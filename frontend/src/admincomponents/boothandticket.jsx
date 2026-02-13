@@ -7,7 +7,7 @@ const BoothandTicket = () => {
   const [activeTab, setActiveTab] = useState("booth-map");
   const [selectedEvent, setSelectedEvent] = useState("TechStart Summint 2026");
   const [detailPopup, setDetailPopup] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, handlePageChange] = useState(1);
   const itemsPerPage = 10;
 
   // Booth Map: 5x5 grid (5 columns, 5 rows). Each cell: null (empty) or { code, type, status, dimensions, bookedBy? }
@@ -59,7 +59,7 @@ const BoothandTicket = () => {
   ];
 
   // Get recent scans (first 4)
-  const recentScans = liveScans.slice(0, 4);
+  const recentScans = liveScans.slice(0, 5);
 
   // Pagination calculations
   const totalPages = Math.ceil(liveScans.length / itemsPerPage);
@@ -108,19 +108,19 @@ const BoothandTicket = () => {
             <>
               <div className="bt-section">
                 <div className="bt-section-header">
-                <h3 className="bt-section-title">Exhibition Hall Layout</h3>
-                <div className="bt-toolbar">
-                  <button className="outlined-button bt-btn bt-btn-upload">
-                    <Icon icon="mdi:upload" />
-                    Upload Map
-                  </button>
-                  <button className="outlined-button bt-btn bt-btn-edit">
-                    <Icon icon="mdi:pencil" />
-                    Edit Layout
-                  </button>
-                  <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom in"><Icon icon="mdi:magnify-plus-outline" /></button>
-                  <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom out"><Icon icon="mdi:magnify-minus-outline" /></button>
-                </div>
+                  <h3 className="bt-section-title">Exhibition Hall Layout</h3>
+                  <div className="bt-toolbar">
+                    <button className="outlined-button bt-btn bt-btn-upload">
+                      <Icon icon="mdi:upload" />
+                      Upload Map
+                    </button>
+                    <button className="outlined-button bt-btn bt-btn-edit">
+                      <Icon icon="mdi:pencil" />
+                      Edit Layout
+                    </button>
+                    <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom in"><Icon icon="mdi:magnify-plus-outline" /></button>
+                    <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom out"><Icon icon="mdi:magnify-minus-outline" /></button>
+                  </div>
 
                 </div>
                 <div className="bt-booth-grid">
@@ -173,13 +173,13 @@ const BoothandTicket = () => {
               <div className="bt-section">
                 <div className="bt-section-header">
                   <h3 className="bt-section-title">Auditorium Seating</h3>
-                
-                <div className="bt-toolbar">
-                  <button className="outlined-button bt-btn bt-btn-upload"><Icon icon="mdi:upload" /> Upload Map</button>
-                  <button className="outlined-button bt-btn bt-btn-edit"><Icon icon="mdi:pencil" /> Edit Layout</button>
-                  <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom in"><Icon icon="mdi:magnify-plus-outline" /></button>
-                  <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom out"><Icon icon="mdi:magnify-minus-outline" /></button>
-                </div>
+
+                  <div className="bt-toolbar">
+                    <button className="outlined-button bt-btn bt-btn-upload"><Icon icon="mdi:upload" /> Upload Map</button>
+                    <button className="outlined-button bt-btn bt-btn-edit"><Icon icon="mdi:pencil" /> Edit Layout</button>
+                    <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom in"><Icon icon="mdi:magnify-plus-outline" /></button>
+                    <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom out"><Icon icon="mdi:magnify-minus-outline" /></button>
+                  </div>
 
                 </div>
                 <div className="bt-seat-layout">
@@ -262,19 +262,19 @@ const BoothandTicket = () => {
                   <div className="bt-scan-list">
                     {recentScans.map((scan) => (
                       <div key={scan.id} className="bt-scan-card">
-                           <div className="left">
-                        <Icon icon={scan.icon} className={`bt-scan-icon bt-scan-icon-desktop ${scan.tag === "BOOTH" ? "blue" : "green"}`} />
-                        <div className="bt-scan-body">
-                         
-                          <h5 className="bt-scan-name">{scan.name}</h5>
-                          <span className="smaller-body-text bt-scan-details">{scan.details}</span>
-                         </div>
-                         </div>
-                          <div className="right">
-                               <div className="bt-scan-body">
-                         <span className={`button-label bt-scan-tag ${scan.tag === "BOOTH" ? "tag-booth" : "tag-seats"}`}>{scan.tag}</span>
-                          <span className="smaller-body-text bt-scan-meta">{scan.time} • {scan.entrance}</span>
+                        <div className="left">
+                          <Icon icon={scan.icon} className={`bt-scan-icon bt-scan-icon-desktop ${scan.tag === "BOOTH" ? "blue" : "green"}`} />
+                          <div className="bt-scan-body">
+
+                            <h5 className="bt-scan-name">{scan.name}</h5>
+                            <span className="smaller-body-text bt-scan-details">{scan.details}</span>
+                          </div>
                         </div>
+                        <div className="right">
+                          <div className="bt-scan-body">
+                            <span className={`button-label bt-scan-tag ${scan.tag === "BOOTH" ? "tag-booth" : "tag-seats"}`}>{scan.tag}</span>
+                            <span className="smaller-body-text bt-scan-meta">{scan.time} • {scan.entrance}</span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -294,6 +294,87 @@ const BoothandTicket = () => {
                   </div>
                 </div>
               </div>
+            <div className="bt-allscan-section">
+  <h3 className="bt-allscan-title">All Live Scan Activity</h3>
+
+  <div className="bt-allscan-table-wrapper">
+    <table className="bt-allscan-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Details</th>
+          <th>Type</th>
+          <th>Time</th>
+          <th>Entrance</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {currentScans.map((scan) => (
+          <tr key={scan.id}>
+            <td>
+              <div className="all-scan-name-wrapper">
+                <Icon
+                  icon={scan.icon}
+                  className={`bt-scan-icon ${scan.tag === "BOOTH" ? "blue" : "green"}`}
+                />
+                <div className="bt-scan-body">
+                  <h5 className="bt-allscan-name-text">{scan.name}</h5>
+                </div>
+              </div>
+            </td>
+
+            <td className="small-body-text bt-allscan-details">
+              <strong>{scan.details}</strong>
+            </td>
+
+            <td>
+              <span
+                className={`bt-allscan-tag ${
+                  scan.tag === "BOOTH"
+                    ? "button-label bt-allscan-tag-booth"
+                    : "button-label bt-allscan-tag-seats"
+                }`}
+              >
+                {scan.tag}
+              </span>
+            </td>
+
+            <td className="small-body-text">{scan.time}</td>
+            <td className="small-body-text">{scan.entrance}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {/* Pagination */}
+  {totalPages > 1 && (
+    <div className="pagination">
+      <button
+        className="pagination-btn"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+      >
+        Previous
+      </button>
+
+      <span className="pagination-info">
+        Page {currentPage} of {totalPages}
+      </span>
+
+      <button
+        className="pagination-btn"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+      >
+        Next
+      </button>
+    </div>
+  )}
+</div>
+
+
             </>
           )}
         </div>
