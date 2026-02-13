@@ -1,14 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
 
-import Sidebar from "./components/sidebar.jsx";
-import Header from "./components/header.jsx";
-import Dashboard from "./components/dashboard.jsx";
-import UserManagement from "./components/usermanagement.jsx";
-import EventManagement from "./components/eventmanagement.jsx";
-import Transaction from "./components/transaction.jsx";
-import Payments from "./components/payments.jsx";
-import BoothandTicket from "./components/boothandticket.jsx";
+import Sidebar from "./admincomponents/sidebar.jsx";
+import Header from "./admincomponents/header.jsx";
+import Dashboard from "./admincomponents/dashboard.jsx";
+import UserManagement from "./admincomponents/usermanagement.jsx";
+import EventManagement from "./admincomponents/eventmanagement.jsx";
+import Transaction from "./admincomponents/transaction.jsx";
+import Payments from "./admincomponents/payments.jsx";
+import BoothandTicket from "./admincomponents/boothandticket.jsx";
 
 
 function App() {
