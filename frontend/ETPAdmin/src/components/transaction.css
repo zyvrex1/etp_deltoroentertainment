@@ -1,0 +1,393 @@
+.transaction-page {
+    padding: 32px;
+    background: var(--color-bg-light);
+    min-height: 100vh;
+
+    .transaction-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 24px;
+        text-align: left;
+
+        h1 {
+            margin: 0 0 4px 0;
+            color: var(--color-black-primary);
+        }
+
+        p {
+            margin: 0;
+            color: var(--color-black-tertiary);
+        }
+
+        .export-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--color-black-secondary);
+            justify-content: center;
+
+            svg {
+                width: 18px;
+                height: 18px;
+            }
+        }
+    }
+}
+
+.tx-content {
+    background: var(--color-white-primary);
+    border-radius: 12px;
+    padding: 24px;
+
+    .tx-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+}
+
+.tx-toolbar-left {
+    flex: 1;
+
+    .tx-search {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--color-bg-light);
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 8px;
+        padding: 10px 16px;
+
+        svg {
+            width: 20px;
+            height: 20px;
+            color: var(--color-black-tertiary);
+        }
+    }
+
+    .tx-search input {
+        flex: 1;
+        border: none;
+        background: none;
+        color: var(--color-black-primary);
+    }
+
+    .tx-search input::placeholder {
+        color: var(--color-black-tertiary);
+    }
+
+    .tx-search input:focus {
+        outline: none;
+    }
+}
+
+.tx-toolbar-right {
+    flex-shrink: 0;
+
+    .tx-filter-dropdown {
+        position: relative;
+    }
+
+    .tx-filter-dropdown-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid var(--color-black-quaternary);
+        background: var(--color-white-primary);
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        min-width: 180px;
+
+        &:hover {
+            border-color: var(--color-black-tertiary);
+        }
+
+        .dropdown-icon {
+            width: 18px;
+            height: 18px;
+            color: var(--color-black-tertiary);
+            transition: transform 0.2s ease;
+        }
+
+        .dropdown-icon.open {
+            transform: rotate(180deg);
+        }
+    }
+
+    .tx-filter-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        min-width: 180px;
+        background: var(--color-white-primary);
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        overflow: hidden;
+    }
+
+    .tx-filter-dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 10px 16px;
+        text-align: left;
+        border: none;
+        background: var(--color-white-primary);
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        transition: background 0.2s ease;
+
+        &:hover {
+            background: var(--color-red-primary);
+            color: var(--color-white-primary);
+        }
+
+        .tx-filter-dropdown-item.active {
+            background: var(--color-red-quaternary);
+            color: var(--color-red-primary);
+        }
+    }
+}
+
+
+/* Table */
+.table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 24px;
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+
+        thead {
+            background: var(--color-bg-light);
+            border-bottom: 1px solid var(--color-black-quaternary);
+
+            th {
+                padding: 12px 16px;
+                text-align: left;
+                color: var(--color-black-secondary);
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                font-size: 14px;
+            }
+
+            tr {
+                border-bottom: 1px solid var(--color-black-quaternary);
+                transition: background 0.2s ease;
+
+                &:hover {
+                    background: var(--color-bg-light);
+                }
+            }
+        }
+    }
+
+    tbody td {
+        padding: 16px;
+        color: var(--color-black-primary);
+        text-align: left;
+    }
+}
+
+
+
+
+/* Category pills */
+
+
+.tx-category-vip {
+    background: var(--color-green-tertiary);
+    color: var(--color-green-primary);
+}
+
+.tx-category-booth {
+    background: var(--color-blue-tertiary);
+    color: var(--color-blue-primary);
+}
+
+.tx-category-standard {
+    background: var(--color-black-quaternary);
+    color: var(--color-black-secondary);
+}
+
+/* Status pills */
+
+.tx-status-completed {
+    background: var(--color-green-tertiary);
+    color: var(--color-green-primary);
+}
+
+.tx-status-pending {
+    background: var(--color-yellow-tertiary);
+    color: var(--color-yellow-primary);
+}
+
+/* View button */
+.tx-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    border: none;
+    background: none;
+    color: var(--color-black-secondary);
+    cursor: pointer;
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* Pagination (reuse global pattern) */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+
+    .pagination-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 40px;
+        padding: 0 16px;
+        border-radius: 8px;
+        border: 1px solid var(--color-black-quaternary);
+        background: var(--color-white-primary);
+        color: var(--color-black-primary);
+        cursor: pointer;
+        font-weight: 500;
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+    }
+
+    .pagination-info {
+        color: var(--color-black-secondary);
+    }
+}
+
+
+
+/* Responsive */
+@media (max-width: 768px) {
+
+    .tx-header-actions{
+        width: 100%;
+    }
+    .transaction-page {
+        padding: 20px;
+    }
+
+    .transaction-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .tx-content {
+        padding: 16px;
+    }
+
+    .tx-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .tx-toolbar-right {
+        width: 100%;
+    }
+
+    .tx-filter-dropdown {
+        width: 100%;
+    }
+
+    .tx-filter-dropdown-btn {
+        width: 100%;
+    }
+
+    .tx-filter-dropdown-menu {
+        right: 0;
+        left: 0;
+        width: 100%;
+    }
+
+    .data-table {
+        table-layout: auto;
+    }
+
+    .data-table thead {
+        display: none;
+    }
+
+    .data-table,
+    .data-table tbody,
+    .data-table tr,
+    .data-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .data-table tbody tr {
+        margin-bottom: 12px;
+        border-radius: 8px;
+        background: var(--color-white-primary);
+    }
+
+    .data-table tbody td {
+        padding: 10px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .data-table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--color-black-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    .pagination {
+        gap: 8px;
+    }
+
+    .tx-view-btn {
+        padding: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .export-btn{
+        width: 100%;
+    }
+    .transaction-page {
+        padding: 16px;
+    }
+
+    .tx-content {
+        padding: 12px;
+    }
+
+    .tx-view-btn {
+        padding: 6px;
+    }
+}
