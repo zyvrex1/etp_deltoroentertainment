@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
 
+
+
 import Sidebar from "./admincomponents/sidebar.jsx";
 import Header from "./admincomponents/header.jsx";
 import Dashboard from "./admincomponents/dashboard.jsx";
@@ -9,7 +11,7 @@ import EventManagement from "./admincomponents/eventmanagement.jsx";
 import Transaction from "./admincomponents/transaction.jsx";
 import Payments from "./admincomponents/payments.jsx";
 import BoothandTicket from "./admincomponents/boothandticket.jsx";
-
+import ReportsandAnalytics from "./admincomponents/reportsandanalytics.jsx";
 
 function App() {
   // User data - replace with actual login data when authentication is implemented
@@ -34,6 +36,7 @@ function App() {
               <Route path="/transactions" element={<Transaction />} />
               <Route path="/payments" element={<Payments />} />
               <Route path="/booths-tickets" element={<BoothandTicket />} />
+              <Route path="/analytics" element={<ReportsandAnalytics />} />
             </Routes>
           </div>
         </main>
