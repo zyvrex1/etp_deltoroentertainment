@@ -289,88 +289,88 @@ export default function ReportsAnalytics() {
                     </div>
 
                     <ResponsiveContainer width="100%" height={300}>
-    <LineChart data={revenueData}>
+                        <LineChart data={revenueData}>
 
-        {/* Gradient Definition */}
-        <defs>
-            <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-red-primary)" stopOpacity={0.3}/>
-                <stop offset="100%" stopColor="var(--color-red-primary)" stopOpacity={0}/>
-            </linearGradient>
-        </defs>
+                            {/* Gradient Definition */}
+                            <defs>
+                                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="var(--color-red-primary)" stopOpacity={0.3} />
+                                    <stop offset="100%" stopColor="var(--color-red-primary)" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
 
-        {/* Grid */}
-        <CartesianGrid
-            stroke="rgba(0,0,0,0.06)"
-            strokeDasharray="3 3"
-            vertical={false}
-        />
+                            {/* Grid */}
+                            <CartesianGrid
+                                stroke="rgba(0,0,0,0.06)"
+                                strokeDasharray="3 3"
+                                vertical={false}
+                            />
 
-        {/* X Axis */}
-        <XAxis
-            dataKey="month"
-            tick={{
-                fill: "var(--color-black-secondary)",
-                fontSize: 14,
-                fontWeight: 500,
-            }}
-            tickLine={false}
-            axisLine={{ stroke: "var(--color-black-quaternary" }}
-        />
+                            {/* X Axis */}
+                            <XAxis
+                                dataKey="month"
+                                tick={{
+                                    fill: "var(--color-black-secondary)",
+                                    fontSize: 14,
+                                    fontWeight: 500,
+                                }}
+                                tickLine={false}
+                                axisLine={{ stroke: "var(--color-black-quaternary" }}
+                            />
 
-        {/* Y Axis */}
-        <YAxis
-            tick={{
-                fill: "var(--color-black-secondary)",
-                fontSize: 14,
-            }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(value) => `$${value / 1000}k`}
-        />
+                            {/* Y Axis */}
+                            <YAxis
+                                tick={{
+                                    fill: "var(--color-black-secondary)",
+                                    fontSize: 14,
+                                }}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(value) => `$${value / 1000}k`}
+                            />
 
-        {/* Tooltip */}
-        <Tooltip
-            formatter={(value) => [`$${value.toLocaleString()}`, "Revenue"]}
-            contentStyle={{
-                backgroundColor: "var(--color-white-primary)",
-                border: "1px solid var(--color-border)",
-                borderRadius: "10px",
-                fontSize: "13px"
-            }}
-            labelStyle={{
-                color: "var(--color-black-primary)",
-                fontWeight: 600
-            }}
-        />
+                            {/* Tooltip */}
+                            <Tooltip
+                                formatter={(value) => [`$${value.toLocaleString()}`, "Revenue"]}
+                                contentStyle={{
+                                    backgroundColor: "var(--color-white-primary)",
+                                    border: "1px solid var(--color-border)",
+                                    borderRadius: "10px",
+                                    fontSize: "13px"
+                                }}
+                                labelStyle={{
+                                    color: "var(--color-black-primary)",
+                                    fontWeight: 600
+                                }}
+                            />
 
-        {/* Line */}
-        <Line
-            type="monotone"
-            dataKey="revenue"
-            stroke="var(--color-red-primary)"
-            strokeWidth={3}
-            dot={{
-                r: 4,
-                strokeWidth: 2,
-                fill: "white"
-            }}
-            activeDot={{
-                r: 6
-            }}
-            animationDuration={800}
-        />
+                            {/* Line */}
+                            <Line
+                                type="monotone"
+                                dataKey="revenue"
+                                stroke="var(--color-red-primary)"
+                                strokeWidth={3}
+                                dot={{
+                                    r: 4,
+                                    strokeWidth: 2,
+                                    fill: "white"
+                                }}
+                                activeDot={{
+                                    r: 6
+                                }}
+                                animationDuration={800}
+                            />
 
-        {/* Area Under Line */}
-        <Line
-            type="monotone"
-            dataKey="revenue"
-            stroke="transparent"
-            fill="url(#revenueGradient)"
-        />
+                            {/* Area Under Line */}
+                            <Line
+                                type="monotone"
+                                dataKey="revenue"
+                                stroke="transparent"
+                                fill="url(#revenueGradient)"
+                            />
 
-    </LineChart>
-</ResponsiveContainer>
+                        </LineChart>
+                    </ResponsiveContainer>
 
                 </div>
 
@@ -381,49 +381,49 @@ export default function ReportsAnalytics() {
                         <p>Daily ticket sales volume</p>
                     </div>
 
-                   <ResponsiveContainer width="100%" height={300}>
-    <BarChart data={ticketSalesData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-black-tertiary)" />
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={ticketSalesData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-black-tertiary)" />
 
-        <XAxis
-            dataKey="day"
-            tick={{
-                fill: "var(--color-black-secondary)",
-                fontSize: 14,
-                fontWeight: 500
-            }}
-            tickLine={false}
-            axisLine={{ stroke: "var(--color-border)" }}
-        />
+                            <XAxis
+                                dataKey="day"
+                                tick={{
+                                    fill: "var(--color-black-secondary)",
+                                    fontSize: 14,
+                                    fontWeight: 500
+                                }}
+                                tickLine={false}
+                                axisLine={{ stroke: "var(--color-border)" }}
+                            />
 
-        <YAxis
-            tick={{
-                fill: "var(--color-black-secondary)",
-                fontSize: 14
-            }}
-            tickLine={false}
-            axisLine={false}
-        />
+                            <YAxis
+                                tick={{
+                                    fill: "var(--color-black-secondary)",
+                                    fontSize: 14
+                                }}
+                                tickLine={false}
+                                axisLine={false}
+                            />
 
-        <Tooltip
-            contentStyle={{
-                backgroundColor: "var(--color-white-primary)",
-                border: "1px solid var(--color-border)",
-                borderRadius: "10px"
-            }}
-            labelStyle={{
-                color: "var(--color-black-primary)",
-                fontWeight: 600
-            }}
-        />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: "var(--color-white-primary)",
+                                    border: "1px solid var(--color-border)",
+                                    borderRadius: "10px"
+                                }}
+                                labelStyle={{
+                                    color: "var(--color-black-primary)",
+                                    fontWeight: 600
+                                }}
+                            />
 
-        <Bar
-            dataKey="sales"
-            fill="var(--color-blue-primary)"
-            radius={[6, 6, 0, 0]}
-        />
-    </BarChart>
-</ResponsiveContainer>
+                            <Bar
+                                dataKey="sales"
+                                fill="var(--color-blue-primary)"
+                                radius={[6, 6, 0, 0]}
+                            />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
 
                 {/* Event Categories */}

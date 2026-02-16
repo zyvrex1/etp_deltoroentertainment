@@ -12,6 +12,8 @@ import Transaction from "./admincomponents/transaction.jsx";
 import Payments from "./admincomponents/payments.jsx";
 import BoothandTicket from "./admincomponents/boothandticket.jsx";
 import ReportsandAnalytics from "./admincomponents/reportsandanalytics.jsx";
+import Content from "./admincomponents/content.jsx";
+
 
 function App() {
   // User data - replace with actual login data when authentication is implemented
@@ -37,6 +39,8 @@ function App() {
               <Route path="/payments" element={<Payments />} />
               <Route path="/booths-tickets" element={<BoothandTicket />} />
               <Route path="/analytics" element={<ReportsandAnalytics />} />
+              <Route path="/content" element={<Content />} />
+
             </Routes>
           </div>
         </main>
