@@ -264,10 +264,10 @@
     padding: 12px 0;
     align-items: left;
     font-size: 14px;
-    text-transform: uppercase;
 }
 
 .table-header {
+    text-transform: uppercase;
     font-weight: 600;
     border-bottom: 1px solid var(--color-border);
     color: var(--color-black-primary);
@@ -286,6 +286,7 @@
     color: var(--color-green-primary);
 }
 
+
 .status {
     background: var(--color-green-tertiary);
     color: var(--color-green-primary);
@@ -295,6 +296,46 @@
 }
 
 
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 24px;
+    padding-bottom: 24px;
+    flex-wrap: wrap;
+    max-width: 100%;
+
+    .pagination-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 40px;
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 6px;
+        background: white;
+        color: var(--color-black-primary);
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        padding: 0 16px;
+
+        &:hover:not(:disabled) {
+            border-color: var(--color-black-tertiary);
+            color: var(--color-black-primary);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    .pagination-info {
+        color: var(--color-black-secondary);
+    }
+}
 
 @media (max-width: 768px) {
     .reports-container {
@@ -345,7 +386,6 @@
     }
 
     .chart-card {
-        padding: 16px;
         width: 100%;
     }
 

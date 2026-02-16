@@ -99,8 +99,56 @@ export default function ReportsAnalytics() {
             revenue: "$33,230",
             status: "Active",
         },
+        {
+            name: "Game Dev Con 2024",
+            date: "Dec 10, 2024",
+            tickets: "800/1,000",
+            revenue: "$95,000",
+            status: "Active",
+        },
+        {
+            name: "Startup Pitch Night",
+            date: "Jan 20, 2025",
+            tickets: "150/200",
+            revenue: "$12,500",
+            status: "Pending",
+        },
+        {
+            name: "Art Gallery Opening",
+            date: "Feb 14, 2025",
+            tickets: "300/300",
+            revenue: "$45,000",
+            status: "Sold Out",
+        },
+        {
+            name: "Blockchain Summit",
+            date: "Mar 05, 2025",
+            tickets: "400/500",
+            revenue: "$120,000",
+            status: "Active",
+        },
+        {
+            name: "AI Workshop",
+            date: "Apr 12, 2025",
+            tickets: "50/50",
+            revenue: "$5,000",
+            status: "Sold Out",
+        }
     ];
 
+    // Pagination Logic
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+
+    const totalPages = Math.ceil(topEvents.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedEvents = topEvents.slice(startIndex, startIndex + itemsPerPage);
+
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
 
     const COLORS = ["var(--color-red-primary)", "var(--color-blue-primary)", "var(--color-purple-primary)", "var(--color-yellow-primary)"];
 
@@ -484,7 +532,7 @@ export default function ReportsAnalytics() {
                                 <span>Status</span>
                             </div>
 
-                            {topEvents.map((event, index) => (
+                            {paginatedEvents.map((event, index) => (
                                 <div key={index} className="table-row">
                                     <h6>{event.name}</h6>
                                     <span className="small-body-text">{event.date}</span>
@@ -494,6 +542,31 @@ export default function ReportsAnalytics() {
                                 </div>
                             ))}
                         </div>
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="pagination">
+                                <button
+                                    className="pagination-btn"
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                >
+                                    Previous
+                                </button>
+
+                                <span className="pagination-info">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+
+                                <button
+                                    className="pagination-btn"
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                 </div>
