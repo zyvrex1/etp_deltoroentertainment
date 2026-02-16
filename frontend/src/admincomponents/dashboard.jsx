@@ -2,6 +2,8 @@ import "./Dashboard.css";
 import { Icon } from "@iconify/react";
 import CreateEventModal from './CreateEventModal';
 import { useState } from 'react';
+import { NavLink } from "react-router-dom";
+
 
 export default function Dashboard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -291,7 +293,7 @@ export default function Dashboard() {
                             <div className="alert-content">
                                 <h4>Action Required</h4>
                                 <p>4 promoter payouts are pending approval.</p>
-                                <button className="outlined-button red">Review Payouts</button>
+                                <NavLink to="/support"><button className="outlined-button red">Review Payouts</button></NavLink>
                             </div>
                         </div>
                     </div>
