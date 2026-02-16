@@ -14,6 +14,9 @@ import BoothandTicket from "./admincomponents/boothandticket.jsx";
 import ReportsandAnalytics from "./admincomponents/reportsandanalytics.jsx";
 import Content from "./admincomponents/content.jsx";
 import Settings from "./admincomponents/settings.jsx";
+import Support from "./admincomponents/support.jsx";
+import AuditLogs from "./admincomponents/audit.jsx";
+
 
 
 
@@ -43,6 +46,8 @@ function App() {
               <Route path="/analytics" element={<ReportsandAnalytics />} />
               <Route path="/content" element={<Content />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/audit-logs" element={<AuditLogs />} />
 
             </Routes>
           </div>
