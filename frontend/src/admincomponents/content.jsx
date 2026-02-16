@@ -1,23 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FaPlus, FaFileContract, FaShieldAlt, FaFileInvoiceDollar } from 'react-icons/fa';
 import './content.css';
 import { Icon } from "@iconify/react";
+import CreateAnnouncementModal from './CreateAnnouncementModal';
 
 
 const ContentManager = () => {
+    const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
     return (
         <div className="content-manager">
             <div className="content-header">
-                    <div>
-                      <h1>Content Management</h1>
-                      <p>Manage platform announcements and static content</p>
-                    </div>
-                    <div className="content-actions">
-                      <button className="primary-button">
+                <div>
+                    <h1>Content Management</h1>
+                    <p>Manage platform announcements and static content</p>
+                </div>
+                <div className="content-actions">
+                    <button className="primary-button" onClick={() => setIsAnnouncementModalOpen(true)}>
                         <Icon icon="mdi:plus" /> New Announcement
-                      </button>
-                    </div>
-                  </div>
+                    </button>
+                </div>
+            </div>
 
 
             <div className="content-grid">
@@ -72,6 +74,7 @@ const ContentManager = () => {
                     </div>
                 </div>
             </div>
+            <CreateAnnouncementModal isOpen={isAnnouncementModalOpen} onClose={() => setIsAnnouncementModalOpen(false)} />
         </div>
     );
 };
