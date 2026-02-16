@@ -289,7 +289,7 @@ export default function ReportsAnalytics() {
                     </div>
 
                     <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={revenueData}>
+                        <LineChart data={revenueData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
 
                             {/* Gradient Definition */}
                             <defs>
@@ -311,7 +311,7 @@ export default function ReportsAnalytics() {
                                 dataKey="month"
                                 tick={{
                                     fill: "var(--color-black-secondary)",
-                                    fontSize: 14,
+                                    fontSize: 12,
                                     fontWeight: 500,
                                 }}
                                 tickLine={false}
@@ -322,7 +322,7 @@ export default function ReportsAnalytics() {
                             <YAxis
                                 tick={{
                                     fill: "var(--color-black-secondary)",
-                                    fontSize: 14,
+                                    fontSize: 12,
                                 }}
                                 tickLine={false}
                                 axisLine={false}
@@ -371,7 +371,6 @@ export default function ReportsAnalytics() {
 
                         </LineChart>
                     </ResponsiveContainer>
-
                 </div>
 
                 {/* Ticket Sales */}
@@ -382,14 +381,14 @@ export default function ReportsAnalytics() {
                     </div>
 
                     <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={ticketSalesData}>
+                        <BarChart data={ticketSalesData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-black-tertiary)" />
 
                             <XAxis
                                 dataKey="day"
                                 tick={{
                                     fill: "var(--color-black-secondary)",
-                                    fontSize: 14,
+                                    fontSize: 12,
                                     fontWeight: 500
                                 }}
                                 tickLine={false}
@@ -399,7 +398,7 @@ export default function ReportsAnalytics() {
                             <YAxis
                                 tick={{
                                     fill: "var(--color-black-secondary)",
-                                    fontSize: 14
+                                    fontSize: 12
                                 }}
                                 tickLine={false}
                                 axisLine={false}
@@ -409,7 +408,7 @@ export default function ReportsAnalytics() {
                                 contentStyle={{
                                     backgroundColor: "var(--color-white-primary)",
                                     border: "1px solid var(--color-border)",
-                                    borderRadius: "10px"
+                                    borderRadius: "6px"
                                 }}
                                 labelStyle={{
                                     color: "var(--color-black-primary)",
@@ -442,9 +441,9 @@ export default function ReportsAnalytics() {
                                 <Pie
                                     data={categoryData}
                                     dataKey="value"
-                                    nameKey="name" sty
-                                    innerRadius={70}
-                                    outerRadius={100}
+                                    nameKey="name"
+                                    innerRadius={60}
+                                    outerRadius={85}
                                     paddingAngle={4}
                                 >
                                     {categoryData.map((entry, index) => (
