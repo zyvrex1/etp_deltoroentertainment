@@ -106,9 +106,8 @@
                 th {
                     background-color: #f9fafb;
                     color: var(--color-black-secondary);
-                    font-weight: 600;
                     font-size: 14px;
-                    text-transform: capitalize;
+                    text-transform: uppercase;
                 }
 
                 td {

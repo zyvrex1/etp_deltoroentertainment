@@ -141,12 +141,12 @@ const AuditLogs = () => {
                             {paginatedLogs.map((log) => (
                                 <tr key={log.id}>
                                     <td className="action-cell">
-                                        <span className="action-text">{log.action}</span>
+                                        <h6 className="action-text">{log.action}</h6>
                                     </td>
-                                    <td className="admin-cell">{log.admin}</td>
-                                    <td className="target-cell">{log.target}</td>
-                                    <td className="details-cell">{log.details}</td>
-                                    <td className="timestamp-cell">
+                                    <td className="regular-body-text audit-admin-cell">{log.admin}</td>
+                                    <td className="small-body-text target-cell">{log.target}</td>
+                                    <td className="small-body-text details-cell">{log.details}</td>
+                                    <td className="small-body-text timestamp-cell">
                                         <div className="timestamp-wrapper">
                                             <Icon icon="mdi:clock-time-four-outline" className="clock-icon" />
                                             <span>{log.timestamp}</span>
