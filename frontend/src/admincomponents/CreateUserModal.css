@@ -139,9 +139,11 @@
     text-align: left;
 
     .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+
+    }
 
     .form-group {
         display: flex;
@@ -155,13 +157,18 @@
             font-weight: 500;
         }
 
-        input {
+        input,
+        textarea,
+        select {
             padding: 10px 12px;
             border: 1px solid var(--color-black-tertiary);
             border-radius: 6px;
             font-size: 14px;
             color: var(--color-black-primary);
             transition: border-color 0.2s;
+            font-family: inherit;
+            background-color: var(--color-white-primary);
+
 
             &:focus {
                 outline: none;
@@ -169,16 +176,18 @@
             }
         }
 
-        .user-full-width {
+        .full-width {
             grid-column: 1 / -1;
 
             input {
                 padding: 10px 12px;
-                border: 1px solid var(--color-black-tertiary);
+                border: 1px solid var(--color-black-quaternary);
                 border-radius: 6px;
                 font-size: 14px;
                 color: var(--color-black-primary);
+                background-color: var(--color-white-primary);
                 transition: border-color 0.2s;
+                font-family: inherit;
 
                 &:focus {
                     outline: none;
@@ -186,37 +195,37 @@
                 }
             }
         }
-    }
-}
-
-.info-banner {
-    display: flex;
-    gap: 12px;
-    padding: 16px;
-    background-color: var(--color-blue-quaternary);
-    border-radius: 8px;
-
-    h6 {
-        margin: 0 0 4px 0;
-        color: var(--color-blue-primary);
-        font-size: 14px;
-
 
     }
 
-    .info-icon {
-        color: var(--color-blue-primary);
-        margin-top: 2px;
-    }
+    .info-banner {
+        display: flex;
+        gap: 12px;
+        padding: 16px;
+        background-color: var(--color-blue-quaternary);
+        border-radius: 8px;
 
-    p {
-        margin: 0;
-        color: var(--color-blue-secondary);
-        font-size: 13px;
-        line-height: 1.4;
-    }
+        h6 {
+            margin: 0 0 4px 0;
+            color: var(--color-blue-primary);
+            font-size: 14px;
 
-}
+
+        }
+
+        .info-icon {
+            color: var(--color-blue-primary);
+            margin-top: 2px;
+        }
+
+        p {
+            margin: 0;
+            color: var(--color-blue-secondary);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+    }
 }
 
 

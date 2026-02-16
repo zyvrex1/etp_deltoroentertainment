@@ -127,18 +127,18 @@
         padding: 16px;
     }
 
-    .content-manager .usermanagement-header {
+    .content-manager .content-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 16px;
     }
 
 
-    .content-manager .dashboard-actions {
+    .content-manager .content-actions {
         width: 100%;
     }
 
-    .content-manager .dashboard-actions button {
+    .content-manager .content-actions button {
         width: 100%;
         justify-content: center;
     }
