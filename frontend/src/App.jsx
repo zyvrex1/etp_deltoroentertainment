@@ -13,6 +13,8 @@ import Payments from "./admincomponents/payments.jsx";
 import BoothandTicket from "./admincomponents/boothandticket.jsx";
 import ReportsandAnalytics from "./admincomponents/reportsandanalytics.jsx";
 import Content from "./admincomponents/content.jsx";
+import Settings from "./admincomponents/settings.jsx";
+
 
 
 function App() {
@@ -40,6 +42,7 @@ function App() {
               <Route path="/booths-tickets" element={<BoothandTicket />} />
               <Route path="/analytics" element={<ReportsandAnalytics />} />
               <Route path="/content" element={<Content />} />
+              <Route path="/settings" element={<Settings />} />
 
             </Routes>
           </div>

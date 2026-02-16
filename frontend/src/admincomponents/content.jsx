@@ -7,12 +7,12 @@ import { Icon } from "@iconify/react";
 const ContentManager = () => {
     return (
         <div className="content-manager">
-            <div className="usermanagement-header">
+            <div className="content-header">
                     <div>
                       <h1>Content Management</h1>
                       <p>Manage platform announcements and static content</p>
                     </div>
-                    <div className="dashboard-actions">
+                    <div className="content-actions">
                       <button className="primary-button">
                         <Icon icon="mdi:plus" /> New Announcement
                       </button>

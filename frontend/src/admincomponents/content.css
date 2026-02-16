@@ -1,6 +1,6 @@
 /* Main Container */
 .content-manager {
-    padding: 24px;
+    padding: 32px;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: #1a1a1a;
     background-color: #f4f6f8;
@@ -8,7 +8,7 @@
        Adjust this value based on actual header height if needed. */
     min-height: calc(100vh - 80px);
 
-    .usermanagement-header {
+    .content-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
