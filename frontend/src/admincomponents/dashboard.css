@@ -23,8 +23,12 @@
             display: flex;
         }
 
-        button {
-            margin-left: 12px;
+        .dashboard-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            width: 100%;
+            justify-content: space-between;
         }
 
         .outlined-button {
@@ -171,7 +175,7 @@
     background: var(--color-white-primary);
     padding: 16px;
     border-radius: 12px;
-                   text-align: left;
+    text-align: left;
 
     .card-header {
         display: flex;
@@ -192,7 +196,7 @@
         max-height: 600px;
         overflow-y: auto;
         padding-right: 6px;
-        
+
 
         li {
             display: block;
@@ -234,8 +238,11 @@
                         color: var(--color-black-primary);
 
                     }
-                    p{color: var(--color-black-tertiary);}
-                    
+
+                    p {
+                        color: var(--color-black-tertiary);
+                    }
+
                 }
             }
         }

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./eventmanagement.css";
+import CreateEventModal from './CreateEventModal';
+
 
 const EventManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -107,6 +109,8 @@ const EventManagement = () => {
     return "status-badge";
   };
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <div className="event-management">
       <div className="eventmanagement-header">
@@ -115,9 +119,8 @@ const EventManagement = () => {
           <p>Manage all events, tickets, and booth layouts.</p>
         </div>
         <div className="dashboard-actions">
-          <button className="primary-button">
-            <Icon icon="mdi:plus" /> Create Event
-          </button>
+          <button className="primary-button" onClick={() => setIsModalOpen(true)}>Create Event</button>
+
         </div>
       </div>
 
@@ -226,6 +229,7 @@ const EventManagement = () => {
           </div>
         )}
       </div>
+      <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 };

@@ -1,7 +1,10 @@
 import "./Dashboard.css";
 import { Icon } from "@iconify/react";
+import CreateEventModal from './CreateEventModal';
+import { useState } from 'react';
 
 export default function Dashboard() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     return (
         <div className="dashboard">
             <div className="dashboard-header">
@@ -11,7 +14,7 @@ export default function Dashboard() {
                 </div>
                 <div className="dashboard-actions">
                     <button className="outlined-button">View Report</button>
-                    <button className="primary-button">+ Create Event</button>
+                    <button className="primary-button" onClick={() => setIsModalOpen(true)}>Create Event</button>
                 </div>
             </div>
 
@@ -209,7 +212,7 @@ export default function Dashboard() {
                             </div>
                         </li>
 
-                         <li className="transaction-item">
+                        <li className="transaction-item">
                             <div className="trans-left">
                                 <span className="user-icon">
                                     <Icon icon="mdi:account-circle" width="48" />
@@ -226,7 +229,7 @@ export default function Dashboard() {
                             </div>
                         </li>
 
-                         <li className="transaction-item">
+                        <li className="transaction-item">
                             <div className="trans-left">
                                 <span className="user-icon">
                                     <Icon icon="mdi:account-circle" width="48" />
@@ -243,7 +246,7 @@ export default function Dashboard() {
                             </div>
                         </li>
 
-                         <li className="transaction-item">
+                        <li className="transaction-item">
                             <div className="trans-left">
                                 <span className="user-icon">
                                     <Icon icon="mdi:account-circle" width="48" />
@@ -259,7 +262,7 @@ export default function Dashboard() {
                                 <em className="button-label completed">completed</em>
                             </div>
                         </li>
-                         <li className="transaction-item">
+                        <li className="transaction-item">
                             <div className="trans-left">
                                 <span className="user-icon">
                                     <Icon icon="mdi:account-circle" width="48" />
@@ -280,18 +283,18 @@ export default function Dashboard() {
 
                 <div className="right-panel">
                     <div className="alert-card">
-                            <div className="alert-inner">
-                                <span className="alert-icon">
-                                    <Icon icon="mdi:alert-circle" width="36" />
-                                </span>
+                        <div className="alert-inner">
+                            <span className="alert-icon">
+                                <Icon icon="mdi:alert-circle" width="36" />
+                            </span>
 
-                                <div className="alert-content">
-                                    <h4>Action Required</h4>
-                                    <p>4 promoter payouts are pending approval.</p>
-                                    <button className="outlined-button red">Review Payouts</button>
-                                </div>
+                            <div className="alert-content">
+                                <h4>Action Required</h4>
+                                <p>4 promoter payouts are pending approval.</p>
+                                <button className="outlined-button red">Review Payouts</button>
                             </div>
                         </div>
+                    </div>
 
                     <div className="quick-actions-card">
                         <h4>Quick Actions</h4>
@@ -363,7 +366,7 @@ export default function Dashboard() {
                                 </div>
                             </li>
 
-                              <li className="promoter-item">
+                            <li className="promoter-item">
                                 <div className="promoter-left">
                                     <span className="promoter-icon">
                                         <Icon icon="mdi:account-circle" width="40" />
@@ -378,11 +381,12 @@ export default function Dashboard() {
                                     <span className="button-label top-rated">Top Rated</span>
                                 </div>
                             </li>
-                            
+
                         </ul>
                     </div>
                 </div>
             </div>
+            <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </div>
     );
 }
