@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 import "./eventmanagement.css";
 import CreateEventModal from './CreateEventModal';
 import EditEventModal from './EditEventModal';
+import AddPromoterModal from './AddPromoterModal';
 
 
 const EventManagement = () => {
@@ -112,11 +113,22 @@ const EventManagement = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddPromoterModalOpen, setIsAddPromoterModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
   const handleEditEvent = (event) => {
     setSelectedEvent(event);
     setIsEditModalOpen(true);
+  };
+
+  const handleAddPromoter = (event) => {
+    setSelectedEvent(event);
+    setIsAddPromoterModalOpen(true);
+  };
+
+  const onPromoterAdded = (eventId, promoter) => {
+    console.log(`Promoter ${promoter.name} added to event ${eventId}`);
+    // Here you would typically update the backend or local state
   };
 
   return (
@@ -202,7 +214,7 @@ const EventManagement = () => {
                       <button className="em-action-btn" aria-label="Edit event" onClick={() => handleEditEvent(event)}>
                         <Icon icon="mdi:square-edit-outline" />
                       </button>
-                      <button className="em-action-btn" aria-label="More actions">
+                      <button className="em-action-btn" aria-label="Add promoter" onClick={() => handleAddPromoter(event)}>
                         <Icon icon="material-symbols:add" />
                       </button>
                     </div>
@@ -239,6 +251,12 @@ const EventManagement = () => {
       </div>
       <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <EditEventModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} event={selectedEvent} />
+      <AddPromoterModal
+        isOpen={isAddPromoterModalOpen}
+        onClose={() => setIsAddPromoterModalOpen(false)}
+        event={selectedEvent}
+        onAdd={onPromoterAdded}
+      />
     </div>
   );
 };
