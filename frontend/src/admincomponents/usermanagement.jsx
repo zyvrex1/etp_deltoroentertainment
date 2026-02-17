@@ -2,11 +2,14 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./usermanagement.css";
 import CreateUserModal from './CreateUserModal';
+import ViewUserModal from './ViewUserModal';
 
 
 const UserManagement = () => {
 
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isViewUserModalOpen, setIsViewUserModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState("all-users");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -144,6 +147,11 @@ const UserManagement = () => {
     setSearchQuery("");
   };
 
+  const handleViewUser = (user) => {
+    setSelectedUser(user);
+    setIsViewUserModalOpen(true);
+  };
+
   const renderTable = () => {
     if (activeTab === "all-users" || activeTab === "admins") {
       return (
@@ -179,7 +187,7 @@ const UserManagement = () => {
                   <td data-label="Joined" className="small-body-text">{user.joined}</td>
                   <td data-label="Actions">
                     <div className="actions">
-                      <button className="action-btn view-btn">
+                      <button className="action-btn view-btn" onClick={() => handleViewUser(user)}>
                         <Icon icon="mdi:eye" />
                       </button>
                       <button className="action-btn edit-btn">
@@ -229,7 +237,7 @@ const UserManagement = () => {
                   <td data-label="Tickets" className="small-body-text">{customer.tickets}</td>
                   <td data-label="Actions">
                     <div className="actions">
-                      <button className="action-btn view-btn">
+                      <button className="action-btn view-btn" onClick={() => handleViewUser(customer)}>
                         <Icon icon="mdi:eye" />
                       </button>
                       <button className="action-btn edit-btn">
@@ -281,7 +289,7 @@ const UserManagement = () => {
                   </td>
                   <td data-label="Actions">
                     <div className="actions">
-                      <button className="action-btn view-btn">
+                      <button className="action-btn view-btn" onClick={() => handleViewUser(promoter)}>
                         <Icon icon="mdi:eye" />
                       </button>
                       <button className="action-btn edit-btn">
@@ -337,7 +345,7 @@ const UserManagement = () => {
                   </td>
                   <td data-label="Actions">
                     <div className="actions">
-                      <button className="action-btn view-btn">
+                      <button className="action-btn view-btn" onClick={() => handleViewUser(sponsor)}>
                         <Icon icon="mdi:eye" />
                       </button>
                       <button className="action-btn edit-btn">
@@ -362,7 +370,7 @@ const UserManagement = () => {
           <p>Manage all platform users in one place.</p>
         </div>
         <div className="dashboard-actions">
-          <button className="primary-button"onClick={() => setIsUserModalOpen(true)}>Create User</button>
+          <button className="primary-button" onClick={() => setIsUserModalOpen(true)}>Create User</button>
         </div>
       </div>
 
@@ -422,6 +430,11 @@ const UserManagement = () => {
         )}
       </div>
       <CreateUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} />
+      <ViewUserModal
+        isOpen={isViewUserModalOpen}
+        onClose={() => setIsViewUserModalOpen(false)}
+        user={selectedUser}
+      />
     </div>
   );
 };
