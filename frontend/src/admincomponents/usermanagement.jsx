@@ -3,13 +3,16 @@ import { Icon } from "@iconify/react";
 import "./usermanagement.css";
 import CreateUserModal from './CreateUserModal';
 import ViewUserModal from './ViewUserModal';
+import EditUserModal from './EditUserModal';
 
 
 const UserManagement = () => {
 
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isViewUserModalOpen, setIsViewUserModalOpen] = useState(false);
+  const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUserType, setSelectedUserType] = useState('');
   const [activeTab, setActiveTab] = useState("all-users");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -152,6 +155,19 @@ const UserManagement = () => {
     setIsViewUserModalOpen(true);
   };
 
+  const handleEditUser = (user, type) => {
+    setSelectedUser(user);
+
+    // Determine type if not explicitly passed (e.g. from All Users tab)
+    let userType = type;
+    if (!userType && user.role) {
+      userType = user.role.toLowerCase();
+    }
+
+    setSelectedUserType(userType);
+    setIsEditUserModalOpen(true);
+  };
+
   const renderTable = () => {
     if (activeTab === "all-users" || activeTab === "admins") {
       return (
@@ -190,7 +206,7 @@ const UserManagement = () => {
                       <button className="action-btn view-btn" onClick={() => handleViewUser(user)}>
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button className="action-btn edit-btn">
+                      <button className="action-btn edit-btn" onClick={() => handleEditUser(user)}>
                         <Icon icon="mdi:pencil" />
                       </button>
                     </div>
@@ -240,7 +256,7 @@ const UserManagement = () => {
                       <button className="action-btn view-btn" onClick={() => handleViewUser(customer)}>
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button className="action-btn edit-btn">
+                      <button className="action-btn edit-btn" onClick={() => handleEditUser(customer, 'customer')}>
                         <Icon icon="mdi:pencil" />
                       </button>
                     </div>
@@ -292,7 +308,7 @@ const UserManagement = () => {
                       <button className="action-btn view-btn" onClick={() => handleViewUser(promoter)}>
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button className="action-btn edit-btn">
+                      <button className="action-btn edit-btn" onClick={() => handleEditUser(promoter, 'promoter')}>
                         <Icon icon="mdi:pencil" />
                       </button>
                     </div>
@@ -348,7 +364,7 @@ const UserManagement = () => {
                       <button className="action-btn view-btn" onClick={() => handleViewUser(sponsor)}>
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button className="action-btn edit-btn">
+                      <button className="action-btn edit-btn" onClick={() => handleEditUser(sponsor, 'sponsor')}>
                         <Icon icon="mdi:pencil" />
                       </button>
                     </div>
@@ -434,6 +450,12 @@ const UserManagement = () => {
         isOpen={isViewUserModalOpen}
         onClose={() => setIsViewUserModalOpen(false)}
         user={selectedUser}
+      />
+      <EditUserModal
+        isOpen={isEditUserModalOpen}
+        onClose={() => setIsEditUserModalOpen(false)}
+        user={selectedUser}
+        type={selectedUserType}
       />
     </div>
   );
