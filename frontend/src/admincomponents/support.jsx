@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './support.css';
+import ViewTicketModal from './ViewTicketModal';
 
 const SupportDisputes = () => {
     // Mock data for tickets
@@ -75,6 +76,28 @@ const SupportDisputes = () => {
         }
     };
 
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTicket, setSelectedTicket] = useState(null);
+
+    const handleViewTicket = (ticket) => {
+        setSelectedTicket(ticket);
+        setIsModalOpen(true);
+    };
+
+    const handleUpdateStatus = (id, newStatus) => {
+        // Update tickets list
+        const updatedTickets = tickets.map(ticket =>
+            ticket.id === id ? { ...ticket, status: newStatus } : ticket
+        );
+        setTickets(updatedTickets);
+
+        // Update selected ticket to reflect change in modal
+        if (selectedTicket && selectedTicket.id === id) {
+            setSelectedTicket({ ...selectedTicket, status: newStatus });
+        }
+    };
+
     return (
         <div className="support-container">
             {/* Header */}
@@ -90,7 +113,7 @@ const SupportDisputes = () => {
                 <div className="stat-card">
                     <div className="stat-info">
                         <span className="stat-label">Open Tickets</span>
-                        <div className="stat-value">5</div>
+                        <div className="stat-value">{tickets.filter(t => t.status === 'open').length}</div>
                     </div>
                     <div className="stat-icon icon-red">
                         <Icon icon="mdi:alert-circle-outline" />
@@ -100,7 +123,7 @@ const SupportDisputes = () => {
                 <div className="stat-card">
                     <div className="stat-info">
                         <span className="stat-label">In Progress</span>
-                        <div className="stat-value">2</div>
+                        <div className="stat-value">{tickets.filter(t => t.status === 'in-progress').length}</div>
                     </div>
                     <div className="stat-icon icon-yellow">
                         <Icon icon="mdi:clock-time-four-outline" />
@@ -110,7 +133,7 @@ const SupportDisputes = () => {
                 <div className="stat-card">
                     <div className="stat-info">
                         <span className="stat-label">Resolved</span>
-                        <div className="stat-value">2</div>
+                        <div className="stat-value">{tickets.filter(t => t.status === 'resolved').length}</div>
                     </div>
                     <div className="stat-icon icon-green">
                         <Icon icon="mdi:check-circle-outline" />
@@ -141,7 +164,12 @@ const SupportDisputes = () => {
                                     <td className="status-cell">{getStatusBadge(ticket.status)}</td>
                                     <td className="small-body-text created-cell">{ticket.created}</td>
                                     <td className="actions-cell">
-                                        <button className="outlined-button view-btn">View</button>
+                                        <button
+                                            className="outlined-button view-btn"
+                                            onClick={() => handleViewTicket(ticket)}
+                                        >
+                                            View
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -174,6 +202,13 @@ const SupportDisputes = () => {
                     </div>
                 )}
             </div>
+
+            <ViewTicketModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                ticket={selectedTicket}
+                onUpdateStatus={handleUpdateStatus}
+            />
         </div>
     );
 };
