@@ -96,7 +96,10 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction }) => {
                 </div>
 
                 <div className="tx-modal-footer">
-                    <button className="close-button-main" onClick={onClose}>Close</button>
+                    {(transaction.type === 'Ticket Purchase' || transaction.type === 'Booth Rental') && (
+                        <button className="process-refund-btn">Process Refund</button>
+                    )}
+                    <button className="primary-button close-button-main" onClick={onClose}>Close</button>
                 </div>
             </div>
         </div>
