@@ -206,18 +206,19 @@
 
 
 .tx-category-vip {
-    background: var(--color-green-tertiary);
-    color: var(--color-green-primary);
+    background: var(--color-purple-tertiary);
+    color: var(--color-purple-primary);
 }
 
-.tx-category-booth {
+.tx-category-corner {
     background: var(--color-blue-tertiary);
     color: var(--color-blue-primary);
 }
 
+.tx-category-inline,
 .tx-category-standard {
-    background: var(--color-black-quaternary);
-    color: var(--color-black-secondary);
+    background: var(--color-green-tertiary);
+    color: var(--color-green-primary);
 }
 
 /* Status pills */
@@ -287,9 +288,10 @@
 /* Responsive */
 @media (max-width: 768px) {
 
-    .tx-header-actions{
+    .tx-header-actions {
         width: 100%;
     }
+
     .transaction-page {
         padding: 20px;
     }
@@ -376,9 +378,10 @@
 
 @media (max-width: 480px) {
 
-    .export-btn{
+    .export-btn {
         width: 100%;
     }
+
     .transaction-page {
         padding: 16px;
     }

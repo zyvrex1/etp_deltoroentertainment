@@ -1,0 +1,272 @@
+.tx-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+    backdrop-filter: blur(2px);
+
+    .tx-modal-container {
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        width: 100%;
+        max-width: 700px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.3s ease-out;
+
+        .tx-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e0e0e0;
+
+            h3 {
+                margin: 0;
+                color: var(--color-black-primary);
+            }
+
+            .close-btn {
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--color-black-tertiary);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 4px;
+                border-radius: 4px;
+                transition: background-color 0.2s;
+
+                &:hover {
+                    color: var(--color-black-primary);
+                }
+            }
+        }
+    }
+}
+
+.tx-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+
+    .amount-card {
+        background-color: var(--color-bg-light);
+        border-radius: 8px;
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+
+        .amount-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-align: left;
+
+            .amount-label {
+                font-weight: 500;
+                color: var(--color-black-secondary);
+                letter-spacing: 0.5px;
+            }
+
+            .amount-value {
+                margin: 0;
+                font-size: 32px;
+                font-weight: 700;
+                color: var(--color-black-primary);
+            }
+        }
+
+        .amount-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+
+            .transac-completed {
+                background-color: var(--color-green-tertiary);
+                color: var(--color-green-primary);
+
+            }
+
+            .transac-pending {
+                background-color: #ffc107;
+                /* Yellow/Orange */
+                color: #212529;
+            }
+
+            .amount-date {
+                color: #6c757d;
+            }
+
+        }
+    }
+}
+
+/* Info Columns Grid */
+.info-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    text-align: left;
+
+    .info-column {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+
+        .column-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #212529;
+            margin: 0 0 16px 0;
+            /* Space below title */
+        }
+
+    }
+}
+
+
+
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .info-label {
+        color: var(--color-black-tertiary);
+    }
+
+    .info-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--color-black-primary);
+    }
+
+}
+
+
+.vip {
+    background-color: var(--color-purple-tertiary);
+    color: var(--color-purple-primary);
+}
+
+.corner {
+    background-color: var(--color-blue-tertiary);
+    color: var(--color-blue-primary);
+}
+
+.inline,
+.standard {
+    background-color: var(--color-green-tertiary);
+    color: var(--color-green-primary);
+}
+
+/* Footer Styles */
+.tx-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    /* Align button to the right */
+    background-color: #f8f9fa;
+    /* Light gray footer background */
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.close-button-main {
+    background-color: #dc3545;
+    /* Red close button */
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.close-button-main:hover {
+    background-color: #c82333;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .tx-modal-container {
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .tx-modal-header {
+        border-radius: 0;
+        padding: 16px !important;
+
+    }
+
+    .info-columns {
+        grid-template-columns: 1fr;
+        /* Stack columns on mobile */
+        gap: 24px;
+    }
+
+    .amount-card {
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 0 !important;
+    }
+
+    .amount-right {
+        align-items: center;
+        /* Center align for better visual on mobile stack */
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .tx-modal-body {
+        padding: 16px;
+        /* Decrease padding on mobile */
+        overflow-y: auto;
+        /* Ensure scroll if content overflows */
+        flex: 1;
+        /* Allow body to grow and push footer down */
+    }
+
+    .tx-modal-header {
+        padding: 16px;
+    }
+
+    .tx-modal-footer {
+        padding: 16px;
+    }
+}

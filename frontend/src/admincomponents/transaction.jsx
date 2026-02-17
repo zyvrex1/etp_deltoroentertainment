@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import "./transaction.css";
+import ViewTransactionModal from "./ViewTransactionModal";
 
 const TransactionMonitoring = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -146,6 +147,14 @@ const TransactionMonitoring = () => {
     setIsDropdownOpen(false);
   };
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+
+  const handleViewTransaction = (transaction) => {
+    setSelectedTransaction(transaction);
+    setIsModalOpen(true);
+  };
+
   const getStatusClass = (status) => {
     if (status === "completed") return "button-label tx-status-completed";
     if (status === "pending") return "button-label tx-status-pending";
@@ -156,7 +165,9 @@ const TransactionMonitoring = () => {
     if (category === "VIP" || category === "VIP Booth")
       return "button-label tx-category-vip";
     if (category === "Corner Booth")
-      return "button-label tx-category-booth";
+      return "button-label tx-category-corner";
+    if (category === "Inline Booth")
+      return "button-label tx-category-inline";
     if (category === "Standard")
       return "button-label tx-category-standard";
     return "tx-category";
@@ -211,9 +222,8 @@ const TransactionMonitoring = () => {
                   {filterOptions.map((option) => (
                     <button
                       key={option.value}
-                      className={`tx-filter-dropdown-item ${
-                        activeFilter === option.value ? "active" : ""
-                      }`}
+                      className={`tx-filter-dropdown-item ${activeFilter === option.value ? "active" : ""
+                        }`}
                       onClick={() => handleFilterChange(option.value)}
                     >
                       {option.label}
@@ -244,10 +254,10 @@ const TransactionMonitoring = () => {
               {paginatedTransactions.map((tx) => (
                 <tr key={tx.id}>
                   <td className="small-body-text" data-label="ID">#{tx.id.toString().padStart(2, "0")}</td>
-                  <td   className="regular-body-text"data-label="User">{tx.user}</td>
-                  <td  className="small-body-text" data-label="Event">{tx.event}</td>
-                  <td   className="small-body-text" data-label="Type">{tx.type}</td>
-                  <td  data-label="Category">
+                  <td className="regular-body-text" data-label="User">{tx.user}</td>
+                  <td className="small-body-text" data-label="Event">{tx.event}</td>
+                  <td className="small-body-text" data-label="Type">{tx.type}</td>
+                  <td data-label="Category">
                     <span className={getCategoryClass(tx.category)}>
                       {tx.category}
                     </span>
@@ -258,9 +268,13 @@ const TransactionMonitoring = () => {
                       {tx.status}
                     </span>
                   </td>
-                  <td  className="small-body-text"data-label="Date">{tx.date}</td>
+                  <td className="small-body-text" data-label="Date">{tx.date}</td>
                   <td data-label="Actions">
-                    <button className="tx-view-btn" aria-label="View details">
+                    <button
+                      className="tx-view-btn"
+                      aria-label="View details"
+                      onClick={() => handleViewTransaction(tx)}
+                    >
                       <Icon icon="mdi:eye" />
                     </button>
                   </td>
@@ -294,6 +308,11 @@ const TransactionMonitoring = () => {
           </div>
         )}
       </div>
+      <ViewTransactionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        transaction={selectedTransaction}
+      />
     </div>
   );
 };
