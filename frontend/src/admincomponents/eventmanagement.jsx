@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./eventmanagement.css";
 import CreateEventModal from './CreateEventModal';
+import EditEventModal from './EditEventModal';
 
 
 const EventManagement = () => {
@@ -110,6 +111,13 @@ const EventManagement = () => {
   };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
+  const handleEditEvent = (event) => {
+    setSelectedEvent(event);
+    setIsEditModalOpen(true);
+  };
 
   return (
     <div className="event-management">
@@ -191,11 +199,11 @@ const EventManagement = () => {
                   <td data-label="Revenue" className="regular-body-text revenue">{event.revenue}</td>
                   <td data-label="Actions">
                     <div className="em-actions">
-                      <button className="em-action-btn" aria-label="Edit event">
+                      <button className="em-action-btn" aria-label="Edit event" onClick={() => handleEditEvent(event)}>
                         <Icon icon="mdi:square-edit-outline" />
                       </button>
                       <button className="em-action-btn" aria-label="More actions">
-                        <Icon icon="mdi:dots-horizontal" />
+                        <Icon icon="material-symbols:add" />
                       </button>
                     </div>
                   </td>
@@ -230,6 +238,7 @@ const EventManagement = () => {
         )}
       </div>
       <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <EditEventModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} event={selectedEvent} />
     </div>
   );
 };

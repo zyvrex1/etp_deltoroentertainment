@@ -237,8 +237,8 @@
 }
 
 .em-action-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 /* Pagination */
@@ -362,7 +362,7 @@
     justify-content: flex-start;
   }
 
-   .em-action-btn {
+  .em-action-btn {
     padding: 6px;
   }
 
@@ -380,7 +380,7 @@
     padding: 12px;
   }
 
-   .em-action-btn {
+  .em-action-btn {
     padding: 6px;
   }
 }

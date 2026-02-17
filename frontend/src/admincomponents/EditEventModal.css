@@ -1,0 +1,275 @@
+/* Modal Overlay */
+.edit-event-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+    backdrop-filter: blur(2px);
+
+    .edit-event-modal-container {
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        width: 100%;
+        max-width: 700px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.3s ease-out;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Header */
+.edit-event-modal-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+        margin: 0;
+        color: var(--color-black-primary);
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--color-black-tertiary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+
+        &:hover {
+            background-color: var(--color-bg-light);
+            color: var(--color-black-primary);
+        }
+
+        svg {
+            width: 24px;
+            height: 24px;
+        }
+    }
+}
+
+
+/* Body */
+.edit-event-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+
+    .edit-event-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            justify-content: baseline;
+
+            h6 {
+                color: var(--color-black-secondary);
+                display: flex;
+            }
+
+            input,
+            textarea {
+                padding: 10px 12px;
+                border: 1px solid var(--color-black-quaternary);
+                border-radius: 6px;
+                font-size: 14px;
+                color: var(--color-black-primary);
+                background-color: var(--color-white-primary);
+                transition: border-color 0.2s;
+                font-family: inherit;
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--color-black-primary);
+                }
+
+                &::placeholder {
+                    color: var(--color-black-tertiary);
+                }
+            }
+
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    }
+}
+
+/* Section Box */
+.section-box {
+    background-color: var(--color-bg-light);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 4px;
+
+    .modal-section-title {
+        margin: 0 0 16px 0;
+        color: var(--color-black-primary);
+        display: flex;
+    }
+
+}
+
+/* Extra Actions Row (Manage Tickets, Edit Booth Map) */
+.extra-actions-row {
+    margin-top: 24px;
+    display: flex;
+    gap: 16px;
+}
+
+.action-row-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--color-black-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background-color: var(--color-bg-light);
+        border-color: var(--color-black-secondary);
+    }
+
+    svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+
+/* Footer */
+.edit-event-modal-footer {
+    padding: 24px;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background-color: var(--color-white-primary);
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+
+    .cancel-btn {
+        background-color: var(--color-white-primary);
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid var(--color-border);
+        /* Explicit border usually good for cancel */
+        padding: 10px 20px;
+        border-radius: 6px;
+
+        &:hover {
+            background-color: var(--color-bg-light);
+            color: var(--color-black-primary);
+            border-color: var(--color-black-quaternary);
+        }
+    }
+
+
+    .save-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        background-color: var(--color-red-primary);
+        color: var(--color-white-primary);
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+
+        &:hover {
+            opacity: 0.9;
+        }
+
+    }
+}
+
+
+
+/* Responsive Styles */
+@media (max-width: 600px) {
+    .edit-event-modal-container {
+        max-height: 100vh;
+        border-radius: 0;
+        height: 100%;
+    }
+
+    .edit-event-modal-header {
+        border-radius: 0;
+    }
+
+    .edit-event-modal-footer {
+        border-radius: 0;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .edit-event-form {
+        gap: 0 !important;
+    }
+
+    .edit-event-modal-body {
+        padding: 16px;
+    }
+
+    .section-box {
+        padding: 12px;
+        margin-bottom: 16px;
+    }
+
+    .edit-event-modal-footer {
+        padding: 16px;
+    }
+
+    .extra-actions-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
