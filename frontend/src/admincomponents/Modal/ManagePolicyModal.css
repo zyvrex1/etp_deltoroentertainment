@@ -1,0 +1,123 @@
+/* Reuse main modal structure but customize for policy editor */
+
+.policy-modal {
+    max-width: 800px;
+    height: 80vh;
+
+    .policy-close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--color-black-tertiary);
+        background-color: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+
+        svg {
+            font-size: 24px;
+        }
+
+        &:hover {
+            color: var(--color-black-primary);
+        }
+    }
+}
+
+.manage-policy-form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+
+        .helper-text {
+            color: var(--color-black-tertiary);
+        }
+
+        .policy-editor {
+            flex: 1;
+            min-height: 200px;
+            padding: 16px;
+            border: 1px solid var(--color-black-tertiary);
+            border-radius: 6px;
+            line-height: 1.6;
+            color: var(--color-black-primary);
+            background-color: var(--color-white-primary);
+            font-family: inherit;
+            resize: none;
+
+            &:focus {
+                outline: none;
+                border-color: var(--color-black-primary);
+            }
+        }
+    }
+}
+
+.policy-modal-footer {
+        padding: 24px;
+        display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    .last-updated {
+        color: var(--color-black-tertiary);
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .cancel-btn {
+        border: none;
+    }
+
+    .save-btn {
+        border: none;
+        cursor: pointer;
+        align-items: center;
+        gap: 8px;
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
+}
+
+
+
+@media (max-width: 600px) {
+    .policy-modal {
+        max-width: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+
+    .policy-modal-footer {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+        border-radius: 12px;
+    }
+
+    .last-updated {
+        text-align: center;
+    }
+
+    .policy-modal-actions {
+        display: block;
+        justify-content: flex-end;
+        text-align: center;
+        display: flex disable;
+    }
+}

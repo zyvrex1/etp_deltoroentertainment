@@ -64,7 +64,7 @@
     padding: 4px;
     border-radius: 4px;
     transition: background-color 0.2s;
-    
+
     svg {
       font-size: 24px;
     }
@@ -445,7 +445,7 @@
 
   .setup-booth-modal-header,
   .setup-booth-modal-footer {
-        padding: 16px;
+    padding: 16px;
   }
 
   .setup-booth-modal-footer {
