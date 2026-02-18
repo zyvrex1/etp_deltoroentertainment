@@ -56,7 +56,7 @@ const formatEventTime = (dateString) => {
   });
 };
 
-const EventManagement = () => {
+const EventManagement = ({ event }) => {
    const { events, dispatch } = useEventsContext();
 
   // const [events, setEvents] = useState([]);
@@ -85,6 +85,25 @@ const EventManagement = () => {
 
     fetchEvents();
   }, [dispatch]);
+
+ const handleDeleteEvent = async (eventId) => {
+  if (!window.confirm("Are you sure you want to delete this event?")) return;
+
+  try {
+    const response = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
+    const json = await response.json();
+
+    if (response.ok) {
+      dispatch({ type: 'DELETE_EVENT', payload: eventId });
+    } else {
+      alert("Failed to delete event.");
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Error deleting event.");
+  }
+};
+
 
   // 2. Filter Logic (Updated for your JSON keys)
   const filteredEvents = (events || []).filter((event) => {
@@ -210,10 +229,14 @@ const EventManagement = () => {
                       <td data-label="Actions">
                         <div className="em-actions">
                           <button className="em-action-btn" aria-label="Edit">
-                            <Icon icon="mdi:square-edit-outline" />
+                            <Icon icon="mdi:edit" color="skye-blue" />
                           </button>
-                          <button className="em-action-btn" aria-label="More">
-                            <Icon icon="mdi:dots-horizontal" />
+                          <button 
+                            onClick={() => handleDeleteEvent(event._id)} 
+                            className="em-action-btn" 
+                            aria-label="Delete"
+                          >
+                            <Icon icon="mdi:delete" color="red" />
                           </button>
                         </div>
                       </td>

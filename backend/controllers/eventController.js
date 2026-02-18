@@ -41,6 +41,28 @@ const createEvent = async (req, res) => {
         isFeatured 
     } = req.body
 
+    const requiredFields = [
+        'title', 'description', 'category', 'venue', 
+        'startDate', 'endDate', 'startTime', 'endTime', 
+        'ticketPrice', 'totalTickets'
+    ];
+
+    let emptyFields = [];
+
+    requiredFields.forEach(field => {
+        // req.body[field] checks the value dynamically
+        if (!req.body[field]) {
+            emptyFields.push(field);
+        }
+    });
+
+    if (emptyFields.length > 0) {
+        return res.status(400).json({ 
+            error: 'Please fill in all the fields', 
+            emptyFields 
+        });
+    }
+
     try {
         const event = await Event.create({
             title,
