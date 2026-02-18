@@ -244,10 +244,7 @@
         max-width: 100vw;
         height: auto;
         max-height: 90vh;
-        /* Keep some padding from viewport edges if possible, or make it full screen */
         border-radius: 12px;
-        /* Maintain radius for cleaner mobile look unless full screen needed. 
-           Design reference doesn't specify full screen mobile, but standard practice is often full width. */
     }
 
     .upload-area {

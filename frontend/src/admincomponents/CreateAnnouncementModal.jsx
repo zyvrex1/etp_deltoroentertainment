@@ -47,7 +47,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose }) => {
 
                 <div className="modal-footer">
                     <button className="button cancel-btn" onClick={onClose}>Cancel</button>
-                    <button className="primary-button save-btn">
+                    <button className="primary-button announce-save-btn">
                         <Icon icon="mdi:content-save-outline" width="18" />
                         Save Changes
                     </button>

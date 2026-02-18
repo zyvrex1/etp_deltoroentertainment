@@ -51,7 +51,15 @@ const AddPromoterModal = ({ isOpen, onClose, event, onAdd }) => {
         if (selectedNewPromoter) {
             const promoterToAdd = availablePromoters.find(p => p.id === parseInt(selectedNewPromoter));
             if (promoterToAdd) {
+                // Update local state
                 setAssignedPromoters([...assignedPromoters, { ...promoterToAdd, avatar: promoterToAdd.name.charAt(0) }]);
+
+                // Call parent handler
+                if (onAdd && event) {
+                    onAdd(event.id, promoterToAdd);
+                }
+
+                // Reset selection
                 setSelectedNewPromoter('');
             }
         }

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Icon } from "@iconify/react";
 import "./boothandticket.css";
 import UploadMapModal from "./UploadMapModal";
+import ManagePricingModal from "./ManagePricingModal";
 
 const BoothandTicket = () => {
   const [activeTab, setActiveTab] = useState("booth-map");
@@ -10,6 +11,7 @@ const BoothandTicket = () => {
   const [detailPopup, setDetailPopup] = useState(null);
   const [currentPage, handlePageChange] = useState(1);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState({ isOpen: false, type: 'booth' });
   const itemsPerPage = 10;
 
   // Booth Map: 5x5 grid (5 columns, 5 rows). Each cell: null (empty) or { code, type, status, dimensions, bookedBy? }
@@ -70,6 +72,12 @@ const BoothandTicket = () => {
   const currentScans = liveScans.slice(startIndex, endIndex);
 
   const rowLabels = ["A", "B", "C", "D", "E"];
+
+  const handlePricingSave = (data) => {
+    console.log("Saving pricing data:", data);
+    // Here you would typically update the state or make an API call
+    setDetailPopup(null); // Just ensuring no other popups interfere
+  };
 
   return (
     <div className="booth-ticket-page">
@@ -165,7 +173,12 @@ const BoothandTicket = () => {
                   <div className="bt-progress"><div className="bt-progress-inner green" style={{ width: "15%" }} /></div>
                   <span className="small-body-text bt-summary-meta">3 / 20 booked</span>
                 </div>
-                <button className="outlined-button bt-btn bt-btn-manage"><Icon icon="mdi:tag-outline" /> Manage Pricing</button>
+                <button
+                  className="outlined-button bt-btn bt-btn-manage"
+                  onClick={() => setIsPricingModalOpen({ isOpen: true, type: 'booth' })}
+                >
+                  <Icon icon="mdi:tag-outline" /> Manage Pricing
+                </button>
               </div>
             </>
           )}
@@ -251,7 +264,12 @@ const BoothandTicket = () => {
                   <div className="bt-progress"><div className="bt-progress-inner blue" style={{ width: "45%" }} /></div>
                   <span className="small-body-text bt-summary-meta">225 / 500 sold</span>
                 </div>
-                <button className="outline-button bt-btn bt-btn-manage"><Icon icon="mdi:tag-outline" /> Manage Pricing</button>
+                <button
+                  className="outlined-button bt-btn bt-btn-manage"
+                  onClick={() => setIsPricingModalOpen({ isOpen: true, type: 'seat' })}
+                >
+                  <Icon icon="mdi:tag-outline" /> Manage Pricing
+                </button>
               </div>
             </>
           )}
@@ -333,8 +351,8 @@ const BoothandTicket = () => {
                           <td>
                             <span
                               className={`bt-allscan-tag ${scan.tag === "BOOTH"
-                                  ? "button-label bt-allscan-tag-booth"
-                                  : "button-label bt-allscan-tag-seats"
+                                ? "button-label bt-allscan-tag-booth"
+                                : "button-label bt-allscan-tag-seats"
                                 }`}
                             >
                               {scan.tag}
@@ -435,6 +453,13 @@ const BoothandTicket = () => {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onSave={(file) => console.log("Uploaded file:", file)}
+      />
+
+      <ManagePricingModal
+        isOpen={isPricingModalOpen.isOpen}
+        type={isPricingModalOpen.type}
+        onClose={() => setIsPricingModalOpen({ ...isPricingModalOpen, isOpen: false })}
+        onSave={handlePricingSave}
       />
     </div>
   );
