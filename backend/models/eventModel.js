@@ -12,7 +12,9 @@ const eventSchema = new Schema({
         type: String,
         required: true
     },
-
+// Promoter
+// Status
+// Revenue
     category: {
         type: String,
         enum: ['concert', 'comedy', 'festival', 'conference', 'sports', 'other'],

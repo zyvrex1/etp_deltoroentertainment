@@ -1,7 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter , Routes, Route } from "react-router-dom";
 import "./App.css";
-
-
 
 import Sidebar from "./admincomponents/sidebar.jsx";
 import Header from "./admincomponents/header.jsx";
@@ -29,7 +27,7 @@ function App() {
   };
 
   return (
-    <Router>
+    <BrowserRouter>
       <div className="app-container">
         <Sidebar />
 
@@ -53,7 +51,7 @@ function App() {
           </div>
         </main>
       </div>
-    </Router>
+    </BrowserRouter>
   );
 }
 

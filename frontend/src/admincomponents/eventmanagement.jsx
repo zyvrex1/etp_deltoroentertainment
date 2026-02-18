@@ -1,94 +1,95 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import "./eventmanagement.css";
-import CreateEventModal from './CreateEventModal';
-import EditEventModal from './EditEventModal';
-import AddPromoterModal from './AddPromoterModal';
+import CreateEventModal from "./modal/CreateEventModal";
+// import EditEventModal from "./modal/EditEventModal"
+
+
+const formatEventDate = (startDate, endDate) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const sameDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const sameMonth =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth();
+
+  // Same exact day
+  if (sameDay) {
+    return start.toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  // Same month
+  if (sameMonth) {
+    return `${start.toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+    })} - ${end.getDate().toString().padStart(2, "0")}, ${start.getFullYear()}`;
+  }
+
+  // Different month
+  return `${start.toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+  })} - ${end.toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+  })}, ${start.getFullYear()}`;
+};
+
+const formatEventTime = (dateString) => {
+  const date = new Date(dateString);
+
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
 
 
 const EventManagement = () => {
+  const [events, setEvents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const itemsPerPage = 5;
 
-  const events = [
-    {
-      id: 1,
-      name: "TechStart Summit 2024",
-      location: "Moscone Center, SF",
-      promoter: "Sarah Chen",
-      date: "Oct 12, 2024",
-      status: "live",
-      sold: 450,
-      total: 600,
-      revenue: "$103,550.00",
-    },
-    {
-      id: 2,
-      name: "Creator Economy Expo",
-      location: "Austin Convention Center",
-      promoter: "David Kim",
-      date: "Nov 25, 2024",
-      status: "pending",
-      sold: 0,
-      total: 500,
-      revenue: "$0.00",
-    },
-    {
-      id: 3,
-      name: "Summer Music Festival",
-      location: "Hyde Park, London",
-      promoter: "David Kim",
-      date: "Jul 20, 2024",
-      status: "completed",
-      sold: 5000,
-      total: 5000,
-      revenue: "$250,000.00",
-    },
-    {
-      id: 4,
-      name: "AI Innovation Conference",
-      location: "Javits Center, NYC",
-      promoter: "Sarah Chen",
-      date: "Dec 10, 2024",
-      status: "live",
-      sold: 300,
-      total: 500,
-      revenue: "$75,000.00",
-    },
-    {
-      id: 5,
-      name: "Startup Pitch Night",
-      location: "WeWork, SF",
-      promoter: "Maria Santos",
-      date: "Oct 30, 2024",
-      status: "live",
-      sold: 30,
-      total: 100,
-      revenue: "$1,500.00",
-    },
-    {
-      id: 6,
-      name: "Global Marketing Summit",
-      location: "Marina Bay Sands, Singapore",
-      promoter: "Liam Carter",
-      date: "Jan 15, 2025",
-      status: "pending",
-      sold: 120,
-      total: 800,
-      revenue: "$18,750.00",
-    },
-  ];
+  // 1. Fetch Data
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('/api/events');
+        const json = await response.json();
+        if (response.ok) {
+          setEvents(json);
+        }
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      }
+    };
+    fetchEvents();
+  }, []);
 
-  const filteredEvents = events.filter((event) => {
+  // 2. Filter Logic (Updated for your JSON keys)
+  const filteredEvents = (events || []).filter((event) => {
     const q = searchQuery.toLowerCase();
     return (
-      event.name.toLowerCase().includes(q) ||
-      event.location.toLowerCase().includes(q) ||
-      event.promoter.toLowerCase().includes(q)
+      event?.title?.toLowerCase().includes(q) ||
+      event?.venue?.name?.toLowerCase().includes(q) ||
+      event?.category?.toLowerCase().includes(q)
     );
   });
 
+  // 3. Pagination Logic
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedEvents = filteredEvents.slice(startIndex, startIndex + itemsPerPage);
@@ -99,59 +100,30 @@ const EventManagement = () => {
     }
   };
 
-  const getSalesPercent = (sold, total) => {
-    if (!total) return 0;
-    return Math.min(100, Math.round((sold / total) * 100));
-  };
-
-  const getStatusClass = (status) => {
-    if (status === "live") return "button-label status-live";
-    if (status === "pending") return "button-label status-pending";
-    if (status === "completed") return "button-label status-completed";
-    return "status-badge";
-  };
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddPromoterModalOpen, setIsAddPromoterModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-
-  const handleEditEvent = (event) => {
-    setSelectedEvent(event);
-    setIsEditModalOpen(true);
-  };
-
-  const handleAddPromoter = (event) => {
-    setSelectedEvent(event);
-    setIsAddPromoterModalOpen(true);
-  };
-
-  const onPromoterAdded = (eventId, promoter) => {
-    console.log(`Promoter ${promoter.name} added to event ${eventId}`);
-    // Here you would typically update the backend or local state
-  };
-
   return (
     <div className="event-management">
+      {/* Header Section */}
       <div className="eventmanagement-header">
         <div>
           <h1>Event Management</h1>
           <p>Manage all events, tickets, and booth layouts.</p>
         </div>
         <div className="dashboard-actions">
-          <button className="primary-button" onClick={() => setIsModalOpen(true)}>Create Event</button>
-
+          <button className="primary-button" onClick={() => setIsModalOpen(true)}>
+            <Icon icon="mdi:plus" /> Create Event
+          </button>
         </div>
       </div>
 
       <div className="em-content">
+        {/* Toolbar Section */}
         <div className="em-toolbar">
           <div className="em-toolbar-left">
             <div className="em-search">
               <Icon icon="mdi:magnify" />
               <input
                 type="text"
-                placeholder="Search events..."
+                placeholder="Search by title, venue, or category..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -168,63 +140,91 @@ const EventManagement = () => {
           </div>
         </div>
 
+        {/* Table Section */}
         <div className="table-wrapper">
           <table className="data-table">
             <thead>
               <tr>
                 <th>Event Name</th>
-                <th>Promoter</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Sales</th>
-                <th>Revenue</th>
+                <th>Venue</th>
+                <th>Date & Time</th>
+                <th>Price</th>
+                <th>Sales Progress</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedEvents.map((event) => (
-                <tr key={event.id}>
-                  <td data-label="Event">
-                    <div className="event-cell">
-                      <h6 className="event-name">{event.name}</h6>
-                      <p className="smaller-body-text event-location">{event.location}</p>
-                    </div>
-                  </td>
-                  <td data-label="Promoter" className="regular-body-text">{event.promoter}</td>
-                  <td data-label="Date" className="small-body-text" >{event.date}</td>
-                  <td data-label="Status">
-                    <span className={getStatusClass(event.status)}>{event.status}</span>
-                  </td>
-                  <td data-label="Sales">
-                    <div className="sales-cell">
-                      <span className="small-body-text sales-label">
-                        {event.sold} / {event.total}
-                      </span>
-                      <div className="sales-bar">
-                        <div
-                          className="sales-bar-inner"
-                          style={{ width: `${getSalesPercent(event.sold, event.total)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </td>
-                  <td data-label="Revenue" className="regular-body-text revenue">{event.revenue}</td>
-                  <td data-label="Actions">
-                    <div className="em-actions">
-                      <button className="em-action-btn" aria-label="Edit event" onClick={() => handleEditEvent(event)}>
-                        <Icon icon="mdi:square-edit-outline" />
-                      </button>
-                      <button className="em-action-btn" aria-label="Add promoter" onClick={() => handleAddPromoter(event)}>
-                        <Icon icon="material-symbols:add" />
-                      </button>
-                    </div>
+              {paginatedEvents.length > 0 ? (
+                paginatedEvents.map((event) => {
+                  const salesPercent = event.totalTickets 
+                    ? Math.round((event.ticketsSold / event.totalTickets) * 100) 
+                    : 0;
+
+                  return (
+                    <tr key={event._id}>
+                      <td data-label="Event">
+                        <div className="event-cell">
+                          <h6 className="event-name">{event.title}</h6>
+                          <p className="smaller-body-text event-category">
+                            {event.category.toUpperCase()}
+                          </p>
+                        </div>
+                      </td>
+                      <td data-label="Venue">
+                        <div className="venue-cell">
+                          <p className="regular-body-text">{event.venue.name}</p>
+                          <p className="smaller-body-text">{event.venue.city}</p>
+                          <p className="smaller-body-text">{event.venue?.zipCode}</p>
+                        </div>
+                      </td>
+                      <td data-label="Date" className="small-body-text">
+                        <strong>{formatEventDate(event.startDate, event.endDate)}</strong>
+                        <br/>
+                        <span className="smaller-body-text" style={{ color: '#666' }}>
+                          {formatEventTime(event.startDate)} to {formatEventTime(event.endDate)}
+                        </span>
+                      </td>
+                      <td data-label="Price" className="regular-body-text">
+                        ${event.ticketPrice}
+                      </td>
+                      <td data-label="Sales">
+                        <div className="sales-cell">
+                          <span className="small-body-text sales-label">
+                            {event.ticketsSold} / {event.totalTickets} ({salesPercent}%)
+                          </span>
+                          <div className="sales-bar">
+                            <div
+                              className="sales-bar-inner"
+                              style={{ width: `${salesPercent}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td data-label="Actions">
+                        <div className="em-actions">
+                          <button className="em-action-btn" aria-label="Edit">
+                            <Icon icon="mdi:square-edit-outline" />
+                          </button>
+                          <button className="em-action-btn" aria-label="More">
+                            <Icon icon="mdi:dots-horizontal" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>
+                    No events found.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
 
+        {/* Pagination Section */}
         {totalPages > 1 && (
           <div className="pagination">
             <button
@@ -249,14 +249,16 @@ const EventManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Modals */}
       <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      <EditEventModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} event={selectedEvent} />
-      <AddPromoterModal
+      {/* <EditEventModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} event={selectedEvent} /> */}
+      {/* <AddPromoterModal
         isOpen={isAddPromoterModalOpen}
         onClose={() => setIsAddPromoterModalOpen(false)}
         event={selectedEvent}
         onAdd={onPromoterAdded}
-      />
+      /> */}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
   MdDashboard,
@@ -14,7 +14,7 @@ import {
   MdAssignment,
   MdLogout,
   MdMenu,
-  MdClose
+  MdClose,
 } from "react-icons/md";
 
 import "./sidebar.css";
@@ -33,7 +33,7 @@ const Sidebar = () => {
         <img src="/logo/Logo1.png" alt="App Logo" className="logo" />
 
         <button
-          className={`mobile-toggle ${mobileExpanded ? 'close-icon' : 'menu-icon'}`}
+          className={`mobile-toggle ${mobileExpanded ? "close-icon" : "menu-icon"}`}
           onClick={() => setMobileExpanded(!mobileExpanded)}
         >
           {mobileExpanded ? <MdClose /> : <MdMenu />}
@@ -46,7 +46,12 @@ const Sidebar = () => {
         <div className="sidebar-section">
           <p className="section-title">OVERVIEW</p>
 
-          <NavLink to="/" className="sidebar-item" activeClassName="active">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              isActive ? "sidebar-item active" : "sidebar-item"
+            }
+          >
             <MdDashboard className="icon" />
             <span>Dashboard</span>
           </NavLink>
