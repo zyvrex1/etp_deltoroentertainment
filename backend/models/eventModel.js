@@ -12,9 +12,7 @@ const eventSchema = new Schema({
         type: String,
         required: true
     },
-// Promoter
-// Status
-// Revenue
+
     category: {
         type: String,
         enum: ['concert', 'comedy', 'festival', 'conference', 'sports', 'other'],
@@ -79,3 +77,7 @@ const eventSchema = new Schema({
 module.exports = mongoose.model('Event', eventSchema)
 
 // Event.find()
+
+// Promoter
+// Status
+// Revenue

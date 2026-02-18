@@ -4,6 +4,7 @@ import "./eventmanagement.css";
 import CreateEventModal from "./modal/CreateEventModal";
 // import EditEventModal from "./modal/EditEventModal"
 
+import { useEventsContext } from "../admincomponents/hooks/useEventsContext"
 
 const formatEventDate = (startDate, endDate) => {
   const start = new Date(startDate);
@@ -55,9 +56,10 @@ const formatEventTime = (dateString) => {
   });
 };
 
-
 const EventManagement = () => {
-  const [events, setEvents] = useState([]);
+   const { events, dispatch } = useEventsContext();
+
+  // const [events, setEvents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,15 +71,20 @@ const EventManagement = () => {
       try {
         const response = await fetch('/api/events');
         const json = await response.json();
+
         if (response.ok) {
-          setEvents(json);
+          // Make sure action type matches your reducer
+          dispatch({ type: 'SET_EVENTS', payload: json });
+        } else {
+          console.error("Failed to fetch events:", json);
         }
       } catch (error) {
         console.error("Error fetching events:", error);
       }
     };
+
     fetchEvents();
-  }, []);
+  }, [dispatch]);
 
   // 2. Filter Logic (Updated for your JSON keys)
   const filteredEvents = (events || []).filter((event) => {

@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './CreateEventModal.css';
+import { useEventsContext } from "../hooks/useEventsContext"
 
 const CreateEventModal = ({ isOpen, onClose }) => {
+    const { dispatch } = useEventsContext()
+
     const today = new Date().toISOString().split("T")[0];
 
     const [title, setTitle] = useState('');
@@ -78,6 +81,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             setError(null);
             onClose(); // Close modal on success
             console.log('New Event Added', json);
+            dispatch({type: 'CREATE_EVENT', payload: json})
         }
     };
 
