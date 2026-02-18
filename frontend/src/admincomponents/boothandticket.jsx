@@ -5,6 +5,7 @@ import "./boothandticket.css";
 import UploadMapModal from "./Modal/UploadMapModal";
 import ManagePricingModal from "./Modal/ManagePricingModal";
 import SetupBoothLayoutModal from "./Modal/SetupBoothLayoutModal";
+import SetupSeatLayoutModal from "./Modal/SetupSeatLayoutModal";
 
 const BoothandTicket = () => {
   const [activeTab, setActiveTab] = useState("booth-map");
@@ -14,6 +15,7 @@ const BoothandTicket = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState({ isOpen: false, type: 'booth' });
   const [isSetupLayoutOpen, setIsSetupLayoutOpen] = useState(false);
+  const [isSeatLayoutOpen, setIsSeatLayoutOpen] = useState(false);
   const itemsPerPage = 10;
 
   // Booth Map: 5x5 grid (5 columns, 5 rows). Each cell: null (empty) or { code, type, status, dimensions, bookedBy? }
@@ -196,7 +198,7 @@ const BoothandTicket = () => {
 
                   <div className="bt-toolbar">
                     <button className="outlined-button bt-btn bt-btn-upload" onClick={() => setIsUploadModalOpen(true)}><Icon icon="mdi:upload" /> Upload Map</button>
-                    <button className="outlined-button bt-btn bt-btn-edit"><Icon icon="mdi:pencil" /> Edit Layout</button>
+                    <button className="outlined-button bt-btn bt-btn-edit" onClick={() => setIsSeatLayoutOpen(true)}><Icon icon="mdi:pencil" /> Edit Layout</button>
                     <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom in"><Icon icon="mdi:magnify-plus-outline" /></button>
                     <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom out"><Icon icon="mdi:magnify-minus-outline" /></button>
                   </div>
@@ -473,6 +475,15 @@ const BoothandTicket = () => {
         onSave={(config) => {
           console.log("Booth layout configuration:", config);
           setIsSetupLayoutOpen(false);
+        }}
+      />
+
+      <SetupSeatLayoutModal
+        isOpen={isSeatLayoutOpen}
+        onClose={() => setIsSeatLayoutOpen(false)}
+        onSave={(config) => {
+          console.log("Seat layout configuration:", config);
+          setIsSeatLayoutOpen(false);
         }}
       />
     </div>

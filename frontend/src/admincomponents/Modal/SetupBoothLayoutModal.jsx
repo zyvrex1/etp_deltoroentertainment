@@ -138,7 +138,7 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
         <div className="setup-booth-modal-body">
           <div className="setup-booth-form-row">
             <div className="setup-booth-field">
-              <label htmlFor="booth-type">Booth Type</label>
+              <h6 htmlFor="booth-type">Booth Type</h6>
               <div className="setup-booth-select-wrapper">
                 <select
                   id="booth-type"
@@ -156,7 +156,7 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
             </div>
 
             <div className="setup-booth-field">
-              <label htmlFor="dimension">Dimension</label>
+              <h6 htmlFor="dimension">Dimension</h6>
               <div className="setup-booth-select-wrapper">
                 <select
                   id="dimension"
@@ -174,9 +174,8 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
             </div>
 
             <div className="setup-booth-field">
-              <label htmlFor="price">Price</label>
+              <h6 htmlFor="price">Price</h6>
               <div className="setup-booth-input-wrapper">
-                <span className="prefix">$</span>
                 <input
                   id="price"
                   type="number"
@@ -189,7 +188,7 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
             </div>
 
             <div className="setup-booth-field">
-              <label htmlFor="quantity">Quantity</label>
+              <h6 htmlFor="quantity">Quantity</h6>
               <input
                 id="quantity"
                 type="number"
@@ -197,7 +196,7 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
                 readOnly
                 className="setup-booth-quantity-input"
               />
-              <p className="small-body-text quantity-hint">
+              <p className="smaller-body-text quantity-hint">
                 Automatically counts selected booths.
               </p>
             </div>
@@ -263,30 +262,32 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
               </div>
             </div>
 
-            <div className="setup-booth-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-              {boothCodesMatrix.map((row, rowIndex) => (
-                <React.Fragment key={`row-${rowIndex}`}>
-                  {row.map((code) => {
-                    const isSelected = selectedCodes.has(code);
-                    return (
-                      <button
-                        key={code}
-                        type="button"
-                        className={`setup-booth-cell${
-                          isSelected ? " selected" : ""
-                        }`}
-                        onClick={() => toggleCode(code)}
-                        aria-pressed={isSelected}
-                        aria-label={`Booth ${code} ${
-                          isSelected ? "selected" : "not selected"
-                        }`}
-                      >
-                        {code}
-                      </button>
-                    );
-                  })}
-                </React.Fragment>
-              ))}
+            <div className="setup-booth-grid-wrapper">
+              <div className="setup-booth-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(28px, 1fr))` }}>
+                {boothCodesMatrix.map((row, rowIndex) => (
+                  <React.Fragment key={`row-${rowIndex}`}>
+                    {row.map((code) => {
+                      const isSelected = selectedCodes.has(code);
+                      return (
+                        <button
+                          key={code}
+                          type="button"
+                          className={`setup-booth-cell${
+                            isSelected ? " selected" : ""
+                          }`}
+                          onClick={() => toggleCode(code)}
+                          aria-pressed={isSelected}
+                          aria-label={`Booth ${code} ${
+                            isSelected ? "selected" : "not selected"
+                          }`}
+                        >
+                          {code}
+                        </button>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
 
             <div className="setup-booth-legend">
