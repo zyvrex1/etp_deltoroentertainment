@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './support.css';
-import ViewTicketModal from './ViewTicketModal';
+import ViewTicketModal from './Modal/ViewTicketModal';
 
 const SupportDisputes = () => {
     // Mock data for tickets

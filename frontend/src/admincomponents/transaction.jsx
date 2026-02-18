@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import "./transaction.css";
-import ViewTransactionModal from "./ViewTransactionModal";
+import ViewTransactionModal from "./Modal/ViewTransactionModal";
 
 const TransactionMonitoring = () => {
   const [searchQuery, setSearchQuery] = useState("");

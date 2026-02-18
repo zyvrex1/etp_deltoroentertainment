@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./usermanagement.css";
-import CreateUserModal from './CreateUserModal';
-import ViewUserModal from './ViewUserModal';
-import EditUserModal from './EditUserModal';
+import CreateUserModal from './Modal/CreateUserModal';
+import ViewUserModal from './Modal/ViewUserModal';
+import EditUserModal from './Modal/EditUserModal';
 
 
 const UserManagement = () => {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FaPlus, FaFileContract, FaShieldAlt, FaFileInvoiceDollar } from 'react-icons/fa';
 import './content.css';
 import { Icon } from "@iconify/react";
-import CreateAnnouncementModal from './CreateAnnouncementModal';
+import CreateAnnouncementModal from './Modal/CreateAnnouncementModal';
 
 
 const ContentManager = () => {

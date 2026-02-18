@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '@iconify/react';
-import './CreateEventModal.css';
 import { useEventsContext } from "../hooks/useEventsContext"
+import "./CreateEventModal.css";
 
 const CreateEventModal = ({ isOpen, onClose }) => {
     const { dispatch } = useEventsContext()

@@ -1,6 +1,6 @@
 import "./Dashboard.css";
 import { Icon } from "@iconify/react";
-import CreateEventModal from '../admincomponents/modal/CreateEventModal';
+import CreateEventModal from './Modal/CreateEventModal';
 import { useState } from 'react';
 import { NavLink } from "react-router-dom";
 
