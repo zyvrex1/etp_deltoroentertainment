@@ -384,10 +384,28 @@
         align-items: center;
         gap: 8px;
 
+        h6{
+            text-decoration: none !important;
+            border: none;
+        }
+
         span {
             flex: 1;
         }
+
     }
+
+    .nav-link-btn {
+  text-decoration: none;
+}
+
+.nav-link-btn:link,
+.nav-link-btn:visited,
+.nav-link-btn:hover,
+.nav-link-btn:active {
+  text-decoration: none;
+}
+
 }
 
 .promoters-card {

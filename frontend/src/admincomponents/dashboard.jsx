@@ -142,7 +142,7 @@ export default function Dashboard() {
                 <div className="transactions-card">
                     <div className="card-header">
                         <h3>Recent Transactions</h3>
-                        <a href="#">View All</a>
+                        <a href="/transactions">View All</a>
                     </div>
 
                     <ul className="transactions">
@@ -299,20 +299,24 @@ export default function Dashboard() {
                     </div>
 
                     <div className="quick-actions-card">
-                        <h4>Quick Actions</h4>
-                        <button className="outlined-button quick-btn">
-                            <h6>Approve New Events</h6>
-                            <Icon icon="mdi:arrow-right" width="18" />
-                        </button>
-                        <button className="outlined-button quick-btn">
-                            <h6>Manage Users</h6>
-                            <Icon icon="mdi:arrow-right" width="18" />
-                        </button>
-                        <button className="outlined-button quick-btn">
-                            <h6>System Settings</h6>
-                            <Icon icon="mdi:arrow-right" width="18" />
-                        </button>
-                    </div>
+  <h4>Quick Actions</h4>
+
+  <button className="outlined-button quick-btn">
+    <h6>Approve New Events</h6>
+    <Icon icon="mdi:arrow-right" width="18" />
+  </button>
+
+  <NavLink to="/users" className="outlined-button quick-btn nav-link-btn">
+    <h6>Manage Users</h6>
+    <Icon icon="mdi:arrow-right" width="18" />
+  </NavLink>
+
+  <NavLink to="/settings" className="outlined-button quick-btn nav-link-btn">
+    <h6>System Settings</h6>
+    <Icon icon="mdi:arrow-right" width="18" />
+  </NavLink>
+</div>
+
 
                     <div className="promoters-card">
                         <div className="card-header">
