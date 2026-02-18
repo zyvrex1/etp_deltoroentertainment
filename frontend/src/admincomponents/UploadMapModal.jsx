@@ -5,6 +5,7 @@ import './UploadMapModal.css';
 const UploadMapModal = ({ isOpen, onClose, onSave }) => {
     const [dragActive, setDragActive] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
 
     if (!isOpen) return null;
 
@@ -23,14 +24,18 @@ const UploadMapModal = ({ isOpen, onClose, onSave }) => {
         e.stopPropagation();
         setDragActive(false);
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            setSelectedFile(e.dataTransfer.files[0]);
+            const file = e.dataTransfer.files[0];
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
         }
     };
 
     const handleChange = (e) => {
         e.preventDefault();
         if (e.target.files && e.target.files[0]) {
-            setSelectedFile(e.target.files[0]);
+            const file = e.target.files[0];
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
         }
     };
 
@@ -70,7 +75,11 @@ const UploadMapModal = ({ isOpen, onClose, onSave }) => {
 
                         {selectedFile ? (
                             <div className="file-preview">
-                                <Icon icon="mdi:file-image" width="48" height="48" className="preview-icon" />
+                                {previewUrl ? (
+                                    <img src={previewUrl} alt="Map Preview" className="preview-image" />
+                                ) : (
+                                    <Icon icon="mdi:file-image" width="48" height="48" className="preview-icon" />
+                                )}
                                 <p className="file-name">{selectedFile.name}</p>
                                 <p className="file-size">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                                 <button
@@ -78,6 +87,7 @@ const UploadMapModal = ({ isOpen, onClose, onSave }) => {
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedFile(null);
+                                        setPreviewUrl(null);
                                     }}
                                 >
                                     Remove
