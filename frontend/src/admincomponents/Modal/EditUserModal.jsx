@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './EditUserModal.css';
+import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert } from '../utils/sweetAlert';
 
 const EditUserModal = ({ isOpen, onClose, user, type }) => {
     if (!isOpen || !user) return null;
@@ -63,152 +64,190 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const result = await showUpdateConfirmAlert(
+            'Update User?',
+            'Are you sure you want to update this user\'s information?'
+        );
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            // Here you would typically send the data to your API
+            await showSuccessAlert('User Updated', 'The user information has been updated successfully.');
+            onClose();
+        } catch (error) {
+            console.error('Error updating user:', error);
+        }
+    };
+
+    const handleCancel = async () => {
+        const hasChanges = Object.keys(formData).some(key => {
+            const originalValue = user[key] || user.name || user.email || user.contact || '';
+            return formData[key] !== originalValue;
+        });
+
+        if (hasChanges) {
+            const result = await showCancelConfirmAlert();
+            if (result.isConfirmed) {
+                onClose();
+            }
+        } else {
+            onClose();
+        }
+    };
+
     const getTitle = () => {
         return "Edit User";
     };
 
     return (
-        <div className="edit-user-modal-overlay" onClick={onClose}>
-            <div className="edit-user-modal-container" onClick={e => e.stopPropagation()}>
-                <div className="edit-user-modal-header">
+        <div className="general-modal-overlay" onClick={handleCancel}>
+            <div className="general-modal-container" onClick={e => e.stopPropagation()}>
+                <div className="general-modal-header">
                     <h3>{getTitle()}</h3>
-                    <button className="close-btn" onClick={onClose}>
+                    <button className="close-btn" onClick={handleCancel}>
                         <Icon icon="mdi:close" width="24" height="24" />
                     </button>
                 </div>
 
                 <div className="edit-user-modal-body">
-                    {/* Common Fields: Full Name & Email (or specific based on type) */}
-                    <div className="form-row">
-                        <div className="form-group">
-                            <h6>Full Name</h6>
-                            <input
-                                type="text"
-                                name="fullName"
-                                value={formData.fullName}
-                                onChange={handleChange}
-                                placeholder="e.g. John Doe"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <h6>Email Address</h6>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder="john@example.com"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Specific Fields */}
-                    {(type === 'sponsor') && (
-                        <div className="form-row">
-                            <div className="form-group">
-                                <h6>Company Name</h6>
+                    <form id="edit-user-form" className="edit-user-form" onSubmit={handleSubmit}>
+                        {/* Common Fields: Full Name & Email (or specific based on type) */}
+                        <div className="add-user-form-row">
+                            <div className="add-user-form-group">
+                                <h6>Full Name</h6>
                                 <input
                                     type="text"
-                                    name="companyName"
-                                    value={formData.companyName}
+                                    name="fullName"
+                                    value={formData.fullName}
                                     onChange={handleChange}
-                                    placeholder="e.g. 1234"
+                                    placeholder="e.g. John Doe"
                                 />
                             </div>
-                            <div className="form-group">
-                                <h6>Industry</h6>
+                            <div className="add-user-form-group">
+                                <h6>Email Address</h6>
                                 <input
-                                    type="text"
-                                    name="industry"
-                                    value={formData.industry}
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
                                     onChange={handleChange}
-                                    placeholder="e.g. Technology"
+                                    placeholder="john@example.com"
                                 />
                             </div>
                         </div>
-                    )}
 
-                    {/* Bank Account for Promoter (as per inference from design/context) */}
-                    {/* Design 3 has Bank Account (Last 4) */}
-                    {type === 'promoter' && (
-                        <div className="form-row">
-                            <div className="form-group">
-                                <h6>Bank Account (Last 4)</h6>
-                                <input
-                                    type="text"
-                                    name="bankAccount"
-                                    value={formData.bankAccount}
-                                    onChange={handleChange}
-                                    placeholder="e.g. 1234"
-                                />
+                        {/* Specific Fields */}
+                        {(type === 'sponsor') && (
+                        <div className="add-user-form-row">
+                            <div className="add-user-form-group">
+                                    <h6>Company Name</h6>
+                                    <input
+                                        type="text"
+                                        name="companyName"
+                                        value={formData.companyName}
+                                        onChange={handleChange}
+                                        placeholder="e.g. 1234"
+                                    />
+                                </div>
+                            <div className="add-user-form-group">
+                                    <h6>Industry</h6>
+                                    <input
+                                        type="text"
+                                        name="industry"
+                                        value={formData.industry}
+                                        onChange={handleChange}
+                                        placeholder="e.g. Technology"
+                                    />
+                                </div>
                             </div>
-                            {/* Phone placeholder to balance grid if needed, or maintain single row */}
-                            <div className="form-group">
-                                <h6>Phone Number</h6>
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    placeholder="+1 (555) 000-0000"
-                                />
-                            </div>
-                        </div>
-                    )}
+                        )}
 
-                    {type !== 'promoter' && (
-                        <div className="form-row">
-                            <div className="form-group full-width">
-                                <h6>Phone Number</h6>
+                        {/* Bank Account for Promoter (as per inference from design/context) */}
+                        {/* Design 3 has Bank Account (Last 4) */}
+                        {type === 'promoter' && (
+                        <div className="add-user-form-row">
+                            <div className="add-user-form-group">
+                                    <h6>Bank Account (Last 4)</h6>
+                                    <input
+                                        type="text"
+                                        name="bankAccount"
+                                        value={formData.bankAccount}
+                                        onChange={handleChange}
+                                        placeholder="e.g. 1234"
+                                    />
+                                </div>
+                                {/* Phone placeholder to balance grid if needed, or maintain single row */}
+                            <div className="add-user-form-group">
+                                    <h6>Phone Number</h6>
+                                    <input
+                                        type="text"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        placeholder="+1 (555) 000-0000"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {type !== 'promoter' && (
+                        <div className="add-user-form-group add-user-full-width">
+                                    <h6>Phone Number</h6>
+                                    <input
+                                        type="text"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        placeholder="+1 (555) 000-0000"
+                                    />
+                                </div>
+                        )}
+
+                        {/* Password Section */}
+                        <div className="add-user-form-row">
+                            <div className="add-user-form-group">
+                                <h6>Current Password</h6>
+                                <div className="password-input-wrapper">
+                                    <input
+                                        type="password"
+                                        name="currentPassword"
+                                        value={formData.currentPassword}
+                                        readOnly
+                                        className="read-only-input"
+                                    />
+                                    <Icon icon="mdi:eye" className="password-icon" />
+                                </div>
+                            </div>
+                            <div className="add-user-form-group">
+                                <h6>Edit Password</h6>
                                 <input
-                                    type="text"
-                                    name="phone"
-                                    value={formData.phone}
+                                    type="text" // Design shows clear text placeholder "Edit Password" initially maybe?
+                                    name="newPassword"
+                                    value={formData.newPassword}
                                     onChange={handleChange}
-                                    placeholder="+1 (555) 000-0000"
+                                    placeholder="Edit Password"
                                 />
                             </div>
                         </div>
-                    )}
 
-                    {/* Password Section */}
-                    <div className="form-row">
-                        <div className="form-group">
-                            <h6>Current Password</h6>
-                            <div className="password-input-wrapper">
-                                <input
-                                    type="password"
-                                    name="currentPassword"
-                                    value={formData.currentPassword}
-                                    readOnly
-                                    className="read-only-input"
-                                />
-                                <Icon icon="mdi:eye" className="password-icon" />
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <h6>Edit Password</h6>
-                            <input
-                                type="text" // Design shows clear text placeholder "Edit Password" initially maybe?
-                                name="newPassword"
-                                value={formData.newPassword}
-                                onChange={handleChange}
-                                placeholder="Edit Password"
-                            />
-                        </div>
-                    </div>
+                        <button type="button" className="primary-button add-temp-password-btn">
+                            Add Temporary Password
+                        </button>
 
-                    <button className="primary-button add-temp-password-btn">
-                        Add Temporary Password
-                    </button>
+                        <div className="general-modal-footer">
+                            <button type="button" className="outlined-button cancel-btn" onClick={handleCancel}>Cancel</button>
+                            <button type="submit" form="edit-user-form" className="primary-button save-btn">Save Changes</button>
+                            {/* Design sometimes shows "Create User" but "Save Changes" is correct for Edit */}
+                        </div>
+                    </form>
 
                 </div>
 
-                <div className="edit-user-modal-footer">
-                    <button className="outlined-button cancel-btn" onClick={onClose}>Cancel</button>
-                    <button className="primary-button edit-save-btn">Save Changes</button>
-                    {/* Design sometimes shows "Create User" but "Save Changes" is correct for Edit */}
-                </div>
+
             </div>
         </div>
     );

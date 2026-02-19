@@ -176,6 +176,7 @@
 
         h6 {
             color: var(--color-black-secondary);
+            text-align: left;
         }
 
         input,

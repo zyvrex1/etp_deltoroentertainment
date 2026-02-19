@@ -1,4 +1,4 @@
-.edit-user-modal-overlay {
+.general-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -9,64 +9,99 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    padding: 16px;
     backdrop-filter: blur(2px);
-            padding: 16px;
+    box-sizing: border-box;
+    overflow: auto;
 
-
-    .edit-user-modal-container {
+    .general-modal-container {
         background-color: var(--color-white-primary);
         border-radius: 12px;
         width: 100%;
-        max-width: 700px;
+        max-width: min(880px, calc(100vw - 32px));
         max-height: 90vh;
+        min-width: 0;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         animation: slideIn 0.3s ease-out;
-        padding: 16px;
+        box-sizing: border-box;
+    }
 
-        .edit-user-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
+}
 
-            h3 {
-                color: var(--color-black-primary);
-            }
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
 
-            .close-btn {
-                background: none;
-                border: none;
-                cursor: pointer;
-                color: var(--color-black-tertiary);
-                padding: 4px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 4px;
-                transition: background-color 0.2s;
-
-                &:hover {
-                    background-color: rgba(0, 0, 0, 0.05);
-                    color: var(--color-black-primary);
-                }
-            }
-        }
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }
 
-.edit-user-modal-body {
+.general-modal-header {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-black-quaternary);
     gap: 16px;
+    flex-shrink: 0;
+    min-width: 0;
 
-    .form-row {
+    h3 {
+        color: var(--color-black-primary);
+        text-align: left;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--color-black-tertiary);
         display: flex;
-        gap: 16px;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
 
-        .form-group {
-            flex: 1;
+        svg {
+            font-size: 24px;
+        }
+
+        &:hover {
+            color: var(--color-black-primary);
+        }
+    }
+
+}
+
+.edit-user-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+
+        .edit-user-form{
+             display: flex;
+    flex-direction: column;
+    gap: 20px;
+    text-align: left;
+        }
+
+    .add-user-form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+        .add-user-form-group {
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -79,18 +114,21 @@
             input {
                 padding: 10px 12px;
                 border: 1px solid var(--color-black-tertiary);
-                /* Adjusted from default */
                 border-radius: 6px;
                 font-size: 14px;
-                outline: none;
                 color: var(--color-black-primary);
-                background-color: transparent;
+                transition: border-color 0.2s;
+                font-family: inherit;
+                background-color: var(--color-white-primary);
 
                 &:focus {
-                    border-color: var(--color-blue-primary);
+                    outline: none;
+                    border-color: var(--color-black-primary);
                 }
 
             }
+
+           
 
             .password-input-wrapper {
                 position: relative;
@@ -115,52 +153,64 @@
                     cursor: not-allowed;
                 }
             }
+
+            .add-user-full-width {
+            grid-column: 1 / -1;
+
+            input {
+                padding: 10px 12px;
+                border: 1px solid var(--color-black-quaternary);
+                border-radius: 6px;
+                font-size: 14px;
+                color: var(--color-black-primary);
+                background-color: var(--color-white-primary);
+                transition: border-color 0.2s;
+                font-family: inherit;
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--color-black-primary);
+                }
+            }
+        }
         }
     }
-}
+    
+
 
 .add-temp-password-btn {
     width: 100%;
     border: none;
     cursor: pointer;
-    margin-top: 8px;
+    margin: 12px 0;
     transition: background-color 0.2s;
+
 }
 
-.edit-user-modal-footer {
+.general-modal-footer {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid #eee;
+    flex-wrap: wrap;
+    gap: 10px;
+    /* border-top: 1px solid var(--color-black-quaternary); */
+    flex-shrink: 0;
+    min-width: 0;
 
     .cancel-btn {
-        padding: 10px 20px;
-        font-weight: 500;
-        border-radius: 6px;
-        border: 1px solid #ddd;
-        background-color: white;
+        background-color: transparent;
+        border: none;
         color: var(--color-black-secondary);
-        cursor: pointer;
 
         &:hover {
-            background-color: #f9f9f9;
-            font-weight: 700;
+            background-color: var(--color-bg-light);
         }
+    }
 
-        .edit-save-btn {
-            padding: 10px 20px;
-            font-weight: 500;
-            border-radius: 6px;
-            background-color: var(--color-red-primary);
-            color: white;
-            border: none;
-            cursor: pointer;
+    .save-btn {
+        border: none;
 
-            &:hover {
-                font-weight: 700;
-            }
+        &:hover {
+            opacity: 0.9;
         }
     }
 }
