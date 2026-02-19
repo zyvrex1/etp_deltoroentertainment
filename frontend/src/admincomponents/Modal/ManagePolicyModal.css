@@ -1,4 +1,3 @@
-/* Reuse main modal structure but customize for policy editor */
 .general-modal-overlay {
     position: fixed;
     top: 0;
@@ -85,7 +84,6 @@
 
 }
 
-
 .manage-policy-form {
     display: flex;
     flex-direction: column;
@@ -121,11 +119,7 @@
     }
 }
 
-/* justify-content: space-between;
-    align-items: center; */
-
-
-.general-modal-footer {
+.policy-modal-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -157,9 +151,6 @@
     }
 }
 
-
-
-
 @media (max-width: 600px) {
     .general-modal-container {
         max-width: 100%;
@@ -167,7 +158,7 @@
         border-radius: 0;
     }
 
-    .general-modal-footer {
+    .policy-modal-footer {
         flex-direction: column;
         gap: 16px;
         align-items: stretch;

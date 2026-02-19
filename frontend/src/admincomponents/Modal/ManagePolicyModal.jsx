@@ -70,7 +70,7 @@ const ManagePolicyModal = ({ isOpen, onClose, policy, onSave }) => {
                             ></textarea>
                         </div>
 
-                        <div className="general-modal-footer">
+                        <div className="policy-modal-footer">
                             <span className="smaller-body-text last-updated">Last updated: {policy.lastUpdated}</span>
                             <div className="policy-modal-actions">
                                 <button type="button" className="button cancel-btn" onClick={handleCancel}>Cancel</button>

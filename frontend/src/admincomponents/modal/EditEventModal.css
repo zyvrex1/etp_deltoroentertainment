@@ -1,4 +1,3 @@
-/* Modal Overlay */
 .edit-event-modal-overlay {
     position: fixed;
     top: 0;
@@ -38,7 +37,6 @@
     }
 }
 
-/* Header */
 .edit-event-modal-header {
     padding: 24px;
     border-bottom: 1px solid var(--color-border);
@@ -75,8 +73,6 @@
     }
 }
 
-
-/* Body */
 .edit-event-modal-body {
     padding: 24px;
     overflow-y: auto;
@@ -124,7 +120,6 @@
                     color: var(--color-black-tertiary);
                 }
             }
-
         }
 
         .full-width {
@@ -133,7 +128,6 @@
     }
 }
 
-/* Section Box */
 .section-box {
     background-color: var(--color-bg-light);
     border: 1px solid var(--color-border);
@@ -146,10 +140,8 @@
         color: var(--color-black-primary);
         display: flex;
     }
-
 }
 
-/* Extra Actions Row (Manage Tickets, Edit Booth Map) */
 .extra-actions-row {
     margin-top: 24px;
     display: flex;
@@ -177,8 +169,6 @@
     }
 }
 
-
-/* Footer */
 .edit-event-modal-footer {
     padding: 24px;
     border-top: 1px solid var(--color-border);
@@ -195,7 +185,6 @@
         cursor: pointer;
         transition: all 0.2s;
         border: 1px solid var(--color-border);
-        /* Explicit border usually good for cancel */
         padding: 10px 20px;
         border-radius: 6px;
 
@@ -205,7 +194,6 @@
             border-color: var(--color-black-quaternary);
         }
     }
-
 
     .save-btn {
         padding: 10px 20px;
@@ -220,13 +208,9 @@
         &:hover {
             opacity: 0.9;
         }
-
     }
 }
 
-
-
-/* Responsive Styles */
 @media (max-width: 600px) {
     .edit-event-modal-container {
         max-height: 100vh;

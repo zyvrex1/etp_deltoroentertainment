@@ -80,12 +80,8 @@
             color: var(--color-black-primary);
         }
     }
-
 }
 
-
-
-/* Body */
 .modal-body {
     padding: 24px;
     overflow-y: auto;
@@ -99,7 +95,6 @@
             color: var(--color-black-secondary);
             margin-bottom: 8px;
             text-align: left;
-
         }
 
         .user-type-grid {
@@ -142,19 +137,16 @@
                 background-color: var(--color-blue-tertiary);
                 border: 1px solid var(--color-blue-primary);
                 color: var(--color-blue-primary);
-
             }
 
             .type-card.customer.active {
                 background-color: var(--color-green-tertiary);
                 border: 1px solid var(--color-green-primary);
                 color: var(--color-green-primary);
-
             }
         }
     }
 }
-
 
 .create-user-form {
     display: flex;
@@ -166,7 +158,6 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 20px;
-
     }
 
     .add-user-form-group {
@@ -190,7 +181,6 @@
             transition: border-color 0.2s;
             font-family: inherit;
             background-color: var(--color-white-primary);
-
 
             &:focus {
                 outline: none;
@@ -231,8 +221,6 @@
             margin: 0 0 4px 0;
             color: var(--color-blue-primary);
             font-size: 14px;
-
-
         }
 
         .info-icon {
@@ -250,15 +238,11 @@
     }
 }
 
-
-
-/* Footer */
 .general-modal-footer {
     display: flex;
     justify-content: flex-end;
     flex-wrap: wrap;
     gap: 10px;
-    /* border-top: 1px solid var(--color-black-quaternary); */
     flex-shrink: 0;
     min-width: 0;
 
@@ -281,10 +265,6 @@
     }
 }
 
-
-
-
-/* Responsive Styles */
 @media (max-width: 600px) {
     .general-modal-container {
         width: 100%;
@@ -296,7 +276,6 @@
     .modal-body {
         padding: 16px;
     }
-
 
     .general-modal-footer {
         padding: 0;
