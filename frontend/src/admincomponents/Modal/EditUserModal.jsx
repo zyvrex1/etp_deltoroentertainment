@@ -142,8 +142,8 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
 
                         {/* Specific Fields */}
                         {(type === 'sponsor') && (
-                        <div className="add-user-form-row">
-                            <div className="add-user-form-group">
+                            <div className="add-user-form-row">
+                                <div className="add-user-form-group">
                                     <h6>Company Name</h6>
                                     <input
                                         type="text"
@@ -153,7 +153,7 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                                         placeholder="e.g. 1234"
                                     />
                                 </div>
-                            <div className="add-user-form-group">
+                                <div className="add-user-form-group">
                                     <h6>Industry</h6>
                                     <input
                                         type="text"
@@ -169,8 +169,8 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                         {/* Bank Account for Promoter (as per inference from design/context) */}
                         {/* Design 3 has Bank Account (Last 4) */}
                         {type === 'promoter' && (
-                        <div className="add-user-form-row">
-                            <div className="add-user-form-group">
+                            <div className="add-user-form-row">
+                                <div className="add-user-form-group">
                                     <h6>Bank Account (Last 4)</h6>
                                     <input
                                         type="text"
@@ -181,7 +181,7 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                                     />
                                 </div>
                                 {/* Phone placeholder to balance grid if needed, or maintain single row */}
-                            <div className="add-user-form-group">
+                                <div className="add-user-form-group">
                                     <h6>Phone Number</h6>
                                     <input
                                         type="text"
@@ -195,16 +195,16 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                         )}
 
                         {type !== 'promoter' && (
-                        <div className="add-user-form-group add-user-full-width">
-                                    <h6>Phone Number</h6>
-                                    <input
-                                        type="text"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        placeholder="+1 (555) 000-0000"
-                                    />
-                                </div>
+                            <div className="add-user-form-group add-user-full-width">
+                                <h6>Phone Number</h6>
+                                <input
+                                    type="text"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    placeholder="+1 (555) 000-0000"
+                                />
+                            </div>
                         )}
 
                         {/* Password Section */}

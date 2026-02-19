@@ -13,11 +13,11 @@ const CreateUserModal = ({ isOpen, onClose }) => {
             'Create User?',
             `Are you sure you want to create a new ${userType} user?`
         );
-        
+
         if (!result.isConfirmed) {
             return;
         }
-        
+
         try {
             // Here you would typically send the data to your API
             await showSuccessAlert('User Created', 'The user has been created successfully. An invitation email has been sent.');
@@ -181,13 +181,13 @@ const CreateUserModal = ({ isOpen, onClose }) => {
                         </div>
 
                         <div className="general-modal-footer">
-                    <button type="button" className="button cancel-btn" onClick={handleCancel}>Cancel</button>
-                    <button type="submit" className="primary-button save-btn">Create User</button>
-                </div>
+                            <button type="button" className="button cancel-btn" onClick={handleCancel}>Cancel</button>
+                            <button type="submit" className="primary-button save-btn">Create User</button>
+                        </div>
                     </form>
                 </div>
 
-                
+
             </div>
         </div>
     );

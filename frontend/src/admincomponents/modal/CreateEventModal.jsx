@@ -29,102 +29,102 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   const [emptyFields, setEmptyFields] = useState([]);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const fieldsToCheck = {
-    title,
-    category,
-    description,
-    startDate,
-    endDate,
-    startTime,
-    endTime,
-    ticketPrice,
-    totalTickets,
-    venueName: venue.name,
-    venueAddress: venue.address,
-    venueCity: venue.city,
-    venueZip: venue.zipCode,
+    const fieldsToCheck = {
+      title,
+      category,
+      description,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      ticketPrice,
+      totalTickets,
+      venueName: venue.name,
+      venueAddress: venue.address,
+      venueCity: venue.city,
+      venueZip: venue.zipCode,
+    };
+
+    const empty = Object.entries(fieldsToCheck)
+      .filter(([key, value]) => value === "" || value === null)
+      .map(([key]) => key);
+
+    if (empty.length > 0) {
+      setEmptyFields(empty);
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    setEmptyFields([]); // clear previous errors
+    setError("");
+
+    const startDateTime = new Date(`${startDate}T${startTime}`);
+    const endDateTime = new Date(`${endDate}T${endTime}`);
+
+    if (endDate < startDate) {
+      setError("End date cannot be earlier than start date.");
+      return;
+    }
+
+    const result = await showCreateConfirmAlert(
+      'Create Event?',
+      `Are you sure you want to create "${title}"?`
+    );
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    const event = {
+      title,
+      description,
+      category,
+      venue: {
+        name: venue.name,
+        address: venue.address,
+        city: venue.city,
+        zipCode: venue.zipCode,
+      },
+      startDate,
+      endDate,
+      startTime: startDateTime,
+      endTime: endDateTime,
+      ticketPrice: Number(ticketPrice),
+      totalTickets: Number(totalTickets),
+    };
+
+    const response = await fetch("/api/events", {
+      method: "POST",
+      body: JSON.stringify(event),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const json = await response.json();
+
+    if (!response.ok) {
+      setError(json.error);
+      setEmptyFields(json.emptyFields || []);
+      await showErrorAlert('Error Creating Event', json.error || 'Failed to create event.');
+    } else {
+      // Reset form on success
+      setTitle("");
+      setDescription("");
+      setVenue({ name: "", address: "", city: "", zipCode: "" });
+      setStartTime("");
+      setEndTime("");
+      setStartDate(today);
+      setEndDate(today);
+      setTicketPrice("");
+      setTotalTickets("");
+      setError(null);
+      setEmptyFields([]);
+      await showSuccessAlert('Event Created', 'The event has been created successfully.');
+      onClose();
+      dispatch({ type: "CREATE_EVENT", payload: json });
+    }
   };
-
-  const empty = Object.entries(fieldsToCheck)
-    .filter(([key, value]) => value === "" || value === null)
-    .map(([key]) => key);
-
-  if (empty.length > 0) {
-    setEmptyFields(empty);
-    setError("Please fill in all required fields.");
-    return;
-  }
-
-  setEmptyFields([]); // clear previous errors
-  setError("");
-
-  const startDateTime = new Date(`${startDate}T${startTime}`);
-  const endDateTime = new Date(`${endDate}T${endTime}`);
-
-  if (endDate < startDate) {
-    setError("End date cannot be earlier than start date.");
-    return;
-  }
-
-  const result = await showCreateConfirmAlert(
-    'Create Event?',
-    `Are you sure you want to create "${title}"?`
-  );
-
-  if (!result.isConfirmed) {
-    return;
-  }
-
-  const event = {
-    title,
-    description,
-    category,
-    venue: {
-      name: venue.name,
-      address: venue.address,
-      city: venue.city,
-      zipCode: venue.zipCode,
-    },
-    startDate,
-    endDate,
-    startTime: startDateTime,
-    endTime: endDateTime,
-    ticketPrice: Number(ticketPrice),
-    totalTickets: Number(totalTickets),
-  };
-
-  const response = await fetch("/api/events", {
-    method: "POST",
-    body: JSON.stringify(event),
-    headers: { "Content-Type": "application/json" },
-  });
-
-  const json = await response.json();
-
-  if (!response.ok) {
-    setError(json.error);
-    setEmptyFields(json.emptyFields || []);
-    await showErrorAlert('Error Creating Event', json.error || 'Failed to create event.');
-  } else {
-    // Reset form on success
-    setTitle("");
-    setDescription("");
-    setVenue({ name: "", address: "", city: "", zipCode: "" });
-    setStartTime("");
-    setEndTime("");
-    setStartDate(today);
-    setEndDate(today);
-    setTicketPrice("");
-    setTotalTickets("");
-    setError(null);
-    setEmptyFields([]);
-    await showSuccessAlert('Event Created', 'The event has been created successfully.');
-    onClose();
-    dispatch({ type: "CREATE_EVENT", payload: json });
-  }
-};
 
   if (!isOpen) return null;
 
@@ -257,57 +257,57 @@ const CreateEventModal = ({ isOpen, onClose }) => {
               />
             </div>
 
-          <div className="add-event-form-row">
-            <div className="add-event-form-group">
+            <div className="add-event-form-row">
+              <div className="add-event-form-group">
                 <input
-                type="text"
-                placeholder="City"
-                value={venue.city}
-                onChange={(e) => setVenue({ ...venue, city: e.target.value })}
-                className={emptyFields.includes("venue") ? "error" : ""}
+                  type="text"
+                  placeholder="City"
+                  value={venue.city}
+                  onChange={(e) => setVenue({ ...venue, city: e.target.value })}
+                  className={emptyFields.includes("venue") ? "error" : ""}
                 />
-            </div>
-            <div className="add-event-form-group">
+              </div>
+              <div className="add-event-form-group">
                 <input
-                type="text"
-                placeholder="Zip Code"
-                value={venue.zipCode}
-                onChange={(e) => setVenue({ ...venue, zipCode: e.target.value })}
-                className={emptyFields.includes("venue") ? "error" : ""}
+                  type="text"
+                  placeholder="Zip Code"
+                  value={venue.zipCode}
+                  onChange={(e) => setVenue({ ...venue, zipCode: e.target.value })}
+                  className={emptyFields.includes("venue") ? "error" : ""}
                 />
-            </div>
+              </div>
             </div>
           </div>
 
+          <div className="add-event-form-group">
             <div className="add-event-form-group">
-            <div className="add-event-form-group">
-            <h6>Ticket Price ($)</h6>
-            <input
+              <h6>Ticket Price ($)</h6>
+              <input
                 type="number"
                 min="0"
                 // Use an empty string if value is 0 or empty to keep the field clean
-                value={ticketPrice === 0 ? "" : ticketPrice} 
+                value={ticketPrice === 0 ? "" : ticketPrice}
                 onChange={(e) => {
-                const val = e.target.value;
-                // Allow empty string so user can backspace everything
-                setTicketPrice(val === "" ? "" : Number(val));
+                  const val = e.target.value;
+                  // Allow empty string so user can backspace everything
+                  setTicketPrice(val === "" ? "" : Number(val));
                 }}
                 className={emptyFields.includes("ticketPrice") ? "error" : ""}
-            />
+              />
             </div>
 
             <div className="add-event-form-group">
-            <h6>Total Capacity</h6>
-            <input
+              <h6>Total Capacity</h6>
+              <input
                 type="number"
                 min="1"
                 value={totalTickets === 0 ? "" : totalTickets}
                 onChange={(e) => {
-                const val = e.target.value;
-                setTotalTickets(val === "" ? "" : Number(val));
+                  const val = e.target.value;
+                  setTotalTickets(val === "" ? "" : Number(val));
                 }}
                 className={emptyFields.includes("totalTickets") ? "error" : ""}
-            />
+              />
             </div>
           </div>
 

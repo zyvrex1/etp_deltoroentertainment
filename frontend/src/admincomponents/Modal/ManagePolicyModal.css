@@ -1,15 +1,72 @@
 /* Reuse main modal structure but customize for policy editor */
+.general-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+    backdrop-filter: blur(2px);
+    box-sizing: border-box;
+    overflow: auto;
 
-.policy-modal {
-    max-width: 800px;
-    height: 80vh;
+    .general-modal-container {
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        width: 100%;
+        max-width: min(880px, calc(100vw - 32px));
+        max-height: 90vh;
+        height: 100%;
+        min-width: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.3s ease-out;
+        box-sizing: border-box;
+    }
 
-    .policy-close-btn {
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.general-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-black-quaternary);
+    gap: 16px;
+    flex-shrink: 0;
+    min-width: 0;
+
+    h3 {
+        color: var(--color-black-primary);
+        text-align: left;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+
+    .close-btn {
         background: none;
         border: none;
         cursor: pointer;
         color: var(--color-black-tertiary);
-        background-color: transparent;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -25,7 +82,9 @@
             color: var(--color-black-primary);
         }
     }
+
 }
+
 
 .manage-policy-form {
     display: flex;
@@ -62,31 +121,35 @@
     }
 }
 
-.policy-modal-footer {
-        padding: 24px;
-        display: flex;
+/* justify-content: space-between;
+    align-items: center; */
 
+
+.general-modal-footer {
+    display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-shrink: 0;
+    min-width: 0;
+
+    .cancel-btn {
+        background-color: transparent;
+        border: none;
+        color: var(--color-black-secondary);
+
+        &:hover {
+            background-color: var(--color-bg-light);
+        }
+    }
 
     .last-updated {
         color: var(--color-black-tertiary);
     }
 
-    .modal-actions {
-        display: flex;
-        gap: 12px;
-    }
-
-    .cancel-btn {
-        border: none;
-    }
-
     .save-btn {
         border: none;
-        cursor: pointer;
-        align-items: center;
-        gap: 8px;
 
         &:hover {
             opacity: 0.9;
@@ -96,14 +159,15 @@
 
 
 
+
 @media (max-width: 600px) {
-    .policy-modal {
+    .general-modal-container {
         max-width: 100%;
         height: 100%;
         border-radius: 0;
     }
 
-    .policy-modal-footer {
+    .general-modal-footer {
         flex-direction: column;
         gap: 16px;
         align-items: stretch;

@@ -266,10 +266,10 @@
         background-color: transparent;
         border: none;
         color: var(--color-black-secondary);
-         
+
         &:hover {
-background-color: var(--color-bg-light);        
-}
+            background-color: var(--color-bg-light);
+        }
     }
 
     .save-btn {
@@ -288,7 +288,7 @@ background-color: var(--color-bg-light);
 @media (max-width: 600px) {
     .general-modal-container {
         width: 100%;
-    max-width: none;
+        max-width: none;
     }
 
     .general-modal-header,
