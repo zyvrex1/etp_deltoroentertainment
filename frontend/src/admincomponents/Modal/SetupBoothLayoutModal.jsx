@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./SetupBoothLayoutModal.css";
+import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from "../utils/sweetAlert";
 
 const BOOTH_TYPES = [
   { value: "vip", label: "VIP Booth" },
@@ -87,7 +88,18 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
     setCols((prev) => Math.max(prev - 1, 1)); // Min 1 column
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const result = await showConfirmAlert(
+      'Save Layout Changes?',
+      `Are you sure you want to save this booth layout configuration? This will affect ${quantity} booths.`,
+      'Yes, save changes',
+      'Cancel'
+    );
+    
+    if (!result.isConfirmed) {
+      return;
+    }
+    
     const payload = {
       boothType,
       dimension,
@@ -96,39 +108,55 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
       selectedCodes: Array.from(selectedCodes),
     };
 
-    if (onSave) {
-      onSave(payload);
+    try {
+      if (onSave) {
+        onSave(payload);
+      }
+      await showSuccessAlert('Layout Saved', 'The booth layout has been saved successfully.');
+      onClose();
+    } catch (error) {
+      console.error('Error saving layout:', error);
     }
-
-    onClose();
   };
 
-  const handleOverlayClick = (event) => {
-    if (event.target === event.currentTarget) {
+  const handleCancel = async () => {
+    const hasChanges = selectedCodes.size > 0 || price !== "3000" || boothType !== "corner" || dimension !== "10x10";
+    
+    if (hasChanges) {
+      const result = await showCancelConfirmAlert();
+      if (result.isConfirmed) {
+        onClose();
+      }
+    } else {
       onClose();
+    }
+  };
+
+  const handleOverlayClick = async (event) => {
+    if (event.target === event.currentTarget) {
+      await handleCancel();
     }
   };
 
   return (
     <div
-      className="setup-booth-modal-overlay"
+      className="general-modal-overlay"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="setup-booth-modal-title"
       onClick={handleOverlayClick}
     >
-      <div className="setup-booth-modal-container">
-        <div className="setup-booth-modal-header">
+      <div className="general-modal-container">
+        <div className="general-modal-header">
           <div>
-            <h3 id="setup-booth-modal-title">Setup/Edit Booths Layout</h3>
+            <h3>Setup/Edit Booths Layout</h3>
             <p className="small-body-text">
               Define booth types, pricing, and layout for this venue.
             </p>
           </div>
           <button
             type="button"
-            className="setup-booth-close-btn"
-            onClick={onClose}
+            className="close-btn"
+            onClick={handleCancel}
             aria-label="Close"
           >
             <Icon icon="mdi:close" />
@@ -307,7 +335,7 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
           <button
             type="button"
             className="button cancel-btn"
-            onClick={onClose}
+            onClick={handleCancel}
           >
             Cancel
           </button>
