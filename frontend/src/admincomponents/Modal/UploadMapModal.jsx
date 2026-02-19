@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './UploadMapModal.css';
+import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from '../utils/sweetAlert';
 
 const UploadMapModal = ({ isOpen, onClose, onSave }) => {
     const [dragActive, setDragActive] = useState(false);
@@ -39,11 +40,38 @@ const UploadMapModal = ({ isOpen, onClose, onSave }) => {
         }
     };
 
-    const handleSave = () => {
-        if (onSave && selectedFile) {
-            onSave(selectedFile);
+    const handleSave = async () => {
+        if (!selectedFile) return;
+
+        const result = await showConfirmAlert(
+            'Upload Map?',
+            `Are you sure you want to upload "${selectedFile.name}"? This will replace the current map.`,
+            'Yes, upload',
+            'Cancel'
+        );
+
+        if (result.isConfirmed) {
+            try {
+                if (onSave) {
+                    onSave(selectedFile);
+                }
+                await showSuccessAlert('Map Uploaded', 'The map has been uploaded successfully.');
+                onClose();
+            } catch (error) {
+                console.error('Error uploading map:', error);
+            }
         }
-        onClose();
+    };
+
+    const handleCancel = async () => {
+        if (selectedFile) {
+            const result = await showCancelConfirmAlert();
+            if (result.isConfirmed) {
+                onClose();
+            }
+        } else {
+            onClose();
+        }
     };
 
     return (
@@ -51,7 +79,7 @@ const UploadMapModal = ({ isOpen, onClose, onSave }) => {
             <div className="upload-map-modal-container">
                 <div className="upload-map-modal-header">
                     <h3>Upload Venue Map</h3>
-                    <button className="close-btn" onClick={onClose}>
+                    <button className="close-btn" onClick={handleCancel}>
                         <Icon icon="mdi:close" width="24" height="24" />
                     </button>
                 </div>
@@ -104,9 +132,8 @@ const UploadMapModal = ({ isOpen, onClose, onSave }) => {
                         )}
                     </div>
                 </div>
-
-                <div className="upload-map-modal-footer">
-                    <button className="button cancel-btn" onClick={onClose}>Cancel</button>
+                <div className="uploadmap-modal-footer">
+                    <button className="button cancel-btn" onClick={handleCancel}>Cancel</button>
                     <button
                         className="primary-button save-btn"
                         onClick={handleSave}

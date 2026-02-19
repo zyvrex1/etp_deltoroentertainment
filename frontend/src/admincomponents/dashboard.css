@@ -247,6 +247,11 @@
             }
         }
 
+        .trans-date {
+            align-items: left;
+            color: var(--color-black-tertiary);
+        }
+
         .trans-right {
             display: flex;
             flex-direction: column;
@@ -567,6 +572,11 @@
             .transaction-item {
                 gap: 8px;
 
+                .trans-date {
+                    min-width: 70px;
+                    font-size: 12px;
+                }
+
                 .trans-left {
                     gap: 8px;
 
@@ -719,6 +729,11 @@
 
             .transaction-item {
                 gap: 6px;
+
+                .trans-date {
+                    min-width: 60px;
+                    font-size: 11px;
+                }
 
                 .trans-left {
                     gap: 6px;

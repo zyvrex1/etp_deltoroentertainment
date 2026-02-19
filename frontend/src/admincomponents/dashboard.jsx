@@ -1,12 +1,25 @@
 import "./Dashboard.css";
 import { Icon } from "@iconify/react";
 import CreateEventModal from './Modal/CreateEventModal';
+import ViewReportModal from './Modal/ViewReportModal';
 import { useState } from 'react';
 import { NavLink } from "react-router-dom";
 
 
+const recentTransactionsData = [
+    { name: 'John Smith', email: 'john@techstart.com', date: '2026-02-10', amount: '$299.00', status: 'completed' },
+    { name: 'Techstart Summit 2026', email: 'Emily Blunt', date: '2026-02-10', amount: '$5,000.00', status: 'completed' },
+    { name: 'Alice Nguyen', email: 'alice@attendee.com', date: '2026-02-11', amount: '$299.00', status: 'pending' },
+    { name: 'Maria Lopez', email: 'maria@vendor.com', date: '2026-02-08', amount: '$299.00', status: 'completed' },
+    { name: 'Maria Lopez', email: 'maria@vendor.com', date: '2026-02-08', amount: '$299.00', status: 'completed' },
+    { name: 'Maria Lopez', email: 'maria@vendor.com', date: '2026-02-08', amount: '$299.00', status: 'completed' },
+    { name: 'Maria Lopez', email: 'maria@vendor.com', date: '2026-02-08', amount: '$299.00', status: 'completed' },
+    { name: 'Maria Lopez', email: 'maria@vendor.com', date: '2026-02-08', amount: '$299.00', status: 'completed' },
+];
+
 export default function Dashboard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     return (
         <div className="dashboard">
             <div className="dashboard-header">
@@ -15,7 +28,7 @@ export default function Dashboard() {
                     <p>System overview and key metrics.</p>
                 </div>
                 <div className="dashboard-actions">
-                    <button className="outlined-button">View Report</button>
+                    <button className="outlined-button" onClick={() => setIsReportModalOpen(true)}>View Report</button>
                     <button className="primary-button" onClick={() => setIsModalOpen(true)}>Create Event</button>
                 </div>
             </div>
@@ -146,140 +159,27 @@ export default function Dashboard() {
                     </div>
 
                     <ul className="transactions">
-                        <li className="transaction-item">
-                            <div className="trans-left">
-                                <span className="user-icon">
-                                    <Icon icon="mdi:account-circle" width="48" />
-                                </span>
-                                <div className="user-info">
-                                    <h5>John Smith</h5>
-                                    <p className="small-body-text">john@techstart.com - 2026-02-10</p>
+                        {recentTransactionsData.map((tx, idx) => (
+                            <li key={idx} className="transaction-item">
+                                <div className="trans-left">
+                                    <span className="user-icon">
+                                        <Icon icon="mdi:account-circle" width="48" />
+                                    </span>
+                                    <div className="user-info">
+                                        <h5>{tx.name}</h5>
+                                        <p className="small-body-text">{tx.email}</p>
+                                        <div className="trans-date">
+                                    <span className="small-body-text">{tx.date}</span>
                                 </div>
-                            </div>
-
-                            <div className="trans-right">
-                                <h4 className="price">$299.00</h4>
-                                <em className="button-label completed">completed</em>
-                            </div>
-                        </li>
-
-                        <li className="transaction-item">
-                            <div className="trans-left">
-                                <span className="user-icon">
-                                    <Icon icon="mdi:account-circle" width="48" />
-                                </span>
-                                <div className="user-info">
-                                    <h5>Techstart Summit 2026</h5>
-                                    <p className="small-body-text">Emily Blunt - 2026-02-10</p>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div className="trans-right">
-                                <h4 className="price">$5,000.00</h4>
-                                <em className="button-label completed">completed</em>
-                            </div>
-                        </li>
-
-                        <li className="transaction-item">
-                            <div className="trans-left">
-                                <span className="user-icon">
-                                    <Icon icon="mdi:account-circle" width="48" />
-                                </span>
-                                <div className="user-info">
-                                    <h5>Alice Nguyen</h5>
-                                    <p className="small-body-text">alice@attendee.com - 2026-02-11</p>
+                                
+                                <div className="trans-right">
+                                    <h4 className="price">{tx.amount}</h4>
+                                    <em className={`button-label ${tx.status}`}>{tx.status}</em>
                                 </div>
-                            </div>
-
-                            <div className="trans-right">
-                                <h4 className="price">$299.00</h4>
-                                <em className="button-label pending">pending</em>
-                            </div>
-                        </li>
-
-                        <li className="transaction-item">
-                            <div className="trans-left">
-                                <span className="user-icon">
-                                    <Icon icon="mdi:account-circle" width="48" />
-                                </span>
-                                <div className="user-info">
-                                    <h5>Maria Lopez</h5>
-                                    <p className="small-body-text">maria@vendor.com - 2026-02-08</p>
-                                </div>
-                            </div>
-
-                            <div className="trans-right">
-                                <h4 className="price">$299.00</h4>
-                                <em className="button-label completed">completed</em>
-                            </div>
-                        </li>
-
-                        <li className="transaction-item">
-                            <div className="trans-left">
-                                <span className="user-icon">
-                                    <Icon icon="mdi:account-circle" width="48" />
-                                </span>
-                                <div className="user-info">
-                                    <h5>Maria Lopez</h5>
-                                    <p className="small-body-text">maria@vendor.com - 2026-02-08</p>
-                                </div>
-                            </div>
-
-                            <div className="trans-right">
-                                <h4 className="price">$299.00</h4>
-                                <em className="button-label completed">completed</em>
-                            </div>
-                        </li>
-
-                        <li className="transaction-item">
-                            <div className="trans-left">
-                                <span className="user-icon">
-                                    <Icon icon="mdi:account-circle" width="48" />
-                                </span>
-                                <div className="user-info">
-                                    <h5>Maria Lopez</h5>
-                                    <p className="small-body-text">maria@vendor.com - 2026-02-08</p>
-                                </div>
-                            </div>
-
-                            <div className="trans-right">
-                                <h4 className="price">$299.00</h4>
-                                <em className="button-label completed">completed</em>
-                            </div>
-                        </li>
-
-                        <li className="transaction-item">
-                            <div className="trans-left">
-                                <span className="user-icon">
-                                    <Icon icon="mdi:account-circle" width="48" />
-                                </span>
-                                <div className="user-info">
-                                    <h5>Maria Lopez</h5>
-                                    <p className="small-body-text">maria@vendor.com - 2026-02-08</p>
-                                </div>
-                            </div>
-
-                            <div className="trans-right">
-                                <h4 className="price">$299.00</h4>
-                                <em className="button-label completed">completed</em>
-                            </div>
-                        </li>
-                        <li className="transaction-item">
-                            <div className="trans-left">
-                                <span className="user-icon">
-                                    <Icon icon="mdi:account-circle" width="48" />
-                                </span>
-                                <div className="user-info">
-                                    <h5>Maria Lopez</h5>
-                                    <p className="small-body-text">maria@vendor.com - 2026-02-08</p>
-                                </div>
-                            </div>
-
-                            <div className="trans-right">
-                                <h4 className="price">$299.00</h4>
-                                <em className="button-label completed">completed</em>
-                            </div>
-                        </li>
+                            </li>
+                        ))}
                     </ul>
                 </div>
 
@@ -393,6 +293,7 @@ export default function Dashboard() {
                 </div>
             </div>
             <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <ViewReportModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
         </div>
     );
 }
