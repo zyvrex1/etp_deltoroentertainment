@@ -1,23 +1,26 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import './CreateAnnouncementModal.css';
-import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from '../utils/sweetAlert';
+import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert } from '../utils/sweetAlert';
 
-const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
-    const getCurrentDate = () => {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
+const EditAnnouncementModal = ({ isOpen, onClose, onSave, announcement }) => {
     const [formData, setFormData] = React.useState({
         title: '',
         content: '',
-        date: getCurrentDate(),
+        date: '',
         category: 'Update'
     });
+
+    React.useEffect(() => {
+        if (announcement) {
+            setFormData({
+                title: announcement.title || '',
+                content: announcement.content || '',
+                date: announcement.date || '',
+                category: announcement.category || 'Update'
+            });
+        }
+    }, [announcement]);
 
     if (!isOpen) return null;
 
@@ -31,9 +34,9 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const result = await showCreateConfirmAlert(
-            'Create Announcement?',
-            `Are you sure you want to create "${formData.title}"?`
+        const result = await showUpdateConfirmAlert(
+            'Update Announcement?',
+            `Are you sure you want to update "${formData.title}"?`
         );
 
         if (!result.isConfirmed) {
@@ -41,23 +44,21 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
         }
 
         try {
-            onSave(formData);
-            await showSuccessAlert('Announcement Created', 'The announcement has been created successfully.');
+            onSave({ ...formData, id: announcement?.id });
+            await showSuccessAlert('Announcement Updated', 'The announcement has been updated successfully.');
             onClose();
-            // Reset form
-            setFormData({
-                title: '',
-                content: '',
-                date: getCurrentDate(),
-                category: 'Update'
-            });
         } catch (error) {
-            console.error('Error creating announcement:', error);
+            console.error('Error updating announcement:', error);
         }
     };
 
     const handleCancel = async () => {
-        const hasChanges = formData.title || formData.content;
+        const hasChanges =
+            formData.title !== (announcement?.title || '') ||
+            formData.content !== (announcement?.content || '') ||
+            formData.date !== (announcement?.date || '') ||
+            formData.category !== (announcement?.category || 'Update');
+
         if (hasChanges) {
             const result = await showCancelConfirmAlert();
             if (result.isConfirmed) {
@@ -72,7 +73,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
         <div className="general-modal-overlay">
             <div className="general-modal-container">
                 <div className="general-modal-header">
-                    <h3>New Announcement</h3>
+                    <h3>Edit Announcement</h3>
                     <button className="close-btn" onClick={handleCancel}>
                         <Icon icon="mdi:close" />
                     </button>
@@ -111,13 +112,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
                                     type="date"
                                     name="date"
                                     value={formData.date}
-                                    readOnly
-                                    disabled
-                                    style={{
-                                        backgroundColor: '#f5f5f5',
-                                        cursor: 'not-allowed',
-                                        color: '#666'
-                                    }}
+                                    onChange={handleChange}
                                     required
                                 />
                             </div>
@@ -149,4 +144,4 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
     );
 };
 
-export default CreateAnnouncementModal;
+export default EditAnnouncementModal;

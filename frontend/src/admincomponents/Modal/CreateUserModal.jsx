@@ -1,9 +1,44 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './CreateUserModal.css';
+import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from '../utils/sweetAlert';
 
 const CreateUserModal = ({ isOpen, onClose }) => {
     const [userType, setUserType] = useState('Admin');
+    const [formData, setFormData] = useState({});
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const result = await showCreateConfirmAlert(
+            'Create User?',
+            `Are you sure you want to create a new ${userType} user?`
+        );
+        
+        if (!result.isConfirmed) {
+            return;
+        }
+        
+        try {
+            // Here you would typically send the data to your API
+            await showSuccessAlert('User Created', 'The user has been created successfully. An invitation email has been sent.');
+            onClose();
+            setFormData({});
+        } catch (error) {
+            console.error('Error creating user:', error);
+        }
+    };
+
+    const handleCancel = async () => {
+        const hasChanges = Object.values(formData).some(val => val && val.toString().trim() !== '');
+        if (hasChanges) {
+            const result = await showCancelConfirmAlert();
+            if (result.isConfirmed) {
+                onClose();
+            }
+        } else {
+            onClose();
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -12,22 +47,22 @@ const CreateUserModal = ({ isOpen, onClose }) => {
             case 'Promoter':
                 return (
                     <>
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div className="add-user-form-row">
+                            <div className="add-user-form-group">
                                 <h6>Full Name</h6>
                                 <input type="text" placeholder="e.g. John Doe" />
                             </div>
-                            <div className="form-group">
+                            <div className="add-user-form-group">
                                 <h6>Email Address</h6>
                                 <input type="email" placeholder="john@example.com" />
                             </div>
                         </div>
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div className="add-user-form-row">
+                            <div className="add-user-form-group">
                                 <h6>Bank Account (Last 4)</h6>
                                 <input type="text" placeholder="e.g. 1234" />
                             </div>
-                            <div className="form-group">
+                            <div className="add-user-form-group">
                                 <h6>Phone Number</h6>
                                 <input type="tel" placeholder="+1 (555) 000-0000" />
                             </div>
@@ -37,27 +72,27 @@ const CreateUserModal = ({ isOpen, onClose }) => {
             case 'Sponsor':
                 return (
                     <>
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div className="add-user-form-row">
+                            <div className="add-user-form-group">
                                 <h6>Full Name</h6>
                                 <input type="text" placeholder="e.g. John Doe" />
                             </div>
-                            <div className="form-group">
+                            <div className="add-user-form-group">
                                 <h6>Email Address</h6>
                                 <input type="email" placeholder="john@example.com" />
                             </div>
                         </div>
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div className="add-user-form-row">
+                            <div className="add-user-form-group">
                                 <h6>Company Name</h6>
                                 <input type="text" placeholder="e.g. 1234" />
                             </div>
-                            <div className="form-group">
+                            <div className="add-user-form-group">
                                 <h6>Industry</h6>
                                 <input type="text" placeholder="e.g. John Doe" />
                             </div>
                         </div>
-                        <div className="form-group full-width">
+                        <div className="add-user-form-group add-user-full-width">
                             <h6>Phone Number</h6>
                             <input type="tel" placeholder="+1 (555) 000-0000" />
                         </div>
@@ -68,17 +103,17 @@ const CreateUserModal = ({ isOpen, onClose }) => {
             default:
                 return (
                     <>
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div className="add-user-form-row">
+                            <div className="add-user-form-group">
                                 <h6>Full Name</h6>
                                 <input type="text" placeholder="e.g. John Doe" />
                             </div>
-                            <div className="form-group">
+                            <div className="add-user-form-group">
                                 <h6>Email Address</h6>
                                 <input type="email" placeholder="john@example.com" />
                             </div>
                         </div>
-                        <div className="form-group user-full-width">
+                        <div className="add-user-form-group add-user-full-width">
                             <h6>Phone Number</h6>
                             <input type="tel" placeholder="+1 (555) 000-0000" />
                         </div>
@@ -88,11 +123,11 @@ const CreateUserModal = ({ isOpen, onClose }) => {
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-container">
-                <div className="modal-header">
+        <div className="general-modal-overlay">
+            <div className="general-modal-container">
+                <div className="general-modal-header">
                     <h3>Add New User</h3>
-                    <button className="close-btn" onClick={onClose}>
+                    <button className="close-btn" onClick={handleCancel}>
                         <Icon icon="mdi:close" />
                     </button>
                 </div>
@@ -132,10 +167,10 @@ const CreateUserModal = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    <form className="create-user-form">
+                    <form className="create-user-form" onSubmit={handleSubmit}>
                         {renderFormFields()}
 
-                        <div className="info-banner">
+                        <div className="add-user-info-banner">
                             <div className="info-icon">
                                 <Icon icon="mdi:account-plus-outline" width="20" />
                             </div>
@@ -144,13 +179,15 @@ const CreateUserModal = ({ isOpen, onClose }) => {
                                 <p>An email will be sent to the user with instructions to set their password and activate their account.</p>
                             </div>
                         </div>
+
+                        <div className="general-modal-footer">
+                    <button type="button" className="button cancel-btn" onClick={handleCancel}>Cancel</button>
+                    <button type="submit" className="primary-button save-btn">Create User</button>
+                </div>
                     </form>
                 </div>
 
-                <div className="modal-footer">
-                    <button className="button cancel-btn" onClick={onClose}>Cancel</button>
-                    <button className="primary-button create-btn">Create User</button>
-                </div>
+                
             </div>
         </div>
     );

@@ -1,9 +1,7 @@
-
-
 /* 2. Error State (High Specificity) */
-.create-event-form .form-group input.error, 
-.create-event-form .form-group textarea.error, 
-.create-event-form .form-group select.error { 
+.create-event-form .form-group input.error,
+.create-event-form .form-group textarea.error,
+.create-event-form .form-group select.error {
     border: 1px solid var(--error) !important;
     background-color: #fffafa;
 }
@@ -11,91 +9,92 @@
 
 
 /* 3. Modal Layout */
-.add-event-modal-overlay {
-   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 16px;
-  backdrop-filter: blur(2px);
-  box-sizing: border-box;
-  overflow: auto;
+.general-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+    backdrop-filter: blur(2px);
+    box-sizing: border-box;
+    overflow: auto;
 
-  .add-event-modal-container {
-  background-color: var(--color-white-primary);
-  border-radius: 12px;
-  width: 100%;
-  max-width: min(880px, calc(100vw - 32px));
-  max-height: 90vh;
-  min-width: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  animation: slideIn 0.3s ease-out;
-  box-sizing: border-box;
+    .general-modal-container {
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        width: 100%;
+        max-width: min(880px, calc(100vw - 32px));
+        max-height: 90vh;
+        min-width: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.3s ease-out;
+        box-sizing: border-box;
+    }
+
 }
-
-}
-
-
 
 @keyframes slideIn {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
-/* 4. Modal Header */
-.add-event-modal-header {
-     display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--color-black-quaternary);
-  gap: 16px;
-  flex-shrink: 0;
-  min-width: 0;
-
-  h3 {
-   margin: 0 0 4px 0;
-    color: var(--color-black-primary);
-    text-align: left;
-    overflow-wrap: break-word;
-    word-break: break-word;
-}
-
-.add-event-close-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--color-black-tertiary);
+.general-modal-header {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-black-quaternary);
+    gap: 16px;
+    flex-shrink: 0;
+    min-width: 0;
 
-      svg {
-      font-size: 24px;
+    h3 {
+        margin: 0 0 4px 0;
+        color: var(--color-black-primary);
+        text-align: left;
+        overflow-wrap: break-word;
+        word-break: break-word;
     }
 
-    &:hover {
-      color: var(--color-black-primary);
+    .close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--color-black-tertiary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+
+        svg {
+            font-size: 24px;
+        }
+
+        &:hover {
+            color: var(--color-black-primary);
+        }
     }
-}
 
 }
 
-
-
-/* 5. Modal Body & Form */
 .add-event-modal-body {
     padding: 24px;
     overflow-y: auto;
@@ -120,54 +119,48 @@
     gap: 8px;
 
     h6 {
-    color: var(--color-black-secondary);
-    text-align: left;
+        color: var(--color-black-secondary);
+        text-align: left;
+    }
 
-    
+    input,
+    textarea,
+    select {
+        padding: 10px 12px;
+        border: 1px solid var(--color-black-tertiary);
+        border-radius: 6px;
+        font-size: 14px;
+        color: var(--color-black-primary);
+        transition: border-color 0.2s;
+        font-family: inherit;
+        background-color: var(--color-white-primary);
+
+        &:focus {
+            outline: none;
+            border-color: var(--color-black-primary);
+
+        }
+    }
 }
-
-input, 
- textarea, 
-select {
-    padding: 10px 12px;
-            border: 1px solid var(--color-black-tertiary);
-            border-radius: 6px;
-            font-size: 14px;
-            color: var(--color-black-primary);
-            transition: border-color 0.2s;
-            font-family: inherit;
-            background-color: var(--color-white-primary);
-
-            &:focus{
-    outline: none;
-    border-color: var(--color-black-primary);
-
-            }
-}
-
-}
-
-
 
 .add-event-full-width {
     grid-column: 1 / -1;
 
-    
-            input {
-                padding: 10px 12px;
-                border: 1px solid var(--color-black-quaternary);
-                border-radius: 6px;
-                font-size: 14px;
-                color: var(--color-black-primary);
-                background-color: var(--color-white-primary);
-                transition: border-color 0.2s;
-                font-family: inherit;
+    input {
+        padding: 10px 12px;
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 6px;
+        font-size: 14px;
+        color: var(--color-black-primary);
+        background-color: var(--color-white-primary);
+        transition: border-color 0.2s;
+        font-family: inherit;
 
-                &:focus {
-                    outline: none;
-                    border-color: var(--color-black-primary);
-                }
-            }
+        &:focus {
+            outline: none;
+            border-color: var(--color-black-primary);
+        }
+    }
 }
 
 /* 6. Section Box */
@@ -181,46 +174,47 @@ select {
     flex-direction: column;
     gap: 12px;
 
-    h5{
-            color: var(--color-black-primary);
-
+    h5 {
+        color: var(--color-black-primary);
     }
 }
 
+.general-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    /* border-top: 1px solid var(--color-black-quaternary); */
+    flex-shrink: 0;
+    min-width: 0;
 
-.add-event-modal-footer {
-   display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 14px 24px 18px 24px;
-  border-top: 1px solid var(--color-black-quaternary);
-  flex-shrink: 0;
-  min-width: 0;
+    .cancel-btn {
+        background-color: transparent;
+        border: none;
+        color: var(--color-black-secondary);
 
-  .cancel-btn {
- background-color: transparent;
-    border: none;
-    color: var(--color-black-secondary);
-    min-width: 80px;
-    flex: 1 1 auto;
-  }
+        &:hover {
+            background-color: var(--color-bg-light);
+        }
+    }
 
-  .create-btn {
-     min-width: 120px;
-    flex: 1 1 auto;
-    border: none;
-  }
+    .save-btn {
+        border: none;
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
 }
 
 /* 8. Responsive Styles */
 @media (max-width: 600px) {
     .add-event-form-row {
-        grid-template-columns: 1fr ;
+        grid-template-columns: 1fr;
         gap: 10px;
     }
 
-    .add-event-modal-footer {
+    .general-modal-footer {
         padding: 0;
     }
 

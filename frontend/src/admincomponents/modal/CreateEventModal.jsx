@@ -129,11 +129,11 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="add-event-modal-overlay">
-      <div className="add-event-modal-container">
-        <div className="add-event-modal-header">
+    <div className="general-modal-overlay">
+      <div className="general-modal-container">
+        <div className="general-modal-header">
           <h3>Create New Event</h3>
-          <button className="add-event-close-btn" onClick={async () => {
+          <button className="close-btn" onClick={async () => {
             const hasChanges = title || description || venue.name || startTime || endTime || ticketPrice || totalTickets;
             if (hasChanges) {
               const result = await showCancelConfirmAlert();
@@ -332,7 +332,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          <div className="add-event-modal-footer">
+          <div className="general-modal-footer">
             <button
               type="button"
               className="button cancel-btn"
@@ -350,7 +350,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             >
               Cancel
             </button>
-            <button type="submit" className="primary-button create-btn">
+            <button type="submit" className="primary-button save-btn">
               Create Event
             </button>
           </div>
