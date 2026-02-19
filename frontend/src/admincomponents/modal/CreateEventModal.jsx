@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { useEventsContext } from "../hooks/useEventsContext";
 import "./CreateEventModal.css";
+import { showSuccessAlert, showCancelConfirmAlert, showErrorAlert, showCreateConfirmAlert } from "../utils/sweetAlert";
 
 const CreateEventModal = ({ isOpen, onClose }) => {
   const { dispatch } = useEventsContext();
@@ -67,6 +68,15 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     return;
   }
 
+  const result = await showCreateConfirmAlert(
+    'Create Event?',
+    `Are you sure you want to create "${title}"?`
+  );
+
+  if (!result.isConfirmed) {
+    return;
+  }
+
   const event = {
     title,
     description,
@@ -96,6 +106,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   if (!response.ok) {
     setError(json.error);
     setEmptyFields(json.emptyFields || []);
+    await showErrorAlert('Error Creating Event', json.error || 'Failed to create event.');
   } else {
     // Reset form on success
     setTitle("");
@@ -109,6 +120,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     setTotalTickets("");
     setError(null);
     setEmptyFields([]);
+    await showSuccessAlert('Event Created', 'The event has been created successfully.');
     onClose();
     dispatch({ type: "CREATE_EVENT", payload: json });
   }
@@ -117,18 +129,28 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <div className="modal-header">
+    <div className="add-event-modal-overlay">
+      <div className="add-event-modal-container">
+        <div className="add-event-modal-header">
           <h3>Create New Event</h3>
-          <button className="close-btn" onClick={onClose}>
+          <button className="add-event-close-btn" onClick={async () => {
+            const hasChanges = title || description || venue.name || startTime || endTime || ticketPrice || totalTickets;
+            if (hasChanges) {
+              const result = await showCancelConfirmAlert();
+              if (result.isConfirmed) {
+                onClose();
+              }
+            } else {
+              onClose();
+            }
+          }}>
             <Icon icon="mdi:close" />
           </button>
         </div>
 
-        <form className="modal-body create-event-form" onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
+        <form className="add-event-modal-body add-event-form" onSubmit={handleSubmit}>
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
               <h6>Event Title</h6>
               <input
                 type="text"
@@ -139,7 +161,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                 className={emptyFields.includes("title") ? "error" : ""}
               />
             </div>
-            <div className="form-group">
+            <div className="add-event-form-group">
               <h6>Category</h6>
               <select
                 value={category}
@@ -156,8 +178,8 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
               <h6>Start Date</h6>
               <input
                 type="date"
@@ -173,7 +195,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                 className={emptyFields.includes("startDate") ? "error" : ""}
               />
             </div>
-            <div className="form-group">
+            <div className="add-event-form-group">
               <h6>End Date</h6>
               <input
                 type="date"
@@ -186,8 +208,8 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
               <h6>Start Time</h6>
               <input
                 type="time"
@@ -197,7 +219,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                 className={emptyFields.includes("startTime") ? "error" : ""}
               />
             </div>
-            <div className="form-group">
+            <div className="add-event-form-group">
               <h6>End Time</h6>
               <input
                 type="time"
@@ -211,7 +233,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
 
           <div className="section-box">
             <h5 className="modal-section-title">Venue Details</h5>
-            <div className="form-group">
+            <div className="add-event-form-group">
               <input
                 type="text"
                 placeholder="Venue Name"
@@ -222,7 +244,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="add-event-form-group">
               <input
                 type="text"
                 placeholder="Street Address"
@@ -235,8 +257,8 @@ const CreateEventModal = ({ isOpen, onClose }) => {
               />
             </div>
 
-            <div className="form-row">
-            <div className="form-group">
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
                 <input
                 type="text"
                 placeholder="City"
@@ -245,7 +267,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                 className={emptyFields.includes("venue") ? "error" : ""}
                 />
             </div>
-            <div className="form-group">
+            <div className="add-event-form-group">
                 <input
                 type="text"
                 placeholder="Zip Code"
@@ -257,8 +279,8 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
+            <div className="add-event-form-group">
+            <div className="add-event-form-group">
             <h6>Ticket Price ($)</h6>
             <input
                 type="number"
@@ -274,7 +296,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             />
             </div>
 
-            <div className="form-group">
+            <div className="add-event-form-group">
             <h6>Total Capacity</h6>
             <input
                 type="number"
@@ -289,7 +311,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="form-group full-width">
+          <div className="add-event-form-group add-event-full-width">
             <h6>About The Event</h6>
             <textarea
               required
@@ -310,11 +332,21 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          <div className="modal-footer">
+          <div className="add-event-modal-footer">
             <button
               type="button"
               className="button cancel-btn"
-              onClick={onClose}
+              onClick={async () => {
+                const hasChanges = title || description || venue.name || startTime || endTime || ticketPrice || totalTickets;
+                if (hasChanges) {
+                  const result = await showCancelConfirmAlert();
+                  if (result.isConfirmed) {
+                    onClose();
+                  }
+                } else {
+                  onClose();
+                }
+              }}
             >
               Cancel
             </button>
