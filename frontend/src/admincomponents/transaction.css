@@ -233,6 +233,11 @@
     color: var(--color-yellow-primary);
 }
 
+.tx-status-refunded {
+    background: var(--color-red-tertiary);
+    color: var(--color-red-primary);
+}
+
 /* View button */
 .tx-view-btn {
     display: inline-flex;

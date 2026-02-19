@@ -40,7 +40,7 @@ const TransactionMonitoring = () => {
     return option ? option.label : "All Transactions";
   };
 
-  const transactions = [
+  const [transactions, setTransactions] = useState([
     {
       id: 1,
       user: "Emily Blunt",
@@ -107,7 +107,17 @@ const TransactionMonitoring = () => {
       date: "Jul 5, 2025",
       filterType: "ticket",
     },
-  ];
+  ]);
+
+  const handleRefund = (transactionId) => {
+    setTransactions(prevTransactions =>
+      prevTransactions.map(tx =>
+        tx.id === transactionId
+          ? { ...tx, status: 'refunded' }
+          : tx
+      )
+    );
+  };
 
   const filteredTransactions = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -158,6 +168,7 @@ const TransactionMonitoring = () => {
   const getStatusClass = (status) => {
     if (status === "completed") return "button-label tx-status-completed";
     if (status === "pending") return "button-label tx-status-pending";
+    if (status === "refunded") return "button-label tx-status-refunded";
     return "button-label tx-status";
   };
 
@@ -312,6 +323,7 @@ const TransactionMonitoring = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         transaction={selectedTransaction}
+        onRefund={handleRefund}
       />
     </div>
   );

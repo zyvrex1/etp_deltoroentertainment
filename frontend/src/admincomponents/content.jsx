@@ -3,10 +3,13 @@ import { FaPlus, FaFileContract, FaShieldAlt, FaFileInvoiceDollar } from 'react-
 import './content.css';
 import { Icon } from "@iconify/react";
 import CreateAnnouncementModal from './Modal/CreateAnnouncementModal';
+import EditAnnouncementModal from './Modal/EditAnnouncementModal';
 import ManagePolicyModal from './Modal/ManagePolicyModal';
+import { showDeleteConfirmAlert, showSuccessAlert } from './utils/sweetAlert';
 
 const ContentManager = () => {
     const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+    const [editingAnnouncement, setEditingAnnouncement] = useState(null);
 
     // Initial dummy data
     const [announcements, setAnnouncements] = useState([
@@ -63,6 +66,29 @@ const ContentManager = () => {
         setIsAnnouncementModalOpen(false);
     };
 
+    const handleUpdateAnnouncement = (updatedAnnouncement) => {
+        setAnnouncements(announcements.map(a =>
+            a.id === updatedAnnouncement.id ? { ...a, ...updatedAnnouncement } : a
+        ));
+        setEditingAnnouncement(null);
+    };
+
+    const handleDeleteAnnouncement = async (announcement) => {
+        const result = await showDeleteConfirmAlert(
+            'Delete Announcement',
+            `Are you sure you want to delete "${announcement.title}"? This action cannot be undone.`
+        );
+        
+        if (result.isConfirmed) {
+            try {
+                setAnnouncements(announcements.filter(a => a.id !== announcement.id));
+                await showSuccessAlert('Deleted!', 'The announcement has been deleted successfully.');
+            } catch (error) {
+                console.error('Error deleting announcement:', error);
+            }
+        }
+    };
+
     const handleOpenPolicyModal = (policy) => {
         setSelectedPolicy(policy);
         setIsPolicyModalOpen(true);
@@ -106,7 +132,25 @@ const ContentManager = () => {
                             <div className="announcement-item" key={announcement.id}>
                                 <div className="announcement-header">
                                     <h5>{announcement.title}</h5>
-                                    <span className="small-body-text announcement-date">{formatDate(announcement.date)}</span>
+                                    <div className="announcement-header-right">
+                                        <span className="small-body-text announcement-date">{formatDate(announcement.date)}</span>
+                                        <div className="announcement-actions">
+                                            <button
+                                                className="announcement-action-btn"
+                                                onClick={() => setEditingAnnouncement(announcement)}
+                                                aria-label="Edit announcement"
+                                            >
+                                                <Icon icon="mdi:edit" width="18" />
+                                            </button>
+                                            <button
+                                                className="announcement-action-btn delete"
+                                                onClick={() => handleDeleteAnnouncement(announcement)}
+                                                aria-label="Delete announcement"
+                                            >
+                                                <Icon icon="mdi:delete" width="18" />
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                                 <p className="small-body-text announcement-desc">
                                     {announcement.content}
@@ -138,6 +182,13 @@ const ContentManager = () => {
                 isOpen={isAnnouncementModalOpen}
                 onClose={() => setIsAnnouncementModalOpen(false)}
                 onSave={handleSaveAnnouncement}
+            />
+
+            <EditAnnouncementModal
+                isOpen={!!editingAnnouncement}
+                onClose={() => setEditingAnnouncement(null)}
+                onSave={handleUpdateAnnouncement}
+                announcement={editingAnnouncement}
             />
 
             <ManagePolicyModal

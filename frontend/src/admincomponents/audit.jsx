@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './audit.css';
+import DateRangePicker from './DateRangePicker';
+import jsPDF from 'jspdf';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from './utils/pdfExport';
 
 const AuditLogs = () => {
+    const [dateRange, setDateRange] = useState(() => ({
+        preset: 'all',
+        presetLabel: 'All time',
+        start: new Date(2000, 0, 1),
+        end: new Date(2100, 11, 31),
+    }));
+
     // Mock data for audit logs matching the screenshot
     const [logs] = useState([
         {
@@ -84,19 +94,91 @@ const AuditLogs = () => {
             target: 'Platform Fees',
             details: 'Changed fee to 5%',
             timestamp: '2024-10-10 16:00:00'
+        },
+          {
+            id: 11,
+            action: 'Updated Settings',
+            admin: 'Alex Thompson',
+            target: 'Platform Fees',
+            details: 'Changed fee to 5%',
+            timestamp: '2024-10-10 16:00:00'
         }
     ]);
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    const totalPages = Math.ceil(logs.length / itemsPerPage);
+    const filterLogsByDateRange = (logsToFilter) => {
+        if (!dateRange?.start || !dateRange?.end || dateRange?.preset === 'all') return logsToFilter;
+
+        const start = new Date(dateRange.start);
+        const end = new Date(dateRange.end);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+
+        return logsToFilter.filter(log => {
+            const logDate = new Date(log.timestamp);
+            return logDate >= start && logDate <= end;
+        });
+    };
+
+    const filteredLogs = filterLogsByDateRange(logs);
+    const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedLogs = logs.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedLogs = filteredLogs.slice(startIndex, startIndex + itemsPerPage);
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
             setCurrentPage(page);
+        }
+    };
+
+    const handleDateRangeChange = (newRange) => {
+        setDateRange(newRange);
+        setCurrentPage(1);
+    };
+
+    const exportReport = async () => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const margin = 15;
+            const FOOTER_HEIGHT = 15;
+            let y = 45;
+
+            addReportHeader(pdf, 'Audit Logs Report', logoData);
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Audit Log Entries', margin, y);
+            y += 8;
+
+            const auditHeaders = ['Action', 'Admin', 'Target', 'Details', 'Timestamp'];
+            const auditRows = filteredLogs.map(log => [
+                log.action,
+                log.admin,
+                log.target,
+                log.details,
+                log.timestamp
+            ]);
+            y = drawTable(pdf, y, auditHeaders, auditRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+
+            y += 4;
+            pdf.setFontSize(9);
+            pdf.setTextColor(100, 100, 100);
+            pdf.text(`Report generated from Audit Logs. ${filteredLogs.length} entries.`, margin, y, { maxWidth: pdfWidth - 2 * margin });
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Audit_Logs_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
         }
     };
 
@@ -108,7 +190,7 @@ const AuditLogs = () => {
                     <h1>Audit Logs</h1>
                     <p>Track all administrative actions for security and compliance.</p>
                 </div>
-                <button className="outlined-button export-btn">
+                <button className="outlined-button export-btn" onClick={exportReport}>
                     <Icon icon="mdi:download-outline" /> Export Report
                 </button>
             </div>
@@ -119,9 +201,12 @@ const AuditLogs = () => {
                     <Icon icon="mdi:magnify" className="search-icon" />
                     <input type="text" placeholder="Search logs..." />
                 </div>
-                <button className="filter-btn">
-                    <Icon icon="mdi:filter-variant" /> Filter by Date
-                </button>
+                <DateRangePicker
+                    value={dateRange}
+                    onChange={handleDateRangeChange}
+                    buttonClassName="filter-btn"
+                    placeholder="Select date range"
+                />
             </div>
 
             {/* Logs Table */}

@@ -94,6 +94,10 @@
         }
     }
 
+    .audit-date-filter-dropdown {
+        position: relative;
+    }
+
     .filter-btn {
         display: flex;
         align-items: center;
@@ -107,10 +111,60 @@
         font-weight: 500;
         cursor: pointer;
         white-space: nowrap;
+        transition: all 0.2s ease;
 
         &:hover {
             background-color: #f9fafb;
             color: var(--color-black-primary);
+        }
+
+        .audit-dropdown-icon {
+            width: 18px;
+            height: 18px;
+            color: var(--color-black-tertiary);
+            transition: transform 0.2s ease;
+            margin-left: 4px;
+        }
+
+        .audit-dropdown-icon.open {
+            transform: rotate(180deg);
+        }
+    }
+
+    .audit-date-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        min-width: 180px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        overflow: hidden;
+    }
+
+    .audit-date-dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 10px 16px;
+        text-align: left;
+        border: none;
+        background: white;
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        transition: background 0.2s ease;
+        font-size: 14px;
+
+        &:hover {
+            background-color: var(--color-red-primary);
+            color: white;
+        }
+
+        &.active {
+            background-color: var(--color-red-quaternary);
+            color: var(--color-red-primary);
+            font-weight: 500;
         }
     }
 }
@@ -290,8 +344,19 @@
         align-items: stretch;
     }
 
+    .audit-date-filter-dropdown {
+        width: 100%;
+    }
+
     .filter-btn {
+        width: 100%;
         justify-content: center;
+    }
+
+    .audit-date-dropdown-menu {
+        right: 0;
+        left: 0;
+        width: 100%;
     }
 
     .audit-table th,

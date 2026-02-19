@@ -1,20 +1,22 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./payments.css";
+import Swal from "sweetalert2";
+import { showSuccessAlert, showRejectReasonAlert, showErrorAlert, showApproveConfirmAlert, showRejectConfirmAlert } from "./utils/sweetAlert";
 
 const Payments = () => {
   const [activeTab, setActiveTab] = useState("payout-requests");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const payoutRequests = [
+  const [payoutRequests, setPayoutRequests] = useState([
     { id: 1, promoter: "Sarah Chen", amount: "$15,240.00", method: "Wire Transfer", status: "pending", requested: "Oct 1, 2024" },
     { id: 2, promoter: "David Kim", amount: "$45,000.00", method: "PayPal", status: "paid", requested: "Aug 1, 2024" },
     { id: 3, promoter: "Lisa Zhang", amount: "$20,000.00", method: "Wire Transfer", status: "paid", requested: "Sep 12, 2024" },
     { id: 4, promoter: "James Wilson", amount: "$5,000.00", method: "Wire Transfer", status: "pending", requested: "Oct 20, 2024" },
     { id: 5, promoter: "Sarah Chen", amount: "$10,000.00", method: "Wire Transfer", status: "processing", requested: "Oct 22, 2024" },
     { id: 6, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
-  ];
+  ]);
 
   const paymentMethods = [
     { id: 1, promoter: "Alice Brown", event: "TechStart Summit 2026", amount: "$15,240.00", method: "Wire Transfer", status: "paid", date: "Oct 1, 2024" },
@@ -38,10 +40,54 @@ const Payments = () => {
     setCurrentPage(1);
   };
 
+  const handleApprove = async (id, promoter, amount) => {
+    const confirmResult = await showApproveConfirmAlert(promoter, amount);
+    
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+    
+    try {
+      setPayoutRequests(prev => 
+        prev.map(req => req.id === id ? { ...req, status: "paid" } : req)
+      );
+      await showSuccessAlert('Payment Approved', 'The payment request has been approved and marked as paid.');
+    } catch (error) {
+      console.error('Error approving payment:', error);
+      await showErrorAlert('Error', 'Failed to approve payment request.');
+    }
+  };
+
+  const handleReject = async (id, promoter, amount) => {
+    const confirmResult = await showRejectConfirmAlert(promoter, amount);
+    
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+    
+    const result = await showRejectReasonAlert();
+    
+    if (result.isConfirmed && result.value) {
+      try {
+        // Here you would typically send the rejection reason to your API
+        setPayoutRequests(prev => 
+          prev.map(req => req.id === id ? { ...req, status: "rejected", rejectionReason: result.value } : req)
+        );
+        await showSuccessAlert('Payment Rejected', `Payment request for ${promoter} (${amount}) has been rejected. Reason: ${result.value}`);
+      } catch (error) {
+        console.error('Error rejecting payment:', error);
+        await showErrorAlert('Error', 'Failed to reject payment request.');
+      }
+    } else if (result.dismiss === Swal.DismissReason.cancel) {
+      await showSuccessAlert('Cancelled', 'Rejection has been cancelled.');
+    }
+  };
+
   const getStatusClass = (status) => {
     if (status === "paid") return "button-label pay-status-paid";
     if (status === "pending") return "button-label pay-status-pending";
     if (status === "processing") return "button-label pay-status-processing";
+    if (status === "rejected") return "button-label pay-status-rejected";
     return "button-label";
   };
 
@@ -116,8 +162,18 @@ const Payments = () => {
                       <td data-label="Actions">
                         {row.status === "pending" ? (
                           <div className="pay-actions">
-                            <button className="button-label pay-btn-approve">Approve</button>
-                            <button className="button-label pay-btn-reject">Reject</button>
+                            <button 
+                              className="button-label pay-btn-approve" 
+                              onClick={() => handleApprove(row.id, row.promoter, row.amount)}
+                            >
+                              Approve
+                            </button>
+                            <button 
+                              className="button-label pay-btn-reject" 
+                              onClick={() => handleReject(row.id, row.promoter, row.amount)}
+                            >
+                              Reject
+                            </button>
                           </div>
                         ) : (
                           "—"

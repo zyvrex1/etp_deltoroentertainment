@@ -96,7 +96,77 @@
           width: 18px;
           height: 18px;
         }
+      }
 
+      .em-filter-dropdown {
+        position: relative;
+      }
+
+      .em-filter-dropdown-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid var(--color-black-quaternary);
+        background: var(--color-white-primary);
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        min-width: 150px;
+        transition: all 0.2s ease;
+      }
+
+      .em-filter-dropdown-btn:hover {
+        border-color: var(--color-black-tertiary);
+      }
+
+      .em-filter-dropdown-btn .dropdown-icon {
+        width: 18px;
+        height: 18px;
+        color: var(--color-black-tertiary);
+        transition: transform 0.2s ease;
+      }
+
+      .em-filter-dropdown-btn .dropdown-icon.open {
+        transform: rotate(180deg);
+      }
+
+      .em-filter-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        min-width: 150px;
+        background: var(--color-white-primary);
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        overflow: hidden;
+      }
+
+      .em-filter-dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 10px 16px;
+        text-align: left;
+        border: none;
+        background: var(--color-white-primary);
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        transition: background 0.2s ease;
+        font-size: 14px;
+      }
+
+      .em-filter-dropdown-item:hover {
+        background: var(--color-red-primary);
+        color: var(--color-white-primary);
+      }
+
+      .em-filter-dropdown-item.active {
+        background: var(--color-red-quaternary);
+        color: var(--color-red-primary);
+        font-weight: 500;
       }
     }
   }
@@ -308,9 +378,18 @@
     width: 100%;
   }
 
-  .em-filters-btn {
+  .em-filter-dropdown {
     width: 100%;
-    justify-content: center;
+  }
+
+  .em-filter-dropdown-btn {
+    width: 100%;
+  }
+
+  .em-filter-dropdown-menu {
+    right: 0;
+    left: 0;
+    width: 100%;
   }
 
   .data-table {

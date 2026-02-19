@@ -190,6 +190,11 @@
                 color: var(--color-blue-primary);
             }
 
+            .pay-status-rejected {
+                background: var(--color-red-tertiary);
+                color: var(--color-red-primary);
+            }
+
             .pay-actions {
                 display: flex;
                 align-items: center;

@@ -49,6 +49,12 @@
     justify-content: center;
     gap: 8px;
     color: var(--color-black-secondary);
+    cursor: pointer;
+}
+
+.export-btn:hover {
+    border-color: var(--color-black-tertiary);
+    color: var(--color-black-primary);
 }
 
 .filter-button span {

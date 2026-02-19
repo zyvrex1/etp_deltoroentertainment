@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "./reportsandanalytics.css";
 import { Icon } from "@iconify/react";
+import jsPDF from "jspdf";
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from "./utils/pdfExport";
 import {
     LineChart,
     Line,
@@ -15,12 +17,18 @@ import {
     Pie,
     Cell,
 } from "recharts";
+import DateRangePicker from "./DateRangePicker";
 
 
 export default function ReportsAnalytics() {
     const [activeDropdown, setActiveDropdown] = useState(null);
     const [activeEvent, setActiveEvent] = useState("all");
-    const [activeDate, setActiveDate] = useState("7days");
+    const [dateRange, setDateRange] = useState(() => {
+        const now = new Date();
+        const start = new Date(now);
+        start.setDate(start.getDate() - 6);
+        return { preset: "last7", presetLabel: "Last 7 days", start, end: new Date(now) };
+    });
 
     const eventOptions = [
         { label: "All Events", value: "all" },
@@ -29,12 +37,6 @@ export default function ReportsAnalytics() {
         { label: "Music Festival", value: "music" },
     ];
 
-    const dateOptions = [
-        { label: "Last Week", value: "7days" },
-        { label: "Last Month", value: "30days" },
-        { label: "Last Quarter", value: "90days" },
-        { label: "Last Year", value: "365days" },
-    ];
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -152,6 +154,111 @@ export default function ReportsAnalytics() {
 
     const COLORS = ["var(--color-red-primary)", "var(--color-blue-primary)", "var(--color-purple-primary)", "var(--color-yellow-primary)"];
 
+    const exportReport = async () => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF("p", "mm", "a4");
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const margin = 15;
+            const FOOTER_HEIGHT = 15;
+            let y = 45;
+            const lineHeight = 6;
+
+            addReportHeader(pdf, "Reports & Analytics", logoData);
+
+            // Key Metrics Section
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Key Metrics", margin, y);
+            y += lineHeight + 2;
+
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont("helvetica", "normal");
+            pdf.text("Total Revenue: $687,550.00 (↑ 12.5%)", margin + 2, y); y += lineHeight;
+            pdf.text("Tickets Sold: 1,245 (↑ 8.2%)", margin + 2, y); y += lineHeight;
+            pdf.text("Booth Rents: 400 (↑ 5.4%)", margin + 2, y); y += lineHeight;
+            pdf.text("Total Users: 8,542 (↑ 5.4%)", margin + 2, y); y += lineHeight + 6;
+
+            // Revenue Trends Section
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Revenue Trends (Monthly)", margin, y);
+            y += lineHeight + 2;
+            pdf.setFontSize(9);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont("helvetica", "normal");
+            revenueData.forEach((d) => {
+                pdf.text(`${d.month}: $${d.revenue.toLocaleString()}`, margin + 2, y);
+                y += lineHeight - 1;
+            });
+            y += 4;
+
+            // Ticket Sales Section
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Ticket Sales (Daily)", margin, y);
+            y += lineHeight + 2;
+            pdf.setFontSize(9);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont("helvetica", "normal");
+            ticketSalesData.forEach((d) => {
+                pdf.text(`${d.day}: ${d.sales} tickets`, margin + 2, y);
+                y += lineHeight - 1;
+            });
+            y += 4;
+
+            // Event Categories Section
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Event Categories Distribution", margin, y);
+            y += lineHeight + 2;
+            pdf.setFontSize(9);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont("helvetica", "normal");
+            categoryData.forEach((d) => {
+                pdf.text(`${d.name}: ${d.value}%`, margin + 2, y);
+                y += lineHeight - 1;
+            });
+            y += 6;
+
+            // Top Performing Events Table
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Top Performing Events", margin, y);
+            y += 8;
+            
+            const eventHeaders = ['Event Name', 'Date', 'Tickets', 'Revenue', 'Status'];
+            const eventRows = topEvents.map(e => [
+                e.name,
+                e.date,
+                e.tickets,
+                e.revenue,
+                e.status
+            ]);
+            y = drawTable(pdf, y, eventHeaders, eventRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+
+            y += 4;
+            pdf.setFontSize(9);
+            pdf.setTextColor(100, 100, 100);
+            pdf.text("Report generated from Reports & Analytics. Charts and detailed data available in the dashboard.", margin, y, { maxWidth: pdfWidth - 2 * margin });
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Reports_Analytics_${new Date().toISOString().split("T")[0]}.pdf`);
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Failed to generate PDF. Please try again.");
+        } finally {
+            removeExportToast(loadingToast);
+        }
+    };
 
     return (
         <div className="reports-container">
@@ -207,53 +314,17 @@ export default function ReportsAnalytics() {
                             )}
                         </div>
 
-                        {/* Date Dropdown */}
-                        <div className="tx-filter-dropdown">
-                            <button
-                                className="outlined-button filter-button"
-                                onClick={() =>
-                                    setActiveDropdown(
-                                        activeDropdown === "date" ? null : "date"
-                                    )
-                                }
-                            >
-                                <span>
-                                    {dateOptions.find(
-                                        (opt) => opt.value === activeDate
-                                    )?.label}
-                                </span>
-
-                                <Icon
-                                    icon="mdi:chevron-down"
-                                    width="18"
-                                    className={`dropdown-icon ${activeDropdown === "date" ? "rotate" : ""
-                                        }`}
-                                />
-                            </button>
-
-                            {activeDropdown === "date" && (
-                                <div className="tx-filter-dropdown-menu">
-                                    {dateOptions.map((option) => (
-                                        <button
-                                            key={option.value}
-                                            className={`tx-filter-dropdown-item ${activeDate === option.value ? "active" : ""
-                                                }`}
-                                            onClick={() => {
-                                                setActiveDate(option.value);
-                                                setActiveDropdown(null);
-                                            }}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        <DateRangePicker
+                            value={dateRange}
+                            onChange={setDateRange}
+                            buttonClassName="outlined-button filter-button"
+                            placeholder="Select date range"
+                        />
 
                     </div>
 
                     {/* Export Button */}
-                    <button className="outlined-button export-btn">
+                    <button className="outlined-button export-btn" onClick={exportReport}>
                         <Icon icon="mdi:download-outline" width="18" />
                         Export Report
                     </button>

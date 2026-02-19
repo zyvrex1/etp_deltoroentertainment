@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import "./eventmanagement.css";
 import CreateEventModal from "./Modal/CreateEventModal";
@@ -56,14 +56,26 @@ const formatEventTime = (dateString) => {
   });
 };
 
+const getEventStatus = (event) => {
+  const now = new Date();
+  const start = new Date(event.startDate);
+  const end = new Date(event.endDate);
+  if (end < now) return "complete";
+  if (start <= now) return "live";
+  return "pending";
+};
+
 const EventManagement = ({ event }) => {
    const { events, dispatch } = useEventsContext();
 
   // const [events, setEvents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const itemsPerPage = 5;
+  const filterDropdownRef = useRef(null);
 
   // 1. Fetch Data
   useEffect(() => {
@@ -105,14 +117,19 @@ const EventManagement = ({ event }) => {
 };
 
 
-  // 2. Filter Logic (Updated for your JSON keys)
+  // 2. Filter Logic (search + status)
   const filteredEvents = (events || []).filter((event) => {
     const q = searchQuery.toLowerCase();
-    return (
+    const matchesSearch =
       event?.title?.toLowerCase().includes(q) ||
       event?.venue?.name?.toLowerCase().includes(q) ||
-      event?.category?.toLowerCase().includes(q)
-    );
+      event?.category?.toLowerCase().includes(q);
+
+    const status = getEventStatus(event);
+    const matchesStatus =
+      statusFilter === "all" || statusFilter === status;
+
+    return matchesSearch && matchesStatus;
   });
 
   // 3. Pagination Logic
@@ -124,6 +141,40 @@ const EventManagement = ({ event }) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+
+    if (isFilterDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFilterDropdownOpen]);
+
+  const filterOptions = [
+    { value: "all", label: "All Events" },
+    { value: "pending", label: "Pending" },
+    { value: "live", label: "Live" },
+    { value: "complete", label: "Complete" },
+  ];
+
+  const getFilterLabel = () => {
+    const option = filterOptions.find((opt) => opt.value === statusFilter);
+    return option ? option.label : "All Events";
+  };
+
+  const handleFilterChange = (filter) => {
+    setStatusFilter(filter);
+    setCurrentPage(1);
+    setIsFilterDropdownOpen(false);
   };
 
   return (
@@ -159,10 +210,31 @@ const EventManagement = ({ event }) => {
             </div>
           </div>
           <div className="em-toolbar-right">
-            <button className="em-filters-btn">
-              <Icon icon="mdi:tune" />
-              <span>Filters</span>
-            </button>
+            <div className="em-filter-dropdown" ref={filterDropdownRef}>
+              <button
+                className="em-filter-dropdown-btn"
+                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+              >
+                <span>{getFilterLabel()}</span>
+                <Icon
+                  icon="mdi:chevron-down"
+                  className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""}`}
+                />
+              </button>
+              {isFilterDropdownOpen && (
+                <div className="em-filter-dropdown-menu">
+                  {filterOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      className={`em-filter-dropdown-item ${statusFilter === option.value ? "active" : ""}`}
+                      onClick={() => handleFilterChange(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -174,6 +246,7 @@ const EventManagement = ({ event }) => {
                 <th>Event Name</th>
                 <th>Venue</th>
                 <th>Date & Time</th>
+                <th>Status</th>
                 <th>Price</th>
                 <th>Sales Progress</th>
                 <th>Actions</th>
@@ -185,6 +258,8 @@ const EventManagement = ({ event }) => {
                   const salesPercent = event.totalTickets 
                     ? Math.round((event.ticketsSold / event.totalTickets) * 100) 
                     : 0;
+                  const eventStatus = getEventStatus(event);
+                  const statusClass = eventStatus === "live" ? "status-live" : eventStatus === "pending" ? "status-pending" : "status-completed";
 
                   return (
                     <tr key={event._id}>
@@ -209,6 +284,9 @@ const EventManagement = ({ event }) => {
                         <span className="smaller-body-text" style={{ color: '#666' }}>
                           {formatEventTime(event.startDate)} to {formatEventTime(event.endDate)}
                         </span>
+                      </td>
+                      <td data-label="Status">
+                        <span className={`status-badge ${statusClass}`}>{eventStatus}</span>
                       </td>
                       <td data-label="Price" className="regular-body-text">
                         ${event.ticketPrice}
@@ -245,7 +323,7 @@ const EventManagement = ({ event }) => {
                 })
               ) : (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>
                     No events found.
                   </td>
                 </tr>

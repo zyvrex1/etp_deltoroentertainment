@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './settings.css';
+import { showConfirmAlert, showSuccessAlert } from './utils/sweetAlert';
 
 const Settings = () => {
     // State for form fields (mock data)
@@ -33,6 +34,60 @@ const Settings = () => {
         fixedFee: '0.99',
         payoutSchedule: 'weekly'
     });
+
+    const handleSaveProfile = async () => {
+        const result = await showConfirmAlert(
+            'Save Profile?',
+            'Are you sure you want to save your profile changes?',
+            'Yes, save changes',
+            'Cancel'
+        );
+        
+        if (result.isConfirmed) {
+            try {
+                // Here you would typically send the data to your API
+                await showSuccessAlert('Profile Saved', 'Your profile has been updated successfully.');
+            } catch (error) {
+                console.error('Error saving profile:', error);
+            }
+        }
+    };
+
+    const handleSaveGeneral = async () => {
+        const result = await showConfirmAlert(
+            'Save General Settings?',
+            'Are you sure you want to save these general configuration changes?',
+            'Yes, save changes',
+            'Cancel'
+        );
+        
+        if (result.isConfirmed) {
+            try {
+                // Here you would typically send the data to your API
+                await showSuccessAlert('Settings Saved', 'General settings have been updated successfully.');
+            } catch (error) {
+                console.error('Error saving settings:', error);
+            }
+        }
+    };
+
+    const handleUpdateFees = async () => {
+        const result = await showConfirmAlert(
+            'Update Fees?',
+            'Are you sure you want to update the fee structure? This will affect all future transactions.',
+            'Yes, update fees',
+            'Cancel'
+        );
+        
+        if (result.isConfirmed) {
+            try {
+                // Here you would typically send the data to your API
+                await showSuccessAlert('Fees Updated', 'The fee structure has been updated successfully.');
+            } catch (error) {
+                console.error('Error updating fees:', error);
+            }
+        }
+    };
 
     return (
         <div className="settings-container">
@@ -184,7 +239,7 @@ const Settings = () => {
 
                     <div className="account-actions">
                         <button className="outlined-button delete-btn">Delete Account</button>
-                        <button className="primary-button save-profile-btn">Save Profile</button>
+                        <button className="primary-button save-profile-btn" onClick={handleSaveProfile}>Save Profile</button>
                     </div>
                 </div>
 
@@ -225,7 +280,7 @@ const Settings = () => {
                                     <Icon icon="mdi:chevron-down" className="select-icon" />
                                 </div>
                             </div>
-                            <button className="primary-button save-changes-btn">Save Changes</button>
+                            <button className="primary-button save-changes-btn" onClick={handleSaveGeneral}>Save Changes</button>
                         </div>
                     </div>
 
@@ -266,7 +321,7 @@ const Settings = () => {
                                     <Icon icon="mdi:chevron-down" className="select-icon" />
                                 </div>
                             </div>
-                            <button className="primary-button update-fees-btn">Update Fees</button>
+                            <button className="primary-button update-fees-btn" onClick={handleUpdateFees}>Update Fees</button>
                         </div>
                     </div>
                 </div>
