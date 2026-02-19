@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './ManagePricingModal.css';
+import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from '../utils/sweetAlert';
 
 const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
     // Default data structure based on type
@@ -71,21 +72,52 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
         ));
     };
 
-    const handleSave = () => {
-        if (onSave) {
-            onSave(items);
+    const handleSave = async () => {
+        const result = await showConfirmAlert(
+            'Save Pricing Changes?',
+            `Are you sure you want to save these pricing changes for ${type === 'booth' ? 'booths' : 'seats'}? This will update the pricing for all items.`,
+            'Yes, save changes',
+            'Cancel'
+        );
+
+        if (result.isConfirmed) {
+            try {
+                if (onSave) {
+                    onSave(items);
+                }
+                await showSuccessAlert('Pricing Updated', 'The pricing has been updated successfully.');
+                onClose();
+            } catch (error) {
+                console.error('Error saving pricing:', error);
+            }
         }
-        onClose();
+    };
+
+    const handleCancel = async () => {
+        const hasChanges = items.some(item => {
+            // Check if any item has been modified from initial values
+            // In a real app, you'd compare with original values
+            return true; // For now, always show confirmation
+        });
+
+        if (hasChanges) {
+            const result = await showCancelConfirmAlert();
+            if (result.isConfirmed) {
+                onClose();
+            }
+        } else {
+            onClose();
+        }
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="manage-pricing-modal-overlay">
-            <div className="manage-pricing-modal-container">
-                <div className="manage-pricing-modal-header">
+        <div className="general-modal-overlay">
+            <div className="general-modal-container">
+                <div className="general-modal-header">
                     <h3>{type === 'booth' ? 'Manage Booth Pricing & Inventory' : 'Manage Seats Pricing & Inventory'}</h3>
-                    <button className="close-btn" onClick={onClose} aria-label="Close modal">
+                    <button className="close-btn" onClick={handleCancel} aria-label="Close modal">
                         <Icon icon="mdi:close" width="24" height="24" />
                     </button>
                 </div>
@@ -164,12 +196,14 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
                             </div>
                         </div>
                     ))}
+
+                    <div className="general-modal-footer">
+                        <button className="button cancel-btn" onClick={handleCancel}>Cancel</button>
+                        <button className="primary-button save-btn" onClick={handleSave}>Save Changes</button>
+                    </div>
                 </div>
 
-                <div className="manage-pricing-modal-footer">
-                    <button className="button cancel-btn" onClick={onClose}>Cancel</button>
-                    <button className="primary-button save-btn" onClick={handleSave}>Save Changes</button>
-                </div>
+
             </div>
         </div>
     );
