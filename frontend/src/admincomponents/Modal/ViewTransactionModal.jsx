@@ -2,12 +2,22 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import './ViewTransactionModal.css';
 
-const ViewTransactionModal = ({ isOpen, onClose, transaction }) => {
+const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
     if (!isOpen || !transaction) return null;
+
+    const handleProcessRefund = () => {
+        if (window.confirm('Are you sure you want to process a refund for this transaction?')) {
+            if (onRefund) {
+                onRefund(transaction.id);
+            }
+            onClose();
+        }
+    };
 
     const getStatusClass = (status) => {
         if (status === 'completed') return 'button-label transac-completed';
         if (status === 'pending') return 'button-label transac-pending';
+        if (status === 'refunded') return 'button-label transac-refunded';
         return 'status-pill';
     };
 
@@ -96,8 +106,8 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction }) => {
                 </div>
 
                 <div className="tx-modal-footer">
-                    {(transaction.type === 'Ticket Purchase' || transaction.type === 'Booth Rental') && (
-                        <button className="process-refund-btn">Process Refund</button>
+                    {(transaction.type === 'Ticket Purchase' || transaction.type === 'Booth Rental') && transaction.status !== 'refunded' && (
+                        <button className="process-refund-btn" onClick={handleProcessRefund}>Process Refund</button>
                     )}
                     <button className="primary-button close-button-main" onClick={onClose}>Close</button>
                 </div>

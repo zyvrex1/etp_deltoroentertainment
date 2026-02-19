@@ -108,6 +108,11 @@
                 color: #212529;
             }
 
+            .transac-refunded {
+                background-color: var(--color-red-tertiary);
+                color: var(--color-red-primary);
+            }
+
             .amount-date {
                 color: #6c757d;
             }
