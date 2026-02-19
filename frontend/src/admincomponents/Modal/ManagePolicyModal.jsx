@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './ManagePolicyModal.css';
+import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert } from '../utils/sweetAlert';
 
 const ManagePolicyModal = ({ isOpen, onClose, policy, onSave }) => {
     const [content, setContent] = useState('');
@@ -13,18 +14,44 @@ const ManagePolicyModal = ({ isOpen, onClose, policy, onSave }) => {
 
     if (!isOpen || !policy) return null;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSave({ ...policy, content });
-        onClose();
+        const result = await showUpdateConfirmAlert(
+            'Update Policy?',
+            `Are you sure you want to update "${policy.title}"?`
+        );
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            onSave({ ...policy, content });
+            await showSuccessAlert('Policy Updated', 'The policy has been updated successfully.');
+            onClose();
+        } catch (error) {
+            console.error('Error updating policy:', error);
+        }
+    };
+
+    const handleCancel = async () => {
+        const hasChanges = content !== (policy?.content || '');
+        if (hasChanges) {
+            const result = await showCancelConfirmAlert();
+            if (result.isConfirmed) {
+                onClose();
+            }
+        } else {
+            onClose();
+        }
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-container policy-modal">
-                <div className="modal-header">
+        <div className="general-modal-overlay">
+            <div className="general-modal-container">
+                <div className="general-modal-header">
                     <h3>{policy.title}</h3>
-                    <button className="policy-close-btn" onClick={onClose}>
+                    <button className="close-btn" onClick={handleCancel}>
                         <Icon icon="mdi:close" />
                     </button>
                 </div>
@@ -42,18 +69,20 @@ const ManagePolicyModal = ({ isOpen, onClose, policy, onSave }) => {
                                 required
                             ></textarea>
                         </div>
+
+                        <div className="general-modal-footer">
+                            <span className="smaller-body-text last-updated">Last updated: {policy.lastUpdated}</span>
+                            <div className="policy-modal-actions">
+                                <button type="button" className="button cancel-btn" onClick={handleCancel}>Cancel</button>
+                                <button type="submit" form="policy-form" className="primary-button save-btn">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
                     </form>
                 </div>
 
-                <div className="policy-modal-footer">
-                    <span className="smaller-body-text last-updated">Last updated: {policy.lastUpdated}</span>
-                    <div className="policy-modal-actions">
-                        <button className="button cancel-btn" onClick={onClose}>Cancel</button>
-                        <button type="submit" form="policy-form" className="primary-button save-btn">
-                            Save Changes
-                        </button>
-                    </div>
-                </div>
+
             </div>
         </div>
     );
