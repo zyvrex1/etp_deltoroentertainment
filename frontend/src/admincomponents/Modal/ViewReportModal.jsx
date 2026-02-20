@@ -203,7 +203,7 @@ const ViewReportModal = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    <div className="general-modal-footer">
+                    <div className="general-viewreport-modal-footer">
                         <button className="button cancel-btn" onClick={onClose}>Close</button>
                         <button className="primary-button save-btn" onClick={exportToPDF}>
                             Export as PDF
