@@ -124,7 +124,7 @@ const CreateUserModal = ({ isOpen, onClose }) => {
 
     return (
         <div className="general-modal-overlay">
-            <div className="general-modal-container">
+            <div className="general-createuser-modal-container">
                 <div className="general-modal-header">
                     <h3>Add New User</h3>
                     <button className="close-btn" onClick={handleCancel}>
@@ -180,7 +180,7 @@ const CreateUserModal = ({ isOpen, onClose }) => {
                             </div>
                         </div>
 
-                        <div className="general-modal-footer">
+                        <div className="general-createuser-modal-footer">
                             <button type="button" className="button cancel-btn" onClick={handleCancel}>Cancel</button>
                             <button type="submit" className="primary-button save-btn">Create User</button>
                         </div>

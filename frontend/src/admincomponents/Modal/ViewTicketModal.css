@@ -186,7 +186,7 @@
     }
 }
 
-.general-modal-footer {
+.general-ticket-modal-footer {
     display: flex;
     justify-content: flex-end;
     flex-wrap: wrap;
@@ -194,8 +194,9 @@
     /* border-top: 1px solid var(--color-black-quaternary); */
     flex-shrink: 0;
     min-width: 0;
+    padding: 16px;
 
-    .cancel-btn {
+    .closeticket-btn {
         background-color: transparent;
         border: none;
         color: var(--color-black-secondary);

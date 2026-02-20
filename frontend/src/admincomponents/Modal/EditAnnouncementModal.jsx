@@ -71,7 +71,7 @@ const EditAnnouncementModal = ({ isOpen, onClose, onSave, announcement }) => {
 
     return (
         <div className="general-modal-overlay">
-            <div className="general-modal-container">
+            <div className="general-announcement-modal-container">
                 <div className="general-modal-header">
                     <h3>Edit Announcement</h3>
                     <button className="close-btn" onClick={handleCancel}>
@@ -131,7 +131,7 @@ const EditAnnouncementModal = ({ isOpen, onClose, onSave, announcement }) => {
                             </div>
                         </div>
 
-                        <div className="general-modal-footer">
+                        <div className="general-announcement-modal-footer">
                             <button className="button cancel-btn" onClick={handleCancel}>Cancel</button>
                             <button className="primary-button save-btn" onClick={handleSubmit}>
                                 Save Changes

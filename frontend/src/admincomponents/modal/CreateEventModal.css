@@ -21,7 +21,7 @@
     box-sizing: border-box;
     overflow: auto;
 
-    .general-modal-container {
+    .general-event-modal-container {
         background-color: var(--color-white-primary);
         border-radius: 12px;
         width: 100%;
@@ -172,7 +172,7 @@
     }
 }
 
-.general-modal-footer {
+.general-event-modal-footer {
     display: flex;
     justify-content: flex-end;
     flex-wrap: wrap;

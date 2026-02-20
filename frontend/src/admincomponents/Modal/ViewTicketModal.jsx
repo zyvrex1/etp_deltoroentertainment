@@ -81,8 +81,8 @@ const ViewTicketModal = ({ isOpen, onClose, ticket, onUpdateStatus }) => {
                     </div>
                 </div>
 
-                <div className="general-modal-footer">
-                    <button className="outlined-button cancel-btn" onClick={onClose}>Close Ticket</button>
+                <div className="general-ticket-modal-footer">
+                    <button className="outlined-button closeticket-btn" onClick={onClose}>Close Ticket</button>
                     <button
                         className={`primary-button update-status-btn ${isUpdateDisabled ? 'disabled' : ''}`}
                         onClick={handleUpdateClick}

@@ -106,7 +106,7 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
 
     return (
         <div className="general-modal-overlay" onClick={handleCancel}>
-            <div className="general-modal-container" onClick={e => e.stopPropagation()}>
+            <div className="general-edituser-modal-container" onClick={e => e.stopPropagation()}>
                 <div className="general-modal-header">
                     <h3>{getTitle()}</h3>
                     <button className="close-btn" onClick={handleCancel}>
@@ -238,7 +238,7 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                             Add Temporary Password
                         </button>
 
-                        <div className="general-modal-footer">
+                        <div className="general-edituser-modal-footer">
                             <button type="button" className="outlined-button cancel-btn" onClick={handleCancel}>Cancel</button>
                             <button type="submit" form="edit-user-form" className="primary-button save-btn">Save Changes</button>
                             {/* Design sometimes shows "Create User" but "Save Changes" is correct for Edit */}

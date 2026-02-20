@@ -114,7 +114,7 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
 
     return (
         <div className="general-modal-overlay">
-            <div className="general-modal-container">
+            <div className="general-pricing-modal-container">
                 <div className="general-modal-header">
                     <h3>{type === 'booth' ? 'Manage Booth Pricing & Inventory' : 'Manage Seats Pricing & Inventory'}</h3>
                     <button className="close-btn" onClick={handleCancel} aria-label="Close modal">
@@ -197,7 +197,7 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
                         </div>
                     ))}
 
-                    <div className="general-modal-footer">
+                    <div className="general-pricing-modal-footer">
                         <button className="button cancel-btn" onClick={handleCancel}>Cancel</button>
                         <button className="primary-button save-btn" onClick={handleSave}>Save Changes</button>
                     </div>

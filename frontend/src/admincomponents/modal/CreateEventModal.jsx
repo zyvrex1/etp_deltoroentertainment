@@ -130,7 +130,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="general-modal-overlay">
-      <div className="general-modal-container">
+      <div className="general-event-modal-container">
         <div className="general-modal-header">
           <h3>Create New Event</h3>
           <button className="close-btn" onClick={async () => {
@@ -332,7 +332,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          <div className="general-modal-footer">
+          <div className="general-event-modal-footer">
             <button
               type="button"
               className="button cancel-btn"
