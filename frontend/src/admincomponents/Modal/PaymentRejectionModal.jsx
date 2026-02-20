@@ -56,7 +56,7 @@ const PaymentRejectionModal = ({ payout, onClose, onConfirm }) => {
                         onClick={handleConfirm}
                         disabled={!rejectionReason.trim()}
                     >
-                        Reject Payment
+                        Reject Payout
                     </button>
                 </div>
             </div>
