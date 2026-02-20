@@ -14,6 +14,7 @@ import Content from "./admincomponents/content.jsx";
 import Settings from "./admincomponents/settings.jsx";
 import Support from "./admincomponents/support.jsx";
 import AuditLogs from "./admincomponents/audit.jsx";
+import EventApproval from "./admincomponents/eventapproval.jsx";
 
 
 
@@ -36,6 +37,7 @@ function App() {
           <div className="content-wrapper">
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/event-approval" element={<EventApproval />} />
               <Route path="/users" element={<UserManagement />} />
               <Route path="/events" element={<EventManagement />} />
               <Route path="/transactions" element={<Transaction />} />
