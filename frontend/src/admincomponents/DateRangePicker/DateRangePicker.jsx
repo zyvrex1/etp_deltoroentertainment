@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import './DateRangePicker.css';
 
@@ -69,7 +70,10 @@ const getPresetRange = (preset) => {
     }
 };
 
-const formatDateLabel = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const formatDateLabel = (date) => {
+    if (!date || isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
 
 const getDaysInMonth = (year, month) => {
     const first = new Date(year, month, 1);
@@ -83,7 +87,7 @@ const getDaysInMonth = (year, month) => {
 
 export default function DateRangePicker({ value, onChange, buttonClassName, placeholder = 'Select date range' }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [activePreset, setActivePreset] = useState(value?.preset || 'last90');
+    const [activePreset, setActivePreset] = useState(value?.preset || null);
     const [rangeStart, setRangeStart] = useState(null);
     const [rangeEnd, setRangeEnd] = useState(null);
     const [selectingStart, setSelectingStart] = useState(true);
@@ -91,9 +95,7 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
         const d = value?.start ? new Date(value.start) : new Date();
         return { year: d.getFullYear(), month: d.getMonth() };
     });
-    const popupRef = useRef(null);
-    const buttonRef = useRef(null);
-    const [popupStyle, setPopupStyle] = useState({});
+    const modalRef = useRef(null);
 
     const getInitialRange = () => {
         if (value?.start && value?.end) {
@@ -105,9 +107,6 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
         return getPresetRange(value?.preset || 'last90') || { start: new Date(), end: new Date() };
     };
 
-    const [displayStart, setDisplayStart] = useState(() => getInitialRange().start);
-    const [displayEnd, setDisplayEnd] = useState(() => getInitialRange().end);
-
     useEffect(() => {
         if (isOpen) {
             const range = getInitialRange();
@@ -115,47 +114,24 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
             setRangeEnd(range.end);
             setActivePreset(value?.preset ?? null);
             setViewMonth({ year: range.start.getFullYear(), month: range.start.getMonth() });
-            setDisplayStart(range.start);
-            setDisplayEnd(range.end);
-
-            // Calculate popup position to stay within screen bounds
-            setTimeout(() => {
-                if (buttonRef.current && popupRef.current) {
-                    const buttonRect = buttonRef.current.getBoundingClientRect();
-                    const popupWidth = 560;
-                    const popupHeight = 450;
-                    const viewportWidth = window.innerWidth;
-                    const viewportHeight = window.innerHeight;
-                    
-                    let left = 0;
-                    let top = buttonRect.height + 8;
-                    
-                    // Check if popup would overflow right edge
-                    if (buttonRect.left + popupWidth > viewportWidth) {
-                        // Position from right edge instead
-                        left = viewportWidth - buttonRect.right;
-                    }
-                    
-                    // Check if popup would overflow bottom edge
-                    if (buttonRect.bottom + popupHeight > viewportHeight) {
-                        // Position above button instead
-                        top = -(popupHeight + 8);
-                    }
-                    
-                    setPopupStyle({ left: `${left}px`, top: `${top}px` });
-                }
-            }, 0);
+            setSelectingStart(true);
         }
-    }, [isOpen]);
+    }, [isOpen, value]);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (popupRef.current && !popupRef.current.contains(e.target)) {
+            if (modalRef.current && !modalRef.current.contains(e.target)) {
                 setIsOpen(false);
             }
         };
-        if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.body.style.overflow = '';
+        };
     }, [isOpen]);
 
     const handlePresetChange = (preset) => {
@@ -165,8 +141,6 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
             const farFuture = new Date(2100, 11, 31);
             setRangeStart(farPast);
             setRangeEnd(farFuture);
-            setDisplayStart(farPast);
-            setDisplayEnd(farFuture);
             return;
         }
         const range = getPresetRange(preset);
@@ -174,8 +148,6 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
         setActivePreset(preset);
         setRangeStart(range.start);
         setRangeEnd(range.end);
-        setDisplayStart(range.start);
-        setDisplayEnd(range.end);
     };
 
     const handleDateClick = (date) => {
@@ -205,26 +177,19 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
         onChange({
             preset: activePreset,
             presetLabel,
-            start: rangeStart || displayStart,
-            end: rangeEnd || displayEnd,
+            start: rangeStart || getInitialRange().start,
+            end: rangeEnd || getInitialRange().end,
         });
         setIsOpen(false);
     };
 
     const handleCancel = () => {
-        setRangeStart(value?.start ? new Date(value.start) : displayStart);
-        setRangeEnd(value?.end ? new Date(value.end) : displayEnd);
-        setActivePreset(value?.preset || 'last90');
         setIsOpen(false);
     };
 
-    const currentStart = rangeStart || displayStart;
-    const currentEnd = rangeEnd || displayEnd;
-    const buttonLabel = value?.presetLabel && value?.start && value?.end
-        ? value.preset === 'all'
-            ? 'All time'
-            : `${value.presetLabel}: ${formatDateLabel(new Date(value.start))} - ${formatDateLabel(new Date(value.end))}`
-        : placeholder;
+    const handleClose = () => {
+        setIsOpen(false);
+    };
 
     const prevMonth = () => {
         if (viewMonth.month === 0) {
@@ -243,39 +208,43 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
     };
 
     const isInRange = (d) => {
-        if (!currentStart || !currentEnd) return false;
+        if (!rangeStart || !rangeEnd || !d) return false;
         const t = d.getTime();
-        const s = currentStart.getTime();
-        const e = currentEnd.getTime();
+        const s = rangeStart.getTime();
+        const e = rangeEnd.getTime();
         return t >= Math.min(s, e) && t <= Math.max(s, e);
     };
 
     const isStartOrEnd = (d) => {
-        if (!d) return false;
+        if (!d || !rangeStart || !rangeEnd) return false;
         const t = d.getTime();
-        const s = (currentStart && currentStart.getTime()) || 0;
-        const e = (currentEnd && currentEnd.getTime()) || 0;
+        const s = rangeStart.getTime();
+        const e = rangeEnd.getTime();
         return t === s || t === e;
     };
 
     const days1 = getDaysInMonth(viewMonth.year, viewMonth.month);
     const days2 = getDaysInMonth(viewMonth.month === 11 ? viewMonth.year + 1 : viewMonth.year, viewMonth.month === 11 ? 0 : viewMonth.month + 1);
 
-    return (
-        <div className="date-range-picker-wrapper" ref={popupRef}>
-            <button
-                ref={buttonRef}
-                type="button"
-                className={`date-range-picker-btn ${buttonClassName || ''}`}
-                onClick={() => setIsOpen(!isOpen)}
-            >
-                <Icon icon="mdi:calendar" width="18" />
-                <span>{buttonLabel}</span>
-                <Icon icon="mdi:chevron-down" width="18" className={isOpen ? 'rotate' : ''} />
-            </button>
+    const currentStart = rangeStart || getInitialRange().start;
+    const currentEnd = rangeEnd || getInitialRange().end;
+    const buttonLabel = value?.presetLabel && value?.start && value?.end
+        ? value.preset === 'all'
+            ? 'All time'
+            : `${value.presetLabel}: ${formatDateLabel(new Date(value.start))} - ${formatDateLabel(new Date(value.end))}`
+        : placeholder;
 
-            {isOpen && (
-                <div className="date-range-picker-popup" style={popupStyle}>
+    const modalContent = isOpen ? (
+        <div className="general-modal-overlay" onClick={handleClose}>
+            <div className="general-date-range-picker-modal-container" ref={modalRef} onClick={(e) => e.stopPropagation()}>
+                <div className="general-modal-header">
+                    <h3>Select Date Range</h3>
+                    <button className="close-btn" onClick={handleClose} type="button">
+                        <Icon icon="mdi:close" width="24" />
+                    </button>
+                </div>
+
+                <div className="date-range-picker-modal-body">
                     <div className="date-range-picker-content">
                         <div className="date-range-presets">
                             {PRESETS.map((p) => (
@@ -329,22 +298,39 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
                             </div>
                         </div>
                     </div>
-                    <div className="date-range-picker-footer">
-                        <div className="date-range-display">
-                            {formatDateLabel(currentStart)} - {formatDateLabel(currentEnd)}
-                        </div>
-                        <p className="date-range-timezone">Dates are shown in Pacific Time</p>
-                        <div className="date-range-actions">
-                            <button type="button" className="outlined-button date-range-cancel" onClick={handleCancel}>
-                                Cancel
-                            </button>
-                            <button type="button" className="primary-button date-range-update" onClick={handleUpdate}>
-                                Update
-                            </button>
-                        </div>
+                </div>
+
+                <div className="date-range-picker-modal-footer">
+                    <div className="date-range-display">
+                        {formatDateLabel(currentStart)} - {formatDateLabel(currentEnd)}
+                    </div>
+                    <p className="date-range-timezone">Dates are shown in Pacific Time</p>
+                    <div className="date-range-actions">
+                        <button type="button" className="outlined-button date-range-cancel" onClick={handleCancel}>
+                            Cancel
+                        </button>
+                        <button type="button" className="primary-button date-range-update" onClick={handleUpdate}>
+                            Update
+                        </button>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
+    ) : null;
+
+    return (
+        <>
+            <button
+                type="button"
+                className={`date-range-picker-btn ${buttonClassName || ''}`}
+                onClick={() => setIsOpen(true)}
+            >
+                <Icon icon="mdi:calendar" width="18" />
+                <span>{buttonLabel}</span>
+                <Icon icon="mdi:chevron-down" width="18" />
+            </button>
+
+            {createPortal(modalContent, document.body)}
+        </>
     );
 }
