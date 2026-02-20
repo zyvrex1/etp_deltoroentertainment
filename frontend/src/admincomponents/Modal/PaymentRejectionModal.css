@@ -1,4 +1,4 @@
-.payment-rejection-modal-overlay {
+.general-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -12,18 +12,22 @@
     padding: 16px;
     backdrop-filter: blur(2px);
     box-sizing: border-box;
-}
+    overflow: auto;
 
-.payment-rejection-modal-container {
-    background-color: var(--color-white-primary);
-    border-radius: 12px;
-    width: 100%;
-    max-width: 500px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    animation: slideIn 0.3s ease-out;
-    box-sizing: border-box;
+    .general-payment-rejection-modal-container {
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        width: 100%;
+        max-width: min(880px, calc(100vw - 32px));
+        max-height: 90vh;
+        min-width: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.3s ease-out;
+        box-sizing: border-box;
+    }
 }
 
 @keyframes slideIn {
@@ -31,136 +35,130 @@
         transform: translateY(20px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
     }
 }
 
-.payment-rejection-modal-header {
+.general-modal-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    padding: 20px 24px;
+    padding: 16px 24px;
     border-bottom: 1px solid var(--color-black-quaternary);
+    gap: 16px;
+    flex-shrink: 0;
+    min-width: 0;
+
+    h3 {
+        color: var(--color-black-primary);
+        text-align: left;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--color-black-tertiary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+
+        svg {
+            font-size: 24px;
+        }
+
+        &:hover {
+            color: var(--color-black-primary);
+        }
+    }
 }
 
-.payment-rejection-modal-header h3 {
-    margin: 0;
-    color: var(--color-black-primary);
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--color-black-tertiary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-
-.close-btn:hover {
-    background-color: var(--color-bg-light);
-    color: var(--color-black-primary);
-}
 
 .payment-rejection-modal-body {
     padding: 24px;
+
+    .rejection-instruction {
+        color: var(--color-black-primary);
+        text-align: left;
+        margin-bottom: 12px;
+
+        strong {
+            font-weight: 600;
+        }
+
+    }
+
+    .rejection-form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+
+        .rejection-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--color-black-quaternary);
+            border-radius: 8px;
+            resize: vertical;
+            font-family: inherit;
+            color: var(--color-black-primary);
+            background: var(--color-white-primary);
+            min-height: 100px;
+
+            &:focus {
+                outline: none;
+                border-color: var(--color-blue-primary);
+            }
+
+            &::placeholder {
+                color: var(--color-black-tertiary);
+            }
+        }
+    }
+
+    .rejection-info {
+        color: var(--color-red-secondary);
+    }
 }
 
-.rejection-instruction {
-    margin: 0 0 16px 0;
-    color: var(--color-black-primary);
-    line-height: 1.5;
-}
 
-.rejection-instruction strong {
-    font-weight: 600;
-}
-
-.rejection-form-group {
+.general-payment-rejection-modal-footer {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-.rejection-form-group label {
-    color: var(--color-black-primary);
-    font-weight: 500;
-}
-
-.rejection-textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid var(--color-black-quaternary);
-    border-radius: 8px;
-    resize: vertical;
-    font-family: inherit;
-    color: var(--color-black-primary);
-    background: var(--color-white-primary);
-    min-height: 100px;
-}
-
-.rejection-textarea:focus {
-    outline: none;
-    border-color: var(--color-blue-primary);
-}
-
-.rejection-textarea::placeholder {
-    color: var(--color-black-tertiary);
-}
-
-.rejection-info {
-    margin: 0;
-    color: var(--color-black-tertiary);
-    line-height: 1.5;
-}
-
-.payment-rejection-modal-footer {
-    display: flex;
-    gap: 12px;
-    padding: 20px 24px;
-    border-top: 1px solid var(--color-black-quaternary);
     justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    /* border-top: 1px solid var(--color-black-quaternary); */
+    flex-shrink: 0;
+    min-width: 0;
+    padding: 24px;
+
+    .cancel-btn {
+        background-color: transparent;
+        border: none;
+        color: var(--color-black-secondary);
+
+        &:hover {
+            background-color: var(--color-bg-light);
+        }
+    }
+
+    .save-btn {
+        border: none;
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
 }
 
-.payment-rejection-modal-footer button {
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
-}
-
-.btn-cancel {
-    background: var(--color-white-primary);
-    color: var(--color-black-primary);
-    border: 1px solid var(--color-black-quaternary) !important;
-}
-
-.btn-cancel:hover {
-    background: var(--color-bg-light);
-}
-
-.btn-reject-payment {
-    background: #EF4444;
-    color: var(--color-white-primary);
-}
-
-.btn-reject-payment:hover:not(:disabled) {
-    background: #DC2626;
-}
-
-.btn-reject-payment:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
 
 @media (max-width: 768px) {
     .payment-rejection-modal-overlay {
@@ -179,12 +177,12 @@
         padding: 16px;
     }
 
-    .payment-rejection-modal-footer {
+    .general-payment-rejection-modal-footer {
         flex-direction: column;
         padding: 16px;
     }
 
-    .payment-rejection-modal-footer button {
+    .general-payment-rejection-modal-footer button {
         width: 100%;
     }
 }
@@ -207,6 +205,6 @@
     }
 
     .payment-rejection-modal-footer {
-        padding: 12px;
+        padding: 16px;
     }
 }

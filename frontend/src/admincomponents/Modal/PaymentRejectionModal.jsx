@@ -19,9 +19,9 @@ const PaymentRejectionModal = ({ payout, onClose, onConfirm }) => {
     };
 
     return (
-        <div className="payment-rejection-modal-overlay" onClick={onClose}>
-            <div className="payment-rejection-modal-container" onClick={(e) => e.stopPropagation()}>
-                <div className="payment-rejection-modal-header">
+        <div className="general-modal-overlay" onClick={onClose}>
+            <div className="general-payment-rejection-modal-container" onClick={(e) => e.stopPropagation()}>
+                <div className="general-modal-header">
                     <h3>Reject Payment Request</h3>
                     <button className="close-btn" onClick={onClose}>
                         <Icon icon="mdi:close" width="24" />
@@ -29,11 +29,10 @@ const PaymentRejectionModal = ({ payout, onClose, onConfirm }) => {
                 </div>
 
                 <div className="payment-rejection-modal-body">
-                    <p className="rejection-instruction">
+                    <p className="regular-body-text rejection-instruction">
                         Please provide a reason for rejecting the payment request from <strong>{payout.promoter}</strong> ({payout.amount}).
                     </p>
                     <div className="rejection-form-group">
-                        <label htmlFor="rejection-reason">Rejection Reason</label>
                         <textarea
                             id="rejection-reason"
                             className="rejection-textarea"
@@ -43,17 +42,17 @@ const PaymentRejectionModal = ({ payout, onClose, onConfirm }) => {
                             rows="4"
                         />
                     </div>
-                    <p className="rejection-info">
+                    <p className="smaller-body-text rejection-info">
                         The promoter will be notified with this reason.
                     </p>
                 </div>
 
-                <div className="payment-rejection-modal-footer">
-                    <button className="btn-cancel" onClick={onClose}>
+                <div className="general-payment-rejection-modal-footer">
+                    <button className="button cancel-btn" onClick={onClose}>
                         Cancel
                     </button>
                     <button
-                        className="btn-reject-payment"
+                        className="primary-button save-btnt"
                         onClick={handleConfirm}
                         disabled={!rejectionReason.trim()}
                     >

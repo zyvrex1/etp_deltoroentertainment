@@ -87,6 +87,7 @@
     .rejection-instruction {
         color: var(--color-black-primary);
         text-align: left;
+        margin-bottom: 12px;
 
         strong {
             font-weight: 600;
