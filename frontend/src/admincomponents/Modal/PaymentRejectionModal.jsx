@@ -22,7 +22,7 @@ const PaymentRejectionModal = ({ payout, onClose, onConfirm }) => {
         <div className="general-modal-overlay" onClick={onClose}>
             <div className="general-payment-rejection-modal-container" onClick={(e) => e.stopPropagation()}>
                 <div className="general-modal-header">
-                    <h3>Reject Payment Request</h3>
+                    <h3>Reject Payout Request</h3>
                     <button className="close-btn" onClick={onClose}>
                         <Icon icon="mdi:close" width="24" />
                     </button>
@@ -30,7 +30,7 @@ const PaymentRejectionModal = ({ payout, onClose, onConfirm }) => {
 
                 <div className="payment-rejection-modal-body">
                     <p className="regular-body-text rejection-instruction">
-                        Please provide a reason for rejecting the payment request from <strong>{payout.promoter}</strong> ({payout.amount}).
+                        Please provide a reason for rejecting the payout request from <strong>{payout.promoter}</strong> ({payout.amount}).
                     </p>
                     <div className="rejection-form-group">
                         <textarea
