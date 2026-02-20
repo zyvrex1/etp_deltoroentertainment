@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./payments.css";
 import Swal from "sweetalert2";
-import { showSuccessAlert, showRejectReasonAlert, showErrorAlert, showApproveConfirmAlert, showRejectConfirmAlert } from "./utils/sweetAlert";
+import { showSuccessAlert, showErrorAlert, showApproveConfirmAlert } from "./utils/sweetAlert";
+import PaymentRejectionModal from "./Modal/PaymentRejectionModal";
 
 const Payments = () => {
   const [activeTab, setActiveTab] = useState("payout-requests");
@@ -17,6 +18,9 @@ const Payments = () => {
     { id: 5, promoter: "Sarah Chen", amount: "$10,000.00", method: "Wire Transfer", status: "processing", requested: "Oct 22, 2024" },
     { id: 6, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
   ]);
+
+  const [selectedPayout, setSelectedPayout] = useState(null);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
 
   const paymentMethods = [
     { id: 1, promoter: "Alice Brown", event: "TechStart Summit 2026", amount: "$15,240.00", method: "Wire Transfer", status: "paid", date: "Oct 1, 2024" },
@@ -58,28 +62,27 @@ const Payments = () => {
     }
   };
 
-  const handleReject = async (id, promoter, amount) => {
-    const confirmResult = await showRejectConfirmAlert(promoter, amount);
-    
-    if (!confirmResult.isConfirmed) {
+  const handleRejectClick = (payout) => {
+    setSelectedPayout(payout);
+    setShowRejectionModal(true);
+  };
+
+  const handleReject = async (rejectionReason) => {
+    if (!selectedPayout || !rejectionReason) {
       return;
     }
-    
-    const result = await showRejectReasonAlert();
-    
-    if (result.isConfirmed && result.value) {
-      try {
-        // Here you would typically send the rejection reason to your API
-        setPayoutRequests(prev => 
-          prev.map(req => req.id === id ? { ...req, status: "rejected", rejectionReason: result.value } : req)
-        );
-        await showSuccessAlert('Payment Rejected', `Payment request for ${promoter} (${amount}) has been rejected. Reason: ${result.value}`);
-      } catch (error) {
-        console.error('Error rejecting payment:', error);
-        await showErrorAlert('Error', 'Failed to reject payment request.');
-      }
-    } else if (result.dismiss === Swal.DismissReason.cancel) {
-      await showSuccessAlert('Cancelled', 'Rejection has been cancelled.');
+
+    try {
+      // Here you would typically send the rejection reason to your API
+      setPayoutRequests(prev => 
+        prev.map(req => req.id === selectedPayout.id ? { ...req, status: "rejected", rejectionReason } : req)
+      );
+      await showSuccessAlert('Payment Rejected', `Payment request for ${selectedPayout.promoter} (${selectedPayout.amount}) has been rejected. Reason: ${rejectionReason}`);
+      setShowRejectionModal(false);
+      setSelectedPayout(null);
+    } catch (error) {
+      console.error('Error rejecting payment:', error);
+      await showErrorAlert('Error', 'Failed to reject payment request.');
     }
   };
 
@@ -170,7 +173,7 @@ const Payments = () => {
                             </button>
                             <button 
                               className="button-label pay-btn-reject" 
-                              onClick={() => handleReject(row.id, row.promoter, row.amount)}
+                              onClick={() => handleRejectClick(row)}
                             >
                               Reject
                             </button>
@@ -236,6 +239,17 @@ const Payments = () => {
           </div>
         )}
       </div>
+
+      {showRejectionModal && selectedPayout && (
+        <PaymentRejectionModal
+          payout={selectedPayout}
+          onClose={() => {
+            setShowRejectionModal(false);
+            setSelectedPayout(null);
+          }}
+          onConfirm={handleReject}
+        />
+      )}
     </div>
   );
 };
