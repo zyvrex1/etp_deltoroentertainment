@@ -1,6 +1,11 @@
 import { BrowserRouter , Routes, Route } from "react-router-dom";
 import "./App.css";
 
+import Home from "./pages/Home.jsx";
+import Navbar from "./pages/Navbar.jsx"
+import Login from "./pages/Login.jsx";
+import Signup from "./pages/Signup.jsx";
+
 import Sidebar from "./admincomponents/sidebar.jsx";
 import Header from "./admincomponents/header.jsx";
 import Dashboard from "./admincomponents/dashboard.jsx";
@@ -28,15 +33,15 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
-      <div className="app-container">
-        <Sidebar />
-
-        <main className="main-content">
-          <Header user={currentUser} />
-          <div className="content-wrapper">
+      <div>
+        <BrowserRouter>
+          <Navbar/>
+          <div className="pages">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Home />}/>
+              <Route path="/login" element={<Login />}/>
+              <Route path="/signup" element={<Signup />}/>
+              <Route path="/admindashboard" element={<Dashboard />} />
               <Route path="/event-approval" element={<EventApproval />} />
               <Route path="/users" element={<UserManagement />} />
               <Route path="/events" element={<EventManagement />} />
@@ -51,9 +56,9 @@ function App() {
 
             </Routes>
           </div>
-        </main>
+        </BrowserRouter>
       </div>
-    </BrowserRouter>
+    
   );
 }
 
