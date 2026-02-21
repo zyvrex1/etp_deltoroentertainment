@@ -155,7 +155,7 @@ export default function Dashboard() {
                 <div className="transactions-card">
                     <div className="card-header">
                         <h3>Recent Transactions</h3>
-                        <a href="/transactions">View All</a>
+                        <a href="/admin/transactions">View All</a>
                     </div>
 
                     <ul className="transactions">
@@ -169,11 +169,11 @@ export default function Dashboard() {
                                         <h5>{tx.name}</h5>
                                         <p className="small-body-text">{tx.email}</p>
                                         <div className="trans-date">
-                                    <span className="small-body-text">{tx.date}</span>
-                                </div>
+                                            <span className="small-body-text">{tx.date}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="trans-right">
                                     <h4 className="price">{tx.amount}</h4>
                                     <em className={`button-label ${tx.status}`}>{tx.status}</em>
@@ -199,24 +199,23 @@ export default function Dashboard() {
                     </div>
 
                     <div className="quick-actions-card">
-  <h4>Quick Actions</h4>
+                        <h4>Quick Actions</h4>
 
-  <button className="outlined-button quick-btn">
-    <h6>Approve New Events</h6>
-    <Icon icon="mdi:arrow-right" width="18" />
-  </button>
+                        <NavLink to="/admin/event-approval" className="outlined-button quick-btn nav-link-btn">
+                            <h6>Approve New Events</h6>
+                            <Icon icon="mdi:arrow-right" width="18" />
+                        </NavLink>
 
-  <NavLink to="/users" className="outlined-button quick-btn nav-link-btn">
-    <h6>Manage Users</h6>
-    <Icon icon="mdi:arrow-right" width="18" />
-  </NavLink>
+                        <NavLink to="/admin/users" className="outlined-button quick-btn nav-link-btn">
+                            <h6>Manage Users</h6>
+                            <Icon icon="mdi:arrow-right" width="18" />
+                        </NavLink>
 
-  <NavLink to="/settings" className="outlined-button quick-btn nav-link-btn">
-    <h6>System Settings</h6>
-    <Icon icon="mdi:arrow-right" width="18" />
-  </NavLink>
-</div>
-
+                        <NavLink to="/admin/settings" className="outlined-button quick-btn nav-link-btn">
+                            <h6>System Settings</h6>
+                            <Icon icon="mdi:arrow-right" width="18" />
+                        </NavLink>
+                    </div>
 
                     <div className="promoters-card">
                         <div className="card-header">

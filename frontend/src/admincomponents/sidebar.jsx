@@ -24,9 +24,8 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`sidebar ${
-        mobileExpanded ? "mobile-expanded" : "mobile-collapsed"
-      }`}
+      className={`sidebar ${mobileExpanded ? "mobile-expanded" : "mobile-collapsed"
+        }`}
     >
       {/* LOGO + TOGGLE */}
       <div className="sidebar-logo">
@@ -47,7 +46,8 @@ const Sidebar = () => {
           <p className="section-title">OVERVIEW</p>
 
           <NavLink
-            to="/"
+            to="/admin"
+            end
             className={({ isActive }) =>
               isActive ? "sidebar-item active" : "sidebar-item"
             }
@@ -61,7 +61,7 @@ const Sidebar = () => {
         <div className="sidebar-section">
           <p className="section-title">APPROVALS</p>
 
-          <NavLink to="/event-approval" className="sidebar-item">
+          <NavLink to="/admin/event-approval" className="sidebar-item">
             <MdEventAvailable className="icon" />
             <span>Event Approval</span>
           </NavLink>
@@ -71,27 +71,27 @@ const Sidebar = () => {
         <div className="sidebar-section">
           <p className="section-title">OPERATIONS</p>
 
-          <NavLink to="/users" className="sidebar-item">
+          <NavLink to="/admin/users" className="sidebar-item">
             <MdPeople className="icon" />
             <span>User Management</span>
           </NavLink>
 
-          <NavLink to="/events" className="sidebar-item">
+          <NavLink to="/admin/events" className="sidebar-item">
             <MdEvent className="icon" />
             <span>Event Management</span>
           </NavLink>
 
-          <NavLink to="/transactions" className="sidebar-item">
+          <NavLink to="/admin/transactions" className="sidebar-item">
             <MdPayment className="icon" />
             <span>Transactions</span>
           </NavLink>
 
-          <NavLink to="/payments" className="sidebar-item">
+          <NavLink to="/admin/payments" className="sidebar-item">
             <MdPayment className="icon" />
             <span>Payments & Payouts</span>
           </NavLink>
 
-          <NavLink to="/booths-tickets" className="sidebar-item">
+          <NavLink to="/admin/booths-tickets" className="sidebar-item">
             <MdConfirmationNumber className="icon" />
             <span>Booth & Tickets</span>
           </NavLink>
@@ -101,7 +101,7 @@ const Sidebar = () => {
         <div className="sidebar-section">
           <p className="section-title">INSIGHTS</p>
 
-          <NavLink to="/analytics" className="sidebar-item">
+          <NavLink to="/admin/analytics" className="sidebar-item">
             <MdInsights className="icon" />
             <span>Reports & Analytics</span>
           </NavLink>
@@ -111,22 +111,22 @@ const Sidebar = () => {
         <div className="sidebar-section">
           <p className="section-title">PLATFORM</p>
 
-          <NavLink to="/content" className="sidebar-item">
+          <NavLink to="/admin/content" className="sidebar-item">
             <MdDescription className="icon" />
             <span>Content</span>
           </NavLink>
 
-          <NavLink to="/settings" className="sidebar-item">
+          <NavLink to="/admin/settings" className="sidebar-item">
             <MdSettings className="icon" />
             <span>Settings</span>
           </NavLink>
 
-          <NavLink to="/support" className="sidebar-item">
+          <NavLink to="/admin/support" className="sidebar-item">
             <MdSupport className="icon" />
             <span>Support & Disputes</span>
           </NavLink>
 
-          <NavLink to="/audit-logs" className="sidebar-item">
+          <NavLink to="/admin/audit-logs" className="sidebar-item">
             <MdAssignment className="icon" />
             <span>Audit Logs</span>
           </NavLink>
