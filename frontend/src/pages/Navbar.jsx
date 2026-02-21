@@ -1,22 +1,20 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router-dom"
 
-const Navbar = () => {
+const Navbar = ({ openSignup, openLogin }) => {
   return (
     <header>
-      <div className="contaier">
+      <div className="container">
         <Link to="/">
           <h1>Landing Page</h1>
         </Link>
 
         <nav>
-          <div>
-            <Link to="/login">Login</Link>
-            <Link to="/signup">Signup</Link>
-          </div>
+           <button onClick={openLogin}>Login</button>
+          <button onClick={openSignup}>Signup</button>
         </nav>
       </div>
     </header>
-  );
-};
+  )
+}
 
-export default Navbar;
+export default Navbar
