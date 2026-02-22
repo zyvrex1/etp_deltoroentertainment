@@ -1,9 +1,13 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
+require('dotenv').config()
+const express = require('express')
+const mongoose = require('mongoose')
 
-const eventRoutes = require('./routes/events')
-const userRoutes = require('./routes/user')
+const eventRoutes = require('./routes/eventRoutes')
+const authRoutes = require('./routes/authRoutes')
+const promoterRoutes = require('./routes/promoterRoutes')
+const sponsorRoutes = require('./routes/sponsorRoutes')
+const customerRoutes = require('./routes/customerRoutes')
+const adminRoutes = require('./routes/adminRoutes')
 
 // express app
 const app = express()
@@ -18,16 +22,26 @@ app.use((req, res, next) => {
 
 // routes
 app.use('/api/events', eventRoutes)
-app.use('/api/user', userRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/promoters', promoterRoutes)
+app.use('/api/sponsors', sponsorRoutes)
+app.use('/api/customers', customerRoutes)
+app.use('/api/admin', adminRoutes)
 
-// connet to db
+// error handling
+app.use((err, req, res, next) => {
+    console.error(err.stack)
+    res.status(500).json({ error: 'Something went wrong' })
+})
+
+// connect to db
 mongoose.connect(process.env.MONGO_URI)
     .then(() => {
-    // request
+        console.log('Connected to MongoDB')
         app.listen(process.env.PORT, () => {
-            console.log('listening on port', process.env.PORT)
+            console.log('Server running on port', process.env.PORT)
         })
     })
     .catch((error) => {
-        console.log(error)
+        console.error('MongoDB connection error:', error)
     })
