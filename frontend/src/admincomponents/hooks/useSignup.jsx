@@ -10,28 +10,30 @@ export const useSignup = () => {
     setIsLoading(true);
     setError(null);
 
-    // Use FormData to handle file uploads
-    const formData = new FormData();
-    Object.keys(formDataObj).forEach((key) => {
-      if (formDataObj[key]) formData.append(key, formDataObj[key]);
-    });
-    formData.append("role", role);
+    try {
+      // Create the payload
+      const payload = { ...formDataObj, role };
 
-    const response = await fetch("/api/user/signup", {
-      method: "POST",
-      body: formData
-    });
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload), // send as JSON
+      });
 
-    const json = await response.json();
+      const json = await response.json();
 
-    if (!response.ok) {
-      setIsLoading(false);
-      setError(json.error);
-    }
+      if (!response.ok) {
+        setError(json.error);
+        setIsLoading(false);
+        return;
+      }
 
-    if (response.ok) {
+      // Success
       localStorage.setItem("user", JSON.stringify(json));
       dispatch({ type: "LOGIN", payload: json });
+      setIsLoading(false);
+    } catch (err) {
+      setError(err.message);
       setIsLoading(false);
     }
   };

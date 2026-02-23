@@ -10,6 +10,7 @@ const createToken = (_id) => jwt.sign({ _id }, process.env.SECRET, { expiresIn: 
 
 // ================= SIGNUP =================
 const signupUser = async (req, res) => {
+  // fallback to empty object if req.body is undefined
   const {
     role,
     email,
@@ -21,7 +22,7 @@ const signupUser = async (req, res) => {
     profilePicture,
     companyName,
     industry
-  } = req.body
+  } = req.body || {}
 
   try {
     if (!role || !email || !password || !confirmPassword) throw Error('Required fields missing')

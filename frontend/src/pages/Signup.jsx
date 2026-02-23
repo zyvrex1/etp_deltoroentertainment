@@ -1,101 +1,90 @@
 import { useState } from "react";
 import { useSignup } from "../admincomponents/hooks/useSignup";
 
-const Signup = ({ role, closeModal }) => {
-  const { signup, error, isLoading } = useSignup();
+function Signup({ role, closeModal }) {
+  const { signup, isLoading, error } = useSignup();
 
-  // Dynamic form state for all possible fields
-  const [formData, setFormData] = useState({
-    profilePicture: null,
-    fullName: "",
+  const [form, setForm] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
+    fullName: "",
+    phone: "",
+    bankAcc: "",
     companyName: "",
     industry: "",
-    phone: "",
-    bankAccount: "",
-    temporaryPassword: "",
+    profilePicture: ""
   });
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    setFormData({
-      ...formData,
-      [name]: files ? files[0] : value,
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    await signup(formData, role);
-    if (closeModal) closeModal();
-  };
+  e.preventDefault();
 
-  // Define which fields each role needs
-  const roleFields = {
-    admin: ["profilePicture", "email"],
-    sponsor: [
-      "profilePicture",
-      "fullName",
-      "email",
-      "companyName",
-      "industry",
-      "phone",
-    ],
-    customer: ["profilePicture", "fullName", "email", "phone"],
-    promoter: ["profilePicture", "fullName", "email", "bankAccount", "phone"],
-  };
+  // Basic validation
+  if (!form.email || !form.password || !form.confirmPassword) {
+    alert("Email and passwords are required");
+    return;
+  }
+
+  if (role === "promoter" && (!form.fullName || !form.phone || !form.bankAcc)) {
+    alert("Please fill all promoter fields");
+    return;
+  }
+
+  if (role === "sponsor" && (!form.fullName || !form.phone || !form.companyName || !form.industry)) {
+    alert("Please fill all sponsor fields");
+    return;
+  }
+
+  if (role === "customer" && (!form.fullName || !form.phone)) {
+    alert("Please fill all customer fields");
+    return;
+  }
+
+  await signup(form, role);
+  closeModal();
+};
 
   return (
-    <form className="signup" onSubmit={handleSubmit}>
-      <h3>{role ? role.toUpperCase() : "Signup"}</h3>
+    <form onSubmit={handleSubmit}>
+      <input name="email" placeholder="Email" onChange={handleChange} required/>
+      <input type="password" name="password" placeholder="Password" onChange={handleChange} required/>
+      <input type="password" name="confirmPassword" placeholder="Confirm Password" onChange={handleChange} required/>
 
-      {roleFields[role]?.map((field) => {
-        if (field === "profilePicture") {
-          return (
-            <div key={field}>
-              <label>Profile Picture:</label>
-              <input type="file" name={field} onChange={handleChange} />
-            </div>
-          );
-        }
+      {role === "promoter" && (
+        <>
+          <input name="fullName" placeholder="Full Name" onChange={handleChange} />
+          <input name="phone" placeholder="Phone" onChange={handleChange} />
+          <input name="bankAcc" placeholder="Bank Account" onChange={handleChange} />
+        </>
+      )}
 
-        const labels = {
-          fullName: "Full Name",
-          email: "Email",
-          password: "Password",
-          companyName: "Company Name",
-          industry: "Industry",
-          phone: "Phone",
-          bankAccount: "Bank Account",
-        };
+      {role === "sponsor" && (
+        <>
+          <input name="fullName" placeholder="Full Name" onChange={handleChange} />
+          <input name="phone" placeholder="Phone" onChange={handleChange} />
+          <input name="companyName" placeholder="Company Name" onChange={handleChange} />
+          <input name="industry" placeholder="Industry" onChange={handleChange} />
+        </>
+      )}
 
-        return (
-          <div key={field}>
-            <label>{labels[field]}:</label>
-            <input
-              type={
-                field.toLowerCase().includes("password") ? "password" : "text"
-              }
-              name={field}
-              value={formData[field]}
-              onChange={handleChange}
-            />
-          </div>
-        );
-      })}
-
-      <p className="info">
-        A temporary password will be sent to the email you provide.
-      </p>
+      {role === "customer" && (
+        <>
+          <input name="fullName" placeholder="Full Name" onChange={handleChange} />
+          <input name="phone" placeholder="Phone" onChange={handleChange} />
+        </>
+      )}
 
       <button disabled={isLoading}>
-        {isLoading ? "Signing up..." : "Sign Up"}
+        {isLoading ? "Signing up..." : "Signup"}
       </button>
 
-      {error && <div className="error">{error}</div>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
     </form>
   );
-};
+}
 
 export default Signup;

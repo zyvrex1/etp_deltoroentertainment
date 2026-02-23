@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { BrowserRouter , Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 
 import Home from "./pages/Home.jsx";
-import Navbar from "./pages/Navbar.jsx"
+import Navbar from "./pages/Navbar.jsx";
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import SignupModal from "./admincomponents/modal/SignupModal.jsx";
@@ -11,7 +11,7 @@ import LoginModal from "./admincomponents/modal/LoginModal.jsx";
 
 // Layouts
 import AdminLayout from "./layouts/adminlayout.jsx";
-import PromoterLayout from "./layouts/promoterlayout.jsx";
+// import PromoterLayout from "./layouts/promoterlayout.jsx";
 
 // Admin Pages
 import AdminSidebar from "./admincomponents/sidebar.jsx";
@@ -30,7 +30,9 @@ import AdminAuditLogs from "./admincomponents/audit.jsx";
 import AdminEventApproval from "./admincomponents/eventapproval.jsx";
 
 // Promoter Pages
-import PromoterDashboard from "./promotercomponents/dashboard.jsx";
+// import PromoterDashboard from "./promotercomponents/dashboard.jsx";
+
+import ProtectedRoute from "./components/ProtectedRoute.jsx"
 
 
 function App() {
@@ -39,14 +41,12 @@ function App() {
 
   return (
     <BrowserRouter>
-
-      {/* Pass function to Navbar */}
-      <Navbar 
+      <Navbar
         openSignup={() => setIsSignupOpen(true)}
         openLogin={() => setIsLoginOpen(true)}
       />
 
-      {/* Modal OUTSIDE Routes */}
+      {/* Modals */}
       <SignupModal
         isOpen={isSignupOpen}
         onClose={() => setIsSignupOpen(false)}
@@ -60,12 +60,20 @@ function App() {
       <div className="pages">
         <Routes>
 
-          {/* HOME ROUTES */}
+          {/* PUBLIC ROUTES */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
 
           {/* ADMIN ROUTES */}
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRole="admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<AdminDashboard />} />
             <Route path="event-approval" element={<AdminEventApproval />} />
             <Route path="users" element={<AdminUserManagement />} />
@@ -80,10 +88,7 @@ function App() {
             <Route path="audit-logs" element={<AdminAuditLogs />} />
           </Route>
 
-          {/* PROMOTER ROUTES */}
-          <Route path="/promoter" element={<PromoterLayout />}>
-            <Route index element={<PromoterDashboard />} />
-          </Route>
+         
 
         </Routes>
       </div>
