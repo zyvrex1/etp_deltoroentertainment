@@ -213,6 +213,7 @@
 
     .stat-value {
         color: var(--color-black-primary);
+        background-color: transparent;
     }
 
     .stat-value.green {

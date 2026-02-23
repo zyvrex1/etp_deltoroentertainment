@@ -23,18 +23,26 @@
 // }
 
 import { Outlet } from "react-router-dom";
-import PromoterSidebar from "../promotercomponents/promotersidebar";
+import PromoterSidebar from "../promotercomponents/promotersidebar.jsx";
+import PromoterHeader from "../promotercomponents/promoterheader.jsx";
 
-export default function PromoterLayout() {
+export default function AdminLayout() {
+  const currentUser = {
+    name: "Alex Thompson",
+    email: "alex@ticketspro.com",
+    role: "Super Admin",
+  };
+
   return (
-    <div style={{ display: "flex" }}>
+    <div className="app-container">
       <PromoterSidebar />
 
-      <div style={{ flex: 1 }}>
-        <div style={{ padding: "20px" }}>
+      <main className="main-content">
+        <PromoterHeader user={currentUser} />
+        <div className="content-wrapper">
           <Outlet />
         </div>
-      </div>
+      </main>
     </div>
   );
 }

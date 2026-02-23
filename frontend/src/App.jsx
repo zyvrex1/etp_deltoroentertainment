@@ -31,6 +31,7 @@ import AdminEventApproval from "./admincomponents/eventapproval.jsx";
 
 // Promoter Pages
 import PromoterDashboard from "./promotercomponents/promoterdashboard.jsx";
+import PromoterSettings from "./promotercomponents/promotersettings.jsx";
 
 function App() {
   const [isSignupOpen, setIsSignupOpen] = useState(false);
@@ -98,6 +99,7 @@ function App() {
           }
         >
           <Route index element={<PromoterDashboard />} />
+          <Route path="settings" element={<PromoterSettings />} />
         </Route>
 
       </Routes>
