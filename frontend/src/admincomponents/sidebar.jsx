@@ -116,11 +116,6 @@ const Sidebar = () => {
             <span>Content</span>
           </NavLink>
 
-          <NavLink to="/admin/settings" className="sidebar-item">
-            <MdSettings className="icon" />
-            <span>Settings</span>
-          </NavLink>
-
           <NavLink to="/admin/support" className="sidebar-item">
             <MdSupport className="icon" />
             <span>Support & Disputes</span>
@@ -133,13 +128,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* FOOTER */}
-      <div className="sidebar-footer">
-        <div className="sidebar-item signout">
-          <MdLogout className="icon" />
-          <span>Sign out</span>
-        </div>
-      </div>
+
     </aside>
   );
 };
