@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import "./header.css";
+import "./promoterheader.css";
 
-const Header = ({ user = null }) => {
+const PromoterHeader = ({ user = null }) => {
   const currentUser = user || {
     name: "Alex Thompson",
     email: "alex@ticketspro.com",
-    role: "Super Admin",
+    role: "Promoter",
   };
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -78,7 +78,7 @@ const Header = ({ user = null }) => {
         {isDropdownOpen && (
           <div className="profile-dropdown">
             <Link
-              to="/admin/settings"
+              to="/promoter/settings"
               className="dropdown-item"
               onClick={() => setIsDropdownOpen(false)}
             >
@@ -100,4 +100,4 @@ const Header = ({ user = null }) => {
   );
 };
 
-export default Header;
+export default PromoterHeader;
