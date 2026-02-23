@@ -1,382 +1,392 @@
-.promoter-settings-page {
- padding: 32px;
-    background-color: var(--color-bg-light);
-    min-height: calc(100vh - 80px);
-    width: 100%;
+/* Scoped promoter settings styles (do not affect admin) */
 
-    .settings-header-row {
-text-align: left;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
+.promoter-settings-container {
+  padding: 32px;
+  background-color: var(--color-bg-light);
+  min-height: calc(100vh - 80px);
+  width: 100%;
 
+  .promoter-settings-header {
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
 
-        p {
-            color: var(--color-black-tertiary);
-            padding: 0;
-            align-items: baseline;
-            display: flex;
-        }
+    p {
+      color: var(--color-black-tertiary);
+    }
 
-        h1 {
-            margin: 0;
-            color: var(--color-black-primary);
-            align-items: baseline;
-            display: flex;
-        }
+    h1 {
+      color: var(--color-black-primary);
+      text-align: left;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+    color: var(--color-black-tertiary);
+    text-align: left;
+  }
+
+  .input-field {
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-family: "Inter", sans-serif;
+    font-size: 14px;
+    color: var(--color-black-primary);
+    background-color: var(--color-white-primary);
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-black-secondary);
+    }
+  }
 }
-}
 
-
-
-
-.settings-tabs {
-  display: inline-flex;
-  gap: 8px;
-  padding: 4px;
-  background: #e2e8f0;
-  border-radius: 999px;
+.promoter-settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   margin-bottom: 24px;
-  overflow-x: auto;
+
+  .promoter-settings-card {
+    background-color: var(--color-white-primary);
+    border-radius: 8px;
+    padding: 24px;
+
+    h3 {
+      color: var(--color-black-primary);
+      text-align: left;
+      margin-bottom: 16px;
+    }
+
+    .promoter-account-form-section {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 32px;
+
+      .promoter-profile-photo-section {
+        flex-shrink: 0;
+
+        .promoter-settings-profile-avatar {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          background-color: #e2e8f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          color: #94a3b8;
+          font-size: 40px;
+
+          .camera-btn {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            background-color: var(--color-white-primary);
+            border: 1px solid #e2e8f0;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-black-secondary);
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+          }
+        }
+      }
+
+      .promoter-top-profile-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        flex-grow: 1;
+
+        .promoter-full-name-group {
+          grid-column: 1;
+        }
+
+        .promoter-email-group {
+          grid-column: 2;
+        }
+
+        .promoter-phone-group {
+          grid-column: 1 / span 2;
+        }
+      }
+    }
+
+    .promoter-org-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .promoter-save-org-btn {
+        align-self: flex-end;
+        margin-top: 8px;
+        background-color: var(--color-red-primary);
+        color: white;
+        border: none;
+      }
+    }
+  }
+
+  .promoter-account-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 32px;
+
+    .promoter-save-profile-btn {
+      background-color: var(--color-red-primary);
+      color: #ffffff;
+    }
+  }
 }
 
-.settings-tab {
-  border: none;
-  background: transparent;
-  padding: 8px 18px;
-  border-radius: 999px;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: #64748b;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.settings-tab.active {
-  background: #ffffff;
-  color: #111827;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.18);
-}
-
-.settings-tab-content {
-  margin-top: 8px;
-}
-
-.settings-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr);
-  gap: 24px;
-}
-
-.settings-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-  border: 1px solid #e5e7eb;
-}
-
-.settings-card h3 {
-  margin-bottom: 16px;
-}
-
-.profile-card-body {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 24px;
-  align-items: flex-start;
-}
-
-.profile-photo-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.profile-avatar-large {
-  width: 80px;
-  height: 80px;
-  border-radius: 999px;
-  background: #fee2e2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: #b91c1c;
-  font-size: 24px;
-}
-
-.change-photo-btn {
-  padding-inline: 18px;
-}
-
-.profile-form-column {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.two-column-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.input-field {
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  padding: 10px 12px;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-}
-
-.input-field:focus {
-  outline: 2px solid var(--color-blue-quaternary);
-  border-color: var(--color-blue-primary);
-}
-
-.textarea {
-  resize: vertical;
-}
-
-.form-actions {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.form-actions .primary-button,
-.form-actions .secondary-button {
-  padding-inline: 24px;
-}
-
-.password-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.organization-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.team-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.team-header-row {
+.promoter-team-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  margin-bottom: 16px;
+  text-align: left;
 }
 
-.team-grid {
+
+.promoter-team-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
+
+  .promoter-team-member-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+
+    .promoter-team-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+
+
+      .status-invited {
+        color: var(--color-yellow-primary);
+        background-color: var(--color-yellow-tertiary);
+      }
+
+      .promoter-team-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        background: #fee2e2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #b91c1c;
+      }
+    }
+  }
 }
 
-.team-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 18px 16px;
-  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
-  border: 1px solid #e5e7eb;
-}
 
-.team-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+
+.promoter-team-email {
+  color: var(--color-black-tertiary);
   margin-bottom: 10px;
+  text-align: left;
+
 }
 
-.team-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: #fee2e2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: #b91c1c;
-}
 
-.status-pill {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  text-transform: lowercase;
-}
+.assigned-events {
 
-.status-active {
-  background: #dcfce7;
-  color: #15803d;
-}
+  p {
+    color: var(--color-black-tertiary);
+    text-align: left;
+    margin-bottom: 8px;
 
-.status-invited {
-  background: #e0f2fe;
-  color: #0369a1;
-}
+  }
 
-.team-card-body h4 {
-  margin-bottom: 2px;
-}
+  .event-tags {
+    color: var(--color-red-primary);
+    text-align: left;
 
-.team-email {
-  color: #64748b;
-  margin-bottom: 10px;
-}
-
-.assigned-events .label {
-  margin-bottom: 6px;
-  color: #64748b;
-}
-
-.event-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.event-tag {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #fee2e2;
-  color: #b91c1c;
-  font-size: 11px;
-}
-
-.billing-card {
-  max-width: 520px;
+  }
 }
 
 .billing-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
 
-.billing-card-row {
+  .billing-card-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 18px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid #e5e7eb;
-  background: #f9fafb;
+
+  p {
+  margin-bottom: 2px;
+  text-align: left;
+  color: var(--color-black-tertiary);
 }
 
-.billing-card-brand p {
-  margin-bottom: 2px;
+  background: #f9fafb;
+}
+}
+
+.billing-card-brand{
+    display:block;
+  align-items: baseline;
+
 }
 
 .card-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #0f172a;
-  color: #f9fafb;
+  display: flex;
+  background: var(--color-bg-dark);
   font-size: 11px;
   margin-bottom: 4px;
 }
 
 .default-pill {
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--color-green-tertiary);
+  color: var(--color-green-primary);
   font-size: 11px;
 }
 
-.add-payment-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.add-payment-btn{
+  color: var(--color-black-primary);
+  display: flex;
+  align-self: flex-end;
+        margin-top: 8px;
+        background-color: var(--color-red-primary);
+        color: white;
+        border: none;
+  ;
 }
 
-.invite-btn {
-  white-space: nowrap;
+.promoter-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
 }
 
-.full-width-mobile {
-  width: auto;
+/* Main content */
+.promoter-main {
+  flex: 1;
+  width: 100%;
+  overflow-x: hidden;
 }
 
-/* Responsive */
+
+
+
 @media (max-width: 1024px) {
-  .settings-grid {
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr);
-  }
-
-  .team-grid {
+  .promoter-team-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 768px) {
-  .promoter-settings-page {
-    padding: 20px 16px 28px;
-    min-height: calc(100vh - 70px);
+
+   .promoter-layout {
+    flex-direction: column;
+  }
+  .promoter-settings-container {
+    padding: 16px;
   }
 
-  .settings-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .promoter-account-form-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
   }
 
-  .profile-card-body {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .two-column-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .form-actions {
-    justify-content: stretch;
-  }
-
-  .full-width-mobile {
+  .promoter-top-profile-grid {
     width: 100%;
+    grid-template-columns: 1fr !important;
+    gap: 0;
   }
 
-  .team-grid {
+  .promoter-full-name-group,
+  .promoter-email-group,
+  .promoter-phone-group {
+    grid-column: 1;
+    margin-bottom: 0;
+  }
+
+  .promoter-team-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .billing-card {
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 640px) {
-  .team-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .team-header-row {
+  .promoter-team-header {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .settings-tabs {
+    .promoter-settings-content 
+  .promoter-settings-card 
+  .promoter-account-form-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+    .promoter-settings-content 
+  .promoter-settings-card 
+  .promoter-top-profile-grid {
+    grid-template-columns: 1fr !important;
     width: 100%;
   }
+
+  /* Make all items take full width */
+  .promoter-settings-content 
+  .promoter-settings-card 
+  .promoter-top-profile-grid > * {
+    grid-column: 1 !important;
+  }
+
+ .promoter-account-actions {
+    justify-content: stretch;
+  }
+
+  .promoter-save-profile-btn {
+    width: 100%;
+  }
+
+  /* Organization Save Button */
+  .promoter-save-org-btn {
+    width: 100%;
+    align-self: stretch;
+  }
+
+  /* Billing Add Payment Button */
+  .add-payment-btn {
+    width: 100%;
+    align-self: stretch;
+    justify-content: center;
+  }
+
 }
 
+@media (max-width: 480px) {
+  .promoter-settings-container {
+    padding: 12px;
+  }
+
+  .promoter-team-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
