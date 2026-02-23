@@ -5,12 +5,7 @@
     width: 100%;
 
     .settings-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 24px;
         text-align: left;
-
         display: flex;
         justify-content: space-between;
         align-items: center;
