@@ -8,9 +8,18 @@ const customerSchema = new Schema({
     ref: 'User',
     required: true
   },
-  fullName: {
+  firstName: {
     type: String,
     required: true
+  },
+  lastName: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true
   },
   phone: {
     type: String,

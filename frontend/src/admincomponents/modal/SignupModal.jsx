@@ -28,8 +28,8 @@ const SignupModal = ({ isOpen, onClose }) => {
           <div className="role-options">
             <h3>Select Account Type</h3>
 
-            <button onClick={() => setSelectedRole("admin")}>Admin</button>
-            <button onClick={() => setSelectedRole("promoter")}>Promoter</button>
+            {/* <button onClick={() => setSelectedRole("admin")}>Admin</button>
+            <button onClick={() => setSelectedRole("promoter")}>Promoter</button> */}
             <button onClick={() => setSelectedRole("sponsor")}>Sponsor</button>
             <button onClick={() => setSelectedRole("customer")}>Customer</button>
           </div>

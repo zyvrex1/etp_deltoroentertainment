@@ -1,14 +1,36 @@
-import { useState } from "react"
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLogin } from "../admincomponents/hooks/useLogin"
+import { useAuthContext } from "../admincomponents/hooks/useAuthContext"
 
 const Login = () => {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const { login, error, isLoading } = useLogin()
+    const { user } = useAuthContext();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        console.log(email, password)
+       await login(email, password)
     }
+
+  
+
+     useEffect(() => {
+        if (user) {
+        if (user.role === "admin") {
+            navigate("/admin");
+        } else if (user.role === "promoter") {
+            navigate("/promoter");
+        } else if (user.role === "customer") {
+            navigate("/customer"); 
+        } else if (user.role === "sponsor") {
+            navigate("/sponsor");
+        }
+        }
+    }, [user, navigate]);
 
     return (
         <form className="login" onSubmit={handleSubmit}>
@@ -27,6 +49,7 @@ const Login = () => {
             value={password}
             />
             <button>Login</button>
+            {error && <div className="error">{error}</div>}
         </form>
     )
 }

@@ -8,12 +8,18 @@ const sponsorSchema = new Schema({
     ref: 'User',
     required: true
   },
-  profilePicture: {
-    type: String
-  },
-  fullName: {
+  firstName: {
     type: String,
     required: true
+  },
+  lastName: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true
   },
   companyName: {
     type: String,

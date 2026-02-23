@@ -38,72 +38,69 @@ function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
-    <BrowserRouter>
+   <BrowserRouter>
+  {/* GLOBAL MODALS */}
+  <SignupModal
+    isOpen={isSignupOpen}
+    onClose={() => setIsSignupOpen(false)}
+  />
 
-      {/* GLOBAL MODALS */}
-      <SignupModal
-        isOpen={isSignupOpen}
-        onClose={() => setIsSignupOpen(false)}
-      />
+  <LoginModal
+    isOpen={isLoginOpen}
+    onClose={() => setIsLoginOpen(false)}
+  />
 
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-      />
+  <Routes>
+    {/* LANDING ROUTES */}
+    <Route
+      element={
+        <LandingLayout
+          openSignup={() => setIsSignupOpen(true)}
+          openLogin={() => setIsLoginOpen(true)}
+        />
+      }
+    >
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+    </Route>
 
-      <Routes>
+    {/* ADMIN ROUTES (PROTECTED) */}
+    <Route
+      path="/admin"
+      element={
+        <ProtectedRoute allowedRole="admin">
+          <AdminLayout />
+        </ProtectedRoute>
+      }
+    >
+      <Route index element={<AdminDashboard />} />
+      <Route path="event-approval" element={<AdminEventApproval />} />
+      <Route path="users" element={<AdminUserManagement />} />
+      <Route path="events" element={<AdminEventManagement />} />
+      <Route path="transactions" element={<AdminTransaction />} />
+      <Route path="payments" element={<AdminPayments />} />
+      <Route path="booths-tickets" element={<AdminBoothandTicket />} />
+      <Route path="analytics" element={<AdminReportsandAnalytics />} />
+      <Route path="content" element={<AdminContent />} />
+      <Route path="settings" element={<AdminSettings />} />
+      <Route path="support" element={<AdminSupport />} />
+      <Route path="audit-logs" element={<AdminAuditLogs />} />
+    </Route>
 
-        {/* LANDING ROUTES */}
-        <Route
-          element={
-            <LandingLayout
-              openSignup={() => setIsSignupOpen(true)}
-              openLogin={() => setIsLoginOpen(true)}
-            />
-          }
-        >
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-        </Route>
-
-        {/* ADMIN ROUTES (PROTECTED) */}
-        <Route
-          path="/admin"
-          element={
-          //   <ProtectedRoute allowedRole="admin">
-              <AdminLayout />
-          //   </ProtectedRoute>
-          }
-        >
-          <Route index element={<AdminDashboard />} />
-          <Route path="event-approval" element={<AdminEventApproval />} />
-          <Route path="users" element={<AdminUserManagement />} />
-          <Route path="events" element={<AdminEventManagement />} />
-          <Route path="transactions" element={<AdminTransaction />} />
-          <Route path="payments" element={<AdminPayments />} />
-          <Route path="booths-tickets" element={<AdminBoothandTicket />} />
-          <Route path="analytics" element={<AdminReportsandAnalytics />} />
-          <Route path="content" element={<AdminContent />} />
-          <Route path="settings" element={<AdminSettings />} />
-          <Route path="support" element={<AdminSupport />} />
-          <Route path="audit-logs" element={<AdminAuditLogs />} />
-        </Route>
-
-        {/* PROMOTER ROUTES (PROTECTED) */}
-        <Route
-          path="/promoter"
-          element={
-          //   <ProtectedRoute allowedRole="promoter">
-              <PromoterLayout />
-          //   </ProtectedRoute>
-          }
-        >
-          <Route index element={<PromoterDashboard />} />
-          <Route path="settings" element={<PromoterSettings />} />
-        </Route>
-
-      </Routes>
-    </BrowserRouter>
+    {/* PROMOTER ROUTES (PROTECTED) */}
+    <Route
+      path="/promoter"
+      element={
+        <ProtectedRoute allowedRole="promoter">
+          <PromoterLayout />
+        </ProtectedRoute>
+      }
+    >
+      <Route index element={<PromoterDashboard />} />
+      <Route path="settings" element={<PromoterSettings />} />
+    </Route>
+  </Routes>
+</BrowserRouter>
   );
 }
 

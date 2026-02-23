@@ -8,12 +8,11 @@ function Signup({ role, closeModal }) {
     email: "",
     password: "",
     confirmPassword: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     phone: "",
-    bankAcc: "",
     companyName: "",
     industry: "",
-    profilePicture: ""
   });
 
   const handleChange = (e) => {
@@ -29,17 +28,12 @@ function Signup({ role, closeModal }) {
     return;
   }
 
-  if (role === "promoter" && (!form.fullName || !form.phone || !form.bankAcc)) {
-    alert("Please fill all promoter fields");
-    return;
-  }
-
-  if (role === "sponsor" && (!form.fullName || !form.phone || !form.companyName || !form.industry)) {
+  if (role === "sponsor" && (!form.firstName || !form.lastName || !form.phone || !form.companyName || !form.industry)) {
     alert("Please fill all sponsor fields");
     return;
   }
 
-  if (role === "customer" && (!form.fullName || !form.phone)) {
+  if (role === "customer" && (!form.firstName || !form.lastName || !form.phone)) {
     alert("Please fill all customer fields");
     return;
   }
@@ -50,31 +44,45 @@ function Signup({ role, closeModal }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <input name="email" placeholder="Email" onChange={handleChange} required/>
-      <input type="password" name="password" placeholder="Password" onChange={handleChange} required/>
-      <input type="password" name="confirmPassword" placeholder="Confirm Password" onChange={handleChange} required/>
-
-      {role === "promoter" && (
-        <>
-          <input name="fullName" placeholder="Full Name" onChange={handleChange} />
-          <input name="phone" placeholder="Phone" onChange={handleChange} />
-          <input name="bankAcc" placeholder="Bank Account" onChange={handleChange} />
-        </>
-      )}
+      <input
+          name="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={handleChange}
+          required
+        />
+        <input
+          type="password"
+          name="confirmPassword"
+          placeholder="Confirm Password"
+          value={form.confirmPassword}
+          onChange={handleChange}
+          required
+        />
 
       {role === "sponsor" && (
         <>
-          <input name="fullName" placeholder="Full Name" onChange={handleChange} />
-          <input name="phone" placeholder="Phone" onChange={handleChange} />
-          <input name="companyName" placeholder="Company Name" onChange={handleChange} />
-          <input name="industry" placeholder="Industry" onChange={handleChange} />
+          <input name="firstName" placeholder="First Name" value={form.firstName} onChange={handleChange} />
+          <input name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleChange} />
+          <input name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} />
+          <input name="companyName" placeholder="Company Name" value={form.companyName} onChange={handleChange} />
+          <input name="industry" placeholder="Industry" value={form.industry} onChange={handleChange} />
         </>
       )}
 
       {role === "customer" && (
         <>
-          <input name="fullName" placeholder="Full Name" onChange={handleChange} />
-          <input name="phone" placeholder="Phone" onChange={handleChange} />
+          <input name="firstName" placeholder="First Name" value={form.firstName} onChange={handleChange} />
+          <input name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleChange} />
+          <input name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} />
         </>
       )}
 

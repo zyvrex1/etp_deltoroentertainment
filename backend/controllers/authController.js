@@ -10,46 +10,28 @@ const createToken = (_id) => jwt.sign({ _id }, process.env.SECRET, { expiresIn: 
 
 // ================= SIGNUP =================
 const signupUser = async (req, res) => {
-  // fallback to empty object if req.body is undefined
-  const {
-    role,
-    email,
-    password,
-    confirmPassword,
-    fullName,
-    phone,
-    bankAcc,
-    profilePicture,
-    companyName,
-    industry
-  } = req.body || {}
+  const { role, email, password, confirmPassword, firstName, lastName, phone, companyName, industry } = req.body || {}
 
   try {
     if (!role || !email || !password || !confirmPassword) throw Error('Required fields missing')
 
+    if (!['customer', 'sponsor'].includes(role)) throw Error('Invalid role for public signup')
+
     // Create user
     const user = await User.signup(email, password, confirmPassword, role)
 
-    // Create role-specific profile
-    if (role === 'promoter') {
-      if (!fullName || !phone || !bankAcc) throw Error('Missing promoter fields')
-      await Promoter.create({ user: user._id, fullName, phone, bankAcc })
+    // Role-specific profile
+    if (role === 'customer') {
+      if (!firstName || !lastName || !phone) throw Error('Missing customer fields')
+      await Customer.create({ user: user._id, firstName, lastName, phone, email })
     } else if (role === 'sponsor') {
-      if (!fullName || !phone || !companyName || !industry) throw Error('Missing sponsor fields')
-      await Sponsor.create({ user: user._id, fullName, phone, companyName, industry, profilePicture })
-    } else if (role === 'customer') {
-      if (!fullName || !phone) throw Error('Missing customer fields')
-      await Customer.create({ user: user._id, fullName, phone })
+      if (!firstName || !lastName || !phone || !companyName || !industry) throw Error('Missing sponsor fields')
+      await Sponsor.create({ user: user._id, firstName, lastName, phone, companyName, industry, email })
     }
 
     const token = createToken(user._id)
 
-    res.status(201).json({
-      message: 'User created successfully',
-      email: user.email,
-      role: user.role,
-      token
-    })
+    res.status(201).json({ message: 'User created successfully', email: user.email, role: user.role, token })
 
   } catch (error) {
     res.status(400).json({ error: error.message })
@@ -63,11 +45,15 @@ const loginUser = async (req, res) => {
   try {
     if (!email || !password) throw Error('All fields must be filled')
 
+    // Attempt to login
     const user = await User.login(email, password)
     const token = createToken(user._id)
 
+    // Return user info including firstName and lastName
     res.status(200).json({
       email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
       role: user.role,
       token
     })

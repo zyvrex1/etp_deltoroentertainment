@@ -5,6 +5,8 @@ const validator = require('validator')
 const Schema = mongoose.Schema
 
 const userSchema = new Schema({
+  firstName: { type: String },
+  lastName: { type: String },
   email: {
     type: String,
     required: true,
@@ -16,7 +18,7 @@ const userSchema = new Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'promoter', 'sponsor', 'customer'],
+    enum: ['superadmin', 'admin', 'promoter', 'sponsor', 'customer'],
     required: true
   }
 }, { timestamps: true })

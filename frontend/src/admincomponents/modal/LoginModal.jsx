@@ -17,7 +17,7 @@ const LoginModal = ({ isOpen, onClose }) => {
         </button>
 
         <h3>Login</h3>
-        <Login /> {/* Reuse your existing Login form */}
+        <Login />
       </div>
     </div>
   );
