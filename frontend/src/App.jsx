@@ -2,20 +2,20 @@ import { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 
-import Home from "./pages/Home.jsx";
-import Navbar from "./pages/Navbar.jsx";
-import Login from "./pages/Login.jsx";
-import Signup from "./pages/Signup.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+
+import Home from "./landingpage/Home.jsx";
+import Login from "./landingpage/Login.jsx";
+
 import SignupModal from "./admincomponents/modal/SignupModal.jsx";
 import LoginModal from "./admincomponents/modal/LoginModal.jsx";
 
 // Layouts
+import LandingLayout from "./layouts/landinglayout.jsx";
 import AdminLayout from "./layouts/adminlayout.jsx";
-// import PromoterLayout from "./layouts/promoterlayout.jsx";
+import PromoterLayout from "./layouts/promoterlayout.jsx";
 
 // Admin Pages
-import AdminSidebar from "./admincomponents/sidebar.jsx";
-import AdminHeader from "./admincomponents/header.jsx";
 import AdminDashboard from "./admincomponents/dashboard.jsx";
 import AdminUserManagement from "./admincomponents/usermanagement.jsx";
 import AdminEventManagement from "./admincomponents/eventmanagement.jsx";
@@ -30,10 +30,7 @@ import AdminAuditLogs from "./admincomponents/audit.jsx";
 import AdminEventApproval from "./admincomponents/eventapproval.jsx";
 
 // Promoter Pages
-// import PromoterDashboard from "./promotercomponents/dashboard.jsx";
-
-import ProtectedRoute from "./components/ProtectedRoute.jsx"
-
+import PromoterDashboard from "./promotercomponents/promoterdashboard.jsx";
 
 function App() {
   const [isSignupOpen, setIsSignupOpen] = useState(false);
@@ -41,12 +38,8 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Navbar
-        openSignup={() => setIsSignupOpen(true)}
-        openLogin={() => setIsLoginOpen(true)}
-      />
 
-      {/* Modals */}
+      {/* GLOBAL MODALS */}
       <SignupModal
         isOpen={isSignupOpen}
         onClose={() => setIsSignupOpen(false)}
@@ -57,41 +50,57 @@ function App() {
         onClose={() => setIsLoginOpen(false)}
       />
 
-      <div className="pages">
-        <Routes>
+      <Routes>
 
-          {/* PUBLIC ROUTES */}
+        {/* LANDING ROUTES */}
+        <Route
+          element={
+            <LandingLayout
+              openSignup={() => setIsSignupOpen(true)}
+              openLogin={() => setIsLoginOpen(true)}
+            />
+          }
+        >
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+        </Route>
 
-          {/* ADMIN ROUTES */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute allowedRole="admin">
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<AdminDashboard />} />
-            <Route path="event-approval" element={<AdminEventApproval />} />
-            <Route path="users" element={<AdminUserManagement />} />
-            <Route path="events" element={<AdminEventManagement />} />
-            <Route path="transactions" element={<AdminTransaction />} />
-            <Route path="payments" element={<AdminPayments />} />
-            <Route path="booths-tickets" element={<AdminBoothandTicket />} />
-            <Route path="analytics" element={<AdminReportsandAnalytics />} />
-            <Route path="content" element={<AdminContent />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="support" element={<AdminSupport />} />
-            <Route path="audit-logs" element={<AdminAuditLogs />} />
-          </Route>
+        {/* ADMIN ROUTES (PROTECTED) */}
+        <Route
+          path="/admin"
+          element={
+          //   <ProtectedRoute allowedRole="admin">
+              <AdminLayout />
+          //   </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="event-approval" element={<AdminEventApproval />} />
+          <Route path="users" element={<AdminUserManagement />} />
+          <Route path="events" element={<AdminEventManagement />} />
+          <Route path="transactions" element={<AdminTransaction />} />
+          <Route path="payments" element={<AdminPayments />} />
+          <Route path="booths-tickets" element={<AdminBoothandTicket />} />
+          <Route path="analytics" element={<AdminReportsandAnalytics />} />
+          <Route path="content" element={<AdminContent />} />
+          <Route path="settings" element={<AdminSettings />} />
+          <Route path="support" element={<AdminSupport />} />
+          <Route path="audit-logs" element={<AdminAuditLogs />} />
+        </Route>
 
-         
+        {/* PROMOTER ROUTES (PROTECTED) */}
+        <Route
+          path="/promoter"
+          element={
+          //   <ProtectedRoute allowedRole="promoter">
+              <PromoterLayout />
+          //   </ProtectedRoute>
+          }
+        >
+          <Route index element={<PromoterDashboard />} />
+        </Route>
 
-        </Routes>
-      </div>
+      </Routes>
     </BrowserRouter>
   );
 }

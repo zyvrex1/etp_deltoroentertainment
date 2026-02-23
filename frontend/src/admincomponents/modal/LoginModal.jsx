@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Login from "../../pages/Login";
+import Login from "../../landingpage/Login";
 
 const LoginModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null; // don’t render if closed

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Signup from "../../pages/Signup";
+import Signup from "../../landingpage/Signup";
 
 const SignupModal = ({ isOpen, onClose }) => {
   const [selectedRole, setSelectedRole] = useState(null);
