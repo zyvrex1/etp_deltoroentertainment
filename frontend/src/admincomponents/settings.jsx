@@ -238,7 +238,6 @@ const Settings = () => {
                     <div className="section-divider"></div>
 
                     <div className="account-actions">
-                        <button className="outlined-button delete-btn">Delete Account</button>
                         <button className="primary-button save-profile-btn" onClick={handleSaveProfile}>Save Profile</button>
                     </div>
                 </div>

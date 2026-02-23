@@ -126,6 +126,8 @@
     flex-direction: column;
     gap: 8px;
     margin-bottom: 16px;
+    color: var(--color-black-tertiary);
+    text-align: left;
 }
 
 .input-field {
@@ -264,7 +266,6 @@ input:checked+.slider:before {
 .account-actions {
     display: flex;
     justify-content: flex-end;
-    justify-content: space-between;
     margin-top: 32px;
 
     .delete-btn {
