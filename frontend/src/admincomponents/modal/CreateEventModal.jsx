@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { useEventsContext } from "../hooks/useEventsContext";
 import "./CreateEventModal.css";
+import "./UploadMapModal.css";
 import { showSuccessAlert, showCancelConfirmAlert, showErrorAlert, showCreateConfirmAlert } from "../utils/sweetAlert";
 
 const CreateEventModal = ({ isOpen, onClose }) => {
@@ -25,8 +26,50 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     zipCode: "",
   });
 
+  const [imageFile, setImageFile] = useState(null);
+  const [imageDragActive, setImageDragActive] = useState(false);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+
   const [error, setError] = useState("");
   const [emptyFields, setEmptyFields] = useState([]);
+
+  const handleImageDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setImageDragActive(true);
+    } else if (e.type === "dragleave") {
+      setImageDragActive(false);
+    }
+  };
+
+  const handleImageDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      const url = URL.createObjectURL(file);
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+      setImageFile(file);
+      setImagePreviewUrl(url);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    e.preventDefault();
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const url = URL.createObjectURL(file);
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+      setImageFile(file);
+      setImagePreviewUrl(url);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,6 +136,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
       endTime: endDateTime,
       ticketPrice: Number(ticketPrice),
       totalTickets: Number(totalTickets),
+      imageUrl: imageFile ? imageFile.name : undefined,
     };
 
     const response = await fetch("/api/events", {
@@ -118,6 +162,11 @@ const CreateEventModal = ({ isOpen, onClose }) => {
       setEndDate(today);
       setTicketPrice("");
       setTotalTickets("");
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+      setImageFile(null);
+      setImagePreviewUrl(null);
       setError(null);
       setEmptyFields([]);
       await showSuccessAlert('Event Created', 'The event has been created successfully.');
@@ -134,7 +183,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
         <div className="general-modal-header">
           <h3>Create New Event</h3>
           <button className="close-btn" onClick={async () => {
-            const hasChanges = title || description || venue.name || startTime || endTime || ticketPrice || totalTickets;
+            const hasChanges = title || description || venue.name || startTime || endTime || ticketPrice || totalTickets || imageFile;
             if (hasChanges) {
               const result = await showCancelConfirmAlert();
               if (result.isConfirmed) {
@@ -279,6 +328,73 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
+          <div className="section-box">
+            <h5 className="modal-section-title">Event Image</h5>
+            <div
+              className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
+              onDragEnter={handleImageDrag}
+              onDragLeave={handleImageDrag}
+              onDragOver={handleImageDrag}
+              onDrop={handleImageDrop}
+              onClick={() =>
+                document.getElementById("event-image-input")?.click()
+              }
+            >
+              <input
+                id="event-image-input"
+                type="file"
+                accept="image/png, image/jpeg, image/webp"
+                onChange={handleImageChange}
+                style={{ display: "none" }}
+              />
+
+              {imageFile ? (
+                <div className="file-preview">
+                  {imagePreviewUrl ? (
+                    <img
+                      src={imagePreviewUrl}
+                      alt="Event Preview"
+                      className="preview-image"
+                    />
+                  ) : (
+                    <Icon
+                      icon="mdi:file-image"
+                      width="48"
+                      height="48"
+                      className="preview-icon"
+                    />
+                  )}
+                  <p className="file-name">{imageFile.name}</p>
+                  <p className="file-size">
+                    {((imageFile.size || 0) / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                  <button
+                    type="button"
+                    className="remove-file-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (imagePreviewUrl) {
+                        URL.revokeObjectURL(imagePreviewUrl);
+                      }
+                      setImageFile(null);
+                      setImagePreviewUrl(null);
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="upload-placeholder">
+                  <div className="icon-circle">
+                    <Icon icon="mdi:image-area" width="32" height="32" />
+                  </div>
+                  <p className="upload-title">Click or drag an image here</p>
+                  <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="add-event-form-group">
             <div className="add-event-form-group">
               <h6>Ticket Price ($)</h6>
@@ -337,7 +453,15 @@ const CreateEventModal = ({ isOpen, onClose }) => {
               type="button"
               className="button cancel-btn"
               onClick={async () => {
-                const hasChanges = title || description || venue.name || startTime || endTime || ticketPrice || totalTickets;
+                const hasChanges =
+                  title ||
+                  description ||
+                  venue.name ||
+                  startTime ||
+                  endTime ||
+                  ticketPrice ||
+                  totalTickets ||
+                  imageFile;
                 if (hasChanges) {
                   const result = await showCancelConfirmAlert();
                   if (result.isConfirmed) {
