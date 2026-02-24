@@ -65,11 +65,6 @@ const Promotersidebar = () => {
             <MdEventAvailable className="icon" />
             <span>My Events</span>
           </NavLink>
-
-          <NavLink to="/promoter/promoter-createevent" className="sidebar-item">
-            <MdEvent className="icon" />
-            <span>Create Event</span>
-          </NavLink>
         </div>
 
         {/* OPERATIONS */}
