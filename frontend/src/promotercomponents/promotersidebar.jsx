@@ -71,7 +71,7 @@ const Promotersidebar = () => {
         <div className="sidebar-section">
           <p className="section-title">MANAGEMENT</p>
 
-          <NavLink to="/promoter/promoter-tickets" className="sidebar-item">
+          <NavLink to="/promoter/promoter-ticketsetup" className="sidebar-item">
             <MdConfirmationNumber className="icon" />
             <span>Ticket Setup</span>
           </NavLink>

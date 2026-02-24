@@ -183,7 +183,7 @@ const PromoterSettings = () => {
           {teamMembers.map((member) => (
             <div key={member.email} className="promoter-team-member-card">
               <div className="promoter-team-card-header">
-                <div className="promoter-team-avatar">
+                <div className="large-body-text promoter-team-avatar">
                   <span>{member.initials}</span>
                 </div>
                 <span
@@ -197,10 +197,10 @@ const PromoterSettings = () => {
 
               <div className="promoter-team-card-body">
                 <h4>{member.name}</h4>
-                <p className="smaller-body-text promoter-team-email">{member.email}</p>
+                <p className="regular-body-text promoter-team-email">{member.email}</p>
 
                 <div className="assigned-events">
-                  <p className="small-body-text label">Assigned Events</p>
+                  <p className="smaller-body-text label">Assigned Events</p>
                   <div className="event-tags">
                     {member.events.map((event) => (
                       <span key={event} className="event-tag">

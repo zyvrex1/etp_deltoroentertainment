@@ -172,11 +172,16 @@
     border-radius: 12px;
     padding: 16px;
 
+    h4{
+      color: var(--color-black-primary);
+      text-align: left;
+    }
+
     .promoter-team-card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
 
 
       .status-invited {
@@ -185,15 +190,14 @@
       }
 
       .promoter-team-avatar {
-        width: 40px;
-        height: 40px;
+        width: 54px;
+        height: 54px;
         border-radius: 999px;
-        background: #fee2e2;
+        background: var(--color-red-tertiary);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 600;
-        color: #b91c1c;
+        color: var(--color-red-primary);
       }
     }
   }
@@ -203,7 +207,6 @@
 
 .promoter-team-email {
   color: var(--color-black-tertiary);
-  margin-bottom: 10px;
   text-align: left;
 
 }

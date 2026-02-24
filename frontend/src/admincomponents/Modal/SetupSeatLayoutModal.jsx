@@ -5,8 +5,7 @@ import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from "../u
 
 const BOOTH_TYPES = [
   { value: "vip", label: "VIP" },
-  { value: "inline", label: "Inline Booth" },
-  { value: "corner", label: "Corner Booth" },
+  { value: "General Admission", label: "Gen Ad" },
 ];
 
 const generateSeatCodes = (rows, cols) => {
