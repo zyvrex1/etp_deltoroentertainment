@@ -76,7 +76,7 @@ const Promotersidebar = () => {
             <span>Ticket Setup</span>
           </NavLink>
 
-          <NavLink to="/promoter/promoter-booth" className="sidebar-item">
+          <NavLink to="/promoter/promoter-boothlayout" className="sidebar-item">
             <MdEventAvailable className="icon" />
             <span>Booth Layout</span>
           </NavLink>
