@@ -34,6 +34,7 @@ import PromoterSettings from "./promotercomponents/promotersettings.jsx";
 import PromoterEvents from "./promotercomponents/promoterevents.jsx";
 import PromoterTicketSetup from "./promotercomponents/promoterticketsetup.jsx";
 import PromoterBoothLayout from "./promotercomponents/promoterboothlayout.jsx";
+import PromoterScan from "./promotercomponents/promoterscan.jsx";
 
 function App() {
   const [isSignupOpen, setIsSignupOpen] = useState(false);
@@ -103,6 +104,7 @@ function App() {
           <Route path="promoter-events" element={<PromoterEvents />} />
           <Route path="promoter-ticketsetup" element={<PromoterTicketSetup />} />
           <Route path="promoter-boothlayout" element={<PromoterBoothLayout />} />
+          <Route path="promoter-scan" element={<PromoterScan />} />
 
 
         </Route>
