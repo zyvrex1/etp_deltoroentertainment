@@ -392,6 +392,7 @@ const UserManagement = () => {
 
       <div className="um-content">
         {/* Tabs */}
+        <div className="tabs-search-row">
         <div className="tabs-container">
           {tabs.map((tab) => (
             <button
@@ -407,7 +408,7 @@ const UserManagement = () => {
         </div>
 
         {/* Search Bar */}
-        <div className="search-container">
+        <div className="outlined-button search-container">
           <Icon icon="mdi:magnify" />
           <input
             type="text"
@@ -415,6 +416,7 @@ const UserManagement = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+        </div>
         </div>
 
         {/* Table */}

@@ -34,11 +34,18 @@
 }
 
 /* Tabs */
-.tabs-container {
+
+.tabs-search-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+    margin-bottom: 24px;
+
+
+  .tabs-container {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid var(--color-black-quaternary);
-  margin-bottom: 24px;
 }
 
 .tab {
@@ -84,11 +91,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--color-bg-light);
-  border: 1px solid var(--color-black-quaternary);
+  background: none;
   border-radius: 8px;
   padding: 10px 16px;
-  margin-bottom: 24px;
   max-width: 400px;
 
   svg {
@@ -111,6 +116,8 @@
       outline: none;
     }
   }
+}
+
 }
 
 /* Table */
@@ -393,25 +400,39 @@
     padding: 16px;
   }
 
+ .tabs-search-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .tabs-container {
-    gap: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+
+    width: 100%;
+    max-width: 100%;
+
     overflow-x: auto;
+    overflow-y: hidden;
+
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
 
-    .tab {
-      padding: 10px 16px;
+  .tabs-container::-webkit-scrollbar {
+    display: none;
+  }
 
-      svg {
-        width: 18px;
-        height: 18px;
-      }
-
-
-    }
+  .tab {
+    flex: 0 0 auto;     /* VERY IMPORTANT */
+    white-space: nowrap;
   }
 
   .search-container {
     max-width: 100%;
+    width: 100%;
+    margin-top: 12px;
   }
 
   /* Turn table into cards on mobile */
