@@ -6,7 +6,6 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 import Home from "./landingpage/Home.jsx";
 import Login from "./landingpage/Login.jsx";
-
 import SignupModal from "./admincomponents/modal/SignupModal.jsx";
 import LoginModal from "./admincomponents/modal/LoginModal.jsx";
 
@@ -33,6 +32,7 @@ import AdminEventApproval from "./admincomponents/eventapproval.jsx";
 import PromoterDashboard from "./promotercomponents/promoterdashboard.jsx";
 import PromoterSettings from "./promotercomponents/promotersettings.jsx";
 import PromoterEvents from "./promotercomponents/promoterevents.jsx";
+import PromoterTicketSetup from "./promotercomponents/promoterticketsetup.jsx";
 
 function App() {
   const [isSignupOpen, setIsSignupOpen] = useState(false);
@@ -69,9 +69,9 @@ function App() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminLayout />
-            </ProtectedRoute>
+            //   <ProtectedRoute allowedRole="admin">
+            <AdminLayout />
+            //   </ProtectedRoute>
           }
         >
           <Route index element={<AdminDashboard />} />
@@ -92,14 +92,16 @@ function App() {
         <Route
           path="/promoter"
           element={
-          //   <ProtectedRoute allowedRole="promoter">
-              <PromoterLayout />
-          //   </ProtectedRoute>
+            //   <ProtectedRoute allowedRole="promoter">
+            <PromoterLayout />
+            //   </ProtectedRoute>
           }
         >
           <Route index element={<PromoterDashboard />} />
           <Route path="settings" element={<PromoterSettings />} />
           <Route path="promoter-events" element={<PromoterEvents />} />
+          <Route path="promoter-ticketsetup" element={<PromoterTicketSetup />} />
+
 
         </Route>
       </Routes>
