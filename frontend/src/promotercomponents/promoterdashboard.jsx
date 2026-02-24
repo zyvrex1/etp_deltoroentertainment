@@ -1,7 +1,12 @@
+import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./promoterdashboard.css";
+import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.jsx";
+
 
 export default function PromoterDashboard() {
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+  
   const stats = [
     {
       label: "Total Revenue",
@@ -136,11 +141,9 @@ export default function PromoterDashboard() {
 
         <div className="pd-actions">
           <button type="button" className="button pd-action-btn scan-btn">
-            <Icon icon="mdi:qrcode-scan" />
             <span>Scan Tickets</span>
           </button>
-          <button type="button" className="primary-button pd-action-btn ">
-            <Icon icon="mdi:plus" />
+          <button type="button" className="primary-button pd-action-btn" onClick={() => setIsCreateOpen(true)}>
             <span>Create Event</span>
           </button>
         </div>
@@ -307,6 +310,11 @@ export default function PromoterDashboard() {
           </div>
         </div>
       </div>
+
+      <PromoterCreateEventModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+      />
     </div>
   );
 }
