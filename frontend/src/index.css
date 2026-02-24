@@ -180,6 +180,8 @@ button {
   padding: 10px 24px;
   border-radius: 12px;
   background-color: var(--color-red-primary);
+  border: none;
+  color: var(--color-white-primary);
 
 }
 
@@ -190,6 +192,9 @@ button {
   padding: 10px 15px;
   border-radius: 12px;
   background-color: var(--color-green-primary);
+    border: none;
+  color: var(--color-white-primary);
+
 }
 
 .outlined-button {
