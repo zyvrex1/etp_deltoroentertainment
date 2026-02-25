@@ -125,7 +125,7 @@ const PromoterPayouts = () => {
 
                         <div className="pay-est-arrival">
                             <Icon icon="mdi:bank-transfer" />
-                            <span className="small-body-text">Est. arrival: Oct 15, 2024</span>
+                            <span className="small-body-text pp-date">Est. arrival: Oct 15, 2024</span>
                         </div>
 
                         <button className="primary-button pay-withdraw-btn">
@@ -141,7 +141,7 @@ const PromoterPayouts = () => {
                                 <Icon icon="mdi:bank-outline" />
                             </div>
                             <div className="pay-method-info">
-                                <h6 className="pay-method-name">Chase Bank</h6>
+                                <h5 className="pay-method-name">Chase Bank</h5>
                                 <span className="smaller-body-text pay-method-num">•••• 4242</span>
                             </div>
                             <span className="button-label pay-default-pill">Default</span>

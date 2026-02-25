@@ -1,265 +1,291 @@
 .pay-container {
-       padding: 32px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    height: 100%;
+    overflow-y: auto;
     background-color: var(--color-bg-light);
     min-height: calc(100vh - 80px);
     width: 100%;
-}
 
-.pay-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+    .pay-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
 
-.pay-title {
-    color: var(--color-black-primary);
-}
+        h1 {
+            color: var(--color-black-primary);
+            text-align: left;
+        }
 
-.pay-header-controls {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-}
+        .pay-header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
 
-.pay-filter-dropdown {
-    position: relative;
-    width: 250px;
-}
+            .pay-filter-dropdown {
+                position: relative;
 
-.pay-filter-dropdown-btn {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: var(--color-white-primary);
-    border: 1px solid var(--color-black-tertiary);
-    border-radius: 8px;
-    padding: 10px 16px;
-    color: var(--color-black-primary);
-    font-size: 14px;
-    cursor: pointer;
-}
+                .pay-filter-dropdown-btn {
+                    width: 100%;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background-color: var(--color-white-primary);
+                    border: 1px solid var(--color-black-tertiary);
+                    border-radius: 8px;
+                    padding: 10px 16px;
+                    color: var(--color-black-secondary);
+                    font-size: 14px;
+                    cursor: pointer;
 
-.truncate-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: inline-block;
-    max-width: 90%;
-}
+                    .truncate-text {
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        display: inline-block;
+                        max-width: 90%;
+                    }
 
-.dropdown-icon {
-    font-size: 18px;
-    transition: transform 0.2s ease;
-}
+                    .dropdown-icon {
+                        font-size: 18px;
+                        transition: transform 0.2s ease;
+                    }
 
-.dropdown-icon.open {
-    transform: rotate(180deg);
-}
+                    .dropdown-icon.open {
+                        transform: rotate(180deg);
+                    }
+                }
 
-.pay-filter-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    width: 100%;
-    background-color: var(--color-white-primary);
-    border: 1px solid var(--color-black-tertiary);
-    border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
+                .pay-filter-dropdown-menu {
+                    position: absolute;
+                    top: calc(100% + 4px);
+                    left: 0;
+                    width: 100%;
+                    background-color: var(--color-white-primary);
+                    border: 1px solid var(--color-black-tertiary);
+                    border-radius: 8px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    z-index: 10;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
 
-.pay-filter-dropdown-item {
-    padding: 10px 16px;
-    background: none;
-    border: none;
-    text-align: left;
-    font-size: 14px;
-    color: var(--color-black-primary);
-    cursor: pointer;
-    border-radius: 0;
-}
+                    .pay-filter-dropdown-item {
+                        padding: 10px 16px;
+                        background: none;
+                        border: none;
+                        text-align: left;
+                        font-size: 14px;
+                        color: var(--color-black-secondary);
+                        cursor: pointer;
+                        border-radius: 0;
 
-.pay-filter-dropdown-item:hover {
-    background-color: var(--color-bg-light);
-}
+                        &:hover {
+                            background-color: var(--color-red-primary);
+                            color: var(--color-white-primary);
+                        }
+                    }
 
-.pay-filter-dropdown-item.active {
-    background-color: var(--color-blue-quaternary);
-    color: var(--color-blue-primary);
-    font-weight: 500;
-}
+                    .pay-filter-dropdown-item.active {
+                        background-color: var(--color-red-quaternary);
+                        color: var(--color-red-primary);
+                        font-weight: 500;
+                    }
+                }
+            }
 
-.pay-export-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--color-black-primary);
-    padding: 10px 16px;
-    border-radius: 8px;
-    background-color: var(--color-white-primary);
+            .pay-export-btn {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--color-black-secondary);
+                padding: 10px 16px;
+                border-radius: 8px;
+                background-color: var(--color-white-primary);
+            }
+        }
+    }
 }
 
 .pay-main-content {
     display: flex;
     gap: 24px;
     align-items: flex-start;
-}
 
-.pay-left-col {
-    flex: 2;
-    display: flex;
-    flex-direction: column;
-}
+    .pay-card {
+        background-color: var(--color-white-primary);
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 24px;
 
-.pay-right-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-}
+        h4 {
+            color: var(--color-black-primary);
+            margin-bottom: 24px;
+            text-align: left;
+        }
+    }
 
-.pay-card {
-    background-color: var(--color-white-primary);
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 24px;
-}
+    .pay-left-col {
+        flex: 2;
+        display: flex;
+        flex-direction: column;
 
-.pay-card-header h4 {
-    color: var(--color-black-primary);
-    margin-bottom: 24px;
-}
+        .pay-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
 
-.pay-table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-}
+            .pay-table {
+                width: 100%;
+                border-collapse: collapse;
 
-.pay-table {
-    width: 100%;
-    border-collapse: collapse;
-}
+                th {
+                    padding: 16px;
+                    color: var(--color-black-secondary);
+                    font-weight: 600;
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    background-color: var(--color-bg-light);
 
-.pay-table th {
-    text-align: left;
-    padding: 16px;
-    color: var(--color-black-secondary);
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-    font-size: 14px;
-    background-color: var(--color-purple-quaternary);
-}
+                    &:first-child {
+                        border-top-left-radius: 8px;
+                        border-bottom-left-radius: 8px;
+                    }
 
-.pay-table th:first-child {
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
-}
+                    &:last-child {
+                        border-top-right-radius: 8px;
+                        border-bottom-right-radius: 8px;
+                    }
+                }
 
-.pay-table th:last-child {
-    border-top-right-radius: 8px;
-    border-bottom-right-radius: 8px;
-}
+                td,
+                th {
+                    padding: 24px 16px;
+                    color: var(--color-black-secondary);
+                    border-bottom: 1px solid #e5e7eb;
+                    text-align: left;
+                }
 
-.pay-table td {
-    padding: 24px 16px;
-    color: var(--color-black-secondary);
-    border-bottom: 1px solid #e5e7eb;
-}
+                .pay-table tr:last-child td {
+                    border-bottom: none;
+                }
 
-.pay-table tr:last-child td {
-    border-bottom: none;
-}
+                .pay-amount-text {
+                    color: var(--color-green-primary);
+                    font-weight: 600;
+                }
 
-.pay-amount-text {
-    color: var(--color-black-primary);
-    font-weight: 600;
-}
+                .pay-status-pill {
+                    background-color: var(--color-green-quaternary);
+                    color: var(--color-green-primary);
+                    display: inline-block;
+                }
+            }
+        }
+    }
 
-.pay-status-pill {
-    background-color: var(--color-green-quaternary);
-    color: var(--color-green-primary);
-    display: inline-block;
-}
+    .pay-right-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
 
-.pay-next-label {
-    color: var(--color-blue-secondary);
-    font-weight: 500;
-}
+        .pay-next-label {
+            color: var(--color-blue-secondary);
+            text-align: left;
 
-.pay-next-amount {
-    color: var(--color-black-tertiary);
-    font-size: 32px;
-    font-weight: 700;
-    margin-top: 8px;
-    margin-bottom: 24px;
-}
 
-.pay-est-arrival {
-    background-color: var(--color-bg-dark);
-    color: var(--color-white-primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin-bottom: 24px;
-}
+        }
 
-.pay-est-arrival .small-body-text {
-    color: var(--color-white-primary);
-}
+        .pay-next-amount {
+            color: var(--color-black-primary);
+            margin-top: 8px;
+            margin-bottom: 24px;
+            text-align: left;
 
-.pay-withdraw-btn {
-    width: 100%;
-}
+        }
 
-.pay-methods-box h4 {
-    color: var(--color-black-primary);
-    margin-bottom: 24px;
-}
 
-.pay-method-item {
-    display: flex;
-    align-items: center;
-    background-color: var(--color-bg-light);
-    padding: 16px;
-    border-radius: 12px;
-    gap: 16px;
-}
+        .pay-est-arrival {
+            background-color: var(--color-bg-dark);
+            color: var(--color-white-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
 
-.pay-method-icon {
-    width: 32px;
-    height: 32px;
-    background-color: var(--color-white-primary);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-black-secondary);
-    font-size: 18px;
-}
+            svg {
+                font-size: 24px;
+            }
 
-.pay-method-info {
-    flex: 1;
-}
+            .pp-date {
+                color: var(--color-white-primary);
+            }
+        }
 
-.pay-method-name {
-    color: var(--color-black-primary);
-    margin-bottom: 4px;
-    font-size: 14px;
-}
 
-.pay-method-num {
-    color: var(--color-black-secondary);
-}
 
-.pay-default-pill {
-    background-color: var(--color-green-quaternary);
-    color: var(--color-green-primary);
+        .pay-withdraw-btn {
+            width: 100%;
+        }
+
+        .pay-methods-box {
+
+            h4 {
+                color: var(--color-black-primary);
+                margin-bottom: 24px;
+                text-align: left;
+            }
+        }
+
+        .pay-method-item {
+            display: flex;
+            align-items: center;
+            background-color: var(--color-bg-light);
+            padding: 16px;
+            border-radius: 12px;
+            gap: 16px;
+
+            .pay-method-icon {
+                width: 32px;
+                height: 32px;
+                background-color: transparent;
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--color-red-primary);
+                font-size: 24px;
+            }
+
+
+            .pay-method-info {
+                flex: 1;
+                text-align: left;
+
+
+                .pay-method-name {
+                    color: var(--color-black-primary);
+                    margin-bottom: 4px;
+                }
+
+                .pay-method-num {
+                    color: var(--color-black-secondary);
+                }
+            }
+
+
+
+            .pay-default-pill {
+                background-color: var(--color-green-quaternary);
+                color: var(--color-green-primary);
+            }
+        }
+
+    }
 }
 
 /* RESPONSIVE */
@@ -277,20 +303,31 @@
 }
 
 @media (max-width: 768px) {
+
+    .pay-container {
+        padding: 16px;
+
+    }
+
     .pay-header {
         flex-direction: column;
-        align-items: flex-start;
         gap: 16px;
+        align-items: flex-start !important;
+
     }
 
     .pay-header-controls {
         width: 100%;
         justify-content: space-between;
+        flex-wrap: wrap;
     }
 
     .pay-filter-dropdown {
-        flex: 1;
-        max-width: 250px;
+        width: 100%;
+
+        .pay-filter-dropdown-btn {
+            width: 100%;
+        }
     }
 }
 
