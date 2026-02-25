@@ -48,16 +48,43 @@ const PromoterScan = () => {
 
     ];
 
-    const manualCheckins = [
-        { initials: "SJ", name: "Sarah Jenkins", email: "sarah@example.com", pill: "VIP A-12", type: "vip", time: "08:45", status: "checked", color: "#a7f3d0" },
-        { initials: "EA", name: "Ehdsell Apan", email: "ehdsell@example.com", pill: "GenAd C-1", type: "gen", time: "10:15", status: "checked", color: "#bbf7d0" },
-        { initials: "ZP", name: "Zyvrex Perez", email: "zyvrex@example.com", pill: "EarlyBird E-1", type: "early", time: "09:25", status: "checked", color: "#d9f99d" },
-        { initials: "SS", name: "Somebody Son", email: "somebody@example.com", pill: "EarlyBird E-1", type: "early", time: null, status: "pending", color: "#bbf7d0" },
-        { initials: "SS", name: "Somebody Son", email: "somebody@example.com", pill: "EarlyBird E-1", type: "early", time: null, status: "pending", color: "#bbf7d0" },
-        { initials: "SS", name: "Somebody Son", email: "somebody@example.com", pill: "EarlyBird E-1", type: "early", time: null, status: "pending", color: "#bbf7d0" },
+  const [manualCheckins, setManualCheckins] = useState([
+    { initials: "SJ", name: "Sarah Jenkins", email: "sarah@example.com", pill: "VIP A-12", type: "vip", time: null, status: "pending", undoCount: 0 },
+    { initials: "EA", name: "Ehdsell Apan", email: "ehdsell@example.com", pill: "GenAd C-1", type: "gen", time: null, status: "pending", undoCount: 0 },
+    { initials: "ZP", name: "Zyvrex Perez", email: "zyvrex@example.com", pill: "EarlyBird E-1", type: "early", time: null, status: "pending", undoCount: 0 },
+    { initials: "SS", name: "Somebody Son", email: "somebody@example.com", pill: "EarlyBird E-1", type: "early", time: null, status: "pending", undoCount: 0 },
+    { initials: "SS", name: "Somebody Son", email: "somebody@example.com", pill: "EarlyBird E-1", type: "early", time: null, status: "pending", undoCount: 0 },
+    { initials: "SS", name: "Somebody Son", email: "somebody@example.com", pill: "EarlyBird E-1", type: "early", time: null, status: "pending", undoCount: 0 },
 
 
-    ];
+]);
+
+const handleCheckIn = (index) => {
+    const updated = [...manualCheckins];
+
+    const now = new Date();
+    const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    updated[index].status = "checked";
+    updated[index].time = formattedTime;
+    updated[index].undoCount = 0; // reset undo count every new check in
+
+    setManualCheckins(updated);
+};
+
+const handleUndo = (index) => {
+    const updated = [...manualCheckins];
+
+    if (updated[index].undoCount < 2) {
+        updated[index].status = "pending";
+        updated[index].time = null;
+        updated[index].undoCount += 1;
+
+        setManualCheckins(updated);
+    } else {
+        alert("Maximum undo attempts reached (2 only).");
+    }
+};
 
     const ticketStats = [
         { name: "VIP Access", count: "2 / 2", progress: "100%" },
@@ -187,16 +214,26 @@ const PromoterScan = () => {
                                         </div>
                                         <div className="sc-manual-right">
                                             {item.status === "checked" ? (
-                                                <>
-                                                    <div className="sc-check-status">
-                                                        <Icon icon="mdi:check-circle-outline" className="sc-check-icon" />
-                                                        <span className="smaller-body-text sc-time">{item.time}</span>
-                                                    </div>
-                                                    <button className="sc-undo-btn small-body-text">Undo</button>
-                                                </>
-                                            ) : (
-                                                <button className="primary-button sc-checkin-btn">Check in</button>
-                                            )}
+    <>
+        <div className="sc-check-status">
+            <Icon icon="mdi:check-circle-outline" className="sc-check-icon" />
+            <span className="smaller-body-text sc-time">{item.time}</span>
+        </div>
+        <button 
+            className="sc-undo-btn small-body-text"
+            onClick={() => handleUndo(index)}
+        >
+            Undo ({2 - item.undoCount} left)
+        </button>
+    </>
+) : (
+    <button 
+        className="primary-button sc-checkin-btn"
+        onClick={() => handleCheckIn(index)}
+    >
+        Check in
+    </button>
+)}
                                         </div>
                                     </div>
                                 ))}
