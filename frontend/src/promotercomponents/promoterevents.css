@@ -11,7 +11,7 @@
     align-items: left;
     gap: 16px;
     margin-bottom: 16px;
-    
+
 
     h1 {
       text-align: left;
@@ -39,6 +39,32 @@
   border-radius: 16px;
   padding: 24px;
   border: 1px solid #e5e7eb;
+
+  .pe-analytics-overview {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .pe-stat-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pe-stat-card .pe-stat-val {
+    color: var(--color-black-primary);
+  }
+
+  .pe-stat-card .pe-stat-sub {
+    color: var(--color-black-secondary);
+    font-weight: 400;
+  }
 
   .pe-filters-row {
     display: flex;
@@ -284,6 +310,10 @@
   .pe-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .pe-analytics-overview {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
 
 /* =========================
@@ -291,7 +321,7 @@
 ========================= */
 @media (max-width: 768px) {
 
-  .pe-card-main{
+  .pe-card-main {
     padding: 12px;
   }
 
@@ -302,6 +332,7 @@
   .pe-grid {
     grid-template-columns: 1fr;
   }
+
   .pe-filters-row {
     flex-direction: column;
     align-items: stretch;
@@ -312,8 +343,10 @@
     flex-wrap: nowrap;
     gap: 8px;
 
-    width: 100%;              /* IMPORTANT */
-    max-width: 100%;          /* IMPORTANT */
+    width: 100%;
+    /* IMPORTANT */
+    max-width: 100%;
+    /* IMPORTANT */
     overflow-x: auto;
     overflow-y: hidden;
 
@@ -322,7 +355,8 @@
   }
 
   .pe-filter-pill {
-    flex: 0 0 auto;           /* IMPORTANT */
+    flex: 0 0 auto;
+    /* IMPORTANT */
     white-space: nowrap;
   }
 
@@ -363,6 +397,10 @@
   .pe-create-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .pe-analytics-overview {
+    grid-template-columns: 1fr !important;
   }
 
   .pe-card-image {

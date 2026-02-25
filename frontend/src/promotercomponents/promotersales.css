@@ -211,11 +211,13 @@
         }
 
         .bg-green-light {
-            background-color: var(--color-green-quaternary);
+            background-color: var(--color-green-tertiary);
+            color: var(--color-green-primary);
         }
 
         .bg-purple-light {
-            background-color: var(--color-purple-quaternary);
+            background-color: var(--color-purple-tertiary);
+            color: var(--color-purple-primary);
         }
 
         .sales-card-icon {

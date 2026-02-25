@@ -38,6 +38,8 @@ import PromoterScan from "./promotercomponents/promoterscan.jsx";
 import PromoterSales from "./promotercomponents/promotersales.jsx";
 import PromoterAttendees from "./promotercomponents/promoterattendees.jsx";
 import PromoterSponsors from "./promotercomponents/promotersponsors.jsx";
+import PromoterRevenue from "./promotercomponents/promoterrevenuereports.jsx";
+import PromoterPayouts from "./promotercomponents/promoterpayouts.jsx";
 
 
 function App() {
@@ -112,6 +114,8 @@ function App() {
           <Route path="promoter-sales" element={<PromoterSales />} />
           <Route path="promoter-attendees" element={<PromoterAttendees />} />
           <Route path="promoter-sponsors" element={<PromoterSponsors />} />
+          <Route path="promoter-revenue" element={<PromoterRevenue />} />
+          <Route path="promoter-payouts" element={<PromoterPayouts />} />
 
 
 
