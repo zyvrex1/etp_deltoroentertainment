@@ -1,12 +1,14 @@
 import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import "./promoterdashboard.css";
 import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.jsx";
 
 
 export default function PromoterDashboard() {
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
-  
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const navigate = useNavigate();
+
   const stats = [
     {
       label: "Total Revenue",
@@ -140,9 +142,9 @@ export default function PromoterDashboard() {
         </div>
 
         <div className="pd-actions">
-          <button type="button" className="outlined-button pd-action-btn scan-btn">
+          <NavLink to="/promoter/promoter-ticketsetup"><button type="button" className="outlined-button pd-action-btn scan-btn">
             <span>Scan Tickets</span>
-          </button>
+          </button></NavLink>
           <button type="button" className="primary-button pd-action-btn" onClick={() => setIsCreateOpen(true)}>
             <span>Create Event</span>
           </button>
@@ -172,7 +174,7 @@ export default function PromoterDashboard() {
           <div className="pd-card">
             <div className="pd-card-header">
               <h3>Active Events</h3>
-              <a href="/admin/transactions">View All</a>
+              <a href="/promoter/promoter-events">View All</a>
             </div>
 
             <div className="pd-events">
@@ -217,9 +219,9 @@ export default function PromoterDashboard() {
                   </div>
 
                   <div className="pd-event-actions">
-                    <button type="button" className="outlined-button">Manage Tickets</button>
-                    <button type="button" className="outlined-button">Booth Layout</button>
-                    <button type="button" className="outlined-button">Check-In</button>
+                    <NavLink to="/promoter/promoter-ticketsetup"><button type="button" className="outlined-button">Manage Tickets</button></NavLink>
+                    <NavLink to="/promoter/promoter-boothlayout"><button type="button" className="outlined-button">Booth Layout</button></NavLink>
+                    <NavLink to="/promoter/promoter-scan"><button type="button" className="outlined-button">Check-In</button></NavLink>
                   </div>
                 </div>
               ))}
@@ -262,9 +264,9 @@ export default function PromoterDashboard() {
             </div>
 
             <div className="pd-transactions-footer">
-              <button type="button" className="primary-button pd-link">
+              <NavLink to="/promoter/promoter-sales"><button type="button" className="primary-button pd-link">
                 View all transactions
-              </button>
+              </button></NavLink>
             </div>
           </div>
         </div>
@@ -276,7 +278,11 @@ export default function PromoterDashboard() {
             </div>
             <div className="pd-quick-actions">
               {quickActions.map((a) => (
-                <div key={a.title} className="pd-qa-item">
+                <div key={a.title} className="pd-qa-item" style={{ cursor: 'pointer' }} onClick={() => {
+                  if (a.title === "Create New Event") setIsCreateOpen(true);
+                  if (a.title === "Check-in Attendees") navigate("/promoter/promoter-scan");
+                  if (a.title === "View Revenue") navigate("/promoter/promoter-revenue");
+                }}>
                   <div className={`pd-qa-icon ${a.color}`}>
                     <Icon icon={a.icon} />
                   </div>

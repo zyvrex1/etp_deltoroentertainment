@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./promotersettings.css";
+import PromoterPayoutMethodModal from "./PromoterModal/PromoterPayoutMethodModal.jsx";
+import { showConfirmAlert, showSuccessAlert } from "../admincomponents/utils/sweetAlert";
+
 
 const PromoterSettings = () => {
+  const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
   const [profile, setProfile] = useState({
     fullName: "Alex Thompson",
     email: "alex@eventpro.com",
@@ -62,6 +66,38 @@ const PromoterSettings = () => {
     },
   ];
 
+  const handleSaveProfile = async () => {
+  const result = await showConfirmAlert(
+    "Save Profile?",
+    "Are you sure you want to update your profile information?",
+    "Yes, Save",
+    "Cancel"
+  );
+
+  if (result.isConfirmed) {
+    await showSuccessAlert(
+      "Profile Saved",
+      "Your profile has been saved successfully."
+    );
+  }
+};
+
+const handleSaveOrganization = async () => {
+  const result = await showConfirmAlert(
+    "Save Organization?",
+    "Are you sure you want to update your organization details?",
+    "Yes, Save",
+    "Cancel"
+  );
+
+  if (result.isConfirmed) {
+    await showSuccessAlert(
+      "Organization Saved",
+      "Your organization details have been saved successfully."
+    );
+  }
+};
+
   const renderProfileTab = () => (
     <div className="promoter-settings-content">
       <div className="promoter-settings-card promoter-account-card">
@@ -113,7 +149,7 @@ const PromoterSettings = () => {
         </div>
 
         <div className="promoter-account-actions">
-          <button type="button" className="primary-button promoter-save-profile-btn">
+          <button type="button" className="primary-button promoter-save-profile-btn" onClick={handleSaveProfile}>
             Save Profile
           </button>
         </div>
@@ -159,7 +195,7 @@ const PromoterSettings = () => {
             />
           </div>
 
-          <button type="button" className="primary-button promoter-save-org-btn">
+          <button type="button" className="primary-button promoter-save-org-btn" onClick={handleSaveOrganization}>
             Save Organization
           </button>
         </div>
@@ -187,9 +223,8 @@ const PromoterSettings = () => {
                   <span>{member.initials}</span>
                 </div>
                 <span
-                  className={`button-label ${
-                    member.status === "active" ? "status-active" : "status-invited"
-                  }`}
+                  className={`button-label ${member.status === "active" ? "status-active" : "status-invited"
+                    }`}
                 >
                   {member.status}
                 </span>
@@ -220,7 +255,7 @@ const PromoterSettings = () => {
   const renderBillingTab = () => (
     <div className="promoter-settings-content">
       <div className="promoter-settings-card promoter-payment-card">
-        <h3>Payment Method</h3>
+        <h3>Payout Method</h3>
         <div className="billing-body">
           <div className="billing-card-row">
             <div className="billing-card-brand">
@@ -230,9 +265,8 @@ const PromoterSettings = () => {
             </div>
             <span className="button-label default-pill">Default</span>
           </div>
-          <button type="button" className="outlined-button add-payment-btn">
-            <Icon icon="mdi:plus" />
-            <span>Add Payment Method</span>
+          <button type="button" className="outlined-button add-payment-btn" onClick={() => setIsPayoutModalOpen(true)}>
+            <span>Add Payout Method</span>
           </button>
         </div>
       </div>
@@ -251,6 +285,11 @@ const PromoterSettings = () => {
       {renderProfileTab()}
       {renderTeamMembersTab()}
       {renderBillingTab()}
+
+      <PromoterPayoutMethodModal
+        isOpen={isPayoutModalOpen}
+        onClose={() => setIsPayoutModalOpen(false)}
+      />
     </div>
   );
 };

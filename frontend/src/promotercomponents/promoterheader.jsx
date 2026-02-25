@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import "./promoterheader.css";
+import { showConfirmAlert, showSuccessAlert } from "../admincomponents/utils/sweetAlert";
 
 const PromoterHeader = ({ user = null }) => {
   const currentUser = user || {
@@ -27,9 +28,19 @@ const PromoterHeader = ({ user = null }) => {
     setIsDropdownOpen((prev) => !prev);
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setIsDropdownOpen(false);
-    navigate("/login");
+    const result = await showConfirmAlert(
+      "Sign Out?",
+      "Are you sure you want to sign out?",
+      "Yes, Sign Out",
+      "Cancel"
+    );
+
+    if (result.isConfirmed) {
+      await showSuccessAlert("Signed Out", "You have been successfully signed out.");
+      navigate("/login");
+    }
   };
 
   useEffect(() => {

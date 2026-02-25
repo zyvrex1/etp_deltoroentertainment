@@ -262,11 +262,13 @@
   display: flex;
   gap: 8px;
   padding: 10px 14px 14px;
+  width: 100%;
+  align-items: stretch;
+  display: flex;
 
   .pe-card-btn {
     flex: 1;
-    padding: 8px 0;
-    color: var(--color-black-primary);
+    color: var(--color-black-primary);  
   }
 
 }

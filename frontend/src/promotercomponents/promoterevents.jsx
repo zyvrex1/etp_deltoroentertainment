@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 import "./promoterevents.css";
 import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.jsx";
 import PromoterEditEventModal from "./PromoterModal/PromoterEditEventModal.jsx";
+import { NavLink } from "react-router-dom";
 
 const sampleEvents = [
   {
@@ -194,16 +195,16 @@ const PromoterEvents = () => {
                   )}
 
                   <div className="pe-card-actions">
-                    <button type="button" className="outlined-button pe-card-btn">
+                    <NavLink to="/promoter/promoter-ticketsetup"><button type="button" className="outlined-button pe-card-btn">
                       Tickets
-                    </button>
-                    <button type="button" className="outlined-button pe-card-btn">
+                    </button></NavLink>
+                    <NavLink to="/promoter/promoter-boothlayout"><button type="button" className="outlined-button pe-card-btn">
                       Booths
-                    </button>
+                    </button></NavLink>
                     {evt?.status?.toLowerCase() === "active" && (
-                      <button type="button" className="outlined-button pe-card-btn pe-scan-btn">
+                      <NavLink to="/promoter/promoter-scan"><button type="button" className="outlined-button pe-card-btn pe-scan-btn">
                         Scan
-                      </button>
+                      </button></NavLink>
                     )}
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./PromoterAddTicketTypeModal.css";
+import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from "../../admincomponents/utils/sweetAlert";
 
 const PromoterAddTicketTypeModal = ({ isOpen, onClose, onAdd }) => {
     const [ticketName, setTicketName] = useState("");
@@ -12,12 +13,31 @@ const PromoterAddTicketTypeModal = ({ isOpen, onClose, onAdd }) => {
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (onAdd) {
-            onAdd({ ticketName, price, quantity, description, salesStart, salesEnd });
+        const result = await showCreateConfirmAlert(
+            "Create Ticket?",
+            "Are you sure you want to create this ticket type?"
+        );
+
+        if (result.isConfirmed) {
+            if (onAdd) {
+                onAdd({ ticketName, price, quantity, description, salesStart, salesEnd });
+            }
+            await showSuccessAlert("Success", "Ticket type created successfully.");
+            onClose();
         }
-        onClose();
+    };
+
+    const handleCancel = async () => {
+        if (ticketName || price || quantity || description || salesStart || salesEnd) {
+            const result = await showCancelConfirmAlert();
+            if (result.isConfirmed) {
+                onClose();
+            }
+        } else {
+            onClose();
+        }
     };
 
     return (
@@ -25,7 +45,7 @@ const PromoterAddTicketTypeModal = ({ isOpen, onClose, onAdd }) => {
             <div className="promoter-add-ticket-modal-container">
                 <div className="promoter-add-ticket-modal-header">
                     <h3>Add Ticket Type</h3>
-                    <button type="button" className="promoter-add-ticket-close-btn" onClick={onClose}>
+                    <button type="button" className="promoter-add-ticket-close-btn" onClick={handleCancel}>
                         <Icon icon="mdi:close" width="24" height="24" />
                     </button>
                 </div>
@@ -101,7 +121,7 @@ const PromoterAddTicketTypeModal = ({ isOpen, onClose, onAdd }) => {
                     </div>
 
                     <div className="promoter-add-ticket-modal-footer">
-                        <button type="button" className="button promoter-add-ticket-cancel-btn" onClick={onClose}>
+                        <button type="button" className="button promoter-add-ticket-cancel-btn" onClick={handleCancel}>
                             Cancel
                         </button>
                         <button type="submit" className="primary-button promoter-add-ticket-save-btn">

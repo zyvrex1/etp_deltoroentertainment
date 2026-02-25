@@ -77,10 +77,13 @@
 
   .pd-stat-label {
     color: var(--color-black-tertiary);
+    text-align: left;
+
   }
 
   .pd-stat-value {
     color: var(--color-black-primary);
+    text-align: left;
   }
 
   .pd-stat-delta {
@@ -297,11 +300,14 @@
 
   h5 {
     color: var(--color-black-primary);
+    text-align: left;
+
   }
 
   p {
     margin-top: 2px;
     color: var(--color-black-tertiary);
+    text-align: left;
   }
 
   .pd-schedule {

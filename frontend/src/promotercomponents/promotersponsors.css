@@ -379,6 +379,11 @@
         .spon-time-col {
             align-items: center;
             gap: 4px;
+            color: var(--color-black-secondary);
+
+            .text-green {
+                color: var(--color-green-primary);
+            }
 
         }
 

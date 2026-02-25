@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./PromoterEditTicketTypeModal.css";
+import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from "../../admincomponents/utils/sweetAlert";
 
 const PromoterEditTicketTypeModal = ({ isOpen, onClose, onSave, initialTicket }) => {
     const [ticketName, setTicketName] = useState("");
@@ -23,12 +24,27 @@ const PromoterEditTicketTypeModal = ({ isOpen, onClose, onSave, initialTicket })
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (onSave) {
-            onSave({ ...initialTicket, ticketName, price, quantity, description, salesStart, salesEnd });
+        const result = await showCreateConfirmAlert(
+            "Update Ticket?",
+            "Are you sure you want to update this ticket type?"
+        );
+
+        if (result.isConfirmed) {
+            if (onSave) {
+                onSave({ ...initialTicket, ticketName, price, quantity, description, salesStart, salesEnd });
+            }
+            await showSuccessAlert("Updated", "Ticket type updated successfully.");
+            onClose();
         }
-        onClose();
+    };
+
+    const handleCancel = async () => {
+        const result = await showCancelConfirmAlert();
+        if (result.isConfirmed) {
+            onClose();
+        }
     };
 
     return (
@@ -36,7 +52,7 @@ const PromoterEditTicketTypeModal = ({ isOpen, onClose, onSave, initialTicket })
             <div className="promoter-edit-ticket-modal-container">
                 <div className="promoter-edit-ticket-modal-header">
                     <h3>Edit Ticket Type</h3>
-                    <button type="button" className="promoter-edit-ticket-close-btn" onClick={onClose}>
+                    <button type="button" className="promoter-edit-ticket-close-btn" onClick={handleCancel}>
                         <Icon icon="mdi:close" width="24" height="24" />
                     </button>
                 </div>
@@ -112,7 +128,7 @@ const PromoterEditTicketTypeModal = ({ isOpen, onClose, onSave, initialTicket })
                     </div>
 
                     <div className="promoter-edit-ticket-modal-footer">
-                        <button type="button" className="buutton promoter-edit-ticket-cancel-btn" onClick={onClose}>
+                        <button type="button" className="buutton promoter-edit-ticket-cancel-btn" onClick={handleCancel}>
                             Cancel
                         </button>
                         <button type="submit" className="primary-button promoter-edit-ticket-save-btn">

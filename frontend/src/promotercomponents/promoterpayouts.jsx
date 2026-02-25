@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './promoterpayouts.css';
-
-const PromoterPayouts = () => {
+import { showConfirmAlert, showSuccessAlert } from "../admincomponents/utils/sweetAlert";const PromoterPayouts = () => {
+   
+   
     const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState("techstart");
     const eventDropdownRef = useRef(null);
@@ -37,6 +38,23 @@ const PromoterPayouts = () => {
         setSelectedEvent(val);
         setIsEventDropdownOpen(false);
     };
+
+const handleWithdraw = async () => {
+    const result = await showConfirmAlert(
+        "Withdraw Funds?",
+        "Are you sure you want to withdraw your available balance?",
+        "Yes, Withdraw",
+        "Cancel"
+    );
+
+    if (result.isConfirmed) {
+        await showSuccessAlert(
+            "Withdrawal Initiated",
+            "Your funds are being transferred to your bank account."
+        );
+    }
+};
+
 
     const payoutHistory = [
         { date: "Jan 01, 2026", amount: "$12,450.00", method: "Bank Transfer •••• 4242", status: "Paid" },
@@ -128,9 +146,12 @@ const PromoterPayouts = () => {
                             <span className="small-body-text pp-date">Est. arrival: Oct 15, 2024</span>
                         </div>
 
-                        <button className="primary-button pay-withdraw-btn">
-                            Withdraw Now
-                        </button>
+<button
+    className="primary-button pay-withdraw-btn"
+    onClick={handleWithdraw}
+>
+    Withdraw Now
+</button>
                     </div>
 
                     <div className="pay-card pay-methods-box">

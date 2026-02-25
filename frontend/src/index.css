@@ -112,6 +112,7 @@ a {
   font-family: 'Poppins', sans-serif;
   font-weight: 400;
   font-size: 14px;
+  text-decoration: none;
 }
 
 a:hover {
@@ -206,6 +207,7 @@ button {
   border-radius: 12px;
   border: 1px solid var(--color-black-tertiary);
   background-color: transparent;
+  text-decoration: none;
 
 }
 
