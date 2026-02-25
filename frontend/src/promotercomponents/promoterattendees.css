@@ -1,5 +1,10 @@
 .att-container {
-    padding: 32px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    height: 100%;
+    overflow-y: auto;
     background-color: var(--color-bg-light);
     min-height: calc(100vh - 80px);
     width: 100%;
@@ -7,117 +12,104 @@
     .att-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 24px;
+        align-items: center;
 
         h1 {
             color: var(--color-black-primary);
-            margin-bottom: 4px;
-            margin-top: 0;
             text-align: left;
         }
 
         p {
-            color: var(--color-black-tertiary);
-            margin: 0;
+            color: var(--color-black-secondary);
             text-align: left;
 
         }
 
-        .att-filter-dropdown {
-            position: relative;
+        .att-header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
 
-            .att-filter-dropdown-btn {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                padding: 10px 16px;
-                border-radius: 10px;
-                border: 1px solid var(--color-black-quaternary);
-                background: var(--color-white-primary);
-                color: var(--color-black-secondary);
-                cursor: pointer;
-                width: 250px;
-                transition: all 0.2s ease;
+            .att-filter-dropdown {
+                position: relative;
 
-                &:hover {
-                    border-color: var(--color-black-tertiary);
-                }
-
-                .truncate-text {
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    text-align: left;
-                }
-
-                .dropdown-icon {
-                    width: 18px;
-                    height: 18px;
-                    color: var(--color-black-tertiary);
-                    transition: transform 0.2s ease;
-                    flex-shrink: 0;
-                }
-
-                .dropdown-icon.open {
-                    transform: rotate(180deg);
-                }
-            }
-
-            .att-filter-dropdown-menu {
-                position: absolute;
-                top: calc(100% + 4px);
-                right: 0;
-                min-width: 250px;
-                background: var(--color-white-primary);
-                border: 1px solid var(--color-black-quaternary);
-                border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
-                overflow: hidden;
-
-                .att-filter-dropdown-item {
-                    display: block;
+                .att-filter-dropdown-btn {
                     width: 100%;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background-color: var(--color-white-primary);
+                    border: 1px solid var(--color-black-tertiary);
+                    border-radius: 8px;
                     padding: 10px 16px;
-                    text-align: left;
-                    border: none;
-                    background: var(--color-white-primary);
                     color: var(--color-black-secondary);
+                    font-size: 14px;
                     cursor: pointer;
-                    transition: background 0.2s ease;
 
-                    &:hover {
-                        background: var(--color-red-primary);
-                        color: var(--color-white-primary);
+                    .truncate-text {
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        display: inline-block;
+                        max-width: 90%;
+                    }
+
+                    .dropdown-icon {
+                        font-size: 18px;
+                        transition: transform 0.2s ease;
+                    }
+
+                    .dropdown-icon.open {
+                        transform: rotate(180deg);
                     }
                 }
 
-                .att-filter-dropdown-item.active {
-                    background: var(--color-red-quaternary);
-                    color: var(--color-red-primary);
-                    font-weight: 500;
+                .att-filter-dropdown-menu {
+                    position: absolute;
+                    top: calc(100% + 4px);
+                    left: 0;
+                    width: 100%;
+                    background-color: var(--color-white-primary);
+                    border: 1px solid var(--color-black-tertiary);
+                    border-radius: 8px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    z-index: 10;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+
+                    .att-filter-dropdown-item {
+                        padding: 10px 16px;
+                        background: none;
+                        border: none;
+                        text-align: left;
+                        font-size: 14px;
+                        color: var(--color-black-secondary);
+                        cursor: pointer;
+                        border-radius: 0;
+
+                        &:hover {
+                            background: var(--color-red-primary);
+                            color: var(--color-white-primary);
+                        }
+                    }
+
+                    .att-filter-dropdown-item.active {
+                        background: var(--color-red-quaternary);
+                        color: var(--color-red-primary);
+                        font-weight: 500;
+                    }
                 }
             }
-        }
-
-        .att-header-controls {
-            display: flex;
-            gap: 16px;
-            align-items: center;
 
             .att-export-btn {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                background-color: var(--color-white-primary);
-                cursor: pointer;
                 color: var(--color-black-secondary);
-
-                .export-icon {
-                    font-size: 18px;
-                }
+                padding: 10px 16px;
+                border-radius: 8px;
+                background-color: var(--color-white-primary);
             }
         }
     }
@@ -236,7 +228,6 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            width: 300px;
 
             svg {
                 color: var(--color-black-primary);
@@ -459,6 +450,8 @@
     .att-header {
         flex-direction: column;
         gap: 16px;
+                align-items: flex-start !important;
+
     }
 
     .att-header-controls {
@@ -474,8 +467,17 @@
         padding: 20px;
     }
 
-    .att-filter-dropdown-btn {
+    .att-filter-dropdown {
         width: 100%;
+
+        .att-filter-dropdown-btn {
+            width: 100%;
+        }
+    }
+
+    .att-export-btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .att-cards-container {

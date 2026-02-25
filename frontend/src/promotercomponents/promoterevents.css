@@ -1,16 +1,18 @@
 .promoter-events-page {
-  padding: 32px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100%;
+  overflow-y: auto;
   background-color: var(--color-bg-light);
   min-height: calc(100vh - 80px);
   width: 100%;
-  text-align: left;
 
   .pe-header-row {
     display: flex;
     justify-content: space-between;
-    align-items: left;
-    gap: 16px;
-    margin-bottom: 16px;
+    align-items: center;
 
 
     h1 {
@@ -22,15 +24,9 @@
 
 .pe-header-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
 
-  .pe-create-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
 }
 
 
@@ -386,7 +382,7 @@
 
   .pe-header-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-start !important;
     gap: 12px;
   }
 

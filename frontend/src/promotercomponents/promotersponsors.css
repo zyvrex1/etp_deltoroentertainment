@@ -1,5 +1,10 @@
 .spon-container {
-    padding: 32px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    height: 100%;
+    overflow-y: auto;
     background-color: var(--color-bg-light);
     min-height: calc(100vh - 80px);
     width: 100%;
@@ -7,19 +12,15 @@
     .spon-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 24px;
+        align-items: center;
 
         h1 {
             color: var(--color-black-primary);
-            margin-bottom: 4px;
-            margin-top: 0;
             text-align: left;
         }
 
         p {
             color: var(--color-black-tertiary);
-            margin: 0;
             text-align: left;
         }
 
@@ -32,9 +33,10 @@
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                background-color: var(--color-white-primary);
                 color: var(--color-black-secondary);
-                cursor: pointer;
+                padding: 10px 16px;
+                border-radius: 8px;
+                background-color: var(--color-white-primary);
 
                 .export-icon {
                     font-size: 18px;
@@ -46,18 +48,17 @@
             position: relative;
 
             .spon-filter-dropdown-btn {
+                width: 100%;
                 display: flex;
-                align-items: center;
                 justify-content: space-between;
-                gap: 12px;
+                align-items: center;
+                background-color: var(--color-white-primary);
+                border: 1px solid var(--color-black-tertiary);
+                border-radius: 8px;
                 padding: 10px 16px;
-                border-radius: 10px;
-                border: 1px solid var(--color-black-quaternary);
-                background: var(--color-white-primary);
                 color: var(--color-black-secondary);
+                font-size: 14px;
                 cursor: pointer;
-                width: 250px;
-                transition: all 0.2s ease;
 
                 &:hover {
                     border-color: var(--color-black-tertiary);
@@ -67,15 +68,13 @@
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
-                    text-align: left;
+                    display: inline-block;
+                    max-width: 90%;
                 }
 
                 .dropdown-icon {
-                    width: 18px;
-                    height: 18px;
-                    color: var(--color-black-tertiary);
+                    font-size: 18px;
                     transition: transform 0.2s ease;
-                    flex-shrink: 0;
                 }
 
                 .dropdown-icon.open {
@@ -86,26 +85,27 @@
             .spon-filter-dropdown-menu {
                 position: absolute;
                 top: calc(100% + 4px);
-                right: 0;
-                min-width: 250px;
-                background: var(--color-white-primary);
-                border: 1px solid var(--color-black-quaternary);
-                border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
+                left: 0;
+                width: 100%;
+                background-color: var(--color-white-primary);
+                border: 1px solid var(--color-black-tertiary);
+                border-radius: 8px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                z-index: 10;
+                display: flex;
+                flex-direction: column;
                 overflow: hidden;
             }
 
             .spon-filter-dropdown-item {
-                display: block;
-                width: 100%;
                 padding: 10px 16px;
-                text-align: left;
+                background: none;
                 border: none;
-                background: var(--color-white-primary);
+                text-align: left;
+                font-size: 14px;
                 color: var(--color-black-secondary);
                 cursor: pointer;
-                transition: background 0.2s ease;
+                border-radius: 0;
 
                 &:hover {
                     background: var(--color-red-primary);
@@ -114,7 +114,7 @@
             }
 
             .spon-filter-dropdown-item.active {
-                background: var(--color-red-quaternary);
+                background-color: var(--color-red-quaternary);
                 color: var(--color-red-primary);
                 font-weight: 500;
             }
@@ -240,7 +240,6 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            width: 250px;
 
             svg {
                 color: var(--color-black-primary);
@@ -459,8 +458,8 @@
 
     .spon-header-controls {
         width: 100%;
-        flex-direction: column;
-        align-items: stretch;
+        justify-content: space-between;
+        flex-wrap: wrap;
     }
 
     .spon-event-banner {
@@ -470,9 +469,17 @@
         padding: 20px;
     }
 
-
-    .spon-filter-dropdown-btn {
+    .spon-export-btn {
         width: 100%;
+        justify-content: center;
+    }
+
+    .spon-filter-dropdown {
+        width: 100%;
+
+        .spon-filter-dropdown-btn {
+            width: 100%;
+        }
     }
 
     .spon-cards-container {
@@ -509,6 +516,11 @@
 @media (max-width: 480px) {
     .spon-banner-left h3 {
         font-size: 18px;
+    }
+
+    .spon-export-btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .spon-banner-stats {

@@ -6,11 +6,13 @@
     height: 100%;
     overflow-y: auto;
     background-color: var(--color-bg-light);
+    min-height: calc(100vh - 80px);
+    width: 100%;
 
     .rep-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
 
         h1 {
             color: var(--color-black-primary);
@@ -20,7 +22,6 @@
 
         p {
             color: var(--color-black-secondary);
-            margin-top: 4px;
             text-align: left;
         }
 
@@ -31,7 +32,6 @@
 
             .rep-filter-dropdown {
                 position: relative;
-                width: 250px;
 
                 .rep-filter-dropdown-btn {
                     width: 100%;
@@ -42,7 +42,7 @@
                     border: 1px solid var(--color-black-tertiary);
                     border-radius: 8px;
                     padding: 10px 16px;
-                    color: var(--color-black-primary);
+                    color: var(--color-black-secondary);
                     font-size: 14px;
                     cursor: pointer;
 
@@ -86,7 +86,7 @@
                     border: none;
                     text-align: left;
                     font-size: 14px;
-                    color: var(--color-black-primary);
+                    color: var(--color-black-secondary);
                     cursor: pointer;
                     border-radius: 0;
 
@@ -100,6 +100,7 @@
                     background-color: var(--color-red-quaternary);
                     color: var(--color-red-primary);
                     font-weight: 500;
+
                 }
             }
 
@@ -140,10 +141,6 @@
         }
     }
 }
-
-
-
-
 
 .rep-summary-cards {
     display: flex;
@@ -239,15 +236,6 @@
         }
     }
 }
-
-
-
-
-
-
-
-
-
 
 
 .rep-content-columns {
@@ -404,6 +392,12 @@
 }
 
 @media (max-width: 768px) {
+
+    .rep-container {
+        padding: 16px;
+
+    }
+
     .rep-header {
         flex-direction: column;
         gap: 16px;
@@ -442,8 +436,11 @@
     }
 
     .rep-filter-dropdown {
-        flex: 1;
-        max-width: 250px;
+        width: 100%;
+
+        .rep-filter-dropdown-btn {
+            width: 100%;
+        }
     }
 }
 

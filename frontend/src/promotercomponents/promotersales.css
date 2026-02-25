@@ -1,30 +1,35 @@
 .sales-container {
-    padding: 32px;
+   padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    height: 100%;
+    overflow-y: auto;
     background-color: var(--color-bg-light);
     min-height: calc(100vh - 80px);
     width: 100%;
 
+
     .sales-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 24px;
-        text-align: left;
+        align-items: center;
 
         h1 {
             color: var(--color-black-primary);
         }
 
         p {
-            color: var(--color-black-tertiary);
+            color: var(--color-black-secondary);
+            text-align: left;
         }
     }
 }
 
 .sales-header-controls {
-    display: flex;
-    gap: 16px;
-    align-items: center;
+     display: flex;
+            gap: 12px;
+            align-items: center;
 
     .sales-export-btn {
         display: flex;
@@ -460,6 +465,8 @@
     .sales-header {
         flex-direction: column;
         gap: 16px;
+                align-items: flex-start !important;
+
     }
 
     .sales-header-controls {

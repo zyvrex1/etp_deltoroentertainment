@@ -140,7 +140,7 @@ export default function PromoterDashboard() {
         </div>
 
         <div className="pd-actions">
-          <button type="button" className="button pd-action-btn scan-btn">
+          <button type="button" className="outlined-button pd-action-btn scan-btn">
             <span>Scan Tickets</span>
           </button>
           <button type="button" className="primary-button pd-action-btn" onClick={() => setIsCreateOpen(true)}>

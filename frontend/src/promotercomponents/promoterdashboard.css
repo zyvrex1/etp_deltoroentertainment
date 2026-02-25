@@ -1,45 +1,52 @@
 .promoter-dashboard {
-  padding: 32px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100%;
+  overflow-y: auto;
   background-color: var(--color-bg-light);
   min-height: calc(100vh - 80px);
   width: 100%;
-  text-align: left;
 
   .pd-topbar {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 18px;
+    align-items: center;
 
     h1 {
-      margin: 0;
       color: var(--color-black-primary);
+      text-align: left;
+
     }
 
     p {
-      margin-top: 4px;
-      color: var(--color-black-tertiary);
+      color: var(--color-black-secondary);
+      text-align: left;
     }
   }
 }
 
 .pd-actions {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  gap: 12px;
+  align-items: center;
 
   .pd-action-btn {
+    display: flex;
+    align-items: center;
     gap: 8px;
-    cursor: pointer;
-    border: none;
 
   }
 
   .pd-action-btn.scan-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-black-secondary);
+    padding: 10px 16px;
+    border-radius: 8px;
     background-color: var(--color-white-primary);
-    color: var(--color-black-primary);
   }
 }
 
@@ -140,9 +147,9 @@
       }
 
       a {
-            color: var(--color-red-primary);
-            text-decoration: none;
-        }
+        color: var(--color-red-primary);
+        text-decoration: none;
+      }
     }
   }
 }
@@ -398,11 +405,13 @@
 }
 
 .pd-transactions-table {
-  min-width: 600px; /* important */
+  min-width: 600px;
+  /* important */
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
+
   .pd-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -415,12 +424,11 @@
 @media (max-width: 768px) {
   .promoter-dashboard {
     padding: 16px;
-    min-height: calc(100vh - 70px);
   }
 
   .pd-topbar {
     flex-direction: column;
-    align-items: flex-start;
+    gap: 16px;
   }
 
   .pd-actions {
@@ -434,6 +442,11 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  .pd-action-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .pd-event-badge {
@@ -479,7 +492,7 @@
     min-width: unset;
   }
 
-.pd-table-wrapper {
-  -webkit-overflow-scrolling: touch;
-}
+  .pd-table-wrapper {
+    -webkit-overflow-scrolling: touch;
+  }
 }
