@@ -163,7 +163,7 @@
 
                     .ts-ticket-header {
                         display: flex;
-                        align-items: center;
+                        align-items: left;
                         gap: 12px;
                         margin-bottom: 8px;
 
@@ -192,9 +192,10 @@
 
                     .ts-ticket-meta {
                         display: flex;
-                        align-items: center;
+                        align-items: left;
                         gap: 20px;
                         margin-bottom: 20px;
+                        text-align: left;
 
                         .ts-meta-price {
                             color: var(--color-black-primary);
@@ -232,6 +233,7 @@
                 color: #9ca3af;
                 cursor: grab;
                 margin-top: 2px;
+                text-align: left;
             }
         }
     }

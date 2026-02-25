@@ -134,7 +134,7 @@ const PromoterBoothLayout = () => {
                                         row.map((cell, ci) => (
                                             <div
                                                 key={`${ri}-${ci}`}
-                                                className={`bl-booth-cell ${cell ? `filled status-${cell.status} type-${cell.type}` : "empty"}`}
+                                                className={`bl-booth-cell ${cell ? `filled status-${cell.status} bl-type-${cell.type}` : "empty"}`}
                                                 aria-label={cell ? `Booth ${cell.code}, ${cell.type}, ${cell.status}` : `Empty slot row ${ri + 1} col ${ci + 1}`}
                                                 onClick={() => setDetailPopup(cell ? { tooltipKind: "booth", ...cell, ri, ci } : { tooltipKind: "booth-empty", ri, ci })}
                                                 role="button"

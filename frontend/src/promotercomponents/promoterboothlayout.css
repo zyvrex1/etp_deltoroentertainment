@@ -300,19 +300,19 @@
 }
 
 /* Available VIP - Purple */
-.bl-booth-cell.status-available.type-vip {
+.bl-booth-cell.status-available.bl-type-vip {
     background: var(--color-purple-tertiary);
     border-color: var(--color-purple-primary);
 }
 
 /* Available Corner - Yellow */
-.bl-booth-cell.status-available.type-corner {
+.bl-booth-cell.status-available.bl-type-corner {
     background: var(--color-yellow-tertiary);
     border-color: var(--color-yellow-primary);
 }
 
 /* Available Inline - Green */
-.bl-booth-cell.status-available.type-inline {
+.bl-booth-cell.status-available.bl-type-inline {
     background: var(--color-green-tertiary);
     border-color: var(--color-green-primary);
 }

@@ -35,6 +35,10 @@ import PromoterEvents from "./promotercomponents/promoterevents.jsx";
 import PromoterTicketSetup from "./promotercomponents/promoterticketsetup.jsx";
 import PromoterBoothLayout from "./promotercomponents/promoterboothlayout.jsx";
 import PromoterScan from "./promotercomponents/promoterscan.jsx";
+import PromoterSales from "./promotercomponents/promotersales.jsx";
+import PromoterAttendees from "./promotercomponents/promoterattendees.jsx";
+import PromoterSponsors from "./promotercomponents/promotersponsors.jsx";
+
 
 function App() {
   const [isSignupOpen, setIsSignupOpen] = useState(false);
@@ -105,6 +109,10 @@ function App() {
           <Route path="promoter-ticketsetup" element={<PromoterTicketSetup />} />
           <Route path="promoter-boothlayout" element={<PromoterBoothLayout />} />
           <Route path="promoter-scan" element={<PromoterScan />} />
+          <Route path="promoter-sales" element={<PromoterSales />} />
+          <Route path="promoter-attendees" element={<PromoterAttendees />} />
+          <Route path="promoter-sponsors" element={<PromoterSponsors />} />
+
 
 
         </Route>
