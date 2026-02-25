@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./promoterevents.css";
 import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.jsx";
-
-
+import PromoterEditEventModal from "./PromoterModal/PromoterEditEventModal.jsx";
 
 const sampleEvents = [
   {
@@ -51,6 +50,8 @@ const sampleEvents = [
 const PromoterEvents = () => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedEventToEdit, setSelectedEventToEdit] = useState(null);
 
   const filteredEvents = sampleEvents.filter((evt) => {
     if (activeFilter === "all") return true;
@@ -155,7 +156,11 @@ const PromoterEvents = () => {
                     </span>
 
                     {["pending", "draft", "active"].includes(status) && (
-                      <button className="pe-edit-top">
+                      <button className="pe-edit-top" onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedEventToEdit(evt);
+                        setIsEditOpen(true);
+                      }}>
                         <Icon icon="mdi:pencil-outline" />
                       </button>
                     )}
@@ -226,6 +231,11 @@ const PromoterEvents = () => {
       <PromoterCreateEventModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
+      />
+      <PromoterEditEventModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        initialEvent={selectedEventToEdit}
       />
     </div>
   );
