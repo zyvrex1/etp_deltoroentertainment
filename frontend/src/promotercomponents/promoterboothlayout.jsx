@@ -2,11 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import './promoterboothlayout.css';
+import PromoterUploadMapModal from './PromoterModal/PromoterUploadMapModal';
 
 const PromoterBoothLayout = () => {
     const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState("techstart");
     const [detailPopup, setDetailPopup] = useState(null);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const eventDropdownRef = useRef(null);
 
     // Booth Map: 5x5 grid (5 columns, 5 rows). Each cell: null (empty) or { code, type, status, dimensions, bookedBy? }
@@ -82,7 +84,7 @@ const PromoterBoothLayout = () => {
                             </div>
                         )}
                     </div>
-                    <button className="outlined-button bl-action upload-btn">
+                    <button className="outlined-button bl-action upload-btn" onClick={() => setIsUploadModalOpen(true)}>
                         <Icon icon="mdi:upload" /> Upload Map
                     </button>
                     <button className="primary-button bl-action save-btn">
@@ -274,6 +276,14 @@ const PromoterBoothLayout = () => {
                     </div>,
                     document.body
                 )}
+
+            <PromoterUploadMapModal
+                isOpen={isUploadModalOpen}
+                onClose={() => setIsUploadModalOpen(false)}
+                onSave={(file) => {
+                    console.log('Map uploaded:', file.name);
+                }}
+            />
         </div >
     );
 };

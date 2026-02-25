@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './promoterticketsetup.css';
+import PromoterAddTicketTypeModal from './PromoterModal/PromoterAddTicketTypeModal';
+import PromoterEditTicketTypeModal from './PromoterModal/PromoterEditTicketTypeModal';
 
 const GripIcon = () => (
     <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -41,6 +43,9 @@ const TrashIcon = () => (
 const PromoterTicketSetup = () => {
     const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState("techstart");
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedTicketToEdit, setSelectedTicketToEdit] = useState(null);
     const eventDropdownRef = useRef(null);
 
     useEffect(() => {
@@ -107,7 +112,7 @@ const PromoterTicketSetup = () => {
                             </div>
                         )}
                     </div>
-                    <button className="primary-button ts-action">Add Ticket Type</button>
+                    <button className="primary-button ts-action" onClick={() => setIsAddModalOpen(true)}>Add Ticket Type</button>
                 </div>
             </div>
 
@@ -153,7 +158,17 @@ const PromoterTicketSetup = () => {
                                         <span className="ts-meta-revenue">$ 17,820 revenue</span>
                                     </div>
                                     <div className="ts-ticket-actions">
-                                        <button className="ts-action-btn"><EditIcon /></button>
+                                        <button className="ts-action-btn" onClick={() => {
+                                            setSelectedTicketToEdit({
+                                                ticketName: "Early Bird General Admission",
+                                                price: "99",
+                                                quantity: "200",
+                                                description: "Access to all main stage talks",
+                                                salesStart: "2024-07-01",
+                                                salesEnd: "2024-08-31"
+                                            });
+                                            setIsEditModalOpen(true);
+                                        }}><EditIcon /></button>
                                         <button className="ts-action-btn"><TrashIcon /></button>
                                     </div>
                                 </div>
@@ -174,7 +189,17 @@ const PromoterTicketSetup = () => {
                                         <span className="ts-meta-revenue">$ 32,780 revenue</span>
                                     </div>
                                     <div className="ts-ticket-actions">
-                                        <button className="ts-action-btn"><EditIcon /></button>
+                                        <button className="ts-action-btn" onClick={() => {
+                                            setSelectedTicketToEdit({
+                                                ticketName: "General Admission",
+                                                price: "149",
+                                                quantity: "300",
+                                                description: "Full event access",
+                                                salesStart: "2024-09-01",
+                                                salesEnd: "2024-10-12"
+                                            });
+                                            setIsEditModalOpen(true);
+                                        }}><EditIcon /></button>
                                         <button className="ts-action-btn"><TrashIcon /></button>
                                     </div>
                                 </div>
@@ -195,7 +220,17 @@ const PromoterTicketSetup = () => {
                                         <span className="ts-meta-revenue">$ 10,465 revenue</span>
                                     </div>
                                     <div className="ts-ticket-actions">
-                                        <button className="ts-action-btn"><EditIcon /></button>
+                                        <button className="ts-action-btn" onClick={() => {
+                                            setSelectedTicketToEdit({
+                                                ticketName: "VIP Access",
+                                                price: "299",
+                                                quantity: "50",
+                                                description: "VIP lounge, priority seating, meet & greet",
+                                                salesStart: "2024-07-01",
+                                                salesEnd: "2024-10-12"
+                                            });
+                                            setIsEditModalOpen(true);
+                                        }}><EditIcon /></button>
                                         <button className="ts-action-btn"><TrashIcon /></button>
                                     </div>
                                 </div>
@@ -216,7 +251,17 @@ const PromoterTicketSetup = () => {
                                         <span className="ts-meta-revenue">$ 2,985 revenue</span>
                                     </div>
                                     <div className="ts-ticket-actions">
-                                        <button className="ts-action-btn"><EditIcon /></button>
+                                        <button className="ts-action-btn" onClick={() => {
+                                            setSelectedTicketToEdit({
+                                                ticketName: "Workshop Pass",
+                                                price: "199",
+                                                quantity: "50",
+                                                description: "Access to hands-on workshops",
+                                                salesStart: "2024-08-01",
+                                                salesEnd: "2024-10-11"
+                                            });
+                                            setIsEditModalOpen(true);
+                                        }}><EditIcon /></button>
                                         <button className="ts-action-btn"><TrashIcon /></button>
                                     </div>
                                 </div>
@@ -266,6 +311,25 @@ const PromoterTicketSetup = () => {
                     </div>
                 </div>
             </div>
+
+            <PromoterAddTicketTypeModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onAdd={(data) => {
+                    console.log('New Ticket Data:', data);
+                    // Add logic here when actual backend integration happens
+                }}
+            />
+
+            <PromoterEditTicketTypeModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                initialTicket={selectedTicketToEdit}
+                onSave={(data) => {
+                    console.log('Updated Ticket Data:', data);
+                    // Update logic here
+                }}
+            />
         </div>
     );
 };

@@ -1,0 +1,176 @@
+/* PromoterAddTicketTypeModal.css */
+.promoter-add-ticket-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+    backdrop-filter: blur(2px);
+    box-sizing: border-box;
+    overflow: auto;
+
+    .promoter-add-ticket-modal-container {
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        width: 100%;
+        max-width: min(600px, calc(100vw - 32px));
+        max-height: 90vh;
+        min-width: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        animation: slideInAddTicket 0.3s ease-out;
+        box-sizing: border-box;
+
+        .promoter-add-ticket-modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--color-black-quaternary);
+            gap: 16px;
+            flex-shrink: 0;
+            min-width: 0;
+
+            h3 {
+                margin: 0 0 4px 0;
+                color: var(--color-black-primary);
+                text-align: left;
+                overflow-wrap: break-word;
+                word-break: break-word;
+            }
+
+            .promoter-add-ticket-close-btn {
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--color-black-tertiary);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 4px;
+                border-radius: 4px;
+                transition: background-color 0.2s;
+
+                &:hover {
+                    color: var(--color-black-primary);
+                    background-color: var(--color-bg-light);
+                }
+            }
+        }
+    }
+}
+
+@keyframes slideInAddTicket {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.promoter-add-ticket-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.promoter-add-ticket-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.promoter-add-ticket-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.promoter-add-ticket-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    h6 {
+        margin: 0;
+        color: var(--color-black-secondary);
+        text-align: left;
+    }
+
+    input,
+    textarea {
+        padding: 10px 12px;
+        border: 1px solid var(--color-black-tertiary);
+        border-radius: 6px;
+        font-size: 14px;
+        color: var(--color-black-primary, #1e293b);
+        transition: border-color 0.2s;
+        font-family: inherit;
+        background-color: var(--color-white-primary);
+        box-sizing: border-box;
+        width: 100%;
+
+        &:focus {
+            outline: none;
+            border-color: var(--color-black-primary);
+        }
+    }
+
+    .promoter-add-ticket-full-width {
+        grid-column: 1 / -1;
+    }
+}
+
+.promoter-add-ticket-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-shrink: 0;
+    min-width: 0;
+
+    .promoter-add-ticket-cancel-btn {
+        background-color: transparent;
+        border: none;
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        transition: background-color 0.2s;
+
+        &:hover {
+            background-color: var(--color-bg-light);
+        }
+    }
+
+    .promoter-add-ticket-save-btn {
+        border: none;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        color: white;
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
+}
+
+
+
+
+@media (max-width: 600px) {
+    .promoter-add-ticket-form-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}

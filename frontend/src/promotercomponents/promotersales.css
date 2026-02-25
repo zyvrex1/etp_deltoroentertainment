@@ -36,7 +36,7 @@
         align-items: center;
         gap: 8px;
         background-color: var(--color-white-primary);
-        color: var(--color-black-primary);
+        color: var(--color-black-secondary);
         cursor: pointer;
 
         .export-icon {

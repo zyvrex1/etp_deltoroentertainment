@@ -119,7 +119,7 @@ const PromoterSales = () => {
                     </div>
                     <button className="outlined-button sales-export-btn">
                         <Icon icon="mdi:tray-arrow-up" className="export-icon" />
-                        Upload Map
+                        Export Report
                     </button>
                 </div>
             </div>
