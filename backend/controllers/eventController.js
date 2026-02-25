@@ -27,31 +27,36 @@ const getEvent = async (req, res) => {
 // create new event
 const createEvent = async (req, res) => {
     const { 
-        title, 
-        description, 
-        category, 
-        venue, 
-        startDate, 
-        endDate, 
-        startTime, 
-        endTime, 
-        ticketPrice, 
-        totalTickets, 
-        image, 
-        isFeatured 
-    } = req.body
+        title,
+        description,
+        category,
+        venue,
+        startDate,
+        endDate,
+        startTime,
+        endTime,
+        ticketPrice,
+        totalTickets,
+        image,
+        booths,
+        isFeatured
+    } = req.body;
 
     const requiredFields = [
         'title', 'description', 'category', 'venue', 
         'startDate', 'endDate', 'startTime', 'endTime', 
-        'ticketPrice', 'totalTickets'
+        'ticketPrice', 'totalTickets', 'image', 'booths'
     ];
 
     let emptyFields = [];
 
     requiredFields.forEach(field => {
-        // req.body[field] checks the value dynamically
-        if (!req.body[field]) {
+        // Check for undefined, null, or empty string
+        if (
+            req.body[field] === undefined ||
+            req.body[field] === null ||
+            req.body[field] === ''
+        ) {
             emptyFields.push(field);
         }
     });
@@ -64,6 +69,8 @@ const createEvent = async (req, res) => {
     }
 
     try {
+        const user_id = req.user._id;
+
         const event = await Event.create({
             title,
             description,
@@ -76,15 +83,16 @@ const createEvent = async (req, res) => {
             ticketPrice,
             totalTickets,
             image,
-            isFeatured
-        })
-        
-        res.status(200).json(event)
+            booths,          
+            isFeatured,
+            user_id         
+        });
+
+        res.status(201).json(event); // 201 is better for create
     } catch (error) {
-       
-        res.status(400).json({ error: error.message })
+        res.status(400).json({ error: error.message });
     }
-}
+};
 
 // delete a event
 const deleteEvent = async (req, res) => {
@@ -105,22 +113,30 @@ const deleteEvent = async (req, res) => {
 
 // update a event
 const updateEvent = async (req, res) => {
-    const { id } = req.params
+  const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(404).json({error: 'No such event'})
-    }
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ error: 'No such event' });
+  }
 
-    const event = await Event.findOneAndUpdate({_id: id}, {
-        ...req.body
-    })
+  try {
+    const updatedData = { ...req.body };
+
+    const event = await Event.findOneAndUpdate(
+      { _id: id },
+      updatedData,
+      { new: true, runValidators: true }
+    );
 
     if (!event) {
-        return res.status(404).json({error: 'No such event'})
+      return res.status(404).json({ error: 'No such event' });
     }
 
-    res.status(200).json(event)
-}
+    res.status(200).json(event);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
 module.exports = {
     getEvents,

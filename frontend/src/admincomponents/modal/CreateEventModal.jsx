@@ -4,9 +4,11 @@ import { useEventsContext } from "../hooks/useEventsContext";
 import "./CreateEventModal.css";
 import "./UploadMapModal.css";
 import { showSuccessAlert, showCancelConfirmAlert, showErrorAlert, showCreateConfirmAlert } from "../utils/sweetAlert";
+import { useAuthContext } from "../hooks/useAuthContext";
 
 const CreateEventModal = ({ isOpen, onClose }) => {
   const { dispatch } = useEventsContext();
+  const { user } = useAuthContext();
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -106,8 +108,8 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     const startDateTime = new Date(`${startDate}T${startTime}`);
     const endDateTime = new Date(`${endDate}T${endTime}`);
 
-    if (endDate < startDate) {
-      setError("End date cannot be earlier than start date.");
+    if (endDateTime < startDateTime) {
+      setError("End date/time cannot be earlier than start date/time.");
       return;
     }
 
@@ -121,29 +123,46 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     }
 
     const event = {
-      title,
-      description,
-      category,
-      venue: {
-        name: venue.name,
-        address: venue.address,
-        city: venue.city,
-        zipCode: venue.zipCode,
-      },
-      startDate,
-      endDate,
-      startTime: startDateTime,
-      endTime: endDateTime,
-      ticketPrice: Number(ticketPrice),
-      totalTickets: Number(totalTickets),
-      imageUrl: imageFile ? imageFile.name : undefined,
+  title,
+  description,
+  category,
+  venue: {
+    name: venue.name,
+    address: venue.address,
+    city: venue.city,
+    zipCode: venue.zipCode,
+  },
+  startDate,             
+  endDate,               
+  startTime,             
+  endTime,               
+  ticketPrice: Number(ticketPrice),
+  totalTickets: Number(totalTickets),
+  image: imageFile ? imageFile.name : undefined, 
+  booths: [], 
+      // booths: [
+      //   {
+      //     boothNumber: { type: String, required: true },
+      //     size: { type: String },
+      //     price: { type: Number, required: true },
+      //     status: { type: String, default: 'available' },
+      //   }
+      // ]
     };
 
-    const response = await fetch("/api/events", {
-      method: "POST",
-      body: JSON.stringify(event),
-      headers: { "Content-Type": "application/json" },
-    });
+    if (!user) {
+  setError("You must be logged in");
+  return;
+}
+
+  const response = await fetch("/api/events", {
+    method: "POST",
+    body: JSON.stringify(event),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${user.token}`,
+    },
+  });
 
     const json = await response.json();
 

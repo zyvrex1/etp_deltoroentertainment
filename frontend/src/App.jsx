@@ -1,5 +1,6 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuthContext } from "./admincomponents/hooks/useAuthContext.jsx";
 import { useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -43,37 +44,15 @@ import PromoterPayouts from "./promotercomponents/promoterpayouts.jsx";
 
 
 function App() {
-  const [isSignupOpen, setIsSignupOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-
   return (
     <BrowserRouter>
-      {/* GLOBAL MODALS */}
-      <SignupModal
-        isOpen={isSignupOpen}
-        onClose={() => setIsSignupOpen(false)}
-      />
-
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-      />
-
       <Routes>
-        {/* LANDING ROUTES */}
-        <Route
-          element={
-            <LandingLayout
-              openSignup={() => setIsSignupOpen(true)}
-              openLogin={() => setIsLoginOpen(true)}
-            />
-          }
-        >
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-        </Route>
+       <Route element={<LandingLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+      </Route>
 
-        {/* ADMIN ROUTES (PROTECTED) */}
+        
         <Route
           path="/admin"
           element={

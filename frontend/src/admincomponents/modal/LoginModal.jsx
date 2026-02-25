@@ -1,18 +1,30 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import Login from "../../landingpage/Login";
 
 const LoginModal = ({ isOpen, onClose }) => {
-  if (!isOpen) return null; // don’t render if closed
 
-  const handleClose = () => {
-    onClose();
-  };
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEsc = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null; // ✅ AFTER hooks
 
   return (
     <div className="modal-overlay">
       <div className="modal">
-        {/* Close button */}
-        <button className="close-btn" onClick={handleClose}>
+        <button className="close-btn" onClick={onClose}>
           ✕
         </button>
 

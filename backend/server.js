@@ -8,6 +8,7 @@ const promoterRoutes = require('./routes/promoterRoutes')
 const sponsorRoutes = require('./routes/sponsorRoutes')
 const customerRoutes = require('./routes/customerRoutes')
 const adminRoutes = require('./routes/adminRoutes')
+const superadminRoutes = require('./routes/superadminRoutes')
 
 // express app
 const app = express()
@@ -27,6 +28,7 @@ app.use('/api/promoters', promoterRoutes)
 app.use('/api/sponsors', sponsorRoutes)
 app.use('/api/customers', customerRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/superadmin', superadminRoutes)
 
 // error handling
 app.use((err, req, res, next) => {

@@ -10,14 +10,11 @@ const Header = () => {
   const { user: authUser } = useAuthContext();
   const navigate = useNavigate();
 
+  // Hooks must always be at the top
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Hide header if no user
-  if (!authUser) return null;
-
-  // Safe getInitials function using firstName + lastName
   const getInitials = (firstName, lastName) => {
     if (!firstName && !lastName) return "";
     const firstInitial = firstName ? firstName[0] : "";
@@ -48,6 +45,9 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // ✅ Early return **after hooks**
+  if (!authUser) return null;
 
   return (
     <header className="app-header">

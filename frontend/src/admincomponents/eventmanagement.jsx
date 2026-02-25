@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import "./eventmanagement.css";
-import CreateEventModal from "./Modal/CreateEventModal";
-// import EditEventModal from "./Modal/EditEventModal"
+import CreateEventModal from "./modal/CreateEventModal";
+import EditEventModal from "./modal/EditEventModal";
 
 import { useEventsContext } from "../admincomponents/hooks/useEventsContext"
+import { useAuthContext } from "./hooks/useAuthContext";
 
 const formatEventDate = (startDate, endDate) => {
   const start = new Date(startDate);
@@ -46,15 +47,6 @@ const formatEventDate = (startDate, endDate) => {
   })}, ${start.getFullYear()}`;
 };
 
-const formatEventTime = (dateString) => {
-  const date = new Date(dateString);
-
-  return date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-};
 
 const getEventStatus = (event) => {
   const now = new Date();
@@ -67,6 +59,10 @@ const getEventStatus = (event) => {
 
 const EventManagement = ({ event }) => {
    const { events, dispatch } = useEventsContext();
+   const { user } = useAuthContext();
+
+   const [isEditModalOpen, setIsEditModalOpen] = useState(false); // controls EditEventModal
+const [selectedEvent, setSelectedEvent] = useState(null);
 
   // const [events, setEvents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,15 +74,26 @@ const EventManagement = ({ event }) => {
   const filterDropdownRef = useRef(null);
 
   // 1. Fetch Data
-  useEffect(() => {
+   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch('/api/events');
+        if (!user || !user.token) {
+          console.error("No user token found. Please log in.");
+          return;
+        }
+
+        const response = await fetch('/api/events', {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+
         const json = await response.json();
 
         if (response.ok) {
-          // Make sure action type matches your reducer
-          dispatch({ type: 'SET_EVENTS', payload: json });
+          const userEvents = json.filter(event => event.createdBy === user._id);
+  dispatch({ type: 'SET_EVENTS', payload: userEvents });
         } else {
           console.error("Failed to fetch events:", json);
         }
@@ -96,25 +103,36 @@ const EventManagement = ({ event }) => {
     };
 
     fetchEvents();
-  }, [dispatch]);
+  }, [dispatch, user]);
 
  const handleDeleteEvent = async (eventId) => {
   if (!window.confirm("Are you sure you want to delete this event?")) return;
 
   try {
-    const response = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
+    const response = await fetch(`/api/events/${eventId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${user.token}`
+      }
+    });
+
     const json = await response.json();
 
     if (response.ok) {
       dispatch({ type: 'DELETE_EVENT', payload: eventId });
     } else {
-      alert("Failed to delete event.");
+      alert(json.error || "Failed to delete event.");
     }
   } catch (error) {
     console.error(error);
     alert("Error deleting event.");
   }
 };
+
+const handleEditEvent = (event) => {
+    setSelectedEvent(event);
+    setIsEditModalOpen(true);
+  };
 
 
   // 2. Filter Logic (search + status)
@@ -193,7 +211,6 @@ const EventManagement = ({ event }) => {
       </div>
 
       <div className="em-content">
-        {/* Toolbar Section */}
         <div className="em-toolbar">
           <div className="em-toolbar-left">
             <div className="em-search">
@@ -282,7 +299,7 @@ const EventManagement = ({ event }) => {
                         <strong>{formatEventDate(event.startDate, event.endDate)}</strong>
                         <br/>
                         <span className="smaller-body-text" style={{ color: '#666' }}>
-                          {formatEventTime(event.startDate)} to {formatEventTime(event.endDate)}
+                          {event.startDate} to {event.endDate}
                         </span>
                       </td>
                       <td data-label="Status">
@@ -306,7 +323,11 @@ const EventManagement = ({ event }) => {
                       </td>
                       <td data-label="Actions">
                         <div className="em-actions">
-                          <button className="em-action-btn" aria-label="Edit">
+                          <button 
+                            className="em-action-btn" 
+                            aria-label="Edit"
+                            onClick={() => handleEditEvent(event)} // <-- add this
+                          >
                             <Icon icon="mdi:edit" color="skye-blue" />
                           </button>
                           <button 
@@ -358,15 +379,12 @@ const EventManagement = ({ event }) => {
         )}
       </div>
 
-      {/* Modals */}
       <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      {/* <EditEventModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} event={selectedEvent} /> */}
-      {/* <AddPromoterModal
-        isOpen={isAddPromoterModalOpen}
-        onClose={() => setIsAddPromoterModalOpen(false)}
+      <EditEventModal 
+        isOpen={isEditModalOpen}
         event={selectedEvent}
-        onAdd={onPromoterAdded}
-      /> */}
+        onClose={() => { setIsEditModalOpen(false); setSelectedEvent(null); }}
+      />
     </div>
   );
 };

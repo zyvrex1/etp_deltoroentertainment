@@ -16,21 +16,23 @@ const Login = () => {
        await login(email, password)
     }
 
-  
-
-     useEffect(() => {
+    useEffect(() => {
         if (user) {
-        if (user.role === "admin") {
+            // Close modal if it exists
+            const closeModalEvent = new CustomEvent("closeLoginModal");
+            window.dispatchEvent(closeModalEvent);
+
+            if (user.role === "admin") {
             navigate("/admin");
-        } else if (user.role === "promoter") {
+            } else if (user.role === "promoter") {
             navigate("/promoter");
-        } else if (user.role === "customer") {
-            navigate("/customer"); 
-        } else if (user.role === "sponsor") {
+            } else if (user.role === "customer") {
+            navigate("/customer");
+            } else if (user.role === "sponsor") {
             navigate("/sponsor");
+            }
         }
-        }
-    }, [user, navigate]);
+        }, [user, navigate]);
 
     return (
         <form className="login" onSubmit={handleSubmit}>
