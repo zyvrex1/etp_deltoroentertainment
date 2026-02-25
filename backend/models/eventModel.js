@@ -85,31 +85,18 @@ const eventSchema = new Schema(
       type: String,
     },
 
-    booths: [
-      {
-        boothNumber: {
-          type: String,
-          required: true,
-        },
-        size: {
-          type: String,
-        },
-        price: {
-          type: Number,
-          min: 0,
-          required: true,
-        },
-        status: {
-          type: String,
-          enum: ["available", "reserved", "sold"],
-          default: "available",
-        },
-        assignedTo: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-        },
-      },
-    ],
+    booths: {
+  type: [
+    {
+      boothNumber: { type: String, required: true },
+      size: String,
+      price: { type: Number, min: 0, required: true },
+      status: { type: String, enum: ["available", "reserved", "sold"], default: "available" },
+      assignedTo: { type: Schema.Types.ObjectId, ref: "User" },
+    },
+  ],
+  default: [],
+},
 
     user_id: {
       type: String,
@@ -126,16 +113,17 @@ const eventSchema = new Schema(
 
 
 eventSchema.pre('save', function(next) {
-    const ticketRevenue = this.ticketPrice * this.ticketsSold
+    const ticketRevenue = (this.ticketPrice || 0) * (this.ticketsSold || 0);
 
-    const boothRevenue = this.booths.reduce((total, booth) => {
-        return booth.status === 'sold'
-            ? total + booth.price
-            : total
-    }, 0)
+    const boothRevenue = Array.isArray(this.booths)
+        ? this.booths.reduce((total, booth) => {
+              // Make sure booth.price exists
+              return total + (booth.status === 'sold' && booth.price ? booth.price : 0);
+          }, 0)
+        : 0;
 
-    this.revenue = ticketRevenue + boothRevenue
-    next()
-})
+    this.revenue = ticketRevenue + boothRevenue;
+    next();
+});
 
 module.exports = mongoose.model("Event", eventSchema);

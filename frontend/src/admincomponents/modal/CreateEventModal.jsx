@@ -3,7 +3,12 @@ import { Icon } from "@iconify/react";
 import { useEventsContext } from "../hooks/useEventsContext";
 import "./CreateEventModal.css";
 import "./UploadMapModal.css";
-import { showSuccessAlert, showCancelConfirmAlert, showErrorAlert, showCreateConfirmAlert } from "../utils/sweetAlert";
+import {
+  showSuccessAlert,
+  showCancelConfirmAlert,
+  showErrorAlert,
+  showCreateConfirmAlert,
+} from "../utils/sweetAlert";
 import { useAuthContext } from "../hooks/useAuthContext";
 
 const CreateEventModal = ({ isOpen, onClose }) => {
@@ -11,12 +16,12 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   const { user } = useAuthContext();
 
   const today = new Date().toISOString().split("T")[0];
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("other");
   const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(today);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [ticketPrice, setTicketPrice] = useState("");
@@ -27,6 +32,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     city: "",
     zipCode: "",
   });
+  const [booths, setBooths] = useState([]);
 
   const [imageFile, setImageFile] = useState(null);
   const [imageDragActive, setImageDragActive] = useState(false);
@@ -73,9 +79,29 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     }
   };
 
+  // Add a new empty booth
+  const addBooth = () => {
+    setBooths([...booths, { boothNumber: "", size: "", price: "" }]);
+  };
+
+  // Update a booth field
+  const updateBooth = (index, field, value) => {
+    const updated = [...booths];
+    updated[index][field] = value;
+    setBooths(updated);
+  };
+
+  // Remove a booth
+  const removeBooth = (index) => {
+    const updated = [...booths];
+    updated.splice(index, 1);
+    setBooths(updated);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validation for required fields
     const fieldsToCheck = {
       title,
       category,
@@ -102,76 +128,76 @@ const CreateEventModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    setEmptyFields([]); // clear previous errors
+    setEmptyFields([]);
     setError("");
 
     const startDateTime = new Date(`${startDate}T${startTime}`);
     const endDateTime = new Date(`${endDate}T${endTime}`);
-
     if (endDateTime < startDateTime) {
       setError("End date/time cannot be earlier than start date/time.");
       return;
     }
 
-    const result = await showCreateConfirmAlert(
-      'Create Event?',
-      `Are you sure you want to create "${title}"?`
-    );
-
-    if (!result.isConfirmed) {
+    if (!user) {
+      setError("You must be logged in");
       return;
     }
 
+    const result = await showCreateConfirmAlert(
+      "Create Event?",
+      `Are you sure you want to create "${title}"?`,
+    );
+    if (!result.isConfirmed) return;
+
     const event = {
-  title,
-  description,
-  category,
-  venue: {
-    name: venue.name,
-    address: venue.address,
-    city: venue.city,
-    zipCode: venue.zipCode,
-  },
-  startDate,             
-  endDate,               
-  startTime,             
-  endTime,               
-  ticketPrice: Number(ticketPrice),
-  totalTickets: Number(totalTickets),
-  image: imageFile ? imageFile.name : undefined, 
-  booths: [], 
-      // booths: [
-      //   {
-      //     boothNumber: { type: String, required: true },
-      //     size: { type: String },
-      //     price: { type: Number, required: true },
-      //     status: { type: String, default: 'available' },
-      //   }
-      // ]
+      title,
+      description,
+      category,
+      venue: {
+        name: venue.name,
+        address: venue.address,
+        city: venue.city,
+        zipCode: venue.zipCode,
+      },
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      startTime,
+      endTime,
+      ticketPrice: Number(ticketPrice),
+      totalTickets: Number(totalTickets),
+      image: imageFile ? imageFile.name : undefined,
+      booths:
+        booths.length > 0
+          ? booths.map((b) => ({
+              boothNumber: b.boothNumber,
+              size: b.size,
+              price: Number(b.price),
+              status: "available",
+            }))
+          : [],
+      user_id: user._id,
     };
 
-    if (!user) {
-  setError("You must be logged in");
-  return;
-}
-
-  const response = await fetch("/api/events", {
-    method: "POST",
-    body: JSON.stringify(event),
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${user.token}`,
-    },
-  });
+    const response = await fetch("/api/events", {
+      method: "POST",
+      body: JSON.stringify(event),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${user.token}`,
+      },
+    });
 
     const json = await response.json();
 
     if (!response.ok) {
       setError(json.error);
       setEmptyFields(json.emptyFields || []);
-      await showErrorAlert('Error Creating Event', json.error || 'Failed to create event.');
+      await showErrorAlert(
+        "Error Creating Event",
+        json.error || "Failed to create event.",
+      );
     } else {
-      // Reset form on success
+      // Reset form
       setTitle("");
       setDescription("");
       setVenue({ name: "", address: "", city: "", zipCode: "" });
@@ -181,14 +207,16 @@ const CreateEventModal = ({ isOpen, onClose }) => {
       setEndDate(today);
       setTicketPrice("");
       setTotalTickets("");
-      if (imagePreviewUrl) {
-        URL.revokeObjectURL(imagePreviewUrl);
-      }
+      setBooths([]);
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
       setImageFile(null);
       setImagePreviewUrl(null);
       setError(null);
       setEmptyFields([]);
-      await showSuccessAlert('Event Created', 'The event has been created successfully.');
+      await showSuccessAlert(
+        "Event Created",
+        "The event has been created successfully.",
+      );
       onClose();
       dispatch({ type: "CREATE_EVENT", payload: json });
     }
@@ -201,22 +229,36 @@ const CreateEventModal = ({ isOpen, onClose }) => {
       <div className="general-event-modal-container">
         <div className="general-modal-header">
           <h3>Create New Event</h3>
-          <button className="close-btn" onClick={async () => {
-            const hasChanges = title || description || venue.name || startTime || endTime || ticketPrice || totalTickets || imageFile;
-            if (hasChanges) {
-              const result = await showCancelConfirmAlert();
-              if (result.isConfirmed) {
+          <button
+            className="close-btn"
+            onClick={async () => {
+              const hasChanges =
+                title ||
+                description ||
+                venue.name ||
+                startTime ||
+                endTime ||
+                ticketPrice ||
+                totalTickets ||
+                imageFile;
+              if (hasChanges) {
+                const result = await showCancelConfirmAlert();
+                if (result.isConfirmed) {
+                  onClose();
+                }
+              } else {
                 onClose();
               }
-            } else {
-              onClose();
-            }
-          }}>
+            }}
+          >
             <Icon icon="mdi:close" />
           </button>
         </div>
 
-        <form className="add-event-modal-body add-event-form" onSubmit={handleSubmit}>
+        <form
+          className="add-event-modal-body add-event-form"
+          onSubmit={handleSubmit}
+        >
           <div className="add-event-form-row">
             <div className="add-event-form-group">
               <h6>Event Title</h6>
@@ -340,7 +382,9 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                   type="text"
                   placeholder="Zip Code"
                   value={venue.zipCode}
-                  onChange={(e) => setVenue({ ...venue, zipCode: e.target.value })}
+                  onChange={(e) =>
+                    setVenue({ ...venue, zipCode: e.target.value })
+                  }
                   className={emptyFields.includes("venue") ? "error" : ""}
                 />
               </div>
@@ -420,11 +464,9 @@ const CreateEventModal = ({ isOpen, onClose }) => {
               <input
                 type="number"
                 min="0"
-                // Use an empty string if value is 0 or empty to keep the field clean
                 value={ticketPrice === 0 ? "" : ticketPrice}
                 onChange={(e) => {
                   const val = e.target.value;
-                  // Allow empty string so user can backspace everything
                   setTicketPrice(val === "" ? "" : Number(val));
                 }}
                 className={emptyFields.includes("ticketPrice") ? "error" : ""}
@@ -456,6 +498,43 @@ const CreateEventModal = ({ isOpen, onClose }) => {
               rows="4"
               className={emptyFields.includes("description") ? "error" : ""}
             ></textarea>
+          </div>
+
+          <div className="section-box">
+            <h5 className="modal-section-title">Booths (Optional)</h5>
+            {booths.map((booth, index) => (
+              <div key={index} className="booth-row">
+                <input
+                  type="text"
+                  placeholder="Booth Number"
+                  value={booth.boothNumber}
+                  onChange={(e) =>
+                    updateBooth(index, "boothNumber", e.target.value)
+                  }
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Size"
+                  value={booth.size}
+                  onChange={(e) => updateBooth(index, "size", e.target.value)}
+                />
+                <input
+                  type="number"
+                  placeholder="Price"
+                  min="0"
+                  value={booth.price}
+                  onChange={(e) => updateBooth(index, "price", e.target.value)}
+                  required
+                />
+                <button type="button" onClick={() => removeBooth(index)}>
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={addBooth}>
+              Add Booth
+            </button>
           </div>
 
           {error && (
