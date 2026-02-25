@@ -6,7 +6,13 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 
 // Create JWT token
-const createToken = (_id) => jwt.sign({ _id }, process.env.SECRET, { expiresIn: '3d' })
+const createToken = (user) => {
+  return jwt.sign(
+    { _id: user._id, role: user.role },
+    process.env.SECRET,
+    { expiresIn: '3d' }
+  );
+};
 
 // ================= SIGNUP =================
 const signupUser = async (req, res) => {
@@ -47,10 +53,11 @@ const loginUser = async (req, res) => {
 
     // Attempt to login
     const user = await User.login(email, password)
-    const token = createToken(user._id)
+    const token = createToken(user);
 
     // Return user info including firstName and lastName
     res.status(200).json({
+      _id: user._id,   // ✅ ADD THIS
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,

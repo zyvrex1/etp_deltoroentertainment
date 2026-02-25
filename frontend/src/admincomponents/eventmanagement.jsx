@@ -59,12 +59,11 @@ const getEventStatus = (event) => {
 
 const EventManagement = ({ event }) => {
    const { events, dispatch } = useEventsContext();
-   const { user } = useAuthContext();
+    const { user, loading } = useAuthContext();
 
    const [isEditModalOpen, setIsEditModalOpen] = useState(false); // controls EditEventModal
 const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // const [events, setEvents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,37 +72,34 @@ const [selectedEvent, setSelectedEvent] = useState(null);
   const itemsPerPage = 5;
   const filterDropdownRef = useRef(null);
 
-  // 1. Fetch Data
-   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        if (!user || !user.token) {
-          console.error("No user token found. Please log in.");
-          return;
-        }
+  useEffect(() => {
+  if (!user?.token) return; // wait until user exists
 
-        const response = await fetch('/api/events', {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
+  const fetchEvents = async () => {
+    try {
+      const response = await fetch('/api/events', {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
 
-        const json = await response.json();
+      const text = await response.text();
+      const json = text ? JSON.parse(text) : [];
 
-        if (response.ok) {
-          const userEvents = json.filter(event => event.createdBy === user._id);
-  dispatch({ type: 'SET_EVENTS', payload: userEvents });
-        } else {
-          console.error("Failed to fetch events:", json);
-        }
-      } catch (error) {
-        console.error("Error fetching events:", error);
+      if (response.ok) {
+        // 🔥 No frontend filtering anymore
+        dispatch({ type: 'SET_EVENTS', payload: json });
+      } else {
+        console.error("Failed to fetch events:", json);
       }
-    };
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    }
+  };
 
-    fetchEvents();
-  }, [dispatch, user]);
+  fetchEvents();
+}, [user, dispatch]);
 
  const handleDeleteEvent = async (eventId) => {
   if (!window.confirm("Are you sure you want to delete this event?")) return;
