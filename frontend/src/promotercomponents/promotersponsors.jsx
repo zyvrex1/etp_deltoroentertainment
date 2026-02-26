@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import jsPDF from 'jspdf';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../admincomponents/utils/pdfExport';
 import './promotersponsors.css';
 
 const PromoterSponsors = () => {
@@ -48,10 +50,10 @@ const PromoterSponsors = () => {
     ];
 
     const sponsorsData = [
-        { initials: "SJ", name: "Sarah Jenkins", email: "Tech Corp", boothPill: "VIP 101", date: "2026-04-19", status: "Checked In", statusType: "checked", time: "2026-06-16 08:45" },
+        { initials: "SJ", name: "Sarah Jenkins", email: "Tech Corp", boothPill: "VIP", date: "2026-04-19", status: "Checked In", statusType: "checked", time: "2026-06-16 08:45" },
         { initials: "MC", name: "Michael Chen", email: "Tech Corp", boothPill: "Inline Location", date: "2026-01-12", status: "Checked In", statusType: "checked", time: "2026-06-16 08:50" },
         { initials: "MC", name: "Michael Chen", email: "Innovate Labs", boothPill: "Corner Locationt", date: "2026-01-15", status: "Checked In", statusType: "checked", time: "2026-06-16 09:05" },
-        { initials: "MC", name: "Michael Chen", email: "Innovate Labs", boothPill: "VIP 101", date: "2026-02-14", status: "Registered", statusType: "pending", time: "---" },
+        { initials: "MC", name: "Michael Chen", email: "Innovate Labs", boothPill: "VIP", date: "2026-02-14", status: "Registered", statusType: "pending", time: "---" },
         { initials: "MC", name: "Michael Chen", email: "Cloud Systems", boothPill: "Corner Locationt", date: "2026-01-12", status: "Checked In", statusType: "checked", time: "2026-06-16 09:25" },
         { initials: "MC", name: "Michael Chen", email: "Cloud Systems", boothPill: "Corner Locationt", date: "2026-01-12", status: "Checked In", statusType: "checked", time: "2026-06-16 09:25" },
 
@@ -83,6 +85,78 @@ const PromoterSponsors = () => {
     const handleFilterChange = (filter) => {
         setActiveFilter(filter);
         setCurrentPage(1);
+    };
+
+    const getBoothClass = (booth) => {
+  const value = booth.toLowerCase();
+
+  if (value.includes("vip")) return "type-vip";
+  if (value.includes("inline")) return "type-inline";
+  if (value.includes("corner")) return "type-corner";
+
+  return "";
+};
+
+    const exportList = async () => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const margin = 15;
+            const FOOTER_HEIGHT = 15;
+            let y = 45;
+            const lineHeight = 6;
+
+            addReportHeader(pdf, 'Sponsors & Exhibitors', logoData);
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Summary', margin, y);
+            y += lineHeight + 2;
+
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            const currentEventLabel = getSelectedEventLabel();
+            pdf.text(`Event: ${currentEventLabel}`, margin + 2, y); y += lineHeight;
+            pdf.text(`Total Sponsors: ${filteredData.length}`, margin + 2, y); y += lineHeight;
+            pdf.text(`Checked In: ${counts.checked}`, margin + 2, y); y += lineHeight;
+            pdf.text(`Pending: ${counts.pending}`, margin + 2, y); y += lineHeight + 4;
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Sponsors', margin, y);
+            y += 8;
+
+            const headers = ['Name', 'Company', 'Booth', 'Purchase Date', 'Status', 'Check-in Time'];
+            const rows = filteredData.map(row => [
+                row.name,
+                row.email,
+                row.boothPill,
+                row.date,
+                row.status,
+                row.time
+            ]);
+            y = drawTable(pdf, y, headers, rows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+
+            y += 4;
+            pdf.setFontSize(9);
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Sponsors & exhibitors list export. Use the dashboard for real-time updates.', margin, y, { maxWidth: pdfWidth - 2 * margin });
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Sponsors_List_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
+        }
     };
 
 
@@ -119,7 +193,7 @@ const PromoterSponsors = () => {
                             </div>
                         )}
                     </div>
-                    <button className="outlined-button spon-export-btn">
+                    <button className="outlined-button spon-export-btn" onClick={exportList}>
                         <Icon icon="mdi:tray-arrow-down" className="export-icon" />
                         Export List
                     </button>
@@ -195,13 +269,14 @@ const PromoterSponsors = () => {
                                                 <div className="user-avatar">{row.initials}</div>
                                                 <div className="user-details">
                                                     <h6 className="user-name">{row.name}</h6>
-                                                    <span className="user-email smaller-body-text">{row.email}</span>
+                                                    <span className="smaller-body-text user-email">{row.email}</span>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
-                                            <span className={`button-label type-vip`}>{row.boothPill}</span>
-                                        </td>
+<span className={`button-label type-pill ${getBoothClass(row.boothPill)}`}>
+  {row.boothPill}
+</span>                                    </td>
                                         <td className="small-body-text date-col">{row.date}</td>
                                         <td>
                                             <span className={`button-label status-${row.statusType}`}>{row.status}</span>

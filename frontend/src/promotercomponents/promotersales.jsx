@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import jsPDF from 'jspdf';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../admincomponents/utils/pdfExport';
 import './promotersales.css';
 
 const PromoterSales = () => {
@@ -84,6 +86,89 @@ const PromoterSales = () => {
         setCurrentPage(1);
     };
 
+    const exportReport = async () => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const margin = 15;
+            const FOOTER_HEIGHT = 15;
+            let y = 45;
+            const lineHeight = 6;
+
+            addReportHeader(pdf, 'Sales Overview', logoData);
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Summary', margin, y);
+            y += lineHeight + 2;
+
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            const currentEventLabel = getSelectedEventLabel();
+
+            const ticketSales = filteredSalesData.filter(row => row.typePill.toLowerCase() === 'ticket');
+            const boothSales = filteredSalesData.filter(row => row.typePill.toLowerCase() === 'booth');
+            const sumAmounts = (data) =>
+                data.reduce((total, row) => {
+                    const numeric = parseFloat(String(row.amount).replace(/[^0-9.-]+/g, '')) || 0;
+                    return total + numeric;
+                }, 0);
+
+            const ticketTotal = sumAmounts(ticketSales);
+            const boothTotal = sumAmounts(boothSales);
+
+            pdf.text(`Event: ${currentEventLabel}`, margin + 2, y); y += lineHeight;
+            pdf.text(
+                `Ticket Sales: $${ticketTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${ticketSales.length} transactions)`,
+                margin + 2,
+                y
+            ); y += lineHeight;
+            pdf.text(
+                `Booth Sales: $${boothTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${boothSales.length} transactions)`,
+                margin + 2,
+                y
+            ); y += lineHeight;
+            pdf.text(`Total Transactions: ${filteredSalesData.length}`, margin + 2, y); y += lineHeight + 4;
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Transactions', margin, y);
+            y += 8;
+
+            const headers = ['Order ID', 'Customer', 'Type', 'Item', 'Amount', 'Date', 'Status'];
+            const rows = filteredSalesData.map(row => [
+                row.id,
+                row.name,
+                row.typePill,
+                row.item,
+                row.amount,
+                row.date,
+                row.status
+            ]);
+            y = drawTable(pdf, y, headers, rows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+
+            y += 4;
+            pdf.setFontSize(9);
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Report generated from Sales Overview. Use the dashboard for real-time updates.', margin, y, { maxWidth: pdfWidth - 2 * margin });
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Sales_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
+        }
+    };
+
     return (
         <div className="sales-container">
             <div className="sales-header">
@@ -117,7 +202,7 @@ const PromoterSales = () => {
                             </div>
                         )}
                     </div>
-                    <button className="outlined-button sales-export-btn">
+                    <button className="outlined-button sales-export-btn" onClick={exportReport}>
                         <Icon icon="mdi:tray-arrow-up" className="export-icon" />
                         Export Report
                     </button>

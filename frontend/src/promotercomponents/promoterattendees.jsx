@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import jsPDF from 'jspdf';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../admincomponents/utils/pdfExport';
 import './promoterattendees.css';
 
 const PromoterAttendees = () => {
@@ -85,6 +87,68 @@ const PromoterAttendees = () => {
         setCurrentPage(1);
     };
 
+    const exportList = async () => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const margin = 15;
+            const FOOTER_HEIGHT = 15;
+            let y = 45;
+            const lineHeight = 6;
+
+            addReportHeader(pdf, 'Attendee List', logoData);
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Summary', margin, y);
+            y += lineHeight + 2;
+
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            const currentEventLabel = getSelectedEventLabel();
+            pdf.text(`Event: ${currentEventLabel}`, margin + 2, y); y += lineHeight;
+            pdf.text(`Total Attendees: ${filteredData.length}`, margin + 2, y); y += lineHeight;
+            pdf.text(`Checked In: ${counts.checked}`, margin + 2, y); y += lineHeight;
+            pdf.text(`Pending: ${counts.pending}`, margin + 2, y); y += lineHeight + 4;
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Attendees', margin, y);
+            y += 8;
+
+            const headers = ['Name', 'Email', 'Ticket Type', 'Purchase Date', 'Status', 'Check-in Time'];
+            const rows = filteredData.map(row => [
+                row.name,
+                row.email,
+                row.pill,
+                row.date,
+                row.status,
+                row.time
+            ]);
+            y = drawTable(pdf, y, headers, rows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+
+            y += 4;
+            pdf.setFontSize(9);
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Attendee list export. Use the dashboard for real-time check-in status.', margin, y, { maxWidth: pdfWidth - 2 * margin });
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Attendees_List_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
+        }
+    };
+
     return (
         <div className="att-container">
             <div className="att-header">
@@ -118,7 +182,7 @@ const PromoterAttendees = () => {
                             </div>
                         )}
                     </div>
-                    <button className="outlined-button att-export-btn">
+                    <button className="outlined-button att-export-btn" onClick={exportList}>
                         <Icon icon="mdi:tray-arrow-down" className="export-icon" />
                         Export List
                     </button>

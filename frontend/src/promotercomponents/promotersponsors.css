@@ -349,10 +349,36 @@
                 color: var(--color-black-primary);
             }
 
+            .user-email {
+                margin: 0;
+                color: var(--color-black-tertiary);
+            }
+
             .user-company {
                 color: var(--color-black-tertiary);
             }
         }
+
+        .type-pill {
+  display: inline-block;
+}
+  /* VIP - Purple */
+.type-vip {
+  background: var(--color-purple-quaternary);
+  color: var(--color-purple-primary);
+}
+
+/* Inline - Green */
+.type-inline {
+  background: var(--color-green-quaternary);
+  color: var(--color-green-primary);
+}
+
+/* Corner - Yellow */
+.type-corner {
+  background: var(--color-yellow-tertiary);
+  color: var(--color-yellow-primary);
+}
 
         .date-col {
             color: var(--color-black-secondary);

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import jsPDF from 'jspdf';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../admincomponents/utils/pdfExport';
 import './promoterrevenuereports.css';
 
 const PromoterRevenueReports = () => {
@@ -45,6 +47,83 @@ const PromoterRevenueReports = () => {
         { name: "Winter Music Festival", revenue: "$0", percentage: "0%", width: "0%", color: "transparent" },
     ];
 
+    const exportReport = async () => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const margin = 15;
+            const FOOTER_HEIGHT = 15;
+            let y = 45;
+            const lineHeight = 6;
+
+            addReportHeader(pdf, 'Revenue Reports', logoData);
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Summary', margin, y);
+            y += lineHeight + 2;
+
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            const currentEventLabel = getSelectedEventLabel();
+            pdf.text(`Event: ${currentEventLabel}`, margin + 2, y); y += lineHeight;
+            pdf.text('Gross Revenue: $103,550', margin + 2, y); y += lineHeight;
+            pdf.text('Platform Fees: $6,005.9', margin + 2, y); y += lineHeight;
+            pdf.text('Net Earnings: $97,544.10', margin + 2, y); y += lineHeight;
+            pdf.text('Tickets Sold: 1,215', margin + 2, y); y += lineHeight;
+            pdf.text('Booths Sold: 24', margin + 2, y); y += lineHeight;
+            pdf.text('Refunds: $450', margin + 2, y); y += lineHeight + 4;
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Revenue by Source', margin, y);
+            y += 8;
+
+            const sourceHeaders = ['Source', 'Share of Total', 'Amount'];
+            const sourceRows = [
+                ['Ticket Sales', '62%', '$64,050'],
+                ['Sponsorships', '29%', '$30,500'],
+                ['Merchandise', '9%', '$9,000'],
+            ];
+            y = drawTable(pdf, y, sourceHeaders, sourceRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+
+            y += 6;
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Revenue by Event', margin, y);
+            y += 8;
+
+            const eventHeaders = ['Event', 'Revenue', 'Share of Total'];
+            const eventRows = revenueByEvent.map(item => [
+                item.name,
+                item.revenue,
+                item.percentage
+            ]);
+            y = drawTable(pdf, y, eventHeaders, eventRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+
+            y += 4;
+            pdf.setFontSize(9);
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Revenue report export. Use the dashboard for interactive charts and real-time data.', margin, y, { maxWidth: pdfWidth - 2 * margin });
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Revenue_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
+        }
+    };
+
     return (
         <div className="rep-container">
             <div className="rep-header">
@@ -78,7 +157,7 @@ const PromoterRevenueReports = () => {
                             </div>
                         )}
                     </div>
-                    <button className="outlined-button rep-export-btn">
+                    <button className="outlined-button rep-export-btn" onClick={exportReport}>
                         <Icon icon="mdi:tray-arrow-down" />
                         Export Report
                     </button>
