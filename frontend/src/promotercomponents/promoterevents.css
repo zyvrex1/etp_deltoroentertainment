@@ -294,6 +294,10 @@
       color: var(--color-black-secondary);
       font-size: 36px;
     }
+
+    h4{
+      text-align: center;
+    }
   }
 }
 
