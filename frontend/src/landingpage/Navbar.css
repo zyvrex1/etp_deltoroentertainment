@@ -1,0 +1,138 @@
+.landing-navbar-header {
+    background-color: var(--color-bg-dark);
+    color: var(--color-white-primary);
+    width: 100%;
+}
+
+.landing-navbar-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 40px;
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+.landing-navbar-logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    padding: 0;
+    /* removes underline */
+}
+
+.landingpage-logo {
+    height: 64px;
+    /* adjust size */
+    width: auto;
+    object-fit: contain;
+}
+
+
+.landing-navbar-links {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+}
+
+.landing-nav-link {
+    color: var(--color-white-primary) !important;
+    text-decoration: none;
+    transition: opacity 0.3s ease;
+}
+
+.landing-nav-link:hover {
+    opacity: 0.8;
+    color: var(--color-white-primary) !important;
+}
+
+.landing-navbar-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.landing-nav-signin-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-white-primary);
+    cursor: pointer;
+    padding: 10px 16px;
+}
+
+.landing-navbar-mobile-toggle {
+    display: none;
+    cursor: pointer;
+    color: var(--color-white-primary);
+}
+
+.landing-burger-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.landing-navbar-mobile-menu {
+    display: none;
+    flex-direction: column;
+    background-color: var(--color-bg-dark);
+    padding: 16px 24px;
+    gap: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.landing-mobile-nav-link {
+    color: var(--color-white-primary) !important;
+    text-decoration: none;
+    padding: 8px 0;
+}
+
+.landing-mobile-nav-link:hover {
+    opacity: 0.8;
+    color: var(--color-white-primary) !important;
+}
+
+.landing-mobile-signin-btn {
+    background: transparent;
+    border: 1px solid var(--color-white-primary);
+    color: var(--color-white-primary);
+    margin-bottom: 8px;
+}
+
+.landing-mobile-getstarted-btn {
+    width: 100%;
+}
+
+/* Tablet View - 768px */
+@media screen and (max-width: 768px) {
+    .landing-navbar-container {
+        padding: 16px 24px;
+    }
+
+    .landing-navbar-links {
+        display: none;
+    }
+
+    .landing-navbar-actions {
+        display: none;
+    }
+
+    .landing-navbar-mobile-toggle {
+        display: block;
+    }
+
+    .landing-navbar-mobile-menu {
+        display: flex;
+    }
+}
+
+/* Mobile View - 480px */
+@media screen and (max-width: 480px) {
+    .landing-navbar-container {
+        padding: 12px 16px;
+    }
+
+    .landing-burger-icon {
+        width: 28px;
+        height: 28px;
+    }
+}
