@@ -119,7 +119,7 @@ const Login = ({ role, onBack }) => {
                 {!isForgotPassword && (
                     <div className="auth-form-group">
                         <div className="auth-form-label-row">
-                            <label className="auth-form-label">Password</label>
+                            <label className="small-body-text auth-form-label">Password</label>
                             <button
                                 type="button"
                                 className="auth-forgot-link"

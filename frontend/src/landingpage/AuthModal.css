@@ -109,6 +109,11 @@
     padding: 24px 32px 32px 32px;
     overflow-y: auto;
     flex: 1;
+
+    .choose-role{
+        color: var(--color-black-secondary);
+        text-align: left;
+    }
 }
 
 /* Role Selection Grid */
@@ -317,19 +322,22 @@
     }
 }
 
+  .auth-form-label {
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        color: var(--color-black-tertiary);
+        font-weight: 500;
+        display: block;
+        text-align: left;
+    }
+
 .auth-form-label-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
 
-    .auth-form-label {
-        font-family: 'Inter', sans-serif;
-        font-size: 14px;
-        color: #475569;
-        font-weight: 500;
-        display: block;
-    }
+  
 
     .auth-forgot-link {
         background: none;

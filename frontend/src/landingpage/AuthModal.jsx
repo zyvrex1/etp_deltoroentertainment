@@ -141,7 +141,7 @@ const AuthModal = ({ isOpen, onClose, initialTab = "login" }) => {
                 <div className="auth-modal-body">
                     {!selectedRole ? (
                         <>
-                            <p className="smaller-body-text" style={{ marginBottom: "16px" }}>
+                            <p className="smaller-body-text choose-role" style={{ marginBottom: "16px" }}>
                                 {activeTab === "login"
                                     ? "Select your portal"
                                     : "Choose your account type"}

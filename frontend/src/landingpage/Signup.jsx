@@ -114,7 +114,7 @@ const Signup = ({ role, onBack }) => {
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
         <div>
-          <label className="auth-form-label" style={{ marginBottom: "8px" }}>
+          <label className="small-body-text auth-form-label" style={{ marginBottom: "8px" }}>
             Full Name
           </label>
           <div className="auth-input-wrapper">
