@@ -1,28 +1,28 @@
 import { Outlet } from "react-router-dom";
 import { useState } from "react";
 import Navbar from "../landingpage/Navbar.jsx";
-import SignupModal from "../admincomponents/modal/SignupModal.jsx";
-import LoginModal from "../admincomponents/modal/LoginModal.jsx";
+import AuthModal from "../landingpage/AuthModal.jsx";
 
 export default function LandingLayout() {
-  const [isSignupOpen, setIsSignupOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authTab, setAuthTab] = useState("login");
+
+  const openAuthModal = (tab) => {
+    setAuthTab(tab);
+    setIsAuthOpen(true);
+  };
 
   return (
     <>
-      <Navbar 
-        openSignup={() => setIsSignupOpen(true)}
-        openLogin={() => setIsLoginOpen(true)}
+      <Navbar
+        openSignup={() => openAuthModal("signup")}
+        openLogin={() => openAuthModal("login")}
       />
 
-      <SignupModal
-        isOpen={isSignupOpen}
-        onClose={() => setIsSignupOpen(false)}
-      />
-
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        initialTab={authTab}
       />
 
       <Outlet />
