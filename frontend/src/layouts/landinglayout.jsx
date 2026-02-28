@@ -6,9 +6,11 @@ import AuthModal from "../landingpage/AuthModal.jsx";
 export default function LandingLayout() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState("login");
+  const [authRole, setAuthRole] = useState(null);
 
-  const openAuthModal = (tab) => {
+  const openAuthModal = (tab, role = null) => {
     setAuthTab(tab);
+    setAuthRole(role);
     setIsAuthOpen(true);
   };
 
@@ -23,9 +25,10 @@ export default function LandingLayout() {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         initialTab={authTab}
+        initialRole={authRole}
       />
 
-      <Outlet />
+      <Outlet context={{ openAuthModal }} />
     </>
   );
 }

@@ -32,16 +32,16 @@ const ROLES = {
     },
 };
 
-const AuthModal = ({ isOpen, onClose, initialTab = "login" }) => {
+const AuthModal = ({ isOpen, onClose, initialTab = "login", initialRole = null }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
-    const [selectedRole, setSelectedRole] = useState(null);
+    const [selectedRole, setSelectedRole] = useState(initialRole);
 
     useEffect(() => {
         if (isOpen) {
             setActiveTab(initialTab);
-            setSelectedRole(null);
+            setSelectedRole(initialRole);
         }
-    }, [isOpen, initialTab]);
+    }, [isOpen, initialTab, initialRole]);
 
     useEffect(() => {
         if (!isOpen) return;

@@ -9,6 +9,10 @@ const Navbar = ({ openSignup, openLogin }) => {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const handleLinkClick = () => {
+    setIsMenuOpen(false);
+  };
+
   return (
     <header className="landing-navbar-header">
       <div className="landing-navbar-container">
@@ -18,11 +22,11 @@ const Navbar = ({ openSignup, openLogin }) => {
 
         {/* Desktop Navigation */}
         <nav className="landing-navbar-links">
-          <Link to="/" className="landing-nav-link">Home</Link>
-          <Link to="/events" className="landing-nav-link">Events</Link>
-          <Link to="/benefits" className="landing-nav-link">Benefits</Link>
-          <Link to="/about" className="landing-nav-link">About</Link>
-          <Link to="/policies" className="landing-nav-link">Policies</Link>
+          <a href="#home" className="landing-nav-link">Home</a>
+          <a href="#events" className="landing-nav-link">Events</a>
+          <a href="#benefits" className="landing-nav-link">Benefits</a>
+          <a href="#about" className="landing-nav-link">About</a>
+          <a href="#policies" className="landing-nav-link">Policies</a>
         </nav>
 
         <div className="landing-navbar-actions">
@@ -47,10 +51,11 @@ const Navbar = ({ openSignup, openLogin }) => {
       {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
         <div className="landing-navbar-mobile-menu">
-          <Link to="/events" className="landing-mobile-nav-link" onClick={toggleMenu}>Events</Link>
-          <Link to="/benefits" className="landing-mobile-nav-link" onClick={toggleMenu}>Benefits</Link>
-          <Link to="/about" className="landing-mobile-nav-link" onClick={toggleMenu}>About</Link>
-          <Link to="/policies" className="landing-mobile-nav-link" onClick={toggleMenu}>Policies</Link>
+          <a href="#home" className="landing-mobile-nav-link" onClick={handleLinkClick}>Home</a>
+          <a href="#events" className="landing-mobile-nav-link" onClick={handleLinkClick}>Events</a>
+          <a href="#benefits" className="landing-mobile-nav-link" onClick={handleLinkClick}>Benefits</a>
+          <a href="#about" className="landing-mobile-nav-link" onClick={handleLinkClick}>About</a>
+          <a href="#policies" className="landing-mobile-nav-link" onClick={handleLinkClick}>Policies</a>
           <button className="landing-mobile-signin-btn" onClick={() => { openLogin(); toggleMenu(); }}>Sign in</button>
           <button className="primary-button landing-mobile-getstarted-btn" onClick={() => { openSignup(); toggleMenu(); }}>Get Started</button>
         </div>

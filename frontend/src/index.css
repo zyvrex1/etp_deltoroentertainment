@@ -16,73 +16,45 @@
 
   /* white */
   --color-white-primary: #ffffff;
-  /* 100% */
   --color-white-secondary: #8b909b;
-  /* 60% */
   --color-white-tertiary: #4a5161;
-  /* 30% */
   --color-white-quaternary: #232a3b;
-  /* 10% */
 
   /* Black */
   --color-black-primary: #000000;
-  /* 100% */
   --color-black-secondary: #666666;
-  /* 60% */
   --color-black-tertiary: #b3b3b3;
-  /* 30% */
   --color-black-quaternary: #e6e6e6;
-  /* 10% */
 
   /* Red */
   --color-red-primary: #c62828;
-  /* 100% */
   --color-red-secondary: #e07b7b;
-  /* 60% */
   --color-red-tertiary: #f1bcbc;
-  /* 30% */
   --color-red-quaternary: #fae3e3;
-  /* 10% */
 
   /* Green */
   --color-green-primary: #4ca626;
-  /* 100% */
   --color-green-secondary: #93c97b;
-  /* 60% */
   --color-green-tertiary: #c8e3bd;
-  /* 30% */
   --color-green-quaternary: #edf6e9;
-  /* 10% */
 
   /* Blue */
   --color-blue-primary: #0059ff;
-  /* 100% */
   --color-blue-secondary: #6699ff;
-  /* 60% */
   --color-blue-tertiary: #b3ccff;
-  /* 30% */
   --color-blue-quaternary: #e6efff;
-  /* 10% */
 
   /* Purple */
   --color-purple-primary: #8c52ff;
-  /* 100% */
   --color-purple-secondary: #b18fff;
-  /* 60% */
   --color-purple-tertiary: #d7c7ff;
-  /* 30% */
   --color-purple-quaternary: #f1edff;
-  /* 10% */
 
   /* Yellow */
   --color-yellow-primary: #ffcc00;
-  /* 100% */
   --color-yellow-secondary: #ffdd66;
-  /* 60% */
   --color-yellow-tertiary: #ffecb3;
-  /* 30% */
   --color-yellow-quaternary: #fff7e6;
-  /* 10% */
 
   /* Backgrounds */
   --color-bg-dark: #0f172a;
@@ -104,7 +76,7 @@
 
 body {
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 
@@ -194,7 +166,7 @@ button {
   padding: 10px 15px;
   border-radius: 12px;
   background-color: var(--color-green-primary);
-    border: none;
+  border: none;
   color: var(--color-white-primary);
 
 }
