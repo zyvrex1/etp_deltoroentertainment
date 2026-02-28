@@ -28,13 +28,13 @@ export default function SponsorHeader() {
             <div className="sponsor-header-container">
                 <div className="sponsor-logo-container">
                     <NavLink to="/sponsor" className="sponsor-header-logo">
-          <img src="/logo/Logo1.png" alt="App Logo" className="sponsor-logo" />
+                        <img src="/logo/Logo1.png" alt="App Logo" className="sponsor-logo" />
                     </NavLink>
                 </div>
 
                 <nav className="sponsor-nav-links">
                     <NavLink to="/sponsor" className="sponsor-nav-link" end>Home</NavLink>
-                    <NavLink to="/app/sponsor/events" className="sponsor-nav-link">Browse Events</NavLink>
+                    <NavLink to="/sponsor/sponsor-events" className="sponsor-nav-link">Browse Events</NavLink>
                 </nav>
 
                 <div className="sponsor-header-actions">
@@ -94,8 +94,8 @@ export default function SponsorHeader() {
                 </div>
 
                 <div className={`sponsor-mobile-nav ${isMobileMenuOpen ? 'open' : ''}`}>
-                    <NavLink to="/app/sponsor" className="sponsor-mobile-nav-link regular-body-text" onClick={() => setIsMobileMenuOpen(false)} end>Home</NavLink>
-                    <NavLink to="/app/sponsor/events" className="sponsor-mobile-nav-link regular-body-text" onClick={() => setIsMobileMenuOpen(false)}>Browse Events</NavLink>
+                    <NavLink to="/sponsor" className="sponsor-mobile-nav-link regular-body-text" onClick={() => setIsMobileMenuOpen(false)} end>Home</NavLink>
+                    <NavLink to="/sponsor/sponsor-events" className="sponsor-mobile-nav-link regular-body-text" onClick={() => setIsMobileMenuOpen(false)}>Browse Events</NavLink>
                 </div>
             </div>
         </header>

@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import SponsorHeader from "../sponsorcomponents/SponsorHeader.jsx";
+import SponsorFooter from "../sponsorcomponents/SponsorFooter.jsx";
 
 export default function SponsorLayout() {
   const currentUser = {
@@ -10,15 +11,18 @@ export default function SponsorLayout() {
 
   return (
     <div className="sponsor-app-container">
-      {/* Top Navigation */}
+      {/* Global Header */}
       <SponsorHeader user={currentUser} />
 
-      {/* Main Page Content */}
+      {/* Page Content */}
       <main className="sponsor-main-content">
         <div className="sponsor-content-wrapper">
           <Outlet />
         </div>
       </main>
+
+      {/* Global Footer */}
+      <SponsorFooter />
     </div>
   );
 }
