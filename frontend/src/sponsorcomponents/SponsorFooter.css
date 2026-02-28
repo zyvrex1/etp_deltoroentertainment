@@ -8,19 +8,37 @@
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 40px;
-        max-width: 1400px;
+        max-width: 1440px;
         margin: 0 auto;
         border-bottom: 1px solid var(--color-white-tertiary);
-        padding-bottom: 40px;
+        padding-bottom: 80px;
+
+        .sponsor-footer-logo-col {
+            margin-right: 25px;
+
+            .sponsor-logo {
+                width: auto;
+                /* adjust as needed */
+                height: 128px;
+                display: block;
+                margin-bottom: 15px;
+                transition: filter 300ms;
+
+                &:hover {
+                    filter: drop-shadow(0 0 2em #646cffaa);
+                }
+            }
+
+            p {
+                text-align: left;
+            }
+        }
 
         .sponsor-footer-col {
             display: flex;
             flex-direction: column;
             gap: 15px;
 
-            .sponsor-footer-logo {
-                margin-bottom: 15px;
-            }
 
             .footer-desc {
                 color: var(--color-black-secondary);

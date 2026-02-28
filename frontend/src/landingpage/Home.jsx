@@ -434,6 +434,13 @@ const Home = () => {
       {/* Footer */}
       <footer className="landing-footer-section">
         <div className="footer-top">
+          <div className="footer-logo-col">
+                        <img src="/logo/Logo1.png" alt="App Logo" className="sponsor-logo" />
+                        <p className="small-body-text footer-desc">
+                            The easiest way to discover and book tickets for your favorite events.
+                            Secure, fast, and reliable.
+                        </p>
+                    </div>
           <div className="footer-column">
             <h4>Platform</h4>
             <a href="#home">Home</a>

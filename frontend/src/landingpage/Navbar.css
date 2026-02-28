@@ -26,6 +26,13 @@
     /* adjust size */
     width: auto;
     object-fit: contain;
+
+    transition: filter 300ms;
+
+
+                &:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
 }
 
 

@@ -812,11 +812,32 @@ html {
     padding: 60px 5%;
     max-width: 100% !important;
 
+    .footer-logo-col {
+        margin-right: 15px;
+
+        .sponsor-logo {
+            width: auto;
+            /* adjust as needed */
+            height: 128px;
+            display: block;
+            margin-bottom: 15px;
+            transition: filter 300ms;
+
+            &:hover {
+                filter: drop-shadow(0 0 2em #646cffaa);
+            }
+        }
+
+        p {
+            text-align: left;
+        }
+    }
+
     .footer-top {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 40px;
-        max-width: 1400px;
+        max-width: 1440px;
         margin: 0 auto;
         border-bottom: 1px solid var(--color-white-tertiary);
         padding-bottom: 40px;
