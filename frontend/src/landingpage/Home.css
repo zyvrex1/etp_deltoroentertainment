@@ -648,6 +648,7 @@ html {
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            text-align: left;
 
             .info-modal-close {
                 background: none;
@@ -662,6 +663,8 @@ html {
         p {
             color: var(--color-black-secondary);
             line-height: 1.6;
+            text-align: left;
+
         }
     }
 }
