@@ -14,6 +14,8 @@ import LoginModal from "./admincomponents/modal/LoginModal.jsx";
 import LandingLayout from "./layouts/landinglayout.jsx";
 import AdminLayout from "./layouts/adminlayout.jsx";
 import PromoterLayout from "./layouts/promoterlayout.jsx";
+import SponsorLayout from "./layouts/sponsorlayout.jsx";
+
 
 // Admin Pages
 import AdminDashboard from "./admincomponents/dashboard.jsx";
@@ -42,17 +44,21 @@ import PromoterSponsors from "./promotercomponents/promotersponsors.jsx";
 import PromoterRevenue from "./promotercomponents/promoterrevenuereports.jsx";
 import PromoterPayouts from "./promotercomponents/promoterpayouts.jsx";
 
+// Sponsor Pages
+
+import SponsorHome from "./sponsorcomponents/SponsorHome.jsx";
+
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-       <Route element={<LandingLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-      </Route>
+        <Route element={<LandingLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+        </Route>
 
-        
+
         <Route
           path="/admin"
           element={
@@ -95,9 +101,22 @@ function App() {
           <Route path="promoter-sponsors" element={<PromoterSponsors />} />
           <Route path="promoter-revenue" element={<PromoterRevenue />} />
           <Route path="promoter-payouts" element={<PromoterPayouts />} />
+        </Route>
 
-
-
+        <Route
+          path="/sponsor"
+          element={
+            // <ProtectedRoute allowedRole="sponsor">
+            <SponsorLayout />
+            // </ProtectedRoute>
+          }
+        >
+          <Route index element={<SponsorHome />} />
+          {/* <Route path="campaigns" element={<SponsorCampaigns />} />
+          <Route path="events" element={<SponsorEvents />} />
+          <Route path="analytics" element={<SponsorAnalytics />} />
+          <Route path="payments" element={<SponsorPayments />} />
+          <Route path="settings" element={<SponsorSettings />} /> */}
         </Route>
       </Routes>
     </BrowserRouter>

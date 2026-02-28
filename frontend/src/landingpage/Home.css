@@ -237,7 +237,7 @@ html {
             border: 1px solid var(--color-black-quaternary);
             flex: 0 0 auto;
             width: 280px;
-            text-align: left;
+            text-align: center;
 
 
         }
@@ -248,17 +248,17 @@ html {
         }
 
         .red-badge {
-            background-color: var(--color-red-quaternary);
+            background-color: var(--color-red-tertiary);
             color: var(--color-red-primary);
         }
 
         .blue-badge {
-            background-color: var(--color-blue-quaternary);
+            background-color: var(--color-blue-tertiary);
             color: var(--color-blue-primary);
         }
 
         .green-badge {
-            background-color: var(--color-green-quaternary);
+            background-color: var(--color-green-tertiary);
             color: var(--color-green-primary);
         }
 
@@ -841,9 +841,9 @@ html {
                 }
             }
 
-            p{
-               color: var(--color-white-secondary);
-                text-align: left; 
+            p {
+                color: var(--color-white-secondary);
+                text-align: left;
             }
         }
     }
@@ -861,16 +861,16 @@ html {
             display: flex;
             gap: 15px;
 
-             a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    color: var(--color-white-primary);
-    transition: 0.3s ease;
-}
+            a {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                color: var(--color-white-primary);
+                transition: 0.3s ease;
+            }
         }
     }
 }
