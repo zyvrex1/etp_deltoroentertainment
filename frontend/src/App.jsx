@@ -47,7 +47,10 @@ import PromoterPayouts from "./promotercomponents/promoterpayouts.jsx";
 // Sponsor Pages
 
 import SponsorHome from "./sponsorcomponents/SponsorHome.jsx";
-
+import SponsorEvents from "./sponsorcomponents/SponsorBrowseEvents.jsx";
+import SponsorEventDetails from './sponsorcomponents/SponsorEventDetails';
+import SponsorVenueLayout from './sponsorcomponents/SponsorVenueLayout';
+import SponsorConfirmSelection from './sponsorcomponents/SponsorConfirmSelection';
 
 function App() {
   return (
@@ -112,8 +115,11 @@ function App() {
           }
         >
           <Route index element={<SponsorHome />} />
-          {/* <Route path="campaigns" element={<SponsorCampaigns />} />
-          <Route path="events" element={<SponsorEvents />} />
+          <Route path="sponsor-events" element={<SponsorEvents />} />
+          <Route path="/sponsor/sponsor-event/:id" element={<SponsorEventDetails />} />
+          <Route path="/sponsor/sponsor-venue-layout" element={<SponsorVenueLayout />} />
+          <Route path="/sponsor/sponsor-confirm-selection" element={<SponsorConfirmSelection />} />
+          {/* <Route path="events" element={<SponsorEvents />} />
           <Route path="analytics" element={<SponsorAnalytics />} />
           <Route path="payments" element={<SponsorPayments />} />
           <Route path="settings" element={<SponsorSettings />} /> */}

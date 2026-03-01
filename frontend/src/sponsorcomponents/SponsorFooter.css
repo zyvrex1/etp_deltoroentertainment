@@ -1,9 +1,17 @@
 .sponsor-footer {
     background-color: var(--color-bg-dark);
     color: var(--color-white-primary);
-    padding: 60px 5%;
-    max-width: 100% !important;
-
+padding: 60px 0;    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    .sponsor-footer-inner {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+.sponsor-footer-grid > * {
+    min-width: 0;
+}
     .sponsor-footer-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -13,16 +21,15 @@
         border-bottom: 1px solid var(--color-white-tertiary);
         padding-bottom: 80px;
 
+        width: 100%;
+        box-sizing: border-box;
+
         .sponsor-footer-logo-col {
             margin-right: 25px;
 
             .sponsor-logo {
-                width: auto;
-                /* adjust as needed */
-                height: 128px;
-                display: block;
-                margin-bottom: 15px;
-                transition: filter 300ms;
+                max-width: 100%;
+                height: auto;
 
                 &:hover {
                     filter: drop-shadow(0 0 2em #646cffaa);
@@ -97,3 +104,61 @@
         }
     }
 }
+
+
+@media (max-width: 1024px) {
+    .sponsor-footer-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 30px;
+    }
+}
+
+/* Small tablets / 768px */
+@media (max-width: 768px) {
+
+
+    .sponsor-footer-grid {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+    .sponsor-footer-logo-col,
+    .sponsor-footer-col {
+        width: 100%;
+    }
+    .sponsor-footer-bottom {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .sponsor-social-links {
+        justify-content: center;
+    }
+
+    .footer-desc {
+        max-width: 100%;
+    }
+}
+
+/* Mobile / 480px */
+@media (max-width: 480px) {
+    .sponsor-logo {
+        height: 100px;
+        margin-bottom: 10px;
+    }
+
+    h4 {
+        font-size: 16px;
+    }
+
+    a,
+    p {
+        font-size: 14px;
+    }
+
+    .sponsor-social-links a {
+        width: 32px;
+        height: 32px;
+    }
+}
+

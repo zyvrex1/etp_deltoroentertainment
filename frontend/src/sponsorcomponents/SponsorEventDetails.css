@@ -1,0 +1,442 @@
+.sed-page-wrapper {
+    background-color: var(--color-bg-light);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+
+    .sed-hero-banner {
+        position: relative;
+        height: 300px;
+        background-image: url('/assets/eventbg.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 40px 5%;
+
+        .sed-hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 100%);
+            z-index: 1;
+        }
+
+        .sed-hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: left;
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0 30px;
+
+            .sed-open-pill {
+                background-color: var(--color-red-primary);
+                color: var(--color-white-primary);
+                display: inline-block;
+                margin-bottom: 16px;
+            }
+
+            .sed-hero-title {
+                color: var(--color-white-primary);
+                margin-bottom: 10px;
+            }
+
+            .sed-hero-info {
+                display: flex;
+                align-items: center;
+                gap: 32px;
+                flex-wrap: wrap;
+
+                .sed-hero-info-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    color: var(--color-white-primary);
+
+                    svg {
+                        color: var(--color-red-primary);
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+.sed-page-wrapper {
+    overflow-x: hidden;
+}
+
+
+
+.sed-main-container {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 60px 30px;
+    display: flex;
+    gap: 40px;
+    flex: 2;
+    align-items: flex-start;
+    min-width: 0;
+
+    .sed-content-left {
+        flex: 2;
+        min-width: 0;
+        flex-shrink: 0;
+        background: transparent;
+
+        .sed-tabs {
+            display: flex;
+            gap: 32px;
+            border-bottom: 1px solid var(--color-black-tertiary);
+            margin-bottom: 40px;
+
+            .sed-tab {
+                background: transparent;
+                border: none;
+                padding: 0 0 16px 0;
+                color: var(--color-black-secondary);
+                cursor: pointer;
+                border-bottom: 3px solid transparent;
+                border-radius: 0;
+
+                &:hover {
+                    color: var(--color-black-primary);
+                }
+            }
+
+            .sed-tab.active {
+                color: var(--color-red-primary);
+                border-bottom-color: var(--color-red-primary);
+            }
+        }
+
+        .sed-tab-content {
+            text-align: left;
+
+            h3 {
+                color: var(--color-black-primary);
+                margin-bottom: 16px;
+            }
+
+            p {
+                color: var(--color-black-secondary);
+            }
+
+            h4 {
+                color: var(--color-black-primary);
+                margin-bottom: 20px;
+                margin-top: 32px;
+            }
+
+            h6 {
+                color: var(--color-black-primary);
+
+            }
+
+            .sed-desc {
+                max-width: 800px;
+                line-height: 1.6;
+            }
+
+            .sed-demographics-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+
+                .sed-demo-card {
+                    background: var(--color-white-primary);
+                    padding: 16px 20px;
+                    border-radius: 8px;
+                    border: 1px solid var(--color-black-quaternary);
+
+                    h4 {
+                        margin: 0;
+                    }
+                }
+            }
+
+            .sed-benefits-list {
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
+                margin-top: 24px;
+
+                .sed-benefit-item {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 16px;
+
+                    .sed-benefit-icon {
+                        width: 48px;
+                        height: 48px;
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-shrink: 0;
+
+                        svg {
+                            font-size: 24px;
+                        }
+                    }
+
+                    .bg-blue-light {
+                        background-color: var(--color-blue-tertiary);
+                    }
+
+                    .text-blue {
+                        color: var(--color-blue-primary);
+                    }
+
+                    .bg-red-light {
+                        background-color: var(--color-red-tertiary);
+                    }
+
+                    .text-red {
+                        color: var(--color-red-primary);
+                    }
+
+                    h6 {
+                        margin-bottom: 4px;
+                    }
+                }
+            }
+
+            .sed-pricing-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 16px;
+                margin-top: 24px;
+
+                .sed-pricing-card {
+                    background: var(--color-white-primary);
+                    border: 1px solid var(--color-black-quaternary);
+                    border-radius: 12px;
+                    padding: 24px 16px;
+                    text-align: center;
+                    width: 100%;
+
+                    .text-center {
+                        text-align: center;
+                    }
+
+                    .mt-2 {
+                        margin-top: 16px;
+                    }
+                }
+            }
+        }
+    }
+
+    .sed-content-right {
+        flex: 1;
+        min-width: 300px;
+        max-width: 400px;
+        position: sticky;
+        top: 40px;
+
+        .sed-reserve-card {
+            background: var(--color-white-primary);
+            border: 1px solid var(--color-black-tertiary);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            text-align: left;
+        }
+
+        h4 {
+            margin-bottom: 12px;
+            color: var(--color-black-primary);
+        }
+
+        p {
+            color: var(--color-black-secondary);
+        }
+
+        .mb-4 {
+            margin-bottom: 24px;
+        }
+
+        .sed-availability-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+
+            .text-secondary {
+                color: var(--color-black-secondary);
+            }
+
+            .text-green {
+                color: var(--color-green-primary);
+            }
+
+            .text-red {
+                color: var(--color-red-primary);
+            }
+
+        }
+
+        .sed-progress-bar-container {
+            height: 8px;
+            background-color: var(--color-black-quaternary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+
+            .sed-progress-bar {
+                height: 100%;
+                background-color: var(--color-red-primary);
+                border-radius: 4px;
+            }
+        }
+
+        .sed-progress-text {
+            text-align: right;
+            margin-bottom: 32px;
+
+            .text-secondary {
+                color: var(--color-black-secondary);
+            }
+        }
+
+        .sed-full-btn {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .sed-download-kit {
+            display: block;
+            text-align: center;
+            text-decoration: none;
+            color: var(--color-black-secondary);
+
+        }
+    }
+}
+
+
+
+
+
+/* Pricing Grid */
+
+
+
+
+
+
+
+/* Media Queries */
+@media (max-width: 1024px) {
+    .sed-main-container {
+        flex-direction: column;
+
+    }
+
+    .sed-content-right {
+        width: 100%;
+        max-width: none;
+        position: static;
+    }
+
+    .sed-pricing-grid {
+        grid-template-columns: 1fr !important;
+
+        gap: 16px;
+        /* optional spacing between cards */
+        width: 100%;
+    }
+
+    .sed-pricing-card {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 768px) {
+    .sed-main-container {
+        flex-direction: column;
+
+    }
+
+      .sed-content-left,
+    .sed-content-right {
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    .sed-hero-info {
+        gap: 16px;
+    }
+
+    .sed-demographics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sed-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        white-space: nowrap;
+        min-width: 0;
+        justify-content: center;
+    }
+
+    .sed-pricing-grid {
+        grid-template-columns: 1fr !important;
+
+        gap: 16px;
+        /* optional spacing between cards */
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .sed-pricing-card {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+
+@media (max-width: 480px) {
+    .sed-hero-content {
+        padding: 0 !important;
+    }
+
+    .sed-main-container {
+        padding: 24px;
+    }
+
+    .sed-hero-info {
+        gap: 10px !important;
+    }
+
+    .sed-pricing-grid {
+        grid-template-columns: 1fr !important;
+
+        gap: 16px;
+        /* optional spacing between cards */
+        width: 100%;
+    }
+
+    .sed-pricing-card {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
