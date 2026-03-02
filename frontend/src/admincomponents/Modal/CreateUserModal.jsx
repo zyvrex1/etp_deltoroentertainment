@@ -2,39 +2,73 @@ import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './CreateUserModal.css';
 import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from '../utils/sweetAlert';
+import { useAuthContext } from '../hooks/useAuthContext';
 
 const CreateUserModal = ({ isOpen, onClose }) => {
-    const [userType, setUserType] = useState('Admin');
+    const { user } = useAuthContext();
+    const [userType, setUserType] = useState('superadmin', 'admin');
     const [formData, setFormData] = useState({});
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const result = await showCreateConfirmAlert(
-            'Create User?',
-            `Are you sure you want to create a new ${userType} user?`
-        );
-
-        if (!result.isConfirmed) {
-            return;
-        }
-
-        try {
-            // Here you would typically send the data to your API
-            await showSuccessAlert('User Created', 'The user has been created successfully. An invitation email has been sent.');
-            onClose();
-            setFormData({});
-        } catch (error) {
-            console.error('Error creating user:', error);
-        }
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
+
+    const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const result = await showCreateConfirmAlert(
+        'Create User?',
+        `Are you sure you want to create a new ${userType} user?`
+    );
+    if (!result.isConfirmed) return;
+
+    try {
+        const payload = {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            role: userType.toLowerCase()
+        };
+
+        // Choose route based on logged-in user
+        const route =
+            user?.role === 'superadmin'
+                ? '/api/superadmin/create-user'
+                : '/api/admin/create-user';
+
+       const response = await fetch(route, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${user?.token}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        let data;
+        try {
+            data = await response.json();
+        } catch {
+            data = { error: 'Server did not return JSON. Check backend.' };
+        }
+
+        if (!response.ok) throw new Error(data.error || 'Failed to create user');
+
+        await showSuccessAlert('User Created', data.message);
+        onClose();
+        setFormData({});
+    } catch (error) {
+        console.error('Error creating user:', error);
+        alert(error.message);
+    }
+};
 
     const handleCancel = async () => {
         const hasChanges = Object.values(formData).some(val => val && val.toString().trim() !== '');
         if (hasChanges) {
             const result = await showCancelConfirmAlert();
-            if (result.isConfirmed) {
-                onClose();
-            }
+            if (result.isConfirmed) onClose();
         } else {
             onClose();
         }
@@ -49,22 +83,56 @@ const CreateUserModal = ({ isOpen, onClose }) => {
                     <>
                         <div className="add-user-form-row">
                             <div className="add-user-form-group">
-                                <h6>Full Name</h6>
-                                <input type="text" placeholder="e.g. John Doe" />
+                                <h6>First Name</h6>
+                                <input
+                                    type="text"
+                                    name="firstName"
+                                    value={formData.firstName || ''}
+                                    onChange={handleChange}
+                                    placeholder="e.g. John"
+                                />
+                            </div>
+                            <div className="add-user-form-group">
+                                <h6>Last Name</h6>
+                                <input
+                                    type="text"
+                                    name="lastName"
+                                    value={formData.lastName || ''}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Doe"
+                                />
                             </div>
                             <div className="add-user-form-group">
                                 <h6>Email Address</h6>
-                                <input type="email" placeholder="john@example.com" />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email || ''}
+                                    onChange={handleChange}
+                                    placeholder="john@example.com"
+                                />
                             </div>
                         </div>
                         <div className="add-user-form-row">
-                            <div className="add-user-form-group">
+                            {/* <div className="add-user-form-group">
                                 <h6>Bank Account (Last 4)</h6>
-                                <input type="text" placeholder="e.g. 1234" />
-                            </div>
+                                <input
+                                    type="text"
+                                    name="bankLast4"
+                                    value={formData.bankLast4 || ''}
+                                    onChange={handleChange}
+                                    placeholder="e.g. 1234"
+                                />
+                            </div> */}
                             <div className="add-user-form-group">
                                 <h6>Phone Number</h6>
-                                <input type="tel" placeholder="+1 (555) 000-0000" />
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={formData.phone || ''}
+                                    onChange={handleChange}
+                                    placeholder="+1 (555) 000-0000"
+                                />
                             </div>
                         </div>
                     </>
@@ -74,27 +142,67 @@ const CreateUserModal = ({ isOpen, onClose }) => {
                     <>
                         <div className="add-user-form-row">
                             <div className="add-user-form-group">
-                                <h6>Full Name</h6>
-                                <input type="text" placeholder="e.g. John Doe" />
+                                <h6>First Name</h6>
+                                <input
+                                    type="text"
+                                    name="firstName"
+                                    value={formData.firstName || ''}
+                                    onChange={handleChange}
+                                    placeholder="e.g. John"
+                                />
+                            </div>
+                             <div className="add-user-form-group">
+                                <h6>LastName</h6>
+                                <input
+                                    type="text"
+                                    name="lastName"
+                                    value={formData.lastName || ''}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Doe"
+                                />
                             </div>
                             <div className="add-user-form-group">
                                 <h6>Email Address</h6>
-                                <input type="email" placeholder="john@example.com" />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email || ''}
+                                    onChange={handleChange}
+                                    placeholder="john@example.com"
+                                />
                             </div>
                         </div>
                         <div className="add-user-form-row">
                             <div className="add-user-form-group">
                                 <h6>Company Name</h6>
-                                <input type="text" placeholder="e.g. 1234" />
+                                <input
+                                    type="text"
+                                    name="companyName"
+                                    value={formData.companyName || ''}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Acme Corp"
+                                />
                             </div>
                             <div className="add-user-form-group">
                                 <h6>Industry</h6>
-                                <input type="text" placeholder="e.g. John Doe" />
+                                <input
+                                    type="text"
+                                    name="industry"
+                                    value={formData.industry || ''}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Tech"
+                                />
                             </div>
                         </div>
                         <div className="add-user-form-group add-user-full-width">
                             <h6>Phone Number</h6>
-                            <input type="tel" placeholder="+1 (555) 000-0000" />
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone || ''}
+                                onChange={handleChange}
+                                placeholder="+1 (555) 000-0000"
+                            />
                         </div>
                     </>
                 );
@@ -105,17 +213,45 @@ const CreateUserModal = ({ isOpen, onClose }) => {
                     <>
                         <div className="add-user-form-row">
                             <div className="add-user-form-group">
-                                <h6>Full Name</h6>
-                                <input type="text" placeholder="e.g. John Doe" />
+                                <h6>First Name</h6>
+                                <input
+                                    type="text"
+                                    name="firstName"
+                                    value={formData.firstName || ''}
+                                    onChange={handleChange}
+                                    placeholder="e.g. John Doe"
+                                />
+                            </div>
+                             <div className="add-user-form-group">
+                                <h6>LastName</h6>
+                                <input
+                                    type="text"
+                                    name="lastName"
+                                    value={formData.lastName || ''}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Doe"
+                                />
                             </div>
                             <div className="add-user-form-group">
                                 <h6>Email Address</h6>
-                                <input type="email" placeholder="john@example.com" />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email || ''}
+                                    onChange={handleChange}
+                                    placeholder="john@example.com"
+                                />
                             </div>
                         </div>
                         <div className="add-user-form-group add-user-full-width">
                             <h6>Phone Number</h6>
-                            <input type="tel" placeholder="+1 (555) 000-0000" />
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone || ''}
+                                onChange={handleChange}
+                                placeholder="+1 (555) 000-0000"
+                            />
                         </div>
                     </>
                 );
@@ -176,7 +312,7 @@ const CreateUserModal = ({ isOpen, onClose }) => {
                             </div>
                             <div className="info-content">
                                 <h6>Account Invitation</h6>
-                                <p>An email will be sent to the user with instructions to set their password and activate their account.</p>
+                                <p>An email will be sent to the user with a temporary password. They can log in and set a permanent password.</p>
                             </div>
                         </div>
 
@@ -186,8 +322,6 @@ const CreateUserModal = ({ isOpen, onClose }) => {
                         </div>
                     </form>
                 </div>
-
-
             </div>
         </div>
     );

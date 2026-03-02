@@ -1,5 +1,5 @@
 const express = require('express')
-const { createUser, getAllUsers, getUser, updateUser } = require('../controllers/superadminController')
+const { createUser, getAllUsers, getUser, updateUser, deleteUser } = require('../controllers/superadminController')
 const requireAuth = require('../middleware/requireAuth')
 const requireRole = require('../middleware/requireRole')
 
@@ -30,5 +30,13 @@ router.patch(
   requireRole('admin', 'superadmin'),
   updateUser
 )
+
+router.delete(
+  '/users/:id',
+  requireRole('admin', 'superadmin'),
+  deleteUser
+)
+
+
 
 module.exports = router

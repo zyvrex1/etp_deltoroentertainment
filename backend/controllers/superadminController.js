@@ -1,57 +1,54 @@
 const User = require('../models/userModel')
 const bcrypt = require('bcrypt')
-const validator = require('validator')
+const crypto = require('crypto')
+const { sendEmail } = require('../utils/email')
 
 // Create user (used by both superadmin and admin routes)
 const createUser = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword, role } = req.body
+    const { firstName, lastName, email, role, password, phone, companyName, industry } = req.body;
 
-    if (!firstName || !lastName || !email || !password || !confirmPassword || !role) {
-      return res.status(400).json({ error: 'All fields are required' })
+    if (!firstName || !lastName || !email || !role) {
+      return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // Role-based restriction
-    if (req.user.role === 'admin') {
-      if (!['promoter', 'sponsor', 'customer'].includes(role)) {
-        return res.status(403).json({ error: 'Admins cannot create this role' })
-      }
-    } else if (req.user.role === 'superadmin') {
-      if (!['superadmin', 'admin', 'promoter', 'sponsor', 'customer'].includes(role)) {
-        return res.status(400).json({ error: 'Invalid role' })
-      }
-    } else {
-      return res.status(403).json({ error: 'Access denied' })
-    }
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ error: 'Email already in use' });
 
-    if (password !== confirmPassword) {
-      return res.status(400).json({ error: 'Passwords do not match' })
-    }
+    // Generate temporary password
+    const tempPassword = crypto.randomBytes(6).toString('hex'); // 12-character password
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(tempPassword, salt);
 
-    if (!validator.isEmail(email)) {
-      return res.status(400).json({ error: 'Email is not valid' })
-    }
+    // Create user with hashed temp password
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: hash,
+      role,
+      phone: phone || null,
+      companyName: companyName || null,
+      industry: industry || null,
+    });
 
-    if (!validator.isStrongPassword(password)) {
-      return res.status(400).json({ error: 'Password is not strong enough' })
-    }
+    // Send email with temporary password
+    await sendEmail({
+      to: email,
+      subject: 'Your new account',
+      text: `Hello ${firstName},\n\nYour account has been created.\nTemporary password: ${tempPassword}\nPlease log in and change your password immediately.`
+    });
 
-    const exists = await User.findOne({ email })
-    if (exists) {
-      return res.status(400).json({ error: 'Email already in use' })
-    }
+    return res.status(201).json({
+      message: `${role} created successfully. Temporary password sent via email.`,
+      user: newUser
+    });
 
-    const salt = await bcrypt.genSalt(10)
-    const hash = await bcrypt.hash(password, salt)
-
-    const newUser = await User.create({ firstName, lastName, email, password: hash, role })
-
-    return res.status(201).json({ message: `${role} created successfully`, user: newUser })
   } catch (err) {
-    console.error(err)
-    return res.status(500).json({ error: 'Server error' })
+    console.error(err);
+    return res.status(500).json({ error: 'Server error' });
   }
-}
+};
 
 // Get all users
 const getAllUsers = async (req, res) => {
@@ -142,4 +139,36 @@ const updateUser = async (req, res) => {
   }
 }
 
-module.exports = { createUser, getAllUsers, getUser, updateUser, }
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid user ID' })
+    }
+
+    const user = await User.findById(id)
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    // Admin cannot delete superadmins
+    if (req.user.role === 'admin' && user.role === 'superadmin') {
+      return res.status(403).json({ error: 'Access denied' })
+    }
+
+    // Admin can only delete promoter, sponsor, customer roles
+    if (req.user.role === 'admin' && !['promoter', 'sponsor', 'customer'].includes(user.role)) {
+      return res.status(403).json({ error: 'Admins cannot delete this role' })
+    }
+
+    await user.deleteOne()
+
+    res.status(200).json({ message: 'User deleted successfully' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Server error' })
+  }
+}
+
+module.exports = { createUser, getAllUsers, getUser, updateUser, deleteUser }

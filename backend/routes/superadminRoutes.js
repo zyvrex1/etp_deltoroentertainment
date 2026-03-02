@@ -1,5 +1,5 @@
 const express = require('express')
-const { createUser, getAllUsers, getUser, updateUser } = require('../controllers/superadminController')
+const { createUser, getAllUsers, getUser, updateUser, deleteUser } = require('../controllers/superadminController')
 const requireSuperadmin = require('../middleware/requireSuperadmin')
 
 const router = express.Router()
@@ -14,5 +14,7 @@ router.get('/users', requireSuperadmin, getAllUsers)
 router.get('/users/:id', requireSuperadmin, getUser)
 
 router.patch('/users/:id', requireSuperadmin, updateUser)
+
+router.delete('/users/:id', requireSuperadmin, deleteUser)
 
 module.exports = router

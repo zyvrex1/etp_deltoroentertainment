@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./usermanagement.css";
 import CreateUserModal from './Modal/CreateUserModal';
 import ViewUserModal from './Modal/ViewUserModal';
 import EditUserModal from './Modal/EditUserModal';
+import { useAuthContext } from "./hooks/useAuthContext";
 
 
 const UserManagement = () => {
+  const { user } = useAuthContext();
+  const [allUsers, setAllUsers] = useState([]);
 
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isViewUserModalOpen, setIsViewUserModalOpen] = useState(false);
@@ -18,107 +21,73 @@ const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // All Users Data
-  const allUsers = [
-    { id: 1, name: "Alex Thompson", email: "alex@ticketspro.com", role: "Admin", status: "active", joined: "Jan 15, 2023" },
-    { id: 2, name: "Jessica Martinez", email: "jessica@ticketspro.com", role: "Promoter", status: "active", joined: "Feb 20, 2023" },
-    { id: 3, name: "Robert Chen", email: "robert@ticketspro.com", role: "Sponsor", status: "active", joined: "Mar 15, 2023" },
-    { id: 4, name: "Amanda Foster", email: "amanda@ticketspro.com", role: "Customer", status: "active", joined: "Apr 10, 2023" },
-    { id: 5, name: "Michael Brown", email: "michael@ticketspro.com", role: "Admin", status: "pending", joined: "May 5, 2023" },
-    { id: 6, name: "Sarah Johnson", email: "sarah@ticketspro.com", role: "Customer", status: "active", joined: "May 12, 2023" },
-    { id: 7, name: "David Wilson", email: "david@ticketspro.com", role: "Promoter", status: "active", joined: "Jun 1, 2023" },
-    { id: 8, name: "Emma Davis", email: "emma@ticketspro.com", role: "Sponsor", status: "active", joined: "Jun 18, 2023" },
-    { id: 9, name: "James Miller", email: "james@ticketspro.com", role: "Customer", status: "suspended", joined: "Jul 2, 2023" },
-    { id: 10, name: "Lisa Anderson", email: "lisa@ticketspro.com", role: "Admin", status: "active", joined: "Jul 15, 2023" },
-    { id: 11, name: "Chris Taylor", email: "chris@ticketspro.com", role: "Promoter", status: "active", joined: "Aug 5, 2023" },
-    { id: 12, name: "Rachel White", email: "rachel@ticketspro.com", role: "Customer", status: "active", joined: "Aug 20, 2023" },
-    { id: 13, name: "Mark Harris", email: "mark@ticketspro.com", role: "Sponsor", status: "pending", joined: "Sep 10, 2023" },
-    { id: 14, name: "Nicole Clark", email: "nicole@ticketspro.com", role: "Customer", status: "active", joined: "Sep 22, 2023" },
-    { id: 15, name: "Kevin Lewis", email: "kevin@ticketspro.com", role: "Admin", status: "active", joined: "Oct 1, 2023" },
-    { id: 16, name: "Jennifer Lee", email: "jennifer@ticketspro.com", role: "Promoter", status: "active", joined: "Oct 15, 2023" },
-    { id: 17, name: "Brian Walker", email: "brian@ticketspro.com", role: "Customer", status: "active", joined: "Nov 5, 2023" },
-    { id: 18, name: "Amanda Hall", email: "amanda.h@ticketspro.com", role: "Sponsor", status: "active", joined: "Nov 18, 2023" },
-    { id: 19, name: "Ryan Young", email: "ryan@ticketspro.com", role: "Customer", status: "active", joined: "Dec 2, 2023" },
-    { id: 20, name: "Sophie King", email: "sophie@ticketspro.com", role: "Admin", status: "active", joined: "Dec 15, 2023" },
-    { id: 21, name: "Daniel Wright", email: "daniel.w@ticketspro.com", role: "Promoter", status: "active", joined: "Jan 5, 2024" },
-    { id: 22, name: "Catherine Lopez", email: "catherine@ticketspro.com", role: "Customer", status: "pending", joined: "Jan 18, 2024" },
-    { id: 23, name: "Thomas Hill", email: "thomas@ticketspro.com", role: "Sponsor", status: "active", joined: "Feb 1, 2024" },
-    { id: 24, name: "Laura Scott", email: "laura@ticketspro.com", role: "Customer", status: "active", joined: "Feb 10, 2024" },
-    { id: 25, name: "Andrew Green", email: "andrew@ticketspro.com", role: "Admin", status: "active", joined: "Feb 20, 2024" },
-    { id: 26, name: "Jessica Adams", email: "jessica.a@ticketspro.com", role: "Promoter", status: "active", joined: "Mar 1, 2024" },
-    { id: 27, name: "Paul Nelson", email: "paul@ticketspro.com", role: "Customer", status: "active", joined: "Mar 12, 2024" },
-    { id: 28, name: "Michelle Carter", email: "michelle@ticketspro.com", role: "Sponsor", status: "active", joined: "Mar 25, 2024" },
-    { id: 29, name: "George Roberts", email: "george@ticketspro.com", role: "Customer", status: "active", joined: "Apr 5, 2024" },
-    { id: 30, name: "Angela Phillips", email: "angela@ticketspro.com", role: "Admin", status: "active", joined: "Apr 15, 2024" },
-    { id: 31, name: "Edward Campbell", email: "edward@ticketspro.com", role: "Promoter", status: "active", joined: "Apr 28, 2024" },
-    { id: 32, name: "Maria Parker", email: "maria.p@ticketspro.com", role: "Customer", status: "active", joined: "May 5, 2024" },
-    { id: 33, name: "Joseph Evans", email: "joseph@ticketspro.com", role: "Sponsor", status: "suspended", joined: "May 18, 2024" },
-    { id: 34, name: "Linda Edwards", email: "linda@ticketspro.com", role: "Customer", status: "active", joined: "May 30, 2024" },
-  ];
+  const [loading, setLoading] = useState(true);
 
-  // Customers Data
-  const customers = [
-    { id: 1, name: "Emily Blunt", email: "emily@gmail.com", status: "active", joined: "May 5, 2023", totalSpent: "$598.00", tickets: 1 },
-    { id: 2, name: "James Wilson", email: "james@yahoo.com", status: "active", joined: "Jun 12, 2023", totalSpent: "$299.00", tickets: 1 },
-    { id: 3, name: "Sophia Garcia", email: "sophia@hotmail.com", status: "active", joined: "Jul 20, 2023", totalSpent: "$150.00", tickets: 1 },
-    { id: 4, name: "Daniel Lee", email: "daniel@gmail.com", status: "suspended", joined: "Aug 15, 2023", totalSpent: "$150.00", tickets: 1 },
-    { id: 5, name: "Olivia Martinez", email: "olivia@outlook.com", status: "active", joined: "Sep 1, 2023", totalSpent: "$150.00", tickets: 1 },
-    { id: 6, name: "Mason Taylor", email: "mason@mail.com", status: "active", joined: "Sep 15, 2023", totalSpent: "$450.00", tickets: 2 },
-    { id: 7, name: "Ava Johnson", email: "ava@gmail.com", status: "active", joined: "Oct 1, 2023", totalSpent: "$299.00", tickets: 1 },
-    { id: 8, name: "Ethan Brown", email: "ethan@yahoo.com", status: "active", joined: "Oct 15, 2023", totalSpent: "$750.00", tickets: 3 },
-    { id: 9, name: "Isabella Davis", email: "isabella@hotmail.com", status: "active", joined: "Nov 2, 2023", totalSpent: "$200.00", tickets: 1 },
-    { id: 10, name: "Liam Anderson", email: "liam@mail.com", status: "pending", joined: "Nov 15, 2023", totalSpent: "$0.00", tickets: 0 },
-    { id: 11, name: "Mia Wilson", email: "mia@gmail.com", status: "active", joined: "Nov 28, 2023", totalSpent: "$350.00", tickets: 2 },
-    { id: 12, name: "Noah Martinez", email: "noah@yahoo.com", status: "active", joined: "Dec 10, 2023", totalSpent: "$450.00", tickets: 1 },
-    { id: 13, name: "Charlotte Taylor", email: "charlotte@hotmail.com", status: "active", joined: "Dec 22, 2023", totalSpent: "$599.00", tickets: 2 },
-    { id: 14, name: "Benjamin Lee", email: "benjamin@mail.com", status: "active", joined: "Jan 5, 2024", totalSpent: "$299.00", tickets: 1 },
-    { id: 15, name: "Amelia Clark", email: "amelia@gmail.com", status: "active", joined: "Jan 18, 2024", totalSpent: "$100.00", tickets: 1 },
-  ];
+  useEffect(() => {
+  if (!user?.token) return;
 
-  // Promoters Data
-  const promoters = [
-    { id: 1, name: "TechStart Inc", contact: "sarah@techstart.com", events: 2, revenue: "$178,550.00", paidOut: "$5,000.00", status: "active" },
-    { id: 2, name: "MusicFest LLC", contact: "david@musicfest.com", events: 2, revenue: "$250,000.00", paidOut: "$7,000.00", status: "active" },
-    { id: 3, name: "EventPro Solutions", contact: "maria@eventpro.com", events: 1, revenue: "$1,500.00", paidOut: "$0.00", status: "pending" },
-    { id: 4, name: "ConferenceMasters", contact: "kevin@confmasters.com", events: 1, revenue: "$0.00", paidOut: "$0.00", status: "suspended" },
-    { id: 5, name: "Art Gala Inc", contact: "isa@artgala.com", events: 2, revenue: "$227,500.00", paidOut: "$20,000.00", status: "active" },
-    { id: 6, name: "ConcertWave Events", contact: "alex@concertwave.com", events: 3, revenue: "$350,000.00", paidOut: "$15,000.00", status: "active" },
-  ];
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users', {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
 
-  // Sponsors Data
-  const sponsors = [
-    { id: 1, company: "Global Corp", contact: "Mike Ross", industry: "Technology", booths: 1, totalSpent: "$5,000.00", status: "active" },
-    { id: 2, company: "TechVentures Inc", contact: "Lisa Wang", industry: "Venture Capital", booths: 1, totalSpent: "$3,500.00", status: "active" },
-    { id: 3, company: "MediaMax Group", contact: "John Smith", industry: "Media", booths: 1, totalSpent: "$2,000.00", status: "active" },
-    { id: 4, company: "StartupHub", contact: "Rachel Green", industry: "Incubator", booths: 0, totalSpent: "$0.00", status: "active" },
-    { id: 5, company: "Action Movies", contact: "Tom Cruise", industry: "Entertainment", booths: 0, totalSpent: "$0.00", status: "pending" },
-    { id: 6, company: "PowerTech Solutions", contact: "Jennifer Lee", industry: "Technology", booths: 2, totalSpent: "$8,500.00", status: "active" },
-    { id: 7, company: "Creative Studio", contact: "Mark Johnson", industry: "Design", booths: 1, totalSpent: "$4,200.00", status: "active" },
-    { id: 8, company: "Finance Plus", contact: "Sarah Davis", industry: "Finance", booths: 1, totalSpent: "$6,000.00", status: "active" },
-  ];
+      const text = await response.text();
+      const json = text ? JSON.parse(text) : [];
+
+      if (response.ok) {
+        setAllUsers(json);
+      } else {
+        console.error("Failed to fetch users:", json);
+      }
+
+    } catch (err) {
+      console.error("Error fetching users:", err);
+    }
+  };
+
+  fetchUsers();
+}, [user]);
 
   const tabs = [
     { id: "all-users", label: "All Users", count: allUsers.length },
-    { id: "admins", label: "Admins", count: allUsers.filter(u => u.role === "Admin").length },
-    { id: "customers", label: "Customers", count: customers.length },
-    { id: "sponsors", label: "Sponsors", count: sponsors.length },
-    { id: "promoters", label: "Promoters", count: promoters.length },
+    { id: "admins", label: "Admins", count: allUsers.filter(u => u.role === "admin").length },
+    { id: "customers", label: "Customers", count: allUsers.filter(u => u.role === "customer").length },
+    { id: "sponsors", label: "Sponsors", count: allUsers.filter(u => u.role === "sponsor").length },
+    { id: "promoters", label: "Promoters", count: allUsers.filter(u => u.role === "promoter").length },
   ];
 
-  const getInitial = (name) => name.charAt(0).toUpperCase();
+  const getInitial = (firstName, lastName) => {
+    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : "";
+    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : "";
+    return firstInitial + lastInitial;
+  };
+
+  const getUserStatus = (lastLogin) => {
+    if (!lastLogin) return "inactive"; // never logged in
+    const lastLoginDate = new Date(lastLogin);
+    const now = new Date();
+    const diffInDays = (now - lastLoginDate) / (1000 * 60 * 60 * 24);
+
+    // Example: consider inactive if no login in 30 days
+    return diffInDays <= 30 ? "active" : "inactive";
+  };
 
   const getTableData = () => {
     switch (activeTab) {
       case "all-users":
         return allUsers;
       case "admins":
-        return allUsers.filter(u => u.role === "Admin");
+        return allUsers.filter(u => u.role === "admin");
       case "customers":
-        return customers;
+        return allUsers.filter(u => u.role === "customer");
       case "promoters":
-        return promoters;
+        return allUsers.filter(u => u.role === "promoter");
       case "sponsors":
-        return sponsors;
+        return allUsers.filter(u => u.role === "sponsor");
       default:
         return [];
     }
@@ -158,7 +127,6 @@ const UserManagement = () => {
   const handleEditUser = (user, type) => {
     setSelectedUser(user);
 
-    // Determine type if not explicitly passed (e.g. from All Users tab)
     let userType = type;
     if (!userType && user.role) {
       userType = user.role.toLowerCase();
@@ -176,6 +144,7 @@ const UserManagement = () => {
             <thead>
               <tr>
                 <th>User</th>
+                <th>Email</th>
                 <th>Role</th>
                 <th>Status</th>
                 <th>Joined</th>
@@ -184,23 +153,39 @@ const UserManagement = () => {
             </thead>
             <tbody>
               {paginatedData.map((user) => (
-                <tr key={user.id}>
+                <tr key={user._id}>
                   <td data-label="User">
                     <div className="user-cell">
-                      <span className="avatar">{getInitial(user.name)}</span>
+                      <span className="avatar">{getInitial(user.firstName, user.lastName)}</span>
                       <div>
-                        <h5 className="user-name">{user.name}</h5>
-                        <p className="smaller-body-text">{user.email}</p>
+                        <h5 className="user-name">{user.firstName} {user.lastName}</h5>
                       </div>
                     </div>
+                  </td>
+                  <td>
+                    <h5 className="smaller-body-text">{user.email}</h5>
                   </td>
                   <td data-label="Role">
                     <span className="button-label role-badge">{user.role}</span>
                   </td>
                   <td data-label="Status">
-                    <span className={`button-label status-${user.status}`}>{user.status}</span>
+                    <span
+                      className={`button-label status-${getUserStatus(user.lastLogin)}`}
+                      style={{
+                        backgroundColor:
+                          getUserStatus(user.lastLogin) === "active" ? "green" : "gray"
+                      }}
+                    >
+                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() + getUserStatus(user.lastLogin).slice(1)}
+                    </span>
                   </td>
-                  <td data-label="Joined" className="small-body-text">{user.joined}</td>
+                  <td data-label="Joined" className="small-body-text">
+                    {new Date(user.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric"
+                    })}
+                  </td>
                   <td data-label="Actions">
                     <div className="actions">
                       <button className="action-btn view-btn" onClick={() => handleViewUser(user)}>
@@ -246,7 +231,15 @@ const UserManagement = () => {
                     </div>
                   </td>
                   <td data-label="Status">
-                    <span className={`button-label status-${customer.status}`}>{customer.status}</span>
+                    <span
+                      className={`button-label status-${getUserStatus(user.lastLogin)}`}
+                      style={{
+                        backgroundColor:
+                          getUserStatus(user.lastLogin) === "active" ? "green" : "gray"
+                      }}
+                    >
+                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() + getUserStatus(user.lastLogin).slice(1)}
+                    </span>
                   </td>
                   <td data-label="Joined" className="small-body-text">{customer.joined}</td>
                   <td data-label="Total Spent" className="regular-body-text">{customer.totalSpent}</td>
@@ -301,7 +294,15 @@ const UserManagement = () => {
                   <td data-label="Revenue" className="regular-body-text revenue">{promoter.revenue}</td>
                   <td data-label="Paid Out" className="regular-body-text paid-out">{promoter.paidOut}</td>
                   <td data-label="Status">
-                    <span className={`button-label status-${promoter.status}`}>{promoter.status}</span>
+                    <span
+                      className={`button-label status-${getUserStatus(user.lastLogin)}`}
+                      style={{
+                        backgroundColor:
+                          getUserStatus(user.lastLogin) === "active" ? "green" : "gray"
+                      }}
+                    >
+                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() + getUserStatus(user.lastLogin).slice(1)}
+                    </span>
                   </td>
                   <td data-label="Actions">
                     <div className="actions">
@@ -357,7 +358,15 @@ const UserManagement = () => {
                   <td className="small-body-text" data-label="Booths">{sponsor.booths}</td>
                   <td className="regular-body-text" data-label="Total Spent">{sponsor.totalSpent}</td>
                   <td data-label="Status">
-                    <span className={`button-label status-${sponsor.status}`}>{sponsor.status}</span>
+                    <span
+                      className={`button-label status-${getUserStatus(user.lastLogin)}`}
+                      style={{
+                        backgroundColor:
+                          getUserStatus(user.lastLogin) === "active" ? "green" : "gray"
+                      }}
+                    >
+                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() + getUserStatus(user.lastLogin).slice(1)}
+                    </span>
                   </td>
                   <td data-label="Actions">
                     <div className="actions">

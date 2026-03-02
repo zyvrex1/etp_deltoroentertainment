@@ -20,8 +20,22 @@ const userSchema = new Schema({
     type: String,
     enum: ['superadmin', 'admin', 'promoter', 'sponsor', 'customer'],
     required: true
-  }
+  },
+   phone: {
+    type: String,
+    default: null
+  },
+   companyName: {
+    type: String,
+    default: null
+  },
+  industry: {
+    type: String,
+    default: null
+  },
+  lastLogin: { type: Date }
 }, { timestamps: true })
+
 
 // ================= SIGNUP =================
 userSchema.statics.signup = async function (email, password, confirmPassword, role) {

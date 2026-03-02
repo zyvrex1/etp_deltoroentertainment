@@ -25,7 +25,7 @@ const signupUser = async (req, res) => {
 
     // Create user
     const user = await User.signup(email, password, confirmPassword, role)
-
+6
     // Role-specific profile
     if (role === 'customer') {
       if (!firstName || !lastName || !phone) throw Error('Missing customer fields')
@@ -52,12 +52,16 @@ const loginUser = async (req, res) => {
     if (!email || !password) throw Error('All fields must be filled')
 
     // Attempt to login
-    const user = await User.login(email, password)
+    const user = await User.login(email, password) // your custom login method
     const token = createToken(user);
+
+    // ✅ Update lastLogin before sending response
+    user.lastLogin = new Date();
+    await user.save();
 
     // Return user info including firstName and lastName
     res.status(200).json({
-      _id: user._id,   // ✅ ADD THIS
+      _id: user._id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
