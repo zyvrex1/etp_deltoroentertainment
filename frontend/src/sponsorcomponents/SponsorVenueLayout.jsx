@@ -81,9 +81,9 @@ const SponsorVenueLayout = () => {
                         <div className="svl-step-info">
                             <span className="small-body-text font-bold text-primary mr-4">Booth Selection</span>
                             <div className="svl-step-progress">
-                                <span className="smaller-body-text text-secondary mb-1 block text-right">Step 1 of 3</span>
+                                <span className="smaller-body-text text-secondary mb-1 block text-right">Step 1 of 4</span>
                                 <div className="svl-progress-bar-container">
-                                    <div className="svl-progress-bar" style={{ width: '33%' }}></div>
+                                    <div className="svl-progress-bar" style={{ width: '25%' }}></div>
                                 </div>
                             </div>
                         </div>
