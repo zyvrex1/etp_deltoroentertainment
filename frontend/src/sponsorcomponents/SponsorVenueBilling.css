@@ -1,0 +1,423 @@
+/* Sponsor Venue Billing Styles */
+
+.svb-page-wrapper {
+    background-color: var(--color-bg-light);
+    min-height: calc(100vh - 80px);
+    padding-bottom: 40px;
+
+
+    .svb-header-top {
+    background-color: var(--color-white-primary);
+    border-bottom: 1px solid var(--color-black-tertiary);
+    padding: 20px 0;
+
+
+        .svb-header-content {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 0 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+            .svb-header-left {
+                display: flex;
+                gap: 16px;
+                width: 100%;
+                min-width: 0;
+
+                .svb-back-btn {
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 24px;
+                    display: flex;
+                    align-items: center;
+                    color: var(--color-black-primary);
+                }
+
+                h2 {
+                    margin: 0;
+                    color: var(--color-black-primary);
+                    word-break: break-word;
+                    overflow-wrap: break-word;
+                    text-align: left;
+                }
+
+                .svb-subtitle {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    flex-wrap: wrap;
+                    color: var(--color-black-tertiary);
+                    text-align: left;
+
+                }
+            }
+
+            .svb-header-right {
+                display: flex;
+                align-items: center;
+
+                .svb-step-info {
+                    display: flex;
+                    align-items: center;
+                }
+
+                span {
+                    color: var(--color-black-secondary);
+                    white-space: nowrap;
+                }
+
+                .svb-step-progress {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+
+                    .svb-progress-bar-container {
+                        width: 60px;
+                        height: 6px;
+                        background-color: var(--color-black-quaternary);
+                        border-radius: 3px;
+                        overflow: hidden;
+
+                        .svb-progress-bar {
+                            height: 100%;
+                            background-color: var(--color-red-primary);
+                            border-radius: 3px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+/* Main Layout */
+.svb-main-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 40px 30px;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+
+    p {
+        color: var(--color-black-primary);
+        text-align: center;
+    }
+
+    .svb-card {
+        background-color: var(--color-white-primary);
+        border-radius: 10px;
+        border: 1px solid var(--color-black-quaternary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+
+        .svb-card-body {
+            padding: 25px;
+
+            h4 {
+                color: var(--color-black-primary);
+                text-align: left;
+            }
+
+
+        }
+    }
+}
+
+/* Forms */
+.svb-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 12px;
+}
+
+.svb-form-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+
+
+    label {
+        color: var(--color-black-tertiary);
+        margin-bottom: 8px;
+    }
+
+    .svb-input {
+        padding: 12px 15px;
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 6px;
+        font-family: inherit;
+        color: var(--color-black-primary);
+        background-color: var(--color-white-primary);
+        transition: border-color 0.2s;
+        width: 100%;
+        box-sizing: border-box;
+
+        &:focus {
+            outline: none;
+            border: 1px solid var(--color-black-quaternary);
+
+            &::placeholder {
+                color: var(--color-black-quaternary);
+                opacity: 0.6;
+            }
+        }
+    }
+
+    .svb-input-icon-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+
+        .svb-input-icon {
+            position: absolute;
+            left: 15px;
+            font-size: 1.2rem;
+            color: var(--color-black-tertiary);
+        }
+
+        .svb-input.with-icon {
+            padding-left: 45px;
+        }
+    }
+}
+
+.svb-payment-option {
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--white);
+}
+
+.svb-payment-option.selected {
+    border: 1.5px solid var(--color-red-primary);
+    background-color: var(--color-red-quaternary);
+    margin: 12px 0;
+}
+
+.svb-payment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    .svb-radio-group {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 12px;
+        text-align: left;
+
+        span {
+            color: var(--color-black-secondary);
+        }
+
+        svg {
+            color: var(--color-black-primary);
+        }
+
+        h5 {
+            color: var(--color-black-primary);
+        }
+
+        .svb-radio {
+            margin-top: 4px;
+            accent-color: var(--color-red-primary);
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+    }
+
+    .svb-card-badges {
+        display: flex;
+        gap: 8px;
+    }
+
+    .svb-badge {
+        border-radius: 4px;
+        color: white;
+    }
+
+    .svb-badge.blue {
+        background-color: var(--color-bg-dark);
+        /* Visa blue */
+    }
+
+    .svb-badge.orange {
+        background-color: var(--color-red-primary);
+    }
+
+    .svb-badge.light-blue {
+        background-color: var(--color-blue-primary);
+    }
+}
+
+.svb-info-alert {
+    background-color: var(--color-blue-quaternary);
+    border: 1px solid var(--color-blue-primary);
+    border-radius: 6px;
+    padding: 12px 15px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    color: var(--color-blue-primary);
+    text-align: left;
+
+    .svb-info-icon {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+}
+
+.svb-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    color: var(--color-black-quaternary);
+
+}
+
+.svb-divider {
+    border: none;
+    border-top: 1px solid var(--color-black-quaternary);
+    margin: 12px 0;
+}
+
+.svb-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.svb-pay-btn {
+    border-radius: 8px;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.align-items-center {
+    align-items: center;
+}
+
+.svb-content-right {
+    flex: 1;
+    min-width: 320px;
+    max-width: 100%;
+    top: 40px;
+    text-align: left;
+
+    span {
+        color: var(--color-black-secondary);
+    }
+
+    h5 {
+        color: var(--color-black-primary);
+    }
+}
+
+
+/* Responsive */
+@media screen and (max-width: 1024px) {
+    .svb-main-container {
+        grid-template-columns: 1fr;
+    }
+
+    .svb-content-right {
+        /* Move order summary to top on smaller screens */
+        margin-bottom: 20px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .svb-header-content {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding: 0 16px;
+        gap: 8px;
+    }
+
+    .svb-header-right {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .svb-form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        /* Adjust gap for stacked inputs */
+    }
+}
+
+@media screen and (max-width: 480px) {
+
+        .svb-header-content {
+        padding: 0 16px !important;
+    }
+    .svb-main-container {
+        padding: 24px 16px;
+    }
+        .svb-header-left {
+        flex-direction: row;
+        gap: 10px !important;
+        width: 100%;
+
+        h2 {
+            margin: 0;
+        }
+
+        .svb-back-btn {
+            padding: 0 !important;
+        }
+    }
+
+       .svb-subtitle {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 4px;
+    }
+    .svb-card-body {
+        padding: 15px;
+
+
+    }
+
+    .svb-payment-option {
+        padding: 15px;
+    }
+
+    .svb-step-info {
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .svb-step-progress {
+        width: 100%;
+        max-width: 200px;
+    }
+
+    .svb-payment-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .svb-card-badges {
+        margin-left: 28px;
+        /* align with text */
+    }
+}

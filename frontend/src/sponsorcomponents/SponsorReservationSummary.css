@@ -1,0 +1,422 @@
+/* Sponsor Reservation Summary Styles */
+
+.srs-page-wrapper {
+    background-color: var(--color-bg-light);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.srs-header-top {
+    background-color: var(--color-white-primary);
+    border-bottom: 1px solid var(--color-black-tertiary);
+    padding: 20px 0;
+
+    .srs-header-content {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 0 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .srs-header-left {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            min-width: 0;
+
+
+            .srs-back-btn {
+                background: transparent;
+                border: none;
+                cursor: pointer;
+                font-size: 24px;
+                display: flex;
+                align-items: center;
+                color: var(--color-black-primary);
+            }
+
+            h2 {
+                margin: 0;
+                color: var(--color-black-primary);
+                word-break: break-word;
+                overflow-wrap: break-word;
+                text-align: left;
+            }
+
+            .srs-subtitle {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                flex-wrap: wrap;
+                color: var(--color-black-tertiary);
+                text-align: left;
+
+            }
+        }
+
+        .srs-header-right {
+            display: flex;
+            align-items: center;
+
+            .srs-step-info {
+                display: flex;
+                align-items: center;
+            }
+
+            span {
+                color: var(--color-black-secondary);
+                white-space: nowrap;
+            }
+
+            .srs-step-progress {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+
+                .srs-progress-bar-container {
+                    width: 60px;
+                    height: 6px;
+                    background-color: var(--color-black-quaternary);
+                    border-radius: 3px;
+                    overflow: hidden;
+
+                    .srs-progress-bar {
+                        height: 100%;
+                        background-color: var(--color-red-primary);
+                        border-radius: 3px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+/* Main Content */
+.srs-main-container {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 40px 30px;
+
+    .srs-card {
+        background-color: var(--color-white-primary);
+        border-radius: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        border: 1px solid var(--color-black-quaternary);
+    }
+}
+
+.srs-timer-banner {
+    background-color: var(--color-bg-dark);
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .srs-timer-banner-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+                    text-align: left;
+
+
+        .srs-clock-icon {
+            font-size: 1.5rem;
+        }
+
+        h5 {
+            color: var(--color-white-primary);
+        }
+
+        span {
+            color: var(--color-white-primary);
+        }
+    }
+
+    .srs-timer-banner-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        h5 {
+            color: var(--color-red-primary);
+            text-align: left;
+        }
+    }
+}
+
+.srs-card-content {
+    padding: 30px 40px;
+
+    .srs-success-icon-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 15px;
+
+        .srs-success-circle {
+            width: 60px;
+            height: 60px;
+            background-color: var(--color-green-tertiary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--color-green-primary);
+
+            svg {
+                color: var(--color-green-primary);
+                font-size: 36px;
+            }
+        }
+    }
+
+    h3 {
+        color: var(--color-black-primary);
+    }
+
+    p {
+        color: var(--color-black-tertiary);
+    }
+}
+
+.srs-order-details-box {
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 25px;
+    padding: 15px 20px;
+
+    h5,
+    h6 {
+        color: var(--color-black-primary);
+        text-align: left;
+    }
+
+    .srs-order-section {
+
+        margin-bottom: 24px;
+
+        .srs-order-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .srs-order-col {
+            text-align: left;
+        }
+    }
+
+    span {
+        color: var(--color-black-tertiary);
+    }
+
+    .srs-order-section.srs-bg-light {
+        background-color: var(--color-bg-light);
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        border-radius: 12px;
+        margin-bottom: 12px;
+        padding: 15px 20px;
+
+
+        .srs-order-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+            margin-bottom: 12px;
+
+
+            h5,
+            span {
+                color: var(--color-black-primary);
+            }
+        }
+    }
+
+
+    .srs-divider {
+        border: none;
+        margin-bottom: 12px;
+
+        border-top: 1px solid var(--color-black-quaternary);
+    }
+
+    .srs-order-section:last-child {
+        border-bottom: none;
+    }
+}
+
+
+
+
+
+
+.srs-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-color);
+    padding: 15px 20px;
+    border-radius: 6px;
+
+    h6 {
+        color: var(--color-black-primary);
+    }
+
+    h5 {
+        color: var(--color-red-primary);
+    }
+}
+
+.srs-buttons-row {
+    display: flex;
+    gap: 15px;
+    flex-direction: row-reverse;
+
+    .srs-reserve-btn {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 12px;
+    }
+
+    .srs-cancel-btn {
+        flex: 0 0 50%;
+        background-color: transparent;
+        color: var(--color-black-primary);
+        display: flex;
+        border: none;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+}
+
+.srs-info-box {
+    background-color: var(--color-blue-quaternary);
+    border: 1px solid var(--color-blue-primary);
+    color: var(--color-blue-primary);
+    border-radius: 6px;
+    padding: 15px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+
+    .srs-info-icon {
+        font-size: 1.5rem;
+        color: var(--color-blue-primary);
+        flex-shrink: 0;
+    }
+
+    .text-blue {
+        color: var(--color-blue-primary);
+        text-align: left;
+    }
+}
+
+
+
+/* Responsiveness */
+@media screen and (max-width: 768px) {
+    .srs-header-content {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding: 0 16px;
+        gap: 8px;
+    }
+
+    .srs-header-right {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .srs-card-content {
+        padding: 20px;
+    }
+
+    .srs-timer-banner {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+    }
+
+    .srs-buttons-row {
+        flex-direction: column;
+    }
+
+    .srs-reserve-btn,
+    .srs-cancel-btn {
+        flex: none;
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .srs-main-container {
+        padding: 15px;
+    }
+
+    .srs-header-left {
+        gap: 10px;
+    }
+
+    .srs-step-info {
+        align-items: flex-end;
+        gap: 5px;
+    }
+
+    .srs-header-content {
+        padding: 0 16px !important;
+    }
+
+    .srs-header-left {
+        flex-direction: row;
+        gap: 10px !important;
+        width: 100%;
+
+        h2 {
+            margin: 0;
+        }
+
+        .srs-back-btn {
+            padding: 0 !important;
+        }
+    }
+
+    .srs-subtitle {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 4px;
+    }
+
+    .srs-step-progress {
+        width: 100%;
+        max-width: 200px;
+    }
+
+    .srs-timer-banner {
+        padding: 15px;
+    }
+
+    .srs-card-content {
+        padding: 15px;
+    }
+
+    .srs-order-section {
+        padding: 12px 15px;
+    }
+
+    .srs-total-row {
+        align-items: flex-start;
+        gap: 5px;
+    }
+}

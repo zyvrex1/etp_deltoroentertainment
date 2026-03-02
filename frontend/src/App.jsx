@@ -48,9 +48,12 @@ import PromoterPayouts from "./promotercomponents/promoterpayouts.jsx";
 
 import SponsorHome from "./sponsorcomponents/SponsorHome.jsx";
 import SponsorEvents from "./sponsorcomponents/SponsorBrowseEvents.jsx";
-import SponsorEventDetails from './sponsorcomponents/SponsorEventDetails';
-import SponsorVenueLayout from './sponsorcomponents/SponsorVenueLayout';
-import SponsorConfirmSelection from './sponsorcomponents/SponsorConfirmSelection';
+import SponsorEventDetails from './sponsorcomponents/SponsorEventDetails.jsx';
+import SponsorVenueLayout from './sponsorcomponents/SponsorVenueLayout.jsx';
+import SponsorConfirmSelection from './sponsorcomponents/SponsorConfirmSelection.jsx';
+import SponsorReservationSummary from './sponsorcomponents/SponsorReservationSummary.jsx';
+import SponsorVenueBilling from './sponsorcomponents/SponsorVenueBilling.jsx';
+
 
 function App() {
   return (
@@ -119,10 +122,9 @@ function App() {
           <Route path="/sponsor/sponsor-event/:id" element={<SponsorEventDetails />} />
           <Route path="/sponsor/sponsor-venue-layout" element={<SponsorVenueLayout />} />
           <Route path="/sponsor/sponsor-confirm-selection" element={<SponsorConfirmSelection />} />
-          {/* <Route path="events" element={<SponsorEvents />} />
-          <Route path="analytics" element={<SponsorAnalytics />} />
-          <Route path="payments" element={<SponsorPayments />} />
-          <Route path="settings" element={<SponsorSettings />} /> */}
+          <Route path="/sponsor/sponsor-reservation" element={<SponsorReservationSummary />} />
+          <Route path="/sponsor/sponsor-venue-billing" element={<SponsorVenueBilling />} />
+
         </Route>
       </Routes>
     </BrowserRouter>

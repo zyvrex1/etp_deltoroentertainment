@@ -20,7 +20,6 @@
 
         .scs-header-left {
             display: flex;
-            /* para pag nag-wrap di pangit */
             gap: 16px;
             width: 100%;
             min-width: 0;
@@ -71,16 +70,15 @@
                 align-items: center;
             }
 
+              span {
+                    color: var(--color-black-secondary);
+                    white-space: nowrap;
+                }
+
             .scs-step-progress {
                 display: flex;
                 flex-direction: column;
                 align-items: flex-end;
-
-
-                span {
-                    color: var(--color-black-secondary);
-                    white-space: nowrap;
-                }
 
                 .scs-progress-bar-container {
                     width: 60px;
@@ -236,7 +234,7 @@
     .scs-content-right {
         flex: 1;
         min-width: 320px;
-        max-width: 350px;
+        max-width: 100%;
         position: sticky;
         top: 40px;
 

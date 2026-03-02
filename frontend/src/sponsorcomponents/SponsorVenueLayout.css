@@ -63,13 +63,13 @@
                     display: flex;
                     align-items: center;
 
+                     span {
+                            color: var(--color-black-secondary);
+                        }
+
                     .svl-step-progress {
                         display: flex;
                         flex-direction: column;
-
-                        span {
-                            color: var(--color-black-secondary);
-                        }
 
                         .svl-progress-bar-container {
                             width: 60px;

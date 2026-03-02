@@ -147,7 +147,7 @@ const SponsorConfirmSelection = () => {
                                 </label>
                             </div>
 
-                            <button className="primary-button scs-reserve-btn">
+                            <button className="primary-button scs-reserve-btn" onClick={() => navigate('/sponsor/sponsor-reservation')}>
                                 Reserve Booth <Icon icon="mdi:arrow-right" className="ml-2" />
                             </button>
                         </div>
