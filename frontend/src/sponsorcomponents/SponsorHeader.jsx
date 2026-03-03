@@ -59,12 +59,12 @@ export default function SponsorHeader() {
                                         </NavLink>
                                     </li>
                                     <li>
-                                        <NavLink to="/app/sponsor/history" onClick={() => setIsDropdownOpen(false)}>
+                                        <NavLink to="/sponsor/sponsor-history" onClick={() => setIsDropdownOpen(false)}>
                                             <Icon icon="mdi:history" width="20" /> Sponsorship History
                                         </NavLink>
                                     </li>
                                     <li>
-                                        <NavLink to="/app/sponsor/invoices" onClick={() => setIsDropdownOpen(false)}>
+                                        <NavLink to="/sponsor/sponsor-invoices" onClick={() => setIsDropdownOpen(false)}>
                                             <Icon icon="mdi:receipt-outline" width="20" /> Invoice & Receipts
                                         </NavLink>
                                     </li>

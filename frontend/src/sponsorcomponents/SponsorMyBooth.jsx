@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import './SponsorMyBooth.css';
 
 export default function SponsorMyBooth() {
-    const myBooths = [
+    const mockData = [
         {
             id: 1,
             image: '/assets/eventbg.jpg',
@@ -16,12 +16,38 @@ export default function SponsorMyBooth() {
         {
             id: 2,
             image: '/assets/eventbg.jpg',
-            title: 'TechInnovate Summit 2026',
-            date: 'Jun 16, 2026',
-            location: 'Starlight Arena, Los Angeles, CA',
-            type: 'Premium Island',
+            title: 'Global Healthcare Expo 2024',
+            date: 'Aug 10, 2024',
+            location: 'McCormick Place, Chicago, IL',
+            type: 'Standard Inline',
+        },
+        {
+            id: 3,
+            image: '/assets/eventbg.jpg',
+            title: 'Global Healthcare Expo 2023',
+            date: 'Sep 15, 2023',
+            location: 'Javits Center, New York, NY',
+            type: 'Corner Booth',
         }
     ];
+
+    const myBooths = Array.from({ length: 12 }, (_, i) => ({
+        ...mockData[i % 3],
+        id: i + 1,
+    }));
+
+    // Pagination Logic
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(myBooths.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedBooths = myBooths.slice(startIndex, startIndex + itemsPerPage);
+
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
 
     return (
         <div className="sponsor-my-booth-container">
@@ -36,7 +62,7 @@ export default function SponsorMyBooth() {
             </div>
 
             <div className="my-booth-list">
-                {myBooths.map(booth => (
+                {paginatedBooths.map(booth => (
                     <div key={booth.id} className="my-booth-card">
                         <div className="my-booth-image-container">
                             <img src={booth.image} alt={booth.title} className="my-booth-image" />
@@ -81,6 +107,30 @@ export default function SponsorMyBooth() {
                     </div>
                 ))}
             </div>
+
+            {totalPages > 1 && (
+                <div className="pagination">
+                    <button
+                        className="pagination-btn"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                    >
+                        Previous
+                    </button>
+
+                    <span className="pagination-info">
+                        Page {currentPage} of {totalPages}
+                    </span>
+
+                    <button
+                        className="pagination-btn"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

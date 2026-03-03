@@ -146,6 +146,42 @@
     }
 }
 
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 30px;
+}
+
+.pagination-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--color-black-quaternary);
+    background-color: var(--color-white-primary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    color: var(--color-black-primary);
+    transition: all 0.3s ease;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+[data-theme="dark"] .pagination-btn {
+    background-color: var(--color-bg-dark);
+    border-color: var(--color-white-quaternary);
+    color: var(--color-white-primary);
+}
+
+.pagination-info {
+    font-family: 'Inter', sans-serif;
+    color: var(--color-black-secondary);
+}
+
 .my-booth-qr-section {
     display: flex;
     flex-direction: column;
