@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import SponsorAddExhibitor from './SponsorModal/SponsorAddExhibitor';
+import SponsorDocuments from './SponsorModal/SponsorDocuments';
 import './SponsorBoothFullDetails.css';
 
 export default function SponsorBoothFullDetails() {
     const navigate = useNavigate();
     const [isAddExhibitorModalOpen, setIsAddExhibitorModalOpen] = useState(false);
+    const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+    const [selectedDocument, setSelectedDocument] = useState(null);
 
     const exhibitors = [
         { id: 1, name: 'John Smith', role: 'Lead Representative', email: 'john.smith@techcorp.com', phone: '+1 (555) 123-4567', initial: 'J' },
@@ -15,10 +18,235 @@ export default function SponsorBoothFullDetails() {
     ];
 
     const documents = [
-        { id: 1, title: 'Sponsorship Contract', size: '2.4 MB' },
-        { id: 2, title: 'Exhibitor Manual', size: '5.1 MB' },
-        { id: 3, title: 'Floor Plan', size: '1.8 MB' },
-        { id: 4, title: 'Setup Guidelines', size: '3.2 MB' },
+        {
+            id: 1,
+            title: 'Sponsorship Contract',
+            size: '2.4 MB',
+            format: "PDF",
+            sections: [
+                {
+                    title: 'Parties',
+                    content: (
+                        <div className="sd-parties" >
+                            <p className="small-body-text" style={{ marginBottom: '12px' }}>
+                                This Sponsorship Agreement ("Agreement") is entered into between:
+                            </p>
+
+                            <ul className="sd-list small-body-text text-secondary">
+                                <li>Sponsor: The participating company or individual</li>
+                                <li>Organizer: Event Platform Events LLC.</li>
+                            </ul>
+                        </div>
+                    )
+                },
+                {
+                    title: 'Booth Assignment',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            The Organizer agrees to provide the Sponsor with the exhibition space as detailed in the booking summary (including Booth Number, Type, Dimensions, and Location).
+                        </p>
+                    )
+                },
+                {
+                    title: 'Sponsorship Fee',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            The total sponsorship fee includes the Booth Base Price, Processing Fee, and Applicable Tax. Payment is processed upon confirmation.
+                        </p>
+                    )
+                },
+                {
+                    title: 'Inclusions',
+                    content: (
+                        <ul className="sd-list small-body-text text-secondary" style={{ margin: 0, paddingLeft: '20px' }}>
+                            <li>Exhibitor Passes (quantity based on booth type)</li>
+                            <li>Dedicated power circuit and WiFi access (if applicable)</li>
+                            <li>Company listing in the official event directory</li>
+                            <li>Access to post-event lead report</li>
+                        </ul>
+                    )
+                },
+                {
+                    title: 'Cancellation Policy',
+                    content: (
+                        <div className="sd-cancellation" >
+                            <p className="small-body-text" style={{ marginBottom: '12px' }}>
+                                Cancellations must be submitted in writing.
+                            </p>
+
+                            <ul className="sd-list small-body-text text-secondary">
+                                <li>60+ days before event: 50% refund of total fees paid</li>
+                                <li>Less than 60 days before event: No refund</li>
+                                <li>Force majeure events will be handled on a case-by-case basis.</li>
+                            </ul>
+                        </div>
+                    )
+                },
+                {
+                    title: 'Conduct & Compliance',
+                    content: (
+                        <ul className="sd-list small-body-text text-secondary" style={{ margin: 0, paddingLeft: '20px' }}>
+                            <li>Comply with all venue rules and regulations.</li>
+                            <li>Not obstruct neighboring booths or common areas.</li>
+                            <li>Ensure all booth materials meet fire safety standards.</li>
+                            <li>Maintain a professional and respectful environment.</li>
+                        </ul>
+                    )
+                }
+            ]
+        },
+        {
+            id: 2,
+            title: 'Exhibitor Manual',
+            size: '5.1 MB',
+            format: "PDF",
+            sections: [
+                {
+                    title: 'Welcome Message',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            Welcome to the Event. We are thrilled to have you as a sponsor. This manual contains everything you need to know to make your exhibition experience seamless and successful.
+                        </p>
+                    )
+                },
+                {
+                    title: 'Event Schedule Overview',
+                    content: (
+                        <ul className="sd-list small-body-text text-secondary" style={{ margin: 0, paddingLeft: '20px' }}>
+                            <li>Setup Days: Dedicated times for booth construction and material preparation.</li>
+                            <li>Event Days: General exhibition hours and specific keynote timings.</li>
+                            <li>Teardown Days: Designated windows for booth dismantling.</li>
+                        </ul>
+                    )
+                },
+                {
+                    title: 'Booth Regulations',
+                    content: (
+                        <div className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            <strong>Height Restrictions:</strong> Standard booths max 8 feet; Island booths max 12 feet. <br />
+                            <strong>Display Rules:</strong> All displays must remain within your assigned footprint. No audio exceeding 85 dB.
+                        </div>
+                    )
+                },
+                {
+                    title: 'Electrical & Technical',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            Basic booth inclusions provide standard drops. High-speed wired internet and dedicated WiFi access must be secured prior to the event. All equipment must be UL-listed.
+                        </p>
+                    )
+                },
+                {
+                    title: 'Shipping & Materials',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            Advance shipments are recommended to the unified warehouse. Direct-to-show shipments are only accepted during loading dock hours. All shipments must be labeled with the booth number and company name.
+                        </p>
+                    )
+                }
+            ]
+        },
+        {
+            id: 3,
+            title: 'Floor Plan',
+            size: '1.8 MB',
+            format: "PDF",
+            sections: [
+                {
+                    title: 'Your Booth Location',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            Details regarding your assigned booth zone, structural dimensions, and proximity to major aisles or features like the Main Entrance.
+                        </p>
+                    )
+                },
+                {
+                    title: 'Adjacent Booths',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            An overview of neighboring booth allocations and standard 10-foot aisle separations.
+                        </p>
+                    )
+                },
+                {
+                    title: 'Hall Layout Overview',
+                    content: (
+                        <ul className="sd-list small-body-text text-secondary" style={{ margin: 0, paddingLeft: '20px' }}>
+                            <li>Premium Island Zones (Zone A)</li>
+                            <li>Corner and Standard Booths (Zones B & C)</li>
+                            <li>Startup Pavilions (Zone D)</li>
+                        </ul>
+                    )
+                },
+                {
+                    title: 'Parking & Access',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            Exhibitor parking rates and designated loading dock operating hours. Includes public transit details for attendee guidance.
+                        </p>
+                    )
+                },
+                {
+                    title: 'Emergency Exits',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            Familiarize yourself with primary, secondary, and tertiary emergency exits. Do not use elevators during emergencies; assembly points are located exteriorly.
+                        </p>
+                    )
+                }
+            ]
+        },
+        {
+            id: 4,
+            title: 'Setup Guidelines',
+            size: '3.2 MB',
+            format: "PDF",
+            sections: [
+                {
+                    title: 'Setup Schedule',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            Premium island exhibitors receive priority setup access. All setup must be completed prior to the final inspection deadline before the hall opens.
+                        </p>
+                    )
+                },
+                {
+                    title: 'What to Bring for Setup',
+                    content: (
+                        <ul className="sd-list small-body-text text-secondary" style={{ margin: 0, paddingLeft: '20px' }}>
+                            <li>Basic toolkits and power extension cords</li>
+                            <li>Carpet tape and ladders</li>
+                            <li>Company signage and promotional materials</li>
+                            <li>Lead capture devices</li>
+                        </ul>
+                    )
+                },
+                {
+                    title: 'Height & Display Restrictions',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            Maximum structure heights apply. Hanging signs require prior management approval. Open flames, live animals, and unsecured helium balloons are strictly prohibited.
+                        </p>
+                    )
+                },
+                {
+                    title: 'Cable Management',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            All cables must be properly managed to ensure attendee safety. Floor cables must be covered and taped down. No cables may cross public aisles.
+                        </p>
+                    )
+                },
+                {
+                    title: 'Teardown Schedule',
+                    content: (
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
+                            Exhibits must remain intact until the official exhibition close. All materials must be removed or staged for freight pickup within the designated windows. Late teardowns result in escorted material removal at exhibitor expense.
+                        </p>
+                    )
+                }
+            ]
+        },
     ];
 
     return (
@@ -113,7 +341,6 @@ export default function SponsorBoothFullDetails() {
                                         </div>
                                     </div>
                                     <div className="exhibitor-actions">
-                                        <button className="icon-btn"><Icon icon="mdi:pencil-outline" width="20" /></button>
                                         <button className="icon-btn"><Icon icon="mdi:trash-can-outline" width="20" /></button>
                                     </div>
                                 </div>
@@ -138,7 +365,13 @@ export default function SponsorBoothFullDetails() {
                                         <p className="small-body-text text-secondary">PDF • {doc.size}</p>
                                     </div>
                                     <div className="document-actions">
-                                        <button className="doc-action-btn"><Icon icon="mdi:eye-outline" width="18" /> View</button>
+                                        <button
+                                            className="doc-action-btn"
+                                            onClick={() => {
+                                                setSelectedDocument(doc);
+                                                setIsDocumentModalOpen(true);
+                                            }}
+                                        ><Icon icon="mdi:eye-outline" width="18" /> View</button>
                                         <button className="doc-action-btn"><Icon icon="mdi:download-outline" width="18" /> Download</button>
                                     </div>
                                 </div>
@@ -183,6 +416,11 @@ export default function SponsorBoothFullDetails() {
             <SponsorAddExhibitor
                 isOpen={isAddExhibitorModalOpen}
                 onClose={() => setIsAddExhibitorModalOpen(false)}
+            />
+            <SponsorDocuments
+                isOpen={isDocumentModalOpen}
+                onClose={() => setIsDocumentModalOpen(false)}
+                document={selectedDocument}
             />
         </div>
     );

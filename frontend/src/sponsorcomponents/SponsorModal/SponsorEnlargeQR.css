@@ -1,0 +1,128 @@
+.sponsor-enlarge-qr-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+
+    .sponsor-enlarge-qr-modal {
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        width: 440px;
+        max-width: 90%;
+        padding: 32px 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+            animation: slideInAddTicket 0.3s ease-out;
+
+
+        .sponsor-enlarge-qr-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--color-black-quaternary);
+            padding-bottom: 16px;
+
+            h3 {
+                color: var(--color-black-primary);
+                margin: 0;
+            }
+
+            .enlarge-qr-close-btn {
+                background: none;
+                border: none;
+                color: var(--color-black-primary);
+                cursor: pointer;
+                padding: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+    }
+}
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+
+
+
+.sponsor-enlarge-qr-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    .enlarge-qr-title {
+        margin: 0 0 8px 0;
+        color: var(--color-black-primary);
+    }
+
+    .enlarge-qr-subtitle {
+        margin: 0 0 24px 0;
+    }
+
+    .enlarge-qr-code-container {
+        width: 240px;
+        height: 240px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 24px;
+
+        .enlarge-qr-icon {
+            width: 100%;
+            height: 100%;
+            color: var(--color-black-primary);
+        }
+    }
+
+    .enlarge-qr-instruction {
+        margin: 0 0 24px 0;
+    }
+
+    .enlarge-qr-download-btn {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        color: var(--color-black-secondary);
+        border-color: var(--color-black-tertiary);
+    }
+}
+
+@media (max-width: 768px) {
+    .sponsor-enlarge-qr-modal {
+        padding: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sponsor-enlarge-qr-modal {
+        width: 100%;
+        margin: 0 16px;
+        padding: 20px 16px;
+    }
+
+    .enlarge-qr-code-container {
+        width: 200px;
+        height: 200px;
+    }
+}

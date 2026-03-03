@@ -9,97 +9,228 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
+}
 
-    .add-exhibitor-modal-content {
-        background-color: var(--color-white-primary);
-        border-radius: 12px;
-        width: 400px;
-        max-width: 90%;
-        padding: 24px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.add-exhibitor-modal-content {
+    background-color: var(--color-white-primary);
+    border-radius: 12px;
+    width: 440px;
+    max-width: 90%;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+        animation: slideInAddTicket 0.3s ease-out;
 
-        .add-exhibitor-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
+}
 
-            h4 {
-                color: var(--color-black-primary);
-                margin: 0;
-                text-align: left;
-            }
+.add-exhibitor-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
 
-            .add-exhibitor-close-btn {
-                background: none;
-                border: none;
-                color: var(--color-black-primary);
-                cursor: pointer;
-                padding: 4px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-        }
+.add-exhibitor-modal-header h4 {
+    color: var(--color-black-primary);
+    margin: 0;
+    text-align: left;
+}
 
-        .add-exhibitor-modal-body {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            margin-bottom: 24px;
+.add-exhibitor-close-btn {
+    background: none;
+    border: none;
+    color: var(--color-black-tertiary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
 
-            .add-exhibitor-form-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
+.add-exhibitor-close-btn:hover {
+    color: var(--color-black-primary);
+}
 
-                label {
-                    font-weight: 700;
-                    color: var(--color-black-tertiary);
-                    text-align: left;
-                }
-
-                .text-red {
-                    color: var(--color-red-primary);
-                }
-
-                input {
-                    padding: 12px 16px;
-                    border: 1px solid var(--color-black-tertiary);
-                    border-radius: 8px;
-                    outline: none;
-                    font-family: 'Inter', sans-serif;
-                    transition: border-color 0.2s;
-                    color: var(--color-black-primary);
-                    background-color: var(--color-white-primary);
-
-                    &::placeholder {
-                        color: var(--color-black-tertiary);
-                    }
-
-                    &:focus {
-                        border-color: var(--color-black-primary);
-                    }
-                }
-            }
-        }
-
-        .add-exhibitor-modal-footer {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-
-            .add-exhibitor-cancel-btn {
-                flex: 1;
-                color: var(--color-black-primary);
-                border-color: var(--color-black-tertiary);
-            }
-
-            .add-exhibitor-submit-btn {
-                flex: 1;
-            }
-        }
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
     }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.add-exhibitor-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    margin-bottom: 32px;
+}
+
+.add-exhibitor-search-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.add-exhibitor-search-section label {
+    font-weight: 700;
+    color: var(--color-black-tertiary);
+    text-align: left;
+}
+
+.add-exhibitor-search-bar {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--color-black-tertiary);
+    border-radius: 8px;
+    padding: 0 12px;
+    background-color: var(--color-white-primary);
+    transition: border-color 0.2s;
+}
+
+.add-exhibitor-search-bar:focus-within {
+    border-color: var(--color-black-primary);
+}
+
+.add-exhibitor-search-input {
+    flex: 1;
+    padding: 12px 4px;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    color: var(--color-black-primary);
+    background: transparent;
+}
+
+.add-exhibitor-search-input::placeholder {
+    color: var(--color-black-tertiary);
+}
+
+.add-exhibitor-submit-btn {
+    width: 100%;
+}
+
+.add-exhibitor-list-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.add-exhibitor-list-title {
+    margin: 0;
+    color: var(--color-black-primary);
+    text-align: left;
+}
+
+.add-exhibitor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.add-exhibitor-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: 8px;
+}
+
+.add-exhibitor-info-wrapper {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.add-exhibitor-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--color-blue-quaternary);
+    color: var(--color-blue-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 700;
+}
+
+.add-exhibitor-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.exhibitor-name {
+    font-weight: 600;
+    color: var(--color-black-primary);
+}
+
+.add-exhibitor-delete-btn {
+    background: none;
+    border: none;
+    color: var(--color-black-tertiary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.add-exhibitor-delete-btn:hover {
+    color: var(--color-red-primary);
+}
+
+.add-exhibitor-search-results {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 100%;
+    background-color: var(--color-white-primary);
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.add-exhibitor-search-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-black-quaternary);
+    transition: background-color 0.2s;
+}
+
+.add-exhibitor-search-item:last-child {
+    border-bottom: none;
+}
+
+.add-exhibitor-search-item:hover {
+    background-color: var(--color-bg-light);
+}
+
+.add-exhibitor-add-small-btn {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    border-color: var(--color-blue-primary) !important;
+    color: var(--color-blue-primary) !important;
+}
+
+.add-exhibitor-search-section {
+    position: relative;
+    /* to make absolute positioning work for results */
 }
 
 @media (max-width: 768px) {
@@ -112,15 +243,6 @@
     .add-exhibitor-modal-content {
         width: 100%;
         margin: 0 16px;
-        padding: 16px;
-    }
-
-    .add-exhibitor-modal-footer {
-        flex-direction: column-reverse;
-    }
-
-    .add-exhibitor-cancel-btn,
-    .add-exhibitor-submit-btn {
-        width: 100%;
+        padding: 20px 16px;
     }
 }

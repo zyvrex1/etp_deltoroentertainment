@@ -261,6 +261,17 @@
     }
 }
 
+.sd-list {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.sd-list li {
+    margin: 0 0 8px 0;   
+    line-height: 1.6;   
+    font-size: 14px !important;
+}
+
 
 @media (max-width: 1024px) {
     .support-content-layout {

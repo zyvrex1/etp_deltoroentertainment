@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Icon } from '@iconify/react';
+import SponsorEnlargeQR from './SponsorModal/SponsorEnlargeQR';
 import './SponsorMyBooth.css';
 
 export default function SponsorMyBooth() {
@@ -47,6 +48,19 @@ export default function SponsorMyBooth() {
         if (page >= 1 && page <= totalPages) {
             setCurrentPage(page);
         }
+    };
+
+    const [isQROpen, setIsQROpen] = useState(false);
+    const [selectedBooth, setSelectedBooth] = useState(null);
+
+    const handleOpenQR = (booth) => {
+        setSelectedBooth(booth);
+        setIsQROpen(true);
+    };
+
+    const handleCloseQR = () => {
+        setIsQROpen(false);
+        setSelectedBooth(null);
     };
 
     return (
@@ -98,12 +112,12 @@ export default function SponsorMyBooth() {
                                 </div>
                             </div>
                         </div>
-                        <div className="my-booth-qr-section">
+                        <button className="my-booth-qr-section" onClick={() => handleOpenQR(booth)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <div className="my-booth-qr-code">
                                 <Icon icon="mdi:qrcode" width="100" color="var(--color-black-secondary)" />
                             </div>
                             <span className="small-body-text text-secondary">Tap to enlarge</span>
-                        </div>
+                        </button>
                     </div>
                 ))}
             </div>
@@ -131,6 +145,12 @@ export default function SponsorMyBooth() {
                     </button>
                 </div>
             )}
+
+            <SponsorEnlargeQR
+                isOpen={isQROpen}
+                onClose={handleCloseQR}
+                booth={selectedBooth}
+            />
         </div>
     );
 }

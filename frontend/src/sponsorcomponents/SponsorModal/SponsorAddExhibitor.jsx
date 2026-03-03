@@ -1,9 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './SponsorAddExhibitor.css';
 
 const SponsorAddExhibitor = ({ isOpen, onClose }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedExhibitors, setSelectedExhibitors] = useState([
+        { id: 1, name: 'Ehdsell Apan', email: 'ehdsell@example.com', initial: 'E' },
+        { id: 2, name: 'Ehdsell Apan', email: 'ehdsell@example.com', initial: 'E' },
+    ]);
+
     if (!isOpen) return null;
+
+    const dummySearchResults = [
+        { id: 3, name: 'John Doe', email: 'john@example.com', initial: 'J' },
+        { id: 4, name: 'Jane Smith', email: 'jane@example.com', initial: 'J' },
+    ];
+
+    const handleAddUser = (user) => {
+        if (!selectedExhibitors.find(e => e.id === user.id)) {
+            setSelectedExhibitors([...selectedExhibitors, user]);
+        }
+        setSearchQuery('');
+    };
+
+    const handleRemoveUser = (id) => {
+        setSelectedExhibitors(selectedExhibitors.filter(user => user.id !== id));
+    };
 
     return (
         <div className="add-exhibitor-modal-overlay">
@@ -16,27 +38,67 @@ const SponsorAddExhibitor = ({ isOpen, onClose }) => {
                 </div>
 
                 <div className="add-exhibitor-modal-body">
-                    <div className="add-exhibitor-form-group">
-                        <label className="smaller-body-text">Name <span className="text-red">*</span></label>
-                        <input type="text" placeholder="John Doe" className="add-exhibitor-input" />
+                    <div className="add-exhibitor-search-section">
+                        <label className="smaller-body-text">Search User</label>
+                        <div className="add-exhibitor-search-bar">
+                            <input
+                                type="text"
+                                placeholder="Search users by name or email..."
+                                className="add-exhibitor-search-input"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+
+                        {searchQuery && (
+                            <div className="add-exhibitor-search-results">
+                                {dummySearchResults.map((user) => (
+                                    <div key={user.id} className="add-exhibitor-search-item">
+                                        <div className="add-exhibitor-info-wrapper">
+                                            <div className="add-exhibitor-avatar">
+                                                {user.initial}
+                                            </div>
+                                            <div className="add-exhibitor-details">
+                                                <span className="regular-body-text exhibitor-name">{user.name}</span>
+                                                <span className="smaller-body-text text-secondary">{user.email}</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="outlined-button add-exhibitor-add-small-btn"
+                                            onClick={() => handleAddUser(user)}
+                                        >
+                                            Add
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    <div className="add-exhibitor-form-group">
-                        <label className="smaller-body-text">Email Address <span className="text-red">*</span></label>
-                        <input type="email" placeholder="john@company.com" className="add-exhibitor-input" />
-                    </div>
-                    <div className="add-exhibitor-form-group">
-                        <label className="smaller-body-text">Role <span className="text-red">*</span></label>
-                        <input type="text" placeholder="Sales Manager" className="add-exhibitor-input" />
-                    </div>
-                    <div className="add-exhibitor-form-group">
-                        <label className="smaller-body-text">Phone Number <span className="text-red">*</span></label>
-                        <input type="text" placeholder="+1 (555) 123-4569" className="add-exhibitor-input" />
+
+                    <div className="add-exhibitor-list-section">
+                        <div className="add-exhibitor-list">
+                            {selectedExhibitors.map((promoter, index) => (
+                                <div key={index} className="add-exhibitor-item">
+                                    <div className="add-exhibitor-info-wrapper">
+                                        <div className="add-exhibitor-avatar">
+                                            {promoter.initial}
+                                        </div>
+                                        <div className="add-exhibitor-details">
+                                            <span className="regular-body-text exhibitor-name">{promoter.name}</span>
+                                            <span className="smaller-body-text text-secondary">{promoter.email}</span>
+                                        </div>
+                                    </div>
+                                    <button className="add-exhibitor-delete-btn" onClick={() => handleRemoveUser(promoter.id)}>
+                                        <Icon icon="mdi:trash-can-outline" width="20" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
                 <div className="add-exhibitor-modal-footer">
-                    <button className="outlined-button add-exhibitor-cancel-btn" onClick={onClose}>Cancel</button>
-                    <button className="primary-button add-exhibitor-submit-btn">Add Exhibitor</button>
+                    <button className="primary-button add-exhibitor-submit-btn" onClick={onClose}>Add Exhibitors</button>
                 </div>
             </div>
         </div>

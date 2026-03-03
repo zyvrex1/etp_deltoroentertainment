@@ -121,15 +121,15 @@ const SponsorConfirmSelection = () => {
                             <h4 className="mb-4 block">Price Breakdown</h4>
 
                             <div className="scs-price-row mb-3">
-                                <span className="small-body-text">Booth Price</span>
+                                <span className="regular-body-text">Booth Price</span>
                                 <h5>$5,000</h5>
                             </div>
                             <div className="scs-price-row mb-3">
-                                <span className="small-body-text">Processing Fee</span>
+                                <span className="regular-body-text">Processing Fee</span>
                                 <h5>$150</h5>
                             </div>
                             <div className="scs-price-row mb-4">
-                                <span className="small-body-text ">Estimated Tax</span>
+                                <span className="regular-body-text ">Estimated Tax</span>
                                 <h5>$425</h5>
                             </div>
 

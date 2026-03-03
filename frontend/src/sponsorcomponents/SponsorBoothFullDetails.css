@@ -381,9 +381,21 @@
 
 
 
+.sd-list {
+    margin: 0;
+    padding-left: 20px;
+}
 
+.sd-list li {
+    margin: 0 0 8px 0;
+    line-height: 1.6;
+    font-size: 14px !important;
+}
 
-
+.sd-parties,
+.sd-cancellation {
+    color: var(--color-black-primary);
+}
 
 /* Responsiveness */
 @media (max-width: 1024px) {
@@ -402,6 +414,12 @@
         flex-direction: column;
         align-items: flex-start !important;
         gap: 12px;
+    }
+
+    .sd-list li {
+        margin: 0 0 8px 0;
+        line-height: 1.6;
+        font-size: 10px !important;
     }
 
     .add-exhibitor-btn {
@@ -425,9 +443,6 @@
         padding: 20px;
     }
 
-    .booth-details-title-area h2 {
-        font-size: 24px;
-    }
 
     .booth-info-grid {
         grid-template-columns: 1fr;
@@ -477,9 +492,6 @@
         height: 180px;
     }
 
-    .booth-details-cover-overlay h3 {
-        font-size: 20px;
-    }
 
     .booth-details-cover-info {
         flex-direction: column;

@@ -113,13 +113,14 @@
         width: 100%;
 
         .svl-info-box {
-            background-color: var(--color-white-primary);
-            border: 1px solid var(--color-black-tertiary);
+            background-color: var(--color-blue-quaternary);
+            border: 1px solid var(--color-blue-primary);
             border-radius: 8px;
             padding: 16px 20px;
             display: flex;
             align-items: center;
             gap: 12px;
+            text-align: left;
 
             svg {
                 font-size: 24px;
@@ -130,7 +131,7 @@
 
             span {
 
-                color: var(--color-black-secondary);
+                color: var(--color-blue-primary);
 
                 .text-red {
                     color: var(--color-red-primary);
@@ -480,7 +481,6 @@
 
     .svl-subtitle .small-body-text:first-child {
         display: block;
-        font-size: 13px;
     }
 
     .svl-subtitle .calendar-row {
