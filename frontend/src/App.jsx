@@ -58,6 +58,7 @@ import SponsorBoothFullDetails from './sponsorcomponents/SponsorBoothFullDetails
 import SponsorEventHistory from './sponsorcomponents/SponsorEventHistory.jsx';
 import SponsorInvoice from './sponsorcomponents/SponsorInvoice.jsx';
 import SponsorSettings from './sponsorcomponents/SponsorSettings.jsx';
+import SponsorSupport from './sponsorcomponents/SponsorSupport.jsx';
 
 function App() {
   return (
@@ -133,6 +134,7 @@ function App() {
           <Route path="/sponsor/sponsor-history" element={<SponsorEventHistory />} />
           <Route path="/sponsor/sponsor-invoices" element={<SponsorInvoice />} />
           <Route path="/sponsor/settings" element={<SponsorSettings />} />
+          <Route path="/sponsor/support" element={<SponsorSupport />} />
 
         </Route>
       </Routes>

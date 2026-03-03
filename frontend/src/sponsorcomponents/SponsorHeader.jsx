@@ -74,7 +74,7 @@ export default function SponsorHeader() {
                                         </NavLink>
                                     </li>
                                     <li>
-                                        <NavLink to="/app/sponsor/support" onClick={() => setIsDropdownOpen(false)}>
+                                        <NavLink to="/sponsor/support" onClick={() => setIsDropdownOpen(false)}>
                                             <Icon icon="mdi:help-circle-outline" width="20" /> Support
                                         </NavLink>
                                     </li>
