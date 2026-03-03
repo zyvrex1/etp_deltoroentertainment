@@ -4,6 +4,21 @@
     margin: 0 auto;
     width: 100%;
     color: var(--color-black-primary);
+
+    .sponsor-invoice-header {
+        margin-bottom: 30px;
+        text-align: left;
+
+        h2 {
+            color: var(--color-black-primary);
+            margin-bottom: 8px;
+        }
+
+        p {
+            margin: 0;
+        }
+    }
+
 }
 
 .text-secondary {
@@ -14,19 +29,6 @@
     color: var(--color-green-primary);
 }
 
-.sponsor-invoice-header {
-    margin-bottom: 30px;
-    text-align: center;
-
-    h2 {
-        color: var(--color-black-primary);
-        margin-bottom: 8px;
-    }
-
-    p {
-        margin: 0;
-    }
-}
 
 .si-controls {
     display: flex;
@@ -65,6 +67,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            color: var(--color-black-secondary);
         }
     }
 }
@@ -73,23 +76,17 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-}
 
-.si-card {
-    background-color: var(--color-white-primary);
-    border-radius: 12px;
-    border: 1px solid var(--color-black-quaternary);
-    padding: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-}
-
-[data-theme="dark"] .si-card,
-[data-theme="dark"] .si-search {
-    background-color: var(--color-bg-hover);
-    border-color: var(--color-white-quaternary);
+    .si-card {
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        border: 1px solid var(--color-black-quaternary);
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
 }
 
 .si-card-left {
@@ -99,7 +96,7 @@
     flex: 1;
 
     .si-card-icon {
-        background-color: var(--color-red-secondary);
+        background-color: var(--color-red-primary);
         width: 48px;
         height: 48px;
         border-radius: 8px;
@@ -271,5 +268,7 @@
     .si-card-left {
         flex-direction: column;
         align-items: flex-start;
+                width: 100%;
+
     }
 }
