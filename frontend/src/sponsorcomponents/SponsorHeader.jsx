@@ -69,7 +69,7 @@ export default function SponsorHeader() {
                                         </NavLink>
                                     </li>
                                     <li>
-                                        <NavLink to="/app/sponsor/settings" onClick={() => setIsDropdownOpen(false)}>
+                                        <NavLink to="/sponsor/settings" onClick={() => setIsDropdownOpen(false)}>
                                             <Icon icon="mdi:cog-outline" width="20" /> Settings
                                         </NavLink>
                                     </li>
