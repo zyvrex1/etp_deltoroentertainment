@@ -54,7 +54,7 @@ export default function SponsorHeader() {
                                 </div>
                                 <ul className="dropdown-menu-list regular-body-text">
                                     <li>
-                                        <NavLink to="/app/sponsor/booths" onClick={() => setIsDropdownOpen(false)}>
+                                        <NavLink to="/sponsor/sponsor-my-booths" onClick={() => setIsDropdownOpen(false)}>
                                             <Icon icon="mdi:storefront-outline" width="20" /> My Booths
                                         </NavLink>
                                     </li>

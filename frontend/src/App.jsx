@@ -53,6 +53,8 @@ import SponsorVenueLayout from './sponsorcomponents/SponsorVenueLayout.jsx';
 import SponsorConfirmSelection from './sponsorcomponents/SponsorConfirmSelection.jsx';
 import SponsorReservationSummary from './sponsorcomponents/SponsorReservationSummary.jsx';
 import SponsorVenueBilling from './sponsorcomponents/SponsorVenueBilling.jsx';
+import SponsorMyBooth from './sponsorcomponents/SponsorMyBooth.jsx';
+import SponsorBoothFullDetails from './sponsorcomponents/SponsorBoothFullDetails.jsx';
 
 
 function App() {
@@ -124,6 +126,8 @@ function App() {
           <Route path="/sponsor/sponsor-confirm-selection" element={<SponsorConfirmSelection />} />
           <Route path="/sponsor/sponsor-reservation" element={<SponsorReservationSummary />} />
           <Route path="/sponsor/sponsor-venue-billing" element={<SponsorVenueBilling />} />
+          <Route path="/sponsor/sponsor-my-booths" element={<SponsorMyBooth />} />
+          <Route path="/sponsor/sponsor-booth-details" element={<SponsorBoothFullDetails />} />
 
         </Route>
       </Routes>

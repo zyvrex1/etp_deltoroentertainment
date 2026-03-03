@@ -1,0 +1,486 @@
+/* frontend/src/sponsorcomponents/SponsorBoothFullDetails.css */
+.booth-details-container {
+    padding: 40px;
+    max-width: 1440px;
+    margin: 0 auto;
+    width: 100%;
+    color: var(--color-black-primary);
+}
+
+
+.text-green {
+    color: var(--color-green-primary);
+}
+
+.text-red {
+    color: var(--color-red-primary);
+}
+
+.font-medium {
+    font-weight: 500;
+}
+
+.booth-details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+
+    .booth-details-title-area {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex: 1;
+        /* important */
+        min-width: 0;
+
+        h2 {
+            margin: 0;
+            color: var(--color-black-primary);
+            text-align: left;
+        }
+
+        p {
+            color: var(--color-black-tertiary);
+            text-align: left;
+        }
+
+        .booth-details-back-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            color: var(--color-black-primary);
+        }
+    }
+
+    .booth-details-status {
+        background-color: var(--color-green-tertiary);
+        color: var(--color-green-primary);
+        align-items: flex-end;
+
+    }
+}
+
+
+
+
+
+
+.booth-details-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+
+    .booth-details-main {
+        flex: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .booth-details-sidebar {
+        flex: 1;
+        position: sticky;
+        top: 24px;
+    }
+}
+
+.booth-details-cover {
+    width: 100%;
+    height: 250px;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .booth-details-cover-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 24px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+        color: var(--color-white-primary);
+    }
+
+    h3 {
+        margin-bottom: 8px;
+        color: var(--color-white-primary);
+        text-align: left;
+    }
+
+    .booth-details-cover-info {
+        display: flex;
+        gap: 16px;
+        font-size: 14px;
+        font-family: 'Inter', sans-serif;
+
+        span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+    }
+}
+
+.booth-section {
+    background-color: var(--color-white-primary);
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: left;
+
+    h4 {
+        margin-bottom: 20px;
+    }
+
+    .booth-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+
+        .booth-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+    }
+
+    .booth-features-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+
+        .booth-feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+    }
+
+    .booth-section-header {
+        display: flex;
+        flex-direction: column;
+        /* stack them */
+        align-items: flex-start;
+        /* align left */
+        gap: 12px;
+        margin-bottom: 24px;
+
+        h4 {
+            margin-bottom: 0;
+        }
+
+        .add-exhibitor-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-align: center;
+            justify-content: center;
+        }
+    }
+
+    .exhibitors-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .exhibitor-card {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border: 1px solid var(--color-black-quaternary);
+            border-radius: 12px;
+            gap: 16px;
+
+            .exhibitor-avatar {
+                width: 48px;
+                height: 48px;
+                background-color: var(--color-blue-quaternary);
+                color: var(--color-blue-primary);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                border-radius: 50%;
+                font-weight: 600;
+                font-family: 'Poppins', sans-serif;
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+
+            .exhibitor-info {
+                flex-grow: 1;
+
+                .exhibitor-name {
+                    margin-bottom: 2px;
+                }
+
+                .exhibitor-role {
+                    margin-bottom: 6px;
+                }
+
+                .exhibitor-contact {
+                    display: flex;
+                    gap: 16px;
+
+                    span {
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                    }
+                }
+            }
+
+            .exhibitor-actions {
+                display: flex;
+                gap: 8px;
+
+                .icon-btn {
+                    background: transparent;
+                    border: none;
+                    color: var(--color-black-secondary);
+                    padding: 8px;
+                    cursor: pointer;
+                    border-radius: 6px;
+
+                    &:hover {
+                        background-color: var(--color-black-quaternary);
+                    }
+                }
+            }
+        }
+    }
+
+    .exhibitor-note {
+        background-color: var(--color-blue-quaternary);
+        color: var(--color-blue-primary);
+        padding: 16px;
+        border-radius: 8px;
+        margin-top: 20px;
+    }
+
+    .documents-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .document-card {
+            display: flex;
+            align-items: left;
+            padding: 16px;
+            border: 1px solid var(--color-black-quaternary);
+            border-radius: 12px;
+            gap: 16px;
+
+            .document-icon-wrapper {
+                width: 40px;
+                height: 40px;
+                background-color: var(--color-red-quaternary);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+            }
+        }
+
+        .document-info {
+            flex-grow: 1;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 16px;
+
+            .doc-action-btn {
+                background: transparent;
+                border: none;
+                color: var(--color-black-secondary);
+                font-weight: 500;
+                font-family: 'Poppins', sans-serif;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                cursor: pointer;
+
+                &:hover {
+                    color: var(--color-black-primary);
+                }
+            }
+        }
+    }
+}
+
+/* Sidebar styles */
+.booth-payment-summary {
+    background-color: var(--color-white-primary);
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 12px;
+    padding: 24px;
+
+    h4 {
+        margin-bottom: 20px;
+        text-align: left;
+    }
+
+    .payment-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .payment-divider {
+        border: none;
+        border-top: 1px solid var(--color-black-quaternary);
+        margin: 16px 0;
+    }
+
+    .payment-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .payment-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+
+        .full-width-btn {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            color: var(--color-black-primary);
+
+        }
+
+        .cancel-reservation-btn {
+            width: 100%;
+            border: none;
+            cursor: pointer;
+
+            &:hover {
+                background-color: var(--color-red-tertiary);
+            }
+        }
+    }
+}
+
+.cancellation-policy {
+    line-height: 1.5;
+}
+
+
+
+
+
+
+
+/* Responsiveness */
+@media (max-width: 1024px) {
+    .booth-details-layout {
+        flex-direction: column;
+    }
+
+    .booth-details-sidebar {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .booth-details-back-btn {
+        padding: 0;
+    }
+
+    .booth-details-header {
+        flex-wrap: nowrap;
+    }
+
+    .booth-details-status {
+        align-self: flex-end;
+        /* keeps it on right side */
+    }
+
+    .booth-details-container {
+        padding: 20px;
+    }
+
+    .booth-details-title-area h2 {
+        font-size: 24px;
+    }
+
+    .booth-info-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .add-exhibitor-btn {
+        width: 100%;
+    }
+
+    .booth-features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .exhibitor-contact {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .exhibitor-card {
+        flex-wrap: wrap;
+    }
+
+    .document-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .document-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 480px) {
+    .booth-details-container {
+        padding: 16px;
+    }
+
+    .booth-details-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .booth-details-cover {
+        height: 180px;
+    }
+
+    .booth-details-cover-overlay h3 {
+        font-size: 20px;
+    }
+
+    .booth-details-cover-info {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .exhibitor-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
