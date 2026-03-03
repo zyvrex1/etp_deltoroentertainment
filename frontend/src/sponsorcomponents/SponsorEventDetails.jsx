@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import SponsorKit from './SponsorModal/SponsorKit';
 import './SponsorEventDetails.css';
 
 const SponsorEventDetails = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Overview');
+    const [isSponsorKitModalOpen, setIsSponsorKitModalOpen] = useState(false);
 
     const tabs = ['Overview', 'Sponsorship Benefits', 'Pricing'];
 
@@ -160,10 +162,12 @@ const SponsorEventDetails = () => {
 
                         <button className="primary-button sed-full-btn" onClick={handleViewMap}>View Booth Map</button>
 
-                        <a href="#" className="sed-download-kit smaller-body-text text-primary">Download Sponsorship Kit</a>
+                        <button className="outlined-button sed-view-kit mt-3" onClick={() => setIsSponsorKitModalOpen(true)}>View Sponsorship Kit</button>
                     </div>
                 </div>
             </div>
+
+            <SponsorKit isOpen={isSponsorKitModalOpen} onClose={() => setIsSponsorKitModalOpen(false)} />
         </div>
     );
 };

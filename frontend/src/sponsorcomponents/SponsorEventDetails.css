@@ -310,7 +310,8 @@
             margin-bottom: 12px;
         }
 
-        .sed-download-kit {
+        .sed-view-kit {
+            width: 100%;
             display: block;
             text-align: center;
             text-decoration: none;
@@ -365,7 +366,7 @@
 
     }
 
-      .sed-content-left,
+    .sed-content-left,
     .sed-content-right {
         width: 100% !important;
         max-width: 100%;

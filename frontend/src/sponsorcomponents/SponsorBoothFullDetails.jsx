@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
+import SponsorAddExhibitor from './SponsorModal/SponsorAddExhibitor';
 import './SponsorBoothFullDetails.css';
 
 export default function SponsorBoothFullDetails() {
     const navigate = useNavigate();
+    const [isAddExhibitorModalOpen, setIsAddExhibitorModalOpen] = useState(false);
 
     const exhibitors = [
         { id: 1, name: 'John Smith', role: 'Lead Representative', email: 'john.smith@techcorp.com', phone: '+1 (555) 123-4567', initial: 'J' },
@@ -92,7 +94,7 @@ export default function SponsorBoothFullDetails() {
                     <div className="booth-section">
                         <div className="booth-section-header">
                             <h4>Exhibitor Passes (3/6)</h4>
-                            <button className="primary-button add-exhibitor-btn">
+                            <button className="primary-button add-exhibitor-btn" onClick={() => setIsAddExhibitorModalOpen(true)}>
                                 <Icon icon="mdi:plus" width="18" /> Add Exhibitor
                             </button>
                         </div>
@@ -178,6 +180,10 @@ export default function SponsorBoothFullDetails() {
                     </div>
                 </div>
             </div>
+            <SponsorAddExhibitor
+                isOpen={isAddExhibitorModalOpen}
+                onClose={() => setIsAddExhibitorModalOpen(false)}
+            />
         </div>
     );
 }
