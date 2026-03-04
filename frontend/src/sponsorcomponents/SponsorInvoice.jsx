@@ -1,18 +1,50 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './SponsorInvoice.css';
+import SponsorViewInvoiceReceipt from './SponsorModal/SponsorViewInvoiceReceipt';
 
 export default function SponsorInvoice() {
     // Mock Data
     const allInvoices = Array.from({ length: 12 }, (_, i) => ({
-        id: i + 1,
-        title: (i % 2 === 0) ? 'TechInnovate Summit 2026' : 'Global Healthcare Expo 2024',
-        invoiceRef: (i % 2 === 0) ? '#INV-2026-001' : '#INV-2024-002',
+    id: i + 1,
+    title: (i % 2 === 0) ? 'TechInnovate Summit 2026' : 'Global Healthcare Expo 2024',
+    invoiceRef: (i % 2 === 0) ? 'INV-2026-001' : 'INV-2024-002',
         booth: (i % 2 === 0) ? 'Booth #102' : 'Booth #405',
         amount: (i % 2 === 0) ? '$5,575' : '$2,750',
         issuedDate: (i % 2 === 0) ? 'May 15, 2026' : 'Aug 10, 2024',
         paidDate: (i % 2 === 0) ? 'May 15, 2026' : 'Aug 10, 2024',
+        // extra info for invoice modal
+        companyName: 'TechCorp Inc.',
+        companyAddress: '123 Tech Street\nSan Francisco, CA 94105',
+        taxId: 'TAX-123456789',
+        items: [
+            { description: 'Premium Island Booth (20x20)', qty: 1, unitPrice: (i % 2 === 0) ? '$ 5,000' : '$ 2,175', total: (i % 2 === 0) ? '$ 5,000' : '$ 2,175' },
+            { description: 'Processing Fee', qty: 1, unitPrice: '$ 150', total: '$ 150' },
+            { description: 'Tax (8.5%)', qty: 1, unitPrice: '$ 425', total: '$ 425' }
+        ],
+        subtotal: (i % 2 === 0) ? '$5,575' : '$2,750',
+        totalDue: (i % 2 === 0) ? '$5,575' : '$2,750',
+        paymentMethod: 'Visa ending in 4242'
     }));
+
+    const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+    const handleViewInvoice = (invoice) => {
+        // Map list item structure to match what the modal expects
+        const mappedInvoice = {
+            ...invoice,
+            issueDate: invoice.issuedDate,
+            dueDate: invoice.issuedDate,
+        };
+        setSelectedInvoice(mappedInvoice);
+        setIsInvoiceModalOpen(true);
+    };
+
+    const closeInvoiceModal = () => {
+        setIsInvoiceModalOpen(false);
+        setSelectedInvoice(null);
+    };
 
     // Pagination Logic
     const [currentPage, setCurrentPage] = useState(1);
@@ -75,7 +107,7 @@ export default function SponsorInvoice() {
                                 <h4 className="si-amount">{item.amount}</h4>
                             </div>
                             <div className="si-actions">
-                                <button className="si-action-btn view">
+                                <button className="si-action-btn view" onClick={() => handleViewInvoice(item)}>
                                     <Icon icon="mdi:eye-outline" width="20" />
                                 </button>
                                 <button className="si-action-btn download">
@@ -110,6 +142,12 @@ export default function SponsorInvoice() {
                     </button>
                 </div>
             )}
+
+            <SponsorViewInvoiceReceipt
+                isOpen={isInvoiceModalOpen}
+                onClose={closeInvoiceModal}
+                invoiceItem={selectedInvoice}
+            />
         </div>
     );
 }

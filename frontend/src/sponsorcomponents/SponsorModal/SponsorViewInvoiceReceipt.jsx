@@ -1,0 +1,161 @@
+import React from 'react';
+import { Icon } from '@iconify/react';
+import './SponsorViewInvoiceReceipt.css';
+
+const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem }) => {
+    if (!isOpen) return null;
+
+    // Default mock data if none provided
+    const item = invoiceItem || {
+        invoiceRef: 'INV-2024-001',
+        title: 'TechInnovate Summit 2024',
+        booth: '102',
+        issueDate: 'May 15, 2026',
+        dueDate: 'May 15, 2026',
+        companyName: 'TechCorp Inc.',
+        companyAddress: '123 Tech Street\nSan Francisco, CA 94105',
+        taxId: 'TAX-123456789',
+        items: [
+            { description: 'Premium Island Booth (20x20)', qty: 1, unitPrice: '$ 5,000', total: '$ 5,000' },
+            { description: 'Processing Fee', qty: 1, unitPrice: '$ 150', total: '$ 150' },
+            { description: 'Tax (8.5%)', qty: 1, unitPrice: '$ 425', total: '$ 425' }
+        ],
+        subtotal: '$5,575',
+        totalDue: '$5,575',
+        paidDate: 'May 15, 2026',
+        paymentMethod: 'Visa ending in 4242'
+    };
+
+    return (
+        <div className="sponsor-invoice-modal-overlay">
+            <div className="sponsor-invoice-modal">
+                <div className="sir-modal-header">
+                    <div className="sir-header-titles">
+                        <h4 className="m-0 text-black">Invoice {item.invoiceRef}</h4>
+                        <span className="small-body-text text-secondary">{item.title}</span>
+                    </div>
+                    <button className="sir-modal-close-icon" onClick={onClose}>
+                        <Icon icon="mdi:close" width="24" />
+                    </button>
+                </div>
+
+                <div className="sir-modal-body">
+                    <div className="sir-invoice-container">
+                        <div className="sir-invoice-top">
+                            <div className="sir-invoice-brand">
+                                <Icon icon="icon-park-solid:tickets-two" width="40" color="var(--color-red-primary)" />
+                                <div className="sir-brand-text">
+                                    <h5 className="m-0 text-black">eTicketsPro</h5>
+                                    <span className="smaller-body-text text-secondary">Event Sponsorship Platform</span>
+                                </div>
+                            </div>
+                            <div className="sir-invoice-titletext">
+                                <h3 className="text-red m-0">INVOICE</h3>
+                            </div>
+                        </div>
+
+                        <div className="sir-invoice-details">
+                            <div className="sir-sender-info">
+                                <p className="small-body-text text-secondary m-0">123 Event Plaza</p>
+                                <p className="small-body-text text-secondary m-0">support@eticketspro.com</p>
+                                <p className="small-body-text text-secondary m-0">Tech City, TC 90210</p>
+                            </div>
+                            <div className="sir-meta-info">
+                                <div className="sir-meta-row">
+                                    <span className="small-body-text text-secondary">Invoice #:</span>
+                                    <span className="small-body-text text-black font-medium">{item.invoiceRef}</span>
+                                </div>
+                                <div className="sir-meta-row">
+                                    <span className="small-body-text text-secondary">Issue Date:</span>
+                                    <span className="small-body-text text-black">{item.issueDate}</span>
+                                </div>
+                                <div className="sir-meta-row">
+                                    <span className="small-body-text text-secondary">Due Date:</span>
+                                    <span className="small-body-text text-black">{item.dueDate}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="sir-bill-to">
+                            <h5 className="text-black m-0 mb-8">Bill To:</h5>
+                            <p className="small-body-text text-black m-0 font-medium">{item.companyName}</p>
+                            <p className="small-body-text text-secondary m-0" style={{ whiteSpace: 'pre-line' }}>{item.companyAddress}</p>
+                            <p className="small-body-text text-secondary m-0 mt-4">Tax ID: <span className="text-black">{item.taxId}</span></p>
+                        </div>
+
+                        <div className="sir-event-details">
+                            <h6 className="text-black m-0 mb-8">Event Details</h6>
+                            <div className="sir-event-info-grid">
+                                <span className="small-body-text text-black"><p className="font-medium inline-block m-0" style={{ display: 'inline-block' }}>Event:</p> {item.title}</span>
+                                <span className="small-body-text text-black"><p className="font-medium inline-block m-0" style={{ display: 'inline-block' }}>Booth Number:</p> {item.booth}</span>
+                            </div>
+                        </div>
+
+                <div className="sir-items-table">
+    <table className="sir-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {item.items.map((lineItem, idx) => (
+                <tr key={idx}>
+                    <td data-label="Description">{lineItem.description}</td>
+                    <td data-label="Qty">{lineItem.qty}</td>
+                    <td data-label="Unit Price">{lineItem.unitPrice}</td>
+                    <td data-label="Total" className="font-medium text-black">{lineItem.total}</td>
+                </tr>
+            ))}
+        </tbody>
+    </table>
+
+    <div className="sir-table-footer">
+        <div className="sir-totals-box">
+            <div className="sir-totals-row">
+                <span className="small-body-text text-secondary">Subtotal:</span>
+                <span className="small-body-text text-black">{item.subtotal}</span>
+            </div>
+            <div className="sir-totals-row sir-final-total">
+                <h5 className="m-0 text-black">Total Due:</h5>
+                <h4 className="m-0 text-red">{item.totalDue}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+                        <div className="sir-payment-status">
+                            <Icon icon="mdi:check-circle-outline" width="24" className="text-green" />
+                            <div className="sir-status-text">
+                                <h6 className="m-0 text-green">Payment Received</h6>
+                                <span className="smaller-body-text text-secondary">
+                                    Paid on <span className="text-green">{item.paidDate}</span> via <span className="text-green">{item.paymentMethod}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="sir-payment-instructions">
+                            <p className="smaller-body-text text-black font-medium m-0 mb-4">Payment Instructions:</p>
+                            <p className="smaller-body-text text-secondary m-0">Wire Transfer: Bank of America, Account #123456789, Routing #987654321</p>
+                            <p className="smaller-body-text text-secondary m-0">ACH: Use invoice number as reference</p>
+                            <p className="smaller-body-text text-secondary m-0">Questions? Contact us at billing@eticketspro.com or call +1 (555) 123-4567</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="sir-modal-footer">
+                    <button className="outlined-button sir-close-btn" onClick={onClose} style={{ color: 'var(--color-black-primary)' }}>Close</button>
+                    <button className="primary-button sir-download-btn">
+                        <Icon icon="mdi:download" width="18" /> Download PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default SponsorViewInvoiceReceipt;
