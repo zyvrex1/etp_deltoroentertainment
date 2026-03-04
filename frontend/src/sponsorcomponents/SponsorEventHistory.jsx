@@ -1,12 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react'; import { Icon } from '@iconify/react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Icon } from '@iconify/react';
 import { NavLink } from 'react-router-dom';
+import SponsorViewFullHistory from './SponsorModal/SponsorViewFullHistory';
 import './SponsorEventHistory.css';
 
 export default function SponsorEventHistory() {
 
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-    const [selectedStatus, setSelectedStatus] = useState("All Status");
+    const [selectedStatus, setSelectedStatus] = useState("All Events");
     const statusDropdownRef = useRef(null);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -155,7 +159,13 @@ export default function SponsorEventHistory() {
                                     <td className="regular-body-text text-secondary">{item.paymentDate}</td>
                                     <td>
                                         <div className="sh-actions">
-                                            <button className="sh-action-btn view-btn">
+                                            <button
+                                                className="sh-action-btn view-btn"
+                                                onClick={() => {
+                                                    setSelectedHistoryItem(item);
+                                                    setIsHistoryModalOpen(true);
+                                                }}
+                                            >
                                                 View
                                             </button>
                                             <button className="sh-action-btn text-secondary">
@@ -195,6 +205,11 @@ export default function SponsorEventHistory() {
                     )}
                 </div>
             </div>
+            <SponsorViewFullHistory
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+                historyItem={selectedHistoryItem}
+            />
         </div>
     );
 }
