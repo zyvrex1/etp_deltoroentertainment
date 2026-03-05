@@ -36,11 +36,12 @@
     margin-bottom: 24px;
 }
 
-.sapm-title{
+.sapm-title {
     color: var(--color-black-primary);
     margin: 0;
     text-align: left;
 }
+
 .sapm-close-btn {
     background: none;
     border: none;
@@ -166,6 +167,10 @@
     color: var(--color-black-primary);
     box-sizing: border-box;
     transition: border-color 0.2s;
+}
+
+input[type="date"] {
+    height: 46px;
 }
 
 .sapm-input:focus {

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { NavLink } from 'react-router-dom';
 import SponsorViewFullHistory from './SponsorModal/SponsorViewFullHistory';
+import DateRangePicker from '../admincomponents/DateRangePicker';
 import './SponsorEventHistory.css';
 
 export default function SponsorEventHistory() {
@@ -58,6 +59,19 @@ export default function SponsorEventHistory() {
     // Pagination Logic
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
+
+    const [dateRange, setDateRange] = useState(() => ({
+        preset: 'all',
+        presetLabel: 'All time',
+        start: new Date(2000, 0, 1),
+        end: new Date(2100, 11, 31),
+    }));
+
+    const handleDateRangeChange = (newRange) => {
+        setDateRange(newRange);
+        setCurrentPage(1);
+    };
+
     const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedHistory = filteredHistory.slice(startIndex, startIndex + itemsPerPage);
@@ -90,9 +104,12 @@ export default function SponsorEventHistory() {
                         <input type="text" placeholder="Search by event or invoice order" className="small-body-text" />
                     </div>
                     <div className="sh-filters">
-                        <button className="outlined-button sh-filter-btn">
-                            <Icon icon="mdi:filter-variant" width="18" /> Date Range
-                        </button>
+                        <DateRangePicker
+                            value={dateRange}
+                            onChange={handleDateRangeChange}
+                            buttonClassName="outlined-button sh-filter-btn"
+                            placeholder="Date Range"
+                        />
                         <div className="sh-dropdown" ref={statusDropdownRef}>
                             <button
                                 className="sh-dropdown-btn"

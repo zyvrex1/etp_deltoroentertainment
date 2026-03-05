@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import DateRangePicker from '../admincomponents/DateRangePicker';
 import './SponsorBrowseEvents.css';
 
 const SponsorBrowseEvents = () => {
@@ -21,6 +22,19 @@ const SponsorBrowseEvents = () => {
     // Pagination Logic
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
+
+    const [dateRange, setDateRange] = useState(() => ({
+        preset: 'all',
+        presetLabel: 'All time',
+        start: new Date(2000, 0, 1),
+        end: new Date(2100, 11, 31),
+    }));
+
+    const handleDateRangeChange = (newRange) => {
+        setDateRange(newRange);
+        setCurrentPage(1);
+    };
+
     const totalPages = Math.ceil(allEvents.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedEvents = allEvents.slice(startIndex, startIndex + itemsPerPage);
@@ -50,20 +64,12 @@ const SponsorBrowseEvents = () => {
                     </div>
 
                     <div className="sbe-filters">
-                        <select className="sbe-filter-select small-body-text" defaultValue="Category">
-                            <option value="Category" disabled hidden>Category</option>
-                            <option value="Concert">Concert</option>
-                            <option value="Sports">Sports</option>
-                            <option value="Theater">Theater</option>
-                            <option value="Festival">Festival</option>
-                        </select>
-
-                        <select className="sbe-filter-select small-body-text" defaultValue="Location">
-                            <option value="Location" disabled hidden>Location</option>
-                            <option value="Los Angeles">Los Angeles, CA</option>
-                            <option value="New York">New York, NY</option>
-                            <option value="Chicago">Chicago, IL</option>
-                        </select>
+                        <DateRangePicker
+                            value={dateRange}
+                            onChange={handleDateRangeChange}
+                            buttonClassName="sbe-date-picker-btn small-body-text"
+                            placeholder="Date Range"
+                        />
                     </div>
                 </div>
 

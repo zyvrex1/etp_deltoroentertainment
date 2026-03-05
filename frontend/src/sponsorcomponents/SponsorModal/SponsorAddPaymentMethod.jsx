@@ -87,12 +87,25 @@ const SponsorAddPaymentMethod = ({ isOpen, onClose }) => {
                             </div>
                             <div className="sapm-input-group">
                                 <label className="regular-body-text font-medium text-black">Card Number</label>
-                                <input type="text" className="sapm-input regular-body-text" placeholder="0000 0000 0000 0000" />
+                                <input
+                                    type="text"
+                                    name="cardNumber"
+                                    inputMode="numeric"
+                                    autoComplete="cc-number"
+                                    maxLength="19"
+                                    placeholder="1234 5678 9012 3456"
+                                    onChange={(e) => {
+                                        const value = e.target.value
+                                            .replace(/\D/g, "") // remove non-digits
+                                            .replace(/(.{4})/g, "$1 ")
+                                            .trim();
+                                        e.target.value = value;
+                                    }} className="sapm-input regular-body-text" />
                             </div>
                             <div className="sapm-row">
                                 <div className="sapm-input-group flex-1">
                                     <label className="regular-body-text font-medium text-black">Expiration Date</label>
-                                    <input type="text" className="sapm-input regular-body-text" placeholder="--/--" />
+                                    <input type="date" className="sapm-input regular-body-text" placeholder="--/--" />
                                 </div>
                                 <div className="sapm-input-group flex-1">
                                     <label className="regular-body-text font-medium text-black">CVV</label>

@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './SponsorInvoice.css';
 import SponsorViewInvoiceReceipt from './SponsorModal/SponsorViewInvoiceReceipt';
+import DateRangePicker from '../admincomponents/DateRangePicker';
 
 export default function SponsorInvoice() {
     // Mock Data
     const allInvoices = Array.from({ length: 12 }, (_, i) => ({
-    id: i + 1,
-    title: (i % 2 === 0) ? 'TechInnovate Summit 2026' : 'Global Healthcare Expo 2024',
-    invoiceRef: (i % 2 === 0) ? 'INV-2026-001' : 'INV-2024-002',
+        id: i + 1,
+        title: (i % 2 === 0) ? 'TechInnovate Summit 2026' : 'Global Healthcare Expo 2024',
+        invoiceRef: (i % 2 === 0) ? 'INV-2026-001' : 'INV-2024-002',
         booth: (i % 2 === 0) ? 'Booth #102' : 'Booth #405',
         amount: (i % 2 === 0) ? '$5,575' : '$2,750',
         issuedDate: (i % 2 === 0) ? 'May 15, 2026' : 'Aug 10, 2024',
@@ -49,6 +50,19 @@ export default function SponsorInvoice() {
     // Pagination Logic
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
+
+    const [dateRange, setDateRange] = useState(() => ({
+        preset: 'all',
+        presetLabel: 'All time',
+        start: new Date(2000, 0, 1),
+        end: new Date(2100, 11, 31),
+    }));
+
+    const handleDateRangeChange = (newRange) => {
+        setDateRange(newRange);
+        setCurrentPage(1);
+    };
+
     const totalPages = Math.ceil(allInvoices.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedInvoices = allInvoices.slice(startIndex, startIndex + itemsPerPage);
@@ -72,9 +86,12 @@ export default function SponsorInvoice() {
                     <input type="text" placeholder="Search by event or invoice order" className="small-body-text" />
                 </div>
                 <div className="si-filters">
-                    <button className="outlined-button si-filter-btn">
-                        <Icon icon="mdi:filter-variant" width="18" /> Date Range
-                    </button>
+                    <DateRangePicker
+                        value={dateRange}
+                        onChange={handleDateRangeChange}
+                        buttonClassName="outlined-button si-filter-btn"
+                        placeholder="Date Range"
+                    />
                 </div>
             </div>
 
