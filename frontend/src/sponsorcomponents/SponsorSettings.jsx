@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { showSuccessAlert, showConfirmAlert } from '../admincomponents/utils/sweetAlert';
 import './SponsorSettings.css';
+import SponsorAddPaymentMethod from './SponsorModal/SponsorAddPaymentMethod';
 
 export default function SponsorSettings() {
     const [activeTab, setActiveTab] = useState('companyInfo');
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
     const tabs = [
         { id: 'companyInfo', label: 'Company Info', icon: 'mdi:domain' },
@@ -11,6 +14,13 @@ export default function SponsorSettings() {
         { id: 'billingMethods', label: 'Billing Methods', icon: 'mdi:credit-card-outline' },
         { id: 'notifications', label: 'Notifications', icon: 'mdi:bell-outline' }
     ];
+
+    const handleSave = async (itemName) => {
+        const result = await showConfirmAlert("Save Changes?", `Are you sure you want to save changes to your ${itemName}?`, "Yes, Save");
+        if (result.isConfirmed) {
+            await showSuccessAlert("Saved", `Your ${itemName} have been saved successfully.`);
+        }
+    };
 
     const renderContent = () => {
         switch (activeTab) {
@@ -45,7 +55,7 @@ export default function SponsorSettings() {
                             </div>
                         </div>
                         <div className="settings-form-actions">
-                            <button className="button settings-save-btn">
+                            <button className="button settings-save-btn" onClick={() => handleSave('company information')}>
                                 <Icon icon="mdi:content-save-outline" width="20" /> Save Changes
                             </button>
                         </div>
@@ -76,7 +86,7 @@ export default function SponsorSettings() {
                             </div>
                         </div>
                         <div className="settings-form-actions">
-                            <button className="settings-save-btn regular-body-text">
+                            <button className="settings-save-btn regular-body-text" onClick={() => handleSave('contact details')}>
                                 <Icon icon="mdi:content-save-outline" width="20" /> Save Changes
                             </button>
                         </div>
@@ -87,7 +97,7 @@ export default function SponsorSettings() {
                     <div className="settings-content-pane">
                         <div className="settings-pane-header flex-between">
                             <h4 className="settings-pane-title">Payment Methods</h4>
-                            <button className="primary-button add-card-btn regular-body-text">
+                            <button className="primary-button add-card-btn regular-body-text" onClick={() => setIsPaymentModalOpen(true)}>
                                 <Icon icon="mdi:plus" width="18" /> Add Card
                             </button>
                         </div>
@@ -124,7 +134,7 @@ export default function SponsorSettings() {
                                 </div>
                                 <div className="card-item-right card-actions-right">
                                     <button className="text-btn red-text small-body-text">Set as Default</button>
-                                    <button className="action-icon-btn"><Icon icon="mdi:trash-can-outline" width="20"/></button>
+                                    <button className="action-icon-btn"><Icon icon="mdi:trash-can-outline" width="20" /></button>
                                 </div>
                             </div>
                         </div>
@@ -136,7 +146,7 @@ export default function SponsorSettings() {
                         </div>
 
                         <div className="settings-form-actions mt-auto">
-                            <button className="settings-save-btn button">
+                            <button className="settings-save-btn button" onClick={() => handleSave('billing methods')}>
                                 <Icon icon="mdi:content-save-outline" width="20" /> Save Changes
                             </button>
                         </div>
@@ -181,7 +191,7 @@ export default function SponsorSettings() {
                             </div>
                         </div>
                         <div className="settings-form-actions mt-auto-p-none">
-                            <button className="settings-save-btn regular-body-text">
+                            <button className="settings-save-btn regular-body-text" onClick={() => handleSave('notification preferences')}>
                                 Save Preferences
                             </button>
                         </div>
@@ -219,6 +229,11 @@ export default function SponsorSettings() {
                     {renderContent()}
                 </div>
             </div>
+
+            <SponsorAddPaymentMethod
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+            />
         </div>
     );
 }
