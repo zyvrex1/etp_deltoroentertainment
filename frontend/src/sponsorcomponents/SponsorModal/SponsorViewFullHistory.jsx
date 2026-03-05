@@ -59,8 +59,8 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem }) => {
                         <div className="svfh-event-labels">
                             <span
                                 className={`button-label svfh-status-event ${item.eventStatus
-                                        ? item.eventStatus.toLowerCase().replace(/\s/g, "-")
-                                        : "upcoming"
+                                    ? item.eventStatus.toLowerCase().replace(/\s/g, "-")
+                                    : "upcoming"
                                     }`}
                             >
                                 {item.eventStatus}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
+import { showDeleteConfirmAlert, showSuccessAlert, showConfirmAlert } from '../admincomponents/utils/sweetAlert';
 import SponsorAddExhibitor from './SponsorModal/SponsorAddExhibitor';
 import SponsorDocuments from './SponsorModal/SponsorDocuments';
 import './SponsorBoothFullDetails.css';
@@ -10,6 +11,10 @@ export default function SponsorBoothFullDetails() {
     const [isAddExhibitorModalOpen, setIsAddExhibitorModalOpen] = useState(false);
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
+
+         const handleEventDetails = () => {
+        navigate(`/sponsor/sponsor-event/${eventId}`);
+    };
 
     const exhibitors = [
         { id: 1, name: 'John Smith', role: 'Lead Representative', email: 'john.smith@techcorp.com', phone: '+1 (555) 123-4567', initial: 'J' },
@@ -341,7 +346,12 @@ export default function SponsorBoothFullDetails() {
                                         </div>
                                     </div>
                                     <div className="exhibitor-actions">
-                                        <button className="icon-btn"><Icon icon="mdi:trash-can-outline" width="20" /></button>
+                                        <button className="icon-btn" onClick={async () => {
+                                            const result = await showDeleteConfirmAlert("Remove Exhibitor?", `Are you sure you want to remove ${ex.name}?`);
+                                            if (result.isConfirmed) {
+                                                await showSuccessAlert("Removed", "Exhibitor has been removed successfully.");
+                                            }
+                                        }}><Icon icon="mdi:trash-can-outline" width="20" /></button>
                                     </div>
                                 </div>
                             ))}
@@ -403,9 +413,18 @@ export default function SponsorBoothFullDetails() {
                         </div>
 
                         <div className="payment-actions">
-                            <button className="outlined-button full-width-btn">View Event Details</button>
+                            <button className="outlined-button full-width-btn" onClick={handleEventDetails}>View Event Details</button>
                             <button className="outlined-button full-width-btn"><Icon icon="mdi:download-outline" width="18" /> Download Invoice</button>
-                            <button className="primary-button cancel-reservation-btn">Cancel Reservation</button>
+                            <button className="primary-button cancel-reservation-btn" onClick={async () => {
+                                const result = await showConfirmAlert(
+                                    "Cancel Reservation",
+                                    "Are you sure you want to cancel your booth reservation? This action cannot be undone.",
+                                    "Yes, Cancel Reservation"
+                                );
+                                if (result.isConfirmed) {
+                                    await showSuccessAlert("Reservation Canceled", "Your booth reservation has been successfully canceled.");
+                                }
+                            }}>Cancel Reservation</button>
                         </div>
                         <p className="small-body-text cancellation-policy text-secondary">
                             <strong>Cancellation Policy:</strong> Cancellations made 60+ days before the event receive a 50% refund. Cancellations within 60 days are non-refundable.

@@ -1,12 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
+import { showConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
 import './SponsorHeader.css';
 
 export default function SponsorHeader() {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const navigate = useNavigate();
+
+    const handleSignOut = async () => {
+        setIsDropdownOpen(false);
+        const result = await showConfirmAlert("Sign Out?", "Are you sure you want to sign out?", "Yes, Sign Out");
+        if (result.isConfirmed) {
+            await showSuccessAlert("Signed Out", "You have been signed out successfully.");
+            navigate('/');
+        }
+    };
 
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
     const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -80,7 +91,7 @@ export default function SponsorHeader() {
                                     </li>
                                 </ul>
                                 <div className="dropdown-menu-footer">
-                                    <button className="sponsor-signout-btn regular-body-text">
+                                    <button className="sponsor-signout-btn regular-body-text" onClick={handleSignOut}>
                                         <Icon icon="mdi:logout" width="20" /> Sign out
                                     </button>
                                 </div>

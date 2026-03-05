@@ -1,10 +1,20 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
+import { useNavigate } from 'react-router-dom';
+
 import './SponsorKit.css';
 
 const SponsorKit = ({ isOpen, onClose }) => {
+        const navigate = useNavigate();
     if (!isOpen) return null;
 
+       const handleReserveBooth = () => {
+        navigate('/sponsor/sponsor-venue-layout');
+    };
+
+     const handleContact = () => {
+        navigate('/sponsor/support');
+    };
     return (
         <div className="sponsor-kit-overlay">
             <div className="sponsor-kit-modal">
@@ -197,8 +207,8 @@ const SponsorKit = ({ isOpen, onClose }) => {
                             </div>
                         </div>
                         <div className="sk-cta-actions">
-                            <button className="primary-button sk-mb-3 sk-w-100 sk-flex-center sk-gap-2">Reserve a Booth <Icon icon="mdi:arrow-right" /></button>
-                            <button className="outlined-button sk-w-100 sk-btn-outline-white">Contact Sales Team</button>
+                            <button className="primary-button sk-mb-3 sk-w-100 sk-flex-center sk-gap-2" onClick={handleReserveBooth}>Reserve a Booth <Icon icon="mdi:arrow-right" /></button>
+                            <button className="outlined-button sk-w-100 sk-btn-outline-white"onClick={handleContact}>Contact Sales Team</button>
                         </div>
                     </div>
                 </div>

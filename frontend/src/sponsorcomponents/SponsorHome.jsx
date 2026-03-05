@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { NavLink } from 'react-router-dom';
+
 import './SponsorHome.css';
 
 export default function SponsorHome() {
@@ -57,7 +59,7 @@ export default function SponsorHome() {
                             }}
                         >
                             Browse Events
-                        </button>            <button className="outlined-button white-outline hero-btn">View Categories</button>
+                        </button>             <NavLink to="/sponsor/sponsor-events"><button className="outlined-button white-outline hero-btn">View Categories</button></NavLink>
                     </div>
                 </div>
             </section>
@@ -106,7 +108,7 @@ export default function SponsorHome() {
                         <h2>Trending Now</h2>
                         <p className="regular-body-text">Don't miss out on these hot events</p>
                     </div>
-                    <a href="#viewall" className="view-all-link regular-body-text">View All</a>
+                    <NavLink to="/sponsor/sponsor-events" className="view-all-link regular-body-text">View All</NavLink>
                 </div>
                 <div className="sponsor-trending-grid">
                     {trendingEvents.map((evt, idx) => (

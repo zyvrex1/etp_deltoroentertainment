@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { showConfirmAlert, showSuccessAlert } from '../../admincomponents/utils/sweetAlert';
 import './SponsorAddExhibitor.css';
 
 const SponsorAddExhibitor = ({ isOpen, onClose }) => {
@@ -25,6 +26,21 @@ const SponsorAddExhibitor = ({ isOpen, onClose }) => {
 
     const handleRemoveUser = (id) => {
         setSelectedExhibitors(selectedExhibitors.filter(user => user.id !== id));
+    };
+
+    const handleSubmit = async () => {
+        if (selectedExhibitors.length === 0) {
+            return;
+        }
+        const result = await showConfirmAlert(
+            "Add Exhibitors?",
+            `Are you sure you want to add these ${selectedExhibitors.length} exhibitor(s)?`,
+            "Yes, Add Them"
+        );
+        if (result.isConfirmed) {
+            await showSuccessAlert("Added", "Exhibitors have been added successfully.");
+            onClose();
+        }
     };
 
     return (
@@ -98,7 +114,7 @@ const SponsorAddExhibitor = ({ isOpen, onClose }) => {
                 </div>
 
                 <div className="add-exhibitor-modal-footer">
-                    <button className="primary-button add-exhibitor-submit-btn" onClick={onClose}>Add Exhibitors</button>
+                    <button className="primary-button add-exhibitor-submit-btn" onClick={handleSubmit}>Add Exhibitors</button>
                 </div>
             </div>
         </div>

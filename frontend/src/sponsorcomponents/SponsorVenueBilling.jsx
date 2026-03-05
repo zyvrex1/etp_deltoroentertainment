@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import { showConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
 import './SponsorVenueBilling.css';
 
 const SponsorVenueBilling = () => {
     const navigate = useNavigate();
-    const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' or 'invoice'
+    const [paymentMethod, setPaymentMethod] = useState('saved'); // 'saved', 'card' or 'invoice'
+
+    const handlePay = async () => {
+        const result = await showConfirmAlert(
+            "Confirm Payment",
+            "Are you sure you want to proceed with the payment of $5,575.00?",
+            "Yes, Pay Now"
+        );
+        if (result.isConfirmed) {
+            await showSuccessAlert("Payment Successful", "Your transaction has been completed.");
+            // Optional routing after payment
+            // navigate('/dashboard');
+        }
+    };
 
     return (
         <div className="svb-page-wrapper">
@@ -87,6 +101,33 @@ const SponsorVenueBilling = () => {
                     <div className="svb-card mb-4">
                         <div className="svb-card-body">
                             <h4 className="mb-4">Payment Method</h4>
+
+                            {/* Saved Payment Option */}
+                            <div
+                                className={`svb-payment-option mb-3 ${paymentMethod === 'saved' ? 'selected' : ''}`}
+                                onClick={() => setPaymentMethod('saved')}
+                            >
+                                <div className="svb-payment-header">
+                                    <div className="svb-radio-group">
+                                        <input
+                                            type="radio"
+                                            checked={paymentMethod === 'saved'}
+                                            readOnly
+                                            className="svb-radio"
+                                        />
+                                        <div>
+                                            <div className="d-flex align-items-center mb-1">
+                                                <Icon icon="mdi:credit-card" className="mr-2" style={{ fontSize: '1.2rem' }} />
+                                                <h5 className="h6 m-0">Visa •••• 4242</h5>
+                                            </div>
+                                            <span className="smaller-body-text text-secondary block">Expires 12/25 &bull; Default</span>
+                                        </div>
+                                    </div>
+                                    <div className="svb-card-badges">
+                                        <span className="svb-badge button-label blue">VISA</span>
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* Credit Card Option */}
                             <div
@@ -231,7 +272,7 @@ const SponsorVenueBilling = () => {
                                 <h4 className="text-red m-0">$5,575.00</h4>
                             </div>
 
-                            <button className="primary-button svb-pay-btn mb-2 w-100 p-3">
+                            <button className="primary-button svb-pay-btn mb-2 w-100 p-3" onClick={handlePay}>
                                 Pay $5,575.00
                             </button>
                             <p className="text-center smaller-body-text text-secondary m-0 pb-4">
