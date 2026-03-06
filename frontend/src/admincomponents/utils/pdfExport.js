@@ -93,96 +93,112 @@ export function removeExportToast(toast) {
  * @param {number} pdfWidth - PDF width
  * @param {number} pdfHeight - PDF height
  * @param {number} footerHeight - Footer height for page break calculation
+ * @param {number} customRowHeight - Base height for a row
+ * @param {number} customPaddingY - Padding above text
  * @returns {number} - Final Y position after table
  */
-export function drawTable(pdf, startY, headers, rows, margin, pdfWidth, pdfHeight, footerHeight) {
+export function drawTable(pdf, startY, headers, rows, margin, pdfWidth, pdfHeight, footerHeight, customRowHeight = 7, customPaddingY = 3) {
     const colWidths = [];
     const totalWidth = pdfWidth - 2 * margin;
     const numCols = headers.length;
-    
+
     // Calculate column widths (equal distribution)
     const colWidth = totalWidth / numCols;
     for (let i = 0; i < numCols; i++) {
         colWidths.push(colWidth);
     }
-    
+
     let y = startY;
-    const rowHeight = 7;
-    const headerHeight = 8;
-    
-    // Draw header
+    const rowHeight = customRowHeight;
+    const headerHeight = Math.max(10, customRowHeight + 4);
+
+    // Draw header background
     pdf.setFillColor(240, 240, 240);
-    pdf.rect(margin, y - headerHeight + 2, totalWidth, headerHeight, 'F');
-    
+    pdf.rect(margin, y, totalWidth, headerHeight, 'F');
+
+    // Header text styling
     pdf.setFontSize(9);
     pdf.setTextColor(30, 60, 114);
     pdf.setFont('helvetica', 'bold');
-    
+
+    // Vertically center header labels, left-aligned within each column
     let x = margin;
     headers.forEach((header, i) => {
-        pdf.text(header, x + 2, y, { maxWidth: colWidths[i] - 4 });
+        const textX = x + 3; // small left padding
+        const textY = y + headerHeight / 2 + 1; // vertically centered with slight offset
+        pdf.text(header, textX, textY, {
+            align: 'left',
+            maxWidth: colWidths[i] - 6,
+        });
         x += colWidths[i];
     });
-    
+
     y += headerHeight;
-    
+
     // Draw header bottom border
     pdf.setDrawColor(200, 200, 200);
     pdf.setLineWidth(0.5);
     pdf.line(margin, y, margin + totalWidth, y);
     y += 2;
-    
+
     // Draw rows
     pdf.setFontSize(8);
     pdf.setTextColor(50, 50, 50);
     pdf.setFont('helvetica', 'normal');
-    
+
     rows.forEach((row) => {
         // Calculate max cell height needed for this row
         let maxCellHeight = rowHeight;
         row.forEach((cell, i) => {
             const lines = pdf.splitTextToSize(cell || '', colWidths[i] - 4);
-            const cellHeight = lines.length * 3.5;
+            const cellHeight = lines.length * 3.5 + (customRowHeight - 7);
             if (cellHeight > maxCellHeight) maxCellHeight = cellHeight;
         });
-        
+
         // Check if we need a new page
         if (y + maxCellHeight > pdfHeight - footerHeight - 10) {
             pdf.addPage();
             // Redraw header on new page
+            // Draw header on new page
+            const newHeaderY = margin + 5;
             pdf.setFillColor(240, 240, 240);
-            pdf.rect(margin, margin + 5, totalWidth, headerHeight, 'F');
+            pdf.rect(margin, newHeaderY, totalWidth, headerHeight, 'F');
             pdf.setFontSize(9);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
             x = margin;
             headers.forEach((header, i) => {
-                pdf.text(header, x + 2, margin + headerHeight + 3, { maxWidth: colWidths[i] - 4 });
+                const textX = x + 3;
+                const textY = newHeaderY + headerHeight / 2 + 1;
+                pdf.text(header, textX, textY, {
+                    align: 'left',
+                    maxWidth: colWidths[i] - 6,
+                });
                 x += colWidths[i];
             });
             pdf.setDrawColor(200, 200, 200);
-            pdf.line(margin, margin + headerHeight + 5, margin + totalWidth, margin + headerHeight + 5);
-            y = margin + headerHeight + 7;
+            pdf.line(margin, newHeaderY + headerHeight, margin + totalWidth, newHeaderY + headerHeight);
+            y = newHeaderY + headerHeight + 2;
             pdf.setFontSize(8);
             pdf.setTextColor(50, 50, 50);
             pdf.setFont('helvetica', 'normal');
         }
-        
+
         // Draw cells
         x = margin;
         row.forEach((cell, i) => {
             const lines = pdf.splitTextToSize(cell || '', colWidths[i] - 4);
-            pdf.text(lines, x + 2, y + 3, { maxWidth: colWidths[i] - 4 });
+            pdf.text(lines, x + 2, y + customPaddingY, { maxWidth: colWidths[i] - 4 });
             x += colWidths[i];
         });
-        
+
         // Draw row bottom border
         pdf.setDrawColor(220, 220, 220);
         pdf.setLineWidth(0.2);
         pdf.line(margin, y + maxCellHeight - 1, margin + totalWidth, y + maxCellHeight - 1);
-        
+
         y += maxCellHeight;
     });
-    
+
     return y;
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import './SponsorViewFullHistory.css';
 
-const SponsorViewFullHistory = ({ isOpen, onClose, historyItem }) => {
+const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) => {
     if (!isOpen) return null;
 
     // Use default mock data if none provided
@@ -180,7 +180,7 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem }) => {
                                 <h4 className="text-red m-0">{item.paymentInfo.totalPaid}</h4>
                             </div>
                         </div>
-                        <button className="outlined-button svfh-receipt-btn">
+                        <button className="outlined-button svfh-receipt-btn" onClick={onDownload}>
                             <Icon icon="mdi:download-outline" width="18" /> Download Receipt
                         </button>
                     </div>

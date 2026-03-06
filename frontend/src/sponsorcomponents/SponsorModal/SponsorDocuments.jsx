@@ -2,7 +2,7 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import './SponsorDocuments.css';
 
-const SponsorDocuments = ({ isOpen, onClose, document }) => {
+const SponsorDocuments = ({ isOpen, onClose, document, onDownload }) => {
     if (!isOpen) return null;
 
     // Use provided sections if available, otherwise fallback to general default
@@ -13,7 +13,10 @@ const SponsorDocuments = ({ isOpen, onClose, document }) => {
                 <p className="small-body-text text-secondary" style={{ margin: 0 }}>
                     This document serves as the general guidelines and agreement for all participating sponsors and exhibitors across our events. Please review carefully to ensure a seamless experience throughout the event lifecycle.
                 </p>
-            )
+            ),
+            pdfContent: [
+                'This document serves as the general guidelines and agreement for all participating sponsors and exhibitors across our events. Please review carefully to ensure a seamless experience throughout the event lifecycle.'
+            ]
         },
         {
             title: 'Compliance & Regulations',
@@ -24,7 +27,13 @@ const SponsorDocuments = ({ isOpen, onClose, document }) => {
                     <li>Any hanging structures or heavy utility requirements must be requested in advance.</li>
                     <li>Conduct any activity that competes directly with the Organizer's business is prohibited.</li>
                 </ul>
-            )
+            ),
+            pdfContent: [
+                '• All participants must comply with venue rules and local safety regulations.',
+                '• Exhibits and materials must safely be contained within the assigned footprint.',
+                '• Any hanging structures or heavy utility requirements must be requested in advance.',
+                '• Conduct any activity that competes directly with the Organizer\'s business is prohibited.'
+            ]
         },
         {
             title: 'Inclusions & Requirements',
@@ -34,7 +43,12 @@ const SponsorDocuments = ({ isOpen, onClose, document }) => {
                     <li>Basic venue amenities unless additional services were requested.</li>
                     <li>Setup materials must meet local fire safety and structural standards.</li>
                 </ul>
-            )
+            ),
+            pdfContent: [
+                '• Standard event passes as outlined in your specific booth package.',
+                '• Basic venue amenities unless additional services were requested.',
+                '• Setup materials must meet local fire safety and structural standards.'
+            ]
         },
         {
             title: 'Cancellation & Support',
@@ -42,7 +56,10 @@ const SponsorDocuments = ({ isOpen, onClose, document }) => {
                 <p className="small-body-text text-secondary" style={{ margin: 0 }}>
                     Cancellations must be submitted in writing. Standard policy allows partial refunds up to 60 days prior to the event, after which all bookings are non-refundable. For detailed questions, contact our Exhibitor Support team at support@eventplatform.com.
                 </p>
-            )
+            ),
+            pdfContent: [
+                'Cancellations must be submitted in writing. Standard policy allows partial refunds up to 60 days prior to the event, after which all bookings are non-refundable. For detailed questions, contact our Exhibitor Support team at support@eventplatform.com.'
+            ]
         }
     ];
 
@@ -101,7 +118,7 @@ const SponsorDocuments = ({ isOpen, onClose, document }) => {
 
                 <div className="sponsor-documents-footer">
                     <button className="outlined-button sd-footer-btn" onClick={onClose}>Close</button>
-                    <button className="primary-button sd-footer-btn sd-download-btn"><Icon icon="mdi:download-outline" width="18" /> Download {format}</button>
+                    <button className="primary-button sd-footer-btn sd-download-btn" onClick={onDownload}><Icon icon="mdi:download-outline" width="18" /> Download {format}</button>
                 </div>
             </div>
         </div>

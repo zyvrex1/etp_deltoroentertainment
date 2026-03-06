@@ -3,6 +3,8 @@ import { Icon } from '@iconify/react';
 import { NavLink } from 'react-router-dom';
 import SponsorViewFullHistory from './SponsorModal/SponsorViewFullHistory';
 import DateRangePicker from '../admincomponents/DateRangePicker';
+import jsPDF from 'jspdf';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../admincomponents/utils/pdfExport';
 import './SponsorEventHistory.css';
 
 export default function SponsorEventHistory() {
@@ -12,6 +14,147 @@ export default function SponsorEventHistory() {
     const statusDropdownRef = useRef(null);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
+
+    const exportHistoryToPDF = async () => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const MARGIN = 15;
+            let y = 45;
+
+            addReportHeader(pdf, 'Sponsorship History', logoData);
+
+            pdf.setFontSize(14);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Event History', MARGIN, y);
+            y += 20;
+
+            const headers = ['Event', 'Booth', 'Date', 'Invoice', 'Amount', 'Event Status', 'Payment Status'];
+            const rows = filteredHistory.map(item => [
+                item.title,
+                item.booth,
+                item.date,
+                item.invoiceRef,
+                item.amount,
+                item.eventStatus,
+                item.paymentStatus
+            ]);
+
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5);
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Sponsorship_History_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
+        }
+    };
+
+    const downloadHistoryItemPDF = async (item) => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const MARGIN = 15;
+            let y = 45;
+
+            addReportHeader(pdf, 'Invoice Receipt', logoData);
+
+            pdf.setFontSize(14);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Invoice Details', MARGIN, y);
+            y += 10;
+
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`Event: ${item.title}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Booth: ${item.booth}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Invoice Ref: ${item.invoiceRef}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Payment Date: ${item.paymentDate}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Booking Date: ${item.bookingDate || 'May 15, 2026'}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Booth Type: Standard • 10x10`, MARGIN, y);
+            y += 10;
+
+            pdf.setFontSize(14);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Payment Information', MARGIN, y);
+            y += 6;
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`Payment Method: Visa ending in 4242`, MARGIN, y);
+            y += 6;
+            pdf.text(`Payment Date: ${item.paymentDate}`, MARGIN, y);
+            y += 10;
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Exhibitors', MARGIN, y);
+            y += 6;
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('• John Smith (Lead Representative)', MARGIN, y);
+            y += 6;
+            pdf.text('• Sarah Johnson (Sales Manager)', MARGIN, y);
+            y += 6;
+            pdf.text('• Mike Chen (Technical Specialist)', MARGIN, y);
+            y += 10;
+
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Included Features', MARGIN, y);
+            y += 6;
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('• High Visibility Location', MARGIN, y);
+            y += 6;
+            pdf.text('• Near Main Entrance', MARGIN, y);
+            y += 6;
+            pdf.text('• Dedicated 20A Power Circuit', MARGIN, y);
+            y += 6;
+            pdf.text('• Premium Carpet Included', MARGIN, y);
+            y += 6;
+            pdf.text('• WiFi Access', MARGIN, y);
+            y += 6;
+            pdf.text('• 6 Exhibitor Passes', MARGIN, y);
+            y += 20;
+
+            const headers = ['Description', 'Amount'];
+            const rows = [
+                ['Booth Price', '$5,000.00'],
+                ['Processing Fee', '$150.00'],
+                ['Tax', '$425.00'],
+                ['Total Paid', item.amount]
+            ];
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5);
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Invoice_${item.invoiceRef}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -91,7 +234,7 @@ export default function SponsorEventHistory() {
                     <h2>Sponsorship History</h2>
                     <p className="regular-body-text text-secondary">View your past sponsorships and payment records.</p>
                 </div>
-                <button className="outlined-button sh-dl">
+                <button className="outlined-button sh-dl" onClick={exportHistoryToPDF}>
                     <Icon icon="mdi:tray-arrow-up" className="export-icon" />
                     Export History
                 </button>
@@ -185,7 +328,7 @@ export default function SponsorEventHistory() {
                                             >
                                                 View
                                             </button>
-                                            <button className="sh-action-btn text-secondary">
+                                            <button className="sh-action-btn text-secondary" onClick={() => downloadHistoryItemPDF(item)}>
                                                 <Icon icon="mdi:download" width="20" />
                                             </button>
                                         </div>
@@ -226,6 +369,7 @@ export default function SponsorEventHistory() {
                 isOpen={isHistoryModalOpen}
                 onClose={() => setIsHistoryModalOpen(false)}
                 historyItem={selectedHistoryItem}
+                onDownload={() => downloadHistoryItemPDF(selectedHistoryItem)}
             />
         </div>
     );

@@ -2,7 +2,7 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import './SponsorViewInvoiceReceipt.css';
 
-const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem }) => {
+const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload }) => {
     if (!isOpen) return null;
 
     // Default mock data if none provided
@@ -91,42 +91,42 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem }) => {
                             </div>
                         </div>
 
-                <div className="sir-items-table">
-    <table className="sir-table">
-        <thead>
-            <tr>
-                <th>Description</th>
-                <th>Qty</th>
-                <th>Unit Price</th>
-                <th>Total</th>
-            </tr>
-        </thead>
+                        <div className="sir-items-table">
+                            <table className="sir-table">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Qty</th>
+                                        <th>Unit Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
 
-        <tbody>
-            {item.items.map((lineItem, idx) => (
-                <tr key={idx}>
-                    <td data-label="Description">{lineItem.description}</td>
-                    <td data-label="Qty">{lineItem.qty}</td>
-                    <td data-label="Unit Price">{lineItem.unitPrice}</td>
-                    <td data-label="Total" className="font-medium text-black">{lineItem.total}</td>
-                </tr>
-            ))}
-        </tbody>
-    </table>
+                                <tbody>
+                                    {item.items.map((lineItem, idx) => (
+                                        <tr key={idx}>
+                                            <td data-label="Description">{lineItem.description}</td>
+                                            <td data-label="Qty">{lineItem.qty}</td>
+                                            <td data-label="Unit Price">{lineItem.unitPrice}</td>
+                                            <td data-label="Total" className="font-medium text-black">{lineItem.total}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
 
-    <div className="sir-table-footer">
-        <div className="sir-totals-box">
-            <div className="sir-totals-row">
-                <span className="small-body-text text-secondary">Subtotal:</span>
-                <span className="small-body-text text-black">{item.subtotal}</span>
-            </div>
-            <div className="sir-totals-row sir-final-total">
-                <h5 className="m-0 text-black">Total Due:</h5>
-                <h4 className="m-0 text-red">{item.totalDue}</h4>
-            </div>
-        </div>
-    </div>
-</div>
+                            <div className="sir-table-footer">
+                                <div className="sir-totals-box">
+                                    <div className="sir-totals-row">
+                                        <span className="small-body-text text-secondary">Subtotal:</span>
+                                        <span className="small-body-text text-black">{item.subtotal}</span>
+                                    </div>
+                                    <div className="sir-totals-row sir-final-total">
+                                        <h5 className="m-0 text-black">Total Due:</h5>
+                                        <h4 className="m-0 text-red">{item.totalDue}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div className="sir-payment-status">
                             <Icon icon="mdi:check-circle-outline" width="24" className="text-green" />
@@ -149,7 +149,7 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem }) => {
 
                 <div className="sir-modal-footer">
                     <button className="outlined-button sir-close-btn" onClick={onClose} style={{ color: 'var(--color-black-primary)' }}>Close</button>
-                    <button className="primary-button sir-download-btn">
+                    <button className="primary-button sir-download-btn" onClick={onDownload}>
                         <Icon icon="mdi:download" width="18" /> Download PDF
                     </button>
                 </div>

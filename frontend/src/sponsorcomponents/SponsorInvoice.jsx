@@ -3,6 +3,8 @@ import { Icon } from '@iconify/react';
 import './SponsorInvoice.css';
 import SponsorViewInvoiceReceipt from './SponsorModal/SponsorViewInvoiceReceipt';
 import DateRangePicker from '../admincomponents/DateRangePicker';
+import jsPDF from 'jspdf';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../admincomponents/utils/pdfExport';
 
 export default function SponsorInvoice() {
     // Mock Data
@@ -30,6 +32,121 @@ export default function SponsorInvoice() {
 
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+    const exportAllInvoicesToPDF = async () => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const MARGIN = 15;
+            let y = 45;
+
+            addReportHeader(pdf, 'Invoices Report', logoData);
+
+            pdf.setFontSize(14);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Invoices Summary', MARGIN, y);
+            y += 20;
+
+            const headers = ['Event', 'Invoice #', 'Booth', 'Amount', 'Issued', 'Paid'];
+            const rows = allInvoices.map(item => [
+                item.title,
+                item.invoiceRef,
+                item.booth,
+                item.amount,
+                item.issuedDate,
+                item.paidDate
+            ]);
+
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5);
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Invoices_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
+        }
+    };
+
+    const downloadInvoicePDF = async (item) => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const MARGIN = 15;
+            let y = 45;
+
+            addReportHeader(pdf, 'Invoice', logoData);
+
+            pdf.setFontSize(14);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Invoice Details', MARGIN, y);
+            y += 10;
+
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`Event: ${item.title}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Booth: ${item.booth}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Invoice Ref: ${item.invoiceRef}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Company: ${item.companyName}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Tax ID: ${item.taxId}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Issued Date: ${item.issuedDate}`, MARGIN, y);
+            y += 6;
+            pdf.text(`Paid Date: ${item.paidDate}`, MARGIN, y);
+            y += 20;
+
+            const headers = ['Description', 'Qty', 'Unit Price', 'Total'];
+            const rows = item.items.map(i => [
+                i.description,
+                i.qty.toString(),
+                i.unitPrice,
+                i.total
+            ]);
+
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5);
+
+            y += 10;
+            y += 10;
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.text(`Total Due: ${item.totalDue}`, MARGIN, y);
+
+            y += 15;
+            pdf.setFontSize(10);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Payment Instructions:', MARGIN, y);
+            y += 6;
+            pdf.setFontSize(9);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Wire Transfer: Bank of America, Account #123456789, Routing #987654321', MARGIN, y);
+            y += 5;
+            pdf.text('ACH: Use invoice number as reference', MARGIN, y);
+            y += 5;
+            pdf.text('Questions? Contact us at billing@eticketspro.com or call +1 (555) 123-4567', MARGIN, y);
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Invoice_${item.invoiceRef}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
+        }
+    };
 
     const handleViewInvoice = (invoice) => {
         // Map list item structure to match what the modal expects
@@ -86,6 +203,10 @@ export default function SponsorInvoice() {
                     <input type="text" placeholder="Search by event or invoice order" className="small-body-text" />
                 </div>
                 <div className="si-filters">
+                    <button className="outlined-button si-filter-btn" onClick={exportAllInvoicesToPDF}>
+                        <Icon icon="mdi:tray-arrow-up" className="export-icon" />
+                        Export Invoices
+                    </button>
                     <DateRangePicker
                         value={dateRange}
                         onChange={handleDateRangeChange}
@@ -127,7 +248,7 @@ export default function SponsorInvoice() {
                                 <button className="si-action-btn view" onClick={() => handleViewInvoice(item)}>
                                     <Icon icon="mdi:eye-outline" width="20" />
                                 </button>
-                                <button className="si-action-btn download">
+                                <button className="si-action-btn download" onClick={() => downloadInvoicePDF(item)}>
                                     <Icon icon="mdi:download-outline" width="20" />
                                 </button>
                             </div>
@@ -164,6 +285,7 @@ export default function SponsorInvoice() {
                 isOpen={isInvoiceModalOpen}
                 onClose={closeInvoiceModal}
                 invoiceItem={selectedInvoice}
+                onDownload={() => downloadInvoicePDF(selectedInvoice)}
             />
         </div>
     );
