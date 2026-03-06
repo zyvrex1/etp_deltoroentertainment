@@ -3,18 +3,16 @@ import { useAuthContext } from "./admincomponents/hooks/useAuthContext.jsx";
 import { useState } from "react";
 import "./App.css";
 
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 import Home from "./landingpage/Home.jsx";
 import Login from "./landingpage/Login.jsx";
-import SignupModal from "./admincomponents/modal/SignupModal.jsx";
-import LoginModal from "./admincomponents/modal/LoginModal.jsx";
 
 // Layouts
 import LandingLayout from "./layouts/landinglayout.jsx";
 import AdminLayout from "./layouts/adminlayout.jsx";
 import PromoterLayout from "./layouts/promoterlayout.jsx";
 import SponsorLayout from "./layouts/sponsorlayout.jsx";
+import CustomerLayout from "./layouts/customerlayout.jsx";
 
 
 // Admin Pages
@@ -45,7 +43,6 @@ import PromoterRevenue from "./promotercomponents/promoterrevenuereports.jsx";
 import PromoterPayouts from "./promotercomponents/promoterpayouts.jsx";
 
 // Sponsor Pages
-
 import SponsorHome from "./sponsorcomponents/SponsorHome.jsx";
 import SponsorEvents from "./sponsorcomponents/SponsorBrowseEvents.jsx";
 import SponsorEventDetails from './sponsorcomponents/SponsorEventDetails.jsx';
@@ -59,6 +56,9 @@ import SponsorEventHistory from './sponsorcomponents/SponsorEventHistory.jsx';
 import SponsorInvoice from './sponsorcomponents/SponsorInvoice.jsx';
 import SponsorSettings from './sponsorcomponents/SponsorSettings.jsx';
 import SponsorSupport from './sponsorcomponents/SponsorSupport.jsx';
+
+// Customer Pages
+import CustomerHome from "./customercomponents/CustomerHome.jsx";
 
 function App() {
   return (
@@ -136,6 +136,17 @@ function App() {
           <Route path="/sponsor/settings" element={<SponsorSettings />} />
           <Route path="/sponsor/support" element={<SponsorSupport />} />
 
+        </Route>
+
+        <Route
+          path="/customer"
+          element={
+            // <ProtectedRoute allowedRole="customer">
+            <CustomerLayout />
+            // </ProtectedRoute>
+          }
+        >
+          <Route index element={<CustomerHome />} />
         </Route>
       </Routes>
     </BrowserRouter>
