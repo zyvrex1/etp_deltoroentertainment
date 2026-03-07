@@ -59,6 +59,8 @@ import SponsorSupport from './sponsorcomponents/SponsorSupport.jsx';
 
 // Customer Pages
 import CustomerHome from "./customercomponents/CustomerHome.jsx";
+import CustomerBrowseEvent from "./customercomponents/CustomerBrowseEvent.jsx";
+import CustomerCart from "./customercomponents/CustomerCart.jsx";
 
 function App() {
   return (
@@ -147,6 +149,9 @@ function App() {
           }
         >
           <Route index element={<CustomerHome />} />
+          <Route path="browse-events" element={<CustomerBrowseEvent />} />
+          <Route path="cart" element={<CustomerCart />} />
+          <Route path="my-tickets" element={<CustomerCart />} />
         </Route>
       </Routes>
     </BrowserRouter>

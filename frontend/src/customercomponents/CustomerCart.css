@@ -1,0 +1,156 @@
+.ccart-page-wrapper {
+    background-color: var(--color-bg-light);
+    color: var(--color-black-primary);
+    width: 100%;
+    min-height: 80vh;
+}
+
+.ccart-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 60px 40px;
+
+    .ccart-header {
+        margin-bottom: 40px;
+
+        h2 {
+            color: var(--color-black-primary);
+            text-align: left;
+        }
+    }
+
+    .ccart-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 25px;
+
+        .ccart-card {
+            background-color: var(--color-white-primary);
+            border: 1px solid var(--color-black-quaternary);
+            border-radius: 12px;
+            display: flex;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+            .ccart-card-left {
+                flex: 1;
+                padding: 25px;
+                display: flex;
+                flex-direction: column;
+                border-right: 1px solid var(--color-black-quaternary);
+
+                .ccart-card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 15px;
+
+                    .ccart-ticket-title {
+                        margin: 0;
+                        color: var(--color-black-primary);
+                        text-align: left;
+                    }
+
+                    .ccart-status-pill {
+                        background-color: var(--color-green-tertiary);
+                        color: var(--color-green-primary);
+                        border-radius: 6px;
+                    }
+                }
+
+                .ccart-info-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 10px;
+                    color: var(--color-black-secondary);
+                }
+
+                .ccart-seat-section {
+                    margin-top: 20px;
+                    background-color: var(--color-bg-light);
+                    padding: 15px;
+                    border-radius: 8px;
+                    text-align: center;
+
+                    span {
+                        color: var(--color-black-secondary);
+                    }
+
+                    .ccart-seat-number {
+                        color: var(--color-black-primary);
+                        margin-top: 5px;
+                    }
+                }
+            }
+
+            .ccart-card-right {
+                width: 200px;
+                background-color: var(--color-bg-light);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+
+                .ccart-qr-container {
+                    background-color: var(--color-white-primary);
+                    padding: 20px;
+                    border-radius: 12px;
+                    border: 1px solid var(--color-black-quaternary);
+                    margin-bottom: 15px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+
+                    .ccart-qr {
+                        color: var(--color-black-primary);
+                    }
+                }
+
+                span {
+                    color: var(--color-black-secondary);
+                }
+            }
+        }
+    }
+}
+
+/* Tablet (1024px) */
+@media (max-width: 1024px) {
+    .ccart-container {
+        padding: 40px 20px;
+    }
+
+    .ccart-container .ccart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Tablet (768px) */
+@media (max-width: 768px) {
+    .ccart-container {
+        padding: 30px 20px;
+    }
+
+    .ccart-container .ccart-grid .ccart-card {
+        flex-direction: column;
+
+        .ccart-card-left {
+            border-right: none;
+            border-bottom: 1px solid var(--color-black-quaternary);
+        }
+
+        .ccart-card-right {
+            width: 100%;
+            padding: 30px 20px;
+        }
+    }
+}
+
+/* Mobile (480px) */
+@media (max-width: 480px) {
+    .ccart-container .ccart-grid .ccart-card-left .ccart-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
