@@ -60,7 +60,14 @@ import SponsorSupport from './sponsorcomponents/SponsorSupport.jsx';
 // Customer Pages
 import CustomerHome from "./customercomponents/CustomerHome.jsx";
 import CustomerBrowseEvent from "./customercomponents/CustomerBrowseEvent.jsx";
+import CustomerEventDetails from "./customercomponents/CustomerEventDetails.jsx";
+import CustomerTicketOrder from "./customercomponents/CustomerTicketOrder.jsx";
 import CustomerCart from "./customercomponents/CustomerCart.jsx";
+import CustomerSupport from "./customercomponents/CustomerSupport.jsx";
+import CustomerSettings from "./customercomponents/CustomerSettings.jsx";
+import CustomerHistory from "./customercomponents/CustomerPurchaseHistory.jsx";
+import CustomerSeats from "./customercomponents/CustomerSeats.jsx";
+import CustomerCheckout from "./customercomponents/CustomerCheckout.jsx";
 
 function App() {
   return (
@@ -150,8 +157,14 @@ function App() {
         >
           <Route index element={<CustomerHome />} />
           <Route path="browse-events" element={<CustomerBrowseEvent />} />
+          <Route path="event-details/:id" element={<CustomerEventDetails />} />
+          <Route path="seats" element={<CustomerSeats />} />
           <Route path="cart" element={<CustomerCart />} />
-          <Route path="my-tickets" element={<CustomerCart />} />
+          <Route path="checkout" element={<CustomerCheckout />} />
+          <Route path="my-ticketsorder" element={<CustomerTicketOrder />} />
+          <Route path="support" element={<CustomerSupport />} />
+          <Route path="settings" element={<CustomerSettings />} />
+          <Route path="history" element={<CustomerHistory />} />
         </Route>
       </Routes>
     </BrowserRouter>
