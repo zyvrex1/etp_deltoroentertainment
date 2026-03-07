@@ -35,7 +35,7 @@ const CustomerBrowseEvent = () => {
 
     const handleEventClick = (eventId) => {
         // Implement navigation if details page created
-        // navigate(`/customer/event-details/${eventId}`);
+        navigate(`/customer/event-details/${eventId}`);
     };
 
     return (
@@ -53,12 +53,8 @@ const CustomerBrowseEvent = () => {
                     </div>
 
                     <div className="cbe-filters">
-                        <button className="cbe-filter-btn small-body-text">
-                            Category
-                            <Icon icon="mdi:chevron-down" />
-                        </button>
-                        <button className="cbe-filter-btn small-body-text">
-                            Location
+                        <button className="cbe-filter-btn small-body-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Icon icon="mdi:calendar-blank-outline" width="18" /> Date
                             <Icon icon="mdi:chevron-down" />
                         </button>
                     </div>
