@@ -1,156 +1,412 @@
-.ccart-page-wrapper {
-    background-color: var(--color-bg-light);
-    color: var(--color-black-primary);
-    width: 100%;
-    min-height: 80vh;
-}
-
-.ccart-container {
-    max-width: 1440px;
+.customer-cart-container {
+    padding: 40px;
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 60px 40px;
+    width: 100%;
+    background-color: var(--color-bg-light);
+    min-height: 80vh;
 
-    .ccart-header {
-        margin-bottom: 40px;
+    .cart-header-nav {
+        margin-bottom: 20px;
+        color: var(--color-black-secondary);
+        font-size: 14px;
+        text-align: left;
 
-        h2 {
+        .breadcrumb {
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .breadcrumb:hover {
+            color: var(--color-red-primary);
+        }
+
+        .breadcrumb-current {
             color: var(--color-black-primary);
-            text-align: left;
+            font-weight: 500;
         }
     }
 
-    .ccart-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 25px;
+    .cart-title-section {
+        margin-bottom: 25px;
 
-        .ccart-card {
-            background-color: var(--color-white-primary);
-            border: 1px solid var(--color-black-quaternary);
-            border-radius: 12px;
+        .cart-title-left {
             display: flex;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            align-items: center;
+            gap: 15px;
 
-            .ccart-card-left {
-                flex: 1;
-                padding: 25px;
+            .back-btn {
+                background-color: var(--color-white-primary);
+                border: 1px solid var(--color-black-quaternary);
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
                 display: flex;
-                flex-direction: column;
-                border-right: 1px solid var(--color-black-quaternary);
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+            }
 
-                .ccart-card-header {
+            .back-btn:hover {
+                border-color: var(--color-black-tertiary);
+                background-color: var(--color-bg-light);
+            }
+
+            .cart-page-title {
+                color: var(--color-black-primary);
+                margin-bottom: 4px;
+                text-align: left;
+            }
+        }
+
+        .timer-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    }
+
+    .cart-tip-card {
+        background-color: var(--color-white-primary);
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 30px;
+        text-align: left;
+
+        p {
+            color: var(--color-black-secondary);
+        }
+    }
+
+    .cart-content-layout {
+        display: flex;
+        gap: 30px;
+
+        .cart-items-column {
+            flex: 2.2;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .cart-summary-column {
+            flex: 1;
+
+            h4{
+                color: var(--color-black-primary);
+            }
+        }
+
+    }
+
+    .cart-event-card {
+        background-color: var(--color-bg-light);
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 12px;
+        overflow: hidden;
+
+        .event-card-header {
+            background-color: var(--color-white-primary);
+            border-bottom: 1px solid var(--color-black-quaternary);
+            padding: 20px;
+
+            .event-info-left {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+
+                .event-thumbnail {
+                    width: 70px;
+                    height: 70px;
+                    border-radius: 10px;
+                    object-fit: cover;
+                }
+
+                .event-details {
+                    text-align: left;
+                    color: var(--color-black-primary);
+                }
+            }
+
+            .event-info-right {
+                p {
+                    color: var(--color-black-secondary);
+                }
+
+                h4 {
+                    color: var(--color-black-primary);
+                }
+            }
+        }
+
+        .ticket-list {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+
+            .ticket-item {
+                display: flex;
+                align-items: center;
+                background-color: var(--color-white-primary);
+                border: 1px solid var(--color-black-quaternary);
+                border-radius: 8px;
+                padding: 20px;
+                transition: all 0.3s ease;
+
+                &.checked {
+                    border-color: var(--color-red-primary);
+                    background-color: var(--color-red-quaternary);
+                }
+
+                .custom-checkbox {
+                    position: relative;
+                    padding-left: 35px;
+                    cursor: pointer;
+                    user-select: none;
+
+                    input {
+                        position: absolute;
+                        opacity: 0;
+                        cursor: pointer;
+                        height: 0;
+                        width: 0;
+                    }
+
+                    .checkmark {
+                        position: absolute;
+                        top: -10px;
+                        left: 0;
+                        height: 20px;
+                        width: 20px;
+                        background-color: var(--color-white-primary);
+                        border: 1px solid var(--color-black-tertiary);
+                        border-radius: 4px;
+
+                        &:after {
+                            content: "";
+                            position: absolute;
+                            display: none;
+                            left: 6px;
+                            top: 2px;
+                            width: 5px;
+                            height: 10px;
+                            border: solid white;
+                            border-width: 0 2px 2px 0;
+                            transform: rotate(45deg);
+                        }
+                    }
+
+                    input:checked~.checkmark {
+                        background-color: var(--color-red-primary);
+                        border-color: var(--color-red-primary);
+                    }
+
+                    input:checked~.checkmark:after {
+                        display: block;
+                    }
+                }
+
+                .ticket-main {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 15px;
+                    width: 100%;
+                }
 
-                    .ccart-ticket-title {
-                        margin: 0;
+                .ticket-info {
+                    flex: 1;
+                    text-align: left;
+
+                    h5 {
                         color: var(--color-black-primary);
-                        text-align: left;
-                    }
-
-                    .ccart-status-pill {
-                        background-color: var(--color-green-tertiary);
-                        color: var(--color-green-primary);
-                        border-radius: 6px;
                     }
                 }
 
-                .ccart-info-row {
+                .ticket-price-right {
                     display: flex;
                     align-items: center;
-                    gap: 10px;
-                    margin-bottom: 10px;
-                    color: var(--color-black-secondary);
-                }
+                    gap: 20px;
+                    width: 120px;
+                    justify-content: flex-end;
 
-                .ccart-seat-section {
-                    margin-top: 20px;
-                    background-color: var(--color-bg-light);
-                    padding: 15px;
-                    border-radius: 8px;
-                    text-align: center;
+                    h5 {
+                        color: var(--color-black-primary);
+                    }
 
-                    span {
+                    .del-btn {
                         color: var(--color-black-secondary);
-                    }
+                        transition: color 0.3s ease;
 
-                    .ccart-seat-number {
-                        color: var(--color-black-primary);
-                        margin-top: 5px;
+                        &:hover {
+                            color: var(--color-red-primary);
+                        }
                     }
                 }
             }
+        }
+    }
 
-            .ccart-card-right {
-                width: 200px;
+    .summary-card {
+        background-color: var(--color-white-primary);
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 12px;
+        padding: 25px;
+        position: sticky;
+        top: 20px;
+
+        .summary-title {
+            color: var(--color-black-primary);
+            text-align: left;
+        }
+
+        .summary-divider {
+            border: none;
+            border-top: 1px solid var(--color-black-quaternary);
+            margin: 20px 0;
+        }
+
+        .checkout-btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--color-red-primary);
+            color: var(--color-white-primary);
+            border: none;
+        }
+
+        .continue-btn {
+            background-color: var(--color-white-primary);
+            color: var(--color-black-primary);
+            border: 1px solid var(--color-black-secondary);
+            transition: all 0.3s ease;
+
+            &:hover {
+                border-color: var(--color-black-primary);
                 background-color: var(--color-bg-light);
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                padding: 20px;
-
-                .ccart-qr-container {
-                    background-color: var(--color-white-primary);
-                    padding: 20px;
-                    border-radius: 12px;
-                    border: 1px solid var(--color-black-quaternary);
-                    margin-bottom: 15px;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-
-                    .ccart-qr {
-                        color: var(--color-black-primary);
-                    }
-                }
-
-                span {
-                    color: var(--color-black-secondary);
-                }
             }
         }
     }
-}
 
-/* Tablet (1024px) */
-@media (max-width: 1024px) {
-    .ccart-container {
-        padding: 40px 20px;
+    .flex-between {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .ccart-container .ccart-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Tablet (768px) */
-@media (max-width: 768px) {
-    .ccart-container {
-        padding: 30px 20px;
+    .mt-1 {
+        margin-top: 4px;
     }
 
-    .ccart-container .ccart-grid .ccart-card {
-        flex-direction: column;
+    .mt-s {
+        margin-top: 10px;
+    }
 
-        .ccart-card-left {
-            border-right: none;
-            border-bottom: 1px solid var(--color-black-quaternary);
+    .mt-m {
+        margin-top: 15px;
+    }
+
+    .mt-l {
+        margin-top: 25px;
+    }
+
+    .mt-xl {
+        margin-top: 30px;
+    }
+
+    .font-bold {
+        font-weight: 600;
+    }
+
+    .red-text {
+        color: var(--color-red-primary) !important;
+    }
+
+    .green-text {
+        color: var(--color-green-primary);
+    }
+
+    .text-muted {
+        color: var(--color-black-secondary);
+    }
+
+    .text-black {
+        color: var(--color-black-primary);
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .full-width {
+        width: 100%;
+    }
+
+    .action-icon-btn {
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+    }
+
+    @media (max-width: 1024px) {
+        .cart-content-layout {
+            flex-direction: column;
         }
 
-        .ccart-card-right {
-            width: 100%;
-            padding: 30px 20px;
+        .summary-card {
+            position: relative;
+            top: 0;
         }
     }
-}
 
-/* Mobile (480px) */
-@media (max-width: 480px) {
-    .ccart-container .ccart-grid .ccart-card-left .ccart-card-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+    @media (max-width: 768px) {
+        .cart-title-section {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .event-card-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+
+            .event-info-right {
+                text-align: left;
+            }
+        }
+
+        .ticket-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+
+            gap: 15px;
+            padding-left: 20px !important;
+
+            .ticket-main {
+                width: 100%;
+            }
+
+            .custom-checkbox {
+                padding-left: 30px;
+            }
+
+            .ticket-price-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    }
+
+    @media (max-width: 480px) {
+        padding: 20px 5%;
     }
 }
