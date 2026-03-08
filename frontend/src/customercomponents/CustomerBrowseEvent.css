@@ -157,11 +157,11 @@
 
                 .cbe-card-footer {
                     display: flex;
-                    justify-content: space-between;
+                    justify-content: flex-end;
                     align-items: center;
 
                     .cbe-price-section {
-                        text-align: left;
+                        text-align: right;
 
                         span {
                             color: var(--color-black-secondary);

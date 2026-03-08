@@ -88,7 +88,6 @@ const CustomerBrowseEvent = () => {
                                         <span className="smaller-body-text">From</span>
                                         <h6 className="cbe-price-text">{event.price}</h6>
                                     </div>
-                                    <button className="outlined-button cbe-view-btn">View Details</button>
                                 </div>
                             </div>
                         </div>
