@@ -39,7 +39,7 @@ export default function CustomerHeader() {
             <div className="customer-header-container">
                 <div className="customer-logo-container">
                     <NavLink to="/customer" className="customer-header-logo">
-                        <img src="/logo/Logo1.png" alt="App Logo" className="customer-logo" />
+                        <img src="/logo/Logo1.png" alt="App Logo" className="customer-head-logo" />
                     </NavLink>
                 </div>
 
@@ -49,6 +49,7 @@ export default function CustomerHeader() {
                 </nav>
 
                 <div className="customer-header-actions">
+                    
                     <button className="customer-cart-btn" onClick={() => navigate('/customer/cart')}>
                         <Icon icon="mdi:cart-outline" width="24" />
                         <span className="cart-badge">3</span>
@@ -70,7 +71,7 @@ export default function CustomerHeader() {
                                 </div>
                                 <ul className="dropdown-menu-list regular-body-text">
                                     <li>
-                                        <NavLink to="/customer/my-tickets" onClick={() => setIsDropdownOpen(false)}>
+                                        <NavLink to="/customer/my-ticketsorder" onClick={() => setIsDropdownOpen(false)}>
                                             <Icon icon="mdi:ticket-confirmation-outline" width="20" /> My Tickets
                                         </NavLink>
                                     </li>

@@ -10,7 +10,7 @@
 .customer-footer .customer-footer-inner {
     max-width: 1440px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 40px;
 }
 
 .customer-footer .customer-footer-grid>* {
@@ -163,4 +163,10 @@
         width: 32px;
         height: 32px;
     }
+
+    .customer-footer-inner {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 20px !important;
+}
 }

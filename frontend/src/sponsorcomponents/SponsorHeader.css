@@ -11,7 +11,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 15px 30px;
+        padding: 15px 40px;
 
         .sponsor-header-logo {
             color: var(--color-white-primary);
@@ -19,7 +19,7 @@
             display: flex;
             align-items: center;
 
-            .sponsor-logo {
+            .sponsor-head-logo {
                 height: 64px;
                 /* adjust size */
                 width: auto;
@@ -188,7 +188,7 @@
 /* RESPONSIVE 768px */
 @media (max-width: 768px) {
     .sponsor-header-container {
-        padding: 15px 20px;
+        padding: 15px 20px ;
     }
 
     .sponsor-nav-links,
@@ -235,7 +235,11 @@
 /* RESPONSIVE 480px */
 @media (max-width: 480px) {
     .sponsor-header-container {
-        padding: 10px 15px;
+        padding: 10px 15px !important;
+    }
+
+    .sponsor-head-logo{
+        height: 54px !important;
     }
 
     .sponsor-profile-dropdown {

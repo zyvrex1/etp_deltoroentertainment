@@ -1,17 +1,21 @@
 .sponsor-footer {
     background-color: var(--color-bg-dark);
     color: var(--color-white-primary);
-padding: 60px 0;    width: 100%;
+    padding: 60px 0;
+    width: 100%;
     box-sizing: border-box;
     overflow-x: hidden;
+
     .sponsor-footer-inner {
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-.sponsor-footer-grid > * {
-    min-width: 0;
-}
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 0 40px;
+    }
+
+    .sponsor-footer-grid>* {
+        min-width: 0;
+    }
+
     .sponsor-footer-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -121,10 +125,12 @@ padding: 60px 0;    width: 100%;
         grid-template-columns: 1fr;
         gap: 25px;
     }
+
     .sponsor-footer-logo-col,
     .sponsor-footer-col {
         width: 100%;
     }
+
     .sponsor-footer-bottom {
         flex-direction: column;
         gap: 15px;
@@ -160,5 +166,9 @@ padding: 60px 0;    width: 100%;
         width: 32px;
         height: 32px;
     }
-}
 
+    
+    .sponsor-footer-inner {
+        padding: 0 20px !important;
+    }
+}

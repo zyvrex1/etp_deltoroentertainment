@@ -39,7 +39,7 @@ export default function SponsorHeader() {
             <div className="sponsor-header-container">
                 <div className="sponsor-logo-container">
                     <NavLink to="/sponsor" className="sponsor-header-logo">
-                        <img src="/logo/Logo1.png" alt="App Logo" className="sponsor-logo" />
+                        <img src="/logo/Logo1.png" alt="App Logo" className="sponsor-head-logo" />
                     </NavLink>
                 </div>
 

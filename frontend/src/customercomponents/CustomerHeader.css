@@ -11,7 +11,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 15px 30px;
+        padding: 15px 40px;
 
         .customer-header-logo {
             color: var(--color-white-primary);
@@ -19,7 +19,7 @@
             display: flex;
             align-items: center;
 
-            .customer-logo {
+            .customer-head-logo {
                 height: 64px;
                 /* adjust size */
                 width: auto;
@@ -265,7 +265,11 @@
 /* RESPONSIVE 480px */
 @media (max-width: 480px) {
     .customer-header-container {
-        padding: 10px 15px;
+        padding: 10px 15px !important;
+    }
+
+      .customer-head-logo{
+        height: 54px !important;
     }
 
     .customer-profile-dropdown {
