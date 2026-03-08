@@ -1,0 +1,335 @@
+.cs-page-wrapper {
+    padding: 40px;
+    max-width: 1440px;
+    margin: 0 auto;
+    width: 100%;
+    background-color: var(--color-bg-light);
+    min-height: 80vh;
+
+    .cs-header-card {
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        border: 1px solid var(--color-black-quaternary);
+    }
+
+    .cs-header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .cs-back-btn {
+        background: none;
+        border: none;
+        color: var(--color-black-primary);
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .cs-header-right {
+        display: flex;
+        align-items: center;
+    }
+
+    .cs-main-container {
+        display: flex;
+        gap: 24px;
+        width: 100%;
+    }
+
+    .cs-content-left {
+        flex: 1;
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        border: 1px solid var(--color-black-quaternary);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .cs-stage-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 16px;
+    }
+
+    .cs-stage-box {
+        background-color: var(--color-bg-dark);
+        color: var(--color-white-secondary);
+        width: 100%;
+        text-align: center;
+        padding: 12px;
+        border-radius: 4px;
+        font-weight: 500;
+        letter-spacing: 1px;
+    }
+
+    .cs-grid-container {
+        width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding-bottom: 24px;
+    }
+
+    .cs-seat-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-width: min-content;
+        padding: 0 16px;
+        margin: 0 auto;
+    }
+
+    .cs-seat-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .cs-row-label {
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-black-secondary);
+        width: 16px;
+        text-align: center;
+    }
+
+    .cs-seat-cols {
+        display: flex;
+        gap: 8px;
+    }
+
+    .cs-seat {
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 10px;
+        color: var(--color-white-primary);
+        transition: all 0.2s ease;
+    }
+
+    .cs-seat-available {
+        background-color: var(--color-green-tertiary);
+        color: var(--color-black-secondary);
+    }
+
+    .cs-seat-available:hover {
+        background-color: var(--color-green-secondary);
+    }
+
+    .cs-seat-vip {
+        background-color: var(--color-purple-tertiary);
+        color: var(--color-black-secondary);
+    }
+
+    .cs-seat-vip:hover {
+        background-color: var(--color-purple-secondary);
+    }
+
+    .cs-seat-selected {
+        background-color: var(--color-blue-primary);
+        color: var(--color-white-primary);
+    }
+
+    .cs-seat-occupied {
+        background-color: var(--color-red-primary);
+        color: var(--color-white-primary);
+        cursor: not-allowed;
+    }
+
+    .cs-seat-legend {
+        display: flex;
+        gap: 24px;
+        justify-content: center;
+        margin-top: 32px;
+    }
+
+    .cs-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cs-legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    .cs-available {
+        background-color: var(--color-green-tertiary);
+    }
+
+    .cs-selected {
+        background-color: var(--color-blue-primary);
+    }
+
+    .cs-occupied {
+        background-color: var(--color-red-primary);
+    }
+
+    .cs-vip {
+        background-color: var(--color-purple-tertiary);
+    }
+
+    .cs-content-right {
+        width: 320px;
+        flex-shrink: 0;
+    }
+
+    .cs-order-summary-card {
+        background-color: var(--color-white-primary);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        border: 1px solid var(--color-black-quaternary);
+    }
+
+    .cs-summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .cs-divider {
+        border: none;
+        border-top: 1px solid var(--color-black-quaternary);
+        margin: 16px 0;
+    }
+
+    .w-100 {
+        width: 100%;
+    }
+
+    .mb-1 {
+        margin-bottom: 4px;
+    }
+
+    .mb-2 {
+        margin-bottom: 8px;
+    }
+
+    .mb-3 {
+        margin-bottom: 12px;
+    }
+
+    .mb-4 {
+        margin-bottom: 16px;
+    }
+
+    .mt-4 {
+        margin-top: 16px;
+    }
+
+    .ml-2 {
+        margin-left: 8px;
+    }
+
+    .mr-2 {
+        margin-right: 8px;
+    }
+
+    .m-0 {
+        margin: 0;
+    }
+
+    .text-black {
+        color: var(--color-black-primary);
+    }
+
+    .text-secondary {
+        color: var(--color-black-secondary);
+    }
+
+    .text-red {
+        color: var(--color-red-primary);
+    }
+
+    .cs-continue-btn {
+        border-color: var(--color-black-quaternary);
+        color: var(--color-black-primary);
+        background-color: transparent;
+    }
+
+    .cs-continue-btn:hover {
+        background-color: var(--color-bg-light);
+    }
+
+    @media (max-width: 1024px) {
+        .cs-main-container {
+            flex-direction: column;
+        }
+
+        .cs-content-right {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        padding: 16px;
+
+        .cs-seat {
+            min-width: 28px;
+            min-height: 28px;
+            font-size: 10px;
+        }
+
+        .cs-row-label {
+            width: 20px;
+            font-size: 11px;
+        }
+
+        .cs-seat-cols {
+            gap: 6px;
+        }
+
+        .cs-header-card {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .cs-header-right {
+            align-self: flex-end;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .cs-seat {
+            min-width: 28px;
+            min-height: 28px;
+            font-size: 11px;
+        }
+
+        .cs-seat-cols {
+            gap: 4px;
+        }
+
+        .cs-seat-row {
+            gap: 4px;
+        }
+    }
+}
