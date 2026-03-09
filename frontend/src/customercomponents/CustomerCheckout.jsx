@@ -15,8 +15,7 @@ const CustomerCheckout = () => {
             "Yes, Pay Now"
         );
         if (result.isConfirmed) {
-            await showSuccessAlert("Payment Successful", "Your transaction has been completed.");
-            navigate('/customer/history');
+            navigate('/customer/success');
         }
     };
 
@@ -202,7 +201,7 @@ const CustomerCheckout = () => {
                                 )}
                             </div>
 
-                            
+
                         </div>
                     </div>
                 </div>

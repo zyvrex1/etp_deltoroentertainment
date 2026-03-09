@@ -68,6 +68,7 @@ import CustomerSettings from "./customercomponents/CustomerSettings.jsx";
 import CustomerHistory from "./customercomponents/CustomerPurchaseHistory.jsx";
 import CustomerSeats from "./customercomponents/CustomerSeats.jsx";
 import CustomerCheckout from "./customercomponents/CustomerCheckout.jsx";
+import CustomerPaySuccess from "./customercomponents/CustomerPaySuccess.jsx";
 
 function App() {
   return (
@@ -161,6 +162,7 @@ function App() {
           <Route path="seats" element={<CustomerSeats />} />
           <Route path="cart" element={<CustomerCart />} />
           <Route path="checkout" element={<CustomerCheckout />} />
+          <Route path="success" element={<CustomerPaySuccess />} />
           <Route path="my-ticketsorder" element={<CustomerTicketOrder />} />
           <Route path="support" element={<CustomerSupport />} />
           <Route path="settings" element={<CustomerSettings />} />
