@@ -67,7 +67,7 @@ const CustomerSeats = () => {
                     </div>
                 </div>
                 <div className="cs-header-right">
-                    <span className="small-body-text text-secondary mr-2">Selected</span>
+                    <span className="small-body-text text-secondary">Selected</span>
                     <h2 className="text-red m-0">{selectedSeats.length}</h2>
                 </div>
             </div>
