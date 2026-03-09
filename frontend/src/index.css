@@ -77,7 +77,7 @@
 body {
   height: 100%;
   overflow-x: hidden;
-      background-color: var(--color-bg-light);
+  background-color: var(--color-bg-light);
 }
 
 
@@ -135,6 +135,7 @@ button {
   font-size: 16;
   padding: 10px 24px;
   border-radius: 12px;
+  cursor: pointer;
 }
 
 .button-label {
@@ -154,7 +155,7 @@ button {
   background-color: var(--color-red-primary);
   border: none;
   color: var(--color-white-primary);
-
+  cursor: pointer;
 }
 
 .secondary-button {
@@ -166,7 +167,7 @@ button {
   background-color: var(--color-green-primary);
   border: none;
   color: var(--color-white-primary);
-
+  cursor: pointer;
 }
 
 .outlined-button {
@@ -178,7 +179,7 @@ button {
   border: 1px solid var(--color-black-tertiary);
   background-color: transparent;
   text-decoration: none;
-
+  cursor: pointer;
 }
 
 .regular-body-text {
