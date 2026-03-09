@@ -46,20 +46,24 @@ const CustomerPaySuccess = () => {
                             <div className="cps-ticket-item">
                                 <div className="cps-ticket-left">
                                     <p className="small-body-text cps-ticket-type">VIP Ticket</p>
-                                    <p className="smaller-body-text cps-ticket-seat">Row A, Seat 12</p>
-                                </div>
-                                <div className="cps-ticket-right">
+                                    <p className="smaller-body-text cps-ticket-seat mb-1">Row A, Seat 12</p>
                                     <p className="small-body-text cps-ticket-price">$150</p>
+                                </div>
+                                <div className="cps-ticket-right cps-qr-container">
+                                    <Icon icon="mdi:qrcode" className="cps-ticket-qr" />
+                                    <p className="smaller-body-text mt-1 text-secondary">#TKT-82741</p>
                                 </div>
                             </div>
 
                             <div className="cps-ticket-item">
                                 <div className="cps-ticket-left">
                                     <p className="small-body-text cps-ticket-type">VIP Ticket</p>
-                                    <p className="smaller-body-text cps-ticket-seat">Row A, Seat 13</p>
-                                </div>
-                                <div className="cps-ticket-right">
+                                    <p className="smaller-body-text cps-ticket-seat mb-1">Row A, Seat 13</p>
                                     <p className="small-body-text cps-ticket-price">$150</p>
+                                </div>
+                                <div className="cps-ticket-right cps-qr-container">
+                                    <Icon icon="mdi:qrcode" className="cps-ticket-qr" />
+                                    <p className="smaller-body-text mt-1 text-secondary">#TKT-82742</p>
                                 </div>
                             </div>
                         </div>

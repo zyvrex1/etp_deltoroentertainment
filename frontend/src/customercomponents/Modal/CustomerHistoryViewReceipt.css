@@ -1,0 +1,240 @@
+.chvr-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.chvr-modal-container {
+    background-color: var(--color-bg-light);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 650px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    padding: 30px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.chvr-modal-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background-color: var(--color-red-primary);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.chvr-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: var(--color-black-tertiary);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chvr-close-btn:hover {
+    background-color: var(--color-black-quaternary);
+    color: var(--color-black-primary);
+}
+
+.chvr-receipt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    margin-top: 24px;
+}
+
+.chvr-logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chvr-logo-image {
+    height: 56px;
+    width: auto;
+    object-fit: contain;
+}
+
+.chvr-divider {
+    border: 0;
+    height: 1px;
+    background-color: var(--color-black-quaternary);
+    margin: 20px 0;
+}
+
+.chvr-billing-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.chvr-info-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.chvr-info-label {
+    color: var(--color-blue-secondary);
+    font-weight: 500;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.chvr-text-green {
+    color: var(--color-green-primary);
+    font-weight: 500;
+}
+
+.chvr-table-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.chvr-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.chvr-table th {
+    padding-bottom: 12px;
+    color: var(--color-black-primary);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid var(--color-black-quaternary);
+}
+
+.chvr-table td {
+    padding: 15px 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-black {
+    color: var(--color-black-primary) !important;
+}
+
+.text-secondary {
+    color: var(--color-black-secondary) !important;
+}
+
+.text-red {
+    color: var(--color-red-primary) !important;
+}
+
+.chvr-summary-container {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.chvr-summary-content {
+    width: 100%;
+    max-width: 300px;
+}
+
+.chvr-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chvr-footer-content {
+    text-align: center;
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.chvr-print-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 12px;
+
+    &:hover {
+        opacity: 0.9;
+    }
+
+}
+
+/* Responsive Styles */
+@media (max-width: 1024px) {
+    .chvr-modal-container {
+        padding: 25px;
+    }
+}
+
+@media (max-width: 768px) {
+    .chvr-modal-container {
+        padding: 20px;
+    }
+
+    .chvr-receipt-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .chvr-header-right {
+        text-align: left !important;
+    }
+
+    .chvr-header-right h4 {
+        margin-top: 0 !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .chvr-modal-container {
+        padding: 15px;
+    }
+
+    .chvr-billing-info {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .chvr-table th:nth-child(2),
+    .chvr-table td:nth-child(2) {
+        display: none;
+        /* Hide Type on mobile */
+    }
+
+    .chvr-summary-content {
+        max-width: 100%;
+    }
+}

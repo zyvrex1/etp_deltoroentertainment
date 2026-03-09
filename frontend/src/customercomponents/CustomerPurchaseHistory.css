@@ -130,6 +130,10 @@
                 margin-top: 15px;
                 display: flex;
                 justify-content: flex-end;
+
+                button{
+                    color: var(--color-black-primary);
+                }
             }
         }
 
@@ -201,14 +205,9 @@
         align-items: center;
     }
 
-    .outline-btn {
-        background-color: var(--color-white-primary);
+    .request-btn{
         color: var(--color-black-primary);
-        border: 1px solid var(--color-black-quaternary);
-        border-radius: 6px;
-        padding: 8px 15px;
         cursor: pointer;
-        font-weight: 500;
         display: flex;
         align-items: center;
         transition: all 0.3s ease;

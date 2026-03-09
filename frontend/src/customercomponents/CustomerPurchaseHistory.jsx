@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './CustomerPurchaseHistory.css';
+import CustomerHistoryViewReceipt from './Modal/CustomerHistoryViewReceipt';
 
 export default function CustomerPurchaseHistory() {
     const [activeTab, setActiveTab] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
+    const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+    const [selectedReceipt, setSelectedReceipt] = useState(null);
     const itemsPerPage = 5;
 
     const tabs = [
@@ -105,6 +108,33 @@ export default function CustomerPurchaseHistory() {
         }
     };
 
+    const handleViewReceipt = (purchase) => {
+        // Map purchase data to the format expected by the receipt modal
+        const receiptData = {
+            orderNum: purchase.orderNum.replace('#', ''),
+            date: purchase.date,
+            billedTo: {
+                name: 'Zyvrex Perez',
+                email: 'hello@zyvrex.com'
+            },
+            paymentMethod: purchase.paymentMethod,
+            status: 'Paid',
+            items: purchase.items.map(item => ({
+                item: item.name.replace(/^\d+x\s*/, ''),
+                type: purchase.type === 'ticket' ? 'Ticket' : purchase.type === 'merchandise' ? 'Merch' : 'Food/Drink',
+                qty: parseInt(item.name.match(/^\d+/)?.[0] || 1, 10),
+                price: item.price,
+                total: item.price // Simplify total calculation for mock data
+            })),
+            subtotal: purchase.total,
+            serviceFee: '$0.00',
+            tax: '$0.00',
+            totalPaid: purchase.total
+        };
+        setSelectedReceipt(receiptData);
+        setIsReceiptModalOpen(true);
+    };
+
     return (
         <div className="customer-history-container">
             <div className="history-header">
@@ -167,12 +197,12 @@ export default function CustomerPurchaseHistory() {
 
                                 <div className="history-actions flex-end">
                                     {purchase.hasRefund && (
-                                        <button className="text-btn outline-btn mr-m">
+                                        <button className="outlined-button request-btn mr-m">
                                             <Icon icon="mdi:refresh" width="18" className="btn-icon" /> Request Refund
                                         </button>
                                     )}
-                                    <button className="outline-btn">
-                                        <Icon icon="mdi:receipt-outline" width="18" className="btn-icon" /> View Receipt
+                                    <button className="outlined-button" onClick={() => handleViewReceipt(purchase)}>
+                                        View Receipt
                                     </button>
                                 </div>
                             </div>
@@ -210,6 +240,12 @@ export default function CustomerPurchaseHistory() {
                     </div>
                 )}
             </div>
+
+            <CustomerHistoryViewReceipt
+                show={isReceiptModalOpen}
+                onClose={() => setIsReceiptModalOpen(false)}
+                receiptData={selectedReceipt}
+            />
         </div>
     );
 }
