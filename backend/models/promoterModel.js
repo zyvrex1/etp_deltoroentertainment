@@ -3,28 +3,31 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const promoterSchema = new Schema({
-  user: {
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
-  },
- firstName: {
-    type: String,
-    required: true
-  },
-  lastName: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
     required: true,
     unique: true
   },
   phone: {
     type: String,
-    required: true
+    required: true,
+    trim: true
+  },
+  companyName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  industry: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  numberOfEvents: {
+    type: Number,
+    default: 0
   }
-}, { timestamps: true })
+}, { timestamps: true });
 
 module.exports = mongoose.model('Promoter', promoterSchema)

@@ -463,3 +463,10 @@
     padding: 6px;
   }
 }
+
+
+.status-pending { background:#FFF3CD; color:#856404; }
+.status-approved { background:#D4EDDA; color:#155724; }
+.status-rejected { background:#F8D7DA; color:#721C24; }
+.status-cancelled { background:#E2E3E5; color:#383D41; }
+.status-completed { background:#CCE5FF; color:#004085; }

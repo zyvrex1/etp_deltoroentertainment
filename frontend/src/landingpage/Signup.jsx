@@ -23,60 +23,35 @@ const Signup = ({ role, onBack }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [form, setForm] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
     firstName: "",
     lastName: "",
+    email: "",
     phone: "",
     companyName: "",
     industry: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleFullNameChange = (e) => {
-    const fullName = e.target.value;
-    const parts = fullName.trim().split(" ");
-    const first = parts[0] || "";
-    const last = parts.slice(1).join(" ") || "";
-
-    setForm({
-      ...form,
-      fullName: fullName,
-      firstName: first,
-      lastName: last
-    });
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.email || !form.password || !form.confirmPassword) {
-      alert("Email and passwords are required");
-      return;
-    }
+    // Basic required validation
+    const requiredFields =
+      role === "sponsor"
+        ? ["firstName", "lastName", "email", "phone", "companyName", "industry", "password", "confirmPassword"]
+        : ["firstName", "lastName", "email", "phone", "password", "confirmPassword"];
 
-    if (
-      role === "sponsor" &&
-      (!form.firstName ||
-        !form.lastName ||
-        !form.phone ||
-        !form.companyName ||
-        !form.industry)
-    ) {
-      alert("Please fill all sponsor fields");
-      return;
-    }
-
-    if (
-      role === "customer" &&
-      (!form.firstName || !form.lastName || !form.phone)
-    ) {
-      alert("Please fill all customer fields");
-      return;
+    for (let field of requiredFields) {
+      if (!form[field]) {
+        alert(`Please fill in the ${field} field.`);
+        return;
+      }
     }
 
     if (form.password !== form.confirmPassword) {
@@ -84,8 +59,12 @@ const Signup = ({ role, onBack }) => {
       return;
     }
 
-    await signup(form, role);
-    // Modal will be closed via parent or redirect if successful (depends on useSignup implementation)
+    // Prepare payload without confirmPassword
+    const { confirmPassword, ...dataToSend } = form;
+    dataToSend.role = role; // ensure role is included
+
+    // Call signup hook
+    await signup(dataToSend, role);
   };
 
   const roleData = ROLES[role];
@@ -99,10 +78,7 @@ const Signup = ({ role, onBack }) => {
       </button>
 
       <div className={`auth-role-banner role-banner-${roleData.id}`}>
-        <div
-          className={`auth-role-icon-box role-${roleData.id}`}
-          style={{ marginBottom: 0 }}
-        >
+        <div className={`auth-role-icon-box role-${roleData.id}`} style={{ marginBottom: 0 }}>
           <Icon icon={roleData.icon} className="auth-role-icon" />
         </div>
         <div className="role-banner-content">
@@ -112,29 +88,41 @@ const Signup = ({ role, onBack }) => {
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
+        {/* First Name */}
         <div>
-          <label className="small-body-text auth-form-label" style={{ marginBottom: "8px" }}>
-            Full Name
-          </label>
+          <label className="small-body-text auth-form-label">First Name</label>
           <div className="auth-input-wrapper">
             <Icon icon="mdi:account-outline" className="auth-input-icon" />
             <input
               type="text"
-              name="fullName"
-              placeholder="Enter your full name"
-              value={form.fullName || ""}
-              onChange={handleFullNameChange}
-              required
+              name="firstName"
+              placeholder="Enter your first name"
+              value={form.firstName}
+              onChange={handleChange}
               className="auth-input"
             />
           </div>
         </div>
 
+        {/* Last Name */}
         <div>
-          <label className="auth-form-label" style={{ marginBottom: "8px" }}>
-            Email Address
-          </label>
+          <label className="small-body-text auth-form-label">Last Name</label>
+          <div className="auth-input-wrapper">
+            <Icon icon="mdi:account-outline" className="auth-input-icon" />
+            <input
+              type="text"
+              name="lastName"
+              placeholder="Enter your last name"
+              value={form.lastName}
+              onChange={handleChange}
+              className="auth-input"
+            />
+          </div>
+        </div>
+
+        {/* Email */}
+        <div>
+          <label className="auth-form-label">Email Address</label>
           <div className="auth-input-wrapper">
             <Icon icon="mdi:email-outline" className="auth-input-icon" />
             <input
@@ -143,16 +131,14 @@ const Signup = ({ role, onBack }) => {
               placeholder="you@example.com"
               value={form.email}
               onChange={handleChange}
-              required
               className="auth-input"
             />
           </div>
         </div>
 
+        {/* Phone */}
         <div>
-          <label className="auth-form-label" style={{ marginBottom: "8px" }}>
-            Phone Number
-          </label>
+          <label className="auth-form-label">Phone Number</label>
           <div className="auth-input-wrapper">
             <Icon icon="mdi:phone-outline" className="auth-input-icon" />
             <input
@@ -161,18 +147,16 @@ const Signup = ({ role, onBack }) => {
               placeholder="+1 (555) 000-0000"
               value={form.phone}
               onChange={handleChange}
-              required
               className="auth-input"
             />
           </div>
         </div>
 
+        {/* Sponsor-only fields */}
         {role === "sponsor" && (
-          <div className="auth-form-row">
+          <>
             <div>
-              <label className="auth-form-label" style={{ marginBottom: "8px" }}>
-                Company Name
-              </label>
+              <label className="auth-form-label">Company Name</label>
               <div className="auth-input-wrapper">
                 <Icon icon="mdi:domain" className="auth-input-icon" />
                 <input
@@ -181,15 +165,13 @@ const Signup = ({ role, onBack }) => {
                   placeholder="ACME Corp"
                   value={form.companyName}
                   onChange={handleChange}
-                  required
                   className="auth-input"
                 />
               </div>
             </div>
+
             <div>
-              <label className="auth-form-label" style={{ marginBottom: "8px" }}>
-                Industry
-              </label>
+              <label className="auth-form-label">Industry</label>
               <div className="auth-input-wrapper">
                 <Icon icon="mdi:briefcase-outline" className="auth-input-icon" />
                 <input
@@ -198,26 +180,16 @@ const Signup = ({ role, onBack }) => {
                   placeholder="Technology"
                   value={form.industry}
                   onChange={handleChange}
-                  required
                   className="auth-input"
                 />
               </div>
             </div>
-          </div>
+          </>
         )}
 
+        {/* Password */}
         <div>
-          <div className="auth-form-label-row">
-            <label className="auth-form-label">
-              Password
-            </label>
-            <button
-              type="button"
-              className="auth-forgot-link"
-            >
-              Forgot password?
-            </button>
-          </div>
+          <label className="auth-form-label">Password</label>
           <div className="auth-input-wrapper">
             <Icon icon="mdi:lock-outline" className="auth-input-icon" />
             <input
@@ -226,25 +198,17 @@ const Signup = ({ role, onBack }) => {
               placeholder="Create a Strong Password"
               value={form.password}
               onChange={handleChange}
-              required
               className="auth-input"
             />
-            <button
-              type="button"
-              className="auth-input-icon-right"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              <Icon
-                icon={showPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"}
-              />
+            <button type="button" className="auth-input-icon-right" onClick={() => setShowPassword(!showPassword)}>
+              <Icon icon={showPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"} />
             </button>
           </div>
         </div>
 
+        {/* Confirm Password */}
         <div>
-          <label className="auth-form-label" style={{ marginBottom: "8px" }}>
-            Confirm Password
-          </label>
+          <label className="auth-form-label">Confirm Password</label>
           <div className="auth-input-wrapper">
             <Icon icon="mdi:lock-outline" className="auth-input-icon" />
             <input
@@ -253,38 +217,22 @@ const Signup = ({ role, onBack }) => {
               placeholder="Confirm your password"
               value={form.confirmPassword}
               onChange={handleChange}
-              required
               className="auth-input"
             />
-            <button
-              type="button"
-              className="auth-input-icon-right"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              <Icon
-                icon={showConfirmPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"}
-              />
+            <button type="button" className="auth-input-icon-right" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+              <Icon icon={showConfirmPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"} />
             </button>
           </div>
         </div>
 
-        <p style={{ fontSize: "12px", color: "var(--color-white-secondary)", marginTop: "8px" }}>
-          By creating an account, you agree to our <a href="#" style={{ color: "var(--color-red-primary)" }}>Terms of Service</a> and <a href="#" style={{ color: "var(--color-red-primary)" }}>Privacy Policy</a>.
+        {/* Terms */}
+        <p style={{ fontSize: "12px", color: "#ccc" }}>
+          By creating an account, you agree to our <a href="#" style={{ color: "#f00" }}>Terms of Service</a> and <a href="#" style={{ color: "#f00" }}>Privacy Policy</a>.
         </p>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={`auth-submit-btn btn-${roleData.id}`}
-          style={{ marginTop: "16px" }}
-        >
-          {isLoading ? (
-            "Signing up..."
-          ) : (
-            <>
-              Sign Up <Icon icon="mdi:open-in-new" />
-            </>
-          )}
+        {/* Submit */}
+        <button type="submit" disabled={isLoading} className={`auth-submit-btn btn-${roleData.id}`}>
+          {isLoading ? "Signing up..." : <>Sign Up <Icon icon="mdi:open-in-new" /></>}
         </button>
 
         {error && <p className="auth-error-msg">{error}</p>}

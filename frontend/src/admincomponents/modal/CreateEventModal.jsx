@@ -18,12 +18,12 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   const today = new Date().toISOString().split("T")[0];
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
-
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("other");
+  const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [eventType, setEventType] = useState("General Admission");
   const [ticketPrice, setTicketPrice] = useState("");
   const [totalTickets, setTotalTickets] = useState("");
   const [venue, setVenue] = useState({
@@ -33,6 +33,8 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     zipCode: "",
   });
   const [booths, setBooths] = useState([]);
+  const [seatVariations, setSeatVariations] = useState([]);
+  const [seatMap, setSeatMap] = useState(null);
 
   const [imageFile, setImageFile] = useState(null);
   const [imageDragActive, setImageDragActive] = useState(false);
@@ -41,188 +43,102 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   const [error, setError] = useState("");
   const [emptyFields, setEmptyFields] = useState([]);
 
-  const handleImageDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setImageDragActive(true);
-    } else if (e.type === "dragleave") {
-      setImageDragActive(false);
-    }
-  };
+  // Image handlers remain the same
+  const handleImageDrag = (e) => { e.preventDefault(); e.stopPropagation(); setImageDragActive(e.type === "dragenter" || e.type === "dragover"); };
+  const handleImageDrop = (e) => { e.preventDefault(); e.stopPropagation(); setImageDragActive(false); if(e.dataTransfer.files[0]){ const file=e.dataTransfer.files[0]; if(imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl); setImageFile(file); setImagePreviewUrl(URL.createObjectURL(file)); } };
+  const handleImageChange = (e) => { e.preventDefault(); if(e.target.files[0]){ const file=e.target.files[0]; if(imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl); setImageFile(file); setImagePreviewUrl(URL.createObjectURL(file)); } };
 
-  const handleImageDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setImageDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      const url = URL.createObjectURL(file);
-      if (imagePreviewUrl) {
-        URL.revokeObjectURL(imagePreviewUrl);
-      }
-      setImageFile(file);
-      setImagePreviewUrl(url);
-    }
-  };
+  // Booths
+  const addBooth = () => setBooths([...booths, { boothNumber: "", size: "", price: "" }]);
+  const updateBooth = (index, field, value) => { const updated=[...booths]; updated[index][field]=value; setBooths(updated); };
+  const removeBooth = (index) => { const updated=[...booths]; updated.splice(index,1); setBooths(updated); };
 
-  const handleImageChange = (e) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-      if (imagePreviewUrl) {
-        URL.revokeObjectURL(imagePreviewUrl);
-      }
-      setImageFile(file);
-      setImagePreviewUrl(url);
-    }
-  };
-
-  // Add a new empty booth
-  const addBooth = () => {
-    setBooths([...booths, { boothNumber: "", size: "", price: "" }]);
-  };
-
-  // Update a booth field
-  const updateBooth = (index, field, value) => {
-    const updated = [...booths];
-    updated[index][field] = value;
-    setBooths(updated);
-  };
-
-  // Remove a booth
-  const removeBooth = (index) => {
-    const updated = [...booths];
-    updated.splice(index, 1);
-    setBooths(updated);
-  };
+  // Seat Variations (for Seating Arrangement)
+  const addSeat = () => setSeatVariations([...seatVariations, { seatNumber: "", price: "" }]);
+  const updateSeat = (index, field, value) => { const updated=[...seatVariations]; updated[index][field]=value; setSeatVariations(updated); };
+  const removeSeat = (index) => { const updated=[...seatVariations]; updated.splice(index,1); setSeatVariations(updated); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation for required fields
+    // Required fields validation
     const fieldsToCheck = {
-      title,
-      category,
-      description,
-      startDate,
-      endDate,
-      startTime,
-      endTime,
-      ticketPrice,
-      totalTickets,
-      venueName: venue.name,
-      venueAddress: venue.address,
-      venueCity: venue.city,
-      venueZip: venue.zipCode,
+      title, category, description, startDate, endDate, startTime, endTime,
+      venueName: venue.name, venueAddress: venue.address, venueCity: venue.city, venueZip: venue.zipCode
     };
 
+    // ticketPrice required only for General Admission
+    if(eventType==="General Admission") fieldsToCheck.ticketPrice = ticketPrice;
+
+    // Seating Arrangement: seatVariations required
+    if(eventType==="Seating Arrangement") fieldsToCheck.seatVariations = seatVariations.length>0 ? "ok":"";
+
     const empty = Object.entries(fieldsToCheck)
-      .filter(([key, value]) => value === "" || value === null)
+      .filter(([_, value]) => value === "" || value === null)
       .map(([key]) => key);
 
-    if (empty.length > 0) {
-      setEmptyFields(empty);
-      setError("Please fill in all required fields.");
-      return;
-    }
+    if(empty.length>0){ setEmptyFields(empty); setError("Please fill in all required fields."); return; }
 
-    setEmptyFields([]);
-    setError("");
+    setEmptyFields([]); setError("");
 
     const startDateTime = new Date(`${startDate}T${startTime}`);
     const endDateTime = new Date(`${endDate}T${endTime}`);
-    if (endDateTime < startDateTime) {
-      setError("End date/time cannot be earlier than start date/time.");
-      return;
-    }
+    if(endDateTime < startDateTime){ setError("End date/time cannot be earlier than start date/time."); return; }
 
-    if (!user) {
-      setError("You must be logged in");
-      return;
-    }
+    if(!user){ setError("You must be logged in"); return; }
 
-    const result = await showCreateConfirmAlert(
-      "Create Event?",
-      `Are you sure you want to create "${title}"?`,
-    );
-    if (!result.isConfirmed) return;
+    const result = await showCreateConfirmAlert("Create Event?", `Are you sure you want to create "${title}"?`);
+    if(!result.isConfirmed) return;
 
     const event = {
       title,
       description,
       category,
-      venue: {
-        name: venue.name,
-        address: venue.address,
-        city: venue.city,
-        zipCode: venue.zipCode,
-      },
+      venue,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       startTime,
       endTime,
-      ticketPrice: Number(ticketPrice),
-      totalTickets: Number(totalTickets),
+      eventType,
+      ticketPrice: ticketPrice ? Number(ticketPrice) : 0,
+      totalTickets: totalTickets ? Number(totalTickets) : (seatVariations.length || 0),
       image: imageFile ? imageFile.name : undefined,
-      booths:
-        booths.length > 0
-          ? booths.map((b) => ({
-              boothNumber: b.boothNumber,
-              size: b.size,
-              price: Number(b.price),
-              status: "available",
-            }))
-          : [],
-      user_id: user._id,
+      booths: booths.map(b=>({ boothNumber:b.boothNumber, size:b.size, price:Number(b.price), status:"available" })),
+      seatMap,
+      seatVariations: seatVariations.map(s=>({ seatNumber:s.seatNumber, price:Number(s.price) })),
     };
 
-    const response = await fetch("/api/events", {
-      method: "POST",
+    const response = await fetch("/api/events",{
+      method:"POST",
       body: JSON.stringify(event),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${user.token}`,
-      },
+      headers:{
+        "Content-Type":"application/json",
+        Authorization:`Bearer ${user.token}`
+      }
     });
 
     const json = await response.json();
 
-    if (!response.ok) {
+    if(!response.ok){
       setError(json.error);
       setEmptyFields(json.emptyFields || []);
-      await showErrorAlert(
-        "Error Creating Event",
-        json.error || "Failed to create event.",
-      );
+      await showErrorAlert("Error Creating Event", json.error || "Failed to create event.");
     } else {
       // Reset form
-      setTitle("");
-      setDescription("");
-      setVenue({ name: "", address: "", city: "", zipCode: "" });
-      setStartTime("");
-      setEndTime("");
-      setStartDate(today);
-      setEndDate(today);
-      setTicketPrice("");
-      setTotalTickets("");
-      setBooths([]);
-      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-      setImageFile(null);
-      setImagePreviewUrl(null);
-      setError(null);
-      setEmptyFields([]);
-      await showSuccessAlert(
-        "Event Created",
-        "The event has been created successfully.",
-      );
+      setTitle(""); setDescription(""); setCategory("");
+      setStartDate(today); setEndDate(today);
+      setStartTime(""); setEndTime(""); setTicketPrice(""); setTotalTickets("");
+      setVenue({name:"",address:"",city:"",zipCode:""});
+      setBooths([]); setSeatVariations([]); setSeatMap(null);
+      if(imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl); setImageFile(null); setImagePreviewUrl(null);
+      setError(null); setEmptyFields([]);
+      await showSuccessAlert("Event Created","The event has been created successfully.");
       onClose();
       dispatch({ type: "CREATE_EVENT", payload: json });
     }
   };
 
-  if (!isOpen) return null;
+  if(!isOpen) return null;
 
   return (
     <div className="general-modal-overlay">
@@ -259,6 +175,78 @@ const CreateEventModal = ({ isOpen, onClose }) => {
           className="add-event-modal-body add-event-form"
           onSubmit={handleSubmit}
         >
+          <div className="section-box">
+            <h5 className="modal-section-title">Event Image</h5>
+            <div
+              className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
+              onDragEnter={handleImageDrag}
+              onDragLeave={handleImageDrag}
+              onDragOver={handleImageDrag}
+              onDrop={handleImageDrop}
+              onClick={() =>
+                document.getElementById("event-image-input")?.click()
+              }
+            >
+              <input
+                id="event-image-input"
+                type="file"
+                accept="image/png, image/jpeg, image/webp"
+                onChange={handleImageChange}
+                style={{ display: "none" }}
+              />
+
+              {imageFile ? (
+                <div className="file-preview">
+                  {imagePreviewUrl ? (
+                    <img
+                      src={imagePreviewUrl}
+                      alt="Event Preview"
+                      className="preview-image"
+                      style={{
+                        width: "100%",        
+                        maxHeight: "300px",  
+                        objectFit: "contain", 
+                        borderRadius: "8px", 
+                      }}
+                    />
+                  ) : (
+                    <Icon
+                      icon="mdi:file-image"
+                      width="48"
+                      height="48"
+                      className="preview-icon"
+                    />
+                  )}
+                  <p className="file-name">{imageFile.name}</p>
+                  <p className="file-size">
+                    {((imageFile.size || 0) / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                  <button
+                    type="button"
+                    className="remove-file-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (imagePreviewUrl) {
+                        URL.revokeObjectURL(imagePreviewUrl);
+                      }
+                      setImageFile(null);
+                      setImagePreviewUrl(null);
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="upload-placeholder">
+                  <div className="icon-circle">
+                    <Icon icon="mdi:image-area" width="32" height="32" />
+                  </div>
+                  <p className="upload-title">Click or drag an image here</p>
+                  <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="add-event-form-row">
             <div className="add-event-form-group">
               <h6>Event Title</h6>
@@ -273,18 +261,14 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
             <div className="add-event-form-group">
               <h6>Category</h6>
-              <select
+              <input
+                type="text"
+                required
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g. Concert, Conference, Festival"
                 className={emptyFields.includes("category") ? "error" : ""}
-              >
-                <option value="concert">Concert</option>
-                <option value="comedy">Comedy</option>
-                <option value="festival">Festival</option>
-                <option value="conference">Conference</option>
-                <option value="sports">Sports</option>
-                <option value="other">Other</option>
-              </select>
+              />
             </div>
           </div>
 
@@ -341,6 +325,18 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
+          <div className="add-event-form-group add-event-full-width">
+            <h6>About The Event</h6>
+            <textarea
+              required
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Event description..."
+              rows="3"
+              className={emptyFields.includes("description") ? "error" : ""}
+            ></textarea>
+          </div>
+
           <div className="section-box">
             <h5 className="modal-section-title">Venue Details</h5>
             <div className="add-event-form-group">
@@ -391,76 +387,47 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="section-box">
-            <h5 className="modal-section-title">Event Image</h5>
-            <div
-              className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
-              onDragEnter={handleImageDrag}
-              onDragLeave={handleImageDrag}
-              onDragOver={handleImageDrag}
-              onDrop={handleImageDrop}
-              onClick={() =>
-                document.getElementById("event-image-input")?.click()
-              }
-            >
-              <input
-                id="event-image-input"
-                type="file"
-                accept="image/png, image/jpeg, image/webp"
-                onChange={handleImageChange}
-                style={{ display: "none" }}
-              />
-
-              {imageFile ? (
-                <div className="file-preview">
-                  {imagePreviewUrl ? (
-                    <img
-                      src={imagePreviewUrl}
-                      alt="Event Preview"
-                      className="preview-image"
-                    />
-                  ) : (
-                    <Icon
-                      icon="mdi:file-image"
-                      width="48"
-                      height="48"
-                      className="preview-icon"
-                    />
-                  )}
-                  <p className="file-name">{imageFile.name}</p>
-                  <p className="file-size">
-                    {((imageFile.size || 0) / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                  <button
-                    type="button"
-                    className="remove-file-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (imagePreviewUrl) {
-                        URL.revokeObjectURL(imagePreviewUrl);
-                      }
-                      setImageFile(null);
-                      setImagePreviewUrl(null);
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <div className="upload-placeholder">
-                  <div className="icon-circle">
-                    <Icon icon="mdi:image-area" width="32" height="32" />
-                  </div>
-                  <p className="upload-title">Click or drag an image here</p>
-                  <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>
-                </div>
-              )}
-            </div>
+          {/* Event Type */}
+          <div className="add-event-form-group">
+            <h6>Event Type</h6>
+            <select value={eventType} onChange={(e)=>setEventType(e.target.value)}>
+              <option value="General Admission">General Admission</option>
+              <option value="Seating Arrangement">Seating Arrangement</option>
+            </select>
           </div>
 
-          <div className="add-event-form-group">
+          {/* Ticket Price & Total Tickets */}
+          {eventType==="General Admission" && (
+            <div className="add-event-form-row">
+              <div className="add-event-form-group">
+                <h6>Ticket Price ($)</h6>
+                <input type="number" min="0" value={ticketPrice} onChange={e=>setTicketPrice(e.target.value)} />
+              </div>
+              <div className="add-event-form-group">
+                <h6>Total Capacity</h6>
+                <input type="number" min="1" value={totalTickets} onChange={e=>setTotalTickets(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {/* Seat Variations for Seating Arrangement */}
+          {eventType==="Seating Arrangement" && (
+            <div className="section-box">
+              <h5 className="modal-section-title">Seat Map & Variations</h5>
+              {seatVariations.map((seat, index)=>(
+                <div key={index} className="booth-row">
+                  <input type="text" placeholder="Seat Number" value={seat.seatNumber} onChange={e=>updateSeat(index,"seatNumber",e.target.value)} />
+                  <input type="number" placeholder="Price" value={seat.price} onChange={e=>updateSeat(index,"price",e.target.value)} />
+                  <button type="button" onClick={()=>removeSeat(index)}>Remove</button>
+                </div>
+              ))}
+              <button type="button" onClick={addSeat}>Add Seat</button>
+            </div>
+          )}
+
+           <div className="add-event-form-row">
             <div className="add-event-form-group">
-              <h6>Ticket Price ($)</h6>
+             <h6>Ticket Price ($)</h6>
               <input
                 type="number"
                 min="0"
@@ -472,7 +439,6 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                 className={emptyFields.includes("ticketPrice") ? "error" : ""}
               />
             </div>
-
             <div className="add-event-form-group">
               <h6>Total Capacity</h6>
               <input
@@ -488,17 +454,9 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="add-event-form-group add-event-full-width">
-            <h6>About The Event</h6>
-            <textarea
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Event description..."
-              rows="4"
-              className={emptyFields.includes("description") ? "error" : ""}
-            ></textarea>
-          </div>
+          
+
+         
 
           <div className="section-box">
             <h5 className="modal-section-title">Booths (Optional)</h5>

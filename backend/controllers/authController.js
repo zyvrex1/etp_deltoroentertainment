@@ -20,23 +20,21 @@ const signupUser = async (req, res) => {
 
   try {
     if (!role || !email || !password || !confirmPassword) throw Error('Required fields missing')
-
     if (!['customer', 'sponsor'].includes(role)) throw Error('Invalid role for public signup')
 
-    // Create user
     const user = await User.signup(email, password, confirmPassword, role)
-6
-    // Role-specific profile
+
     if (role === 'customer') {
       if (!firstName || !lastName || !phone) throw Error('Missing customer fields')
       await Customer.create({ user: user._id, firstName, lastName, phone, email })
-    } else if (role === 'sponsor') {
+    }
+
+    if (role === 'sponsor') {
       if (!firstName || !lastName || !phone || !companyName || !industry) throw Error('Missing sponsor fields')
       await Sponsor.create({ user: user._id, firstName, lastName, phone, companyName, industry, email })
     }
 
     const token = createToken(user._id)
-
     res.status(201).json({ message: 'User created successfully', email: user.email, role: user.role, token })
 
   } catch (error) {

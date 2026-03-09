@@ -5,12 +5,22 @@ const validator = require('validator')
 const Schema = mongoose.Schema
 
 const userSchema = new Schema({
-  firstName: { type: String },
-  lastName: { type: String },
+  firstName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  lastName: {
+    type: String,
+    required: true,
+    trim: true
+  },
   email: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    lowercase: true,
+    trim: true
   },
   password: {
     type: String,
@@ -21,20 +31,10 @@ const userSchema = new Schema({
     enum: ['superadmin', 'admin', 'promoter', 'sponsor', 'customer'],
     required: true
   },
-   phone: {
-    type: String,
-    default: null
-  },
-   companyName: {
-    type: String,
-    default: null
-  },
-  industry: {
-    type: String,
-    default: null
-  },
-  lastLogin: { type: Date }
-}, { timestamps: true })
+  lastLogin: {
+    type: Date
+  }
+}, { timestamps: true });
 
 
 // ================= SIGNUP =================

@@ -3,6 +3,18 @@ const Schema = mongoose.Schema;
 
 const eventSchema = new Schema(
   {
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    creatorModel: {
+      type: String,
+      enum: ["Promoter", "Admin", "Superadmin"],
+      required: true,
+    },
+
     title: {
       type: String,
       required: true,
@@ -16,91 +28,77 @@ const eventSchema = new Schema(
 
     category: {
       type: String,
-      enum: ["concert", "comedy", "festival", "conference", "sports", "other"],
-      default: "other",
+      required: true,
+      trim: true,
     },
 
-    venue: {
+   venue: {
       name: { type: String, required: true },
       address: { type: String, required: true },
       city: { type: String, required: true },
-      zipCode: { type: String, required: true },
+      zipCode: { type: String, required: true }
     },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, required: true },
 
-    startDate: {
-      type: Date,
-      required: true,
-    },
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true },
 
-    endDate: {
-      type: Date,
-      required: true,
-    },
+    image: String,
 
-    startTime: {
+    eventType: {
       type: String,
-      required: true,
+      enum: ["General Admission", "Seating Arrangement"],
+      default: "General Admission",
     },
 
-    endTime: {
-      type: String,
-      required: true,
-    },
-
-    ticketPrice: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-
-    totalTickets: {
-      type: Number,
-      required: true,
-    },
-
-    ticketsSold: {
+     ticketPrice: {
       type: Number,
       default: 0,
+      validate: {
+        validator: function (value) {
+          // Require ticketPrice only if eventType is General Admission
+          if (this.eventType === "General Admission") {
+            return value !== null && value !== undefined;
+          }
+          return true; // optional for Seating Arrangement
+        },
+        message:
+          "ticketPrice is required for General Admission events",
+      },
+    },
+    totalTickets: { type: Number, default: 0 },
+
+    seatMap: {
+      type: Schema.Types.Mixed,
+      default: null,
     },
 
-    revenue: {
+    seatVariations: [
+      {
+        seatNumber: String,
+        price: Number,
+        isAvailable: { type: Boolean, default: true },
+      },
+    ],
+
+    ticketsSold: { type: Number, default: 0 },
+    revenue: { type: Number, default: 0 },
+
+    hasBooths: {
+      type: Boolean,
+      default: false,
+    },
+
+    maxBooths: {
       type: Number,
       default: 0,
     },
 
     status: {
       type: String,
-      enum: [
-        "draft",
-        "pending",
-        "approved",
-        "rejected",
-        "cancelled",
-        "completed",
-      ],
+      enum: ["pending", "approved", "rejected", "cancelled", "completed"],
       default: "pending",
-    },
-
-    image: {
-      type: String,
-    },
-
-    booths: {
-  type: [
-    {
-      boothNumber: { type: String, required: true },
-      size: String,
-      price: { type: Number, min: 0, required: true },
-      status: { type: String, enum: ["available", "reserved", "sold"], default: "available" },
-      assignedTo: { type: Schema.Types.ObjectId, ref: "User" },
-    },
-  ],
-  default: [],
-},
-
-    user_id: {
-      type: String,
-      required: true,
     },
 
     isFeatured: {
@@ -108,22 +106,7 @@ const eventSchema = new Schema(
       default: false,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
-
-
-eventSchema.pre('save', function(next) {
-    const ticketRevenue = (this.ticketPrice || 0) * (this.ticketsSold || 0);
-
-    const boothRevenue = Array.isArray(this.booths)
-        ? this.booths.reduce((total, booth) => {
-              // Make sure booth.price exists
-              return total + (booth.status === 'sold' && booth.price ? booth.price : 0);
-          }, 0)
-        : 0;
-
-    this.revenue = ticketRevenue + boothRevenue;
-    next();
-});
 
 module.exports = mongoose.model("Event", eventSchema);

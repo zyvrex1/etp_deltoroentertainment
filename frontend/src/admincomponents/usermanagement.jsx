@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./usermanagement.css";
-import CreateUserModal from './Modal/CreateUserModal';
-import ViewUserModal from './Modal/ViewUserModal';
-import EditUserModal from './Modal/EditUserModal';
+import CreateUserModal from "./Modal/CreateUserModal";
+import ViewUserModal from "./Modal/ViewUserModal";
+import EditUserModal from "./Modal/EditUserModal";
 import { useAuthContext } from "./hooks/useAuthContext";
-
 
 const UserManagement = () => {
   const { user } = useAuthContext();
@@ -15,49 +14,59 @@ const UserManagement = () => {
   const [isViewUserModalOpen, setIsViewUserModalOpen] = useState(false);
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedUserType, setSelectedUserType] = useState('');
+  const [selectedUserType, setSelectedUserType] = useState("");
   const [activeTab, setActiveTab] = useState("all-users");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-  if (!user?.token) return;
-
   const fetchUsers = async () => {
+    if (!user?.token) return;
+
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await fetch("/api/admin/users", {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${user.token}`,
         },
       });
 
-      const text = await response.text();
-      const json = text ? JSON.parse(text) : [];
+      const json = await response.json();
 
       if (response.ok) {
         setAllUsers(json);
-      } else {
-        console.error("Failed to fetch users:", json);
       }
-
     } catch (err) {
       console.error("Error fetching users:", err);
     }
   };
 
-  fetchUsers();
-}, [user]);
+  useEffect(() => {
+    fetchUsers();
+  }, [user]);
 
   const tabs = [
     { id: "all-users", label: "All Users", count: allUsers.length },
-    { id: "admins", label: "Admins", count: allUsers.filter(u => u.role === "admin").length },
-    { id: "customers", label: "Customers", count: allUsers.filter(u => u.role === "customer").length },
-    { id: "sponsors", label: "Sponsors", count: allUsers.filter(u => u.role === "sponsor").length },
-    { id: "promoters", label: "Promoters", count: allUsers.filter(u => u.role === "promoter").length },
+    {
+      id: "admins",
+      label: "Admins",
+      count: allUsers.filter((u) => u.role === "admin").length,
+    },
+    {
+      id: "promoters",
+      label: "Promoters",
+      count: allUsers.filter((u) => u.role === "promoter").length,
+    },
+    {
+      id: "sponsors",
+      label: "Sponsors",
+      count: allUsers.filter((u) => u.role === "sponsor").length,
+    },
+    {
+      id: "customers",
+      label: "Customers",
+      count: allUsers.filter((u) => u.role === "customer").length,
+    },
   ];
 
   const getInitial = (firstName, lastName) => {
@@ -81,31 +90,34 @@ const UserManagement = () => {
       case "all-users":
         return allUsers;
       case "admins":
-        return allUsers.filter(u => u.role === "admin");
+        return allUsers.filter((u) => u.role === "admin");
       case "customers":
-        return allUsers.filter(u => u.role === "customer");
+        return allUsers.filter((u) => u.role === "customer");
       case "promoters":
-        return allUsers.filter(u => u.role === "promoter");
+        return allUsers.filter((u) => u.role === "promoter");
       case "sponsors":
-        return allUsers.filter(u => u.role === "sponsor");
+        return allUsers.filter((u) => u.role === "sponsor");
       default:
         return [];
     }
   };
 
-  const filteredData = getTableData().filter(item => {
+  const filteredData = getTableData().filter((item) => {
     const searchStr = searchQuery.toLowerCase();
     return (
-      (item.name && item.name.toLowerCase().includes(searchStr)) ||
-      (item.email && item.email.toLowerCase().includes(searchStr)) ||
-      (item.contact && item.contact.toLowerCase().includes(searchStr)) ||
-      (item.company && item.company.toLowerCase().includes(searchStr))
+      `${item.firstName || ""} ${item.lastName || ""}`
+        .toLowerCase()
+        .includes(searchStr) ||
+      (item.email && item.email.toLowerCase().includes(searchStr))
     );
   });
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedData = filteredData.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -143,11 +155,11 @@ const UserManagement = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>User</th>
+                <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
-                <th>Status</th>
                 <th>Joined</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -156,9 +168,13 @@ const UserManagement = () => {
                 <tr key={user._id}>
                   <td data-label="User">
                     <div className="user-cell">
-                      <span className="avatar">{getInitial(user.firstName, user.lastName)}</span>
+                      <span className="avatar">
+                        {getInitial(user.firstName, user.lastName)}
+                      </span>
                       <div>
-                        <h5 className="user-name">{user.firstName} {user.lastName}</h5>
+                        <h5 className="user-name">
+                          {user.firstName} {user.lastName}
+                        </h5>
                       </div>
                     </div>
                   </td>
@@ -168,30 +184,40 @@ const UserManagement = () => {
                   <td data-label="Role">
                     <span className="button-label role-badge">{user.role}</span>
                   </td>
+                  <td data-label="Joined" className="small-body-text">
+                    {new Date(user.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </td>
                   <td data-label="Status">
                     <span
                       className={`button-label status-${getUserStatus(user.lastLogin)}`}
                       style={{
                         backgroundColor:
-                          getUserStatus(user.lastLogin) === "active" ? "green" : "gray"
+                          getUserStatus(user.lastLogin) === "active"
+                            ? "green"
+                            : "gray",
                       }}
                     >
-                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() + getUserStatus(user.lastLogin).slice(1)}
+                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() +
+                        getUserStatus(user.lastLogin).slice(1)}
                     </span>
                   </td>
-                  <td data-label="Joined" className="small-body-text">
-                    {new Date(user.createdAt).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric"
-                    })}
-                  </td>
+
                   <td data-label="Actions">
                     <div className="actions">
-                      <button className="action-btn view-btn" onClick={() => handleViewUser(user)}>
+                      <button
+                        className="action-btn view-btn"
+                        onClick={() => handleViewUser(user)}
+                      >
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button className="action-btn edit-btn" onClick={() => handleEditUser(user)}>
+                      <button
+                        className="action-btn edit-btn"
+                        onClick={() => handleEditUser(user)}
+                      >
                         <Icon icon="mdi:pencil" />
                       </button>
                     </div>
@@ -210,46 +236,70 @@ const UserManagement = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Customer</th>
-                <th>Status</th>
-                <th>Joined</th>
+                <th>Name</th>
+                <th>Email</th>
                 <th>Total Spent</th>
-                <th>Tickets</th>
+                <th>Joined</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginatedData.map((customer) => (
-                <tr key={customer.id}>
+                <tr key={customer._id}>
                   <td data-label="Customer">
                     <div className="user-cell">
-                      <span className="avatar green">{getInitial(customer.name)}</span>
+                      <span className="avatar">
+                        {" "}
+                        {getInitial(customer.firstName, customer.lastName)}
+                      </span>
                       <div>
-                        <h5 className="user-name">{customer.name}</h5>
-                        <p className="smaller-body-text">{customer.email}</p>
+                        <h5 className="user-name">
+                          {customer.firstName} {customer.lastName}
+                        </h5>
                       </div>
                     </div>
                   </td>
+                  <td>
+                    <h5 className="smaller-body-text">{customer.email}</h5>
+                  </td>
+                  <td data-label="Total Spent" className="regular-body-text">
+                    {customer.totalSpent}
+                  </td>
+                  <td data-label="Joined" className="small-body-text">
+                    {new Date(customer.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </td>
                   <td data-label="Status">
                     <span
-                      className={`button-label status-${getUserStatus(user.lastLogin)}`}
+                      className={`button-label status-${getUserStatus(customer.lastLogin)}`}
                       style={{
                         backgroundColor:
-                          getUserStatus(user.lastLogin) === "active" ? "green" : "gray"
+                          getUserStatus(user.lastLogin) === "active"
+                            ? "green"
+                            : "gray",
                       }}
                     >
-                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() + getUserStatus(user.lastLogin).slice(1)}
+                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() +
+                        getUserStatus(customer.lastLogin).slice(1)}
                     </span>
                   </td>
-                  <td data-label="Joined" className="small-body-text">{customer.joined}</td>
-                  <td data-label="Total Spent" className="regular-body-text">{customer.totalSpent}</td>
-                  <td data-label="Tickets" className="small-body-text">{customer.tickets}</td>
+
                   <td data-label="Actions">
                     <div className="actions">
-                      <button className="action-btn view-btn" onClick={() => handleViewUser(customer)}>
+                      <button
+                        className="action-btn view-btn"
+                        onClick={() => handleViewUser(customer)}
+                      >
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button className="action-btn edit-btn" onClick={() => handleEditUser(customer, 'customer')}>
+                      <button
+                        className="action-btn edit-btn"
+                        onClick={() => handleEditUser(customer, "customer")}
+                      >
                         <Icon icon="mdi:pencil" />
                       </button>
                     </div>
@@ -268,48 +318,64 @@ const UserManagement = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Organization</th>
-                <th>Events</th>
-                <th>Revenue</th>
-                <th>Paid Out</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Company</th>
+                <th>Phone</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginatedData.map((promoter) => (
-                <tr key={promoter.id}>
-                  <td data-label="Organization">
+                <tr key={promoter._id}>
+                  <td data-label="User">
                     <div className="user-cell">
-                      <span className="avatar purple">
-                        <Icon icon="mdi:briefcase" />
+                      <span className="avatar">
+                        {getInitial(promoter.firstName, promoter.lastName)}
                       </span>
                       <div>
-                        <h5 className="user-name">{promoter.name}</h5>
-                        <p className="smaller-body-text">{promoter.contact}</p>
+                        <h5 className="small-body-text">
+                          {promoter.firstName} {promoter.lastName}
+                        </h5>
                       </div>
                     </div>
                   </td>
-                  <td data-label="Events" className="small-body-text">{promoter.events}</td>
-                  <td data-label="Revenue" className="regular-body-text revenue">{promoter.revenue}</td>
-                  <td data-label="Paid Out" className="regular-body-text paid-out">{promoter.paidOut}</td>
+                  <td>
+                    <h5 className="smaller-body-text">{promoter.email}</h5>
+                  </td>
+                  <td data-label="Organization" className="small-body-text">
+                    {promoter.companyName}
+                  </td>
+                  <td data-label="Events" className="small-body-text">
+                    {promoter.phone}
+                  </td>
                   <td data-label="Status">
                     <span
-                      className={`button-label status-${getUserStatus(user.lastLogin)}`}
+                      className={`button-label status-${getUserStatus(promoter.lastLogin)}`}
                       style={{
                         backgroundColor:
-                          getUserStatus(user.lastLogin) === "active" ? "green" : "gray"
+                          getUserStatus(user.lastLogin) === "active"
+                            ? "green"
+                            : "gray",
                       }}
                     >
-                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() + getUserStatus(user.lastLogin).slice(1)}
+                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() +
+                        getUserStatus(promoter.lastLogin).slice(1)}
                     </span>
                   </td>
                   <td data-label="Actions">
                     <div className="actions">
-                      <button className="action-btn view-btn" onClick={() => handleViewUser(promoter)}>
+                      <button
+                        className="action-btn view-btn"
+                        onClick={() => handleViewUser(promoter)}
+                      >
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button className="action-btn edit-btn" onClick={() => handleEditUser(promoter, 'promoter')}>
+                      <button
+                        className="action-btn edit-btn"
+                        onClick={() => handleEditUser(promoter, "promoter")}
+                      >
                         <Icon icon="mdi:pencil" />
                       </button>
                     </div>
@@ -328,52 +394,64 @@ const UserManagement = () => {
           <table className="data-table">
             <thead>
               <tr>
+                <th>Name</th>
+                <th>Email</th>
                 <th>Company</th>
-                <th>Contact</th>
-                <th>Booths</th>
-                <th>Total Spent</th>
+                <th>Phone</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginatedData.map((sponsor) => (
-                <tr key={sponsor.id}>
-                  <td data-label="Company">
+                <tr key={sponsor._id}>
+                  <td data-label="User">
                     <div className="user-cell">
-                      <span className="avatar blue">
-                        <Icon icon="mdi:office-building" />
+                      <span className="avatar">
+                        {getInitial(sponsor.firstName, sponsor.lastName)}
                       </span>
                       <div>
-                        <h5 className="user-name">{sponsor.company}</h5>
-                        <p className="smaller-body-text">{sponsor.industry}</p>
+                        <h5 className="small-body-text">
+                          {sponsor.firstName} {sponsor.lastName}
+                        </h5>
                       </div>
                     </div>
                   </td>
-                  <td data-label="Contact">
-                    <div>
-                      <p className="large-body-text user-name">{sponsor.contact}</p>
-                    </div>
+                  <td>
+                    <h5 className="smaller-body-text">{sponsor.email}</h5>
                   </td>
-                  <td className="small-body-text" data-label="Booths">{sponsor.booths}</td>
-                  <td className="regular-body-text" data-label="Total Spent">{sponsor.totalSpent}</td>
+                  <td data-label="Organization" className="small-body-text">
+                    {sponsor.companyName}
+                  </td>
+                  <td data-label="Events" className="small-body-text">
+                    {sponsor.phone}
+                  </td>
                   <td data-label="Status">
                     <span
-                      className={`button-label status-${getUserStatus(user.lastLogin)}`}
+                      className={`button-label status-${getUserStatus(sponsor.lastLogin)}`}
                       style={{
                         backgroundColor:
-                          getUserStatus(user.lastLogin) === "active" ? "green" : "gray"
+                          getUserStatus(user.lastLogin) === "active"
+                            ? "green"
+                            : "gray",
                       }}
                     >
-                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() + getUserStatus(user.lastLogin).slice(1)}
+                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() +
+                        getUserStatus(sponsor.lastLogin).slice(1)}
                     </span>
                   </td>
                   <td data-label="Actions">
                     <div className="actions">
-                      <button className="action-btn view-btn" onClick={() => handleViewUser(sponsor)}>
+                      <button
+                        className="action-btn view-btn"
+                        onClick={() => handleViewUser(sponsor)}
+                      >
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button className="action-btn edit-btn" onClick={() => handleEditUser(sponsor, 'sponsor')}>
+                      <button
+                        className="action-btn edit-btn"
+                        onClick={() => handleEditUser(sponsor, "sponsor")}
+                      >
                         <Icon icon="mdi:pencil" />
                       </button>
                     </div>
@@ -395,37 +473,54 @@ const UserManagement = () => {
           <p>Manage all platform users in one place.</p>
         </div>
         <div className="dashboard-actions">
-          <button className="primary-button" onClick={() => setIsUserModalOpen(true)}>Create User</button>
+          <button
+            className="primary-button"
+            onClick={() => setIsUserModalOpen(true)}
+          >
+            Create User
+          </button>
         </div>
       </div>
 
       <div className="um-content">
         {/* Tabs */}
         <div className="tabs-search-row">
-        <div className="tabs-container">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`tab ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => handleTabChange(tab.id)}
-            >
-              <Icon icon={tab.id === "all-users" ? "mdi:account-multiple" : tab.id === "admins" ? "mdi:shield-account" : tab.id === "customers" ? "mdi:account" : tab.id === "sponsors" ? "mdi:office-building" : "mdi:briefcase"} />
-              <span>{tab.label}</span>
-              <span className="badge-count">{tab.count}</span>
-            </button>
-          ))}
-        </div>
+          <div className="tabs-container">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={`tab ${activeTab === tab.id ? "active" : ""}`}
+                onClick={() => handleTabChange(tab.id)}
+              >
+                <Icon
+                  icon={
+                    tab.id === "all-users"
+                      ? "mdi:account-multiple"
+                      : tab.id === "admins"
+                        ? "mdi:shield-account"
+                        : tab.id === "customers"
+                          ? "mdi:account"
+                          : tab.id === "sponsors"
+                            ? "mdi:office-building"
+                            : "mdi:briefcase"
+                  }
+                />
+                <span>{tab.label}</span>
+                <span className="badge-count">{tab.count}</span>
+              </button>
+            ))}
+          </div>
 
-        {/* Search Bar */}
-        <div className="outlined-button search-container">
-          <Icon icon="mdi:magnify" />
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+          {/* Search Bar */}
+          <div className="outlined-button search-container">
+            <Icon icon="mdi:magnify" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Table */}
@@ -456,7 +551,11 @@ const UserManagement = () => {
           </div>
         )}
       </div>
-      <CreateUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} />
+      <CreateUserModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        onUserCreated={fetchUsers}
+      />
       <ViewUserModal
         isOpen={isViewUserModalOpen}
         onClose={() => setIsViewUserModalOpen(false)}

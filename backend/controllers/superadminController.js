@@ -1,46 +1,80 @@
 const User = require('../models/userModel')
+const Promoter = require('../models/promoterModel')
+const Sponsor = require('../models/sponsorModel')
+const Customer = require('../models/customerModel')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const { sendEmail } = require('../utils/email')
 
-// Create user (used by both superadmin and admin routes)
 const createUser = async (req, res) => {
   try {
-    const { firstName, lastName, email, role, password, phone, companyName, industry } = req.body;
+    const { firstName, lastName, email, role, phone, companyName, industry } = req.body;
 
     if (!firstName || !lastName || !email || !role) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
     const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ error: 'Email already in use' });
+    if (exists) {
+      return res.status(400).json({ error: 'Email already in use' });
+    }
 
     // Generate temporary password
-    const tempPassword = crypto.randomBytes(6).toString('hex'); // 12-character password
+    const tempPassword = crypto.randomBytes(6).toString('hex');
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(tempPassword, salt);
 
-    // Create user with hashed temp password
+    // ✅ 1. Create Base User (ONLY core fields)
     const newUser = await User.create({
       firstName,
       lastName,
       email,
       password: hash,
-      role,
-      phone: phone || null,
-      companyName: companyName || null,
-      industry: industry || null,
+      role
     });
 
-    // Send email with temporary password
+    // ✅ 2. Create Role-Specific Profile
+    const lowerRole = role.toLowerCase();
+
+    if (lowerRole === 'promoter') {
+      await Promoter.create({
+        userId: newUser._id,
+        phone,
+        companyName,
+        industry
+      });
+    }
+
+    if (lowerRole === 'sponsor') {
+      await Sponsor.create({
+        userId: newUser._id,
+        phone,
+        companyName,
+        industry
+      });
+    }
+
+    if (lowerRole === 'customer') {
+      await Customer.create({
+        userId: newUser._id,
+        phone
+      });
+    }
+
+    // ✅ 3. Send email
     await sendEmail({
       to: email,
       subject: 'Your new account',
-      text: `Hello ${firstName},\n\nYour account has been created.\nTemporary password: ${tempPassword}\nPlease log in and change your password immediately.`
+      text: `Hello ${firstName},
+
+Your account has been created.
+Temporary password: ${tempPassword}
+
+Please log in and change your password immediately.`
     });
 
     return res.status(201).json({
-      message: `${role} created successfully. Temporary password sent via email.`,
+      message: `${role} created successfully.`,
       user: newUser
     });
 
@@ -49,6 +83,8 @@ const createUser = async (req, res) => {
     return res.status(500).json({ error: 'Server error' });
   }
 };
+
+module.exports = { createUser };
 
 // Get all users
 const getAllUsers = async (req, res) => {
