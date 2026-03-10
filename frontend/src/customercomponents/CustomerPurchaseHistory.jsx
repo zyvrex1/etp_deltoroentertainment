@@ -196,11 +196,6 @@ export default function CustomerPurchaseHistory() {
                                 <hr className="history-divider" />
 
                                 <div className="history-actions flex-end">
-                                    {purchase.hasRefund && (
-                                        <button className="outlined-button request-btn mr-m">
-                                            <Icon icon="mdi:refresh" width="18" className="btn-icon" /> Request Refund
-                                        </button>
-                                    )}
                                     <button className="outlined-button" onClick={() => handleViewReceipt(purchase)}>
                                         View Receipt
                                     </button>
