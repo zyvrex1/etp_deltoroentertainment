@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './CustomerTicketOrder.css';
+import CustomerEnlargeQr from './Modal/CustomerEnlargeQr';
+import CustomerRequestRefund from './Modal/CustomerRequestRefund';
 
 const CustomerTicketOrder = () => {
+    const [qrModalShow, setQrModalShow] = useState(false);
+    const [refundModalShow, setRefundModalShow] = useState(false);
+    const [selectedTicket, setSelectedTicket] = useState(null);
+
+    const handleEnlargeQr = (ticket) => {
+        setSelectedTicket(ticket);
+        setQrModalShow(true);
+    };
+
+    const handleRequestRefund = (ticket) => {
+        setSelectedTicket(ticket);
+        setRefundModalShow(true);
+    };
+
     // Mock active events/tickets mapping
     const activeTickets = [
         {
@@ -76,9 +92,19 @@ const CustomerTicketOrder = () => {
                                     <span className="smaller-body-text">Seat Location</span>
                                     <h5 className="ticket-order-seat-number">{ticket.seat}</h5>
                                 </div>
+
+                                <div className="ticket-order-refund-action">
+                                    <button
+                                        className="ticket-order-refund-btn"
+                                        onClick={() => handleRequestRefund(ticket)}
+                                    >
+                                        <Icon icon="mdi:refresh" width="16" className="mr-1" />
+                                        Request Refund
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="ticket-order-card-right">
+                            <div className="ticket-order-card-right" onClick={() => handleEnlargeQr(ticket)} style={{ cursor: 'pointer' }}>
                                 <div className="ticket-order-qr-container">
                                     <Icon icon="mdi:qrcode" width="80" className="ticket-order-qr" />
                                 </div>
@@ -88,6 +114,17 @@ const CustomerTicketOrder = () => {
                     ))}
                 </div>
             </div>
+
+            <CustomerEnlargeQr
+                show={qrModalShow}
+                onClose={() => setQrModalShow(false)}
+                ticketData={selectedTicket}
+            />
+            <CustomerRequestRefund
+                show={refundModalShow}
+                onClose={() => setRefundModalShow(false)}
+                ticketData={selectedTicket}
+            />
         </div>
     );
 };

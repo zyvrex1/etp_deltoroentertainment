@@ -79,6 +79,7 @@
                         padding: 15px;
                         border-radius: 8px;
                         text-align: center;
+                        margin-bottom: 20px;
 
                         span {
                             color: var(--color-black-secondary);
@@ -87,6 +88,34 @@
                         .ticket-order-seat-number {
                             color: var(--color-black-primary);
                             margin-top: 5px;
+                            margin-bottom: 0;
+                        }
+                    }
+
+                    .ticket-order-refund-action {
+                        text-align: center;
+                        margin-top: auto;
+
+                        .ticket-order-refund-btn {
+                            background: transparent;
+                            border: none;
+                            color: var(--color-black-secondary);
+                            display: inline-flex;
+                            align-items: center;
+                            cursor: pointer;
+                            font-family: inherit;
+                            font-size: 13px;
+                            font-weight: 500;
+                            text-decoration: underline;
+                            text-underline-offset: 3px;
+
+                            .mr-1 {
+                                margin-right: 4px;
+                            }
+
+                            &:hover {
+                                color: var(--color-black-primary);
+                            }
                         }
                     }
                 }
