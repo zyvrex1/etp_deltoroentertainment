@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { showSuccessAlert, showConfirmAlert } from '../admincomponents/utils/sweetAlert';
 import './CustomerSettings.css';
+import CustomerAddPaymentMethod from './Modal/CustomerAddPaymentMethod';
 
 export default function CustomerSettings() {
     const [activeTab, setActiveTab] = useState('personalInfo');
+    const [isAddCardOpen, setIsAddCardOpen] = useState(false);
 
     const tabs = [
         { id: 'personalInfo', label: 'Personal Info', icon: 'mdi:account-outline' },
@@ -19,8 +21,8 @@ export default function CustomerSettings() {
         }
     };
 
-    const handleAddCard = async () => {
-        await showSuccessAlert("Coming Soon", "Add payment method function will be available soon.");
+    const handleAddCard = () => {
+        setIsAddCardOpen(true);
     };
 
     const renderContent = () => {
@@ -193,6 +195,11 @@ export default function CustomerSettings() {
                     {renderContent()}
                 </div>
             </div>
+
+            <CustomerAddPaymentMethod
+                isOpen={isAddCardOpen}
+                onClose={() => setIsAddCardOpen(false)}
+            />
         </div>
     );
 }
