@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import DateRangePicker from '../admincomponents/DateRangePicker';
 import './CustomerBrowseEvent.css';
 
 const CustomerBrowseEvent = () => {
@@ -26,6 +27,18 @@ const CustomerBrowseEvent = () => {
     const totalPages = Math.ceil(allEvents.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedEvents = allEvents.slice(startIndex, startIndex + itemsPerPage);
+
+    const [dateRange, setDateRange] = useState(() => ({
+        preset: 'all',
+        presetLabel: 'All time',
+        start: new Date(2000, 0, 1),
+        end: new Date(2100, 11, 31),
+    }));
+
+    const handleDateRangeChange = (newRange) => {
+        setDateRange(newRange);
+        setCurrentPage(1);
+    };
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -53,10 +66,12 @@ const CustomerBrowseEvent = () => {
                     </div>
 
                     <div className="cbe-filters">
-                        <button className="cbe-filter-btn small-body-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Icon icon="mdi:calendar-blank-outline" width="18" /> Date
-                            <Icon icon="mdi:chevron-down" />
-                        </button>
+                        <DateRangePicker
+                            value={dateRange}
+                            onChange={handleDateRangeChange}
+                            buttonClassName="cbe-date-picker-btn small-body-text"
+                            placeholder="Date Range"
+                        />
                     </div>
                 </div>
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import DateRangePicker from '../admincomponents/DateRangePicker';
 import './CustomerPurchaseHistory.css';
 import CustomerHistoryViewReceipt from './Modal/CustomerHistoryViewReceipt';
 
@@ -8,6 +9,13 @@ export default function CustomerPurchaseHistory() {
     const [currentPage, setCurrentPage] = useState(1);
     const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
     const [selectedReceipt, setSelectedReceipt] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [dateRange, setDateRange] = useState(() => ({
+        preset: 'all',
+        presetLabel: 'All time',
+        start: new Date(2000, 0, 1),
+        end: new Date(2100, 11, 31),
+    }));
     const itemsPerPage = 5;
 
     const tabs = [
@@ -72,7 +80,27 @@ export default function CustomerPurchaseHistory() {
         orderNum: `${mockData[i % 3].orderNum.split('-')[0]}-${1000 + i}`
     }));
 
-    const filteredPurchases = purchases.filter(p => activeTab === 'all' || p.type === activeTab);
+    const filteredPurchases = purchases.filter(p => {
+        const matchesTab = activeTab === 'all' || p.type === activeTab;
+        const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.orderNum.toLowerCase().includes(searchQuery.toLowerCase());
+
+        // Simple date filtering (assuming date format is M/D/YYYY)
+        const purchaseDate = new Date(p.date);
+        const matchesDate = purchaseDate >= dateRange.start && purchaseDate <= dateRange.end;
+
+        return matchesTab && matchesSearch && matchesDate;
+    });
+
+    const handleDateRangeChange = (newRange) => {
+        setDateRange(newRange);
+        setCurrentPage(1);
+    };
+
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
+        setCurrentPage(1);
+    };
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredPurchases.length / itemsPerPage);
@@ -139,6 +167,28 @@ export default function CustomerPurchaseHistory() {
         <div className="customer-history-container">
             <div className="history-header">
                 <h2 className="history-page-title">Purchase History</h2>
+            </div>
+
+            <div className="cph-controls">
+                <div className="cph-search">
+                    <Icon icon="mdi:magnify" width="20" className="search-icon" />
+                    <input
+                        type="text"
+                        placeholder="Search purchases or Order ID"
+                        className="small-body-text"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                    />
+                </div>
+
+                <div className="cph-filters">
+                    <DateRangePicker
+                        value={dateRange}
+                        onChange={handleDateRangeChange}
+                        buttonClassName="cph-date-picker-btn small-body-text"
+                        placeholder="Date Range"
+                    />
+                </div>
             </div>
 
             <div className="history-tabs-container">

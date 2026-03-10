@@ -12,6 +12,63 @@
         margin-bottom: 30px;
     }
 
+    .cph-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--color-white-primary);
+        padding: 15px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 16px;
+
+        .cph-search {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+            min-width: 250px;
+            background-color: var(--color-bg-light);
+            padding: 10px 16px;
+            border-radius: 8px;
+
+            .search-icon {
+                color: var(--color-black-secondary);
+            }
+
+            input {
+                border: none;
+                background: transparent;
+                outline: none;
+                width: 100%;
+                color: var(--color-black-primary);
+                font-family: 'Inter', sans-serif;
+            }
+        }
+
+        .cph-filters {
+            display: flex;
+            gap: 15px;
+
+            .cph-date-picker-btn {
+                padding: 10px 16px;
+                border-radius: 8px;
+                border: 1px solid var(--color-black-quaternary);
+                background-color: var(--color-bg-light);
+                color: var(--color-black-secondary);
+                outline: none;
+                cursor: pointer;
+                min-width: 140px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+            }
+        }
+    }
+
     .history-tabs-container {
         border-bottom: 1px solid var(--color-black-quaternary);
         margin-bottom: 30px;
@@ -131,7 +188,7 @@
                 display: flex;
                 justify-content: flex-end;
 
-                button{
+                button {
                     color: var(--color-black-primary);
                 }
             }
@@ -205,7 +262,7 @@
         align-items: center;
     }
 
-    .request-btn{
+    .request-btn {
         color: var(--color-black-primary);
         cursor: pointer;
         display: flex;
@@ -265,6 +322,27 @@
     }
 
     @media (max-width: 768px) {
+        .cph-controls {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 20px;
+
+            .cph-search {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .cph-filters {
+                width: 100%;
+                flex-direction: column;
+
+                .cph-date-picker-btn {
+                    width: 100%;
+                    justify-content: center;
+                }
+            }
+        }
+
         .history-tabs-container .history-tab-list {
             overflow-x: auto;
             padding-bottom: 5px;
