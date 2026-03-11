@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import Swal from 'sweetalert2';
 import './CustomerRequestRefund.css';
 
 const CustomerRequestRefund = ({ show, onClose, ticketData }) => {
@@ -16,6 +17,38 @@ const CustomerRequestRefund = ({ show, onClose, ticketData }) => {
             setReason('');
         }
     }, [show, ticketData]);
+
+    const handleSubmit = () => {
+        if (!reason.trim()) {
+            Swal.fire({
+                title: 'Error',
+                text: 'Please provide a reason for the refund.',
+                icon: 'error',
+                confirmButtonColor: '#9A212E',
+            });
+            return;
+        }
+        Swal.fire({
+            title: 'Submit Request?',
+            text: 'Are you sure you want to submit this refund request?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#9A212E',
+            cancelButtonColor: '#aaa',
+            confirmButtonText: 'Yes, submit it'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Request Submitted!',
+                    text: 'Your refund request has been successfully submitted.',
+                    icon: 'success',
+                    confirmButtonColor: '#9A212E',
+                }).then(() => {
+                    onClose();
+                });
+            }
+        });
+    };
 
     if (!show) return null;
 
@@ -94,7 +127,7 @@ const CustomerRequestRefund = ({ show, onClose, ticketData }) => {
 
                     <div className="crr-form-actions">
                         <button className="outlined-button crr-cancel-btn" onClick={onClose}>Cancel</button>
-                        <button className="primary-button crr-submit-btn">Submit Request</button>
+                        <button className="primary-button crr-submit-btn" onClick={handleSubmit}>Submit Request</button>
                     </div>
                 </div>
             </div>

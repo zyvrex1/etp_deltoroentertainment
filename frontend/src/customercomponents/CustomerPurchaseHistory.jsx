@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import DateRangePicker from '../admincomponents/DateRangePicker';
+import jsPDF from 'jspdf';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../admincomponents/utils/pdfExport';
 import './CustomerPurchaseHistory.css';
 import CustomerHistoryViewReceipt from './Modal/CustomerHistoryViewReceipt';
 
@@ -163,10 +165,54 @@ export default function CustomerPurchaseHistory() {
         setIsReceiptModalOpen(true);
     };
 
+    const exportHistoryToPDF = async () => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const MARGIN = 15;
+            let y = 45;
+
+            addReportHeader(pdf, 'Purchase History', logoData);
+
+            pdf.setFontSize(14);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Purchase History', MARGIN, y);
+            y += 20;
+
+            const headers = ['Order', 'Title', 'Date', 'Type', 'Status', 'Total'];
+            const rows = filteredPurchases.map(item => [
+                item.orderNum,
+                item.title,
+                item.date,
+                item.type.charAt(0).toUpperCase() + item.type.slice(1),
+                item.status,
+                item.total
+            ]);
+
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5);
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Purchase_History_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
+        }
+    };
+
     return (
         <div className="customer-history-container">
-            <div className="history-header">
-                <h2 className="history-page-title">Purchase History</h2>
+            <div className="history-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <h2 className="history-page-title" style={{ marginBottom: 0 }}>Purchase History</h2>
+                <button className="outlined-button" onClick={exportHistoryToPDF} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Icon icon="mdi:tray-arrow-up" width="20" />
+                    Export History
+                </button>
             </div>
 
             <div className="cph-controls">

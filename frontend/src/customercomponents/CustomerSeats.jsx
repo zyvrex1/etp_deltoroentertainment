@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import './CustomerSeats.css';
 
 const CustomerSeats = () => {
@@ -48,6 +49,50 @@ const CustomerSeats = () => {
     const subtotal = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
     const serviceFees = selectedSeats.length > 0 ? 10 : 0;
     const total = subtotal + serviceFees;
+
+    const handleAddToCart = () => {
+        if (selectedSeats.length === 0) return;
+        Swal.fire({
+            title: 'Add to Cart?',
+            text: `Are you sure you want to add ${selectedSeats.length} ticket(s) to your cart?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#9A212E',
+            cancelButtonColor: '#aaa',
+            confirmButtonText: 'Yes, add them'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Added!',
+                    text: 'Ticket(s) added to your cart.',
+                    icon: 'success',
+                    confirmButtonColor: '#9A212E',
+                }).then(() => {
+                    navigate('/customer/cart');
+                });
+            }
+        });
+    };
+
+    const handleContinueBrowsing = () => {
+        if (selectedSeats.length > 0) {
+            Swal.fire({
+                title: 'Continue Browsing?',
+                text: 'Are you sure you want to continue browsing? Your selected seats will be held for 10 minutes.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#9A212E',
+                cancelButtonColor: '#aaa',
+                confirmButtonText: 'Yes, continue'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    navigate('/customer/browse-events');
+                }
+            });
+        } else {
+            navigate('/customer/browse-events');
+        }
+    };
 
     const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
     const cols = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -175,14 +220,14 @@ const CustomerSeats = () => {
                         <button
                             className="primary-button cs-submit-btn w-100 mb-3"
                             disabled={selectedSeats.length === 0}
-                            onClick={() => navigate('/customer/cart')}
+                            onClick={handleAddToCart}
                         >
                             Add {selectedSeats.length} Tickets to Cart
                         </button>
 
                         <button
                             className="outlined-button cs-continue-btn w-100 mb-3"
-                            onClick={() => navigate('/customer/browse-events')}
+                            onClick={handleContinueBrowsing}
                         >
                             Continue Browsing events
                         </button>

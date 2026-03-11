@@ -1,5 +1,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
+import jsPDF from 'jspdf';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../../admincomponents/utils/pdfExport';
 import './CustomerHistoryViewReceipt.css';
 
 const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
@@ -27,6 +29,81 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
 
     const handlePrint = () => {
         window.print();
+    };
+
+    const handleDownloadPDF = async () => {
+        const loadingToast = showExportToast();
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const MARGIN = 15;
+            let y = 45;
+
+            addReportHeader(pdf, 'Transaction Receipt', logoData);
+
+            pdf.setFontSize(14);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(`Order #${data.orderNum}`, MARGIN, y);
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(data.date, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
+            y += 15;
+
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('BILLED TO', MARGIN, y);
+            pdf.text('PAYMENT METHOD', pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
+            y += 6;
+            
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(data.billedTo.name, MARGIN, y);
+            pdf.text(data.paymentMethod, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
+            y += 6;
+            
+            pdf.text(data.billedTo.email, MARGIN, y);
+            pdf.setTextColor(40, 167, 69); // Green status
+            pdf.text(data.status, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
+            y += 20;
+
+            const headers = ['Item', 'Type', 'Qty', 'Price', 'Total'];
+            const rows = data.items.map(item => [
+                item.item,
+                item.type,
+                item.qty.toString(),
+                item.price,
+                item.total
+            ]);
+
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5);
+
+            y += 10;
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.text(`Subtotal: ${data.subtotal}`, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
+            y += 6;
+            pdf.text(`Service Fee: ${data.serviceFee}`, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
+            y += 6;
+            pdf.text(`Tax: ${data.tax}`, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
+            y += 10;
+            
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(30, 60, 114);
+            pdf.text('Total Paid:', pdf.internal.pageSize.getWidth() - MARGIN - 30, y, { align: 'right' });
+            pdf.setTextColor(220, 53, 69); // Red color for total
+            pdf.text(data.totalPaid, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
+
+            addReportFooter(pdf, 1, 1);
+            pdf.save(`Receipt_${data.orderNum}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
+        }
     };
 
     return (
@@ -80,8 +157,8 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                         <tbody>
                             {data.items.map((row, index) => (
                                 <tr key={index}>
-                                    <td className="text-black">{row.item}</td>
-                                    <td className="text-secondary">{row.type}</td>
+                                    <td className="text-left text-black">{row.item}</td>
+                                    <td className="text-left text-secondary">{row.type}</td>
                                     <td className="text-center text-black">{row.qty}</td>
                                     <td className="text-right text-secondary">{row.price}</td>
                                     <td className="text-right text-black">{row.total}</td>
@@ -125,9 +202,9 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                     <p className="small-body-text text-secondary mb-3 mt-0">For food and merch orders, present your pickup ticket at the vendor booth.</p>
                     <p className="smaller-body-text text-secondary m-0">Support Contact: support@eticketspro.com</p>
 
-                    <button className="primary-button chvr-print-btn mt-4" onClick={handlePrint}>
-                        <Icon icon="mdi:printer" width="18" className="mr-2" />
-                        Print Receipt
+                    <button className="primary-button chvr-print-btn mt-2" onClick={handleDownloadPDF} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon icon="mdi:download" width="18" className="mr-2" />
+                        Download PDF
                     </button>
                 </div>
             </div>

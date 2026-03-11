@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import Swal from 'sweetalert2';
 import './CustomerSupport.css';
 
 export default function CustomerSupport() {
@@ -31,6 +32,27 @@ export default function CustomerSupport() {
             answer: "We accept all major credit cards (Visa, Mastercard, American Express), Apple Pay, and Google Pay."
         }
     ];
+
+    const handleSendMessage = () => {
+        Swal.fire({
+            title: 'Send Message?',
+            text: 'Are you sure you want to send this message to our support team?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#9A212E',
+            cancelButtonColor: '#aaa',
+            confirmButtonText: 'Yes, send it'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Message Sent!',
+                    text: 'Our support team will get back to you within 24 hours.',
+                    icon: 'success',
+                    confirmButtonColor: '#9A212E',
+                });
+            }
+        });
+    };
 
     return (
         <div className="customer-support-container">
@@ -102,7 +124,7 @@ export default function CustomerSupport() {
                                 <label className="small-body-text text-muted">Message</label>
                                 <textarea className="form-input form-textarea regular-body-text" rows="4" placeholder="How can we help you today?"></textarea>
                             </div>
-                            <button type="button" className="primary-button send-msg-btn">
+                            <button type="button" className="primary-button send-msg-btn" onClick={handleSendMessage}>
                                 <Icon icon="mdi:send-outline" width="18" /> Send Message
                             </button>
                         </form>

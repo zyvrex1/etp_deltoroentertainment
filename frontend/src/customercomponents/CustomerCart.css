@@ -66,6 +66,34 @@
         }
     }
 
+    .empty-cart-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 20px;
+        text-align: center;
+        background-color: var(--color-bg-light); /* Or white if needed, but it seems to blend with the background in the image */
+    }
+
+    .empty-cart-icon {
+        color: var(--color-black-primary);
+        margin-bottom: 15px;
+    }
+
+    .empty-cart-state h3 {
+        color: var(--color-black-primary);
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .empty-browse-btn {
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
     .cart-tip-card {
         background-color: var(--color-white-primary);
         border: 1px solid var(--color-black-quaternary);
