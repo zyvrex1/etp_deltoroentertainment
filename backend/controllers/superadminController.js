@@ -89,20 +89,79 @@ module.exports = { createUser };
 // Get all users
 const getAllUsers = async (req, res) => {
   try {
-    let query = {}
-
+    // Admin cannot see superadmins
+    let usersQuery = {};
     if (req.user.role === 'admin') {
-      // Admin cannot see superadmins
-      query.role = { $ne: 'superadmin' }
+      usersQuery.role = { $ne: 'superadmin' };
     }
 
-    const users = await User.find(query).select('-password').sort({ createdAt: -1 })
-    res.status(200).json(users)
+    // Fetch all role documents
+    const customers = await Customer.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt');
+    const promoters = await Promoter.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt');
+    const sponsors = await Sponsor.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt');
+    
+    // Fetch admins (excluding superadmins if current user is admin)
+    const adminFilter = req.user.role === 'admin' ? { role: 'admin' } : { role: { $in: ['admin', 'superadmin'] } };
+    const admins = await User.find(adminFilter).select('firstName lastName email role lastLogin createdAt updatedAt');
+
+    // Merge into one array
+    const allUsers = [
+      ...customers.map(c => ({
+        _id: c.userId._id,
+        firstName: c.userId.firstName,
+        lastName: c.userId.lastName,
+        email: c.userId.email,
+        role: c.userId.role,
+        lastLogin: c.userId.lastLogin,
+        createdAt: c.userId.createdAt,
+        updatedAt: c.userId.updatedAt,
+        roleDetails: { phone: c.phone, ticketsPurchased: c.ticketsPurchased, totalSpent: c.totalSpent },
+        roleType: 'customer'
+      })),
+      ...promoters.map(p => ({
+        _id: p.userId._id,
+        firstName: p.userId.firstName,
+        lastName: p.userId.lastName,
+        email: p.userId.email,
+        role: p.userId.role,
+        lastLogin: p.userId.lastLogin,
+        createdAt: p.userId.createdAt,
+        updatedAt: p.userId.updatedAt,
+        roleDetails: { phone: p.phone, companyName: p.companyName, industry: p.industry, numberOfEvents: p.numberOfEvents },
+        roleType: 'promoter'
+      })),
+      ...sponsors.map(s => ({
+        _id: s.userId._id,
+        firstName: s.userId.firstName,
+        lastName: s.userId.lastName,
+        email: s.userId.email,
+        role: s.userId.role,
+        lastLogin: s.userId.lastLogin,
+        createdAt: s.userId.createdAt,
+        updatedAt: s.userId.updatedAt,
+        roleDetails: { phone: s.phone, companyName: s.companyName, industry: s.industry },
+        roleType: 'sponsor'
+      })),
+      ...admins.map(a => ({
+        _id: a._id,
+        firstName: a.firstName,
+        lastName: a.lastName,
+        email: a.email,
+        role: a.role,
+        lastLogin: a.lastLogin,
+        createdAt: a.createdAt,
+        updatedAt: a.updatedAt,
+        roleDetails: {},
+        roleType: 'admin'
+      }))
+    ];
+
+    res.status(200).json(allUsers);
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: 'Server error' })
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
-}
+};
 
 // Get single user
 const getUser = async (req, res) => {

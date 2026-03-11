@@ -32,12 +32,13 @@ const eventSchema = new Schema(
       trim: true,
     },
 
-   venue: {
+    venue: {
       name: { type: String, required: true },
       address: { type: String, required: true },
       city: { type: String, required: true },
-      zipCode: { type: String, required: true }
+      zipCode: { type: String, required: true },
     },
+
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
 
@@ -52,21 +53,20 @@ const eventSchema = new Schema(
       default: "General Admission",
     },
 
-     ticketPrice: {
+    ticketPrice: {
       type: Number,
       default: 0,
       validate: {
         validator: function (value) {
-          // Require ticketPrice only if eventType is General Admission
           if (this.eventType === "General Admission") {
             return value !== null && value !== undefined;
           }
           return true; // optional for Seating Arrangement
         },
-        message:
-          "ticketPrice is required for General Admission events",
+        message: "ticketPrice is required for General Admission events",
       },
     },
+
     totalTickets: { type: Number, default: 0 },
 
     seatMap: {
@@ -85,15 +85,19 @@ const eventSchema = new Schema(
     ticketsSold: { type: Number, default: 0 },
     revenue: { type: Number, default: 0 },
 
-    hasBooths: {
-      type: Boolean,
-      default: false,
-    },
+    // -----------------------------
+    // Booths: number per size & price
+    // -----------------------------
+    booths: [
+      {
+        size: { type: String, default: null },        // e.g., Small, Medium, Large
+        price: { type: Number, required: true, min: 0 },
+        quantity: { type: Number, required: true, min: 1 }, // number of booths of this type
+      },
+    ],
 
-    maxBooths: {
-      type: Number,
-      default: 0,
-    },
+    hasBooths: { type: Boolean, default: false },    // true if booths exist
+    maxBooths: { type: Number, default: 0 },         // total booths (sum of quantities)
 
     status: {
       type: String,
@@ -101,10 +105,7 @@ const eventSchema = new Schema(
       default: "pending",
     },
 
-    isFeatured: {
-      type: Boolean,
-      default: false,
-    },
+    isFeatured: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

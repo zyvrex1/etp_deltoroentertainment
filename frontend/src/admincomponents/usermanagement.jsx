@@ -45,29 +45,31 @@ const UserManagement = () => {
     fetchUsers();
   }, [user]);
 
-  const tabs = [
-    { id: "all-users", label: "All Users", count: allUsers.length },
-    {
-      id: "admins",
-      label: "Admins",
-      count: allUsers.filter((u) => u.role === "admin").length,
-    },
-    {
-      id: "promoters",
-      label: "Promoters",
-      count: allUsers.filter((u) => u.role === "promoter").length,
-    },
-    {
-      id: "sponsors",
-      label: "Sponsors",
-      count: allUsers.filter((u) => u.role === "sponsor").length,
-    },
-    {
-      id: "customers",
-      label: "Customers",
-      count: allUsers.filter((u) => u.role === "customer").length,
-    },
-  ];
+  const usersExcludingCurrent = allUsers.filter(u => u._id !== user._id);
+
+const tabs = [
+  { id: "all-users", label: "All Users", count: usersExcludingCurrent.length },
+  {
+    id: "admins",
+    label: "Admins",
+    count: usersExcludingCurrent.filter((u) => u.role === "admin").length,
+  },
+  {
+    id: "promoters",
+    label: "Promoters",
+    count: usersExcludingCurrent.filter((u) => u.role === "promoter").length,
+  },
+  {
+    id: "sponsors",
+    label: "Sponsors",
+    count: usersExcludingCurrent.filter((u) => u.role === "sponsor").length,
+  },
+  {
+    id: "customers",
+    label: "Customers",
+    count: usersExcludingCurrent.filter((u) => u.role === "customer").length,
+  },
+];
 
   const getInitial = (firstName, lastName) => {
     const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : "";
@@ -86,21 +88,24 @@ const UserManagement = () => {
   };
 
   const getTableData = () => {
-    switch (activeTab) {
-      case "all-users":
-        return allUsers;
-      case "admins":
-        return allUsers.filter((u) => u.role === "admin");
-      case "customers":
-        return allUsers.filter((u) => u.role === "customer");
-      case "promoters":
-        return allUsers.filter((u) => u.role === "promoter");
-      case "sponsors":
-        return allUsers.filter((u) => u.role === "sponsor");
-      default:
-        return [];
-    }
-  };
+  // Filter out the logged-in user first
+  const usersExcludingCurrent = allUsers.filter(u => u._id !== user._id);
+
+  switch (activeTab) {
+    case "all-users":
+      return usersExcludingCurrent;
+    case "admins":
+      return usersExcludingCurrent.filter((u) => u.role === "admin");
+    case "customers":
+      return usersExcludingCurrent.filter((u) => u.role === "customer");
+    case "promoters":
+      return usersExcludingCurrent.filter((u) => u.role === "promoter");
+    case "sponsors":
+      return usersExcludingCurrent.filter((u) => u.role === "sponsor");
+    default:
+      return [];
+  }
+};
 
   const filteredData = getTableData().filter((item) => {
     const searchStr = searchQuery.toLowerCase();
@@ -214,12 +219,12 @@ const UserManagement = () => {
                       >
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button
+                      {/* <button
                         className="action-btn edit-btn"
                         onClick={() => handleEditUser(user)}
                       >
                         <Icon icon="mdi:pencil" />
-                      </button>
+                      </button> */}
                     </div>
                   </td>
                 </tr>
@@ -264,7 +269,7 @@ const UserManagement = () => {
                     <h5 className="smaller-body-text">{customer.email}</h5>
                   </td>
                   <td data-label="Total Spent" className="regular-body-text">
-                    {customer.totalSpent}
+                    {customer.roleDetails.totalSpent}
                   </td>
                   <td data-label="Joined" className="small-body-text">
                     {new Date(customer.createdAt).toLocaleDateString("en-US", {
@@ -283,7 +288,7 @@ const UserManagement = () => {
                             : "gray",
                       }}
                     >
-                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() +
+                      {getUserStatus(customer.lastLogin).charAt(0).toUpperCase() +
                         getUserStatus(customer.lastLogin).slice(1)}
                     </span>
                   </td>
@@ -296,12 +301,12 @@ const UserManagement = () => {
                       >
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button
+                      {/* <button
                         className="action-btn edit-btn"
                         onClick={() => handleEditUser(customer, "customer")}
                       >
                         <Icon icon="mdi:pencil" />
-                      </button>
+                      </button> */}
                     </div>
                   </td>
                 </tr>
@@ -345,10 +350,10 @@ const UserManagement = () => {
                     <h5 className="smaller-body-text">{promoter.email}</h5>
                   </td>
                   <td data-label="Organization" className="small-body-text">
-                    {promoter.companyName}
+                    {promoter.roleDetails.companyName}
                   </td>
                   <td data-label="Events" className="small-body-text">
-                    {promoter.phone}
+                    {promoter.roleDetails.phone}
                   </td>
                   <td data-label="Status">
                     <span
@@ -356,11 +361,11 @@ const UserManagement = () => {
                       style={{
                         backgroundColor:
                           getUserStatus(user.lastLogin) === "active"
-                            ? "green"
-                            : "gray",
+                            ? "gray"
+                            : "green",
                       }}
                     >
-                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() +
+                      {getUserStatus(promoter.lastLogin).charAt(0).toUpperCase() +
                         getUserStatus(promoter.lastLogin).slice(1)}
                     </span>
                   </td>
@@ -372,12 +377,12 @@ const UserManagement = () => {
                       >
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button
+                      {/* <button
                         className="action-btn edit-btn"
                         onClick={() => handleEditUser(promoter, "promoter")}
                       >
                         <Icon icon="mdi:pencil" />
-                      </button>
+                      </button> */}
                     </div>
                   </td>
                 </tr>
@@ -421,10 +426,10 @@ const UserManagement = () => {
                     <h5 className="smaller-body-text">{sponsor.email}</h5>
                   </td>
                   <td data-label="Organization" className="small-body-text">
-                    {sponsor.companyName}
+                    {sponsor.roleDetails.companyName}
                   </td>
                   <td data-label="Events" className="small-body-text">
-                    {sponsor.phone}
+                    {sponsor.roleDetails.phone}
                   </td>
                   <td data-label="Status">
                     <span
@@ -436,7 +441,7 @@ const UserManagement = () => {
                             : "gray",
                       }}
                     >
-                      {getUserStatus(user.lastLogin).charAt(0).toUpperCase() +
+                      {getUserStatus(sponsor.lastLogin).charAt(0).toUpperCase() +
                         getUserStatus(sponsor.lastLogin).slice(1)}
                     </span>
                   </td>
@@ -448,12 +453,12 @@ const UserManagement = () => {
                       >
                         <Icon icon="mdi:eye" />
                       </button>
-                      <button
+                      {/* <button
                         className="action-btn edit-btn"
                         onClick={() => handleEditUser(sponsor, "sponsor")}
                       >
                         <Icon icon="mdi:pencil" />
-                      </button>
+                      </button> */}
                     </div>
                   </td>
                 </tr>

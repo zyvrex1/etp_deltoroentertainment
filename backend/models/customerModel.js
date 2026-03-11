@@ -14,7 +14,14 @@ const customerSchema = new Schema({
     required: true,
     trim: true
   },
-  ticketsPurchased: Number,
+  ticketsPurchased: {
+    type: Number,
+    default: 0
+  },
+  totalSpent: {
+    type: Number,
+    default: 0  // Initialize as 0
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Customer', customerSchema)
