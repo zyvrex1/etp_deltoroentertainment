@@ -3,9 +3,11 @@ import { Icon } from '@iconify/react';
 import { NavLink } from 'react-router-dom';
 
 import './CustomerHome.css';
+import CustomerViewEventFullDetails from './Modal/CustomerViewEventFullDetails';
 
 export default function CustomerHome() {
     const [modalData, setModalData] = useState(null);
+    const [eventDetailsModal, setEventDetailsModal] = useState(null);
 
     const openModal = (title, content) => {
         setModalData({ title, content });
@@ -142,7 +144,7 @@ export default function CustomerHome() {
                                         <p className="smaller-body-text">From</p>
                                         <h6 className="price-range">{evt.price}</h6>
                                     </div>
-                                    <button className="outlined-button get-tickets-btn">Get Tickets</button>
+                                    <button className="outlined-button get-tickets-btn" onClick={() => setEventDetailsModal(evt)}>View Details</button>
                                 </div>
                             </div>
                         </div>
@@ -156,7 +158,7 @@ export default function CustomerHome() {
                 <div className="customer-cta-content">
                     <h2>Ready to make memories?</h2>
                     <p className="regular-body-text">Join millions of fans who trust eTicketsPro for their live entertainment needs.</p>
-                    <button className="primary-button cta-btn">Start Exploring</button>
+                    <NavLink to="/customer/browse-events">     <button className="primary-button cta-btn">Start Exploring</button></NavLink>
                 </div>
             </section>
 
@@ -192,6 +194,13 @@ export default function CustomerHome() {
                     </div>
                 </div>
             )}
+
+            {/* Event Details Modal */}
+            <CustomerViewEventFullDetails
+                show={!!eventDetailsModal}
+                onClose={() => setEventDetailsModal(null)}
+                eventData={eventDetailsModal}
+            />
         </div>
     );
 }

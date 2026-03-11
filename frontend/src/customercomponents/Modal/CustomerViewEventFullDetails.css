@@ -1,0 +1,415 @@
+.cved-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.cved-modal-container {
+    background-color: var(--color-white-primary);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    text-align: left;
+
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background-color: var(--color-black-tertiary);
+        border-radius: 4px;
+    }
+
+    .cved-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 30px;
+        position: sticky;
+        top: 0;
+        background-color: var(--color-white-primary);
+        z-index: 10;
+
+        .cved-modal-title {
+            color: var(--color-bg-dark);
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .cved-close-btn {
+            background: transparent;
+            border: none;
+            color: var(--color-black-primary);
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+
+            &:hover {
+                background-color: var(--color-black-quaternary);
+            }
+        }
+    }
+
+    .cved-modal-body {
+        padding: 0 0 30px 0;
+
+        .cved-banner {
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            margin: 0 30px 20px 30px;
+            border-radius: 12px;
+            overflow: hidden;
+
+            &::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+            }
+
+            .cved-banner-text {
+                position: relative;
+                z-index: 1;
+                padding: 20px;
+                width: 100%;
+
+                .event-tag-red {
+                    background-color: var(--color-white-primary);
+                    color: var(--color-black-primary);
+                    padding: 4px 10px;
+                    border-radius: 4px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    display: inline-block;
+                    margin-bottom: 8px;
+                }
+
+                .cved-event-title {
+                    color: var(--color-white-primary);
+                    margin: 0;
+                    font-size: 28px;
+                    font-weight: 700;
+                }
+            }
+        }
+
+        .cved-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px 20px 30px;
+            border-bottom: 1px solid var(--color-black-quaternary);
+            margin-bottom: 20px;
+
+            .cved-info-col {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                flex: 1;
+
+                .cved-info-icon-wrapper {
+                    background-color: var(--color-red-quaternary);
+                    color: var(--color-red-primary);
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+
+                .cved-info-text {
+                    display: flex;
+                    flex-direction: column;
+
+                    .label-text {
+                        color: var(--color-black-secondary);
+                        font-weight: 600;
+                        margin-bottom: 2px;
+                        letter-spacing: 0.5px;
+                    }
+
+                    .value-text {
+                        color: var(--color-bg-dark);
+                        font-weight: 500;
+                        line-height: 1.3;
+                    }
+                }
+            }
+        }
+
+        .cved-section {
+            padding: 0 30px;
+            margin-bottom: 25px;
+
+            h3,
+            h4 {
+                color: var(--color-bg-dark);
+                margin-bottom: 10px;
+            }
+
+            p {
+                color: var(--color-black-secondary);
+                line-height: 1.6;
+            }
+
+            &.cved-bg-gray {
+                background-color: var(--color-bg-light);
+                padding: 20px 30px;
+                border-radius: 8px;
+                margin: 0 30px 25px 30px;
+
+                h4 {
+                    font-size: 16px;
+                }
+
+                .cved-venue-amenities {
+                    display: flex;
+                    gap: 15px;
+                    margin-top: 15px;
+
+                    span {
+                        display: flex;
+                        align-items: center;
+                        gap: 5px;
+                        color: var(--color-black-secondary);
+                    }
+                }
+            }
+        }
+
+        .cved-ticket-block {
+            background-color: var(--color-red-quaternary);
+            margin: 0 30px 20px 30px;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--color-red-tertiary);
+
+            .cved-ticket-block-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 20px;
+
+                span {
+                    color: var(--color-black-secondary);
+                }
+
+                .cved-price {
+                    color: var(--color-bg-dark);
+                    margin: 5px 0 0 0;
+                }
+            }
+
+            .cved-ticket-actions {
+                display: flex;
+                gap: 15px;
+                margin-bottom: 12px;
+
+                .cved-seatmap-btn {
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    color: var(--color-red-primary);
+                    border-color: var(--color-red-primary);
+
+                    &:hover {
+                        background-color: var(--color-red-quaternary);
+                    }
+                }
+
+                .cved-buy-btn {
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                }
+            }
+
+            .cved-ticket-note {
+                color: var(--color-black-secondary);
+                text-align: left;
+                margin: 0;
+            }
+        }
+
+        .cved-guarantee-alert {
+            background-color: var(--color-green-quaternary);
+            border: 1px solid var(--color-green-tertiary);
+            color: var(--color-green-primary);
+            margin: 0 30px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+
+            span {
+                color: var(--color-green-primary);
+                font-weight: 500;
+            }
+        }
+    }
+}
+
+/* Tablet (1024px) */
+@media (max-width: 1024px) {
+    .cved-modal-overlay {
+        padding: 30px 20px;
+    }
+}
+
+/* Tablet (768px) */
+@media (max-width: 768px) {
+    .cved-modal-container {
+        .cved-modal-header {
+            padding: 15px 25px;
+        }
+
+        .cved-modal-body {
+            .cved-banner {
+                margin: 0 25px 20px 25px;
+                height: 180px;
+            }
+
+            .cved-info-row {
+                flex-direction: column;
+                gap: 15px;
+                padding: 0 25px 20px 25px;
+            }
+
+            .cved-section {
+                padding: 0 25px;
+
+                &.cved-bg-gray {
+                    margin: 0 25px 25px 25px;
+                    padding: 15px 20px;
+                }
+            }
+
+            .cved-ticket-block {
+                margin: 0 25px 20px 25px;
+                padding: 20px;
+            }
+
+            .cved-guarantee-alert {
+                margin: 0 25px;
+            }
+        }
+    }
+}
+
+/* Mobile (480px) */
+@media (max-width: 480px) {
+    .cved-modal-overlay {
+        padding: 15px 10px;
+    }
+
+    .cved-modal-container {
+        border-radius: 8px;
+
+        .cved-modal-header {
+            padding: 15px 20px;
+
+            .cved-modal-title {
+                font-size: 18px;
+            }
+        }
+
+        .cved-modal-body {
+            padding-bottom: 20px;
+
+            .cved-banner {
+                margin: 0 20px 15px 20px;
+                height: 150px;
+
+                .cved-banner-text {
+                    padding: 15px;
+
+                    .cved-event-title {
+                        font-size: 22px;
+                    }
+                }
+            }
+
+            .cved-info-row {
+                padding: 0 20px 15px 20px;
+                gap: 15px;
+
+                .cved-info-col {
+                    .cved-info-icon-wrapper {
+                        width: 32px;
+                        height: 32px;
+                    }
+                }
+            }
+
+            .cved-section {
+                padding: 0 20px;
+                margin-bottom: 15px;
+
+                &.cved-bg-gray {
+                    margin: 0 20px 20px 20px;
+                    padding: 15px;
+
+                    .cved-venue-amenities {
+                        flex-direction: column;
+                        gap: 10px;
+                    }
+                }
+            }
+
+            .cved-ticket-block {
+                margin: 0 20px 15px 20px;
+                padding: 15px;
+
+                .cved-ticket-actions {
+                    flex-direction: column;
+                    gap: 10px;
+
+                    .cved-seatmap-btn,
+                    .cved-buy-btn {
+                        width: 100%;
+                    }
+                }
+            }
+
+            .cved-guarantee-alert {
+                margin: 0 20px;
+                padding: 10px;
+
+                span {
+                    font-size: 10px;
+                    text-align: left;
+                }
+            }
+        }
+    }
+}
