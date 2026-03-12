@@ -88,88 +88,111 @@ const getEvent = async (req, res) => {
 };
 
 const createEvent = async (req, res) => {
-   const {
-    title,
-    description,
-    category,
-    venue,
-    startDate,
-    endDate,
-    startTime,
-    endTime,
-    ticketPrice,
-    totalTickets,
-    eventType,
-    seatMap,
-    seatVariations,
-    booths = [],
-    isFeatured
-  } = req.body;
-
-  // Use uploaded image file if exists
-  const image = req.file ? req.file.filename : req.body.image;
-
-  const requiredFields = [
-    "title",
-    "description",
-    "category",
-    "startDate",
-    "endDate",
-    "startTime",
-    "endTime",
-    "image"
-  ];
-
-  let emptyFields = [];
-
-  requiredFields.forEach((field) => {
-    if (!req.body[field] || String(req.body[field]).trim() === "") {
-      emptyFields.push(field);
-    }
-  });
-
-  // ticketPrice required only for General Admission
-  if (eventType === "General Admission" && (ticketPrice === null || ticketPrice === undefined)) {
-    emptyFields.push("ticketPrice");
-  }
-
-  // Seating Arrangement validation
-  if (eventType === "Seating Arrangement") {
-    if (!seatMap || Object.keys(seatMap).length === 0) emptyFields.push("seatMap");
-    if (!seatVariations || seatVariations.length === 0) emptyFields.push("seatVariations");
-  }
-
-  // Venue validation
-  const venueFields = ["name", "address", "city", "zipCode"];
-  let emptyVenueFields = [];
-  venueFields.forEach((field) => {
-    if (!venue || !venue[field] || String(venue[field]).trim() === "") {
-      emptyVenueFields.push(`venue.${field}`);
-    }
-  });
-
-  // Booth validation
-  let invalidBooths = [];
-  if (Array.isArray(booths)) {
-    booths.forEach((b, index) => {
-      if (!b.size || b.size.trim() === "") invalidBooths.push(`booths[${index}].size`);
-      if (b.price === undefined || b.price < 0) invalidBooths.push(`booths[${index}].price`);
-      if (!b.quantity || b.quantity < 1) invalidBooths.push(`booths[${index}].quantity`);
-    });
-  }
-
-  // Return validation errors
-  if (emptyFields.length || emptyVenueFields.length || invalidBooths.length) {
-    return res.status(400).json({
-      error: "Validation failed",
-      emptyFields,
-      emptyVenueFields,
-      invalidBooths
-    });
-  }
-
   try {
+
+    let {
+      title,
+      description,
+      category,
+      venue,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      ticketPrice,
+      totalTickets,
+      eventType,
+      seatMap,
+      seatVariations,
+      booths = [],
+      isFeatured
+    } = req.body;
+
+    // Parse JSON fields if coming from FormData
+    if (typeof venue === "string") venue = JSON.parse(venue);
+    if (typeof seatVariations === "string") seatVariations = JSON.parse(seatVariations);
+    if (typeof booths === "string") booths = JSON.parse(booths);
+    if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
+
+    // Handle uploaded image
+    const image = req.file ? req.file.filename : null;
+
+    // Required fields
+    const requiredFields = [
+      "title",
+      "description",
+      "category",
+      "startDate",
+      "endDate",
+      "startTime",
+      "endTime",
+      "image"
+    ];
+
+    let emptyFields = [];
+
+    requiredFields.forEach((field) => {
+      if (field === "image") {
+        if (!req.file) emptyFields.push("image");
+      } else if (!req.body[field] || String(req.body[field]).trim() === "") {
+        emptyFields.push(field);
+      }
+    });
+
+    // Ticket validation
+    if (eventType === "General Admission" && ticketPrice === undefined) {
+      emptyFields.push("ticketPrice");
+    }
+
+    // Seating validation
+    if (eventType === "Seating Arrangement") {
+      if (!Array.isArray(seatVariations) || seatVariations.length === 0) {
+        emptyFields.push("seatVariations");
+      }
+
+      if (seatMap && typeof seatMap !== "object") {
+        emptyFields.push("seatMap");
+      }
+    }
+
+    // Venue validation
+    const venueFields = ["name", "address", "city", "zipCode"];
+    let emptyVenueFields = [];
+
+    venueFields.forEach((field) => {
+      if (!venue || !venue[field] || String(venue[field]).trim() === "") {
+        emptyVenueFields.push(`venue.${field}`);
+      }
+    });
+
+    // Booth validation
+    let invalidBooths = [];
+
+    if (Array.isArray(booths)) {
+      booths.forEach((b, index) => {
+        if (b.size || b.price || b.quantity) {
+          if (!b.size) invalidBooths.push(`booths[${index}].size`);
+          if (b.price === undefined || b.price < 0)
+            invalidBooths.push(`booths[${index}].price`);
+          if (!b.quantity || b.quantity < 1)
+            invalidBooths.push(`booths[${index}].quantity`);
+        }
+      });
+    }
+
+    // Return validation errors
+    if (emptyFields.length || emptyVenueFields.length || invalidBooths.length) {
+      return res.status(400).json({
+        error: "Validation failed",
+        emptyFields,
+        emptyVenueFields,
+        invalidBooths
+      });
+    }
+
+    // User info
     const userId = req.user._id;
+
     let creatorModel =
       req.user.role === "superadmin"
         ? "Superadmin"
@@ -177,16 +200,24 @@ const createEvent = async (req, res) => {
         ? "Admin"
         : "Promoter";
 
+    // Auto calculate total seats if seating arrangement
     let finalTotalTickets = totalTickets;
-    if (eventType === "Seating Arrangement" && (!totalTickets || totalTickets === 0)) {
+
+    if (
+      eventType === "Seating Arrangement" &&
+      (!totalTickets || totalTickets === 0)
+    ) {
       finalTotalTickets = seatVariations ? seatVariations.length : 0;
     }
 
+    // Booth calculations
     const hasBooths = Array.isArray(booths) && booths.length > 0;
+
     const maxBooths = hasBooths
       ? booths.reduce((sum, b) => sum + Number(b.quantity), 0)
       : 0;
 
+    // Create event
     const event = await Event.create({
       title,
       description,
@@ -198,31 +229,38 @@ const createEvent = async (req, res) => {
       endTime,
       ticketPrice: Number(ticketPrice) || 0,
       totalTickets: finalTotalTickets,
-      image, // <- use uploaded file if available
+      image,
       eventType,
       seatMap: seatMap || null,
       seatVariations: seatVariations || [],
       isFeatured: isFeatured || false,
+
       booths: hasBooths
         ? booths.map((b) => ({
             size: b.size,
             price: Number(b.price),
-            quantity: Number(b.quantity),
+            quantity: Number(b.quantity)
           }))
         : [],
+
       hasBooths,
       maxBooths,
+
       createdBy: userId,
-      creatorModel,
+      creatorModel
     });
 
     res.status(201).json({ event });
+
   } catch (error) {
+
     console.error("Create Event Error:", error);
+
     res.status(500).json({
       error: "Server error while creating event",
-      message: error.message,
+      message: error.message
     });
+
   }
 };
 
@@ -295,11 +333,12 @@ const updateEvent = async (req, res) => {
       emptyFields.push("ticketPrice");
     }
 
-    // Seating Arrangement validation
     if (eventType === "Seating Arrangement") {
-      if (!seatMap || Object.keys(seatMap).length === 0) emptyFields.push("seatMap");
-      if (!seatVariations || seatVariations.length === 0) emptyFields.push("seatVariations");
-    }
+  // Seat map is optional (for future floor plan builder)
+  if (!Array.isArray(seatVariations) || seatVariations.length === 0) {
+    emptyFields.push("seatVariations");
+  }
+}
 
     // Venue validation
     const venueFields = ["name", "address", "city", "zipCode"];
@@ -313,12 +352,14 @@ const updateEvent = async (req, res) => {
     // Booth validation
     let invalidBooths = [];
     if (Array.isArray(booths)) {
-      booths.forEach((b, index) => {
-        if (!b.size || b.size.trim() === "") invalidBooths.push(`booths[${index}].size`);
-        if (b.price === undefined || b.price < 0) invalidBooths.push(`booths[${index}].price`);
-        if (!b.quantity || b.quantity < 1) invalidBooths.push(`booths[${index}].quantity`);
-      });
+  booths.forEach((b, index) => {
+    if (b.size || b.price || b.quantity) {
+      if (!b.size) invalidBooths.push(`booths[${index}].size`);
+      if (b.price === undefined || b.price < 0) invalidBooths.push(`booths[${index}].price`);
+      if (!b.quantity || b.quantity < 1) invalidBooths.push(`booths[${index}].quantity`);
     }
+  });
+}
 
     // Return validation errors
     if (emptyFields.length || emptyVenueFields.length || invalidBooths.length) {
