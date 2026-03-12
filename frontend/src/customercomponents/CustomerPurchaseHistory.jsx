@@ -207,7 +207,7 @@ export default function CustomerPurchaseHistory() {
 
     return (
         <div className="customer-history-container">
-            <div className="history-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+            <div className="history-header">
                 <h2 className="history-page-title" style={{ marginBottom: 0 }}>Purchase History</h2>
                 <button className="outlined-button" onClick={exportHistoryToPDF} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Icon icon="mdi:tray-arrow-up" width="20" />

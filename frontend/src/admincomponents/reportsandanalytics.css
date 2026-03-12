@@ -186,6 +186,16 @@
     color: var(--color-red-primary);
 }
 
+.stat-card .icon.yellow {
+    background: var(--color-yellow-quaternary);
+    color: var(--color-yellow-primary);
+}
+
+.stat-card .icon.orange {
+    background: var(--color-yellow-tertiary);
+    color: #e67e22;
+}
+
 
 /* Analytics Section */
 .analytics-grid {

@@ -8,33 +8,34 @@ const ViewReportModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     const reportStats = [
-        { label: 'Total Revenue', value: '$687,550.00', change: '+12.5%' },
-        { label: 'Active Events', value: '5', change: '+8.2%' },
-        { label: 'Total Users', value: '34', change: '+5.4%' },
-        { label: 'Pending Actions', value: '6', change: '!' },
+        { label: 'Total Events', value: '156', change: '+12.5%' },
+        { label: 'Tickets Sold', value: '12,458', change: '+8.2%' },
+        { label: 'Total Revenue', value: '$458,920', change: '+15.3%' },
+        { label: 'Active Users', value: '8,542', change: '+5.8%' },
     ];
 
     const miniStats = [
-        { label: 'Tickets Sold Today', value: '1,245' },
-        { label: 'Booths Booked', value: '85' },
-        { label: 'New Signups', value: '42' },
-        { label: 'Open Support Tickets', value: '5' },
+        { label: 'Pending Approvals', value: '8' },
+        { label: 'Booths Reserved', value: '342' },
+        { label: 'Pending Payouts', value: '$45,230' },
+        { label: 'Support Tickets', value: '12' },
     ];
 
-    const recentTransactions = [
-        { name: 'John Smith', email: 'john@techstart.com', date: '2026-02-10', amount: '$299.00', status: 'completed' },
-        { name: 'Techstart Summit 2026', email: 'Emily Blunt', date: '2026-02-10', amount: '$5,000.00', status: 'completed' },
-        { name: 'Alice Nguyen', email: 'alice@attendee.com', date: '2026-02-11', amount: '$299.00', status: 'pending' },
-        { name: 'Maria Lopez', email: 'maria@vendor.com', date: '2026-02-08', amount: '$299.00', status: 'completed' },
-        { name: 'David Kim', email: 'david@eventpro.com', date: '2026-02-07', amount: '$1,500.00', status: 'completed' },
-        { name: 'Sarah Chen', email: 'sarah@musicfest.com', date: '2026-02-06', amount: '$850.00', status: 'completed' },
+    const topSponsors = [
+        { name: 'Global Tech', event: 'AI Summit 2026', type: 'Platinum' },
+        { name: 'Nexus Corp', event: 'Creator Expo', type: 'Gold' },
+        { name: 'Startup Hub', event: 'TechStart', type: 'Silver' },
+        { name: 'Startup Hub', event: 'TechStart', type: 'Silver' },
+        { name: 'Startup Hub', event: 'TechStart', type: 'Silver' },
     ];
 
     const topPromoters = [
         { name: 'TechStart Inc', email: 'contact@techstart.com', badge: 'Top Rated' },
         { name: 'MusicFest LLC', email: 'info@musicfest.com', badge: 'Top Rated' },
         { name: 'EventPro Solutions', email: 'hello@eventpro.com', badge: 'Top Rated' },
-        { name: 'LiveEvents Co', email: 'support@liveevents.com', badge: 'Top Rated' },
+        { name: 'EventPro Solutions', email: 'hello@eventpro.com', badge: 'Top Rated' },
+        { name: 'EventPro Solutions', email: 'hello@eventpro.com', badge: 'Top Rated' },
+        { name: 'EventPro Solutions', email: 'hello@eventpro.com', badge: 'Top Rated' },
     ];
 
     const exportToPDF = async () => {
@@ -77,23 +78,21 @@ const ViewReportModal = ({ isOpen, onClose }) => {
                 y += lineHeight;
             });
 
-            // Recent Transactions Table
+            // Top Sponsors Table
             y += 4;
             pdf.setFontSize(12);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('Recent Transactions', MARGIN, y);
+            pdf.text('Top Sponsors', MARGIN, y);
             y += 14; // bottom margin after section title
             
-            const transactionHeaders = ['Name', 'Email', 'Date', 'Amount', 'Status'];
-            const transactionRows = recentTransactions.map(tx => [
-                tx.name,
-                tx.email,
-                tx.date,
-                tx.amount,
-                tx.status
+            const sponsorHeaders = ['Name', 'Event', 'Type'];
+            const sponsorRows = topSponsors.map(s => [
+                s.name,
+                s.event,
+                s.type
             ]);
-            y = drawTable(pdf, y, transactionHeaders, transactionRows, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+            y = drawTable(pdf, y, sponsorHeaders, sponsorRows, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT);
 
             // Top Promoters Table
             y += 6;
@@ -161,20 +160,16 @@ const ViewReportModal = ({ isOpen, onClose }) => {
                                 ))}
                             </div>
 
-                            <div className="report-section-text report-transactions-section">
-                                <h3>Recent Transactions</h3>
-                                <div className="report-transactions-list">
-                                    {recentTransactions.map((tx, idx) => (
-                                        <div key={idx} className="report-transaction-item">
-                                            <div className="report-transaction-left">
-                                                <h6 className="report-transaction-name">{tx.name}</h6>
-                                                <span className="small-body-text report-transaction-subtitle">{tx.email}</span>
-                                                <span className="small-body-text report-transaction-date">{tx.date}</span>
+                            <div className="report-section-text report-promoters-section">
+                                <h3>Top Sponsors</h3>
+                                <div className="report-promoters-list">
+                                    {topSponsors.map((sponsor, idx) => (
+                                        <div key={idx} className="report-promoter-item">
+                                            <div className="report-promoter-info">
+                                                <h6 className="report-promoter-name">{sponsor.name}</h6>
+                                                <span className="small-body-text report-promoter-email">{sponsor.event}</span>
                                             </div>
-                                            <div className="report-transaction-right">
-                                                <h6 className="report-transaction-amount">{tx.amount}</h6>
-                                                <span className={`button-label report-transaction-status ${tx.status}`}>{tx.status}</span>
-                                            </div>
+                                            <span className="button-label report-promoter-badge">{sponsor.type}</span>
                                         </div>
                                     ))}
                                 </div>

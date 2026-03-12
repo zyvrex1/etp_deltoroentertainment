@@ -178,10 +178,14 @@ export default function ReportsAnalytics() {
             pdf.setFontSize(10);
             pdf.setTextColor(50, 50, 50);
             pdf.setFont("helvetica", "normal");
-            pdf.text("Total Revenue: $687,550.00 (↑ 12.5%)", margin + 2, y); y += lineHeight;
-            pdf.text("Tickets Sold: 1,245 (↑ 8.2%)", margin + 2, y); y += lineHeight;
-            pdf.text("Booth Rents: 400 (↑ 5.4%)", margin + 2, y); y += lineHeight;
-            pdf.text("Total Users: 8,542 (↑ 5.4%)", margin + 2, y); y += lineHeight + 6;
+            pdf.text("Total Events: 156 (↑ 12.5%)", margin + 2, y); y += lineHeight;
+            pdf.text("Pending Approvals: 8", margin + 2, y); y += lineHeight;
+            pdf.text("Tickets Sold: 12,458 (↑ 8.2%)", margin + 2, y); y += lineHeight;
+            pdf.text("Total Revenue: $458,920 (↑ 15.3%)", margin + 2, y); y += lineHeight;
+            pdf.text("Active Users: 8,542 (↑ 5.8%)", margin + 2, y); y += lineHeight;
+            pdf.text("Booths Reserved: 342 (↑ 22.3%)", margin + 2, y); y += lineHeight;
+            pdf.text("Pending Payouts: $45,230", margin + 2, y); y += lineHeight;
+            pdf.text("Support Tickets: 12", margin + 2, y); y += lineHeight + 6;
 
             // Revenue Trends Section
             pdf.setFontSize(12);
@@ -337,30 +341,30 @@ export default function ReportsAnalytics() {
 
                 <div className="stat-card">
                     <div className="upper-stats">
-                        <span className="icon green">
-                            <Icon icon="mdi:currency-usd" width="32" />
+                        <span className="icon red">
+                            <Icon icon="mdi:calendar-blank" width="32" />
                         </span>
                         <span className="trend up">↑ 12.5%</span>
                     </div>
 
                     <div className="bottom-stats">
-                        <p className="regular-body-text">Total Revenue</p>
-                        <h3>$687,550.00</h3>
+                        <p className="regular-body-text">Total Events</p>
+                        <h3>156</h3>
                         <p className="smaller-body-text">vs last period</p>
                     </div>
                 </div>
 
                 <div className="stat-card">
                     <div className="upper-stats">
-                        <span className="icon red">
-                            <Icon icon="solar:ticket-outline" width="32" />
+                        <span className="icon yellow">
+                            <Icon icon="mdi:clock-outline" width="32" />
                         </span>
-                        <span className="trend up">↑ 8.2%</span>
+                        <span className="trend hidden"></span>
                     </div>
 
                     <div className="bottom-stats">
-                        <p className="regular-body-text">Tickets Sold</p>
-                        <h3>1,245</h3>
+                        <p className="regular-body-text">Pending Approvals</p>
+                        <h3>8</h3>
                         <p className="smaller-body-text">vs last period</p>
                     </div>
                 </div>
@@ -368,14 +372,29 @@ export default function ReportsAnalytics() {
                 <div className="stat-card">
                     <div className="upper-stats">
                         <span className="icon blue">
-                            <Icon icon="mdi:office-building-outline" width="32" />
+                            <Icon icon="mdi:ticket-outline" width="32" />
                         </span>
-                        <span className="trend up">↑ 5.4%</span>
+                        <span className="trend up">↑ 8.2%</span>
                     </div>
 
                     <div className="bottom-stats">
-                        <p className="regular-body-text">Booth Rents</p>
-                        <h3>400</h3>
+                        <p className="regular-body-text">Tickets Sold</p>
+                        <h3>12,458</h3>
+                        <p className="smaller-body-text">vs last period</p>
+                    </div>
+                </div>
+
+                <div className="stat-card">
+                    <div className="upper-stats">
+                        <span className="icon green">
+                            <Icon icon="mdi:currency-usd" width="32" />
+                        </span>
+                        <span className="trend up">↑ 15.3%</span>
+                    </div>
+
+                    <div className="bottom-stats">
+                        <p className="regular-body-text">Total Revenue</p>
+                        <h3>$458,920</h3>
                         <p className="smaller-body-text">vs last period</p>
                     </div>
                 </div>
@@ -383,14 +402,59 @@ export default function ReportsAnalytics() {
                 <div className="stat-card">
                     <div className="upper-stats">
                         <span className="icon purple">
-                            <Icon icon="mdi:account-group" width="32" />
+                            <Icon icon="mdi:account-group-outline" width="32" />
                         </span>
-                        <span className="trend up">↑ 5.4%</span>
+                        <span className="trend up">↑ 5.8%</span>
                     </div>
 
                     <div className="bottom-stats">
-                        <p className="regular-body-text">Total Users</p>
+                        <p className="regular-body-text">Active Users</p>
                         <h3>8,542</h3>
+                        <p className="smaller-body-text">vs last period</p>
+                    </div>
+                </div>
+
+                <div className="stat-card">
+                    <div className="upper-stats">
+                        <span className="icon orange">
+                            <Icon icon="mdi:map-marker-outline" width="32" />
+                        </span>
+                        <span className="trend up">↑ 22.3%</span>
+                    </div>
+
+                    <div className="bottom-stats">
+                        <p className="regular-body-text">Booths Reserved</p>
+                        <h3>342</h3>
+                        <p className="smaller-body-text">vs last period</p>
+                    </div>
+                </div>
+
+                <div className="stat-card">
+                    <div className="upper-stats">
+                        <span className="icon red">
+                            <Icon icon="mdi:currency-usd" width="32" />
+                        </span>
+                        <span className="trend hidden"></span>
+                    </div>
+
+                    <div className="bottom-stats">
+                        <p className="regular-body-text">Pending Payouts</p>
+                        <h3>$45,230</h3>
+                        <p className="smaller-body-text">vs last period</p>
+                    </div>
+                </div>
+
+                <div className="stat-card">
+                    <div className="upper-stats">
+                        <span className="icon yellow">
+                            <Icon icon="mdi:alert-outline" width="32" />
+                        </span>
+                        <span className="trend hidden"></span>
+                    </div>
+
+                    <div className="bottom-stats">
+                        <p className="regular-body-text">Support Tickets</p>
+                        <h3>12</h3>
                         <p className="smaller-body-text">vs last period</p>
                     </div>
                 </div>
@@ -407,7 +471,7 @@ export default function ReportsAnalytics() {
                         <p>Monthly revenue breakdown</p>
                     </div>
 
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="99%" height={300}>
                         <LineChart data={revenueData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
 
                             {/* Gradient Definition */}
@@ -499,7 +563,7 @@ export default function ReportsAnalytics() {
                         <p>Daily ticket sales volume</p>
                     </div>
 
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="99%" height={300}>
                         <BarChart data={ticketSalesData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-black-tertiary)" />
 
@@ -555,7 +619,7 @@ export default function ReportsAnalytics() {
                             <p>Distribution by type</p>
                         </div>
 
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer width="99%" height={300}>
                             <PieChart>
                                 <Pie
                                     data={categoryData}
