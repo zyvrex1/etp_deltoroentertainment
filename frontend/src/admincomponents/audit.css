@@ -7,27 +7,27 @@
     .audit-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
         margin-bottom: 24px;
         text-align: left;
 
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-
-        h1 {
-            margin: 0;
-            color: var(--color-black-primary);
-            align-items: baseline;
+        .header-title-group {
             display: flex;
-        }
+            flex-direction: column;
+            gap: 8px;
 
-        p {
-            color: var(--color-black-tertiary);
-            padding: 0;
-            align-items: baseline;
-            display: flex;
+            h1 {
+                margin: 0;
+                color: var(--color-black-primary);
+                align-items: baseline;
+                display: flex;
+            }
+
+            p {
+                color: var(--color-black-tertiary);
+                padding: 0;
+                margin: 0;
+            }
         }
 
         .export-btn {
@@ -173,11 +173,10 @@
 
 
 .audit-card {
-    background-color: var(--color-white-primary);
+   background-color: var(--color-white-primary);
     border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
     border: 1px solid #e5e7eb;
+    padding: 12px;
 
     .table-responsive {
         width: 100%;
@@ -196,9 +195,6 @@
                 border-bottom: 1px solid #e5e7eb;
                 color: var(--color-black-primary);
                 vertical-align: middle;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
             }
 
             th {
@@ -249,12 +245,21 @@
 
             /* Timestamp */
 
+            .action-td {
+                .mobile-expand-icon {
+                    display: none;
+                }
+            }
+
             .action-cell {
                 font-weight: 500;
                 color: var(--color-black-primary);
+                display: flex;
+                align-items: center;
+                gap: 12px;
             }
 
-            .audit-admin-cell,
+            .admin-td,
             .target-cell {
                 color: var(--color-black-primary);
             }
@@ -323,9 +328,27 @@
 
 
 /* Responsive Styles */
+@media (max-width: 1024px) {
+    .audit-container {
+        padding: 24px;
+
+        .audit-card {
+            .table-responsive {
+                .audit-table {
+
+                    th,
+                    td {
+                        padding: 12px 16px;
+                    }
+                }
+            }
+        }
+    }
+}
+
 @media (max-width: 768px) {
     .audit-container {
-        padding: 16px;
+        padding: 12px ;
     }
 
     .audit-header {
@@ -363,31 +386,155 @@
     .audit-table td {
         padding: 12px 16px;
     }
+
+.audit-card {
+            padding: 12px !important;
+
+    .table-responsive {
+        .audit-table {
+            
+            thead {
+                display: none;
+            }
+
+            tbody {
+                tr {
+                    display: block;
+                    border: 1px solid var(--color-black-quaternary);
+                    border-radius: 8px;
+                    margin-bottom: 12px;
+                    padding: 16px ;
+
+                    &:last-child {
+                        margin-bottom: 0;
+                    }
+
+                    &:not(.expanded) td:not(.action-td):not(.admin-td) {
+                        display: none;
+                    }
+                }
+
+                td {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    padding: 12px 0;
+                    border-bottom: 1px solid var(--color-black-quaternary);
+
+                    &:last-child {
+                        border-bottom: none;
+                    }
+
+                    &::before {
+                        content: attr(data-label);
+                        color: var(--color-black-primary);
+                        text-align: left;
+                    }
+
+                    /* ⭐ ACTION ROW (like id-td sa payments) */
+                    &.action-td {
+                        justify-content: flex-start;
+                        flex-wrap: nowrap;
+                        border-bottom: none;
+                        padding-bottom: 4px;
+
+                        .mobile-expand-icon {
+                            order: 1;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 24px;
+                            height: 24px;
+                            border-radius: 50%;
+                            color: var(--color-black-primary);
+                            font-size: 16px;
+                            cursor: pointer;
+                            flex-shrink: 0;
+                        }
+
+                        &::before {
+                            order: 2;
+                            margin-left: 12px;
+                            margin-right: auto;
+                        }
+
+                        .action-cell {
+                            order: 3;
+                            margin-left: auto;
+                            text-align: right;
+
+                            .action-text {
+                                margin-bottom: 0;
+                            }
+                        }
+                    }
+
+                    &.admin-td {
+                        padding-top: 4px;
+                        border-bottom: none;
+                    }
+
+                    /* ⭐ NON-ACTION CELLS — follow payment layout */
+                    &:not(.action-td):not(.admin-td) {
+                        text-align: right;
+                        justify-content: space-between;
+
+                        > * {
+                            max-width: 60% !important;
+                            text-align: right;
+                            white-space: normal;
+                        }
+                    }
+                }
+
+                tr.expanded td.admin-td {
+                    border-bottom: 1px solid var(--color-black-quaternary);
+                    padding-bottom: 12px;
+                }
+            }
+
+             th,
+                td {
+                    width: auto !important;   /* ⭐ hard reset */
+                    max-width: none !important;
+                }
+        }
+    }
+}
 }
 
 @media (max-width: 480px) {
     .audit-container {
-        padding: 12px;
+        padding: 12px !important;
     }
 
-    .audit-card .table-responsive {
-        border-radius: 8px;
-        overflow-x: auto;
-        /* Ensure horizontal scroll */
-        -webkit-overflow-scrolling: touch;
-    }
+    .audit-card {
+                    padding: 10px !important;
 
-    .audit-card .table-responsive .audit-table {
-        table-layout: auto;
-        /* Disable fixed layout on mobile to allow expansion */
-        min-width: 600px;
-        /* Force minimum width to trigger scroll */
-    }
+        .table-responsive {
+            .audit-table {
+                tbody {
+                    tr {
+                        padding: 12px !important;
+                    }
 
-    /* Reset fixed widths on mobile */
-    .audit-card .table-responsive .audit-table th:nth-child(n),
-    .audit-card .table-responsive .audit-table td:nth-child(n) {
-        width: auto;
-        white-space: nowrap;
+                    td {
+                        padding: 8px 0 !important;
+
+                        &.action-td {
+                            .mobile-expand-icon {
+                                width: 20px;
+                                height: 20px;
+                                font-size: 14px;
+                            }
+
+                            &::before {
+                                margin-left: 8px;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -97,7 +97,7 @@ export function removeExportToast(toast) {
  * @param {number} customPaddingY - Padding above text
  * @returns {number} - Final Y position after table
  */
-export function drawTable(pdf, startY, headers, rows, margin, pdfWidth, pdfHeight, footerHeight, customRowHeight = 7, customPaddingY = 3) {
+export function drawTable(pdf, startY, headers, rows, margin, pdfWidth, pdfHeight, footerHeight, customRowHeight = 10, customPaddingY = 3) {
     const colWidths = [];
     const totalWidth = pdfWidth - 2 * margin;
     const numCols = headers.length;

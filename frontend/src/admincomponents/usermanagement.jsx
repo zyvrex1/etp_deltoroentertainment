@@ -18,7 +18,7 @@ const UserManagement = () => {
   const [activeTab, setActiveTab] = useState("all-users");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 7;
 
   const fetchUsers = async () => {
     if (!user?.token) return;

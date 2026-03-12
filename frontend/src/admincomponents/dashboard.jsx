@@ -97,7 +97,7 @@ export default function Dashboard() {
 
             <div className="stats-grid-wrapper">
                 <div className="stats-grid">
-                    <div className="stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon red"><Icon icon="mdi:calendar-blank" width="24" /></span>
                             <span className="trend up"><Icon icon="mdi:trending-up" /> 12.5%</span>
@@ -108,7 +108,7 @@ export default function Dashboard() {
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                    <div className="stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon yellow"><Icon icon="mdi:clock-outline" width="24" /></span>
                             <span className="trend hidden"></span>
@@ -119,7 +119,7 @@ export default function Dashboard() {
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                    <div className="stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon blue"><Icon icon="mdi:ticket-outline" width="24" /></span>
                             <span className="trend up"><Icon icon="mdi:trending-up" /> 8.2%</span>
@@ -130,7 +130,7 @@ export default function Dashboard() {
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                    <div className="stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon green"><Icon icon="mdi:currency-usd" width="24" /></span>
                             <span className="trend up"><Icon icon="mdi:trending-up" /> 15.3%</span>
@@ -141,7 +141,7 @@ export default function Dashboard() {
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                    <div className="stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon purple"><Icon icon="mdi:account-group-outline" width="24" /></span>
                             <span className="trend up"><Icon icon="mdi:trending-up" /> 5.8%</span>
@@ -152,7 +152,7 @@ export default function Dashboard() {
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                    <div className="stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon orange"><Icon icon="mdi:map-marker-outline" width="24" /></span>
                             <span className="trend up"><Icon icon="mdi:trending-up" /> 22.3%</span>
@@ -163,7 +163,7 @@ export default function Dashboard() {
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                    <div className="stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon red"><Icon icon="mdi:currency-usd" width="24" /></span>
                             <span className="trend hidden"></span>
@@ -174,7 +174,7 @@ export default function Dashboard() {
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                    <div className="stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon yellow"><Icon icon="mdi:alert-outline" width="24" /></span>
                             <span className="trend hidden"></span>

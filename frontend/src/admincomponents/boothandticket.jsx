@@ -16,7 +16,7 @@ const BoothandTicket = () => {
   const [isPricingModalOpen, setIsPricingModalOpen] = useState({ isOpen: false, type: 'booth' });
   const [isSetupLayoutOpen, setIsSetupLayoutOpen] = useState(false);
   const [isSeatLayoutOpen, setIsSeatLayoutOpen] = useState(false);
-  const itemsPerPage = 10;
+  const itemsPerPage = 7;
 
   // Booth Map: 5x5 grid (5 columns, 5 rows). Each cell: null (empty) or { code, type, status, dimensions, bookedBy? }
   const boothGrid = [
@@ -25,6 +25,7 @@ const BoothandTicket = () => {
     [null, null, null, { code: "I2", type: "inline", status: "booked", dimensions: "10x10", bookedBy: "TechStart Inc" }, null],
     [null, null, null, null, null],
     [null, null, null, null, null],
+    
   ];
 
   // Seat Map: type 'vip' | 'standard', status 'available' | 'booked', optional bookedBy
@@ -63,6 +64,7 @@ const BoothandTicket = () => {
     { id: 22, name: "Wendy Hill", details: "General Admission • Row B, Seat 11", tag: "SEATS", time: "9:52 AM", entrance: "Main Entrance", icon: "mdi:account-outline" },
     { id: 23, name: "Xavier Scott", details: "Standard • Row D, Seat 6", tag: "SEATS", time: "9:50 AM", entrance: "Side Entrance", icon: "mdi:account-outline" },
     { id: 24, name: "Yara Green", details: "Corner Booth • Booth 215", tag: "BOOTH", time: "9:48 AM", entrance: "Main Entrance", icon: "mdi:office-building-outline" },
+   
     { id: 25, name: "Zachary Adams", details: "VIP • Row A, Seat 1", tag: "SEATS", time: "9:45 AM", entrance: "Main Entrance", icon: "mdi:account-outline" },
   ];
 

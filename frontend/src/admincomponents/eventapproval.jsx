@@ -32,6 +32,24 @@ const EventApproval = () => {
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [showRejectionModal, setShowRejectionModal] = useState(false);
+    const [expandedRow, setExpandedRow] = useState(null);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 7;
+
+    const totalPages = Math.ceil(events.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedEvents = events.slice(startIndex, startIndex + itemsPerPage);
+
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+    const toggleRow = (id) => {
+        setExpandedRow(expandedRow === id ? null : id);
+    };
 
     const getInitials = (name) => {
         return name
@@ -103,7 +121,7 @@ const EventApproval = () => {
             <div className="event-approval-header">
                 <div>
                     <h1>Event Approvals</h1>
-                    <p>Review and approve incoming event requests.</p>
+                    <p className="large-body-text">Review and approve incoming event requests.</p>
                 </div>
             </div>
 
@@ -120,17 +138,23 @@ const EventApproval = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {events.length > 0 ? (
-                                events.map((event) => (
-                                    <tr key={event.id}>
-                                        <td data-label="Event Name">
+                            {paginatedEvents.length > 0 ? (
+                                paginatedEvents.map((event) => (
+                                    <tr 
+                                        key={event.id} 
+                                        className={expandedRow === event.id ? 'expanded' : ''}
+                                    >
+                                        <td data-label="Event Name" className="event-name-td">
+                                            <div className="mobile-expand-icon" onClick={() => toggleRow(event.id)}>
+                                                <Icon icon={expandedRow === event.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                            </div>
                                             <div className="event-name-cell">
                                                 <div className="event-avatar">
                                                     {getInitials(event.name)}
                                                 </div>
                                                 <div className="event-name-info">
                                                     <h6 className="event-name">{event.name}</h6>
-                                                    <div className="small-body-text event-category">{event.category}</div>
+                                                    <div className="smaller-body-text event-category">{event.category}</div>
                                                 </div>
                                             </div>
                                         </td>
@@ -172,13 +196,37 @@ const EventApproval = () => {
                             ) : (
                                 <tr>
                                     <td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>
-                                        No events found.
+                                        <p className="regular-body-text">No events found.</p>
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="pagination">
+                        <button
+                            className="pagination-btn"
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </button>
+
+                        <span className="pagination-info">
+                            Page {currentPage} of {totalPages}
+                        </span>
+
+                        <button
+                            className="pagination-btn"
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
 
             {showReviewModal && selectedEvent && (

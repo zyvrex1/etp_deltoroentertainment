@@ -2,13 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import "./transaction.css";
 import ViewTransactionModal from "./Modal/ViewTransactionModal";
+import jsPDF from "jspdf";
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from './utils/pdfExport';
 
 const TransactionMonitoring = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState("all");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const itemsPerPage = 5;
+  const itemsPerPage = 7;
 
   const filterOptions = [
     { value: "all", label: "All Transactions" },
@@ -32,7 +34,7 @@ const TransactionMonitoring = () => {
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-    };
+    }
   }, [isDropdownOpen]);
 
   const getFilterLabel = () => {
@@ -107,14 +109,39 @@ const TransactionMonitoring = () => {
       date: "Jul 5, 2025",
       filterType: "ticket",
     },
+    {
+      id: 7,
+      user: "Liam Anderson",
+      event: "Summer Music Festival",
+      type: "Ticket Purchase",
+      category: "Standard",
+      amount: "$120.00",
+      status: "completed",
+      date: "Jul 5, 2025",
+      filterType: "ticket",
+    },
+    {
+      id: 8,
+      user: "Liam Anderson",
+      event: "Summer Music Festival",
+      type: "Ticket Purchase",
+      category: "Standard",
+      amount: "$120.00",
+      status: "completed",
+      date: "Jul 5, 2025",
+      filterType: "ticket",
+    },
   ]);
 
+  const [expandedRow, setExpandedRow] = useState(null);
+  const toggleRow = (id) => {
+    setExpandedRow(expandedRow === id ? null : id);
+  };
+
   const handleRefund = (transactionId) => {
-    setTransactions(prevTransactions =>
-      prevTransactions.map(tx =>
-        tx.id === transactionId
-          ? { ...tx, status: 'refunded' }
-          : tx
+    setTransactions((prevTransactions) =>
+      prevTransactions.map((tx) =>
+        tx.id === transactionId ? { ...tx, status: "refunded" } : tx
       )
     );
   };
@@ -165,6 +192,54 @@ const TransactionMonitoring = () => {
     setIsModalOpen(true);
   };
 
+  const handleExportReport = async () => {
+    const loadingToast = showExportToast();
+    try {
+        const logoData = await loadLogo();
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 15;
+        const FOOTER_HEIGHT = 15;
+        let y = 45;
+
+        addReportHeader(pdf, 'Transactions Report', logoData);
+
+        pdf.setFontSize(12);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Real-time view of all financial activities.', margin, y);
+        y += 8;
+
+        const tableColumn = ["ID", "User", "Event", "Type", "Category", "Amount", "Status", "Date"];
+        const tableRows = transactions.map((tx) => [
+            `#${tx.id.toString().padStart(2, "0")}`,
+            tx.user,
+            tx.event,
+            tx.type,
+            tx.category,
+            tx.amount,
+            tx.status,
+            tx.date,
+        ]);
+
+        y = drawTable(pdf, y, tableColumn, tableRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+
+        y += 4;
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`Report generated from Transaction Monitoring. ${transactions.length} entries.`, margin, y, { maxWidth: pdfWidth - 2 * margin });
+
+        addReportFooter(pdf, 1, 1);
+        pdf.save(`Transaction_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Failed to generate PDF. Please try again.');
+    } finally {
+        removeExportToast(loadingToast);
+    }
+  };
+
   const getStatusClass = (status) => {
     if (status === "completed") return "button-label tx-status-completed";
     if (status === "pending") return "button-label tx-status-pending";
@@ -175,12 +250,9 @@ const TransactionMonitoring = () => {
   const getCategoryClass = (category) => {
     if (category === "VIP" || category === "VIP Booth")
       return "button-label tx-category-vip";
-    if (category === "Corner Booth")
-      return "button-label tx-category-corner";
-    if (category === "Inline Booth")
-      return "button-label tx-category-inline";
-    if (category === "Standard")
-      return "button-label tx-category-standard";
+    if (category === "Corner Booth") return "button-label tx-category-corner";
+    if (category === "Inline Booth") return "button-label tx-category-inline";
+    if (category === "Standard") return "button-label tx-category-standard";
     return "tx-category";
   };
 
@@ -189,12 +261,12 @@ const TransactionMonitoring = () => {
       <div className="transaction-header">
         <div>
           <h1>Transaction Monitoring</h1>
-          <p>Real-time view of all financial activities.</p>
+          <p className="large-body-text">Real-time view of all financial activities.</p>
         </div>
         <div className="tx-header-actions">
-          <button className="outlined-button export-btn">
+          <button className="outlined-button export-btn" onClick={handleExportReport}>
             <Icon icon="mdi:tray-arrow-down" />
-            Export CSV
+            Export Report
           </button>
         </div>
       </div>
@@ -233,8 +305,9 @@ const TransactionMonitoring = () => {
                   {filterOptions.map((option) => (
                     <button
                       key={option.value}
-                      className={`tx-filter-dropdown-item ${activeFilter === option.value ? "active" : ""
-                        }`}
+                      className={`tx-filter-dropdown-item ${
+                        activeFilter === option.value ? "active" : ""
+                      }`}
                       onClick={() => handleFilterChange(option.value)}
                     >
                       {option.label}
@@ -263,23 +336,38 @@ const TransactionMonitoring = () => {
             </thead>
             <tbody>
               {paginatedTransactions.map((tx) => (
-                <tr key={tx.id}>
-                  <td className="small-body-text" data-label="ID">#{tx.id.toString().padStart(2, "0")}</td>
-                  <td className="regular-body-text" data-label="User">{tx.user}</td>
-                  <td className="small-body-text" data-label="Event">{tx.event}</td>
-                  <td className="small-body-text" data-label="Type">{tx.type}</td>
+                <tr key={tx.id} className={expandedRow === tx.id ? "expanded" : ""}>
+                  <td className="small-body-text id-td" data-label="ID">
+                    <div className="mobile-expand-icon" onClick={() => toggleRow(tx.id)}>
+                      <Icon icon={expandedRow === tx.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                    </div>
+                    <span>#{tx.id.toString().padStart(2, "0")}</span>
+                  </td>
+                  <td className="regular-body-text name-td" data-label="User">
+                    {tx.user}
+                  </td>
+                  <td className="small-body-text" data-label="Event">
+                    {tx.event}
+                  </td>
+                  <td className="small-body-text" data-label="Type">
+                    {tx.type}
+                  </td>
                   <td data-label="Category">
                     <span className={getCategoryClass(tx.category)}>
                       {tx.category}
                     </span>
                   </td>
-                  <td className="regular-body-text amount" data-label="Amount">{tx.amount}</td>
+                  <td className="regular-body-text amount" data-label="Amount">
+                    {tx.amount}
+                  </td>
                   <td data-label="Status">
                     <span className={getStatusClass(tx.status)}>
                       {tx.status}
                     </span>
                   </td>
-                  <td className="small-body-text" data-label="Date">{tx.date}</td>
+                  <td className="small-body-text" data-label="Date">
+                    {tx.date}
+                  </td>
                   <td data-label="Actions">
                     <button
                       className="tx-view-btn"

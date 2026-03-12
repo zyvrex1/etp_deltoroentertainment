@@ -69,7 +69,7 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 16px;
 
-            .stat-card {
+            .dashboard-stat-card {
                 background: var(--color-white-primary);
                 padding: 16px;
                 border-radius: 12px;
@@ -822,40 +822,41 @@
             min-width: 0;
         }
 
-        .stat-card {
+        .dashboard-stat-card {
             align-items: center;
             text-align: center;
             padding: 14px !important;
-        }
 
-        .stat-card .upper-stats {
+            .upper-stats {
             justify-content: center;
             margin-bottom: 8px;
         }
 
-        .stat-card .trend {
+        .trend {
             display: none !important;
             /* optional kung gusto mo clean look */
         }
 
-        .stat-card .bottom-stats {
+        .bottom-stats {
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
 
-        .stat-card .bottom-stats p {
+            p {
             text-align: center !important;
         }
 
-        .stat-card .bottom-stats h3 {
+        h3 {
             text-align: center !important;
             font-size: 18px;
         }
 
-        .stat-card .view-details {
+.view-details {
             display: none !important;
             /* kadalasan tinatago sa mobile dashboards */
+        }
+
+        }
         }
 
 

@@ -47,6 +47,20 @@ const SupportDisputes = () => {
             user: 'Lisa Wang',
             status: 'in-progress',
             created: 'Oct 1, 2024'
+        },
+                {
+            id: 7,
+            subject: 'Booth Size Question',
+            user: 'Lisa Wang',
+            status: 'in-progress',
+            created: 'Oct 1, 2024'
+        },
+                {
+            id: 8,
+            subject: 'Booth Size Question',
+            user: 'Lisa Wang',
+            status: 'in-progress',
+            created: 'Oct 1, 2024'
         }
     ]);
 
@@ -64,11 +78,16 @@ const SupportDisputes = () => {
     };
 
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 7;
 
     const totalPages = Math.ceil(tickets.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedTickets = tickets.slice(startIndex, startIndex + itemsPerPage);
+
+    const [expandedRow, setExpandedRow] = useState(null);
+    const toggleRow = (id) => {
+        setExpandedRow(expandedRow === id ? null : id);
+    };
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -99,18 +118,26 @@ const SupportDisputes = () => {
     };
 
     return (
-        <div className="support-container">
-            {/* Header */}
+        <div className="support-page">
             <div className="support-header">
                 <div>
                     <h1>Support & Disputes</h1>
-                    <p>Manage user support tickets and resolve disputes.</p>
+                    <p className="large-body-text">Manage user support tickets and resolve disputes.</p>
                 </div>
             </div>
 
-            {/* Stats Cards */}
             <div className="support-stats-grid">
-                <div className="stat-card">
+                <div className="support-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Total Tickets</span>
+                        <div className="stat-value">{tickets.length}</div>
+                    </div>
+                    <div className="stat-icon icon-blue">
+                        <Icon icon="mdi:ticket-outline" />
+                    </div>
+                </div>
+
+                <div className="support-stat-card">
                     <div className="stat-info">
                         <span className="stat-label">Open Tickets</span>
                         <div className="stat-value">{tickets.filter(t => t.status === 'open').length}</div>
@@ -120,7 +147,7 @@ const SupportDisputes = () => {
                     </div>
                 </div>
 
-                <div className="stat-card">
+                <div className="support-stat-card">
                     <div className="stat-info">
                         <span className="stat-label">In Progress</span>
                         <div className="stat-value">{tickets.filter(t => t.status === 'in-progress').length}</div>
@@ -130,7 +157,7 @@ const SupportDisputes = () => {
                     </div>
                 </div>
 
-                <div className="stat-card">
+                <div className="support-stat-card">
                     <div className="stat-info">
                         <span className="stat-label">Resolved</span>
                         <div className="stat-value">{tickets.filter(t => t.status === 'resolved').length}</div>
@@ -141,14 +168,14 @@ const SupportDisputes = () => {
                 </div>
             </div>
 
-            {/* Tickets Table */}
-            <div className="support-tickets-card">
-                <div className="table-responsive">
-                    <table className="tickets-table">
+            <div className="support-content">
+                <div className="table-wrapper">
+                    <table className="data-table">
                         <thead>
                             <tr>
-                                <th>Subject</th>
+                                <th>ID</th>
                                 <th>User</th>
+                                <th>Subject</th>
                                 <th>Status</th>
                                 <th>Created</th>
                                 <th>Actions</th>
@@ -156,14 +183,20 @@ const SupportDisputes = () => {
                         </thead>
                         <tbody>
                             {paginatedTickets.map((ticket) => (
-                                <tr key={ticket.id}>
-                                    <td className="subject-cell">
+                                <tr key={ticket.id} className={expandedRow === ticket.id ? "expanded" : ""}>
+                                    <td className="small-body-text id-td" data-label="ID">
+                                        <div className="mobile-expand-icon" onClick={() => toggleRow(ticket.id)}>
+                                            <Icon icon={expandedRow === ticket.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                        </div>
+                                        <span>#{ticket.id.toString().padStart(2, "0")}</span>
+                                    </td>
+                                    <td className="regular-body-text name-td" data-label="User">{ticket.user}</td>
+                                    <td className="subject-cell" data-label="Subject">
                                         <span className="subject-text">{ticket.subject}</span>
                                     </td>
-                                    <td className="regular-body-text support-user-cell">{ticket.user}</td>
-                                    <td className="status-cell">{getStatusBadge(ticket.status)}</td>
-                                    <td className="small-body-text created-cell">{ticket.created}</td>
-                                    <td className="actions-cell">
+                                    <td className="status-cell" data-label="Status">{getStatusBadge(ticket.status)}</td>
+                                    <td className="small-body-text created-cell" data-label="Created">{ticket.created}</td>
+                                    <td className="actions-cell" data-label="Actions">
                                         <button
                                             className="outlined-button view-btn"
                                             onClick={() => handleViewTicket(ticket)}
@@ -177,7 +210,6 @@ const SupportDisputes = () => {
                     </table>
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="pagination">
                         <button

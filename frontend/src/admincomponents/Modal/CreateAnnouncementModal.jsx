@@ -1,6 +1,6 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
-import './CreateAnnouncementModal.css';
+import './ManagePolicyModal.css';
 import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from '../utils/sweetAlert';
 
 const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {

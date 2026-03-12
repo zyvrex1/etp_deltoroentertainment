@@ -4,7 +4,8 @@ import './content.css';
 import { Icon } from "@iconify/react";
 import CreateAnnouncementModal from './Modal/CreateAnnouncementModal';
 import EditAnnouncementModal from './Modal/EditAnnouncementModal';
-import ManagePolicyModal from './Modal/ManagePolicyModal';
+import EditPolicyModal from './Modal/EditPolicyModal';
+import CreatePolicyModal from './Modal/CreatePolicyModal';
 import { showDeleteConfirmAlert, showSuccessAlert } from './utils/sweetAlert';
 
 const ContentManager = () => {
@@ -56,6 +57,7 @@ const ContentManager = () => {
 
     const [selectedPolicy, setSelectedPolicy] = useState(null);
     const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
+    const [isCreatePolicyModalOpen, setIsCreatePolicyModalOpen] = useState(false);
 
     const handleSaveAnnouncement = (newAnnouncement) => {
         const announcement = {
@@ -103,6 +105,30 @@ const ContentManager = () => {
         setSelectedPolicy(null);
     };
 
+    const handleCreatePolicy = (newPolicy) => {
+        setPolicies([
+            ...policies,
+            { ...newPolicy, icon: <FaFileContract /> }
+        ]);
+        setIsCreatePolicyModalOpen(false);
+    };
+
+    const handleDeletePolicy = async (policy) => {
+        const result = await showDeleteConfirmAlert(
+            'Delete Policy',
+            `Are you sure you want to delete "${policy.title}"? This action cannot be undone.`
+        );
+        
+        if (result.isConfirmed) {
+            try {
+                setPolicies(policies.filter(p => p.id !== policy.id));
+                await showSuccessAlert('Deleted!', 'The policy has been deleted successfully.');
+            } catch (error) {
+                console.error('Error deleting policy:', error);
+            }
+        }
+    };
+
     const formatDate = (dateString) => {
         if (!dateString) return '';
         const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -116,17 +142,18 @@ const ContentManager = () => {
                     <h1>Content Management</h1>
                     <p>Manage platform announcements and static content</p>
                 </div>
-                <div className="content-actions">
-                    <button className="primary-button" onClick={() => setIsAnnouncementModalOpen(true)}>
-                        <Icon icon="mdi:plus" /> New Announcement
-                    </button>
-                </div>
+
             </div>
 
 
             <div className="content-grid">
                 <div className="content-card announcements-card">
-                    <h3>Announcements</h3>
+                    <div className="card-header-with-action">
+                        <h3>Announcements</h3>
+                        <button className="add-icon-btn" onClick={() => setIsAnnouncementModalOpen(true)} aria-label="New Announcement">
+                            <Icon icon="mdi:plus" />
+                        </button>
+                    </div>
                     <div className="announcement-list">
                         {announcements.map((announcement) => (
                             <div className="announcement-item" key={announcement.id}>
@@ -161,19 +188,43 @@ const ContentManager = () => {
                 </div>
 
                 <div className="content-card legal-card">
-                    <h3>Legal & Policies</h3>
+                    <div className="card-header-with-action">
+                        <h3>Legal & Policies</h3>
+                        <button className="add-icon-btn" onClick={() => setIsCreatePolicyModalOpen(true)} aria-label="New Policy">
+                            <Icon icon="mdi:plus" />
+                        </button>
+                    </div>
                     <div className="legal-list">
                         {policies.map(policy => (
-                            <button
-                                key={policy.id}
-                                className="legal-item"
-                                onClick={() => handleOpenPolicyModal(policy)}
-                            >
-                                <div className="legal-icon">
-                                    {policy.icon}
+                            <div className="legal-item-container" key={policy.id}>
+                                <div className="legal-header">
+                                    <div className="legal-header-left">
+                                        <div className="legal-icon">
+                                            {policy.icon}
+                                        </div>
+                                        <h5>{policy.title}</h5>
+                                    </div>
+                                    <div className="legal-header-right">
+                                        <span className="small-body-text legal-date">{policy.lastUpdated}</span>
+                                        <div className="legal-actions">
+                                            <button
+                                                className="legal-action-btn"
+                                                onClick={() => handleOpenPolicyModal(policy)}
+                                                aria-label="Edit policy"
+                                            >
+                                                <Icon icon="mdi:edit" width="18" />
+                                            </button>
+                                            <button
+                                                className="legal-action-btn delete"
+                                                onClick={(e) => { e.stopPropagation(); handleDeletePolicy(policy); }}
+                                                aria-label="Delete policy"
+                                            >
+                                                <Icon icon="mdi:delete" width="18" />
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <h6>{policy.title}</h6>
-                            </button>
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -191,11 +242,17 @@ const ContentManager = () => {
                 announcement={editingAnnouncement}
             />
 
-            <ManagePolicyModal
+            <EditPolicyModal
                 isOpen={isPolicyModalOpen}
                 policy={selectedPolicy}
                 onClose={() => setIsPolicyModalOpen(false)}
                 onSave={handleSavePolicy}
+            />
+
+            <CreatePolicyModal
+                isOpen={isCreatePolicyModalOpen}
+                onClose={() => setIsCreatePolicyModalOpen(false)}
+                onSave={handleCreatePolicy}
             />
         </div>
     );

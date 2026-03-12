@@ -8,7 +8,7 @@ import PaymentRejectionModal from "./Modal/PaymentRejectionModal";
 const Payments = () => {
   const [activeTab, setActiveTab] = useState("payout-requests");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 7;
 
   const [payoutRequests, setPayoutRequests] = useState([
     { id: 1, promoter: "Sarah Chen", amount: "$15,240.00", method: "Wire Transfer", status: "pending", requested: "Oct 1, 2024" },
@@ -17,6 +17,10 @@ const Payments = () => {
     { id: 4, promoter: "James Wilson", amount: "$5,000.00", method: "Wire Transfer", status: "pending", requested: "Oct 20, 2024" },
     { id: 5, promoter: "Sarah Chen", amount: "$10,000.00", method: "Wire Transfer", status: "processing", requested: "Oct 22, 2024" },
     { id: 6, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
+     { id: 7, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
+    { id: 8, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
+
+ 
   ]);
 
   const [selectedPayout, setSelectedPayout] = useState(null);
@@ -35,6 +39,11 @@ const Payments = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = tableData.slice(startIndex, startIndex + itemsPerPage);
 
+  const [expandedRow, setExpandedRow] = useState(null);
+  const toggleRow = (id) => {
+    setExpandedRow(expandedRow === id ? null : id);
+  };
+
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
@@ -42,6 +51,7 @@ const Payments = () => {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setCurrentPage(1);
+    setExpandedRow(null);
   };
 
   const handleApprove = async (id, promoter, amount) => {
@@ -73,7 +83,6 @@ const Payments = () => {
     }
 
     try {
-      // Here you would typically send the rejection reason to your API
       setPayoutRequests(prev => 
         prev.map(req => req.id === selectedPayout.id ? { ...req, status: "rejected", rejectionReason } : req)
       );
@@ -99,14 +108,14 @@ const Payments = () => {
       <div className="payments-header">
         <div>
           <h1>Payments & Payouts</h1>
-          <p>Manage promoter payouts and platform payment settings.</p>
+          <p className="large-body-text">Manage promoter payouts and platform payment settings.</p>
         </div>
       </div>
 
       <div className="payments-cards">
         <div className="pay-card pay-card-pending">
           <p className="regular-body-text pay-card-title">Pending Payouts</p>
-          <h3 className="pay-card-amount">$15,240.00</h3>
+          <h4 className="pay-card-amount">$15,240.00</h4>
           <span className="small-body-text pay-card-meta">
             <Icon icon="mdi:file-document-outline" />
             3 requests waiting
@@ -114,7 +123,7 @@ const Payments = () => {
         </div>
         <div className="pay-card pay-card-total">
           <p className="regular-body-text pay-card-title">Total Paid (YTD)</p>
-          <h3 className="pay-card-amount">$450,000.00</h3>
+          <h4 className="pay-card-amount">$450,000.00</h4>
           <span className="small-body-text pay-card-meta pay-card-meta-success">
             <Icon icon="mdi:check-circle" />
             All processed successfully
@@ -144,6 +153,7 @@ const Payments = () => {
               <>
                 <thead>
                   <tr>
+                    <th>ID</th>
                     <th>Promoter</th>
                     <th>Amount</th>
                     <th>Method</th>
@@ -154,8 +164,14 @@ const Payments = () => {
                 </thead>
                 <tbody>
                   {paginatedData.map((row) => (
-                    <tr key={row.id}>
-                      <td data-label="Promoter" className="regular-body-text">{row.promoter}</td>
+                    <tr key={row.id} className={expandedRow === row.id ? "expanded" : ""}>
+                      <td className="small-body-text id-td" data-label="ID">
+                        <div className="mobile-expand-icon" onClick={() => toggleRow(row.id)}>
+                          <Icon icon={expandedRow === row.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                        </div>
+                        <span>#{row.id.toString().padStart(2, "0")}</span>
+                      </td>
+                      <td data-label="Promoter" className="regular-body-text name-td">{row.promoter}</td>
                       <td data-label="Amount" className="regular-body-text pay-amount">{row.amount}</td>
                       <td data-label="Method" className="small-body-text">{row.method}</td>
                       <td data-label="Status">
@@ -190,6 +206,7 @@ const Payments = () => {
               <>
                 <thead>
                   <tr>
+                    <th>ID</th>
                     <th>Promoter</th>
                     <th>Event</th>
                     <th>Amount</th>
@@ -200,15 +217,21 @@ const Payments = () => {
                 </thead>
                 <tbody>
                   {paginatedData.map((row) => (
-                    <tr key={row.id}>
-                      <td data-label="Promoter">{row.promoter}</td>
-                      <td data-label="Event">{row.event}</td>
-                      <td data-label="Amount" className="pay-amount">{row.amount}</td>
-                      <td data-label="Method">{row.method}</td>
+                    <tr key={row.id} className={expandedRow === row.id ? "expanded" : ""}>
+                      <td className="small-body-text id-td" data-label="ID">
+                        <div className="mobile-expand-icon" onClick={() => toggleRow(row.id)}>
+                          <Icon icon={expandedRow === row.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                        </div>
+                        <span>#{row.id.toString().padStart(2, "0")}</span>
+                      </td>
+                      <td data-label="Promoter" className="regular-body-text name-td">{row.promoter}</td>
+                      <td data-label="Event" className="small-body-text">{row.event}</td>
+                      <td data-label="Amount" className="pay-amount regular-body-text">{row.amount}</td>
+                      <td data-label="Method" className="small-body-text">{row.method}</td>
                       <td data-label="Status">
                         <span className={getStatusClass(row.status)}>{row.status}</span>
                       </td>
-                      <td data-label="Date">{row.date}</td>
+                      <td data-label="Date" className="small-body-text">{row.date}</td>
                     </tr>
                   ))}
                 </tbody>

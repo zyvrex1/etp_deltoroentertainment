@@ -4,25 +4,20 @@ import { Icon } from "@iconify/react";
 import jsPDF from "jspdf";
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from "./utils/pdfExport";
 import {
-    LineChart,
-    Line,
     XAxis,
     YAxis,
     CartesianGrid,
-    Tooltip,
+    Tooltip as RechartsTooltip,
     ResponsiveContainer,
-    BarChart,
-    Bar,
     PieChart,
     Pie,
     Cell,
+    AreaChart,
+    Area
 } from "recharts";
 import DateRangePicker from "./DateRangePicker";
 
-
 export default function ReportsAnalytics() {
-    const [activeDropdown, setActiveDropdown] = useState(null);
-    const [activeEvent, setActiveEvent] = useState("all");
     const [dateRange, setDateRange] = useState(() => {
         const now = new Date();
         const start = new Date(now);
@@ -30,129 +25,45 @@ export default function ReportsAnalytics() {
         return { preset: "last7", presetLabel: "Last 7 days", start, end: new Date(now) };
     });
 
-    const eventOptions = [
-        { label: "All Events", value: "all" },
-        { label: "Tech Expo 2026", value: "tech" },
-        { label: "Startup Summit", value: "startup" },
-        { label: "Music Festival", value: "music" },
-    ];
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [expandedRow, setExpandedRow] = useState(null);
 
-
-    // Close dropdown when clicking outside
     useEffect(() => {
-        function handleClickOutside(event) {
-            if (!event.target.closest(".tx-filter-dropdown")) {
-                setActiveDropdown(null);
-            }
-        }
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
     }, []);
+
+    const toggleRow = (id) => {
+        setExpandedRow(expandedRow === id ? null : id);
+    };
 
     // Static Data for Charts
     const revenueData = [
-        { month: "Jan", revenue: 42000 },
-        { month: "Feb", revenue: 30000 },
-        { month: "Mar", revenue: 20000 },
-        { month: "Apr", revenue: 28000 },
-        { month: "May", revenue: 19000 },
-        { month: "Jun", revenue: 24000 },
-        { month: "Jul", revenue: 36000 },
-    ];
-
-    const ticketSalesData = [
-        { day: "Mon", sales: 120 },
-        { day: "Tue", sales: 135 },
-        { day: "Wed", sales: 100 },
-        { day: "Thu", sales: 140 },
-        { day: "Fri", sales: 190 },
-        { day: "Sat", sales: 240 },
-        { day: "Sun", sales: 210 },
+        { month: "Jun", total: 420000 },
+        { month: "Jul", total: 480000 },
+        { month: "Aug", total: 430000 },
+        { month: "Sep", total: 550000 },
+        { month: "Oct", total: 610000 },
+        { month: "Nov", total: 580000 },
+        { month: "Dec", total: 687550 },
     ];
 
     const categoryData = [
-        { name: "Technology", value: 35 },
-        { name: "Music", value: 25 },
-        { name: "Business", value: 20 },
-        { name: "Art", value: 20 },
+        { name: "Concerts", value: 45, color: "#8c52ff" },
+        { name: "Conferences", value: 30, color: "#0059ff" },
+        { name: "Others", value: 25, color: "#e6e6e6" },
     ];
 
     const topEvents = [
-        {
-            name: "TechStart Summit 2026",
-            date: "Jun 16, 2026",
-            tickets: "450/600",
-            revenue: "$103,550",
-            status: "Active",
-        },
-        {
-            name: "Music Festival 2024",
-            date: "Nov 15, 2024",
-            tickets: "2,100/5,000",
-            revenue: "$185,200",
-            status: "Active",
-        },
-        {
-            name: "Creator Economy Expo",
-            date: "Nov 05, 2024",
-            tickets: "120/500",
-            revenue: "$33,230",
-            status: "Active",
-        },
-        {
-            name: "Game Dev Con 2024",
-            date: "Dec 10, 2024",
-            tickets: "800/1,000",
-            revenue: "$95,000",
-            status: "Active",
-        },
-        {
-            name: "Startup Pitch Night",
-            date: "Jan 20, 2025",
-            tickets: "150/200",
-            revenue: "$12,500",
-            status: "Pending",
-        },
-        {
-            name: "Art Gallery Opening",
-            date: "Feb 14, 2025",
-            tickets: "300/300",
-            revenue: "$45,000",
-            status: "Sold Out",
-        },
-        {
-            name: "Blockchain Summit",
-            date: "Mar 05, 2025",
-            tickets: "400/500",
-            revenue: "$120,000",
-            status: "Active",
-        },
-        {
-            name: "AI Workshop",
-            date: "Apr 12, 2025",
-            tickets: "50/50",
-            revenue: "$5,000",
-            status: "Sold Out",
-        }
+        { id: 1, name: "TechStart Summit 2024", tickets: "450 tickets sold", revenue: "$103,550.00", cap: "75% cap" },
+        { id: 2, name: "Creator Economy Expo", tickets: "0 tickets sold", revenue: "$0.00", cap: "0% cap" },
+        { id: 3, name: "Summer Music Festival", tickets: "5000 tickets sold", revenue: "$250,000.00", cap: "100% cap" },
+        { id: 4, name: "AI Innovation Conference", tickets: "300 tickets sold", revenue: "$75,000.00", cap: "60% cap" },
+        { id: 5, name: "Startup Pitch Night", tickets: "30 tickets sold", revenue: "$1,500.00", cap: "30% cap" }
     ];
-
-    // Pagination Logic
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
-
-    const totalPages = Math.ceil(topEvents.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedEvents = topEvents.slice(startIndex, startIndex + itemsPerPage);
-
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
-
-    const COLORS = ["var(--color-red-primary)", "var(--color-blue-primary)", "var(--color-purple-primary)", "var(--color-yellow-primary)"];
 
     const exportReport = async () => {
         const loadingToast = showExportToast();
@@ -168,7 +79,6 @@ export default function ReportsAnalytics() {
 
             addReportHeader(pdf, "Reports & Analytics", logoData);
 
-            // Key Metrics Section
             pdf.setFontSize(12);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont("helvetica", "bold");
@@ -178,81 +88,30 @@ export default function ReportsAnalytics() {
             pdf.setFontSize(10);
             pdf.setTextColor(50, 50, 50);
             pdf.setFont("helvetica", "normal");
-            pdf.text("Total Events: 156 (↑ 12.5%)", margin + 2, y); y += lineHeight;
-            pdf.text("Pending Approvals: 8", margin + 2, y); y += lineHeight;
-            pdf.text("Tickets Sold: 12,458 (↑ 8.2%)", margin + 2, y); y += lineHeight;
-            pdf.text("Total Revenue: $458,920 (↑ 15.3%)", margin + 2, y); y += lineHeight;
-            pdf.text("Active Users: 8,542 (↑ 5.8%)", margin + 2, y); y += lineHeight;
-            pdf.text("Booths Reserved: 342 (↑ 22.3%)", margin + 2, y); y += lineHeight;
-            pdf.text("Pending Payouts: $45,230", margin + 2, y); y += lineHeight;
-            pdf.text("Support Tickets: 12", margin + 2, y); y += lineHeight + 6;
+            pdf.text("Gross Revenue: $687,550.00 (↑ 15%)", margin + 2, y); y += lineHeight;
+            pdf.text("Net Revenue: $34,377.50 (↑ 12%)", margin + 2, y); y += lineHeight;
+            pdf.text("Tickets Sold: 7,330 (↑ 8%)", margin + 2, y); y += lineHeight;
+            pdf.text("Refund Rate: 0.8% (↓ 2%)", margin + 2, y); y += lineHeight + 6;
 
-            // Revenue Trends Section
-            pdf.setFontSize(12);
-            pdf.setTextColor(30, 60, 114);
-            pdf.setFont("helvetica", "bold");
-            pdf.text("Revenue Trends (Monthly)", margin, y);
-            y += lineHeight + 2;
-            pdf.setFontSize(9);
-            pdf.setTextColor(50, 50, 50);
-            pdf.setFont("helvetica", "normal");
-            revenueData.forEach((d) => {
-                pdf.text(`${d.month}: $${d.revenue.toLocaleString()}`, margin + 2, y);
-                y += lineHeight - 1;
-            });
-            y += 4;
-
-            // Ticket Sales Section
-            pdf.setFontSize(12);
-            pdf.setTextColor(30, 60, 114);
-            pdf.setFont("helvetica", "bold");
-            pdf.text("Ticket Sales (Daily)", margin, y);
-            y += lineHeight + 2;
-            pdf.setFontSize(9);
-            pdf.setTextColor(50, 50, 50);
-            pdf.setFont("helvetica", "normal");
-            ticketSalesData.forEach((d) => {
-                pdf.text(`${d.day}: ${d.sales} tickets`, margin + 2, y);
-                y += lineHeight - 1;
-            });
-            y += 4;
-
-            // Event Categories Section
-            pdf.setFontSize(12);
-            pdf.setTextColor(30, 60, 114);
-            pdf.setFont("helvetica", "bold");
-            pdf.text("Event Categories Distribution", margin, y);
-            y += lineHeight + 2;
-            pdf.setFontSize(9);
-            pdf.setTextColor(50, 50, 50);
-            pdf.setFont("helvetica", "normal");
-            categoryData.forEach((d) => {
-                pdf.text(`${d.name}: ${d.value}%`, margin + 2, y);
-                y += lineHeight - 1;
-            });
-            y += 6;
-
-            // Top Performing Events Table
             pdf.setFontSize(12);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont("helvetica", "bold");
             pdf.text("Top Performing Events", margin, y);
             y += 8;
             
-            const eventHeaders = ['Event Name', 'Date', 'Tickets', 'Revenue', 'Status'];
+            const eventHeaders = ['Rank', 'Event Name', 'Tickets Info', 'Revenue Info'];
             const eventRows = topEvents.map(e => [
+                `#${e.id}`,
                 e.name,
-                e.date,
                 e.tickets,
-                e.revenue,
-                e.status
+                `${e.revenue} (${e.cap})`
             ]);
             y = drawTable(pdf, y, eventHeaders, eventRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
 
             y += 4;
             pdf.setFontSize(9);
             pdf.setTextColor(100, 100, 100);
-            pdf.text("Report generated from Reports & Analytics. Charts and detailed data available in the dashboard.", margin, y, { maxWidth: pdfWidth - 2 * margin });
+            pdf.text("Report generated from Reports & Analytics.", margin, y, { maxWidth: pdfWidth - 2 * margin });
 
             addReportFooter(pdf, 1, 1);
             pdf.save(`Reports_Analytics_${new Date().toISOString().split("T")[0]}.pdf`);
@@ -265,449 +124,233 @@ export default function ReportsAnalytics() {
     };
 
     return (
-        <div className="reports-container">
+        <div className="admin-reports-page">
 
-            {/* Header */}
             <div className="reports-header">
                 <div>
                     <h1>Reports & Analytics</h1>
-                    <p>Platform performance and revenue insights.</p>
+                    <p className="large-body-text">Platform performance and revenue insights.</p>
                 </div>
                 <div className="reports-actions">
-                    {/* Event Dropdown */}
-                    <div className="filters-group">
-                        <div className="tx-filter-dropdown">
-                            <button
-                                className="outlined-button filter-button"
-                                onClick={() =>
-                                    setActiveDropdown(
-                                        activeDropdown === "event" ? null : "event"
-                                    )
-                                }
-                            >
-                                <span>
-                                    {eventOptions.find(
-                                        (opt) => opt.value === activeEvent
-                                    )?.label}
-                                </span>
-
-                                <Icon
-                                    icon="mdi:chevron-down"
-                                    width="18"
-                                    className={`dropdown-icon ${activeDropdown === "event" ? "rotate" : ""
-                                        }`}
-                                />
-                            </button>
-
-                            {activeDropdown === "event" && (
-                                <div className="tx-filter-dropdown-menu">
-                                    {eventOptions.map((option) => (
-                                        <button
-                                            key={option.value}
-                                            className={`tx-filter-dropdown-item ${activeEvent === option.value ? "active" : ""
-                                                }`}
-                                            onClick={() => {
-                                                setActiveEvent(option.value);
-                                                setActiveDropdown(null);
-                                            }}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <DateRangePicker
-                            value={dateRange}
-                            onChange={setDateRange}
-                            buttonClassName="outlined-button filter-button"
-                            placeholder="Select date range"
-                        />
-
-                    </div>
-
-                    {/* Export Button */}
+                    <DateRangePicker
+                        value={dateRange}
+                        onChange={setDateRange}
+                        buttonClassName="outlined-button filter-button"
+                        placeholder="Select date range"
+                    />
                     <button className="outlined-button export-btn" onClick={exportReport}>
                         <Icon icon="mdi:download-outline" width="18" />
                         Export Report
                     </button>
-
                 </div>
             </div>
 
-            {/* Metrics */}
-            <div className="stats-grid">
-
-                <div className="stat-card">
-                    <div className="upper-stats">
-                        <span className="icon red">
-                            <Icon icon="mdi:calendar-blank" width="32" />
-                        </span>
-                        <span className="trend up">↑ 12.5%</span>
-                    </div>
-
-                    <div className="bottom-stats">
-                        <p className="regular-body-text">Total Events</p>
-                        <h3>156</h3>
-                        <p className="smaller-body-text">vs last period</p>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="upper-stats">
-                        <span className="icon yellow">
-                            <Icon icon="mdi:clock-outline" width="32" />
-                        </span>
-                        <span className="trend hidden"></span>
-                    </div>
-
-                    <div className="bottom-stats">
-                        <p className="regular-body-text">Pending Approvals</p>
-                        <h3>8</h3>
-                        <p className="smaller-body-text">vs last period</p>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="upper-stats">
-                        <span className="icon blue">
-                            <Icon icon="mdi:ticket-outline" width="32" />
-                        </span>
-                        <span className="trend up">↑ 8.2%</span>
-                    </div>
-
-                    <div className="bottom-stats">
-                        <p className="regular-body-text">Tickets Sold</p>
-                        <h3>12,458</h3>
-                        <p className="smaller-body-text">vs last period</p>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="upper-stats">
-                        <span className="icon green">
-                            <Icon icon="mdi:currency-usd" width="32" />
-                        </span>
-                        <span className="trend up">↑ 15.3%</span>
-                    </div>
-
-                    <div className="bottom-stats">
-                        <p className="regular-body-text">Total Revenue</p>
-                        <h3>$458,920</h3>
-                        <p className="smaller-body-text">vs last period</p>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="upper-stats">
-                        <span className="icon purple">
-                            <Icon icon="mdi:account-group-outline" width="32" />
-                        </span>
-                        <span className="trend up">↑ 5.8%</span>
-                    </div>
-
-                    <div className="bottom-stats">
-                        <p className="regular-body-text">Active Users</p>
-                        <h3>8,542</h3>
-                        <p className="smaller-body-text">vs last period</p>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="upper-stats">
-                        <span className="icon orange">
-                            <Icon icon="mdi:map-marker-outline" width="32" />
-                        </span>
-                        <span className="trend up">↑ 22.3%</span>
-                    </div>
-
-                    <div className="bottom-stats">
-                        <p className="regular-body-text">Booths Reserved</p>
-                        <h3>342</h3>
-                        <p className="smaller-body-text">vs last period</p>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="upper-stats">
-                        <span className="icon red">
-                            <Icon icon="mdi:currency-usd" width="32" />
-                        </span>
-                        <span className="trend hidden"></span>
-                    </div>
-
-                    <div className="bottom-stats">
-                        <p className="regular-body-text">Pending Payouts</p>
-                        <h3>$45,230</h3>
-                        <p className="smaller-body-text">vs last period</p>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="upper-stats">
-                        <span className="icon yellow">
-                            <Icon icon="mdi:alert-outline" width="32" />
-                        </span>
-                        <span className="trend hidden"></span>
-                    </div>
-
-                    <div className="bottom-stats">
-                        <p className="regular-body-text">Support Tickets</p>
-                        <h3>12</h3>
-                        <p className="smaller-body-text">vs last period</p>
-                    </div>
-                </div>
-
-            </div>
-
-            {/* Analytics Charts Section */}
-            <div className="analytics-grid">
-
-                {/* Revenue Trends */}
-                <div className="chart-card">
-                    <div className="chart-header">
-                        <h3>Revenue Trends</h3>
-                        <p>Monthly revenue breakdown</p>
-                    </div>
-
-                    <ResponsiveContainer width="99%" height={300}>
-                        <LineChart data={revenueData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-
-                            {/* Gradient Definition */}
-                            <defs>
-                                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="var(--color-red-primary)" stopOpacity={0.3} />
-                                    <stop offset="100%" stopColor="var(--color-red-primary)" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-
-                            {/* Grid */}
-                            <CartesianGrid
-                                stroke="rgba(0,0,0,0.06)"
-                                strokeDasharray="3 3"
-                                vertical={false}
-                            />
-
-                            {/* X Axis */}
-                            <XAxis
-                                dataKey="month"
-                                tick={{
-                                    fill: "var(--color-black-secondary)",
-                                    fontSize: 12,
-                                    fontWeight: 500,
-                                }}
-                                tickLine={false}
-                                axisLine={{ stroke: "var(--color-black-quaternary" }}
-                            />
-
-                            {/* Y Axis */}
-                            <YAxis
-                                tick={{
-                                    fill: "var(--color-black-secondary)",
-                                    fontSize: 12,
-                                }}
-                                tickLine={false}
-                                axisLine={false}
-                                tickFormatter={(value) => `$${value / 1000}k`}
-                            />
-
-                            {/* Tooltip */}
-                            <Tooltip
-                                formatter={(value) => [`$${value.toLocaleString()}`, "Revenue"]}
-                                contentStyle={{
-                                    backgroundColor: "var(--color-white-primary)",
-                                    border: "1px solid var(--color-border)",
-                                    borderRadius: "10px",
-                                    fontSize: "13px"
-                                }}
-                                labelStyle={{
-                                    color: "var(--color-black-primary)",
-                                    fontWeight: 600
-                                }}
-                            />
-
-                            {/* Line */}
-                            <Line
-                                type="monotone"
-                                dataKey="revenue"
-                                stroke="var(--color-red-primary)"
-                                strokeWidth={3}
-                                dot={{
-                                    r: 4,
-                                    strokeWidth: 2,
-                                    fill: "white"
-                                }}
-                                activeDot={{
-                                    r: 6
-                                }}
-                                animationDuration={800}
-                            />
-
-                            {/* Area Under Line */}
-                            <Line
-                                type="monotone"
-                                dataKey="revenue"
-                                stroke="transparent"
-                                fill="url(#revenueGradient)"
-                            />
-
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Ticket Sales */}
-                <div className="chart-card">
-                    <div className="chart-header">
-                        <h3>Ticket Sales</h3>
-                        <p>Daily ticket sales volume</p>
-                    </div>
-
-                    <ResponsiveContainer width="99%" height={300}>
-                        <BarChart data={ticketSalesData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-black-tertiary)" />
-
-                            <XAxis
-                                dataKey="day"
-                                tick={{
-                                    fill: "var(--color-black-secondary)",
-                                    fontSize: 12,
-                                    fontWeight: 500
-                                }}
-                                tickLine={false}
-                                axisLine={{ stroke: "var(--color-border)" }}
-                            />
-
-                            <YAxis
-                                tick={{
-                                    fill: "var(--color-black-secondary)",
-                                    fontSize: 12
-                                }}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: "var(--color-white-primary)",
-                                    border: "1px solid var(--color-border)",
-                                    borderRadius: "6px"
-                                }}
-                                labelStyle={{
-                                    color: "var(--color-black-primary)",
-                                    fontWeight: 600
-                                }}
-                            />
-
-                            <Bar
-                                dataKey="sales"
-                                fill="var(--color-blue-primary)"
-                                radius={[6, 6, 0, 0]}
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Event Categories */}
-                {/* Bottom Row: Categories + Top Events */}
-                <div className="bottom-row">
-
-                    {/* Event Categories */}
-                    <div className="chart-card">
-                        <div className="chart-header">
-                            <h3>Event Categories</h3>
-                            <p>Distribution by type</p>
+            <div className="stats-grid-wrapper">
+                <div className="stats-grid">
+                    <div className="report-stat-card">
+                        <div className="upper-stats">
+                            <span className="icon green"><Icon icon="mdi:currency-usd" width="24" /></span>
+                            <span className="trend up"><Icon icon="mdi:trending-up" /> 15%</span>
                         </div>
+                        <div className="bottom-stats">
+                            <p className="regular-body-text left-aligned">Gross Revenue</p>
+                            <h4>$687,550.00</h4>
+                        </div>
+                    </div>
 
-                        <ResponsiveContainer width="99%" height={300}>
-                            <PieChart>
-                                <Pie
-                                    data={categoryData}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    innerRadius={60}
-                                    outerRadius={85}
-                                    paddingAngle={4}
-                                >
-                                    {categoryData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index]} />
+                    <div className="report-stat-card">
+                        <div className="upper-stats">
+                            <span className="icon blue"><Icon icon="mdi:trending-up" width="24" /></span>
+                            <span className="trend up"><Icon icon="mdi:trending-up" /> 12%</span>
+                        </div>
+                        <div className="bottom-stats">
+                            <p className="regular-body-text left-aligned">Net Revenue</p>
+                            <h4>$34,377.50</h4>
+                        </div>
+                    </div>
+
+                    <div className="report-stat-card">
+                        <div className="upper-stats">
+                            <span className="icon purple"><Icon icon="mdi:account-group-outline" width="24" /></span>
+                            <span className="trend up"><Icon icon="mdi:trending-up" /> 8%</span>
+                        </div>
+                        <div className="bottom-stats">
+                            <p className="regular-body-text left-aligned">Tickets Sold</p>
+                            <h4>7,330</h4>
+                        </div>
+                    </div>
+
+                    <div className="report-stat-card">
+                        <div className="upper-stats">
+                            <span className="icon red"><Icon icon="mdi:chart-bar" width="24" /></span>
+                            <span className="trend down"><Icon icon="mdi:trending-down" /> 2%</span>
+                        </div>
+                        <div className="bottom-stats">
+                            <p className="regular-body-text left-aligned">Refund Rate</p>
+                            <h4>0.8%</h4>
+                            <p className="smaller-body-text left-aligned">vs last month</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="reports-content-grid">
+                <div className="reports-left-panel">
+                    <div className="chart-card wide area">
+                        <div className="chart-card-header">
+                            <h4 className="left-aligned">Revenue Trends</h4>
+                        </div>
+                        <div className="chart-placeholder area-placeholder">
+                            <ResponsiveContainer width="100%" height={isMobile ? 180 : 250}>
+                                <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    
+                                    <defs>
+                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#f1f5f9" stopOpacity={0.8}/>
+                                            <stop offset="95%" stopColor="#f1f5f9" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+
+                                    {!isMobile && (
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                                    )}
+                                    <XAxis
+                                        dataKey="month"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                                        tickFormatter={(val) => `$${val / 1000}k`}
+                                    />
+                                    <RechartsTooltip formatter={(value) => `$${value}`} />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="total"
+                                        stroke="#f1f5f9"
+                                        strokeWidth={isMobile ? 2 : 3}
+                                        fillOpacity={1}
+                                        fill="url(#colorRevenue)"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="list-card top-events-card">
+                        <div className="card-header">
+                            <h4 className="left-aligned">Top Performing Events</h4>
+                        </div>
+                        <div className="table-wrapper">
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Event Name</th>
+                                        <th>Revenue</th>
+                                        <th>Rank</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {topEvents.map((row) => (
+                                        <tr key={row.id} className={expandedRow === row.id ? "expanded" : ""}>
+                                            <td data-label="Event Name" className="regular-body-text event-name-td">
+                                                <div className="mobile-expand-icon" onClick={() => toggleRow(row.id)}>
+                                                    <Icon icon={expandedRow === row.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                                </div>
+                                                <div className="event-name-cell">
+                                                    <div className="event-avatar">
+                                                        {row.name.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div className="event-info-wrapper left-aligned">
+                                                        <span className="event-name-text">{row.name}</span>
+                                                        <span className="event-sub-text smaller-body-text">{row.tickets}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td data-label="Revenue" className="regular-body-text rev-td">
+                                                <div className="event-rev-wrapper">
+                                                    <span className="event-rev-text">{row.revenue}</span>
+                                                    <span className="event-sub-text smaller-body-text">{row.cap}</span>
+                                                </div>
+                                            </td>
+                                            <td className="small-body-text rank-td" data-label="Rank">
+                                                <span>#{row.id}</span>
+                                            </td>
+                                        </tr>
                                     ))}
-                                </Pie>
-                                <Tooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
-                        {/* Legend */}
-                        <div className="pie-legend">
-                            {categoryData.map((item, index) => (
-                                <div key={item.name} className=" legend-item">
-                                    <span
-                                        className="legend-color"
-                                        style={{ background: COLORS[index] }}
-                                    ></span>
-                                    <span className="small-body-text">{item.name}</span>
-                                </div>
-                            ))}
+                <div className="reports-right-panel">
+                    <div className="chart-card donut-chart-card">
+                        <h4 className="left-aligned">Sales by Category</h4>
+                        <div className="chart-placeholder donut">
+                            <ResponsiveContainer width={isMobile ? "100%" : "90%"} height={isMobile ? 180 : 250}>
+                                <PieChart>
+                                    <Pie
+                                        data={categoryData}
+                                        innerRadius={isMobile ? 55 : 65}
+                                        outerRadius={isMobile ? 75 : 90}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        stroke="none"
+                                    >
+                                        {categoryData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <RechartsTooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <div className="donut-center-text">
+                                <h3>12.4k</h3>
+                                <p>Total Sales</p>
+                            </div>
+                            <div className="chart-legend multi">
+                                <span className="legend-item"><span className="dot purple"></span>Concerts (45%)</span>
+                                <span className="legend-item"><span className="dot blue"></span>Conferences (30%)</span>
+                                <span className="legend-item"><span className="dot gray"></span>Others (25%)</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Top Performing Events Table */}
-                    <div className="chart-card">
-                        <div className="chart-header">
-                            <h3>Top Performing Events</h3>
-                            <p>By revenue and attendance</p>
+                    <div className="list-card sponsor-metrics-card">
+                        <div className="card-header">
+                            <h4 className="left-aligned">Sponsor Metrics</h4>
                         </div>
-
-                        <div className="events-table">
-                            <div className="table-header">
-                                <span>Event Name</span>
-                                <span>Date</span>
-                                <span>Tickets</span>
-                                <span>Revenue</span>
-                                <span>Status</span>
-                            </div>
-
-                            {paginatedEvents.map((event, index) => (
-                                <div key={index} className="table-row">
-                                    <h6>{event.name}</h6>
-                                    <span className="small-body-text">{event.date}</span>
-                                    <span className="small-body-text">{event.tickets}</span>
-                                    <span className="regular-body-text revenue">{event.revenue}</span>
-                                    <span className="button-label status">{event.status}</span>
+                        <div className="sponsor-total">
+                            <span className="small-body-text label-text">Total Booth Revenue</span>
+                            <h3 className="amount-text">$185,000.00</h3>
+                        </div>
+                        <div className="progress-list">
+                            <div className="progress-group">
+                                <div className="progress-header">
+                                    <span className="small-body-text label-text">Booth Occupancy</span>
+                                    <span className="small-body-text percent-text">85%</span>
                                 </div>
-                            ))}
-                        </div>
-
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div className="pagination">
-                                <button
-                                    className="pagination-btn"
-                                    onClick={() => handlePageChange(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                >
-                                    Previous
-                                </button>
-
-                                <span className="pagination-info">
-                                    Page {currentPage} of {totalPages}
-                                </span>
-
-                                <button
-                                    className="pagination-btn"
-                                    onClick={() => handlePageChange(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                >
-                                    Next
-                                </button>
+                                <div className="progress-bar">
+                                    <div className="progress-fill blue" style={{ width: "85%" }}></div>
+                                </div>
                             </div>
-                        )}
+                            <div className="progress-group">
+                                <div className="progress-header">
+                                    <span className="small-body-text label-text">Sponsor Retention</span>
+                                    <span className="small-body-text percent-text">92%</span>
+                                </div>
+                                <div className="progress-bar">
+                                    <div className="progress-fill green" style={{ width: "92%" }}></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
                 </div>
             </div>
-
-
         </div>
     );
 }

@@ -106,7 +106,7 @@ const AuditLogs = () => {
     ]);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 7;
 
     const filterLogsByDateRange = (logsToFilter) => {
         if (!dateRange?.start || !dateRange?.end || dateRange?.preset === 'all') return logsToFilter;
@@ -136,6 +136,11 @@ const AuditLogs = () => {
     const handleDateRangeChange = (newRange) => {
         setDateRange(newRange);
         setCurrentPage(1);
+    };
+
+    const [expandedRow, setExpandedRow] = useState(null);
+    const toggleRow = (id) => {
+        setExpandedRow(expandedRow === id ? null : id);
     };
 
     const exportReport = async () => {
@@ -188,7 +193,7 @@ const AuditLogs = () => {
             <div className="audit-header">
                 <div className="header-title-group">
                     <h1>Audit Logs</h1>
-                    <p>Track all administrative actions for security and compliance.</p>
+                    <p className="large-body-text">Track all administrative actions for security and compliance.</p>
                 </div>
                 <button className="outlined-button export-btn" onClick={exportReport}>
                     <Icon icon="mdi:download-outline" /> Export Report
@@ -224,14 +229,19 @@ const AuditLogs = () => {
                         </thead>
                         <tbody>
                             {paginatedLogs.map((log) => (
-                                <tr key={log.id}>
-                                    <td className="action-cell">
-                                        <h6 className="action-text">{log.action}</h6>
+                                <tr key={log.id} className={expandedRow === log.id ? 'expanded' : ''}>
+                                    <td className="action-td" data-label="Action">
+                                        <div className="mobile-expand-icon" onClick={() => toggleRow(log.id)}>
+                                            <Icon icon={expandedRow === log.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                        </div>
+                                        <div className="action-cell">
+                                            <h6 className="action-text">{log.action}</h6>
+                                        </div>
                                     </td>
-                                    <td className="regular-body-text audit-admin-cell">{log.admin}</td>
-                                    <td className="small-body-text target-cell">{log.target}</td>
-                                    <td className="small-body-text details-cell">{log.details}</td>
-                                    <td className="small-body-text timestamp-cell">
+                                    <td className="regular-body-text admin-td" data-label="Admin">{log.admin}</td>
+                                    <td className="small-body-text target-cell" data-label="Target">{log.target}</td>
+                                    <td className="small-body-text details-cell" data-label="Details">{log.details}</td>
+                                    <td className="small-body-text timestamp-cell" data-label="Timestamp">
                                         <div className="timestamp-wrapper">
                                             <Icon icon="mdi:clock-time-four-outline" className="clock-icon" />
                                             <span>{log.timestamp}</span>
