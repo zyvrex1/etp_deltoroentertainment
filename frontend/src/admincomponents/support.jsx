@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './support.css';
-import ViewTicketModal from './Modal/ViewTicketModal';
+import ViewTicket from './ViewTicket';
 
 const SupportDisputes = () => {
     // Mock data for tickets
@@ -48,14 +48,14 @@ const SupportDisputes = () => {
             status: 'in-progress',
             created: 'Oct 1, 2024'
         },
-                {
+        {
             id: 7,
             subject: 'Booth Size Question',
             user: 'Lisa Wang',
             status: 'in-progress',
             created: 'Oct 1, 2024'
         },
-                {
+        {
             id: 8,
             subject: 'Booth Size Question',
             user: 'Lisa Wang',
@@ -77,12 +77,70 @@ const SupportDisputes = () => {
         }
     };
 
+    const [searchQuery, setSearchQuery] = useState("");
+    const [activeFilter, setActiveFilter] = useState("all");
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    const filterOptions = [
+        { value: "all", label: "All Status" },
+        { value: "open", label: "Open" },
+        { value: "in-progress", label: "In Progress" },
+        { value: "resolved", label: "Resolved" },
+    ];
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        if (isDropdownOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        }
+    }, [isDropdownOpen]);
+
+    const getFilterLabel = () => {
+        const option = filterOptions.find((opt) => opt.value === activeFilter);
+        return option ? option.label : "All Status";
+    };
+
+    const handleFilterChange = (filter) => {
+        setActiveFilter(filter);
+        setCurrentPage(1);
+        setIsDropdownOpen(false);
+    };
+
+    const filteredTickets = useMemo(() => {
+        const q = searchQuery.toLowerCase();
+
+        return tickets.filter((tx) => {
+            const matchesFilter =
+                activeFilter === "all" ? true : tx.status === activeFilter;
+
+            if (!matchesFilter) return false;
+
+            if (!q) return true;
+
+            return (
+                tx.user.toLowerCase().includes(q) ||
+                tx.subject.toLowerCase().includes(q) ||
+                tx.id.toString().includes(q)
+            );
+        });
+    }, [tickets, searchQuery, activeFilter]);
+
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 7;
 
-    const totalPages = Math.ceil(tickets.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredTickets.length / itemsPerPage) || 1;
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedTickets = tickets.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedTickets = filteredTickets.slice(startIndex, startIndex + itemsPerPage);
 
     const [expandedRow, setExpandedRow] = useState(null);
     const toggleRow = (id) => {
@@ -95,13 +153,15 @@ const SupportDisputes = () => {
         }
     };
 
-    // Modal State
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedTicket, setSelectedTicket] = useState(null);
+    // View State
+    const [selectedTicketId, setSelectedTicketId] = useState(null);
 
     const handleViewTicket = (ticket) => {
-        setSelectedTicket(ticket);
-        setIsModalOpen(true);
+        setSelectedTicketId(ticket.id);
+    };
+
+    const handleBackToSupport = () => {
+        setSelectedTicketId(null);
     };
 
     const handleUpdateStatus = (id, newStatus) => {
@@ -110,12 +170,18 @@ const SupportDisputes = () => {
             ticket.id === id ? { ...ticket, status: newStatus } : ticket
         );
         setTickets(updatedTickets);
-
-        // Update selected ticket to reflect change in modal
-        if (selectedTicket && selectedTicket.id === id) {
-            setSelectedTicket({ ...selectedTicket, status: newStatus });
-        }
     };
+
+    if (selectedTicketId) {
+        const ticket = tickets.find(t => t.id === selectedTicketId);
+        return (
+            <ViewTicket
+                ticket={ticket}
+                onUpdateStatus={handleUpdateStatus}
+                onBack={handleBackToSupport}
+            />
+        );
+    }
 
     return (
         <div className="support-page">
@@ -167,8 +233,56 @@ const SupportDisputes = () => {
                     </div>
                 </div>
             </div>
-
             <div className="support-content">
+
+
+                <div className="support-toolbar">
+                    <div className="support-toolbar-left">
+                        <div className="support-search">
+                            <Icon icon="mdi:magnify" />
+                            <input
+                                type="text"
+                                placeholder="Search tickets..."
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="small-body-text"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="support-toolbar-right">
+                        <div className="support-filter-dropdown" ref={dropdownRef}>
+                            <button
+                                className="support-filter-dropdown-btn"
+                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            >
+                                <span className="truncate-text">{getFilterLabel()}</span>
+                                <Icon
+                                    icon="mdi:chevron-down"
+                                    className={`dropdown-icon ${isDropdownOpen ? "open" : ""}`}
+                                />
+                            </button>
+                            {isDropdownOpen && (
+                                <div className="support-filter-dropdown-menu">
+                                    {filterOptions.map((option) => (
+                                        <button
+                                            key={option.value}
+                                            className={`support-filter-dropdown-item small-body-text ${activeFilter === option.value ? "active" : ""
+                                                }`}
+                                            onClick={() => handleFilterChange(option.value)}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="table-wrapper">
                     <table className="data-table">
                         <thead>
@@ -184,25 +298,32 @@ const SupportDisputes = () => {
                         <tbody>
                             {paginatedTickets.map((ticket) => (
                                 <tr key={ticket.id} className={expandedRow === ticket.id ? "expanded" : ""}>
-                                    <td className="small-body-text id-td" data-label="ID">
+                                    <td className="regular-body-text id-td" data-label="ID">
                                         <div className="mobile-expand-icon" onClick={() => toggleRow(ticket.id)}>
                                             <Icon icon={expandedRow === ticket.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                                         </div>
                                         <span>#{ticket.id.toString().padStart(2, "0")}</span>
                                     </td>
                                     <td className="regular-body-text name-td" data-label="User">{ticket.user}</td>
-                                    <td className="subject-cell" data-label="Subject">
+                                    <td className="subject-cell regular-body-text" data-label="Subject">
                                         <span className="subject-text">{ticket.subject}</span>
                                     </td>
                                     <td className="status-cell" data-label="Status">{getStatusBadge(ticket.status)}</td>
-                                    <td className="small-body-text created-cell" data-label="Created">{ticket.created}</td>
+                                    <td className="regular-body-text created-cell" data-label="Created">{ticket.created}</td>
                                     <td className="actions-cell" data-label="Actions">
-                                        <button
-                                            className="outlined-button view-btn"
-                                            onClick={() => handleViewTicket(ticket)}
-                                        >
-                                            View
-                                        </button>
+                                        <div className="actions-flex">
+                                            <button
+                                                className="outlined-button view-btn"
+                                                onClick={() => handleViewTicket(ticket)}
+                                            >
+                                                View
+                                            </button>
+                                            <button
+                                                className="primary-button assign-btn"
+                                            >
+                                                Assign
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -234,13 +355,6 @@ const SupportDisputes = () => {
                     </div>
                 )}
             </div>
-
-            <ViewTicketModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                ticket={selectedTicket}
-                onUpdateStatus={handleUpdateStatus}
-            />
         </div>
     );
 };
