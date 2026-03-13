@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./SetupSeatLayoutModal.css";
 import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from "../utils/sweetAlert";
+import { useDragScroll } from "../utils/useDragScroll";
 
 const BOOTH_TYPES = [
   { value: "vip", label: "VIP" },
@@ -34,6 +35,7 @@ const SetupSeatLayoutModal = ({ isOpen, onClose, onSave }) => {
   const [rows, setRows] = useState(9);
   const [cols, setCols] = useState(23);
   const [selectedSeats, setSelectedSeats] = useState(() => new Set());
+  const gridScrollRef = useDragScroll();
 
   const quantity = useMemo(() => selectedSeats.size, [selectedSeats]);
 
@@ -271,21 +273,17 @@ const SetupSeatLayoutModal = ({ isOpen, onClose, onSave }) => {
               </div>
             </div>
 
-            <div className="setup-seat-grid-container">
+            <div className="setup-seat-grid-container" ref={gridScrollRef}>
               <div className="setup-seat-grid-wrapper">
-                {/* Row labels on the left */}
-                <div className="setup-seat-row-labels-left">
-                  {seatCodesMatrix.map((row, rowIndex) => (
-                    <div key={`label-left-${rowIndex}`} className="setup-seat-row-label">
-                      {row[0]?.rowLabel}
-                    </div>
-                  ))}
-                </div>
                 
                 {/* Main grid */}
-                <div className="setup-seat-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(28px, 1fr))` }}>
+                <div className="setup-seat-grid" style={{ gridTemplateColumns: `min-content repeat(${cols}, minmax(28px, 1fr)) min-content` }}>
                   {seatCodesMatrix.map((row, rowIndex) => (
                     <React.Fragment key={`row-${rowIndex}`}>
+                      <div className="setup-seat-row-label">
+                        {row[0]?.rowLabel}
+                      </div>
+
                       {row.map((seat) => {
                         const isSelected = selectedSeats.has(seat.code);
                         return (
@@ -305,25 +303,21 @@ const SetupSeatLayoutModal = ({ isOpen, onClose, onSave }) => {
                           </button>
                         );
                       })}
+
+                      <div className="setup-seat-row-label">
+                        {row[0]?.rowLabel}
+                      </div>
                     </React.Fragment>
                   ))}
                 </div>
                 
-                {/* Row labels on the right */}
-                <div className="setup-seat-row-labels-right">
-                  {seatCodesMatrix.map((row, rowIndex) => (
-                    <div key={`label-right-${rowIndex}`} className="setup-seat-row-label">
-                      {row[0]?.rowLabel}
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
 
             <div className="setup-seat-legend">
               <div className="legend-item">
                 <span className="legend-dot available" />
-                <span className="small-body-text">Available</span>
+                <span className="small-body-text">Unavailable</span>
               </div>
               <div className="legend-item">
                 <span className="legend-dot selected" />

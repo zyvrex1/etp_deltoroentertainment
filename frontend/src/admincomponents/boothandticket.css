@@ -91,7 +91,7 @@
     gap: 24px;
     align-items: flex-start;
     min-width: 0;
-  width: 100%;
+    width: 100%;
 
     .bt-content {
         flex: 1;
@@ -100,7 +100,8 @@
         flex-wrap: wrap;
         min-width: 0;
         flex: 1;
-  width: 100%;
+        width: 100%;
+
 
         .bt-section {
             flex: 1;
@@ -139,74 +140,17 @@
                 }
             }
 
-            .bt-booth-grid {
-                display: grid;
-                grid-template-columns: repeat(5, 1fr);
-                gap: 8px;
-                margin-bottom: 16px;
-
-                .bt-section-scan {
-                    flex: 1;
-                    min-width: 280px;
-                }
-
-                .bt-booth-code {
-                    font-weight: 700;
-                }
-
-                .bt-booth-type {
-                    opacity: 0.9;
-                }
+            .bt-section-scan {
+                flex: 1;
+                min-width: 280px;
             }
 
-
-            .bt-booth-cell {
-                position: relative;
-                aspect-ratio: 1;
-                border-radius: 6px;
-                border: 1px solid var(--color-black-quaternary);
-                background: var(--color-bg-light);
-                cursor: pointer;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 2px;
-                transition: all 0.2s ease;
-                font: inherit;
-                padding: 0;
+            .bt-booth-code {
+                font-weight: 700;
             }
 
-            .bt-booth-cell.empty:hover {
-                background: var(--color-black-quaternary);
-            }
-
-            .bt-booth-cell.filled {
-                border-style: solid;
-            }
-
-            /* Available VIP - Purple */
-            .bt-booth-cell.status-available.type-vip {
-                background: var(--color-purple-tertiary);
-                border-color: var(--color-purple-primary);
-            }
-
-            /* Available Corner - Yellow */
-            .bt-booth-cell.status-available.type-corner {
-                background: #FFD700;
-                border-color: #FFD700;
-            }
-
-            /* Available Inline - Green */
-            .bt-booth-cell.status-available.type-inline {
-                background: var(--color-green-tertiary);
-                border-color: var(--color-green-primary);
-            }
-
-            /* Booked (any type) - Red */
-            .bt-booth-cell.status-booked {
-                background: var(--color-red-tertiary);
-                border-color: var(--color-red-primary);
+            .bt-booth-type {
+                opacity: 0.9;
             }
         }
 
@@ -239,6 +183,7 @@
 .bt-legend {
     display: flex;
     flex-wrap: wrap;
+    padding: 12px 0;
     gap: 16px;
     color: var(--color-black-secondary);
 
@@ -285,6 +230,88 @@
     }
 }
 
+.section-hint {
+    color: var(--color-black-secondary);
+    text-align: center;
+}
+.bt-grid-outer {
+    width: 100%;
+    min-width: 0;
+}
+
+/* Booth grid layout wrapper – matches modal behavior */
+.bt-booth-grid-wrapper {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 500px;
+}
+
+.bt-booth-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--bt-total-cols), minmax(28px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+    width: max-content;
+    min-width: 100%;
+    box-sizing: border-box;
+}
+
+.bt-booth-cell {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    border: 1px dashed rgba(148, 163, 184, 0.9);
+    background: var(--color-white-primary);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-black-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.16s ease-out;
+
+    &:hover {
+        background: #eef2ff;
+        border-color: var(--color-blue-primary);
+    }
+}
+
+.bt-booth-cell.empty:hover {
+    background: #eef2ff;
+    border-color: var(--color-blue-primary);
+}
+
+.bt-booth-cell.filled {
+    border-style: solid;
+}
+
+/* Available VIP - Purple */
+.bt-booth-cell.status-available.type-vip {
+    background: var(--color-purple-tertiary);
+    border-color: var(--color-purple-primary);
+}
+
+/* Available Corner - Yellow */
+.bt-booth-cell.status-available.type-corner {
+    background: #FFD700;
+    border-color: #FFD700;
+}
+
+/* Available Inline - Green */
+.bt-booth-cell.status-available.type-inline {
+    background: var(--color-green-tertiary);
+    border-color: var(--color-green-primary);
+}
+
+/* Booked (any type) - Red */
+.bt-booth-cell.status-booked {
+    background: var(--color-red-tertiary);
+    border-color: var(--color-red-primary);
+}
+
 
 .bt-seat-layout {
     background: var(--color-white-primary);
@@ -292,7 +319,6 @@
     border-radius: 12px;
     margin-bottom: 16px;
     max-width: 100%;
-    overflow: visible;
     box-sizing: border-box;
 
     .bt-stage {
@@ -303,47 +329,47 @@
         font-weight: 600;
     }
 
-    .bt-seat-grid {
+    /* Scrollable, bounded container for the seat grid (match SetupSeatLayoutModal behavior) */
+    .bt-seat-grid-container {
+           width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 500px;
+    }
+
+    .bt-seat-grid-wrapper {
+        display: flex;
+        align-items: start;
+        gap: 8px;
+        min-width: min-content;
         padding: 16px;
+
+    }
+
+    .bt-seat-row-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-black-secondary);
+        min-height: 32px;
+        height: 100%;
+        width: 24px;
+    }
+
+    .bt-seat-grid {
+        display: grid;
+        gap: 8px;
+        flex: 1;
         min-width: 0;
-        max-width: 100%;
-        box-sizing: border-box;
-        gap: 12px;
+        width: max-content;
     }
 }
-
-.bt-seat-row {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 6px;
-    min-width: 0;
-}
-
-.bt-seat-row:last-child {
-    margin-bottom: 0;
-}
-
-.bt-seat-row-block {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    min-width: 0;
-    flex: 1;
-}
-
-
 
 /* Desktop: continuous row, no gap between blocks or between seats */
 @media (min-width: 769px) {
-    .bt-seat-row {
-        margin-bottom: 4px;
-    }
-
-    .bt-seat-row-block {
-        flex: none;
-    }
-
     .bt-btn-icon-desktop {
         display: inline-block;
     }
@@ -372,10 +398,6 @@
         justify-content: center;
     }
 
-    .bt-booth-grid {
-        grid-template-columns: repeat(5, 1fr);
-    }
-
     .bt-section-title {
         text-align: center;
     }
@@ -383,77 +405,58 @@
     .bt-section-scan .bt-section-title {
         text-align: center;
     }
-
 }
 
-.bt-seat {
+.bt-seat-cell {
     position: relative;
-    flex-shrink: 0;
-    width: 24px;
-    height: 24px;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    min-width: 32px;
+    min-height: 32px;
     border-radius: 6px;
-    border: 1px solid var(--color-black-quaternary);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font: inherit;
-    padding: 0;
-}
-
-.bt-seat-tooltip {
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-8px);
-    padding: 10px 12px;
-    background: var(--color-black-primary);
-    color: var(--color-white-primary);
-    border-radius: 8px;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-    pointer-events: none;
-    z-index: 100;
+    border: 1px solid rgba(148, 163, 184, 0.9);
+    background: var(--color-white-primary);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-black-secondary);
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.16s ease-out;
+    padding: 4px;
+    box-sizing: border-box;
+
+    &:hover {
+        background: #eef2ff;
+        border-color: var(--color-blue-primary);
+    }
 }
 
-.bt-seat-tooltip strong {
-    display: block;
-    margin-bottom: 2px;
-}
-
-.bt-seat:hover .bt-seat-tooltip {
-    opacity: 1;
-    visibility: visible;
-}
-
-.bt-seat.type-vip.status-available {
+.bt-seat-cell.type-vip.status-available {
     background: var(--color-purple-tertiary);
     border-color: var(--color-purple-primary);
 }
 
-.bt-seat.type-vip.status-available:hover {
+.bt-seat-cell.type-vip.status-available:hover {
     background: var(--color-purple-quaternary);
 }
 
-.bt-seat.type-standard.status-available {
+.bt-seat-cell.type-standard.status-available {
     background: var(--color-green-tertiary);
     border-color: var(--color-green-primary);
 }
 
-.bt-seat.type-standard.status-available:hover {
+.bt-seat-cell.type-standard.status-available:hover {
     background: var(--color-green-quaternary);
 }
 
-.bt-seat.status-booked {
+.bt-seat-cell.status-booked {
     background: var(--color-red-tertiary);
     border-color: var(--color-red-primary);
 }
 
-.bt-seat.status-booked:hover {
+.bt-seat-cell.status-booked:hover {
     background: var(--color-red-quaternary);
 }
 
@@ -823,9 +826,9 @@
     -webkit-overflow-scrolling: touch;
 
     .bt-allscan-table {
-    width: 100%;
-    border-collapse: collapse;
-}
+        width: 100%;
+        border-collapse: collapse;
+    }
 }
 
 .all-scan-name-wrapper {
@@ -978,18 +981,20 @@
         display: none;
     }
 
-    .bt-booth-grid {
-        grid-template-columns: repeat(5, 1fr);
-        gap: 4px;
+    .bt-booth-grid-wrapper {
+        margin: 0 -4px;
         width: 100%;
-        max-width: 100%;
-        margin-left: 0;
-        margin-right: 0;
-        box-sizing: border-box;
+        min-width: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .bt-booth-grid {
+        gap: 8px;
     }
 
     .bt-booth-cell {
-        min-width: 0;
+        min-width: 28px;
         font-size: 11px;
         padding: 4px;
     }
@@ -1008,40 +1013,31 @@
 
     .bt-seat-layout {
         max-width: 100%;
-        overflow: visible;
+    }
+
+    .bt-seat-grid-container {
+        max-height: 400px;
+    }
+
+    .bt-seat-row-label {
+        width: 20px;
+        font-size: 11px;
     }
 
     .bt-seat-grid {
-        padding: 8px;
-        padding-top: 72px;
-        overflow: visible;
-    }
-
-    .bt-seat-row {
-        width: 100%;
-        flex-direction: column;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .bt-seat-row-block {
-        width: 100%;
-        flex: none;
-        min-width: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
         gap: 6px;
     }
 
-    .bt-seat {
-        flex: 1 1 0;
-        min-width: 22px;
-        min-height: 22px;
-        width: auto;
-        height: auto;
-        aspect-ratio: 1;
-        max-width: 36px;
+    .bt-seat-row-labels-left,
+    .bt-seat-row-labels-right {
+        font-size: 11px;
+        gap: 6px;
+    }
+
+    .bt-seat-cell {
+        font-size: 10px;
+        min-width: 28px;
+        min-height: 28px;
     }
 
     /* Seat tooltip: allow wrap and constrain width so full details visible on mobile */
@@ -1082,80 +1078,86 @@
         padding: 5px;
     }
 
+
+    .bt-allscan-table thead {
+        display: none;
+        /* Hide header */
+    }
+
+    .bt-allscan-table,
+    .bt-allscan-table tbody,
+    .bt-allscan-table tr,
+    .bt-allscan-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .bt-allscan-table tr {
+        background: #f3f4f6;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .bt-allscan-table td {
+        border: none;
+        padding: 8px 0;
+        position: relative;
+    }
+
+    /* Add labels before each cell */
+    .bt-allscan-table td:nth-child(1)::before {
+        content: "NAME";
+    }
+
+    .bt-allscan-table td:nth-child(2)::before {
+        content: "DETAILS";
+    }
+
+    .bt-allscan-table td:nth-child(3)::before {
+        content: "TYPE";
+    }
+
+    .bt-allscan-table td:nth-child(4)::before {
+        content: "TIME";
+    }
+
+    .bt-allscan-table td:nth-child(5)::before {
+        content: "ENTRANCE";
+    }
+
+    .bt-allscan-table td::before {
+        display: block;
+        font-size: 11px;
+        letter-spacing: 1px;
+        color: #6b7280;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    /* Name wrapper fix */
+    .all-scan-name-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Adjust font sizes */
+    .bt-allscan-table td {
+        font-size: 14px;
+    }
+
+    /* Make tag smaller for mobile */
+    .bt-allscan-tag {
+        padding: 4px 10px;
+        font-size: 11px;
+    }
+
     
-  .bt-allscan-table thead {
-    display: none; /* Hide header */
-  }
-
-  .bt-allscan-table,
-  .bt-allscan-table tbody,
-  .bt-allscan-table tr,
-  .bt-allscan-table td {
-    display: block;
-    width: 100%;
-  }
-
-  .bt-allscan-table tr {
-    background: #f3f4f6;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-    border: 1px solid #e5e7eb;
-  }
-
-  .bt-allscan-table td {
-    border: none;
-    padding: 8px 0;
-    position: relative;
-  }
-
-  /* Add labels before each cell */
-  .bt-allscan-table td:nth-child(1)::before {
-    content: "NAME";
-  }
-
-  .bt-allscan-table td:nth-child(2)::before {
-    content: "DETAILS";
-  }
-
-  .bt-allscan-table td:nth-child(3)::before {
-    content: "TYPE";
-  }
-
-  .bt-allscan-table td:nth-child(4)::before {
-    content: "TIME";
-  }
-
-  .bt-allscan-table td:nth-child(5)::before {
-    content: "ENTRANCE";
-  }
-
-  .bt-allscan-table td::before {
-    display: block;
-    font-size: 11px;
-    letter-spacing: 1px;
-    color: #6b7280;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-
-  /* Name wrapper fix */
-  .all-scan-name-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  /* Adjust font sizes */
-  .bt-allscan-table td {
-    font-size: 14px;
-  }
-
-  /* Make tag smaller for mobile */
-  .bt-allscan-tag {
-    padding: 4px 10px;
-    font-size: 11px;
-  }
+.section-hint {
+    display: none;
+}
 }
 
 @media (max-width: 480px) {
@@ -1173,12 +1175,7 @@
     }
 
     .bt-booth-grid {
-        grid-template-columns: repeat(5, 1fr);
-        gap: 3px;
-        width: 100%;
-        max-width: 100%;
-        margin-left: 0;
-        margin-right: 0;
+        gap: 6px;
     }
 
     .bt-booth-cell {
@@ -1198,23 +1195,29 @@
         display: none;
     }
 
+    .bt-seat-grid-container {
+        max-height: 350px;
+    }
+
+    .bt-seat-row-label {
+        width: 18px;
+        font-size: 10px;
+    }
+
     .bt-seat-grid {
-        padding: 6px;
-        padding-top: 64px;
-    }
-
-    .bt-seat-row {
-        gap: 8px;
-    }
-
-    .bt-seat-row-block {
         gap: 4px;
     }
 
-    .bt-seat {
-        min-width: 18px;
-        min-height: 18px;
-        max-width: 28px;
+    .bt-seat-row-labels-left,
+    .bt-seat-row-labels-right {
+        font-size: 10px;
+        gap: 4px;
+        padding: 0 4px;
+    }
+
+    .bt-seat-cell {
+        font-size: 11px;
+        min-width: 28px;
     }
 
     .bt-seat-tooltip {
@@ -1261,30 +1264,35 @@
     }
 
     .bt-allscan-table,
-  .bt-allscan-table tbody,
-  .bt-allscan-table tr,
-  .bt-allscan-table td {
-    display: block;
-    width: 100%;
-  }
-    
-  .bt-allscan-section {
-    padding: 12px;
-  }
+    .bt-allscan-table tbody,
+    .bt-allscan-table tr,
+    .bt-allscan-table td {
+        display: block;
+        width: 100%;
+    }
 
-  .bt-allscan-table-wrapper {
-    overflow-x: visible; /* remove scroll on small screens */
-  }
+    .bt-allscan-section {
+        padding: 12px;
+    }
+
+    .bt-allscan-table-wrapper {
+        overflow-x: visible;
+        /* remove scroll on small screens */
+    }
 
     .bt-allscan-table {
-    width: 100%;
-  }
+        width: 100%;
+    }
 
-  .bt-allscan-table tr {
-    margin-bottom: 14px;
-    padding: 14px;
-    width: 100%;
-  }
+    .bt-allscan-table tr {
+        margin-bottom: 14px;
+        padding: 14px;
+        width: 100%;
+    }
+
+    .section-hint {
+    display: none;
+}
 
 }
 

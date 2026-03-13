@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./SetupBoothLayoutModal.css";
 import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from "../utils/sweetAlert";
+import { useDragScroll } from "../utils/useDragScroll";
 
 const BOOTH_TYPES = [
   { value: "vip", label: "VIP Booth" },
@@ -39,7 +40,37 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
   const [cols, setCols] = useState(7);
   const [selectedCodes, setSelectedCodes] = useState(() => new Set());
 
-  const quantity = useMemo(() => selectedCodes.size, [selectedCodes]);
+  // For VIP booths, every 4 selected boxes represent 1 larger VIP booth.
+  // For all other booth types, quantity equals the number of selected boxes.
+  const quantity = useMemo(
+    () => (boothType === "vip" ? Math.floor(selectedCodes.size / 4) : selectedCodes.size),
+    [selectedCodes, boothType]
+  );
+
+  const gridScrollRef = useDragScroll();
+
+  const vipMergedCells = useMemo(() => {
+    if (boothType !== "vip") return {};
+    const coordSet = new Set(selectedCodes);
+    const result = {};
+    const covered = new Set();
+    coordSet.forEach((code) => {
+      if (covered.has(code)) return;
+      const r = Number(code.slice(0, 1)) - 1;
+      const c = Number(code.slice(1)) - 1;
+      const right = `${r + 1}${String(c + 2).padStart(2, "0")}`;
+      const bottom = `${r + 2}${String(c + 1).padStart(2, "0")}`;
+      const bottomRight = `${r + 2}${String(c + 2).padStart(2, "0")}`;
+      if (coordSet.has(right) && coordSet.has(bottom) && coordSet.has(bottomRight)) {
+        result[code] = { role: "top-left" };
+        result[right] = { role: "merged" };
+        result[bottom] = { role: "merged" };
+        result[bottomRight] = { role: "merged" };
+        covered.add(code).add(right).add(bottom).add(bottomRight);
+      }
+    });
+    return result;
+  }, [selectedCodes, boothType]);
 
   // Generate booth codes matrix dynamically based on current rows/cols
   const boothCodesMatrix = useMemo(() => generateBoothCodes(rows, cols), [rows, cols]);
@@ -61,15 +92,54 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
   if (!isOpen) return null;
 
   const toggleCode = (code) => {
-    setSelectedCodes((prev) => {
-      const next = new Set(prev);
-      if (next.has(code)) {
-        next.delete(code);
-      } else {
-        next.add(code);
-      }
-      return next;
-    });
+    // For VIP booths, treat a click as selecting/deselecting a 2x2 block (4 boxes)
+    if (boothType === "vip") {
+      setSelectedCodes((prev) => {
+        const next = new Set(prev);
+
+        const rowIndex = Number(code.slice(0, 1)) - 1;
+        const colIndex = Number(code.slice(1)) - 1;
+
+        // Ensure we have room for a 2x2 block starting at this cell
+        if (
+          !Number.isFinite(rowIndex) ||
+          !Number.isFinite(colIndex) ||
+          rowIndex < 0 ||
+          colIndex < 0 ||
+          rowIndex + 1 >= rows ||
+          colIndex + 1 >= cols
+        ) {
+          return next;
+        }
+
+        const topLeft = code;
+        const topRight = `${rowIndex + 1}${String(colIndex + 2).padStart(2, "0")}`;
+        const bottomLeft = `${rowIndex + 2}${String(colIndex + 1).padStart(2, "0")}`;
+        const bottomRight = `${rowIndex + 2}${String(colIndex + 2).padStart(2, "0")}`;
+
+        const group = [topLeft, topRight, bottomLeft, bottomRight];
+        const allSelected = group.every((c) => next.has(c));
+
+        if (allSelected) {
+          group.forEach((c) => next.delete(c));
+        } else {
+          group.forEach((c) => next.add(c));
+        }
+
+        return next;
+      });
+    } else {
+      // Non‑VIP booths: simple single‑cell toggle
+      setSelectedCodes((prev) => {
+        const next = new Set(prev);
+        if (next.has(code)) {
+          next.delete(code);
+        } else {
+          next.add(code);
+        }
+        return next;
+      });
+    }
   };
 
   const addRow = () => {
@@ -89,6 +159,11 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
   };
 
   const handleSave = async () => {
+    // Prevent saving an invalid VIP configuration (must be in groups of 4)
+    if (boothType === "vip" && (selectedCodes.size === 0 || selectedCodes.size % 4 !== 0)) {
+      return;
+    }
+
     const result = await showConfirmAlert(
       'Save Layout Changes?',
       `Are you sure you want to save this booth layout configuration? This will affect ${quantity} booths.`,
@@ -106,6 +181,8 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
       price: Number(price) || 0,
       quantity,
       selectedCodes: Array.from(selectedCodes),
+      rows,
+      cols,
     };
 
     try {
@@ -290,12 +367,20 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
               </div>
             </div>
 
-            <div className="setup-booth-grid-wrapper">
+            <div className="setup-booth-grid-wrapper" ref={gridScrollRef}>
               <div className="setup-booth-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(28px, 1fr))` }}>
                 {boothCodesMatrix.map((row, rowIndex) => (
                   <React.Fragment key={`row-${rowIndex}`}>
                     {row.map((code) => {
                       const isSelected = selectedCodes.has(code);
+                      const vipInfo = vipMergedCells[code];
+                      
+                      if (vipInfo && vipInfo.role === "merged") return null;
+
+                      const style = (vipInfo && vipInfo.role === "top-left")
+                        ? { gridRow: "span 2", gridColumn: "span 2" }
+                        : undefined;
+
                       return (
                         <button
                           key={code}
@@ -303,6 +388,7 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
                           className={`setup-booth-cell${
                             isSelected ? " selected" : ""
                           }`}
+                          style={style}
                           onClick={() => toggleCode(code)}
                           aria-pressed={isSelected}
                           aria-label={`Booth ${code} ${
@@ -321,7 +407,7 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
             <div className="setup-booth-legend">
               <div className="legend-item">
                 <span className="legend-dot available" />
-                <span className="small-body-text">Available</span>
+                <span className="small-body-text">Unavailable</span>
               </div>
               <div className="legend-item">
                 <span className="legend-dot selected" />
@@ -343,7 +429,10 @@ const SetupBoothLayoutModal = ({ isOpen, onClose, onSave }) => {
             type="button"
             className="primary-button save-btn"
             onClick={handleSave}
-            disabled={quantity === 0}
+            disabled={
+              quantity === 0 ||
+              (boothType === "vip" && (selectedCodes.size === 0 || selectedCodes.size % 4 !== 0))
+            }
           >
             Save Changes
           </button>

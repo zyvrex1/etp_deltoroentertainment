@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react';
 import './ManagePricingModal.css';
 import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from '../utils/sweetAlert';
 
-const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
+const ManagePricingModal = ({ isOpen, onClose, type, onSave, quantities }) => {
     // Default data structure based on type
     const [items, setItems] = useState([]);
 
@@ -18,7 +18,7 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
                         title: 'VIP Booth',
                         description: 'Premium location, larger space, high visibility.',
                         price: 5000,
-                        quantity: 5,
+                        quantity: quantities?.vip ?? 5,
                         badge: 'Premium',
                         badgeColor: 'purple'
                     },
@@ -27,7 +27,7 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
                         title: 'Corner Booth',
                         description: 'Corner positions with two open sides.',
                         price: 3000,
-                        quantity: 10,
+                        quantity: quantities?.corner ?? 10,
                         badge: 'Popular',
                         badgeColor: 'green'
                     },
@@ -36,7 +36,7 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
                         title: 'Inline Booth',
                         description: 'Standard inline positions.',
                         price: 2000,
-                        quantity: 20,
+                        quantity: quantities?.inline ?? 20,
                         badge: 'Standard',
                         badgeColor: 'gray'
                     }
@@ -48,7 +48,7 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
                         title: 'VIP Seats',
                         description: 'Front rows, premium view, exclusive access.',
                         price: 5000,
-                        quantity: 5,
+                        quantity: quantities?.vip ?? 5,
                         badge: 'Premium',
                         badgeColor: 'purple'
                     },
@@ -57,7 +57,7 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
                         title: 'Non-VIP Seats',
                         description: 'Standard seating area.',
                         price: 2000,
-                        quantity: 20,
+                        quantity: quantities?.["General Admission"] ?? 20,
                         badge: 'Standard',
                         badgeColor: 'gray'
                     }
@@ -67,6 +67,11 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
     }, [isOpen, type]);
 
     const handleInputChange = (id, field, value) => {
+        // Quantity is now read-only and driven by the layout configuration.
+        if (field === 'quantity') {
+            return;
+        }
+
         setItems(items.map(item =>
             item.id === id ? { ...item, [field]: value } : item
         ));
@@ -174,19 +179,21 @@ const ManagePricingModal = ({ isOpen, onClose, type, onSave }) => {
                                             id={`quantity-${item.id}`}
                                             type="number"
                                             value={item.quantity}
-                                            onChange={(e) => handleInputChange(item.id, 'quantity', e.target.value)}
+                                            readOnly
                                             className="pricing-input"
                                         />
                                         <div className="input-controls">
                                             <button
                                                 className="control-btn"
-                                                onClick={() => handleInputChange(item.id, 'quantity', Number(item.quantity) + 1)}
+                                                type="button"
+                                                disabled
                                             >
                                                 <Icon icon="mdi:chevron-up" />
                                             </button>
                                             <button
                                                 className="control-btn entry-control"
-                                                onClick={() => handleInputChange(item.id, 'quantity', Math.max(0, Number(item.quantity) - 1))}
+                                                type="button"
+                                                disabled
                                             >
                                                 <Icon icon="mdi:chevron-down" />
                                             </button>

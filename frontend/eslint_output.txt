@@ -1,0 +1,12 @@
+﻿
+D:\Web Dev\ETP_DeltoroEntertainment\frontend\src\admincomponents\boothandticket.jsx
+  167:9  error  'boothTotalRows' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  168:9  error  'boothMaxColsDesktop' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  169:9  error  'boothMaxColsMobile' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  170:9  error  'boothMaxRows' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+  175:9  error  'seatMaxColsDesktop' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  176:9  error  'seatMaxColsMobile' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+  177:9  error  'seatMaxRows' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+
+Γ£û 7 problems (7 errors, 0 warnings)
+

@@ -1,4 +1,4 @@
- import { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@iconify/react";
 import "./boothandticket.css";
@@ -6,6 +6,7 @@ import UploadMapModal from "./Modal/UploadMapModal";
 import ManagePricingModal from "./Modal/ManagePricingModal";
 import SetupBoothLayoutModal from "./Modal/SetupBoothLayoutModal";
 import SetupSeatLayoutModal from "./Modal/SetupSeatLayoutModal";
+import { useDragScroll } from "./utils/useDragScroll";
 
 const BoothandTicket = () => {
   const [activeTab, setActiveTab] = useState("booth-map");
@@ -18,19 +19,153 @@ const BoothandTicket = () => {
   const [isSeatLayoutOpen, setIsSeatLayoutOpen] = useState(false);
   const itemsPerPage = 7;
 
-  // Booth Map: 5x5 grid (5 columns, 5 rows). Each cell: null (empty) or { code, type, status, dimensions, bookedBy? }
-  const boothGrid = [
-    [{ code: "V1", type: "vip", status: "booked", dimensions: "20x20", bookedBy: "Acme Corp" }, { code: "V2", type: "vip", status: "available", dimensions: "20x20" }, null, null, null],
-    [null, { code: "C1", type: "corner", status: "available", dimensions: "10x10" }, { code: "I1", type: "inline", status: "available", dimensions: "10x10" }, null, null],
-    [null, null, null, { code: "I2", type: "inline", status: "booked", dimensions: "10x10", bookedBy: "TechStart Inc" }, null],
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-    
+  // Booth layout configuration saved from SetupBoothLayoutModal
+  const [boothLayoutConfig, setBoothLayoutConfig] = useState(null);
+
+  // Seat layout configuration saved from SetupSeatLayoutModal
+  const [seatLayoutConfig, setSeatLayoutConfig] = useState(null);
+
+  // Quantities to drive ManagePricingModal so quantity always matches current layouts
+  const [boothPricingQuantities, setBoothPricingQuantities] = useState({});
+  const [seatPricingQuantities, setSeatPricingQuantities] = useState({});
+
+  const boothGridScrollRef = useDragScroll();
+  const seatGridScrollRef = useDragScroll();
+
+  // Default Booth Map: 5 rows x 7 columns.
+  // Each cell: null (empty) or { code, type, status, dimensions, bookedBy? }
+  const defaultBoothGrid = [
+    [
+      { code: "V1", type: "vip", status: "booked", dimensions: "20x20", bookedBy: "Acme Corp", rowSpan: 2, colSpan: 2 },
+      { skip: true },
+      { code: "V2", type: "vip", status: "available", dimensions: "20x20", rowSpan: 2, colSpan: 2 },
+      { skip: true },
+      null, null, null, null, null, null, null, null, null, null, null, null,
+    ],
+    [
+      { skip: true },
+      { skip: true },
+      { skip: true },
+      { skip: true },
+      { code: "C1", type: "corner", status: "available", dimensions: "10x10" },
+      { code: "I1", type: "inline", status: "available", dimensions: "10x10" },
+      null, null, null, null, null, null, null, null, null, null,
+    ],
+    [
+      null, null, null,
+      { code: "I2", type: "inline", status: "booked", dimensions: "10x10", bookedBy: "TechStart Inc" },
+      null, null, null, null, null, null, null, null, null, null, null, null,
+    ],
+    [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
   ];
 
-  // Seat Map: type 'vip' | 'standard', status 'available' | 'booked', optional bookedBy
-  const seatRows = 5;
-  const seatsPerRow = 18;
+  // If a custom booth layout has been saved, derive a grid from it.
+  const boothGrid = boothLayoutConfig
+    ? (() => {
+      const { rows, cols, boothType, dimension, selectedCodes } = boothLayoutConfig;
+      const grid = Array.from({ length: rows }, () =>
+        Array.from({ length: cols }, () => null)
+      );
+
+      if (Array.isArray(selectedCodes)) {
+        selectedCodes.forEach((code) => {
+          // Codes are generated as: row (1 digit) + col (2 digits), e.g. "101", "305"
+          const rowIndex = Number(code.slice(0, 1)) - 1;
+          const colIndex = Number(code.slice(1)) - 1;
+
+          if (
+            Number.isFinite(rowIndex) &&
+            Number.isFinite(colIndex) &&
+            rowIndex >= 0 &&
+            rowIndex < rows &&
+            colIndex >= 0 &&
+            colIndex < cols
+          ) {
+            grid[rowIndex][colIndex] = {
+              code,
+              type: boothType,
+              status: "available",
+              dimensions: dimension,
+            };
+          }
+        });
+      }
+
+      return grid;
+    })()
+    : defaultBoothGrid;
+
+  // When configuring VIP booths, 4 selected boxes represent 1 larger booth.
+  // Build a map that tells us which cells should render as a merged 2x2 booth.
+  const vipMergedCells = useMemo(() => {
+    if (!boothLayoutConfig || boothLayoutConfig.boothType !== "vip") {
+      return {};
+    }
+
+    const { selectedCodes = [], rows, cols } = boothLayoutConfig;
+    const coordSet = new Set();
+    const codeToCoord = {};
+
+    selectedCodes.forEach((code) => {
+      const r = Number(code.slice(0, 1)) - 1;
+      const c = Number(code.slice(1)) - 1;
+      if (
+        Number.isFinite(r) &&
+        Number.isFinite(c) &&
+        r >= 0 &&
+        c >= 0 &&
+        r < rows &&
+        c < cols
+      ) {
+        const key = `${r}-${c}`;
+        coordSet.add(key);
+        codeToCoord[code] = { r, c };
+      }
+    });
+
+    const result = {};
+    const covered = new Set();
+
+    coordSet.forEach((key) => {
+      if (covered.has(key)) return;
+      const [rStr, cStr] = key.split("-");
+      const r = Number(rStr);
+      const c = Number(cStr);
+
+      const kRight = `${r}-${c + 1}`;
+      const kBottom = `${r + 1}-${c}`;
+      const kBottomRight = `${r + 1}-${c + 1}`;
+
+      if (
+        coordSet.has(kRight) &&
+        coordSet.has(kBottom) &&
+        coordSet.has(kBottomRight)
+      ) {
+        // This cell is the top-left of a 2x2 VIP booth
+        result[key] = { role: "top-left", rowSpan: 2, colSpan: 2 };
+        result[kRight] = { role: "merged" };
+        result[kBottom] = { role: "merged" };
+        result[kBottomRight] = { role: "merged" };
+
+        covered.add(key);
+        covered.add(kRight);
+        covered.add(kBottom);
+        covered.add(kBottomRight);
+      }
+    });
+
+    return result;
+  }, [boothLayoutConfig]);
+
+  // Column/row limits to achieve the required responsive grow/shrink scrolling behaviour
+  const boothTotalCols = (boothGrid[0] && boothGrid[0].length) || 1;
+
+  // Seat Map limits: max 15 columns, 10 rows before scrolling
+  const seatRows = seatLayoutConfig?.rows ?? 30;
+  const seatsPerRow = seatLayoutConfig?.cols ?? 50;
   const getSeatInfo = (row, col) => {
     const type = row === 0 ? "vip" : "standard";
     const bookedCols = row === 1 ? [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15] : row === 3 ? [0, 4, 8, 12] : [];
@@ -64,7 +199,7 @@ const BoothandTicket = () => {
     { id: 22, name: "Wendy Hill", details: "General Admission • Row B, Seat 11", tag: "SEATS", time: "9:52 AM", entrance: "Main Entrance", icon: "mdi:account-outline" },
     { id: 23, name: "Xavier Scott", details: "Standard • Row D, Seat 6", tag: "SEATS", time: "9:50 AM", entrance: "Side Entrance", icon: "mdi:account-outline" },
     { id: 24, name: "Yara Green", details: "Corner Booth • Booth 215", tag: "BOOTH", time: "9:48 AM", entrance: "Main Entrance", icon: "mdi:office-building-outline" },
-   
+
     { id: 25, name: "Zachary Adams", details: "VIP • Row A, Seat 1", tag: "SEATS", time: "9:45 AM", entrance: "Main Entrance", icon: "mdi:account-outline" },
   ];
 
@@ -140,20 +275,72 @@ const BoothandTicket = () => {
                     <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom in"><Icon icon="mdi:magnify-plus-outline" /></button>
                     <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom out"><Icon icon="mdi:magnify-minus-outline" /></button>
                   </div>
-
                 </div>
-                <div className="bt-booth-grid">
-                  {boothGrid.map((row, ri) =>
-                    row.map((cell, ci) => (
-                      <button
-                        type="button"
-                        key={`${ri}-${ci}`}
-                        className={`bt-booth-cell ${cell ? `filled status-${cell.status} type-${cell.type}` : "empty"}`}
-                        onClick={() => setDetailPopup(cell ? { tooltipKind: "booth", ...cell, ri, ci } : { tooltipKind: "booth-empty", ri, ci })}
-                        aria-label={cell ? `Booth ${cell.code}, ${cell.type}, ${cell.status}` : `Empty slot row ${ri + 1} col ${ci + 1}`}
-                      />
-                    ))
-                  )}
+                <div
+                  className="bt-grid-outer"
+                  style={{
+                    "--bt-total-cols": boothTotalCols,
+                  }}
+                >
+                  <div className="bt-booth-grid-wrapper" ref={boothGridScrollRef}>
+                    <div className="bt-booth-grid" style={{ gridTemplateColumns: `repeat(${boothTotalCols}, minmax(28px, 1fr))` }}>
+                      {boothGrid.map((row, ri) =>
+                        <React.Fragment key={`row-${ri}`}>
+                          {row.map((cell, ci) => {
+                            const boothCell = row[ci];
+                            if (boothCell && boothCell.skip) return null;
+
+                            const key = `${ri}-${ci}`;
+                            const vipInfo = vipMergedCells[key];
+
+                            // Skip cells that are part of a merged VIP booth but not the top-left
+                            if (vipInfo && vipInfo.role === "merged") {
+                              return null;
+                            }
+
+                            const isTopLeftMerged = vipInfo && vipInfo.role === "top-left";
+                            const rowSpan = isTopLeftMerged ? vipInfo.rowSpan : (boothCell?.rowSpan || 1);
+                            const colSpan = isTopLeftMerged ? vipInfo.colSpan : (boothCell?.colSpan || 1);
+
+                            const style = (rowSpan > 1 || colSpan > 1)
+                              ? {
+                                gridRow: `${ri + 1} / span ${rowSpan}`,
+                                gridColumn: `${ci + 1} / span ${colSpan}`,
+                              }
+                              : undefined;
+
+                            const displayCode = boothCell ? boothCell.code : `${ri + 1}${String(ci + 1).padStart(2, '0')}`;
+
+                            return (
+                              <button
+                                type="button"
+                                key={key}
+                                className={`bt-booth-cell ${boothCell
+                                  ? `filled status-${boothCell.status} type-${boothCell.type}`
+                                  : "empty"
+                                  } ${isTopLeftMerged ? "vip-merged" : ""}`}
+                                style={style}
+                                onClick={() =>
+                                  setDetailPopup(
+                                    boothCell
+                                      ? { tooltipKind: "booth", ...boothCell, ri, ci }
+                                      : { tooltipKind: "booth-empty", ri, ci }
+                                  )
+                                }
+                                aria-label={
+                                  boothCell
+                                    ? `Booth ${boothCell.code}, ${boothCell.type}, ${boothCell.status}`
+                                    : `Empty slot row ${ri + 1} col ${ci + 1}`
+                                }
+                              >
+                                {displayCode}
+                              </button>
+                            );
+                          })}
+                        </React.Fragment>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="bt-legend">
                   <span className="small-body-text bt-legend-item"><span className="dot booth-vip" /> VIP Booth</span>
@@ -161,6 +348,7 @@ const BoothandTicket = () => {
                   <span className="small-body-text bt-legend-item"><span className="dot booth-inline" /> Inline Booth</span>
                   <span className="small-body-text bt-legend-item"><span className="dot booth-booked" /> Booked/Sold</span>
                 </div>
+                <p className="section-hint small-body-text">Hold shift and Scroll up and down to scroll horizontally</p>
               </div>
               <div className="bt-summary">
                 <h3 className="bt-section-title right">Inventory Summary</h3>
@@ -208,49 +396,50 @@ const BoothandTicket = () => {
                 </div>
                 <div className="bt-seat-layout">
                   <div className="bt-stage">STAGE</div>
-                  <div className="bt-seat-grid">
-                    {Array.from({ length: seatRows }).map((_, rowIndex) => {
-                      const rowLabel = rowLabels[rowIndex];
-                      const half = Math.floor(seatsPerRow / 2);
-                      return (
-                        <div key={rowIndex} className="bt-seat-row">
-                          {/* Left block: seats 1–9 (cols 0–8) */}
-                          <div className="bt-seat-row-block">
-                            {Array.from({ length: half }).map((_, i) => {
-                              const colIndex = i;
-                              const info = getSeatInfo(rowIndex, colIndex);
-                              const seatNum = colIndex + 1;
-                              return (
-                                <button
-                                  type="button"
-                                  key={`${rowIndex}-${colIndex}`}
-                                  className={`bt-seat type-${info.type} status-${info.status}`}
-                                  aria-label={`Row ${rowLabel} Seat ${seatNum} ${info.type} ${info.status}`}
-                                  onClick={() => setDetailPopup({ tooltipKind: "seat", rowLabel, seatNum, ...info })}
-                                />
-                              );
-                            })}
-                          </div>
-                          {/* Right block: seats 10–18 (cols 9–17) */}
-                          <div className="bt-seat-row-block">
-                            {Array.from({ length: seatsPerRow - half }).map((_, i) => {
-                              const colIndex = half + i;
-                              const info = getSeatInfo(rowIndex, colIndex);
-                              const seatNum = colIndex + 1;
-                              return (
-                                <button
-                                  type="button"
-                                  key={`${rowIndex}-${colIndex}`}
-                                  className={`bt-seat type-${info.type} status-${info.status}`}
-                                  aria-label={`Row ${rowLabel} Seat ${seatNum} ${info.type} ${info.status}`}
-                                  onClick={() => setDetailPopup({ tooltipKind: "seat", rowLabel, seatNum, ...info })}
-                                />
-                              );
-                            })}
-                          </div>
+                  <div
+                    className="bt-grid-outer"
+                    style={{
+                      "--bt-total-cols": seatsPerRow,
+                    }}
+                  >
+                    <div className="bt-seat-grid-container" ref={seatGridScrollRef}>
+                      <div className="bt-seat-grid-wrapper">
+
+                        <div className="bt-seat-grid" style={{ gridTemplateColumns: `min-content repeat(${seatsPerRow}, minmax(28px, 1fr)) min-content` }}>
+                          {Array.from({ length: seatRows }).map((_, rowIndex) => {
+                            const rowLabel = rowLabels[rowIndex] ?? String.fromCharCode(65 + rowIndex);
+                            return (
+                              <React.Fragment key={`row-${rowIndex}`}>
+                                <div className="bt-seat-row-label">{rowLabel}</div>
+                                {Array.from({ length: seatsPerRow }).map((_, colIndex) => {
+                                  const info = getSeatInfo(rowIndex, colIndex);
+                                  const seatNum = String(colIndex + 1).padStart(2, '0');
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={`${rowIndex}-${colIndex}`}
+                                      className={`bt-seat-cell type-${info.type} status-${info.status}`}
+                                      aria-label={`Row ${rowLabel} Seat ${colIndex + 1} ${info.type} ${info.status}`}
+                                      onClick={() =>
+                                        setDetailPopup({
+                                          tooltipKind: "seat",
+                                          rowLabel,
+                                          seatNum: colIndex + 1,
+                                          ...info,
+                                        })
+                                      }
+                                    >
+                                      {seatNum}
+                                    </button>
+                                  );
+                                })}
+                                <div className="bt-seat-row-label">{rowLabel}</div>
+                              </React.Fragment>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="bt-legend">
@@ -258,6 +447,7 @@ const BoothandTicket = () => {
                   <span className="small-body-text bt-legend-item"><span className="dot booked" /> Booked/Sold</span>
                   <span className="small-body-text bt-legend-item"><span className="dot vip" /> VIP</span>
                 </div>
+                <p className="section-hint small-body-text">Hold shift and Scroll up and down to scroll horizontally</p>
               </div>
               <div className="bt-summary">
                 <h3 className="bt-section-title right">Inventory Summary</h3>
@@ -467,6 +657,7 @@ const BoothandTicket = () => {
       <ManagePricingModal
         isOpen={isPricingModalOpen.isOpen}
         type={isPricingModalOpen.type}
+        quantities={isPricingModalOpen.type === 'booth' ? boothPricingQuantities : seatPricingQuantities}
         onClose={() => setIsPricingModalOpen({ ...isPricingModalOpen, isOpen: false })}
         onSave={handlePricingSave}
       />
@@ -476,6 +667,11 @@ const BoothandTicket = () => {
         onClose={() => setIsSetupLayoutOpen(false)}
         onSave={(config) => {
           console.log("Booth layout configuration:", config);
+          setBoothLayoutConfig(config);
+          setBoothPricingQuantities((prev) => ({
+            ...prev,
+            [config.boothType]: config.quantity,
+          }));
           setIsSetupLayoutOpen(false);
         }}
       />
@@ -485,6 +681,11 @@ const BoothandTicket = () => {
         onClose={() => setIsSeatLayoutOpen(false)}
         onSave={(config) => {
           console.log("Seat layout configuration:", config);
+          setSeatLayoutConfig(config);
+          setSeatPricingQuantities((prev) => ({
+            ...prev,
+            [config.boothType]: config.quantity,
+          }));
           setIsSeatLayoutOpen(false);
         }}
       />

@@ -273,7 +273,8 @@
   width: 100%;
   min-width: 0;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: auto;
+  max-height: 290px;
   -webkit-overflow-scrolling: touch;
 }
 
