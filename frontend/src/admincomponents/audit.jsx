@@ -108,21 +108,34 @@ const AuditLogs = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 7;
 
-    const filterLogsByDateRange = (logsToFilter) => {
-        if (!dateRange?.start || !dateRange?.end || dateRange?.preset === 'all') return logsToFilter;
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filterLogsByDateRangeAndSearch = (logsToFilter) => {
+        let filtered = logsToFilter;
+
+        if (searchQuery) {
+            filtered = filtered.filter(log =>
+               log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               log.admin.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               log.target.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               log.details.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+
+        if (!dateRange?.start || !dateRange?.end || dateRange?.preset === 'all') return filtered;
 
         const start = new Date(dateRange.start);
         const end = new Date(dateRange.end);
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
 
-        return logsToFilter.filter(log => {
+        return filtered.filter(log => {
             const logDate = new Date(log.timestamp);
             return logDate >= start && logDate <= end;
         });
     };
 
-    const filteredLogs = filterLogsByDateRange(logs);
+    const filteredLogs = filterLogsByDateRangeAndSearch(logs);
     const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedLogs = filteredLogs.slice(startIndex, startIndex + itemsPerPage);
@@ -200,22 +213,33 @@ const AuditLogs = () => {
                 </button>
             </div>
 
-            {/* Controls Row */}
-            <div className="audit-controls">
-                <div className="search-bar">
-                    <Icon icon="mdi:magnify" className="search-icon" />
-                    <input type="text" placeholder="Search logs..." />
+            <div className="audit-content">
+                <div className="audit-toolbar">
+                    <div className="audit-toolbar-left">
+                        <div className="audit-search">
+                            <Icon icon="mdi:magnify" className="search-icon" />
+                            <input 
+                                type="text" 
+                                placeholder="Search logs..." 
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                            />
+                        </div>
+                    </div>
+                    <div className="audit-toolbar-right">
+                        <DateRangePicker
+                            value={dateRange}
+                            onChange={handleDateRangeChange}
+                            buttonClassName="filter-btn"
+                            placeholder="Select date range"
+                        />
+                    </div>
                 </div>
-                <DateRangePicker
-                    value={dateRange}
-                    onChange={handleDateRangeChange}
-                    buttonClassName="filter-btn"
-                    placeholder="Select date range"
-                />
-            </div>
 
             {/* Logs Table */}
-            <div className="audit-card">
                 <div className="table-responsive">
                     <table className="audit-table">
                         <thead>
