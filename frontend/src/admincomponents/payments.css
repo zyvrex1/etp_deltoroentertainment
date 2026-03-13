@@ -133,6 +133,128 @@
             }
         }
 
+        .pay-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+
+            .pay-toolbar-left {
+                flex: 1;
+
+                .pay-search {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    background: var(--color-bg-light);
+                    border: 1px solid var(--color-black-quaternary);
+                    border-radius: 8px;
+                    padding: 10px 16px;
+
+                    svg {
+                        width: 20px;
+                        height: 20px;
+                        color: var(--color-black-tertiary);
+                    }
+
+                    input {
+                        flex: 1;
+                        border: none;
+                        background: none;
+                        color: var(--color-black-primary);
+
+                        &::placeholder {
+                            color: var(--color-black-tertiary);
+                        }
+
+                        &:focus {
+                            outline: none;
+                        }
+                    }
+                }
+            }
+
+            .pay-toolbar-right {
+                flex-shrink: 0;
+
+                .pay-filter-dropdown {
+                    position: relative;
+
+                    .pay-filter-dropdown-btn {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        background-color: var(--color-white-primary);
+                        border: 1px solid var(--color-black-tertiary);
+                        border-radius: 8px;
+                        padding: 10px 16px;
+                        color: var(--color-black-secondary);
+                        cursor: pointer;
+                        min-width: 180px;
+                        transition: border-color 0.2s;
+
+                        &:hover {
+                            border-color: var(--color-black-secondary);
+                        }
+
+                        .truncate-text {
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            max-width: 90%;
+                        }
+
+                        .dropdown-icon {
+                            transition: transform 0.2s ease;
+                            font-size: 18px;
+
+                            &.open {
+                                transform: rotate(180deg);
+                            }
+                        }
+                    }
+
+                    .pay-filter-dropdown-menu {
+                        position: absolute;
+                        top: calc(100% + 4px);
+                        right: 0;
+                        left: 0;
+                        background-color: var(--color-white-primary);
+                        border: 1px solid var(--color-black-tertiary);
+                        border-radius: 8px;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                        z-index: 10;
+                        display: flex;
+                        flex-direction: column;
+                        overflow: hidden;
+
+                        .pay-filter-dropdown-item {
+                            padding: 10px 16px;
+                            background: none;
+                            border: none;
+                            text-align: left;
+                            color: var(--color-black-secondary);
+                            cursor: pointer;
+                            border-radius: 0;
+                            transition: background 0.2s ease;
+
+                            &:hover {
+                                background: var(--color-red-primary);
+                                color: var(--color-white-primary);
+                            }
+
+                            &.active {
+                                background: var(--color-red-quaternary);
+                                color: var(--color-red-primary);
+                                font-weight: 500;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         .table-wrapper {
             overflow-x: auto;
             margin-bottom: 24px;
@@ -269,6 +391,21 @@
 
         .payments-content {
             padding: 20px;
+
+            .pay-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+
+                .pay-toolbar-right {
+                    width: 100%;
+
+                    .pay-filter-dropdown,
+                    .pay-filter-dropdown-btn,
+                    .pay-filter-dropdown-menu {
+                        width: 100%;
+                    }
+                }
+            }
 
             .table-wrapper {
                 .data-table {

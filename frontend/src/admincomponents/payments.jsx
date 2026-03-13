@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./payments.css";
 import Swal from "sweetalert2";
@@ -34,10 +34,40 @@ const Payments = () => {
     { id: 5, promoter: "Sarah Chen", event: "Creator Economy Expo", amount: "$10,000.00", method: "Wire Transfer", status: "paid", date: "Oct 22, 2024" },
   ];
 
-  const tableData = activeTab === "payout-requests" ? payoutRequests : paymentMethods;
-  const totalPages = Math.ceil(tableData.length / itemsPerPage) || 1;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const filterDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+    if (isFilterDropdownOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isFilterDropdownOpen]);
+
+  let filteredData = activeTab === "payout-requests" ? payoutRequests : paymentMethods;
+
+  if (searchQuery) {
+    const query = searchQuery.toLowerCase();
+    filteredData = filteredData.filter(item => 
+      item.promoter.toLowerCase().includes(query) ||
+      (item.event && item.event.toLowerCase().includes(query)) ||
+      item.amount.toLowerCase().includes(query) ||
+      item.status.toLowerCase().includes(query)
+    );
+  }
+
+  if (activeTab === "payout-requests" && statusFilter !== "All Status") {
+    filteredData = filteredData.filter(item => item.status.toLowerCase() === statusFilter.toLowerCase());
+  }
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = tableData.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
   const [expandedRow, setExpandedRow] = useState(null);
   const toggleRow = (id) => {
@@ -51,6 +81,8 @@ const Payments = () => {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setCurrentPage(1);
+    setSearchQuery("");
+    setStatusFilter("All Status");
     setExpandedRow(null);
   };
 
@@ -145,6 +177,55 @@ const Payments = () => {
           >
             Payment Methods
           </button>
+        </div>
+
+        <div className="pay-toolbar">
+          <div className="pay-toolbar-left">
+            <div className="pay-search">
+              <Icon icon="mdi:magnify" />
+              <input
+                type="text"
+                placeholder={activeTab === "payout-requests" ? "Search payouts..." : "Search payments..."}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="small-body-text"
+              />
+            </div>
+          </div>
+
+          {activeTab === "payout-requests" && (
+            <div className="pay-toolbar-right">
+              <div className="pay-filter-dropdown" ref={filterDropdownRef}>
+                <button
+                  className="pay-filter-dropdown-btn small-body-text"
+                  onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                >
+                  <span className="truncate-text">{statusFilter}</span>
+                  <Icon icon="mdi:chevron-down" className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""}`} />
+                </button>
+                {isFilterDropdownOpen && (
+                  <div className="pay-filter-dropdown-menu">
+                    {["All Status", "Pending", "Processing", "Paid", "Rejected"].map((option) => (
+                      <button
+                        key={option}
+                        className={`pay-filter-dropdown-item small-body-text ${statusFilter === option ? "active" : ""}`}
+                        onClick={() => {
+                          setStatusFilter(option);
+                          setCurrentPage(1);
+                          setIsFilterDropdownOpen(false);
+                        }}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="table-wrapper">
