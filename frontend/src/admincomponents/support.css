@@ -305,7 +305,7 @@
                                 margin-bottom: 0;
                             }
 
-                            &:not(.expanded) td:not(.id-td):not(.name-td) {
+                            &:not(.expanded) td:not(.id-td):not(.name-td):not(.subject-cell):not(.status-cell) {
                                 display: none;
                             }
                         }
@@ -364,7 +364,6 @@
 
                             &.name-td {
                                 padding-top: 4px;
-                                border-bottom: none;
                             }
 
                             &:not(.id-td) {
@@ -386,7 +385,11 @@
                             }
                         }
 
-                        tr.expanded td.name-td {
+                        tr:not(.expanded) td.status-cell {
+                            border-bottom: none;
+                        }
+
+                        tr.expanded td.status-cell {
                             border-bottom: 1px solid var(--color-black-quaternary);
                             padding-bottom: 12px;
                         }
