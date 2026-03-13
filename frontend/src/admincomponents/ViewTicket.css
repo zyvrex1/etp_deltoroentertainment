@@ -1,0 +1,544 @@
+/* ViewTicket.css */
+
+.vt-page {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+
+.vt-header-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.vt-back-btn {
+    background: none;
+    border: none;
+    color: var(--color-black-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+.vt-back-btn:hover {
+    background-color: var(--color-bg-hover);
+}
+
+.vt-header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vt-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vt-title-row h2 {
+    margin: 0;
+    color: var(--color-black-primary);
+}
+
+.vt-subtitle {
+    color: var(--color-black-secondary);
+}
+
+/* Badges */
+.vt-badge-medium {
+    background-color: var(--color-yellow-quaternary);
+    color: #e6a23c;
+    border: 1px solid #faecd8;
+}
+
+.vt-badge-status {
+    border-radius: 12px;
+    padding: 4px 12px;
+}
+
+.vt-badge-open {
+    background-color: var(--color-red-quaternary);
+    color: var(--color-red-primary);
+    border: 1px solid var(--color-red-tertiary);
+}
+
+.vt-badge-in-progress {
+    background-color: var(--color-blue-quaternary);
+    color: var(--color-blue-primary);
+    border: 1px solid var(--color-blue-tertiary);
+}
+
+.vt-badge-resolved {
+    background-color: var(--color-green-quaternary);
+    color: var(--color-green-primary);
+    border: 1px solid var(--color-green-tertiary);
+}
+
+.vt-badge-customer {
+    background-color: var(--color-green-quaternary);
+    color: var(--color-green-primary);
+    font-size: 10px;
+    padding: 2px 6px;
+    border: 1px solid var(--color-green-tertiary);
+}
+
+.vt-badge-admin {
+    background-color: var(--color-yellow-quaternary);
+    color: #e6a23c;
+    font-size: 10px;
+    padding: 2px 6px;
+    border: 1px solid #faecd8;
+    margin-left: auto;
+}
+
+/* Layout */
+.vt-grid {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.vt-col-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 380px;
+}
+
+.vt-col-right {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Cards */
+.vt-card {
+    background-color: var(--color-white-primary);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid var(--color-black-quaternary);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.vt-card-heading {
+    color: var(--color-black-secondary);
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.vt-orange-heading {
+    color: #e6a23c;
+}
+
+/* User Info */
+.vt-user-info {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.vt-avatar {
+    width: 48px;
+    height: 48px;
+    background-color: var(--color-bg-light);
+    color: var(--color-black-secondary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.fw-600 {
+    font-weight: 600 !important;
+}
+
+.vt-user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vt-user-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vt-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-black-secondary);
+}
+
+/* Event Info */
+.vt-event-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background-color: var(--color-bg-light);
+    border-radius: 8px;
+    border: 1px solid var(--color-black-quaternary);
+}
+
+.vt-icon-red {
+    color: var(--color-red-primary);
+}
+
+.vt-icon-gray {
+    color: var(--color-black-secondary);
+}
+
+/* Ticket Details */
+.vt-detail-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vt-label {
+    color: var(--color-black-secondary);
+}
+
+.vt-status-dropdown-wrapper {
+    position: relative;
+    border: 1px solid var(--color-red-primary);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.vt-select-status {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    padding: 6px 32px 6px 12px;
+    font-size: 14px;
+    color: var(--color-black-primary);
+    cursor: pointer;
+    font-family: var(--font-family, 'Inter', sans-serif);
+    font-weight: 500;
+}
+
+.vt-status-dropdown-wrapper::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid var(--color-black-primary);
+    pointer-events: none;
+}
+
+.vt-category-val {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-black-secondary);
+}
+
+.vt-divider {
+    height: 1px;
+    background-color: var(--color-black-quaternary);
+    margin: 8px 0;
+}
+
+.vt-assigned-header {
+    margin-bottom: 8px;
+}
+
+.vt-reassign {
+    color: var(--color-black-secondary);
+    cursor: pointer;
+}
+
+.vt-assignee {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vt-avatar-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.vt-avatar-red {
+    background-color: var(--color-red-quaternary);
+    color: var(--color-red-primary);
+}
+
+.vt-avatar-darkred {
+    background-color: var(--color-red-primary);
+    color: var(--color-white-primary);
+}
+
+/* Attachments */
+.vt-attachment {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 8px;
+}
+
+.vt-att-icon {
+    background-color: var(--color-bg-light);
+    padding: 8px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vt-attach-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.vt-attach-info .smaller-body-text {
+    color: var(--color-black-secondary);
+}
+
+/* Chat Area */
+.vt-chat-card {
+    padding-bottom: 24px;
+}
+
+.vt-chat-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 16px;
+    background-color: var(--color-bg-light);
+    border-radius: 8px;
+}
+
+.vt-chat-name {
+    color: var(--color-black-secondary);
+    margin-bottom: 4px;
+}
+
+.vt-message-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+}
+
+.vt-message-wrapper.left {
+    align-self: flex-start;
+}
+
+.vt-message-wrapper.right {
+    align-self: flex-end;
+}
+
+.right-align {
+    text-align: right;
+}
+
+.vt-message-bubble {
+    padding: 16px;
+    border-radius: 12px;
+}
+
+.user-message {
+    background-color: var(--color-white-primary);
+    border: 1px solid var(--color-black-quaternary);
+    color: var(--color-black-primary);
+    border-top-left-radius: 0;
+}
+
+.admin-message {
+    background-color: var(--color-blue-primary);
+    color: var(--color-white-primary);
+    border-top-right-radius: 0;
+}
+
+.vt-message-time {
+    color: var(--color-black-tertiary);
+    margin-top: 6px;
+}
+
+/* Reply Area */
+.vt-reply-area {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.vt-reply-input {
+    width: 100%;
+    min-height: 80px;
+    border: none;
+    resize: none;
+    outline: none;
+    background: transparent;
+    color: var(--color-black-primary);
+}
+
+.vt-reply-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--color-black-quaternary);
+    padding-top: 12px;
+}
+
+.vt-hint-text {
+    color: var(--color-black-secondary);
+}
+
+.vt-reply-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+}
+
+/* Internal Notes */
+.vt-internal-notes {
+    border: 1px solid #faecd8;
+    background-color: var(--color-yellow-quaternary);
+}
+
+.vt-notes-header {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #faecd8;
+    padding-bottom: 16px;
+}
+
+.vt-note {
+    background-color: var(--color-white-primary);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #faecd8;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.vt-note-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vt-note-header .smaller-body-text {
+    color: var(--color-black-secondary);
+    margin-left: 8px;
+}
+
+.vt-edit-icon {
+    margin-left: auto;
+    color: var(--color-black-secondary);
+    cursor: pointer;
+}
+
+.vt-add-note {
+    background-color: var(--color-white-primary);
+    border: 1px solid #faecd8;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.vt-note-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--color-black-primary);
+}
+
+.vt-add-note-action {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.vt-add-note-btn {
+    background-color: #e6a23c;
+    color: var(--color-white-primary);
+    border: none;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+    .vt-grid {
+        flex-direction: column;
+    }
+    .vt-col-left {
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .vt-page {
+        padding: 16px;
+    }
+    .vt-title-row {
+        flex-wrap: wrap;
+    }
+    .vt-card {
+        padding: 16px;
+    }
+}
+
+    @media (max-width: 480px) {
+        padding: 12px;
+        
+        .vt-title-row h2 {
+            font-size: 20px;
+        }
+        .vt-user-info {
+            flex-direction: column;
+        }
+        .vt-detail-row {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .vt-message-wrapper {
+            max-width: 95%;
+        }
+    }
+}
