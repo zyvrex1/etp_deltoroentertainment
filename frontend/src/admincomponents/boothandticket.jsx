@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@iconify/react";
 import "./boothandticket.css";
@@ -10,9 +10,55 @@ import { useDragScroll } from "./utils/useDragScroll";
 
 const BoothandTicket = () => {
   const [activeTab, setActiveTab] = useState("booth-map");
-  const [selectedEvent, setSelectedEvent] = useState("TechStart Summint 2026");
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortFilter, setSortFilter] = useState("Recently Added");
+
+  const allEvents = [
+    { id: 1, title: 'TechStart Summit 2026', date: 'Jun 16, 2026', location: 'Starlight Arena, Los Angeles, CA', attendees: '5,000+', spotsLeft: 12, category: 'Technology', image: '/assets/eventbg.jpg', addedDate: '2026-01-01' },
+    { id: 2, title: 'Creator Economy Expo 2025', date: 'Mar 10, 2025', location: 'Convention Center, NY', attendees: '2,500+', spotsLeft: 5, category: 'Digital Media', image: '/assets/eventbg.jpg', addedDate: '2025-01-05' },
+    { id: 3, title: 'AI Innovation Conference 2025', date: 'Sep 22, 2025', location: 'Tech Hub, San Francisco', attendees: '8,000+', spotsLeft: 30, category: 'AI', image: '/assets/eventbg.jpg', addedDate: '2025-01-10' },
+    { id: 4, title: 'Future of Work 2025', date: 'Oct 15, 2025', location: 'O2 Arena, London', attendees: '10,000+', spotsLeft: 0, category: 'Business', image: '/assets/eventbg.jpg', addedDate: '2025-01-15' },
+    { id: 5, title: 'Future of Work 2025', date: 'Oct 15, 2025', location: 'O2 Arena, London', attendees: '10,000+', spotsLeft: 0, category: 'Business', image: '/assets/eventbg.jpg', addedDate: '2025-01-15' },
+    { id: 6, title: 'Future of Work 2025', date: 'Oct 15, 2025', location: 'O2 Arena, London', attendees: '10,000+', spotsLeft: 0, category: 'Business', image: '/assets/eventbg.jpg', addedDate: '2025-01-15' },
+    { id: 7, title: 'Future of Work 2025', date: 'Oct 15, 2025', location: 'O2 Arena, London', attendees: '10,000+', spotsLeft: 0, category: 'Business', image: '/assets/eventbg.jpg', addedDate: '2025-01-15' },
+    { id: 8, title: 'Future of Work 2025', date: 'Oct 15, 2025', location: 'O2 Arena, London', attendees: '10,000+', spotsLeft: 0, category: 'Business', image: '/assets/eventbg.jpg', addedDate: '2025-01-15' },
+    { id: 9, title: 'Future of Work 2025', date: 'Oct 15, 2025', location: 'O2 Arena, London', attendees: '10,000+', spotsLeft: 0, category: 'Business', image: '/assets/eventbg.jpg', addedDate: '2025-01-15' },
+    { id: 10, title: 'Future of Work 2025', date: 'Oct 15, 2025', location: 'O2 Arena, London', attendees: '10,000+', spotsLeft: 0, category: 'Business', image: '/assets/eventbg.jpg', addedDate: '2025-01-15' },
+    { id: 11, title: 'Future of Work 2025', date: 'Oct 15, 2025', location: 'O2 Arena, London', attendees: '10,000+', spotsLeft: 0, category: 'Business', image: '/assets/eventbg.jpg', addedDate: '2025-01-15' },
+  ];
+
+  let filteredEvents = allEvents.filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  if (sortFilter === 'A-Z') {
+    filteredEvents.sort((a, b) => a.title.localeCompare(b.title));
+  } else if (sortFilter === 'Z-A') {
+    filteredEvents.sort((a, b) => b.title.localeCompare(a.title));
+  } else {
+    // Recently Added (descending by date)
+    filteredEvents.sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate));
+  }
+
   const [detailPopup, setDetailPopup] = useState(null);
-  const [currentPage, handlePageChange] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [eventCurrentPage, setEventCurrentPage] = useState(1);
+  const eventsPerPage = 8;
+  const totalEventPages = Math.ceil(filteredEvents.length / eventsPerPage) || 1;
+  const startEventIndex = (eventCurrentPage - 1) * eventsPerPage;
+  const paginatedEvents = filteredEvents.slice(startEventIndex, startEventIndex + eventsPerPage);
+
+  const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
+  const eventDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (eventDropdownRef.current && !eventDropdownRef.current.contains(event.target)) {
+        setIsEventDropdownOpen(false);
+      }
+    };
+    if (isEventDropdownOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isEventDropdownOpen]);
+
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState({ isOpen: false, type: 'booth' });
   const [isSetupLayoutOpen, setIsSetupLayoutOpen] = useState(false);
@@ -222,473 +268,586 @@ const BoothandTicket = () => {
 
   return (
     <div className="booth-ticket-page">
-      <div className="bt-header">
-        <div>
-          <h1>Booth & Ticket Control</h1>
-          <p>Manage venue layouts and ticket inventory.</p>
-        </div>
-        <div className="bt-event-select">
-          <select
-            value={selectedEvent}
-            onChange={(e) => setSelectedEvent(e.target.value)}
-            className="bt-event-dropdown"
-          >
-            <option>TechStart Summint 2026</option>
-            <option>Creator Economy Expo 2025</option>
-            <option>AI Innovation Conference 2025</option>
-          </select>
-          <Icon icon="mdi:chevron-down" className="bt-chevron" />
-        </div>
-      </div>
+      {!selectedEvent ? (
+        <div className="bt-event-selection-container">
+          <div className="bt-header">
+            <div>
+              <h1>Booth & Ticket Control</h1>
+              <p className="large-body-text">Select an event to manage venue layouts and ticket inventory.</p>
+            </div>
+          </div>
 
-      <div className="bt-tabs">
-        <button className={`bt-tab ${activeTab === "booth-map" ? "active" : ""}`} onClick={() => setActiveTab("booth-map")}>
-          Booth Map
-        </button>
-        <button className={`bt-tab ${activeTab === "seat-map" ? "active" : ""}`} onClick={() => setActiveTab("seat-map")}>
-          Seat Map
-        </button>
-        <button className={`bt-tab ${activeTab === "live-scanning" ? "active" : ""}`} onClick={() => setActiveTab("live-scanning")}>
-          Live Scanning
-        </button>
-      </div>
-
-      <div className="bt-main">
-        <div className="bt-content">
-          {activeTab === "booth-map" && (
-            <>
-              <div className="bt-section">
-                <div className="bt-section-header">
-                  <h3 className="bt-section-title">Exhibition Hall Layout</h3>
-                  <div className="bt-toolbar">
-                    <button className="outlined-button bt-btn bt-btn-upload" onClick={() => setIsUploadModalOpen(true)}>
-                      <Icon icon="mdi:upload" />
-                      Upload Map
-                    </button>
-                    <button
-                      className="outlined-button bt-btn bt-btn-edit"
-                      onClick={() => setIsSetupLayoutOpen(true)}
-                    >
-                      <Icon icon="mdi:pencil" />
-                      Edit Layout
-                    </button>
-                    <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom in"><Icon icon="mdi:magnify-plus-outline" /></button>
-                    <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom out"><Icon icon="mdi:magnify-minus-outline" /></button>
-                  </div>
-                </div>
-                <div
-                  className="bt-grid-outer"
-                  style={{
-                    "--bt-total-cols": boothTotalCols,
-                  }}
-                >
-                  <div className="bt-booth-grid-wrapper" ref={boothGridScrollRef}>
-                    <div className="bt-booth-grid" style={{ gridTemplateColumns: `repeat(${boothTotalCols}, minmax(28px, 1fr))` }}>
-                      {boothGrid.map((row, ri) =>
-                        <React.Fragment key={`row-${ri}`}>
-                          {row.map((cell, ci) => {
-                            const boothCell = row[ci];
-                            if (boothCell && boothCell.skip) return null;
-
-                            const key = `${ri}-${ci}`;
-                            const vipInfo = vipMergedCells[key];
-
-                            // Skip cells that are part of a merged VIP booth but not the top-left
-                            if (vipInfo && vipInfo.role === "merged") {
-                              return null;
-                            }
-
-                            const isTopLeftMerged = vipInfo && vipInfo.role === "top-left";
-                            const rowSpan = isTopLeftMerged ? vipInfo.rowSpan : (boothCell?.rowSpan || 1);
-                            const colSpan = isTopLeftMerged ? vipInfo.colSpan : (boothCell?.colSpan || 1);
-
-                            const style = (rowSpan > 1 || colSpan > 1)
-                              ? {
-                                gridRow: `${ri + 1} / span ${rowSpan}`,
-                                gridColumn: `${ci + 1} / span ${colSpan}`,
-                              }
-                              : undefined;
-
-                            const displayCode = boothCell ? boothCell.code : `${ri + 1}${String(ci + 1).padStart(2, '0')}`;
-
-                            return (
-                              <button
-                                type="button"
-                                key={key}
-                                className={`bt-booth-cell ${boothCell
-                                  ? `filled status-${boothCell.status} type-${boothCell.type}`
-                                  : "empty"
-                                  } ${isTopLeftMerged ? "vip-merged" : ""}`}
-                                style={style}
-                                onClick={() =>
-                                  setDetailPopup(
-                                    boothCell
-                                      ? { tooltipKind: "booth", ...boothCell, ri, ci }
-                                      : { tooltipKind: "booth-empty", ri, ci }
-                                  )
-                                }
-                                aria-label={
-                                  boothCell
-                                    ? `Booth ${boothCell.code}, ${boothCell.type}, ${boothCell.status}`
-                                    : `Empty slot row ${ri + 1} col ${ci + 1}`
-                                }
-                              >
-                                {displayCode}
-                              </button>
-                            );
-                          })}
-                        </React.Fragment>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="bt-legend">
-                  <span className="small-body-text bt-legend-item"><span className="dot booth-vip" /> VIP Booth</span>
-                  <span className="small-body-text bt-legend-item"><span className="dot booth-corner" /> Corner Booth</span>
-                  <span className="small-body-text bt-legend-item"><span className="dot booth-inline" /> Inline Booth</span>
-                  <span className="small-body-text bt-legend-item"><span className="dot booth-booked" /> Booked/Sold</span>
-                </div>
-                <p className="section-hint small-body-text">Hold shift and Scroll up and down to scroll horizontally</p>
-              </div>
-              <div className="bt-summary">
-                <h3 className="bt-section-title right">Inventory Summary</h3>
-                <div className="bt-summary-item">
-                  <h6 className="bt-summary-label">VIP Booths</h6>
-                  <span className="large-body-text bt-summary-value">$15,000.00</span>
-                  <div className="bt-progress"><div className="bt-progress-inner purple" style={{ width: "60%" }} /></div>
-                  <span className="small-body-text bt-summary-meta">3 / 5 booked</span>
-                </div>
-                <div className="bt-summary-item">
-                  <h6 className="bt-summary-label">Corner Booths</h6>
-                  <span className="large-body-text bt-summary-value">$6,000.00</span>
-                  <div className="bt-progress"><div className="bt-progress-inner blue" style={{ width: "20%" }} /></div>
-                  <span className="small-body-text bt-summary-meta">2 / 10 booked</span>
-                </div>
-                <div className="bt-summary-item">
-                  <h6 className="bt-summary-label">Inline Booths</h6>
-                  <span className="large-body-text bt-summary-value">$6,000.00</span>
-                  <div className="bt-progress"><div className="bt-progress-inner green" style={{ width: "15%" }} /></div>
-                  <span className="small-body-text bt-summary-meta">3 / 20 booked</span>
-                </div>
-                <button
-                  className="outlined-button bt-btn bt-btn-manage"
-                  onClick={() => setIsPricingModalOpen({ isOpen: true, type: 'booth' })}
-                >
-                  <Icon icon="mdi:tag-outline" /> Manage Pricing
-                </button>
-              </div>
-            </>
-          )}
-
-          {activeTab === "seat-map" && (
-            <>
-              <div className="bt-section">
-                <div className="bt-section-header">
-                  <h3 className="bt-section-title">Auditorium Seating</h3>
-
-                  <div className="bt-toolbar">
-                    <button className="outlined-button bt-btn bt-btn-upload" onClick={() => setIsUploadModalOpen(true)}><Icon icon="mdi:upload" /> Upload Map</button>
-                    <button className="outlined-button bt-btn bt-btn-edit" onClick={() => setIsSeatLayoutOpen(true)}><Icon icon="mdi:pencil" /> Edit Layout</button>
-                    <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom in"><Icon icon="mdi:magnify-plus-outline" /></button>
-                    <button className="outlined-button bt-btn bt-btn-icon" aria-label="Zoom out"><Icon icon="mdi:magnify-minus-outline" /></button>
-                  </div>
-
-                </div>
-                <div className="bt-seat-layout">
-                  <div className="bt-stage">STAGE</div>
-                  <div
-                    className="bt-grid-outer"
-                    style={{
-                      "--bt-total-cols": seatsPerRow,
+          <div className="bt-content-first-page">
+            <div className="bt-toolbar">
+              <div className="bt-toolbar-left">
+                <div className="bt-search">
+                  <Icon icon="mdi:magnify" />
+                  <input
+                    type="text"
+                    placeholder="Search events..."
+                    value={searchQuery}
+                    onChange={e => {
+                      setSearchQuery(e.target.value);
+                      setEventCurrentPage(1);
                     }}
+                    className="small-body-text bt-search-input"
+                  />
+                </div>
+              </div>
+
+              <div className="bt-toolbar-right">
+                <div className="bt-filter-dropdown" ref={eventDropdownRef}>
+                  <button
+                    className="bt-filter-dropdown-btn small-body-text"
+                    onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
                   >
-                    <div className="bt-seat-grid-container" ref={seatGridScrollRef}>
-                      <div className="bt-seat-grid-wrapper">
-
-                        <div className="bt-seat-grid" style={{ gridTemplateColumns: `min-content repeat(${seatsPerRow}, minmax(28px, 1fr)) min-content` }}>
-                          {Array.from({ length: seatRows }).map((_, rowIndex) => {
-                            const rowLabel = rowLabels[rowIndex] ?? String.fromCharCode(65 + rowIndex);
-                            return (
-                              <React.Fragment key={`row-${rowIndex}`}>
-                                <div className="bt-seat-row-label">{rowLabel}</div>
-                                {Array.from({ length: seatsPerRow }).map((_, colIndex) => {
-                                  const info = getSeatInfo(rowIndex, colIndex);
-                                  const seatNum = String(colIndex + 1).padStart(2, '0');
-                                  return (
-                                    <button
-                                      type="button"
-                                      key={`${rowIndex}-${colIndex}`}
-                                      className={`bt-seat-cell type-${info.type} status-${info.status}`}
-                                      aria-label={`Row ${rowLabel} Seat ${colIndex + 1} ${info.type} ${info.status}`}
-                                      onClick={() =>
-                                        setDetailPopup({
-                                          tooltipKind: "seat",
-                                          rowLabel,
-                                          seatNum: colIndex + 1,
-                                          ...info,
-                                        })
-                                      }
-                                    >
-                                      {seatNum}
-                                    </button>
-                                  );
-                                })}
-                                <div className="bt-seat-row-label">{rowLabel}</div>
-                              </React.Fragment>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bt-legend">
-                  <span className="small-body-text bt-legend-item"><span className="dot available" /> Available</span>
-                  <span className="small-body-text bt-legend-item"><span className="dot booked" /> Booked/Sold</span>
-                  <span className="small-body-text bt-legend-item"><span className="dot vip" /> VIP</span>
-                </div>
-                <p className="section-hint small-body-text">Hold shift and Scroll up and down to scroll horizontally</p>
-              </div>
-              <div className="bt-summary">
-                <h3 className="bt-section-title right">Inventory Summary</h3>
-                <div className="bt-summary-item">
-                  <h6 className="bt-summary-label">VIP Seats</h6>
-                  <span className="large-body-text bt-summary-value">$299.00</span>
-                  <div className="bt-progress"><div className="bt-progress-inner red" style={{ width: "80%" }} /></div>
-                  <span className="small-body-text bt-summary-meta">80 / 100 sold</span>
-                </div>
-                <div className="bt-summary-item">
-                  <h6 className="bt-summary-label">Standard Seats</h6>
-                  <span className="large-body-text bt-summary-value">$99.00</span>
-                  <div className="bt-progress"><div className="bt-progress-inner blue" style={{ width: "45%" }} /></div>
-                  <span className="small-body-text bt-summary-meta">225 / 500 sold</span>
-                </div>
-                <button
-                  className="outlined-button bt-btn bt-btn-manage"
-                  onClick={() => setIsPricingModalOpen({ isOpen: true, type: 'seat' })}
-                >
-                  <Icon icon="mdi:tag-outline" /> Manage Pricing
-                </button>
-              </div>
-            </>
-          )}
-
-          {activeTab === "live-scanning" && (
-            <>
-              <div className="bt-content-row">
-                <div className="bt-section bt-section-scan">
-                  <h3 className="bt-section-title">Recent Live Scan Activity</h3>
-                  <div className="bt-scan-list">
-                    {recentScans.map((scan) => (
-                      <div key={scan.id} className="bt-scan-card">
-                        <div className="left">
-                          <Icon icon={scan.icon} className={`bt-scan-icon bt-scan-icon-desktop ${scan.tag === "BOOTH" ? "blue" : "green"}`} />
-                          <div className="bt-scan-body">
-
-                            <h5 className="bt-scan-name">{scan.name}</h5>
-                            <span className="smaller-body-text bt-scan-details">{scan.details}</span>
-                          </div>
-                        </div>
-                        <div className="right">
-                          <div className="bt-scan-body">
-                            <span className={`button-label bt-scan-tag ${scan.tag === "BOOTH" ? "tag-booth" : "tag-seats"}`}>{scan.tag}</span>
-                            <span className="smaller-body-text bt-scan-meta">{scan.time} • {scan.entrance}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="bt-summary">
-                  <h3 className="bt-section-title right">Inventory Summary</h3>
-                  <div className="bt-summary-item">
-                    <span className="small-body-text bt-summary-label">Seats</span>
-                    <div className="bt-progress"><div className="bt-progress-inner green" style={{ width: "80%" }} /></div>
-                    <span className="small-body-text bt-summary-meta">80 / 100 Scanned</span>
-                  </div>
-                  <div className="bt-summary-item">
-                    <span className="large-body-text bt-summary-label">Booths</span>
-                    <div className="bt-progress"><div className="bt-progress-inner blue" style={{ width: "10%" }} /></div>
-                    <span className="small-body-text bt-summary-meta">5 / 50 Scanned</span>
-                  </div>
-                </div>
-              </div>
-              <div className="bt-allscan-section">
-                <h3 className="bt-allscan-title">All Live Scan Activity</h3>
-
-                <div className="bt-allscan-table-wrapper">
-                  <table className="bt-allscan-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Details</th>
-                        <th>Type</th>
-                        <th>Time</th>
-                        <th>Entrance</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {currentScans.map((scan) => (
-                        <tr key={scan.id}>
-                          <td>
-                            <div className="all-scan-name-wrapper">
-                              <Icon
-                                icon={scan.icon}
-                                className={`bt-scan-icon ${scan.tag === "BOOTH" ? "blue" : "green"}`}
-                              />
-                              <div className="bt-scan-body">
-                                <h5 className="bt-allscan-name-text">{scan.name}</h5>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="small-body-text bt-allscan-details">
-                            <strong>{scan.details}</strong>
-                          </td>
-
-                          <td>
-                            <span
-                              className={`bt-allscan-tag ${scan.tag === "BOOTH"
-                                ? "button-label bt-allscan-tag-booth"
-                                : "button-label bt-allscan-tag-seats"
-                                }`}
-                            >
-                              {scan.tag}
-                            </span>
-                          </td>
-
-                          <td className="small-body-text">{scan.time}</td>
-                          <td className="small-body-text">{scan.entrance}</td>
-                        </tr>
+                    <span className="truncate-text">{sortFilter}</span>
+                    <Icon icon="mdi:chevron-down" className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`} />
+                  </button>
+                  {isEventDropdownOpen && (
+                    <div className="bt-filter-dropdown-menu">
+                      {["Recently Added", "A-Z", "Z-A"].map((option) => (
+                        <button
+                          key={option}
+                          className={`bt-filter-dropdown-item small-body-text ${sortFilter === option ? "active" : ""}`}
+                          onClick={() => {
+                            setSortFilter(option);
+                            setEventCurrentPage(1);
+                            setIsEventDropdownOpen(false);
+                          }}
+                        >
+                          {option}
+                        </button>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  )}
                 </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="pagination">
-                    <button
-                      className="pagination-btn"
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    >
-                      Previous
-                    </button>
-
-                    <span className="pagination-info">
-                      Page {currentPage} of {totalPages}
-                    </span>
-
-                    <button
-                      className="pagination-btn"
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </div>
-
-
-            </>
-          )}
-        </div>
-      </div>
-
-      {detailPopup &&
-        createPortal(
-          <div
-            className="bt-detail-popup-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="bt-detail-popup-title"
-            onClick={() => setDetailPopup(null)}
-          >
-            <div className="bt-detail-popup-box" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                className="bt-detail-popup-close"
-                onClick={() => setDetailPopup(null)}
-                aria-label="Close"
-              >
-                <Icon icon="mdi:close" />
-              </button>
-              <div className="bt-detail-popup-content">
-                {detailPopup.tooltipKind === "booth" && (
-                  <>
-                    <strong id="bt-detail-popup-title">Booth {detailPopup.code}</strong>
-                    <span>Type: {detailPopup.type}</span>
-                    <span>Dimensions: {detailPopup.dimensions}</span>
-                    <span>Status: {detailPopup.status}</span>
-                    {detailPopup.bookedBy && <span>Booked by: {detailPopup.bookedBy}</span>}
-                    <span>Position: Row {detailPopup.ri + 1}, Col {detailPopup.ci + 1}</span>
-                  </>
-                )}
-                {detailPopup.tooltipKind === "booth-empty" && (
-                  <>
-                    <strong id="bt-detail-popup-title">Empty slot</strong>
-                    <span>Position: Row {detailPopup.ri + 1}, Col {detailPopup.ci + 1}</span>
-                    <span>Available for assignment</span>
-                  </>
-                )}
-                {detailPopup.tooltipKind === "seat" && (
-                  <>
-                    <strong id="bt-detail-popup-title">Row {detailPopup.rowLabel}, Seat {detailPopup.seatNum}</strong>
-                    <span>Type: {detailPopup.type === "vip" ? "VIP" : "Standard"}</span>
-                    <span>Status: {detailPopup.status}</span>
-                    {detailPopup.bookedBy && <span>Booked by: {detailPopup.bookedBy}</span>}
-                  </>
-                )}
               </div>
             </div>
-          </div>,
-          document.body
-        )}
+<div className="bt-events-grid">
+  {paginatedEvents.length === 0 && (
+    <div className="bt-empty-state">
+      <Icon icon="mdi:magnify-close" width="48" />
+      <h4>No events found</h4>
+      <p className="small-body-text">
+        No events match "<strong>{searchQuery}</strong>".
+      </p>
+    </div>
+  )}
 
-      <UploadMapModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        onSave={(file) => console.log("Uploaded file:", file)}
-      />
+  {paginatedEvents.map((event) => (
+    <div
+      key={event.id}
+      className="bt-event-card"
+      onClick={() => setSelectedEvent(event.title)}
+    >
+      <div className="bt-card-image-wrap">
+        <span className="bt-category-pill button-label">
+          {event.category}
+        </span>
+        <img src={event.image} alt={event.title} />
+      </div>
 
-      <ManagePricingModal
-        isOpen={isPricingModalOpen.isOpen}
-        type={isPricingModalOpen.type}
-        quantities={isPricingModalOpen.type === 'booth' ? boothPricingQuantities : seatPricingQuantities}
-        onClose={() => setIsPricingModalOpen({ ...isPricingModalOpen, isOpen: false })}
-        onSave={handlePricingSave}
-      />
+      <div className="bt-card-details">
+        <h3 className="bt-card-title">{event.title}</h3>
 
-      <SetupBoothLayoutModal
-        isOpen={isSetupLayoutOpen}
-        onClose={() => setIsSetupLayoutOpen(false)}
-        onSave={(config) => {
-          console.log("Booth layout configuration:", config);
-          setBoothLayoutConfig(config);
-          setBoothPricingQuantities((prev) => ({
-            ...prev,
-            [config.boothType]: config.quantity,
-          }));
-          setIsSetupLayoutOpen(false);
-        }}
-      />
+        <div className="bt-card-info">
+          <Icon icon="mdi:calendar" />
+          <span className="small-body-text">{event.date}</span>
+        </div>
 
-      <SetupSeatLayoutModal
-        isOpen={isSeatLayoutOpen}
-        onClose={() => setIsSeatLayoutOpen(false)}
-        onSave={(config) => {
-          console.log("Seat layout configuration:", config);
-          setSeatLayoutConfig(config);
-          setSeatPricingQuantities((prev) => ({
-            ...prev,
-            [config.boothType]: config.quantity,
-          }));
-          setIsSeatLayoutOpen(false);
-        }}
-      />
+        <div className="bt-card-info">
+          <Icon icon="mdi:map-marker" />
+          <span className="small-body-text">{event.location}</span>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+            {totalEventPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="pagination-btn"
+                  onClick={() => setEventCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={eventCurrentPage === 1}
+                >
+                  Previous
+                </button>
+                <span className="pagination-info">
+                  Page {eventCurrentPage} of {totalEventPages}
+                </span>
+                <button
+                  className="pagination-btn"
+                  onClick={() => setEventCurrentPage(prev => Math.min(prev + 1, totalEventPages))}
+                  disabled={eventCurrentPage === totalEventPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="bt-header">
+            <div className="bt-header-left">
+              <button className="bt-back-btn" onClick={() => setSelectedEvent(null)}>
+                <Icon icon="mdi:arrow-left" width="24" />
+              </button>
+              <div>
+                <h1>{selectedEvent}</h1>
+                <p className="regular-body-text">Manage venue layouts and ticket inventory.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bt-tabs">
+            <button className={`bt-tab ${activeTab === "booth-map" ? "active" : ""}`} onClick={() => setActiveTab("booth-map")}>
+              Booth Map
+            </button>
+            <button className={`bt-tab ${activeTab === "seat-map" ? "active" : ""}`} onClick={() => setActiveTab("seat-map")}>
+              Seat Map
+            </button>
+            <button className={`bt-tab ${activeTab === "live-scanning" ? "active" : ""}`} onClick={() => setActiveTab("live-scanning")}>
+              Live Scanning
+            </button>
+          </div>
+
+          <div className="bt-main">
+            <div className="bt-content">
+              {activeTab === "booth-map" && (
+                <>
+                  <div className="bt-section">
+                    <div className="bt-section-header">
+                      <h3 className="bt-section-title">Exhibition Hall Layout</h3>
+                      <div className="bt-toolbar">
+                        <button className="outlined-button bt-btn bt-btn-upload" onClick={() => setIsUploadModalOpen(true)}>
+                          <Icon icon="mdi:upload" />
+                          Upload Map
+                        </button>
+                        <button
+                          className="outlined-button bt-btn bt-btn-edit"
+                          onClick={() => setIsSetupLayoutOpen(true)}
+                        >
+                          <Icon icon="mdi:pencil" />
+                          Edit Layout
+                        </button>
+                      </div>
+                    </div>
+                    <div
+                      className="bt-grid-outer"
+                      style={{
+                        "--bt-total-cols": boothTotalCols,
+                      }}
+                    >
+                      <div className="bt-booth-grid-wrapper" ref={boothGridScrollRef}>
+                        <div className="bt-booth-grid" style={{ gridTemplateColumns: `repeat(${boothTotalCols}, minmax(28px, 1fr))` }}>
+                          {boothGrid.map((row, ri) =>
+                            <React.Fragment key={`row-${ri}`}>
+                              {row.map((cell, ci) => {
+                                const boothCell = row[ci];
+                                if (boothCell && boothCell.skip) return null;
+
+                                const key = `${ri}-${ci}`;
+                                const vipInfo = vipMergedCells[key];
+
+                                // Skip cells that are part of a merged VIP booth but not the top-left
+                                if (vipInfo && vipInfo.role === "merged") {
+                                  return null;
+                                }
+
+                                const isTopLeftMerged = vipInfo && vipInfo.role === "top-left";
+                                const rowSpan = isTopLeftMerged ? vipInfo.rowSpan : (boothCell?.rowSpan || 1);
+                                const colSpan = isTopLeftMerged ? vipInfo.colSpan : (boothCell?.colSpan || 1);
+
+                                const style = (rowSpan > 1 || colSpan > 1)
+                                  ? {
+                                    gridRow: `${ri + 1} / span ${rowSpan}`,
+                                    gridColumn: `${ci + 1} / span ${colSpan}`,
+                                  }
+                                  : undefined;
+
+                                const displayCode = boothCell ? boothCell.code : `${ri + 1}${String(ci + 1).padStart(2, '0')}`;
+
+                                return (
+                                  <button
+                                    type="button"
+                                    key={key}
+                                    className={`bt-booth-cell ${boothCell
+                                      ? `filled status-${boothCell.status} type-${boothCell.type}`
+                                      : "empty"
+                                      } ${isTopLeftMerged ? "vip-merged" : ""}`}
+                                    style={style}
+                                    onClick={() =>
+                                      setDetailPopup(
+                                        boothCell
+                                          ? { tooltipKind: "booth", ...boothCell, ri, ci }
+                                          : { tooltipKind: "booth-empty", ri, ci }
+                                      )
+                                    }
+                                    aria-label={
+                                      boothCell
+                                        ? `Booth ${boothCell.code}, ${boothCell.type}, ${boothCell.status}`
+                                        : `Empty slot row ${ri + 1} col ${ci + 1}`
+                                    }
+                                  >
+                                    {displayCode}
+                                  </button>
+                                );
+                              })}
+                            </React.Fragment>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bt-legend">
+                      <span className="small-body-text bt-legend-item"><span className="dot booth-vip" /> VIP Booth</span>
+                      <span className="small-body-text bt-legend-item"><span className="dot booth-corner" /> Corner Booth</span>
+                      <span className="small-body-text bt-legend-item"><span className="dot booth-inline" /> Inline Booth</span>
+                      <span className="small-body-text bt-legend-item"><span className="dot booth-booked" /> Booked/Sold</span>
+                    </div>
+                    <p className="section-hint small-body-text">Hold shift and Scroll up and down to scroll horizontally</p>
+                  </div>
+                  <div className="bt-summary">
+                    <h3 className="bt-section-title right">Inventory Summary</h3>
+                    <div className="bt-summary-item">
+                      <h6 className="bt-summary-label">VIP Booths</h6>
+                      <span className="large-body-text bt-summary-value">$15,000.00</span>
+                      <div className="bt-progress"><div className="bt-progress-inner purple" style={{ width: "60%" }} /></div>
+                      <span className="small-body-text bt-summary-meta">3 / 5 booked</span>
+                    </div>
+                    <div className="bt-summary-item">
+                      <h6 className="bt-summary-label">Corner Booths</h6>
+                      <span className="large-body-text bt-summary-value">$6,000.00</span>
+                      <div className="bt-progress"><div className="bt-progress-inner blue" style={{ width: "20%" }} /></div>
+                      <span className="small-body-text bt-summary-meta">2 / 10 booked</span>
+                    </div>
+                    <div className="bt-summary-item">
+                      <h6 className="bt-summary-label">Inline Booths</h6>
+                      <span className="large-body-text bt-summary-value">$6,000.00</span>
+                      <div className="bt-progress"><div className="bt-progress-inner green" style={{ width: "15%" }} /></div>
+                      <span className="small-body-text bt-summary-meta">3 / 20 booked</span>
+                    </div>
+                    <button
+                      className="outlined-button bt-btn bt-btn-manage"
+                      onClick={() => setIsPricingModalOpen({ isOpen: true, type: 'booth' })}
+                    >
+                      <Icon icon="mdi:tag-outline" /> Manage Pricing
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {activeTab === "seat-map" && (
+                <>
+                  <div className="bt-section">
+                    <div className="bt-section-header">
+                      <h3 className="bt-section-title">Auditorium Seating</h3>
+
+                      <div className="bt-toolbar">
+                        <button className="outlined-button bt-btn bt-btn-upload" onClick={() => setIsUploadModalOpen(true)}><Icon icon="mdi:upload" /> Upload Map</button>
+                        <button className="outlined-button bt-btn bt-btn-edit" onClick={() => setIsSeatLayoutOpen(true)}><Icon icon="mdi:pencil" /> Edit Layout</button>
+                      </div>
+
+                    </div>
+                    <div className="bt-seat-layout">
+                      <div className="bt-stage">STAGE</div>
+                      <div
+                        className="bt-grid-outer"
+                        style={{
+                          "--bt-total-cols": seatsPerRow,
+                        }}
+                      >
+                        <div className="bt-seat-grid-container" ref={seatGridScrollRef}>
+                          <div className="bt-seat-grid-wrapper">
+
+                            <div className="bt-seat-grid" style={{ gridTemplateColumns: `min-content repeat(${seatsPerRow}, minmax(28px, 1fr)) min-content` }}>
+                              {Array.from({ length: seatRows }).map((_, rowIndex) => {
+                                const rowLabel = rowLabels[rowIndex] ?? String.fromCharCode(65 + rowIndex);
+                                return (
+                                  <React.Fragment key={`row-${rowIndex}`}>
+                                    <div className="bt-seat-row-label">{rowLabel}</div>
+                                    {Array.from({ length: seatsPerRow }).map((_, colIndex) => {
+                                      const info = getSeatInfo(rowIndex, colIndex);
+                                      const seatNum = String(colIndex + 1).padStart(2, '0');
+                                      return (
+                                        <button
+                                          type="button"
+                                          key={`${rowIndex}-${colIndex}`}
+                                          className={`bt-seat-cell type-${info.type} status-${info.status}`}
+                                          aria-label={`Row ${rowLabel} Seat ${colIndex + 1} ${info.type} ${info.status}`}
+                                          onClick={() =>
+                                            setDetailPopup({
+                                              tooltipKind: "seat",
+                                              rowLabel,
+                                              seatNum: colIndex + 1,
+                                              ...info,
+                                            })
+                                          }
+                                        >
+                                          {seatNum}
+                                        </button>
+                                      );
+                                    })}
+                                    <div className="bt-seat-row-label">{rowLabel}</div>
+                                  </React.Fragment>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bt-legend">
+                      <span className="small-body-text bt-legend-item"><span className="dot available" /> Available</span>
+                      <span className="small-body-text bt-legend-item"><span className="dot booked" /> Booked/Sold</span>
+                      <span className="small-body-text bt-legend-item"><span className="dot vip" /> VIP</span>
+                    </div>
+                    <p className="section-hint small-body-text">Hold shift and Scroll up and down to scroll horizontally</p>
+                  </div>
+                  <div className="bt-summary">
+                    <h3 className="bt-section-title right">Inventory Summary</h3>
+                    <div className="bt-summary-item">
+                      <h6 className="bt-summary-label">VIP Seats</h6>
+                      <span className="large-body-text bt-summary-value">$299.00</span>
+                      <div className="bt-progress"><div className="bt-progress-inner red" style={{ width: "80%" }} /></div>
+                      <span className="small-body-text bt-summary-meta">80 / 100 sold</span>
+                    </div>
+                    <div className="bt-summary-item">
+                      <h6 className="bt-summary-label">Standard Seats</h6>
+                      <span className="large-body-text bt-summary-value">$99.00</span>
+                      <div className="bt-progress"><div className="bt-progress-inner blue" style={{ width: "45%" }} /></div>
+                      <span className="small-body-text bt-summary-meta">225 / 500 sold</span>
+                    </div>
+                    <button
+                      className="outlined-button bt-btn bt-btn-manage"
+                      onClick={() => setIsPricingModalOpen({ isOpen: true, type: 'seat' })}
+                    >
+                      <Icon icon="mdi:tag-outline" /> Manage Pricing
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {activeTab === "live-scanning" && (
+                <>
+                  <div className="bt-content-row">
+                    <div className="bt-section bt-section-scan">
+                      <h3 className="bt-section-title">Recent Live Scan Activity</h3>
+                      <div className="bt-scan-list">
+                        {recentScans.map((scan) => (
+                          <div key={scan.id} className="bt-scan-card">
+                            <div className="left">
+                              <Icon icon={scan.icon} className={`bt-scan-icon bt-scan-icon-desktop ${scan.tag === "BOOTH" ? "blue" : "green"}`} />
+                              <div className="bt-scan-body">
+
+                                <h5 className="bt-scan-name">{scan.name}</h5>
+                                <span className="smaller-body-text bt-scan-details">{scan.details}</span>
+                              </div>
+                            </div>
+                            <div className="right">
+                              <div className="bt-scan-body">
+                                <span className={`button-label bt-scan-tag ${scan.tag === "BOOTH" ? "tag-booth" : "tag-seats"}`}>{scan.tag}</span>
+                                <span className="smaller-body-text bt-scan-meta">{scan.time} • {scan.entrance}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="bt-summary">
+                      <h3 className="bt-section-title right">Inventory Summary</h3>
+                      <div className="bt-summary-item">
+                        <span className="small-body-text bt-summary-label">Seats</span>
+                        <div className="bt-progress"><div className="bt-progress-inner green" style={{ width: "80%" }} /></div>
+                        <span className="small-body-text bt-summary-meta">80 / 100 Scanned</span>
+                      </div>
+                      <div className="bt-summary-item">
+                        <span className="large-body-text bt-summary-label">Booths</span>
+                        <div className="bt-progress"><div className="bt-progress-inner blue" style={{ width: "10%" }} /></div>
+                        <span className="small-body-text bt-summary-meta">5 / 50 Scanned</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bt-allscan-section">
+                    <h3 className="bt-allscan-title">All Live Scan Activity</h3>
+
+                    <div className="bt-allscan-table-wrapper">
+                      <table className="bt-allscan-table">
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Details</th>
+                            <th>Type</th>
+                            <th>Time</th>
+                            <th>Entrance</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {currentScans.map((scan) => (
+                            <tr key={scan.id}>
+                              <td>
+                                <div className="all-scan-name-wrapper">
+                                  <Icon
+                                    icon={scan.icon}
+                                    className={`bt-scan-icon ${scan.tag === "BOOTH" ? "blue" : "green"}`}
+                                  />
+                                  <div className="bt-scan-body">
+                                    <h5 className="bt-allscan-name-text">{scan.name}</h5>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="small-body-text bt-allscan-details">
+                                <strong>{scan.details}</strong>
+                              </td>
+
+                              <td>
+                                <span
+                                  className={`bt-allscan-tag ${scan.tag === "BOOTH"
+                                    ? "button-label bt-allscan-tag-booth"
+                                    : "button-label bt-allscan-tag-seats"
+                                    }`}
+                                >
+                                  {scan.tag}
+                                </span>
+                              </td>
+
+                              <td className="small-body-text">{scan.time}</td>
+                              <td className="small-body-text">{scan.entrance}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="pagination">
+                        <button
+                          className="pagination-btn"
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </button>
+
+                        <span className="pagination-info">
+                          Page {currentPage} of {totalPages}
+                        </span>
+
+                        <button
+                          className="pagination-btn"
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+
+                </>
+              )}
+            </div>
+          </div>
+
+          {detailPopup &&
+            createPortal(
+              <div
+                className="bt-detail-popup-overlay"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="bt-detail-popup-title"
+                onClick={() => setDetailPopup(null)}
+              >
+                <div className="bt-detail-popup-box" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className="bt-detail-popup-close"
+                    onClick={() => setDetailPopup(null)}
+                    aria-label="Close"
+                  >
+                    <Icon icon="mdi:close" />
+                  </button>
+                  <div className="bt-detail-popup-content">
+                    {detailPopup.tooltipKind === "booth" && (
+                      <>
+                        <strong id="bt-detail-popup-title">Booth {detailPopup.code}</strong>
+                        <span>Type: {detailPopup.type}</span>
+                        <span>Dimensions: {detailPopup.dimensions}</span>
+                        <span>Status: {detailPopup.status}</span>
+                        {detailPopup.bookedBy && <span>Booked by: {detailPopup.bookedBy}</span>}
+                        <span>Position: Row {detailPopup.ri + 1}, Col {detailPopup.ci + 1}</span>
+                      </>
+                    )}
+                    {detailPopup.tooltipKind === "booth-empty" && (
+                      <>
+                        <strong id="bt-detail-popup-title">Empty slot</strong>
+                        <span>Position: Row {detailPopup.ri + 1}, Col {detailPopup.ci + 1}</span>
+                        <span>Available for assignment</span>
+                      </>
+                    )}
+                    {detailPopup.tooltipKind === "seat" && (
+                      <>
+                        <strong id="bt-detail-popup-title">Row {detailPopup.rowLabel}, Seat {detailPopup.seatNum}</strong>
+                        <span>Type: {detailPopup.type === "vip" ? "VIP" : "Standard"}</span>
+                        <span>Status: {detailPopup.status}</span>
+                        {detailPopup.bookedBy && <span>Booked by: {detailPopup.bookedBy}</span>}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
+
+          <UploadMapModal
+            isOpen={isUploadModalOpen}
+            onClose={() => setIsUploadModalOpen(false)}
+            onSave={(file) => console.log("Uploaded file:", file)}
+          />
+
+          <ManagePricingModal
+            isOpen={isPricingModalOpen.isOpen}
+            type={isPricingModalOpen.type}
+            quantities={isPricingModalOpen.type === 'booth' ? boothPricingQuantities : seatPricingQuantities}
+            onClose={() => setIsPricingModalOpen({ ...isPricingModalOpen, isOpen: false })}
+            onSave={handlePricingSave}
+          />
+
+          <SetupBoothLayoutModal
+            isOpen={isSetupLayoutOpen}
+            onClose={() => setIsSetupLayoutOpen(false)}
+            onSave={(config) => {
+              console.log("Booth layout configuration:", config);
+              setBoothLayoutConfig(config);
+              setBoothPricingQuantities((prev) => ({
+                ...prev,
+                [config.boothType]: config.quantity,
+              }));
+              setIsSetupLayoutOpen(false);
+            }}
+          />
+
+          <SetupSeatLayoutModal
+            isOpen={isSeatLayoutOpen}
+            onClose={() => setIsSeatLayoutOpen(false)}
+            onSave={(config) => {
+              console.log("Seat layout configuration:", config);
+              setSeatLayoutConfig(config);
+              setSeatPricingQuantities((prev) => ({
+                ...prev,
+                [config.boothType]: config.quantity,
+              }));
+              setIsSeatLayoutOpen(false);
+            }}
+          />
+        </>
+      )}
     </div>
   );
 };
