@@ -236,21 +236,32 @@ const ContentManager = () => {
             {policies.map((p, index) => (
               <div
                 key={`${p.policyKey}-${index}`}
-                className="legal-item-wrapper"
+                className="legal-item-container"
               >
-                <button
-                  className="legal-item"
-                  onClick={() => setEditingPolicy(p)}
-                >
-                  <div className="legal-icon">{p.icon}</div>
-                  <h6>{p.title}</h6>
-                </button>
-                <button
-                  className="policy-delete-btn"
-                  onClick={() => handleDeletePolicy(p)}
-                >
-                  <Icon icon="mdi:delete" width="16" />
-                </button>
+                              <div className="legal-header">
+                  <h5>{a.title}</h5>
+                  <div className="legal-header-right">
+                    <span className="small-body-text announcement-date">
+                      {formatDate(p.date)}
+                    </span>
+                    <div className="legal-actions">
+                      <button
+                        className="legal-action-btn"
+                        onClick={() => setEditingPolicy(p)}
+                      >
+                        <Icon icon="mdi:edit" width="18" />
+                      </button>
+                      <button
+                        className="legal-action-btn delete"
+                        onClick={() => handleDeletePolicy(p)}
+                      >
+                        <Icon icon="mdi:delete" width="18" />
+                      </button>
+                    </div>
+                  </div>
+                <p className="small-body-text announcement-desc">{p.content}</p>
+
+              </div>
               </div>
             ))}
           </div>
