@@ -1,5 +1,5 @@
 const Event = require('../models/eventModel')
-const Booth = require("../models/boothModel"); 
+// const Booth = require("../models/boothModel"); 
 const mongoose = require('mongoose')
 
 const multer = require("multer");
@@ -68,23 +68,43 @@ const getEvents = async (req, res) => {
 };
 
 // GET a single event
-const getEvent = async (req, res) => {
+  const getEvent = async (req, res) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).json({ error: "No such event" });
   }
 
-  const event = await Event.findById(id).populate({
-    path: "createdBy",
-    select: "firstName lastName role",
-  });
+  try {
+    const user = req.user;
+    const role = user.role?.toLowerCase();
 
-  if (!event) {
-    return res.status(404).json({ error: "No such event" });
+    let eventQuery;
+
+    if (role === "superadmin" || role === "admin") {
+      eventQuery = Event.findById(id);
+    } else if (role === "promoter") {
+      eventQuery = Event.findOne({ _id: id, createdBy: user._id });
+    } else if (role === "customer" || role === "sponsor") {
+      eventQuery = Event.findOne({ _id: id, status: "approved" });
+    } else {
+      return res.status(403).json({ error: "Unauthorized role" });
+    }
+
+    const event = await eventQuery.populate({
+      path: "createdBy",
+      select: "firstName lastName role",
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: "No such event" });
+    }
+
+    return res.status(200).json(event);
+  } catch (error) {
+    console.error("Error fetching event:", error);
+    return res.status(400).json({ error: error.message });
   }
-
-  res.status(200).json(event);
 };
 
 const createEvent = async (req, res) => {
@@ -169,16 +189,22 @@ const createEvent = async (req, res) => {
     let invalidBooths = [];
 
     if (Array.isArray(booths)) {
-      booths.forEach((b, index) => {
-        if (b.size || b.price || b.quantity) {
-          if (!b.size) invalidBooths.push(`booths[${index}].size`);
-          if (b.price === undefined || b.price < 0)
-            invalidBooths.push(`booths[${index}].price`);
-          if (!b.quantity || b.quantity < 1)
-            invalidBooths.push(`booths[${index}].quantity`);
-        }
-      });
+  booths.forEach((b, index) => {
+    // Only validate if at least one field is present
+    if (b.size || b.price || b.quantity || b.code || b.status || b.type) {
+      
+      // Existing validations
+      if (!b.size) invalidBooths.push(`booths[${index}].size`);
+      if (b.price === undefined || b.price < 0) invalidBooths.push(`booths[${index}].price`);
+      if (!b.quantity || b.quantity < 1) invalidBooths.push(`booths[${index}].quantity`);
+
+      // New validations
+      if (!b.code) invalidBooths.push(`booths[${index}].code`);
+      if (!b.status) invalidBooths.push(`booths[${index}].status`);
+      if (!b.type) invalidBooths.push(`booths[${index}].type`);
     }
+  });
+}
 
     // Return validation errors
     if (emptyFields.length || emptyVenueFields.length || invalidBooths.length) {
@@ -236,12 +262,15 @@ const createEvent = async (req, res) => {
       isFeatured: isFeatured || false,
 
       booths: hasBooths
-        ? booths.map((b) => ({
-            size: b.size,
-            price: Number(b.price),
-            quantity: Number(b.quantity)
-          }))
-        : [],
+  ? booths.map((b) => ({
+      code: b.code || null,
+      type: b.type || "standard",
+      status: b.status || "available",
+      size: b.size || null,
+      price: Number(b.price),
+      quantity: Number(b.quantity),
+    }))
+  : [],
 
       hasBooths,
       maxBooths,
@@ -351,12 +380,21 @@ const updateEvent = async (req, res) => {
 
     // Booth validation
     let invalidBooths = [];
-    if (Array.isArray(booths)) {
+
+if (Array.isArray(booths)) {
   booths.forEach((b, index) => {
-    if (b.size || b.price || b.quantity) {
+    // Only validate if at least one relevant field is present
+    if (b.size || b.price || b.quantity || b.code || b.status || b.type) {
+      
+      // Existing validations
       if (!b.size) invalidBooths.push(`booths[${index}].size`);
       if (b.price === undefined || b.price < 0) invalidBooths.push(`booths[${index}].price`);
       if (!b.quantity || b.quantity < 1) invalidBooths.push(`booths[${index}].quantity`);
+
+      // New validations
+      if (!b.code) invalidBooths.push(`booths[${index}].code`);
+      if (!b.status) invalidBooths.push(`booths[${index}].status`);
+      if (!b.type) invalidBooths.push(`booths[${index}].type`);
     }
   });
 }
@@ -388,12 +426,15 @@ const updateEvent = async (req, res) => {
       seatVariations: seatVariations || [],
       isFeatured: isFeatured || false,
       booths: Array.isArray(booths)
-        ? booths.map(b => ({
-            size: b.size,
-            price: Number(b.price),
-            quantity: Number(b.quantity)
-          }))
-        : [],
+  ? booths.map((b) => ({
+      code: b.code || null,
+      type: b.type || "standard",
+      status: b.status || "available",
+      size: b.size || null,
+      price: Number(b.price),
+      quantity: Number(b.quantity),
+    }))
+  : [],
       hasBooths: Array.isArray(booths) && booths.length > 0,
       maxBooths: Array.isArray(booths) && booths.length > 0
         ? booths.reduce((sum, b) => sum + Number(b.quantity), 0)

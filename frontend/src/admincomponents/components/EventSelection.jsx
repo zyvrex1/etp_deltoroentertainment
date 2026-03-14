@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 
-import { useEventsContext } from "../hooks/useEventsContext"; 
+import { useEventsContext } from "../hooks/useEventsContext";
 import { useAuthContext } from "../hooks/useAuthContext";
 
 const EventSelection = ({ setSelectedEvent }) => {
@@ -9,7 +9,12 @@ const EventSelection = ({ setSelectedEvent }) => {
   const { user } = useAuthContext();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortFilter, setSortFilter] = useState("Recently Added");
+  const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
 
+  const eventDropdownRef = useRef(null);
+
+  // Fetch events from API
   useEffect(() => {
     if (!user?.token) return;
 
@@ -34,10 +39,48 @@ const EventSelection = ({ setSelectedEvent }) => {
     fetchEvents();
   }, [user, dispatch]);
 
-  const filteredEvents =
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        eventDropdownRef.current &&
+        !eventDropdownRef.current.contains(event.target)
+      ) {
+        setIsEventDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Sort events
+  const sortEvents = (eventsList) => {
+    if (!eventsList) return [];
+
+    const sorted = [...eventsList];
+
+    switch (sortFilter) {
+      case "A-Z":
+        return sorted.sort((a, b) => a.title?.localeCompare(b.title));
+
+      case "Z-A":
+        return sorted.sort((a, b) => b.title?.localeCompare(a.title));
+
+      case "Recently Added":
+      default:
+        return sorted.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+    }
+  };
+
+  // Filter events based on search
+  const filteredEvents = sortEvents(
     events?.filter((event) =>
       event.title?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+    )
+  );
 
   return (
     <div className="bt-event-selection-container">
@@ -45,53 +88,126 @@ const EventSelection = ({ setSelectedEvent }) => {
         <div>
           <h1>Booth & Ticket Control</h1>
           <p className="large-body-text">
-            Select an event to manage venue layouts.
+            Select an event to manage venue layouts and ticket inventory.
           </p>
         </div>
       </div>
 
-      <div className="bt-events-grid">
-        {filteredEvents.map((event) => (
-          <div
-  key={event._id}
-  className="bt-event-card"
-  onClick={() => setSelectedEvent(event)}
->
-  <div className="bt-card-image-wrap">
-    <img
-      src={
-        event.image
-          ? `http://localhost:4000/uploads/${event.image}`
-          : "/assets/eventbg.jpg"
-      }
-      alt={event.title}
-    />
-  </div>
+      <div className="bt-content-first-page">
+        <div className="bt-toolbar">
+          <div className="bt-toolbar-left">
+            <div className="bt-search">
+              <Icon icon="mdi:magnify" />
+              <input
+                type="text"
+                placeholder="Search events..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="small-body-text bt-search-input"
+              />
+            </div>
+          </div>
 
-  <div className="bt-card-details">
-    <div className="bt-card-info">
-        <h3>{event.title}</h3>
-    </div>
-    <div className="bt-card-info">
-        <span>
-            {event.category}
-        </span>
-    </div>
+          <div className="bt-toolbar-right">
+            <div className="bt-filter-dropdown" ref={eventDropdownRef}>
+              <button
+                className="bt-filter-dropdown-btn small-body-text"
+                onClick={() =>
+                  setIsEventDropdownOpen(!isEventDropdownOpen)
+                }
+              >
+                <span className="truncate-text">{sortFilter}</span>
+                <Icon
+                  icon="mdi:chevron-down"
+                  className={`dropdown-icon ${
+                    isEventDropdownOpen ? "open" : ""
+                  }`}
+                />
+              </button>
 
-    <div className="bt-card-info">
-      <Icon icon="mdi:calendar" />
-      <span>
-        {new Date(event.startDate).toLocaleDateString()}
-      </span>
-    </div>
+              {isEventDropdownOpen && (
+                <div className="bt-filter-dropdown-menu">
+                  {["Recently Added", "A-Z", "Z-A"].map((option) => (
+                    <button
+                      key={option}
+                      className={`bt-filter-dropdown-item small-body-text ${
+                        sortFilter === option ? "active" : ""
+                      }`}
+                      onClick={() => {
+                        setSortFilter(option);
+                        setIsEventDropdownOpen(false);
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
-    <div className="bt-card-info">
-      <Icon icon="mdi:map-marker" />
-      <span>{event.venue?.name || "No Venue"}</span>
-    </div>
-  </div>
-</div>
-        ))}
+        <div className="bt-events-grid">
+          {filteredEvents.length > 0 &&
+            filteredEvents.map((event) => (
+              <div
+                key={event._id}
+                className="bt-event-card"
+                onClick={() => setSelectedEvent(event)}
+              >
+                <div className="bt-card-image-wrap">
+                  <img
+                    src={
+                      event.image
+                        ? `http://localhost:4000/uploads/${event.image}`
+                        : "/assets/eventbg.jpg"
+                    }
+                    alt={event.title}
+                  />
+                </div>
+
+                <div className="bt-card-details">
+                  <div className="bt-card-info">
+                    <h3>{event.title}</h3>
+                  </div>
+
+                  <div className="bt-card-info">
+                    <span>{event.category || "No category"}</span>
+                  </div>
+
+                  <div className="bt-card-info">
+                    <Icon icon="mdi:calendar" />
+                    <span className="event-dates">
+                      {new Date(event.startDate).toLocaleDateString()} -{" "}
+                      {new Date(event.endDate).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div className="bt-card-info">
+                    <Icon icon="mdi:clock-outline" />
+                    <span className="event-times">
+                      {event.startTime || "N/A"} - {event.endTime || "N/A"}
+                    </span>
+                  </div>
+
+                  <div className="bt-card-info">
+                    <Icon icon="mdi:map-marker" />
+                    <span>{event.venue?.name || "No Venue"}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+          {filteredEvents.length === 0 && (
+            <div className="bt-empty-state">
+              <Icon icon="mdi:magnify-close" width="48" />
+              <h4>No events found</h4>
+              <p className="small-body-text">
+                No events match "<strong>{searchQuery}</strong>".
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

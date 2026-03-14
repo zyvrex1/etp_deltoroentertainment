@@ -49,7 +49,18 @@
     const handleImageChange = (e) => { e.preventDefault(); if(e.target.files[0]){ const file=e.target.files[0]; if(imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl); setImageFile(file); setImagePreviewUrl(URL.createObjectURL(file)); } };
 
     // Booths
-    const addBooth = () => setBooths([...booths, { size: "", price: 0, quantity: 1 }]);
+    const addBooth = () => 
+  setBooths([
+    ...booths,
+    {
+      code: null,
+      type: "standard",
+      status: "available",
+      size: "",
+      price: 0,
+      quantity: 1,
+    }
+  ]);
     const updateBooth = (index, field, value) => { const updated=[...booths]; updated[index][field]=value; setBooths(updated); };
     const removeBooth = (index) => { const updated=[...booths]; updated.splice(index,1); setBooths(updated); };
 
@@ -82,12 +93,12 @@
   }
 
     booths.forEach((b, index) => {
-    if (b.size || b.price || b.quantity) {
-      if (!b.size || !b.price || !b.quantity) {
-        fieldsToCheck[`booths[${index}]`] = "";
-      }
+  if (b.size || b.price || b.quantity || b.code || b.status || b.type) {
+    if (!b.size || b.price === undefined || b.price < 0 || !b.quantity || !b.code || !b.status || !b.type) {
+      fieldsToCheck[`booths[${index}]`] = "";
     }
-  });
+  }
+});
 
     const empty = Object.entries(fieldsToCheck)
       .filter(([_, value]) => !value || value === "")
@@ -418,13 +429,48 @@ const response = await fetch("/api/events", {
         <div className="section-box">
           <h5 className="modal-section-title">Booths (Optional)</h5>
           {booths.map((booth, index) => (
-            <div key={index} className="booth-row">
-              <input type="text" placeholder="Size" value={booth.size} onChange={e => updateBooth(index, "size", e.target.value)} />
-              <input type="number" placeholder="Price" min="0" value={booth.price} onChange={e => updateBooth(index, "price", e.target.value)} />
-              <input type="number" placeholder="Quantity" min="1" value={booth.quantity} onChange={e => updateBooth(index, "quantity", e.target.value)} />
-              <button type="button" onClick={() => removeBooth(index)}>Remove</button>
-            </div>
-          ))}
+  <div key={index} className="booth-row">
+    <input
+      type="text"
+      placeholder="Booth Code"
+      value={booth.code || ""}
+      onChange={e => updateBooth(index, "code", e.target.value)}
+    />
+    <input
+      type="text"
+      placeholder="Size"
+      value={booth.size || ""}
+      onChange={e => updateBooth(index, "size", e.target.value)}
+    />
+    <input
+      type="number"
+      placeholder="Price"
+      min="0"
+      value={booth.price !== undefined ? booth.price : 0}
+      onChange={e => updateBooth(index, "price", Number(e.target.value))}
+    />
+    <input
+      type="number"
+      placeholder="Quantity"
+      min="1"
+      value={booth.quantity !== undefined ? booth.quantity : 1}
+      onChange={e => updateBooth(index, "quantity", Number(e.target.value))}
+    />
+    <input
+      type="text"
+      placeholder="Type"
+      value={booth.type || "standard"}
+      onChange={e => updateBooth(index, "type", e.target.value)}
+    />
+    <input
+      type="text"
+      placeholder="Status"
+      value={booth.status || "available"}
+      onChange={e => updateBooth(index, "status", e.target.value)}
+    />
+    <button type="button" onClick={() => removeBooth(index)}>Remove</button>
+  </div>
+))}
           <button type="button" onClick={addBooth}>Add Booth</button>
         </div>
 

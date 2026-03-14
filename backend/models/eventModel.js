@@ -90,7 +90,10 @@ const eventSchema = new Schema(
     // -----------------------------
     booths: [
       {
-        size: { type: String, default: null },        // e.g., Small, Medium, Large
+        code: { type: String, default: null },       // e.g., "B001"
+        type: { type: String, default: "standard" }, // e.g., "standard", "premium"
+        status: { type: String, default: "available" }, // e.g., "available", "booked"
+        size: { type: String, default: null },       // e.g., "Small", "Medium", "Large"
         price: { type: Number, required: true, min: 0 },
         quantity: { type: Number, required: true, min: 1 }, // number of booths of this type
       },
