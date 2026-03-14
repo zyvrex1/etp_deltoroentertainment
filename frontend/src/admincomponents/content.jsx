@@ -41,8 +41,14 @@ const ContentManager = () => {
       const res = await fetch("/api/policies");
       if (!res.ok) throw new Error("Failed to fetch policies");
       const data = await res.json();
-      const icons = { tos: <FaFileContract />, privacy: <FaShieldAlt />, refund: <FaFileInvoiceDollar /> };
-      setPolicies(data.map((p) => ({ id: p.policyKey, ...p, icon: icons[p.policyKey] })));
+      const icons = {
+        tos: <FaFileContract />,
+        privacy: <FaShieldAlt />,
+        refund: <FaFileInvoiceDollar />,
+      };
+      setPolicies(
+        data.map((p) => ({ id: p.policyKey, ...p, icon: icons[p.policyKey] })),
+      );
     } catch (err) {
       console.error("Error fetching policies:", err);
     }
@@ -89,12 +95,14 @@ const ContentManager = () => {
   const handleDeleteAnnouncement = async (announcement) => {
     const result = await showDeleteConfirmAlert(
       "Delete Announcement",
-      `Are you sure you want to delete "${announcement.title}"?`
+      `Are you sure you want to delete "${announcement.title}"?`,
     );
     if (!result.isConfirmed) return;
 
     try {
-      const res = await fetch(`/api/announcements/${announcement.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/announcements/${announcement.id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error("Failed to delete announcement");
       await res.json();
       await fetchAnnouncements(); // <-- refresh announcements
@@ -103,7 +111,6 @@ const ContentManager = () => {
       console.error("Error deleting announcement:", err);
     }
   };
-
 
   // --- Policy Handlers ---
   const handleAddPolicy = async (newPolicy) => {
@@ -116,10 +123,18 @@ const ContentManager = () => {
       if (!res.ok) throw new Error("Failed to create policy");
       const createdPolicy = await res.json();
 
-      const icons = { tos: <FaFileContract />, privacy: <FaShieldAlt />, refund: <FaFileInvoiceDollar /> };
+      const icons = {
+        tos: <FaFileContract />,
+        privacy: <FaShieldAlt />,
+        refund: <FaFileInvoiceDollar />,
+      };
       setPolicies((prev) => [
         ...prev,
-        { id: createdPolicy.policyKey, ...createdPolicy, icon: icons[createdPolicy.policyKey] }
+        {
+          id: createdPolicy.policyKey,
+          ...createdPolicy,
+          icon: icons[createdPolicy.policyKey],
+        },
       ]);
 
       setIsAddPolicyOpen(false);
@@ -147,12 +162,14 @@ const ContentManager = () => {
   const handleDeletePolicy = async (policy) => {
     const result = await showDeleteConfirmAlert(
       "Delete Policy",
-      `Are you sure you want to delete "${policy.title}"? This action cannot be undone.`
+      `Are you sure you want to delete "${policy.title}"? This action cannot be undone.`,
     );
     if (!result.isConfirmed) return;
 
     try {
-      const res = await fetch(`/api/policies/${policy.policyKey}`, { method: "DELETE" });
+      const res = await fetch(`/api/policies/${policy.policyKey}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error("Failed to delete policy");
       await res.json();
       await fetchPolicies(); // <-- refresh policies
@@ -161,8 +178,6 @@ const ContentManager = () => {
       console.error("Error deleting policy:", err);
     }
   };
-
-
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -180,17 +195,19 @@ const ContentManager = () => {
           <h1>Content Management</h1>
           <p>Manage platform announcements and static content</p>
         </div>
-        <div className="content-actions">
-        </div>
-        <div className="content-actions">
-        </div>
+        <div className="content-actions"></div>
+        <div className="content-actions"></div>
       </div>
 
       <div className="content-grid">
         <div className="content-card announcements-card">
           <div className="card-header-with-action">
             <h3>Announcements</h3>
-            <button className="add-icon-btn" onClick={() => setIsAnnouncementModalOpen(true)} aria-label="New Announcement">
+            <button
+              className="add-icon-btn"
+              onClick={() => setIsAnnouncementModalOpen(true)}
+              aria-label="New Announcement"
+            >
               <Icon icon="mdi:plus" />
             </button>
           </div>
@@ -228,7 +245,11 @@ const ContentManager = () => {
         <div className="content-card legal-card">
           <div className="card-header-with-action">
             <h3>Legal & Policies</h3>
-            <button className="add-icon-btn" onClick={() => setIsAddPolicyOpen(true)} aria-label="New Policy">
+            <button
+              className="add-icon-btn"
+              onClick={() => setIsAddPolicyOpen(true)}
+              aria-label="New Policy"
+            >
               <Icon icon="mdi:plus" />
             </button>
           </div>
@@ -238,8 +259,8 @@ const ContentManager = () => {
                 key={`${p.policyKey}-${index}`}
                 className="legal-item-container"
               >
-                              <div className="legal-header">
-                  <h5>{a.title}</h5>
+                <div className="legal-header">
+                  <h5>{p.title}</h5>
                   <div className="legal-header-right">
                     <span className="small-body-text announcement-date">
                       {formatDate(p.date)}
@@ -259,9 +280,8 @@ const ContentManager = () => {
                       </button>
                     </div>
                   </div>
-                <p className="small-body-text announcement-desc">{p.content}</p>
-
-              </div>
+                </div>
+                <p className="small-body-text legal-desc">{p.content}</p>
               </div>
             ))}
           </div>
