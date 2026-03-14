@@ -362,17 +362,7 @@ const removeSeat = (index) => {
           <h3>Edit Event</h3>
           <button
             className="close-btn"
-            onClick={async () => {
-              const hasChanges = Object.values(formData).some((val) =>
-                typeof val === "object"
-                  ? Object.values(val).some((v) => v)
-                  : val,
-              );
-              if (hasChanges) {
-                const result = await showCancelConfirmAlert();
-                if (result.isConfirmed) onClose();
-              } else onClose();
-            }}
+            onClick={onClose} // directly call onClose
           >
             <Icon icon="mdi:close" width="24" height="24" />
           </button>

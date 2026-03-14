@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './ManagePolicyModal.css';
 import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from '../utils/sweetAlert';
@@ -12,44 +12,57 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
         return `${year}-${month}-${day}`;
     };
 
-    const [formData, setFormData] = React.useState({
+    const [formData, setFormData] = useState({
         title: '',
         content: '',
         date: getCurrentDate(),
-        category: 'Update'
+        contentcategory: 'Update' // matches backend field
     });
 
     if (!isOpen) return null;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         const result = await showCreateConfirmAlert(
             'Create Announcement?',
             `Are you sure you want to create "${formData.title}"?`
         );
 
-        if (!result.isConfirmed) {
-            return;
-        }
+        if (!result.isConfirmed) return;
 
         try {
-            onSave(formData);
-            await showSuccessAlert('Announcement Created', 'The announcement has been created successfully.');
+            // --- Call backend to create the announcement ---
+            const res = await fetch('/api/announcements', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+
+            if (!res.ok) throw new Error('Failed to create announcement');
+
+            const savedAnnouncement = await res.json();
+
+            // --- Pass the saved announcement object back to parent ---
+            await onSave(savedAnnouncement);
+
+            await showSuccessAlert(
+                'Announcement Created',
+                'The announcement has been created successfully.'
+            );
             onClose();
+
             // Reset form
             setFormData({
                 title: '',
                 content: '',
                 date: getCurrentDate(),
-                category: 'Update'
+                contentcategory: 'Update'
             });
         } catch (error) {
             console.error('Error creating announcement:', error);
@@ -60,9 +73,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
         const hasChanges = formData.title || formData.content;
         if (hasChanges) {
             const result = await showCancelConfirmAlert();
-            if (result.isConfirmed) {
-                onClose();
-            }
+            if (result.isConfirmed) onClose();
         } else {
             onClose();
         }
@@ -113,21 +124,17 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
                                     value={formData.date}
                                     readOnly
                                     disabled
-                                    style={{
-                                        backgroundColor: '#f5f5f5',
-                                        cursor: 'not-allowed',
-                                        color: '#666'
-                                    }}
-                                    required
+                                    style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed', color: '#666' }}
                                 />
                             </div>
                             <div className="announcement-form-group">
                                 <h6>Category</h6>
                                 <select
-                                    name="category"
-                                    value={formData.category}
+                                    name="contentcategory"
+                                    value={formData.contentcategory}
                                     onChange={handleChange}
                                 >
+                                    <option value="General">General</option>
                                     <option value="Update">Update</option>
                                     <option value="News">News</option>
                                     <option value="Maintenance">Maintenance</option>
@@ -137,8 +144,10 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
                         </div>
 
                         <div className="general-announcement-modal-footer">
-                            <button className="button cancel-btn" onClick={handleCancel}>Cancel</button>
-                            <button className="primary-button save-btn" onClick={handleSubmit}>
+                            <button type="button" className="button cancel-btn" onClick={handleCancel}>
+                                Cancel
+                            </button>
+                            <button type="submit" className="primary-button save-btn">
                                 Save Changes
                             </button>
                         </div>

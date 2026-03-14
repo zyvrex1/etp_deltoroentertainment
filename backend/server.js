@@ -13,6 +13,8 @@ const customerRoutes = require('./routes/customerRoutes')
 const adminRoutes = require('./routes/adminRoutes')
 const superadminRoutes = require('./routes/superadminRoutes')
 const eventRoutes = require('./routes/eventRoutes')
+const announcementRoutes = require('./routes/announcementsRoutes')
+const policiesRoutes = require("./routes/policiesRoutes");
 
 // express app
 const app = express()
@@ -35,7 +37,6 @@ app.use((req, res, next) => {
 // serve uploaded images
 app.use('/uploads', express.static(uploadDir))
 
-
 // API routes
 app.use('/api/auth', authRoutes)
 app.use('/api/promoter', promoterRoutes)
@@ -45,8 +46,10 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/superadmin', superadminRoutes)
 app.use('/api/events', eventRoutes)
 
+app.use('/api/announcements', announcementRoutes)
+app.use('/api/policies', policiesRoutes) 
 
-// Global error handler (important for multer errors)
+// Global error handler
 app.use((err, req, res, next) => {
     console.error(err)
 
@@ -60,7 +63,6 @@ app.use((err, req, res, next) => {
 
     res.status(500).json({ error: 'Something went wrong' })
 })
-
 
 // connect to db
 mongoose.connect(process.env.MONGO_URI)

@@ -1,114 +1,152 @@
-import React, { useState, useEffect } from 'react';
-import { Icon } from '@iconify/react';
-import './ManagePolicyModal.css';
-import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert } from '../utils/sweetAlert';
+import { useState, useEffect } from "react";
+import { Icon } from "@iconify/react";
+import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert } from "../utils/sweetAlert";
 
-const ManagePolicyModal = ({ isOpen, onClose, policy, onSave }) => {
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const [date, setDate] = useState('');
+const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [policyKey, setPolicyKey] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        if (policy) {
-            setTitle(policy.title || '');
-            setContent(policy.content || '');
-            setDate(policy.lastUpdated ? new Date(policy.lastUpdated).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-        }
-    }, [policy]);
+  // Initialize form when modal opens
+  useEffect(() => {
+    if (isOpen && policy) {
+      setTitle(policy.title || "");
+      setContent(policy.content || "");
+      setPolicyKey(policy.policyKey || "");
+    }
+  }, [isOpen, policy]);
 
-    if (!isOpen || !policy) return null;
+  if (!isOpen) return null;
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const result = await showUpdateConfirmAlert(
-            'Update Policy?',
-            `Are you sure you want to update "${policy.title}"?`
-        );
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!policyKey || isSaving) return;
 
-        if (!result.isConfirmed) {
-            return;
-        }
+    try {
+      const updatedPolicy = { ...policy, title: title.trim(), content: content.trim() };
 
-        try {
-            onSave({ ...policy, title, content, lastUpdated: new Date(date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) });
-            await showSuccessAlert('Policy Updated', 'The policy has been updated successfully.');
-            onClose();
-        } catch (error) {
-            console.error('Error updating policy:', error);
-        }
-    };
+      // Confirm update
+      const result = await showUpdateConfirmAlert();
+      if (!result.isConfirmed) return;
 
-    const handleCancel = async () => {
-        const hasChanges = title !== (policy?.title || '') || content !== (policy?.content || '') || date !== (policy?.lastUpdated ? new Date(policy.lastUpdated).toISOString().split('T')[0] : '');
-        if (hasChanges) {
-            const result = await showCancelConfirmAlert();
-            if (result.isConfirmed) {
-                onClose();
-            }
-        } else {
-            onClose();
-        }
-    };
+      setIsSaving(true);
 
-    return (
-        <div className="general-modal-overlay">
-            <div className="general-announcement-modal-container">
-                <div className="general-modal-header">
-                    <h3>Edit Policy</h3>
-                    <button type="button" className="close-btn" onClick={handleCancel}>
-                        <Icon icon="mdi:close" />
-                    </button>
-                </div>
+      // Save to backend
+      const res = await fetch(`/api/policies/${policyKey}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedPolicy),
+      });
 
-                <div className="modal-body">
-                    <form className="create-announcement-form" onSubmit={handleSubmit}>
-                        <div className="announcement-form-group">
-                            <h6>Policy Title</h6>
-                            <input
-                                type="text"
-                                className="regular-body-text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                placeholder="e.g., Terms of Service"
-                                required
-                            />
-                        </div>
+      let savedPolicy;
+      try {
+        savedPolicy = await res.json();
+      } catch (err) {
+        const text = await res.text();
+        console.error("Unexpected response:", res.status, text);
+        throw new Error(text || "Failed to parse response from server");
+      }
 
-                        <div className="announcement-form-group">
-                            <h6>Content</h6>
-                            <textarea
-                                className="regular-body-text"
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                placeholder="Enter policy details here..."
-                                rows="6"
-                                required
-                            ></textarea>
-                        </div>
+      if (!res.ok) throw new Error(savedPolicy?.error || "Failed to update policy");
 
-                        <div className="announcement-form-row">
-                            <div className="announcement-form-group">
-                                <h6>Publish Date</h6>
-                                <input
-                                    type="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
+      // Update parent state
+      onSave(savedPolicy);
 
-                        <div className="general-announcement-modal-footer">
-                            <button type="button" className="button cancel-btn" onClick={handleCancel}>Cancel</button>
-                            <button type="submit" className="primary-button save-btn">
-                                Save Changes
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+      await showSuccessAlert(
+        "Policy Updated",
+        "The policy has been updated successfully."
+      );
+
+      onClose();
+    } catch (error) {
+      console.error("Error updating policy:", error);
+      alert(error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    const hasChanges =
+      title.trim() !== (policy?.title || "").trim() ||
+      content.trim() !== (policy?.content || "").trim();
+
+    if (hasChanges) {
+      const result = await showCancelConfirmAlert();
+      if (result.isConfirmed) onClose();
+    } else {
+      onClose();
+    }
+  };
+
+  const policyLabel = (key) =>
+    key === "tos"
+      ? "Terms of Service"
+      : key === "privacy"
+      ? "Privacy Policy"
+      : "Refund Policy";
+
+  return (
+    <div className="general-modal-overlay">
+      <div className="general-modal-container">
+        <div className="general-modal-header">
+          <h3>Edit Policy</h3>
+          <button className="close-btn" onClick={handleCancel}>
+            <Icon icon="mdi:close" />
+          </button>
         </div>
-    );
+
+        <div className="modal-body">
+          <form id="edit-policy-form" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <h4>Policy Key</h4>
+              <input type="text" value={policyLabel(policyKey)} disabled />
+            </div>
+
+            <div className="form-group">
+              <h4>Policy Title</h4>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter policy title..."
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <h4>Policy Content</h4>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Enter policy details here..."
+                required
+              ></textarea>
+            </div>
+
+            <div className="policy-modal-footer">
+              <button
+                type="button"
+                className="button cancel-btn"
+                onClick={handleCancel}
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="primary-button save-btn"
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Update Policy"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export default ManagePolicyModal;
+export default EditPolicyModal;

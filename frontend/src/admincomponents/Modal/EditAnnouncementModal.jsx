@@ -1,23 +1,23 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './ManagePolicyModal.css';
 import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert } from '../utils/sweetAlert';
 
 const EditAnnouncementModal = ({ isOpen, onClose, onSave, announcement }) => {
-    const [formData, setFormData] = React.useState({
+    const [formData, setFormData] = useState({
         title: '',
         content: '',
         date: '',
-        category: 'Update'
+        contentcategory: 'Update' // match backend
     });
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (announcement) {
             setFormData({
                 title: announcement.title || '',
                 content: announcement.content || '',
-                date: announcement.date || '',
-                category: announcement.category || 'Update'
+                date: announcement.date ? announcement.date.split('T')[0] : '', // format for date input
+                contentcategory: announcement.contentcategory || 'Update'
             });
         }
     }, [announcement]);
@@ -26,10 +26,7 @@ const EditAnnouncementModal = ({ isOpen, onClose, onSave, announcement }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e) => {
@@ -38,13 +35,10 @@ const EditAnnouncementModal = ({ isOpen, onClose, onSave, announcement }) => {
             'Update Announcement?',
             `Are you sure you want to update "${formData.title}"?`
         );
-
-        if (!result.isConfirmed) {
-            return;
-        }
+        if (!result.isConfirmed) return;
 
         try {
-            onSave({ ...formData, id: announcement?.id });
+            await onSave({ ...formData, id: announcement?.id });
             await showSuccessAlert('Announcement Updated', 'The announcement has been updated successfully.');
             onClose();
         } catch (error) {
@@ -56,14 +50,12 @@ const EditAnnouncementModal = ({ isOpen, onClose, onSave, announcement }) => {
         const hasChanges =
             formData.title !== (announcement?.title || '') ||
             formData.content !== (announcement?.content || '') ||
-            formData.date !== (announcement?.date || '') ||
-            formData.category !== (announcement?.category || 'Update');
+            formData.date !== (announcement?.date ? announcement.date.split('T')[0] : '') ||
+            formData.contentcategory !== (announcement?.contentcategory || 'Update');
 
         if (hasChanges) {
             const result = await showCancelConfirmAlert();
-            if (result.isConfirmed) {
-                onClose();
-            }
+            if (result.isConfirmed) onClose();
         } else {
             onClose();
         }
@@ -119,8 +111,8 @@ const EditAnnouncementModal = ({ isOpen, onClose, onSave, announcement }) => {
                             <div className="announcement-form-group">
                                 <h6>Category</h6>
                                 <select
-                                    name="category"
-                                    value={formData.category}
+                                    name="contentcategory"
+                                    value={formData.contentcategory}
                                     onChange={handleChange}
                                 >
                                     <option value="Update">Update</option>
@@ -132,8 +124,10 @@ const EditAnnouncementModal = ({ isOpen, onClose, onSave, announcement }) => {
                         </div>
 
                         <div className="general-announcement-modal-footer">
-                            <button className="button cancel-btn" onClick={handleCancel}>Cancel</button>
-                            <button className="primary-button save-btn" onClick={handleSubmit}>
+                            <button type="button" className="button cancel-btn" onClick={handleCancel}>
+                                Cancel
+                            </button>
+                            <button type="submit" className="primary-button save-btn">
                                 Save Changes
                             </button>
                         </div>
