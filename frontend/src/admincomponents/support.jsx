@@ -284,51 +284,55 @@ const SupportDisputes = () => {
                 </div>
 
                 <div className="table-wrapper">
-                    <table className="data-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>User</th>
-                                <th>Subject</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedTickets.map((ticket) => (
-                                <tr key={ticket.id} className={expandedRow === ticket.id ? "expanded" : ""}>
-                                    <td className="regular-body-text id-td" data-label="ID">
-                                        <div className="mobile-expand-icon" onClick={() => toggleRow(ticket.id)}>
-                                            <Icon icon={expandedRow === ticket.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
-                                        </div>
-                                        <span>#{ticket.id.toString().padStart(2, "0")}</span>
-                                    </td>
-                                    <td className="regular-body-text name-td" data-label="User">{ticket.user}</td>
-                                    <td className="subject-cell regular-body-text" data-label="Subject">
-                                        <span className="subject-text">{ticket.subject}</span>
-                                    </td>
-                                    <td className="status-cell" data-label="Status">{getStatusBadge(ticket.status)}</td>
-                                    <td className="regular-body-text created-cell" data-label="Created">{ticket.created}</td>
-                                    <td className="actions-cell" data-label="Actions">
-                                        <div className="actions-flex">
-                                            <button
-                                                className="outlined-button view-btn"
-                                                onClick={() => handleViewTicket(ticket)}
-                                            >
-                                                View
-                                            </button>
-                                            <button
-                                                className="primary-button assign-btn"
-                                            >
-                                                Assign
-                                            </button>
-                                        </div>
-                                    </td>
+                    {paginatedTickets.length === 0 ? (
+                        // Empty state outside table for mobile-friendly display
+                        <div className="bt-empty-state">
+                            <Icon icon="mdi:magnify-close" width="48" />
+                            <h4>No tickets found</h4>
+                            <p className="small-body-text">
+                                No tickets match "<strong>{searchQuery}</strong>".
+                            </p>
+                        </div>
+                    ) : (
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {paginatedTickets.map((ticket) => (
+                                    <tr key={ticket.id} className={expandedRow === ticket.id ? "expanded" : ""}>
+                                        <td className="regular-body-text id-td" data-label="ID">
+                                            <div className="mobile-expand-icon" onClick={() => toggleRow(ticket.id)}>
+                                                <Icon icon={expandedRow === ticket.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                            </div>
+                                            <span>#{ticket.id.toString().padStart(2, "0")}</span>
+                                        </td>
+                                        <td className="regular-body-text name-td" data-label="User">{ticket.user}</td>
+                                        <td className="subject-cell regular-body-text" data-label="Subject">
+                                            <span className="subject-text">{ticket.subject}</span>
+                                        </td>
+                                        <td className="status-cell" data-label="Status">{getStatusBadge(ticket.status)}</td>
+                                        <td className="regular-body-text created-cell" data-label="Created">{ticket.created}</td>
+                                        <td className="actions-cell" data-label="Actions">
+                                            <div className="actions-flex">
+                                                <button className="outlined-button view-btn" onClick={() => handleViewTicket(ticket)}>
+                                                    View
+                                                </button>
+                                                <button className="primary-button assign-btn">Assign</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
 
                 {totalPages > 1 && (

@@ -20,8 +20,6 @@ const ViewTicket = ({ ticket, onUpdateStatus, onBack }) => {
                 <div className="vt-header-titles">
                     <div className="vt-title-row">
                         <h2>{ticket.subject}</h2>
-                        <span className="button-label vt-badge-medium">medium</span>
-                        <span className={`button-label vt-badge-status vt-badge-${ticket.status}`}>{ticket.status}</span>
                     </div>
                     <p className="small-body-text vt-subtitle">
                         #{ticket.id.toString().padStart(2, "0")} • Opened {ticket.created}
@@ -34,15 +32,29 @@ const ViewTicket = ({ ticket, onUpdateStatus, onBack }) => {
                     <div className="vt-card">
                         <h6 className="vt-card-heading">SUBMITTED BY</h6>
                         <div className="vt-user-info">
-                            <div className="vt-avatar">{ticket.user.charAt(0)}</div>
+                            <div className="vt-avatar">
+                                {ticket.user.charAt(0)}
+                            </div>
                             <div className="vt-user-details">
                                 <div className="vt-user-name-row">
                                     <span className="regular-body-text fw-600">{ticket.user}</span>
                                     <span className="button-label vt-badge-customer">CUSTOMER</span>
                                 </div>
-                                <span className="small-body-text vt-contact-row"><Icon icon="mdi:email-outline" /> {ticket.user.toLowerCase().replace(' ', '')}@gmail.com</span>
-                                <span className="small-body-text vt-contact-row"><Icon icon="mdi:phone-outline" /> +1 (555) 0401</span>
+                                <div className="vt-contact-row">
+                                    <Icon icon="mdi:email-outline" />
+                                    <span className="small-body-text">
+                                        {ticket.user.toLowerCase().replace(' ', '')}@gmail.com
+                                    </span>
+                                </div>
+                                <div className="vt-contact-row">
+                                    <Icon icon="mdi:phone-outline" />
+                                    <span className="small-body-text">
+                                        +1 (555) 0401
+                                    </span>
+                                </div>
+
                             </div>
+
                         </div>
                     </div>
 
@@ -74,7 +86,7 @@ const ViewTicket = ({ ticket, onUpdateStatus, onBack }) => {
                             <span className="small-body-text vt-label">Category</span>
                             <span className="small-body-text vt-category-val"><Icon icon="mdi:tag-outline" /> Billing</span>
                         </div>
-                        
+
                         <div className="vt-divider"></div>
 
                         <div className="vt-detail-row vt-assigned-header">
@@ -161,32 +173,52 @@ const ViewTicket = ({ ticket, onUpdateStatus, onBack }) => {
                             <h6 className="vt-card-heading vt-orange-heading"><Icon icon="mdi:lock-outline" width="18" /> Internal Notes</h6>
                             <span className="button-label vt-badge-admin">ADMIN ONLY</span>
                         </div>
-                        
+
                         <div className="vt-note">
                             <div className="vt-note-header">
-                                <div className="vt-avatar-small vt-avatar-red">R</div>
-                                <span className="small-body-text fw-600">Robert Chen</span>
-                                <span className="smaller-body-text">2024-10-02 11:35</span>
+
+                                <div className="vt-avatar-small">R</div>
+
+                                <div className="vt-note-user">
+                                    <span className="regular-body-text fw-600">Robert Chen</span>
+                                    <span className="smaller-body-text">2024-10-02 11:35</span>
+                                </div>
+
                                 <Icon icon="mdi:pencil-outline" className="vt-edit-icon" />
+
                             </div>
-                            <p className="small-body-text">Checked refund policy — event allows refunds up to 7 days before. This is within the window. Proceeding with refund approval.</p>
+
+                            <p className="small-body-text">
+                                Checked refund policy — event allows refunds up to 7 days before.
+                                This is within the window. Proceeding with refund approval.
+                            </p>
                         </div>
 
                         <div className="vt-note">
                             <div className="vt-note-header">
-                                <div className="vt-avatar-small vt-avatar-darkred">A</div>
-                                <span className="small-body-text fw-600">Alex Thompson</span>
-                                <span className="smaller-body-text">2024-10-02 14:00</span>
+
+                                <div className="vt-avatar-small">A</div>
+
+                                <div className="vt-note-user">
+                                    <span className="regular-body-text fw-600">Alex Thompson</span>
+                                    <span className="smaller-body-text">2024-10-02 14:00</span>
+                                </div>
+
                                 <Icon icon="mdi:pencil-outline" className="vt-edit-icon" />
+
                             </div>
-                            <p className="small-body-text">Approved. Process the refund through the standard channel.</p>
+
+                            <p className="small-body-text">
+                                Approved. Process the refund through the standard channel.
+                            </p>
                         </div>
-                        
+
+
                         <div className="vt-add-note">
                             <input type="text" placeholder="Add an internal note..." className="small-body-text vt-note-input" />
                         </div>
                         <div className="vt-add-note-action">
-                            <button className="vt-add-note-btn">+ Add Note</button>
+                            <button className="vt-add-note-btn primary-button">Add Note</button>
                         </div>
                     </div>
                 </div>

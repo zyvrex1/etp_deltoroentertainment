@@ -324,46 +324,46 @@ const BoothandTicket = () => {
                 </div>
               </div>
             </div>
-<div className="bt-events-grid">
-  {paginatedEvents.length === 0 && (
-    <div className="bt-empty-state">
-      <Icon icon="mdi:magnify-close" width="48" />
-      <h4>No events found</h4>
-      <p className="small-body-text">
-        No events match "<strong>{searchQuery}</strong>".
-      </p>
-    </div>
-  )}
+            <div className="bt-events-grid">
+              {paginatedEvents.length === 0 && (
+                <div className="bt-empty-state">
+                  <Icon icon="mdi:magnify-close" width="48" />
+                  <h4>No events found</h4>
+                  <p className="small-body-text">
+                    No events match "<strong>{searchQuery}</strong>".
+                  </p>
+                </div>
+              )}
 
-  {paginatedEvents.map((event) => (
-    <div
-      key={event.id}
-      className="bt-event-card"
-      onClick={() => setSelectedEvent(event.title)}
-    >
-      <div className="bt-card-image-wrap">
-        <span className="bt-category-pill button-label">
-          {event.category}
-        </span>
-        <img src={event.image} alt={event.title} />
-      </div>
+              {paginatedEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="bt-event-card"
+                  onClick={() => setSelectedEvent(event.title)}
+                >
+                  <div className="bt-card-image-wrap">
+                    <span className="bt-category-pill button-label">
+                      {event.category}
+                    </span>
+                    <img src={event.image} alt={event.title} />
+                  </div>
 
-      <div className="bt-card-details">
-        <h3 className="bt-card-title">{event.title}</h3>
+                  <div className="bt-card-details">
+                    <h3 className="bt-card-title">{event.title}</h3>
 
-        <div className="bt-card-info">
-          <Icon icon="mdi:calendar" />
-          <span className="small-body-text">{event.date}</span>
-        </div>
+                    <div className="bt-card-info">
+                      <Icon icon="mdi:calendar" />
+                      <span className="small-body-text">{event.date}</span>
+                    </div>
 
-        <div className="bt-card-info">
-          <Icon icon="mdi:map-marker" />
-          <span className="small-body-text">{event.location}</span>
-        </div>
-      </div>
-    </div>
-  ))}
-</div>
+                    <div className="bt-card-info">
+                      <Icon icon="mdi:map-marker" />
+                      <span className="small-body-text">{event.location}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
 
             {totalEventPages > 1 && (
               <div className="pagination">
