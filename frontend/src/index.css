@@ -313,3 +313,36 @@ li {
   }
 
 }
+
+
+.empty-state {
+    width: 100%;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--color-black-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+
+    h4 {
+    font-weight: 600;
+}
+}
+
+
+    .bt-empty-state{
+  width: 100%;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-black-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  h4{
+  font-weight: 600;
+}
+}

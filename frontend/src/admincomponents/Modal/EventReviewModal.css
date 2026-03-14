@@ -173,14 +173,13 @@
 
 
 
-.general-modal-footer {
-    display: flex;
+.general-eventreview-modal-footer {
+     display: flex;
     justify-content: flex-end;
+    align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    /* border-top: 1px solid var(--color-black-quaternary); */
-    flex-shrink: 0;
-    min-width: 0;
+    width: 100%;
 
     .cancel-btn {
         background-color: transparent;
@@ -202,6 +201,7 @@ background-color: var(--color-bg-light);
 
     .save-btn {
         border: none;
+
 
         &:hover {
             opacity: 0.9;
@@ -244,6 +244,29 @@ background-color: var(--color-bg-light);
 }
 
 @media (max-width: 480px) {
+
+      .general-eventreview-modal-footer {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+    }
+
+    .general-eventreview-modal-footer button,
+    .general-eventreview-modal-footer .button-label {
+        width: 100%;
+    }
+
+    /* approved / rejected layout */
+    .general-eventreview-modal-footer.status-view {
+        flex-direction: row;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .general-eventreview-modal-footer.status-view button,
+    .general-eventreview-modal-footer.status-view .button-label {
+        width: auto;
+    }
     .event-review-modal-overlay {
         padding: 0;
     }

@@ -12,6 +12,8 @@ const EventReviewModal = ({ event, onClose, onApprove, onReject }) => {
             .substring(0, 1);
     };
 
+    const isPending = event.status === "Pending Review";
+
     return (
         <div className="general-modal-overlay" onClick={onClose}>
             <div className="general-eventreview-modal-container" onClick={(e) => e.stopPropagation()}>
@@ -64,20 +66,39 @@ const EventReviewModal = ({ event, onClose, onApprove, onReject }) => {
                         </div>
                     </div>
 
-                    <div className="general-modal-footer">
-                    <button className="cancel-btn" onClick={onClose}>
-                        Close
-                    </button>
-                    <button className="primary-button reject-btn" onClick={onReject}>
-                        Reject
-                    </button>
-                    <button className="secondary-button save-btn" onClick={onApprove}>
-                        Approve Event
-                    </button>
-                </div>
+                    <div className={`general-eventreview-modal-footer ${!isPending ? "status-view" : ""}`}>
+
+                        {event.status === "Pending Review" ? (
+                            <>
+                                <button className="cancel-btn" onClick={onClose}>
+                                    Close
+                                </button>
+
+                                <button className="primary-button reject-btn" onClick={onReject}>
+                                    Reject
+                                </button>
+
+                                <button className="secondary-button save-btn" onClick={onApprove}>
+                                    Approve
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button className="cancel-btn" onClick={onClose}>
+                                    Close
+                                </button>
+
+                                <span className={`button-label ${event.status === "Approved" ? "status-approved" : "status-rejected"
+                                    }`}>
+                                    {event.status}
+                                </span>
+                            </>
+                        )}
+
+                    </div>
                 </div>
 
-                
+
             </div>
         </div>
     );

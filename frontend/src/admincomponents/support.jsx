@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './support.css';
 import ViewTicket from './ViewTicket';
+import AssignAdmin from './Modal/AssignAdmin';
 
 const SupportDisputes = () => {
     // Mock data for tickets
@@ -11,6 +12,7 @@ const SupportDisputes = () => {
             subject: 'Refund Request',
             user: 'Emily Blunt',
             status: 'open',
+            assignedTo: 'Robert Chen',
             created: 'Jan 2, 2026'
         },
         {
@@ -18,6 +20,7 @@ const SupportDisputes = () => {
             subject: 'Booth Layout Issue',
             user: 'Sarah Chen',
             status: 'in-progress',
+            assignedTo: 'Michael Brown',
             created: 'Sep 28, 2024'
         },
         {
@@ -25,6 +28,7 @@ const SupportDisputes = () => {
             subject: 'Sponsorship Inquiry',
             user: 'Mike Ross',
             status: 'resolved',
+            assignedTo: 'Robert Chen',
             created: 'Sep 15, 2024'
         },
         {
@@ -32,6 +36,7 @@ const SupportDisputes = () => {
             subject: 'Login Issues',
             user: 'James Wilson',
             status: 'resolved',
+            assignedTo: 'Michael Brown',
             created: 'Sep 10, 2024'
         },
         {
@@ -39,6 +44,7 @@ const SupportDisputes = () => {
             subject: 'Ticket Not Received',
             user: 'Sophia Garcia',
             status: 'open',
+            assignedTo: 'Unassigned',
             created: 'Oct 5, 2024'
         },
         {
@@ -46,6 +52,7 @@ const SupportDisputes = () => {
             subject: 'Booth Size Question',
             user: 'Lisa Wang',
             status: 'in-progress',
+            assignedTo: 'Sophia Garcia',
             created: 'Oct 1, 2024'
         },
         {
@@ -53,6 +60,7 @@ const SupportDisputes = () => {
             subject: 'Booth Size Question',
             user: 'Lisa Wang',
             status: 'in-progress',
+            assignedTo: 'Robert Chen',
             created: 'Oct 1, 2024'
         },
         {
@@ -60,6 +68,7 @@ const SupportDisputes = () => {
             subject: 'Booth Size Question',
             user: 'Lisa Wang',
             status: 'in-progress',
+            assignedTo: 'Michael Brown',
             created: 'Oct 1, 2024'
         }
     ]);
@@ -155,9 +164,38 @@ const SupportDisputes = () => {
 
     // View State
     const [selectedTicketId, setSelectedTicketId] = useState(null);
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [selectedTicketForAssign, setSelectedTicketForAssign] = useState(null);
 
     const handleViewTicket = (ticket) => {
         setSelectedTicketId(ticket.id);
+    };
+
+    const handleAssignClick = (ticket) => {
+        setSelectedTicketForAssign(ticket);
+        setIsAssignModalOpen(true);
+    };
+
+    const handleCloseAssignModal = () => {
+        setIsAssignModalOpen(false);
+        setSelectedTicketForAssign(null);
+    };
+
+    const handleAssignAdmin = (adminId) => {
+        const admins = {
+            "robert_chen": "Robert Chen",
+            "michael_brown": "Michael Brown",
+            "sophia_garcia": "Sophia Garcia",
+        };
+        const assignedName = admins[adminId] || "Unassigned";
+
+        const updatedTickets = tickets.map(ticket =>
+            ticket.id === selectedTicketForAssign?.id ? { ...ticket, assignedTo: assignedName } : ticket
+        );
+        setTickets(updatedTickets);
+
+        setIsAssignModalOpen(false);
+        setSelectedTicketForAssign(null);
     };
 
     const handleBackToSupport = () => {
@@ -286,7 +324,7 @@ const SupportDisputes = () => {
                 <div className="table-wrapper">
                     {paginatedTickets.length === 0 ? (
                         // Empty state outside table for mobile-friendly display
-                        <div className="bt-empty-state">
+                        <div className="empty-state">
                             <Icon icon="mdi:magnify-close" width="48" />
                             <h4>No tickets found</h4>
                             <p className="small-body-text">
@@ -301,6 +339,7 @@ const SupportDisputes = () => {
                                     <th>User</th>
                                     <th>Subject</th>
                                     <th>Status</th>
+                                    <th>Assigned To</th>
                                     <th>Created</th>
                                     <th>Actions</th>
                                 </tr>
@@ -319,13 +358,22 @@ const SupportDisputes = () => {
                                             <span className="subject-text">{ticket.subject}</span>
                                         </td>
                                         <td className="status-cell" data-label="Status">{getStatusBadge(ticket.status)}</td>
+                                        <td className="regular-body-text" data-label="Assigned To">
+                                            {ticket.assignedTo === 'Unassigned' ? (
+                                                <span style={{ color: "var(--color-black-tertiary)" }}>Unassigned</span>
+                                            ) : (
+                                                ticket.assignedTo
+                                            )}
+                                        </td>
                                         <td className="regular-body-text created-cell" data-label="Created">{ticket.created}</td>
                                         <td className="actions-cell" data-label="Actions">
                                             <div className="actions-flex">
                                                 <button className="outlined-button view-btn" onClick={() => handleViewTicket(ticket)}>
                                                     View
                                                 </button>
-                                                <button className="primary-button assign-btn">Assign</button>
+                                                <button className="primary-button assign-btn" onClick={() => handleAssignClick(ticket)}>
+                                                    Assign
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -359,6 +407,13 @@ const SupportDisputes = () => {
                     </div>
                 )}
             </div>
+
+            <AssignAdmin
+                isOpen={isAssignModalOpen}
+                onClose={handleCloseAssignModal}
+                onAssign={handleAssignAdmin}
+                ticket={selectedTicketForAssign}
+            />
         </div>
     );
 };

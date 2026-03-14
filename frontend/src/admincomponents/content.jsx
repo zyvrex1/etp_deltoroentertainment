@@ -56,111 +56,111 @@ const ContentManager = () => {
 
   // Announcement Handler
   const handleSaveAnnouncement = async (formData) => {
-  try {
-    const res = await fetch("/api/announcements", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-    if (!res.ok) throw new Error("Failed to create announcement");
-    await res.json();
-    await fetchAnnouncements(); // <-- refresh announcements
-  } catch (err) {
-    console.error("Error creating announcement:", err);
-  }
-};
+    try {
+      const res = await fetch("/api/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Failed to create announcement");
+      await res.json();
+      await fetchAnnouncements(); // <-- refresh announcements
+    } catch (err) {
+      console.error("Error creating announcement:", err);
+    }
+  };
 
-const handleUpdateAnnouncement = async (updatedAnnouncement) => {
-  try {
-    const res = await fetch(`/api/announcements/${updatedAnnouncement.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedAnnouncement),
-    });
-    if (!res.ok) throw new Error("Failed to update announcement");
-    await res.json();
-    await fetchAnnouncements(); // <-- refresh announcements
-    setEditingAnnouncement(null);
-  } catch (err) {
-    console.error("Error updating announcement:", err);
-  }
-};
+  const handleUpdateAnnouncement = async (updatedAnnouncement) => {
+    try {
+      const res = await fetch(`/api/announcements/${updatedAnnouncement.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedAnnouncement),
+      });
+      if (!res.ok) throw new Error("Failed to update announcement");
+      await res.json();
+      await fetchAnnouncements(); // <-- refresh announcements
+      setEditingAnnouncement(null);
+    } catch (err) {
+      console.error("Error updating announcement:", err);
+    }
+  };
 
-const handleDeleteAnnouncement = async (announcement) => {
-  const result = await showDeleteConfirmAlert(
-    "Delete Announcement",
-    `Are you sure you want to delete "${announcement.title}"?`
-  );
-  if (!result.isConfirmed) return;
+  const handleDeleteAnnouncement = async (announcement) => {
+    const result = await showDeleteConfirmAlert(
+      "Delete Announcement",
+      `Are you sure you want to delete "${announcement.title}"?`
+    );
+    if (!result.isConfirmed) return;
 
-  try {
-    const res = await fetch(`/api/announcements/${announcement.id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete announcement");
-    await res.json();
-    await fetchAnnouncements(); // <-- refresh announcements
-    await showSuccessAlert("Deleted!", "Announcement deleted successfully.");
-  } catch (err) {
-    console.error("Error deleting announcement:", err);
-  }
-};
+    try {
+      const res = await fetch(`/api/announcements/${announcement.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete announcement");
+      await res.json();
+      await fetchAnnouncements(); // <-- refresh announcements
+      await showSuccessAlert("Deleted!", "Announcement deleted successfully.");
+    } catch (err) {
+      console.error("Error deleting announcement:", err);
+    }
+  };
 
 
-// --- Policy Handlers ---
-const handleAddPolicy = async (newPolicy) => {
-  try {
-    const res = await fetch("/api/policies", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newPolicy),
-    });
-    if (!res.ok) throw new Error("Failed to create policy");
-    const createdPolicy = await res.json();
+  // --- Policy Handlers ---
+  const handleAddPolicy = async (newPolicy) => {
+    try {
+      const res = await fetch("/api/policies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newPolicy),
+      });
+      if (!res.ok) throw new Error("Failed to create policy");
+      const createdPolicy = await res.json();
 
-    const icons = { tos: <FaFileContract />, privacy: <FaShieldAlt />, refund: <FaFileInvoiceDollar /> };
-    setPolicies((prev) => [
-      ...prev,
-      { id: createdPolicy.policyKey, ...createdPolicy, icon: icons[createdPolicy.policyKey] }
-    ]);
+      const icons = { tos: <FaFileContract />, privacy: <FaShieldAlt />, refund: <FaFileInvoiceDollar /> };
+      setPolicies((prev) => [
+        ...prev,
+        { id: createdPolicy.policyKey, ...createdPolicy, icon: icons[createdPolicy.policyKey] }
+      ]);
 
-    setIsAddPolicyOpen(false);
-  } catch (err) {
-    console.error("Error adding policy:", err);
-  }
-};
+      setIsAddPolicyOpen(false);
+    } catch (err) {
+      console.error("Error adding policy:", err);
+    }
+  };
 
-const handleUpdatePolicy = async (updatedPolicy) => {
-  try {
-    const res = await fetch(`/api/policies/${updatedPolicy.policyKey}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedPolicy),
-    });
-    if (!res.ok) throw new Error("Failed to update policy");
-    await res.json();
-    await fetchPolicies(); // <-- refresh policies
-    setEditingPolicy(null);
-  } catch (err) {
-    console.error("Error updating policy:", err);
-  }
-};
+  const handleUpdatePolicy = async (updatedPolicy) => {
+    try {
+      const res = await fetch(`/api/policies/${updatedPolicy.policyKey}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedPolicy),
+      });
+      if (!res.ok) throw new Error("Failed to update policy");
+      await res.json();
+      await fetchPolicies(); // <-- refresh policies
+      setEditingPolicy(null);
+    } catch (err) {
+      console.error("Error updating policy:", err);
+    }
+  };
 
-const handleDeletePolicy = async (policy) => {
-  const result = await showDeleteConfirmAlert(
-    "Delete Policy",
-    `Are you sure you want to delete "${policy.title}"? This action cannot be undone.`
-  );
-  if (!result.isConfirmed) return;
+  const handleDeletePolicy = async (policy) => {
+    const result = await showDeleteConfirmAlert(
+      "Delete Policy",
+      `Are you sure you want to delete "${policy.title}"? This action cannot be undone.`
+    );
+    if (!result.isConfirmed) return;
 
-  try {
-    const res = await fetch(`/api/policies/${policy.policyKey}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete policy");
-    await res.json();
-    await fetchPolicies(); // <-- refresh policies
-    await showSuccessAlert("Deleted!", "Policy deleted successfully.");
-  } catch (err) {
-    console.error("Error deleting policy:", err);
-  }
-};
+    try {
+      const res = await fetch(`/api/policies/${policy.policyKey}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete policy");
+      await res.json();
+      await fetchPolicies(); // <-- refresh policies
+      await showSuccessAlert("Deleted!", "Policy deleted successfully.");
+    } catch (err) {
+      console.error("Error deleting policy:", err);
+    }
+  };
 
 
 
@@ -181,26 +181,19 @@ const handleDeletePolicy = async (policy) => {
           <p>Manage platform announcements and static content</p>
         </div>
         <div className="content-actions">
-          <button
-            className="primary-button"
-            onClick={() => setIsAnnouncementModalOpen(true)}
-          >
-            <Icon icon="mdi:plus" /> New Announcement
-          </button>
         </div>
         <div className="content-actions">
-          <button
-            className="primary-button"
-            onClick={() => setIsAddPolicyOpen(true)}
-          >
-            <Icon icon="mdi:plus" /> Add Policy
-          </button>
         </div>
       </div>
 
       <div className="content-grid">
         <div className="content-card announcements-card">
-          <h3>Announcements</h3>
+          <div className="card-header-with-action">
+            <h3>Announcements</h3>
+            <button className="add-icon-btn" onClick={() => setIsAnnouncementModalOpen(true)} aria-label="New Announcement">
+              <Icon icon="mdi:plus" />
+            </button>
+          </div>
           <div className="announcement-list">
             {announcements.map((a, index) => (
               <div key={`${a.id}-${index}`} className="announcement-item">
@@ -233,7 +226,12 @@ const handleDeletePolicy = async (policy) => {
         </div>
 
         <div className="content-card legal-card">
-          <h3>Legal & Policies</h3>
+          <div className="card-header-with-action">
+            <h3>Legal & Policies</h3>
+            <button className="add-icon-btn" onClick={() => setIsAddPolicyOpen(true)} aria-label="New Policy">
+              <Icon icon="mdi:plus" />
+            </button>
+          </div>
           <div className="legal-list">
             {policies.map((p, index) => (
               <div

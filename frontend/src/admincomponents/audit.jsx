@@ -95,7 +95,7 @@ const AuditLogs = () => {
             details: 'Changed fee to 5%',
             timestamp: '2024-10-10 16:00:00'
         },
-          {
+        {
             id: 11,
             action: 'Updated Settings',
             admin: 'Alex Thompson',
@@ -115,10 +115,10 @@ const AuditLogs = () => {
 
         if (searchQuery) {
             filtered = filtered.filter(log =>
-               log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               log.admin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               log.target.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               log.details.toLowerCase().includes(searchQuery.toLowerCase())
+                log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                log.admin.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                log.target.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                log.details.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
 
@@ -218,9 +218,9 @@ const AuditLogs = () => {
                     <div className="audit-toolbar-left">
                         <div className="audit-search">
                             <Icon icon="mdi:magnify" className="search-icon" />
-                            <input 
-                                type="text" 
-                                placeholder="Search logs..." 
+                            <input
+                                type="text"
+                                placeholder="Search logs..."
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
@@ -239,42 +239,55 @@ const AuditLogs = () => {
                     </div>
                 </div>
 
-            {/* Logs Table */}
+                {/* Logs Table */}
                 <div className="table-responsive">
-                    <table className="audit-table">
-                        <thead>
-                            <tr>
-                                <th>Action</th>
-                                <th>Admin</th>
-                                <th>Target</th>
-                                <th>Details</th>
-                                <th>Timestamp</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedLogs.map((log) => (
-                                <tr key={log.id} className={expandedRow === log.id ? 'expanded' : ''}>
-                                    <td className="action-td" data-label="Action">
-                                        <div className="mobile-expand-icon" onClick={() => toggleRow(log.id)}>
-                                            <Icon icon={expandedRow === log.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
-                                        </div>
-                                        <div className="action-cell">
-                                            <h6 className="action-text">{log.action}</h6>
-                                        </div>
-                                    </td>
-                                    <td className="regular-body-text admin-td" data-label="Admin">{log.admin}</td>
-                                    <td className="small-body-text target-cell" data-label="Target">{log.target}</td>
-                                    <td className="small-body-text details-cell" data-label="Details">{log.details}</td>
-                                    <td className="small-body-text timestamp-cell" data-label="Timestamp">
-                                        <div className="timestamp-wrapper">
-                                            <Icon icon="mdi:clock-time-four-outline" className="clock-icon" />
-                                            <span>{log.timestamp}</span>
-                                        </div>
-                                    </td>
+                    {paginatedLogs.length === 0 ? (
+                        // Empty state outside table for mobile-friendly display
+                        <div className="empty-state">
+                            <Icon icon="mdi:magnify-close" width="48" />
+                            <h4>No users found</h4>
+                            <p className="small-body-text">
+                                No users match "<strong>{searchQuery}</strong>".
+                            </p>
+                        </div>
+                    ) : (
+                        <table className="audit-table">
+
+
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Admin</th>
+                                    <th>Target</th>
+                                    <th>Details</th>
+                                    <th>Timestamp</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {paginatedLogs.map((log) => (
+                                    <tr key={log.id} className={expandedRow === log.id ? 'expanded' : ''}>
+                                        <td className="action-td" data-label="Action">
+                                            <div className="mobile-expand-icon" onClick={() => toggleRow(log.id)}>
+                                                <Icon icon={expandedRow === log.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                            </div>
+                                            <div className="action-cell">
+                                                <h6 className="action-text">{log.action}</h6>
+                                            </div>
+                                        </td>
+                                        <td className="regular-body-text admin-td" data-label="Admin">{log.admin}</td>
+                                        <td className="small-body-text target-cell" data-label="Target">{log.target}</td>
+                                        <td className="small-body-text details-cell" data-label="Details">{log.details}</td>
+                                        <td className="small-body-text timestamp-cell" data-label="Timestamp">
+                                            <div className="timestamp-wrapper">
+                                                <Icon icon="mdi:clock-time-four-outline" className="clock-icon" />
+                                                <span>{log.timestamp}</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
 
                 {/* Pagination */}

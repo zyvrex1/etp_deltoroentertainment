@@ -320,6 +320,17 @@ const TransactionMonitoring = () => {
         </div>
 
         <div className="table-wrapper">
+
+           {paginatedTransactions.length === 0 ? (
+                                  // Empty state outside table for mobile-friendly display
+                                  <div className="empty-state">
+                                      <Icon icon="mdi:magnify-close" width="48" />
+                                      <h4>No transactions found</h4>
+                                      <p className="small-body-text">
+                                          No transactions match "<strong>{searchQuery}</strong>".
+                                      </p>
+                                  </div>
+                              ) : (
           <table className="data-table">
             <thead>
               <tr>
@@ -381,6 +392,8 @@ const TransactionMonitoring = () => {
               ))}
             </tbody>
           </table>
+
+            )}
         </div>
 
         {totalPages > 1 && (

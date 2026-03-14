@@ -67,166 +67,166 @@ const EventManagement = () => {
   };
 
   useEffect(() => {
-  if (!user?.token) return;
+    if (!user?.token) return;
 
-  const fetchEvents = async () => {
-    try {
-      const response = await fetch('/api/events', {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('/api/events', {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
 
-      const text = await response.text();
-      const json = text ? JSON.parse(text) : [];
+        const text = await response.text();
+        const json = text ? JSON.parse(text) : [];
 
-      if (response.ok) {
-        dispatch({ type: 'SET_EVENTS', payload: json });
-      } else {
-        console.error("Failed to fetch events:", json);
+        if (response.ok) {
+          dispatch({ type: 'SET_EVENTS', payload: json });
+        } else {
+          console.error("Failed to fetch events:", json);
+        }
+      } catch (err) {
+        console.error("Error fetching events:", err);
       }
-    } catch (err) {
-      console.error("Error fetching events:", err);
-    }
-  };
+    };
 
-  fetchEvents();
-}, [user, dispatch]);
+    fetchEvents();
+  }, [user, dispatch]);
 
-const handleEditEvent = (event) => {
+  const handleEditEvent = (event) => {
     setSelectedEvent(event);
     setIsEditModalOpen(true);
   };
 
- const handleDeleteEvent = async (eventId) => {
-  if (!window.confirm("Are you sure you want to delete this event?")) return;
+  const handleDeleteEvent = async (eventId) => {
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
 
-  try {
-    const response = await fetch(`/api/events/${eventId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${user.token}`
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      });
+
+      const json = await response.json();
+
+      if (response.ok) {
+        dispatch({ type: 'DELETE_EVENT', payload: eventId });
+      } else {
+        alert(json.error || "Failed to delete event.");
       }
-    });
-
-    const json = await response.json();
-
-    if (response.ok) {
-      dispatch({ type: 'DELETE_EVENT', payload: eventId });
-    } else {
-      alert(json.error || "Failed to delete event.");
+    } catch (error) {
+      console.error(error);
+      alert("Error deleting event.");
     }
-  } catch (error) {
-    console.error(error);
-    alert("Error deleting event.");
-  }
-};
+  };
 
-const handleApproveEvent = async (eventId) => {
-  if (!window.confirm("Are you sure you want to approve this event?")) return;
+  const handleApproveEvent = async (eventId) => {
+    if (!window.confirm("Are you sure you want to approve this event?")) return;
 
-  try {
-    const response = await fetch(`/api/events/${eventId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${user.token}`,
-      },
-      body: JSON.stringify({ status: "approved" }),
-    });
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ status: "approved" }),
+      });
 
-    const json = await response.json();
+      const json = await response.json();
 
-    if (response.ok) {
-      dispatch({ type: "UPDATE_EVENT", payload: json });
-    } else {
-      alert(json.error || "Failed to approve event.");
+      if (response.ok) {
+        dispatch({ type: "UPDATE_EVENT", payload: json });
+      } else {
+        alert(json.error || "Failed to approve event.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error approving event.");
     }
-  } catch (error) {
-    console.error(error);
-    alert("Error approving event.");
-  }
-};
+  };
 
-const handleRejectEvent = async (eventId) => {
-  if (!window.confirm("Are you sure you want to reject this event?")) return;
+  const handleRejectEvent = async (eventId) => {
+    if (!window.confirm("Are you sure you want to reject this event?")) return;
 
-  try {
-    const response = await fetch(`/api/events/${eventId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${user.token}`,
-      },
-      body: JSON.stringify({ status: "rejected" }),
-    });
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ status: "rejected" }),
+      });
 
-    const json = await response.json();
+      const json = await response.json();
 
-    if (response.ok) {
-      dispatch({ type: "UPDATE_EVENT", payload: json });
-    } else {
-      alert(json.error || "Failed to reject event.");
+      if (response.ok) {
+        dispatch({ type: "UPDATE_EVENT", payload: json });
+      } else {
+        alert(json.error || "Failed to reject event.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error rejecting event.");
     }
-  } catch (error) {
-    console.error(error);
-    alert("Error rejecting event.");
-  }
-};
+  };
 
-const handleCancelEvent = async (eventId) => {
-  if (!window.confirm("Are you sure you want to cancel this event?")) return;
+  const handleCancelEvent = async (eventId) => {
+    if (!window.confirm("Are you sure you want to cancel this event?")) return;
 
-  try {
-    const response = await fetch(`/api/events/${eventId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${user.token}`,
-      },
-      body: JSON.stringify({ status: "cancelled" }),
-    });
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
 
-    const json = await response.json();
+      const json = await response.json();
 
-    if (response.ok) {
-      dispatch({ type: "UPDATE_EVENT", payload: json });
-    } else {
-      alert(json.error || "Failed to cancel event.");
+      if (response.ok) {
+        dispatch({ type: "UPDATE_EVENT", payload: json });
+      } else {
+        alert(json.error || "Failed to cancel event.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error cancelling event.");
     }
-  } catch (error) {
-    console.error(error);
-    alert("Error cancelling event.");
-  }
-};
+  };
 
-const getTableData = () => {
-  switch (activeTab) {
-    case "all-events":
-      return allEvents;
+  const getTableData = () => {
+    switch (activeTab) {
+      case "all-events":
+        return allEvents;
 
-    case "pending-events":
-      return allEvents.filter((e) => e.status === "pending");
+      case "pending-events":
+        return allEvents.filter((e) => e.status === "pending");
 
-    case "approved-events":
-      return allEvents.filter((e) => e.status === "approved");
+      case "approved-events":
+        return allEvents.filter((e) => e.status === "approved");
 
-    case "rejected-events":
-      return allEvents.filter((e) => e.status === "rejected");
+      case "rejected-events":
+        return allEvents.filter((e) => e.status === "rejected");
 
-    case "cancelled-events":
-      return allEvents.filter((e) => e.status === "cancelled");
+      case "cancelled-events":
+        return allEvents.filter((e) => e.status === "cancelled");
 
-    case "completed-events":
-      return allEvents.filter((e) => e.status === "completed");
+      case "completed-events":
+        return allEvents.filter((e) => e.status === "completed");
 
-    default:
-      return [];
-  }
-};
+      default:
+        return [];
+    }
+  };
 
-const filteredData = getTableData().filter((item) => {
+  const filteredData = getTableData().filter((item) => {
     const searchStr = searchQuery.toLowerCase();
     return (
       `${item.firstName || ""} ${item.lastName || ""}`
@@ -250,206 +250,217 @@ const filteredData = getTableData().filter((item) => {
   };
 
   const eventTabs = [
-  { id: "all-events", label: "All Events", count: allEvents.length },
+    { id: "all-events", label: "All Events", count: allEvents.length },
 
-  {
-    id: "pending-events",
-    label: "Pending",
-    count: allEvents.filter((e) => e.status === "pending").length,
-  },
+    {
+      id: "pending-events",
+      label: "Pending",
+      count: allEvents.filter((e) => e.status === "pending").length,
+    },
 
-  {
-    id: "approved-events",
-    label: "Approved",
-    count: allEvents.filter((e) => e.status === "approved").length,
-  },
+    {
+      id: "approved-events",
+      label: "Approved",
+      count: allEvents.filter((e) => e.status === "approved").length,
+    },
 
-  {
-    id: "rejected-events",
-    label: "Rejected",
-    count: allEvents.filter((e) => e.status === "rejected").length,
-  },
+    {
+      id: "rejected-events",
+      label: "Rejected",
+      count: allEvents.filter((e) => e.status === "rejected").length,
+    },
 
-  {
-    id: "cancelled-events",
-    label: "Cancelled",
-    count: allEvents.filter((e) => e.status === "cancelled").length,
-  },
+    {
+      id: "cancelled-events",
+      label: "Cancelled",
+      count: allEvents.filter((e) => e.status === "cancelled").length,
+    },
 
-  {
-    id: "completed-events",
-    label: "Completed",
-    count: allEvents.filter((e) => e.status === "completed").length,
-  },
-];
+    {
+      id: "completed-events",
+      label: "Completed",
+      count: allEvents.filter((e) => e.status === "completed").length,
+    },
+  ];
 
 
- const renderTable = () => {
-  return (
-    <div className="table-wrapper">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Event</th>
-            <th>Venue</th>
-            <th>Date & Time</th>
-            <th>Status</th>
-            <th>Sales Progress</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+  const renderTable = () => {
+    return (
+      <div className="table-wrapper">
+        {paginatedData.length === 0 ? (
+          // Empty state outside table for mobile-friendly display
+          <div className="empty-state">
+            <Icon icon="mdi:magnify-close" width="48" />
+            <h4>No events found</h4>
+            <p className="small-body-text">
+              No events match "<strong>{searchQuery}</strong>".
+            </p>
+          </div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Venue</th>
+                <th>Date & Time</th>
+                <th>Status</th>
+                <th>Sales Progress</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
 
-        <tbody>
-          {paginatedData.length > 0 ? (
-            paginatedData.map((event) => {
-              const salesPercent = event.totalTickets
-                ? Math.round((event.ticketsSold / event.totalTickets) * 100)
-                : 0;
+            <tbody>
+              {paginatedData.length > 0 ? (
+                paginatedData.map((event) => {
+                  const salesPercent = event.totalTickets
+                    ? Math.round((event.ticketsSold / event.totalTickets) * 100)
+                    : 0;
 
-              const statusClass = `status-${event.status}`;
+                  const statusClass = `status-${event.status}`;
 
-              return (
-                <tr key={event._id}>
-                  <td data-label="Event">
-                    <div className="event-cell">
-                      <h6 className="event-name">{event.title}</h6>
-                      <p className="smaller-body-text event-category">
-                        {event.category || "No Category"}
-                      </p>
-                      <p className="smaller-body-text event-category">
-                        {event.createdBy
-                          ? `${event.createdBy.firstName} ${event.createdBy.lastName} (${event.createdBy.role})`
-                          : "Unknown Creator"}
-                      </p>
-                    </div>
-                  </td>
+                  return (
+                    <tr key={event._id}>
+                      <td data-label="Event">
+                        <div className="event-cell">
+                          <h6 className="event-name">{event.title}</h6>
+                          <p className="smaller-body-text event-category">
+                            {event.category || "No Category"}
+                          </p>
+                          <p className="smaller-body-text event-category">
+                            {event.createdBy
+                              ? `${event.createdBy.firstName} ${event.createdBy.lastName} (${event.createdBy.role})`
+                              : "Unknown Creator"}
+                          </p>
+                        </div>
+                      </td>
 
-                  <td data-label="Venue">
-                    <div className="venue-cell">
-                      <p className="regular-body-text">
-                        {event.venue?.name || "No Venue"}
-                      </p>
-                      <p className="smaller-body-text">
-                        {event.venue?.city || ""}
-                      </p>
-                      <p className="smaller-body-text">
-                        {event.venue?.zipCode || ""}
-                      </p>
-                    </div>
-                  </td>
+                      <td data-label="Venue">
+                        <div className="venue-cell">
+                          <p className="regular-body-text">
+                            {event.venue?.name || "No Venue"}
+                          </p>
+                          <p className="smaller-body-text">
+                            {event.venue?.city || ""}
+                          </p>
+                          <p className="smaller-body-text">
+                            {event.venue?.zipCode || ""}
+                          </p>
+                        </div>
+                      </td>
 
-                  <td data-label="Date" className="small-body-text">
-                    <strong>
-                      {formatEventDate(event.startDate, event.endDate)}
-                    </strong>
-                    <br />
-                    <span className="smaller-body-text" style={{ color: "#666" }}>
-                      {event.startTime} - {event.endTime}
-                    </span>
-                  </td>
+                      <td data-label="Date" className="small-body-text">
+                        <strong>
+                          {formatEventDate(event.startDate, event.endDate)}
+                        </strong>
+                        <br />
+                        <span className="smaller-body-text" style={{ color: "#666" }}>
+                          {event.startTime} - {event.endTime}
+                        </span>
+                      </td>
 
-                  <td data-label="Status">
-                    <span className={`status-badge ${statusClass}`}>
-                      {event.status}
-                    </span>
-                  </td>
+                      <td data-label="Status">
+                        <span className={`status-badge ${statusClass}`}>
+                          {event.status}
+                        </span>
+                      </td>
 
-                 
 
-                  <td data-label="Sales">
-                    <div className="sales-cell">
-                      <span className="small-body-text sales-label">
-                        {event.ticketsSold} / {event.totalTickets} ({salesPercent}%)
-                      </span>
 
-                      <div className="sales-bar">
-                        <div
-                          className="sales-bar-inner"
-                          style={{ width: `${salesPercent}%` }}
-                        />
-                      </div>
-                    </div>
-                  </td>
+                      <td data-label="Sales">
+                        <div className="sales-cell">
+                          <span className="small-body-text sales-label">
+                            {event.ticketsSold} / {event.totalTickets} ({salesPercent}%)
+                          </span>
 
-                  <td data-label="Actions">
-  <div className="em-actions">
-    {event.createdBy._id === user._id ? (
-      // Current user owns this event → Edit/Delete
-      <>
-        <button
-          className="em-action-btn"
-          onClick={() => handleEditEvent(event)}
-          title="Edit Event"
-        >
-          <Icon icon="mdi:pencil" />
-        </button>
+                          <div className="sales-bar">
+                            <div
+                              className="sales-bar-inner"
+                              style={{ width: `${salesPercent}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
 
-        <button
-          className="em-action-btn"
-          onClick={() => handleDeleteEvent(event._id)}
-          title="Delete Event"
-        >
-          <Icon icon="mdi:delete" />
-        </button>
-      </>
-    ) : (
-      // Event is NOT owned by user → View + Approve (if pending & admin)
-      <>
-        <button
-          className="em-action-btn"
-          onClick={() => handleEditEvent(event)}
-          title="View Event"
-        >
-          <Icon icon="mdi:eye-outline" />
-        </button>
+                      <td data-label="Actions">
+                        <div className="em-actions">
+                          {event.createdBy._id === user._id ? (
+                            // Current user owns this event → Edit/Delete
+                            <>
+                              <button
+                                className="em-action-btn"
+                                onClick={() => handleEditEvent(event)}
+                                title="Edit Event"
+                              >
+                                <Icon icon="mdi:pencil" />
+                              </button>
 
-        {event.status === "pending" && (user.role === "admin" || user.role === "superadmin") && (
-          <>
-            <button
-              className="em-action-btn approve-btn"
-              onClick={() => handleApproveEvent(event._id)}
-              title="Approve Event"
-            >
-              <Icon icon="mdi:check-circle-outline" />
-            </button>
-            <button
-              className="em-action-btn reject-btn"
-              onClick={() => handleRejectEvent(event._id)}
-              title="Reject Event"
-            >
-              <Icon icon="mdi:close-circle-outline" />
-            </button>
-          </>
-        )}
+                              <button
+                                className="em-action-btn"
+                                onClick={() => handleDeleteEvent(event._id)}
+                                title="Delete Event"
+                              >
+                                <Icon icon="mdi:delete" />
+                              </button>
+                            </>
+                          ) : (
+                            // Event is NOT owned by user → View + Approve (if pending & admin)
+                            <>
+                              <button
+                                className="em-action-btn"
+                                onClick={() => handleEditEvent(event)}
+                                title="View Event"
+                              >
+                                <Icon icon="mdi:eye-outline" />
+                              </button>
 
-        {event.status === "approved" && (user.role === "admin" || user.role === "superadmin") && (
-          <button
-            className="em-action-btn cancel-btn"
-            onClick={() => handleCancelEvent(event._id)}
-            title="Cancel Event"
-          >
-            <Icon icon="mdi:cancel" />
-          </button>
-        )}
-      </>
-    )}
-  </div>
-</td>
-                </tr>
-              );
-            })
-          ) : (
-            <tr>
-              <td colSpan="7" style={{ textAlign: "center", padding: "2rem" }}>
+                              {event.status === "pending" && (user.role === "admin" || user.role === "superadmin") && (
+                                <>
+                                  <button
+                                    className="em-action-btn approve-btn"
+                                    onClick={() => handleApproveEvent(event._id)}
+                                    title="Approve Event"
+                                  >
+                                    <Icon icon="mdi:check-circle-outline" />
+                                  </button>
+                                  <button
+                                    className="em-action-btn reject-btn"
+                                    onClick={() => handleRejectEvent(event._id)}
+                                    title="Reject Event"
+                                  >
+                                    <Icon icon="mdi:close-circle-outline" />
+                                  </button>
+                                </>
+                              )}
+
+                              {event.status === "approved" && (user.role === "admin" || user.role === "superadmin") && (
+                                <button
+                                  className="em-action-btn cancel-btn"
+                                  onClick={() => handleCancelEvent(event._id)}
+                                  title="Cancel Event"
+                                >
+                                  <Icon icon="mdi:cancel" />
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  {/* <td colSpan="7" style={{ textAlign: "center", padding: "2rem" }}>
                 No events found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
-};
+              </td> */}
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="user-management">
@@ -458,7 +469,7 @@ const filteredData = getTableData().filter((item) => {
           <h1>Event Management</h1>
           <p>Manage all events, tickets, and booth layouts.</p>
         </div>
-         <div className="dashboard-actions">
+        <div className="dashboard-actions">
           <button className="primary-button" onClick={() => setIsModalOpen(true)}>
             <Icon icon="mdi:plus" /> Create Event
           </button>
@@ -468,35 +479,35 @@ const filteredData = getTableData().filter((item) => {
       <div className="um-content">
         {/* Tabs */}
         <div className="tabs-search-row">
-         <div className="tabs-container">
-  {eventTabs.map((tab) => (
-    <button
-      key={tab.id}
-      className={`tab ${activeTab === tab.id ? "active" : ""}`}
-      onClick={() => handleTabChange(tab.id)}
-    >
-      <Icon
-        icon={
-          tab.id === "all-events"
-            ? "mdi:calendar-multiple"
-            : tab.id === "pending-events"
-            ? "mdi:clock-outline"
-            : tab.id === "approved-events"
-            ? "mdi:check-circle-outline"
-            : tab.id === "rejected-events"
-            ? "mdi:close-circle-outline"
-            : tab.id === "cancelled-events"
-            ? "mdi:cancel"
-            : tab.id === "completed-events"
-            ? "mdi:flag-checkered"
-            : "mdi:calendar"
-        }
-      />
-      <span>{tab.label}</span>
-      <span className="badge-count">{tab.count}</span>
-    </button>
-  ))}
-</div>
+          <div className="tabs-container">
+            {eventTabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={`tab ${activeTab === tab.id ? "active" : ""}`}
+                onClick={() => handleTabChange(tab.id)}
+              >
+                <Icon
+                  icon={
+                    tab.id === "all-events"
+                      ? "mdi:calendar-multiple"
+                      : tab.id === "pending-events"
+                        ? "mdi:clock-outline"
+                        : tab.id === "approved-events"
+                          ? "mdi:check-circle-outline"
+                          : tab.id === "rejected-events"
+                            ? "mdi:close-circle-outline"
+                            : tab.id === "cancelled-events"
+                              ? "mdi:cancel"
+                              : tab.id === "completed-events"
+                                ? "mdi:flag-checkered"
+                                : "mdi:calendar"
+                  }
+                />
+                <span>{tab.label}</span>
+                <span className="badge-count">{tab.count}</span>
+              </button>
+            ))}
+          </div>
 
           <div className="outlined-button search-container">
             <Icon icon="mdi:magnify" />
@@ -536,7 +547,7 @@ const filteredData = getTableData().filter((item) => {
         )}
       </div>
       <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      <EditEventModal 
+      <EditEventModal
         isOpen={isEditModalOpen}
         event={selectedEvent}
         onClose={() => { setIsEditModalOpen(false); setSelectedEvent(null); }}
