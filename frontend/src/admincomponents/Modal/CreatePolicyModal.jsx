@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { showSuccessAlert, showCancelConfirmAlert } from "../utils/sweetAlert";
+import './ManagePolicyModal.css';
 
 const CreatePolicyModal = ({
   isOpen,
@@ -87,48 +88,66 @@ const CreatePolicyModal = ({
 
   return (
     <div className="general-modal-overlay">
-      <div className="general-modal-container">
+      <div className="general-announcement-modal-container">
         <div className="general-modal-header">
           <h3>Add New Policy</h3>
-          <button className="close-btn" onClick={handleCancel}>
+          <button type="button" className="close-btn" onClick={handleCancel}>
             <Icon icon="mdi:close" />
           </button>
         </div>
 
         <div className="modal-body">
-          <form id="add-policy-form" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <h4>Policy Key</h4>
-              {availableKeys.length === 0 ? (
-    <p>All policy keys are already used.</p>
-  ) : (
-    <select
-      value={policyKey}
-      onChange={(e) => setPolicyKey(e.target.value)}
-      required
-    >
-      {["tos", "privacy", "refund"].map((key) => (
-        <option
-          key={key}
-          value={key}
-          disabled={existingPolicies.some((p) => p.policyKey === key)} // disable if already used
-        >
-          {key === "tos"
-            ? "Terms of Service"
-            : key === "privacy"
-            ? "Privacy Policy"
-            : "Refund Policy"}{" "}
-          {existingPolicies.some((p) => p.policyKey === key)
-            ? "(Already used)"
-            : ""}
-        </option>
-      ))}
-    </select>
-  )}
+          <form className="create-announcement-form" onSubmit={handleSubmit}>
+            <div className="announcement-form-row">
+
+              <div className="announcement-form-group">
+                <h6>Policy Key</h6>
+                {availableKeys.length === 0 ? (
+                  <p>All policy keys are already used.</p>
+                ) : (
+                  <select
+                    value={policyKey}
+                    onChange={(e) => setPolicyKey(e.target.value)}
+                    required
+                  >
+                    {["tos", "privacy", "refund"].map((key) => (
+                      <option
+                        key={key}
+                        value={key}
+                        disabled={existingPolicies.some((p) => p.policyKey === key)} // disable if already used
+                      >
+                        {key === "tos"
+                          ? "Terms of Service"
+                          : key === "privacy"
+                            ? "Privacy Policy"
+                            : "Refund Policy"}{" "}
+                        {existingPolicies.some((p) => p.policyKey === key)
+                          ? "(Already used)"
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="announcement-form-group">
+                <h6>Publish Date</h6>
+                <input
+                  type="date"
+                  value={new Date().toISOString().split('T')[0]}
+                  readOnly
+                  disabled
+                  style={{
+                    backgroundColor: '#f5f5f5',
+                    cursor: 'not-allowed',
+                    color: '#666'
+                  }}
+                  required
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <h4>Policy Title</h4>
+            <div className="announcement-form-group">
+              <h6>Policy Title</h6>
               <input
                 type="text"
                 value={title}
@@ -139,8 +158,8 @@ const CreatePolicyModal = ({
               />
             </div>
 
-            <div className="form-group">
-              <h4>Policy Content</h4>
+            <div className="announcement-form-group">
+              <h6>Policy Content</h6>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -150,12 +169,9 @@ const CreatePolicyModal = ({
               ></textarea>
             </div>
 
-            <div className="policy-modal-footer">
-              <button
-                type="button"
-                className="button cancel-btn"
-                onClick={handleCancel}
-              >
+
+            <div className="general-announcement-modal-footer">
+              <button type="button" className="button cancel-btn" onClick={handleCancel}>
                 Cancel
               </button>
               <button

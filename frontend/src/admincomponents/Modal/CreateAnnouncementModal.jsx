@@ -91,7 +91,37 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
 
                 <div className="modal-body">
                     <form className="create-announcement-form" onSubmit={handleSubmit}>
-                        <div className="announcement-form-group">
+                      <div className="announcement-form-row">
+
+                           <div className="announcement-form-group">
+                                <h6>Category</h6>
+                                <select
+                                    name="contentcategory"
+                                    value={formData.contentcategory}
+                                    onChange={handleChange}
+                                >
+                                    <option value="General">General</option>
+                                    <option value="Update">Update</option>
+                                    <option value="News">News</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                    <option value="Alert">Alert</option>
+                                </select>
+                            </div>
+                            <div className="announcement-form-group">
+                                <h6>Publish Date</h6>
+                                <input
+                                    type="date"
+                                    name="date"
+                                    value={formData.date}
+                                    readOnly
+                                    disabled
+                                    style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed', color: '#666',   padding: '7px 12px', fontSize: '14px'}}
+                                />
+                            </div>
+                         
+                        </div>
+                     
+                       <div className="announcement-form-group">
                             <h6>Announcement Title</h6>
                             <input
                                 type="text"
@@ -115,33 +145,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
                             ></textarea>
                         </div>
 
-                        <div className="announcement-form-row">
-                            <div className="announcement-form-group">
-                                <h6>Publish Date</h6>
-                                <input
-                                    type="date"
-                                    name="date"
-                                    value={formData.date}
-                                    readOnly
-                                    disabled
-                                    style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed', color: '#666' }}
-                                />
-                            </div>
-                            <div className="announcement-form-group">
-                                <h6>Category</h6>
-                                <select
-                                    name="contentcategory"
-                                    value={formData.contentcategory}
-                                    onChange={handleChange}
-                                >
-                                    <option value="General">General</option>
-                                    <option value="Update">Update</option>
-                                    <option value="News">News</option>
-                                    <option value="Maintenance">Maintenance</option>
-                                    <option value="Alert">Alert</option>
-                                </select>
-                            </div>
-                        </div>
+                       
 
                         <div className="general-announcement-modal-footer">
                             <button type="button" className="button cancel-btn" onClick={handleCancel}>
