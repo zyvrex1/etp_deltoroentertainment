@@ -559,7 +559,7 @@
 
     .sales-toolbar {
         flex-direction: column;
-        align-items: stretch;
+        align-items: stretch !important;
 
         .sales-toolbar-right {
             width: 100%;
