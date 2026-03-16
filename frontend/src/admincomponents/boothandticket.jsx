@@ -15,13 +15,11 @@ import SetupBoothLayoutModal from "./Modal/SetupBoothLayoutModal";
 import SetupSeatLayoutModal from "./Modal/SetupSeatLayoutModal";
 import EditEventModal from "./modal/EditEventModal";
 
-
 const BoothandTicket = () => {
   const [activeTab, setActiveTab] = useState("booth-map");
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [detailPopup, setDetailPopup] = useState(null);
-    const [isEditEventModalOpen, setIsEditEventModalOpen] = useState(false);
-
+  const [isEditEventModalOpen, setIsEditEventModalOpen] = useState(false);
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState({
@@ -87,14 +85,14 @@ const BoothandTicket = () => {
             <div className="bt-content">
               {activeTab === "booth-map" && (
                 <BoothMap
-    selectedEvent={selectedEvent}
-    setDetailPopup={setDetailPopup}
-    setIsUploadModalOpen={setIsUploadModalOpen}
-    setIsSetupLayoutOpen={setIsSetupLayoutOpen}
-    setIsPricingModalOpen={setIsPricingModalOpen}
-    setIsEditEventModalOpen={setIsEditEventModalOpen} // ✅ new prop
-    boothLayoutConfig={boothLayoutConfig}
-  />
+                  selectedEvent={selectedEvent}
+                  setDetailPopup={setDetailPopup}
+                  setIsUploadModalOpen={setIsUploadModalOpen}
+                  setIsSetupLayoutOpen={setIsSetupLayoutOpen}
+                  setIsPricingModalOpen={setIsPricingModalOpen}
+                  setIsEditEventModalOpen={setIsEditEventModalOpen} // ✅ new prop
+                  boothLayoutConfig={boothLayoutConfig}
+                />
               )}
 
               {activeTab === "seat-map" && (
@@ -116,16 +114,27 @@ const BoothandTicket = () => {
 
       {detailPopup &&
         createPortal(
-          <div className="bt-detail-popup-overlay" onClick={() => setDetailPopup(null)}>
-            <div className="bt-detail-popup-box" onClick={(e) => e.stopPropagation()}>
-              <button className="bt-detail-popup-close" onClick={() => setDetailPopup(null)}>
+          <div
+            className="bt-detail-popup-overlay"
+            onClick={() => setDetailPopup(null)}
+          >
+            <div
+              className="bt-detail-popup-box"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="bt-detail-popup-close"
+                onClick={() => setDetailPopup(null)}
+              >
                 <Icon icon="mdi:close" />
               </button>
 
-              <div className="bt-detail-popup-content">{JSON.stringify(detailPopup)}</div>
+              <div className="bt-detail-popup-content">
+                {JSON.stringify(detailPopup)}
+              </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       <UploadMapModal
@@ -141,7 +150,9 @@ const BoothandTicket = () => {
             ? boothPricingQuantities
             : seatPricingQuantities
         }
-        onClose={() => setIsPricingModalOpen({ ...isPricingModalOpen, isOpen: false })}
+        onClose={() =>
+          setIsPricingModalOpen({ ...isPricingModalOpen, isOpen: false })
+        }
         onSave={handlePricingSave}
       />
 
@@ -164,10 +175,10 @@ const BoothandTicket = () => {
       />
 
       <EditEventModal
-  isOpen={isEditEventModalOpen}
-  onClose={() => setIsEditEventModalOpen(false)}
-  event={selectedEvent}
-/>
+        isOpen={isEditEventModalOpen}
+        onClose={() => setIsEditEventModalOpen(false)}
+        event={selectedEvent}
+      />
     </div>
   );
 };
