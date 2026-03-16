@@ -44,20 +44,26 @@ const signupUser = async (req, res) => {
 
 // ================= LOGIN =================
 const loginUser = async (req, res) => {
-  const { email, password } = req.body
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'All fields must be filled' });
+  }
 
   try {
-    if (!email || !password) throw Error('All fields must be filled')
-
     // Attempt to login
-    const user = await User.login(email, password) // your custom login method
+    const user = await User.login(email, password); // your custom login method
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
     const token = createToken(user);
 
-    // ✅ Update lastLogin before sending response
+    // Update lastLogin
     user.lastLogin = new Date();
     await user.save();
 
-    // Return user info including firstName and lastName
+    // Return user info
     res.status(200).json({
       _id: user._id,
       email: user.email,
@@ -65,11 +71,11 @@ const loginUser = async (req, res) => {
       lastName: user.lastName,
       role: user.role,
       token
-    })
-
-  } catch (error) {
-    res.status(400).json({ error: error.message })
+    });
+  } catch (err) {
+    console.error('Login error:', err); // log the real error
+    res.status(500).json({ error: 'Internal server error' });
   }
-}
+};
 
 module.exports = { signupUser, loginUser }
