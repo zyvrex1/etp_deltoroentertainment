@@ -670,6 +670,9 @@
         }
 
         .recent-activity-card .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             gap: 12px;
             padding-bottom: 12px;
             border-bottom: 1px solid var(--color-black-quaternary);
@@ -680,12 +683,21 @@
                 padding-bottom: 0;
             }
 
+            .activity-left {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex: 1;
+                min-width: 0;
+            }
+
             .activity-icon {
                 padding: 8px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                flex-shrink: 0;
 
                 &.red-light {
                     background: var(--color-red-quaternary);
@@ -723,23 +735,31 @@
                 }
 
                 p {
-                    margin: 0 0 6px 0;
+                    margin: 0;
                     color: var(--color-black-secondary);
                     font-size: 12px;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
                 }
+            }
 
+            .activity-right {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--color-black-tertiary);
+                flex-shrink: 0;
+                
                 .time {
                     font-size: 11px;
                     color: var(--color-black-tertiary);
+                    font-weight: 500;
                 }
-            }
 
-            .view-icon {
-                color: var(--color-black-tertiary);
-                cursor: pointer;
+                .view-icon {
+                    cursor: pointer;
+                }
             }
         }
     }
@@ -886,6 +906,17 @@
 
         .dashboard-header {
             text-align: center;
+        }
+
+        .recent-activity-card .activity-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+
+            .activity-right {
+                width: 100%;
+                justify-content: flex-end;
+            }
         }
     }
 }

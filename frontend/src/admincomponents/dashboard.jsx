@@ -480,59 +480,83 @@ export default function Dashboard() {
                             <span className="view-all">View all <Icon icon="mdi:arrow-right" /></span>
                         </div>
                         <div className="activity-list">
-                            <div className="activity-item left-aligned-flex">
-                                <div className="activity-icon red-light"><Icon icon="mdi:calendar-blank" /></div>
-                                <div className="activity-details left-aligned">
-                                    <h5 className="left-aligned">New Event Created</h5>
-                                    <p className="left-aligned">Music Festival 2024 submitted</p>
+                            <div className="activity-item">
+                                <div className="activity-left">
+                                    <div className="activity-icon red-light"><Icon icon="mdi:calendar-blank" /></div>
+                                    <div className="activity-details left-aligned">
+                                        <h5 className="left-aligned">New Event Created</h5>
+                                        <p className="left-aligned">Music Festival 2024 submitted</p>
+                                    </div>
+                                </div>
+                                <div className="activity-right">
                                     <span className="time left-aligned">5 min ago</span>
+                                    <Icon icon="mdi:eye-outline" className="view-icon" />
                                 </div>
-                                <Icon icon="mdi:eye-outline" className="view-icon" />
                             </div>
-                            <div className="activity-item left-aligned-flex">
-                                <div className="activity-icon green-light"><Icon icon="mdi:currency-usd" /></div>
-                                <div className="activity-details left-aligned">
-                                    <h5 className="left-aligned">Payment Received</h5>
-                                    <p className="left-aligned">$2,500 booth payment from TechCorp</p>
+                            <div className="activity-item">
+                                <div className="activity-left">
+                                    <div className="activity-icon green-light"><Icon icon="mdi:currency-usd" /></div>
+                                    <div className="activity-details left-aligned">
+                                        <h5 className="left-aligned">Payment Received</h5>
+                                        <p className="left-aligned">$2,500 booth payment from TechCorp</p>
+                                    </div>
+                                </div>
+                                <div className="activity-right">
                                     <span className="time left-aligned">15 min ago</span>
+                                    <Icon icon="mdi:eye-outline" className="view-icon" />
                                 </div>
-                                <Icon icon="mdi:eye-outline" className="view-icon" />
                             </div>
-                            <div className="activity-item left-aligned-flex">
-                                <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
-                                <div className="activity-details left-aligned">
-                                    <h5 className="left-aligned">Tickets Sold</h5>
-                                    <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
-                                    <span className="time left-aligned">30 min ago</span>
+                            <div className="activity-item">
+                                <div className="activity-left">
+                                    <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
+                                    <div className="activity-details left-aligned">
+                                        <h5 className="left-aligned">Tickets Sold</h5>
+                                        <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
+                                    </div>
                                 </div>
-                                <Icon icon="mdi:eye-outline" className="view-icon" />
+                                <div className="activity-right">
+                                    <span className="time left-aligned">30 min ago</span>
+                                    <Icon icon="mdi:eye-outline" className="view-icon" />
+                                </div>
                             </div>
-                            <div className="activity-item left-aligned-flex">
-                                <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
-                                <div className="activity-details left-aligned">
-                                    <h5 className="left-aligned">Tickets Sold</h5>
-                                    <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
-                                    <span className="time left-aligned">30 min ago</span>
+                            <div className="activity-item">
+                                <div className="activity-left">
+                                    <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
+                                    <div className="activity-details left-aligned">
+                                        <h5 className="left-aligned">Tickets Sold</h5>
+                                        <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
+                                    </div>
                                 </div>
-                                <Icon icon="mdi:eye-outline" className="view-icon" />
+                                <div className="activity-right">
+                                    <span className="time left-aligned">30 min ago</span>
+                                    <Icon icon="mdi:eye-outline" className="view-icon" />
+                                </div>
                             </div>
-                            <div className="activity-item left-aligned-flex">
-                                <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
-                                <div className="activity-details left-aligned">
-                                    <h5 className="left-aligned">Tickets Sold</h5>
-                                    <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
-                                    <span className="time left-aligned">30 min ago</span>
+                            <div className="activity-item">
+                                <div className="activity-left">
+                                    <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
+                                    <div className="activity-details left-aligned">
+                                        <h5 className="left-aligned">Tickets Sold</h5>
+                                        <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
+                                    </div>
                                 </div>
-                                <Icon icon="mdi:eye-outline" className="view-icon" />
+                                <div className="activity-right">
+                                    <span className="time left-aligned">30 min ago</span>
+                                    <Icon icon="mdi:eye-outline" className="view-icon" />
+                                </div>
                             </div>
-                            <div className="activity-item left-aligned-flex">
-                                <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
-                                <div className="activity-details left-aligned">
-                                    <h5 className="left-aligned">Tickets Sold</h5>
-                                    <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
-                                    <span className="time left-aligned">30 min ago</span>
+                            <div className="activity-item">
+                                <div className="activity-left">
+                                    <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
+                                    <div className="activity-details left-aligned">
+                                        <h5 className="left-aligned">Tickets Sold</h5>
+                                        <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
+                                    </div>
                                 </div>
-                                <Icon icon="mdi:eye-outline" className="view-icon" />
+                                <div className="activity-right">
+                                    <span className="time left-aligned">30 min ago</span>
+                                    <Icon icon="mdi:eye-outline" className="view-icon" />
+                                </div>
                             </div>
                         </div>
                     </div>

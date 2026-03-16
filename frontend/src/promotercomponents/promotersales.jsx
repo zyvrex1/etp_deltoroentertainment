@@ -8,25 +8,36 @@ const PromoterSales = () => {
     const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState("techstart");
     const [activeFilter, setActiveFilter] = useState("All Sales");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [expandedRow, setExpandedRow] = useState(null);
     const itemsPerPage = 5;
     const eventDropdownRef = useRef(null);
+    const filterDropdownRef = useRef(null);
+
+    const toggleRow = (index) => {
+        setExpandedRow(expandedRow === index ? null : index);
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (eventDropdownRef.current && !eventDropdownRef.current.contains(event.target)) {
                 setIsEventDropdownOpen(false);
             }
+            if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
+                setIsFilterDropdownOpen(false);
+            }
         };
 
-        if (isEventDropdownOpen) {
+        if (isEventDropdownOpen || isFilterDropdownOpen) {
             document.addEventListener("mousedown", handleClickOutside);
         }
 
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [isEventDropdownOpen]);
+    }, [isEventDropdownOpen, isFilterDropdownOpen]);
 
     const eventOptions = [
         { value: "techstart", label: "TechStart Summit 2026" },
@@ -59,10 +70,16 @@ const PromoterSales = () => {
     ];
 
     const filteredSalesData = salesData.filter((row) => {
-        if (activeFilter === "All Sales") return true;
-        if (activeFilter === "Tickets") return row.typePill.toLowerCase() === "ticket";
-        if (activeFilter === "Booths") return row.typePill.toLowerCase() === "booth";
-        return true;
+        const q = searchQuery.toLowerCase();
+        const matchesFilter = (() => {
+            if (activeFilter === "All Sales") return true;
+            if (activeFilter === "Tickets") return row.typePill.toLowerCase() === "ticket";
+            if (activeFilter === "Booths") return row.typePill.toLowerCase() === "booth";
+            return true;
+        })();
+        if (!matchesFilter) return false;
+        if (!q) return true;
+        return row.name.toLowerCase().includes(q) || row.item.toLowerCase().includes(q) || row.id.toLowerCase().includes(q);
     });
 
     const counts = {
@@ -228,7 +245,7 @@ const PromoterSales = () => {
                         <div className="sales-card" key={idx}>
                             <div className="sales-card-left">
                                 <p className={`smaller-body-text sales-card-title ${stat.colorClass}`}>{stat.title}</p>
-                                <h2 className={stat.colorClass}>{stat.amount}</h2>
+                                <h3 className={stat.colorClass}>{stat.amount}</h3>
                                 <p className={`smaller-body-text ${stat.colorClass}`}>{stat.sub}</p>
                             </div>
                             <div className={`sales-card-icon ${stat.bgClass}`}>
@@ -239,24 +256,52 @@ const PromoterSales = () => {
                 </div>
 
                 <div className="sales-table-container">
-                    <div className="sales-table-header">
-                        <div className="outlined-button sales-search">
-                            <Icon icon="mdi:magnify" className="search-icon" />
-                            <input type="text" placeholder="Search transactions..." className="sales-search-input" />
+                    <div className="sales-toolbar">
+                        <div className="sales-toolbar-left">
+                            <div className="sales-search">
+                                <Icon icon="mdi:magnify" />
+                                <input
+                                    type="text"
+                                    placeholder="Search transactions..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="small-body-text"
+                                />
+                            </div>
                         </div>
-                        <div className="sales-filters">
-                            <button className={`sales-filter-pill ${activeFilter === "All Sales" ? "active" : ""}`} onClick={() => handleFilterChange("All Sales")}>
-                                <span>All Sales</span>
-                                <span className="sales-count">{counts.all}</span>
-                            </button>
-                            <button className={`sales-filter-pill ${activeFilter === "Tickets" ? "active" : ""}`} onClick={() => handleFilterChange("Tickets")}>
-                                <span>Tickets</span>
-                                <span className="sales-count">{counts.tickets}</span>
-                            </button>
-                            <button className={`sales-filter-pill ${activeFilter === "Booths" ? "active" : ""}`} onClick={() => handleFilterChange("Booths")}>
-                                <span>Booths</span>
-                                <span className="sales-count">{counts.booths}</span>
-                            </button>
+
+                        <div className="sales-toolbar-right">
+                            <div className="sales-filter-dropdown" ref={filterDropdownRef}>
+                                <button
+                                    className="sales-filter-dropdown-btn"
+                                    onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                                >
+                                    <span className="truncate-text">
+                                        {activeFilter}
+                                    </span>
+                                    <Icon
+                                        icon="mdi:chevron-down"
+                                        className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""}`}
+                                    />
+                                </button>
+
+                                {isFilterDropdownOpen && (
+                                    <div className="sales-filter-dropdown-menu">
+                                        {["All Sales", "Tickets", "Booths"].map((option) => (
+                                            <button
+                                                key={option}
+                                                className={`sales-filter-dropdown-item small-body-text ${activeFilter === option ? "active" : ""}`}
+                                                onClick={() => {
+                                                    handleFilterChange(option);
+                                                    setIsFilterDropdownOpen(false);
+                                                }}
+                                            >
+                                                {option}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="sales-table-wrapper">
@@ -274,24 +319,29 @@ const PromoterSales = () => {
                             </thead>
                             <tbody>
                                 {paginatedData.map((row, index) => (
-                                    <tr key={index}>
-                                        <td className="small-body-text date-col">{row.id}</td>
-                                        <td>
+                                    <tr key={index} className={expandedRow === index ? "expanded" : ""}>
+                                        <td className="small-body-text date-col id-td" data-label="Order ID">
+                                            <div className="mobile-expand-icon" onClick={() => toggleRow(index)}>
+                                                <Icon icon={expandedRow === index ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                            </div>
+                                            <span>{row.id}</span>
+                                        </td>
+                                        <td className="name-td" data-label="Customer">
                                             <div className="user-info">
                                                 <div className="user-avatar">{row.initials}</div>
                                                 <div>
-                                                    <h5 className="user-name">{row.name}</h5>
+                                                    <h6 className="user-name">{row.name}</h6>
                                                     <p className="smaller-body-text user-email">{row.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td data-label="Type">
                                             <span className={`button-label pill-bg-${row.typeColor}`}>{row.typePill}</span>
                                         </td>
-                                        <td className="small-body-text item-col">{row.item}</td>
-                                        <td className='ps-green-amount large-body-text'><strong>{row.amount}</strong></td>
-                                        <td className="small-body-text date-col">{row.date}</td>
-                                        <td>
+                                        <td className="small-body-text item-col" data-label="Item">{row.item}</td>
+                                        <td className='ps-green-amount large-body-text' data-label="Amount"><strong>{row.amount}</strong></td>
+                                        <td className="small-body-text date-col" data-label="Date">{row.date}</td>
+                                        <td className="status-cell" data-label="Status">
                                             <span className={`button-label pill-bg-${row.statusColor}`}>{row.status}</span>
                                         </td>
                                     </tr>

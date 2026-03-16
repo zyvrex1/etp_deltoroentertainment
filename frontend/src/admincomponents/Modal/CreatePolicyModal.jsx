@@ -99,7 +99,6 @@ const CreatePolicyModal = ({
         <div className="modal-body">
           <form className="create-announcement-form" onSubmit={handleSubmit}>
             <div className="announcement-form-row">
-
               <div className="announcement-form-group">
                 <h6>Policy Key</h6>
                 {availableKeys.length === 0 ? (

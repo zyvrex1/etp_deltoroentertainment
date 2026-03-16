@@ -8,25 +8,36 @@ const PromoterAttendees = () => {
     const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState("techstart");
     const [activeFilter, setActiveFilter] = useState("All");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [expandedRow, setExpandedRow] = useState(null);
     const itemsPerPage = 5;
     const eventDropdownRef = useRef(null);
+    const filterDropdownRef = useRef(null);
+
+    const toggleRow = (index) => {
+        setExpandedRow(expandedRow === index ? null : index);
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (eventDropdownRef.current && !eventDropdownRef.current.contains(event.target)) {
                 setIsEventDropdownOpen(false);
             }
+            if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
+                setIsFilterDropdownOpen(false);
+            }
         };
 
-        if (isEventDropdownOpen) {
+        if (isEventDropdownOpen || isFilterDropdownOpen) {
             document.addEventListener("mousedown", handleClickOutside);
         }
 
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [isEventDropdownOpen]);
+    }, [isEventDropdownOpen, isFilterDropdownOpen]);
 
     const eventOptions = [
         { value: "techstart", label: "TechStart Summit 2026" },
@@ -47,7 +58,6 @@ const PromoterAttendees = () => {
         { title: "Early Bird General Admission", count: "1", sub: "1 checked in" },
         { title: "General Admission", count: "3", sub: "2 checked in" },
         { title: "VIP Access", count: "2", sub: "2 checked in" },
-        { title: "Workshop Pass", count: "1", sub: "checked in" }
     ];
 
     const attendeesData = [
@@ -60,10 +70,16 @@ const PromoterAttendees = () => {
     ];
 
     const filteredData = attendeesData.filter((row) => {
-        if (activeFilter === "All") return true;
-        if (activeFilter === "Checked In") return row.statusType === "checked";
-        if (activeFilter === "Pending") return row.statusType === "pending";
-        return true;
+        const q = searchQuery.toLowerCase();
+        const matchesFilter = (() => {
+            if (activeFilter === "All") return true;
+            if (activeFilter === "Checked In") return row.statusType === "checked";
+            if (activeFilter === "Pending") return row.statusType === "pending";
+            return true;
+        })();
+        if (!matchesFilter) return false;
+        if (!q) return true;
+        return row.name.toLowerCase().includes(q) || row.email.toLowerCase().includes(q) || row.pill.toLowerCase().includes(q);
     });
 
     const counts = {
@@ -222,24 +238,52 @@ const PromoterAttendees = () => {
                 </div>
 
                 <div className="att-table-container">
-                    <div className="att-table-header">
-                        <div className="outlined-button att-search">
-                            <Icon icon="mdi:magnify" className="search-icon" />
-                            <input type="text" placeholder="Search attendees..." className="att-search-input" />
+                    <div className="att-toolbar">
+                        <div className="att-toolbar-left">
+                            <div className="att-search">
+                                <Icon icon="mdi:magnify" />
+                                <input
+                                    type="text"
+                                    placeholder="Search attendees..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="small-body-text"
+                                />
+                            </div>
                         </div>
-                        <div className="att-filters">
-                            <button className={`att-filter-pill ${activeFilter === "All" ? "active" : ""}`} onClick={() => handleFilterChange("All")}>
-                                <span>All</span>
-                                <span className="att-count">{counts.all}</span>
-                            </button>
-                            <button className={`att-filter-pill ${activeFilter === "Checked In" ? "active" : ""}`} onClick={() => handleFilterChange("Checked In")}>
-                                <span>Checked In</span>
-                                <span className="att-count">{counts.checked}</span>
-                            </button>
-                            <button className={`att-filter-pill ${activeFilter === "Pending" ? "active" : ""}`} onClick={() => handleFilterChange("Pending")}>
-                                <span>Pending</span>
-                                <span className="att-count">{counts.pending}</span>
-                            </button>
+
+                        <div className="att-toolbar-right">
+                            <div className="att-filter-dropdown" ref={filterDropdownRef}>
+                                <button
+                                    className="att-filter-dropdown-btn"
+                                    onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                                >
+                                    <span className="truncate-text">
+                                        {activeFilter}
+                                    </span>
+                                    <Icon
+                                        icon="mdi:chevron-down"
+                                        className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""}`}
+                                    />
+                                </button>
+
+                                {isFilterDropdownOpen && (
+                                    <div className="att-filter-dropdown-menu">
+                                        {["All", "Checked In", "Pending"].map((option) => (
+                                            <button
+                                                key={option}
+                                                className={`att-filter-dropdown-item small-body-text ${activeFilter === option ? "active" : ""}`}
+                                                onClick={() => {
+                                                    handleFilterChange(option);
+                                                    setIsFilterDropdownOpen(false);
+                                                }}
+                                            >
+                                                {option}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="att-table-wrapper">
@@ -256,8 +300,11 @@ const PromoterAttendees = () => {
                             </thead>
                             <tbody>
                                 {paginatedData.map((row, index) => (
-                                    <tr key={index}>
-                                        <td>
+                                    <tr key={index} className={expandedRow === index ? "expanded" : ""}>
+                                        <td className="id-td" data-label="Attendee">
+                                            <div className="mobile-expand-icon" onClick={() => toggleRow(index)}>
+                                                <Icon icon={expandedRow === index ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                            </div>
                                             <div className="user-info">
                                                 <div className="user-avatar">{row.initials}</div>
                                                 <div className="user-details">
@@ -266,18 +313,18 @@ const PromoterAttendees = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td className="type-cell" data-label="Ticket Type">
                                             <span className={`button-label type-${row.type}`}>{row.pill}</span>
                                         </td>
-                                        <td className="small-body-text date-col">{row.date}</td>
-                                        <td>
+                                        <td data-label="Purchase Date" className="small-body-text date-col">{row.date}</td>
+                                        <td className="status-cell" data-label="Status">
                                             <span className={`button-label status-${row.statusType}`}>{row.status}</span>
                                         </td>
-                                        <td className="small-body-text att-time-col">
+                                        <td data-label="Check-in Time" className="small-body-text att-time-col">
                                             {row.statusType === 'checked' && <Icon icon="mdi:clock-outline" className="time-icon text-green" />}
                                             <span className={row.statusType === 'checked' ? 'text-green' : ''}> {row.time}</span>
                                         </td>
-                                        <td>
+                                        <td data-label="Actions">
                                             <button className="action-btn">
                                                 <Icon icon="mdi:email-outline" />
                                             </button>

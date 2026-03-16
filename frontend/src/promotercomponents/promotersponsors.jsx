@@ -8,25 +8,36 @@ const PromoterSponsors = () => {
     const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState("techstart");
     const [activeFilter, setActiveFilter] = useState("All");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [expandedRow, setExpandedRow] = useState(null);
     const itemsPerPage = 5;
     const eventDropdownRef = useRef(null);
+    const filterDropdownRef = useRef(null);
+
+    const toggleRow = (index) => {
+        setExpandedRow(expandedRow === index ? null : index);
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (eventDropdownRef.current && !eventDropdownRef.current.contains(event.target)) {
                 setIsEventDropdownOpen(false);
             }
+            if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
+                setIsFilterDropdownOpen(false);
+            }
         };
 
-        if (isEventDropdownOpen) {
+        if (isEventDropdownOpen || isFilterDropdownOpen) {
             document.addEventListener("mousedown", handleClickOutside);
         }
 
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [isEventDropdownOpen]);
+    }, [isEventDropdownOpen, isFilterDropdownOpen]);
 
     const eventOptions = [
         { value: "techstart", label: "TechStart Summit 2026" },
@@ -44,6 +55,7 @@ const PromoterSponsors = () => {
     };
 
     const sponsorStats = [
+        { type: "Total", count: "5", checkins: "1 checked in", colorClass: "text-blue", bgClass: "bg-blue-light" },
         { type: "VIP", count: "5", checkins: "1 checked in", colorClass: "text-purple", bgClass: "bg-purple-light" },
         { type: "Corner Location", count: "1", checkins: "1 checked in", colorClass: "text-yellow", bgClass: "bg-yellow-light" },
         { type: "Inline Location", count: "1", checkins: "1 checked in", colorClass: "text-green", bgClass: "bg-green-light" }
@@ -60,10 +72,16 @@ const PromoterSponsors = () => {
     ];
 
     const filteredData = sponsorsData.filter((row) => {
-        if (activeFilter === "All") return true;
-        if (activeFilter === "Checked In") return row.statusType === "checked";
-        if (activeFilter === "Pending") return row.statusType === "pending";
-        return true;
+        const q = searchQuery.toLowerCase();
+        const matchesFilter = (() => {
+            if (activeFilter === "All") return true;
+            if (activeFilter === "Checked In") return row.statusType === "checked";
+            if (activeFilter === "Pending") return row.statusType === "pending";
+            return true;
+        })();
+        if (!matchesFilter) return false;
+        if (!q) return true;
+        return row.name.toLowerCase().includes(q) || row.email.toLowerCase().includes(q) || row.boothPill.toLowerCase().includes(q);
     });
 
     const counts = {
@@ -88,14 +106,14 @@ const PromoterSponsors = () => {
     };
 
     const getBoothClass = (booth) => {
-  const value = booth.toLowerCase();
+        const value = booth.toLowerCase();
 
-  if (value.includes("vip")) return "type-vip";
-  if (value.includes("inline")) return "type-inline";
-  if (value.includes("corner")) return "type-corner";
+        if (value.includes("vip")) return "type-vip";
+        if (value.includes("inline")) return "type-inline";
+        if (value.includes("corner")) return "type-corner";
 
-  return "";
-};
+        return "";
+    };
 
     const exportList = async () => {
         const loadingToast = showExportToast();
@@ -229,24 +247,52 @@ const PromoterSponsors = () => {
                 </div>
 
                 <div className="spon-table-container">
-                    <div className="spon-table-header">
-                        <div className="outlined-button spon-search">
-                            <Icon icon="mdi:magnify" className="search-icon" />
-                            <input type="text" placeholder="Search attendees..." className="spon-search-input" />
+                    <div className="spon-toolbar">
+                        <div className="spon-toolbar-left">
+                            <div className="spon-search">
+                                <Icon icon="mdi:magnify" />
+                                <input
+                                    type="text"
+                                    placeholder="Search sponsors..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="small-body-text"
+                                />
+                            </div>
                         </div>
-                        <div className="spon-filters">
-                            <button className={`spon-filter-pill ${activeFilter === "All" ? "active" : ""}`} onClick={() => handleFilterChange("All")}>
-                                <span>All</span>
-                                <span className="spon-count">{counts.all}</span>
-                            </button>
-                            <button className={`spon-filter-pill ${activeFilter === "Checked In" ? "active" : ""}`} onClick={() => handleFilterChange("Checked In")}>
-                                <span>Checked In</span>
-                                <span className="spon-count">{counts.checked}</span>
-                            </button>
-                            <button className={`spon-filter-pill ${activeFilter === "Pending" ? "active" : ""}`} onClick={() => handleFilterChange("Pending")}>
-                                <span>Pending</span>
-                                <span className="spon-count">{counts.pending}</span>
-                            </button>
+
+                        <div className="spon-toolbar-right">
+                            <div className="spon-filter-dropdown" ref={filterDropdownRef}>
+                                <button
+                                    className="spon-filter-dropdown-btn"
+                                    onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                                >
+                                    <span className="truncate-text">
+                                        {activeFilter}
+                                    </span>
+                                    <Icon
+                                        icon="mdi:chevron-down"
+                                        className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""}`}
+                                    />
+                                </button>
+
+                                {isFilterDropdownOpen && (
+                                    <div className="spon-filter-dropdown-menu">
+                                        {["All", "Checked In", "Pending"].map((option) => (
+                                            <button
+                                                key={option}
+                                                className={`spon-filter-dropdown-item small-body-text ${activeFilter === option ? "active" : ""}`}
+                                                onClick={() => {
+                                                    handleFilterChange(option);
+                                                    setIsFilterDropdownOpen(false);
+                                                }}
+                                            >
+                                                {option}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="spon-table-wrapper">
@@ -263,8 +309,11 @@ const PromoterSponsors = () => {
                             </thead>
                             <tbody>
                                 {paginatedData.map((row, index) => (
-                                    <tr key={index}>
-                                        <td>
+                                    <tr key={index} className={expandedRow === index ? "expanded" : ""}>
+                                        <td className="id-td" data-label="Attendee">
+                                            <div className="mobile-expand-icon" onClick={() => toggleRow(index)}>
+                                                <Icon icon={expandedRow === index ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                            </div>
                                             <div className="user-info">
                                                 <div className="user-avatar">{row.initials}</div>
                                                 <div className="user-details">
@@ -273,19 +322,19 @@ const PromoterSponsors = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
-<span className={`button-label type-pill ${getBoothClass(row.boothPill)}`}>
-  {row.boothPill}
-</span>                                    </td>
-                                        <td className="small-body-text date-col">{row.date}</td>
-                                        <td>
+                                        <td className="type-cell" data-label="Booth Type">
+                                            <span className={`button-label type-pill ${getBoothClass(row.boothPill)}`}>
+                                                {row.boothPill}
+                                            </span>                                    </td>
+                                        <td className="small-body-text date-col" data-label="Purchase Date">{row.date}</td>
+                                        <td className="status-cell" data-label="Status">
                                             <span className={`button-label status-${row.statusType}`}>{row.status}</span>
                                         </td>
-                                        <td className="small-body-text spon-time-col">
+                                        <td className="small-body-text spon-time-col" data-label="Check-in Time">
                                             {row.statusType === 'checked' && <Icon icon="mdi:clock-outline" className="time-icon text-green" />}
                                             <span className={row.statusType === 'checked' ? 'text-green' : ''}> {row.time}</span>
                                         </td>
-                                        <td>
+                                        <td data-label="Actions">
                                             <button className="action-btn">
                                                 <Icon icon="mdi:email-outline" />
                                             </button>

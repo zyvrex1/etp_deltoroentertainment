@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./promoterevents.css";
 import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.jsx";
@@ -50,17 +50,52 @@ const sampleEvents = [
 
 const PromoterEvents = () => {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedEventToEdit, setSelectedEventToEdit] = useState(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const filterOptions = [
+    { value: "all", label: "All Events" },
+    { value: "active", label: "Active" },
+    { value: "pending", label: "Pending" },
+    { value: "drafts", label: "Drafts" },
+    { value: "past", label: "Past" }
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   const filteredEvents = sampleEvents.filter((evt) => {
-    if (activeFilter === "all") return true;
-    if (activeFilter === "active") return evt.status === "Active";
-    if (activeFilter === "pending") return evt.status === "Pending";
-    if (activeFilter === "drafts") return evt.status === "Draft";
-    if (activeFilter === "past") return evt.status === "Past";
-    return true;
+    const q = searchQuery.toLowerCase();
+    
+    const matchesFilter = (() => {
+      if (activeFilter === "all") return true;
+      if (activeFilter === "active") return evt.status === "Active";
+      if (activeFilter === "pending") return evt.status === "Pending";
+      if (activeFilter === "drafts") return evt.status === "Draft";
+      if (activeFilter === "past") return evt.status === "Past";
+      return true;
+    })();
+
+    if (!matchesFilter) return false;
+    if (!q) return true;
+    return evt.title.toLowerCase().includes(q) || evt.location.toLowerCase().includes(q);
   });
 
   return (
@@ -78,63 +113,53 @@ const PromoterEvents = () => {
         </div>
       </div>
       <div className="pe-card-main">
-        <div className="pe-filters-row">
-          <div className="pe-filters">
-            <button
-              type="button"
-              className={`pe-filter-pill ${activeFilter === "all" ? "active" : ""}`}
-              onClick={() => setActiveFilter("all")}
-            >
-              <Icon icon="mdi:calendar-multiple" />
-              <span>All Events</span>
-              <span className="pe-count">4</span>
-            </button>
+        <div className="pe-toolbar">
+            <div className="pe-toolbar-left">
+                <div className="pe-search">
+                    <Icon icon="mdi:magnify" />
+                    <input
+                        type="text"
+                        placeholder="Search events..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="small-body-text"
+                    />
+                </div>
+            </div>
 
-            <button
-              type="button"
-              className={`pe-filter-pill ${activeFilter === "active" ? "active" : ""}`}
-              onClick={() => setActiveFilter("active")}
-            >
-              <Icon icon="mdi:check-circle-outline" />
-              <span>Active</span>
-              <span className="pe-count">2</span>
-            </button>
+            <div className="pe-toolbar-right">
+                <div className="pe-filter-dropdown" ref={dropdownRef}>
+                    <button
+                        className="pe-filter-dropdown-btn"
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    >
+                        <span className="truncate-text">
+                            {filterOptions.find(opt => opt.value === activeFilter)?.label || "All Events"}
+                        </span>
+                        <Icon
+                            icon="mdi:chevron-down"
+                            className={`dropdown-icon ${isDropdownOpen ? "open" : ""}`}
+                        />
+                    </button>
 
-            <button
-              type="button"
-              className={`pe-filter-pill ${activeFilter === "pending" ? "active" : ""}`}
-              onClick={() => setActiveFilter("pending")}
-            >
-              <Icon icon="mdi:check-circle-outline" />
-              <span>Pending</span>
-              <span className="pe-count">2</span>
-            </button>
-
-            <button
-              type="button"
-              className={`pe-filter-pill ${activeFilter === "drafts" ? "active" : ""}`}
-              onClick={() => setActiveFilter("drafts")}
-            >
-              <Icon icon="mdi:file-document-edit-outline" />
-              <span>Drafts</span>
-              <span className="pe-count">1</span>
-            </button>
-
-            <button
-              type="button"
-              className={`pe-filter-pill ${activeFilter === "past" ? "active" : ""}`}
-              onClick={() => setActiveFilter("past")}
-            >
-              <Icon icon="mdi:history" />
-              <span>Past</span>
-              <span className="pe-count">1</span>
-            </button>
-          </div>
-
-          <div className="outlined-button pe-search">
-            <Icon icon="mdi:magnify" />
-            <input type="text" placeholder="Search events..." />
-          </div>
+                    {isDropdownOpen && (
+                        <div className="pe-filter-dropdown-menu">
+                            {filterOptions.map((option) => (
+                                <button
+                                    key={option.value}
+                                    className={`pe-filter-dropdown-item small-body-text ${activeFilter === option.value ? "active" : ""}`}
+                                    onClick={() => {
+                                        setActiveFilter(option.value);
+                                        setIsDropdownOpen(false);
+                                    }}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
 
         <div className="pe-grid">
