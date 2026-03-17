@@ -305,49 +305,60 @@ const PromoterSales = () => {
                         </div>
                     </div>
                     <div className="sales-table-wrapper">
-                        <table className="sales-table">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Customer</th>
-                                    <th>Type</th>
-                                    <th>Item</th>
-                                    <th>Amount</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedData.map((row, index) => (
-                                    <tr key={index} className={expandedRow === index ? "expanded" : ""}>
-                                        <td className="small-body-text date-col id-td" data-label="Order ID">
-                                            <div className="mobile-expand-icon" onClick={() => toggleRow(index)}>
-                                                <Icon icon={expandedRow === index ? "mdi:chevron-up" : "mdi:chevron-down"} />
-                                            </div>
-                                            <span>{row.id}</span>
-                                        </td>
-                                        <td className="name-td" data-label="Customer">
-                                            <div className="user-info">
-                                                <div className="user-avatar">{row.initials}</div>
-                                                <div>
-                                                    <h6 className="user-name">{row.name}</h6>
-                                                    <p className="smaller-body-text user-email">{row.email}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td data-label="Type">
-                                            <span className={`button-label pill-bg-${row.typeColor}`}>{row.typePill}</span>
-                                        </td>
-                                        <td className="small-body-text item-col" data-label="Item">{row.item}</td>
-                                        <td className='ps-green-amount large-body-text' data-label="Amount"><strong>{row.amount}</strong></td>
-                                        <td className="small-body-text date-col" data-label="Date">{row.date}</td>
-                                        <td className="status-cell" data-label="Status">
-                                            <span className={`button-label pill-bg-${row.statusColor}`}>{row.status}</span>
-                                        </td>
+                        {paginatedData.length === 0 ? (
+                            // Empty state outside table for mobile-friendly display
+                            <div className="empty-state">
+                                <Icon icon="mdi:magnify-close" width="48" />
+                                <h4>No payments found</h4>
+                                <p className="small-body-text">
+                                    No payments match "<strong>{searchQuery}</strong>".
+                                </p>
+                            </div>
+                        ) : (
+                            <table className="sales-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer</th>
+                                        <th>Type</th>
+                                        <th>Item</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {paginatedData.map((row, index) => (
+                                        <tr key={index} className={expandedRow === index ? "expanded" : ""}>
+                                            <td className="small-body-text date-col id-td" data-label="Order ID">
+                                                <div className="mobile-expand-icon" onClick={() => toggleRow(index)}>
+                                                    <Icon icon={expandedRow === index ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                                </div>
+                                                <span>{row.id}</span>
+                                            </td>
+                                            <td className="name-td" data-label="Customer">
+                                                <div className="user-info">
+                                                    <div className="user-avatar">{row.initials}</div>
+                                                    <div>
+                                                        <h6 className="user-name">{row.name}</h6>
+                                                        <p className="smaller-body-text user-email">{row.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td data-label="Type">
+                                                <span className={`button-label pill-bg-${row.typeColor}`}>{row.typePill}</span>
+                                            </td>
+                                            <td className="small-body-text item-col" data-label="Item">{row.item}</td>
+                                            <td className='ps-green-amount large-body-text' data-label="Amount"><strong>{row.amount}</strong></td>
+                                            <td className="small-body-text date-col" data-label="Date">{row.date}</td>
+                                            <td className="status-cell" data-label="Status">
+                                                <span className={`button-label pill-bg-${row.statusColor}`}>{row.status}</span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
 
                     {/* Pagination */}

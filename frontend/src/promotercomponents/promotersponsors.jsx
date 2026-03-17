@@ -296,53 +296,64 @@ const PromoterSponsors = () => {
                         </div>
                     </div>
                     <div className="spon-table-wrapper">
-                        <table className="spon-table">
-                            <thead>
-                                <tr>
-                                    <th>Attendee</th>
-                                    <th>Booth Type</th>
-                                    <th>Purchase Date</th>
-                                    <th>Status</th>
-                                    <th>Check-in Time</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedData.map((row, index) => (
-                                    <tr key={index} className={expandedRow === index ? "expanded" : ""}>
-                                        <td className="id-td" data-label="Attendee">
-                                            <div className="mobile-expand-icon" onClick={() => toggleRow(index)}>
-                                                <Icon icon={expandedRow === index ? "mdi:chevron-up" : "mdi:chevron-down"} />
-                                            </div>
-                                            <div className="user-info">
-                                                <div className="user-avatar">{row.initials}</div>
-                                                <div className="user-details">
-                                                    <h6 className="user-name">{row.name}</h6>
-                                                    <span className="smaller-body-text user-email">{row.email}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="type-cell" data-label="Booth Type">
-                                            <span className={`button-label type-pill ${getBoothClass(row.boothPill)}`}>
-                                                {row.boothPill}
-                                            </span>                                    </td>
-                                        <td className="small-body-text date-col" data-label="Purchase Date">{row.date}</td>
-                                        <td className="status-cell" data-label="Status">
-                                            <span className={`button-label status-${row.statusType}`}>{row.status}</span>
-                                        </td>
-                                        <td className="small-body-text spon-time-col" data-label="Check-in Time">
-                                            {row.statusType === 'checked' && <Icon icon="mdi:clock-outline" className="time-icon text-green" />}
-                                            <span className={row.statusType === 'checked' ? 'text-green' : ''}> {row.time}</span>
-                                        </td>
-                                        <td data-label="Actions">
-                                            <button className="action-btn">
-                                                <Icon icon="mdi:email-outline" />
-                                            </button>
-                                        </td>
+                        {paginatedData.length === 0 ? (
+                            // Empty state outside table for mobile-friendly display
+                            <div className="empty-state">
+                                <Icon icon="mdi:magnify-close" width="48" />
+                                <h4>No Sponsor(s) found</h4>
+                                <p className="small-body-text">
+                                    No Sponsor(s) match "<strong>{searchQuery}</strong>".
+                                </p>
+                            </div>
+                        ) : (
+                            <table className="spon-table">
+                                <thead>
+                                    <tr>
+                                        <th>Attendee</th>
+                                        <th>Booth Type</th>
+                                        <th>Purchase Date</th>
+                                        <th>Status</th>
+                                        <th>Check-in Time</th>
+                                        <th>Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {paginatedData.map((row, index) => (
+                                        <tr key={index} className={expandedRow === index ? "expanded" : ""}>
+                                            <td className="id-td" data-label="Attendee">
+                                                <div className="mobile-expand-icon" onClick={() => toggleRow(index)}>
+                                                    <Icon icon={expandedRow === index ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                                </div>
+                                                <div className="user-info">
+                                                    <div className="user-avatar">{row.initials}</div>
+                                                    <div className="user-details">
+                                                        <h6 className="user-name">{row.name}</h6>
+                                                        <span className="smaller-body-text user-email">{row.email}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="type-cell" data-label="Booth Type">
+                                                <span className={`button-label type-pill ${getBoothClass(row.boothPill)}`}>
+                                                    {row.boothPill}
+                                                </span>                                    </td>
+                                            <td className="small-body-text date-col" data-label="Purchase Date">{row.date}</td>
+                                            <td className="status-cell" data-label="Status">
+                                                <span className={`button-label status-${row.statusType}`}>{row.status}</span>
+                                            </td>
+                                            <td className="small-body-text spon-time-col" data-label="Check-in Time">
+                                                {row.statusType === 'checked' && <Icon icon="mdi:clock-outline" className="time-icon text-green" />}
+                                                <span className={row.statusType === 'checked' ? 'text-green' : ''}> {row.time}</span>
+                                            </td>
+                                            <td data-label="Actions">
+                                                <button className="action-btn">
+                                                    <Icon icon="mdi:email-outline" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
 
                     {/* Pagination */}

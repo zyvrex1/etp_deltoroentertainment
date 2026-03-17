@@ -287,6 +287,16 @@ const PromoterAttendees = () => {
                         </div>
                     </div>
                     <div className="att-table-wrapper">
+                         {paginatedData.length === 0 ? (
+            // Empty state outside table for mobile-friendly display
+            <div className="empty-state">
+              <Icon icon="mdi:magnify-close" width="48" />
+              <h4>No Attendee(s) found</h4>
+              <p className="small-body-text">
+                No Attendee(s) match "<strong>{searchQuery}</strong>".
+              </p>
+            </div>
+          ) : (
                         <table className="att-table">
                             <thead>
                                 <tr>
@@ -333,6 +343,7 @@ const PromoterAttendees = () => {
                                 ))}
                             </tbody>
                         </table>
+          )}
                     </div>
 
                     {/* Pagination */}
