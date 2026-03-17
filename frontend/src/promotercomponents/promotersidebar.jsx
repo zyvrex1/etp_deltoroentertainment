@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
   MdDashboard,
@@ -19,24 +18,31 @@ import {
 
 import "./promotersidebar.css";
 
-const Promotersidebar = () => {
-  const [mobileExpanded, setMobileExpanded] = useState(false);
+const Promotersidebar = ({ mobileExpanded, setMobileExpanded }) => {
+
+  const handleLinkClick = () => {
+  // Only close sidebar on mobile
+  if (window.innerWidth <= 768) {
+    setMobileExpanded(false);
+  }
+};
 
   return (
     <aside
       className={`sidebar ${mobileExpanded ? "mobile-expanded" : "mobile-collapsed"
         }`}
     >
-      {/* LOGO + TOGGLE */}
+      {/* LOGO */}
       <div className="sidebar-logo">
         <img src="/logo/Logo1.png" alt="App Logo" className="logo" />
-
-        <button
-          className={`mobile-toggle ${mobileExpanded ? "close-icon" : "menu-icon"}`}
-          onClick={() => setMobileExpanded(!mobileExpanded)}
-        >
-          {mobileExpanded ? <MdClose /> : <MdMenu />}
-        </button>
+        {mobileExpanded && (
+          <button
+            className="mobile-toggle close-icon"
+            onClick={() => setMobileExpanded(false)}
+          >
+            <MdClose />
+          </button>
+        )}
       </div>
 
       {/* CONTENT */}
@@ -50,10 +56,15 @@ const Promotersidebar = () => {
             end
             className={({ isActive }) =>
               isActive ? "sidebar-item active" : "sidebar-item"
-            }
+            } onClick={handleLinkClick}
           >
-            <MdDashboard className="icon" />
+            <MdDashboard className="icon"  />
             <span>Dashboard</span>
+          </NavLink>
+
+          <NavLink to="/promoter/promoter-announcement" className="sidebar-item" onClick={handleLinkClick}>
+            <MdDescription className="icon" />
+            <span>Announcement & Policy</span>
           </NavLink>
         </div>
 
@@ -61,7 +72,7 @@ const Promotersidebar = () => {
         <div className="sidebar-section">
           <p className="section-title">EVENTS</p>
 
-          <NavLink to="/promoter/promoter-events" className="sidebar-item">
+          <NavLink to="/promoter/promoter-events" className="sidebar-item" onClick={handleLinkClick}>
             <MdEventAvailable className="icon" />
             <span>My Events</span>
           </NavLink>
@@ -71,19 +82,9 @@ const Promotersidebar = () => {
         <div className="sidebar-section">
           <p className="section-title">MANAGEMENT</p>
 
-          <NavLink to="/promoter/promoter-ticketsetup" className="sidebar-item">
-            <MdConfirmationNumber className="icon" />
-            <span>Ticket Setup</span>
-          </NavLink>
-
-          <NavLink to="/promoter/promoter-boothlayout" className="sidebar-item">
-            <MdEventAvailable className="icon" />
-            <span>Booth Layout</span>
-          </NavLink>
-
-          <NavLink to="/promoter/promoter-scan" className="sidebar-item">
-            <MdAssignment className="icon" />
-            <span>Check in/ Scan</span>
+          <NavLink to="/promoter/promoter-eventmanagement" className="sidebar-item" onClick={handleLinkClick}>
+            <MdEvent className="icon" />
+            <span>Event Management</span>
           </NavLink>
         </div>
 
@@ -91,17 +92,17 @@ const Promotersidebar = () => {
         <div className="sidebar-section">
           <p className="section-title">SALES & PEOPLE</p>
 
-          <NavLink to="/promoter/promoter-sales" className="sidebar-item">
+          <NavLink to="/promoter/promoter-sales" className="sidebar-item" onClick={handleLinkClick}>
             <MdInsights className="icon" />
             <span>Sales Overview</span>
           </NavLink>
 
-          <NavLink to="/promoter/promoter-attendees" className="sidebar-item">
+          <NavLink to="/promoter/promoter-attendees" className="sidebar-item" onClick={handleLinkClick}>
             <MdPeople className="icon" />
             <span>Attendees</span>
           </NavLink>
 
-          <NavLink to="/promoter/promoter-sponsors" className="sidebar-item">
+          <NavLink to="/promoter/promoter-sponsors" className="sidebar-item"onClick={handleLinkClick} >
             <MdSupport className="icon" />
             <span>Sponsors</span>
           </NavLink>
@@ -111,12 +112,12 @@ const Promotersidebar = () => {
         <div className="sidebar-section">
           <p className="section-title">FINANCE</p>
 
-          <NavLink to="/promoter/promoter-revenue" className="sidebar-item">
+          <NavLink to="/promoter/promoter-revenue" className="sidebar-item" onClick={handleLinkClick}>
             <MdDescription className="icon" />
             <span>Revenue Reports</span>
           </NavLink>
 
-          <NavLink to="/promoter/promoter-payouts" className="sidebar-item">
+          <NavLink to="/promoter/promoter-payouts" className="sidebar-item" onClick={handleLinkClick}>
             <MdPayment className="icon" />
             <span>Payouts</span>
           </NavLink>

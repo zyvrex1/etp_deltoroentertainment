@@ -4,7 +4,7 @@ import { Icon } from "@iconify/react";
 import "./promoterheader.css";
 import { showConfirmAlert, showSuccessAlert } from "../admincomponents/utils/sweetAlert";
 
-const PromoterHeader = ({ user = null }) => {
+const PromoterHeader = ({ user = null, mobileExpanded, setMobileExpanded }) => {
   const currentUser = user || {
     name: "Alex Thompson",
     email: "alex@ticketspro.com",
@@ -61,6 +61,15 @@ const PromoterHeader = ({ user = null }) => {
 
   return (
     <header className="app-header">
+      <div className="header-left-mobile">
+        <button
+          className="mobile-header-toggle"
+          onClick={() => setMobileExpanded(!mobileExpanded)}
+        >
+          <Icon icon={mobileExpanded ? "mdi:close" : "mdi:menu"} width="28" />
+        </button>
+      </div>
+
       <div className="header-profile" ref={dropdownRef}>
         <button
           type="button"

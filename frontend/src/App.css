@@ -37,7 +37,7 @@
 /* Tablet & Mobile View */
 @media (max-width: 768px) {
   .main-content {
-    margin-left: 72px;
+    margin-left: 0;
   }
 
   .app-container {
