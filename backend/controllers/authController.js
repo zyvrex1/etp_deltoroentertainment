@@ -22,7 +22,18 @@ const signupUser = async (req, res) => {
     if (!role || !email || !password || !confirmPassword) throw Error('Required fields missing')
     if (!['customer', 'sponsor'].includes(role)) throw Error('Invalid role for public signup')
 
-    const user = await User.signup(email, password, confirmPassword, role)
+    const user = await User.signup(
+      email,
+      password,
+      confirmPassword,
+      role,
+      firstName,
+      lastName
+    )
+
+    // Save phone
+    user.phone = phone || ''
+    await user.save()
 
     if (role === 'customer') {
       if (!firstName || !lastName || !phone) throw Error('Missing customer fields')
@@ -34,8 +45,14 @@ const signupUser = async (req, res) => {
       await Sponsor.create({ user: user._id, firstName, lastName, phone, companyName, industry, email })
     }
 
-    const token = createToken(user._id)
-    res.status(201).json({ message: 'User created successfully', email: user.email, role: user.role, token })
+    const token = createToken(user)
+
+    res.status(201).json({
+      message: 'User created successfully',
+      email: user.email,
+      role: user.role,
+      token
+    })
 
   } catch (error) {
     res.status(400).json({ error: error.message })
@@ -51,30 +68,27 @@ const loginUser = async (req, res) => {
   }
 
   try {
-    // Attempt to login
-    const user = await User.login(email, password); // your custom login method
-    if (!user) {
-      return res.status(400).json({ error: 'Invalid email or password' });
-    }
+    const user = await User.login(email, password);
 
     const token = createToken(user);
 
-    // Update lastLogin
     user.lastLogin = new Date();
     await user.save();
 
-    // Return user info
     res.status(200).json({
       _id: user._id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
+      phone: user.phone,
+      twoFactor: user.twoFactor,
+      notifications: user.notifications,
       token
     });
+
   } catch (err) {
-    console.error('Login error:', err); // log the real error
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: err.message });
   }
 };
 

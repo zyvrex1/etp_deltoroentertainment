@@ -7,6 +7,8 @@ const fs = require('fs')
 
 // Routes
 const authRoutes = require('./routes/authRoutes')
+const userRoutes = require('./routes/userRoutes')
+const settingsRoutes = require('./routes/settingsRoutes')
 const promoterRoutes = require('./routes/promoterRoutes')
 const sponsorRoutes = require('./routes/sponsorRoutes')
 const customerRoutes = require('./routes/customerRoutes')
@@ -39,6 +41,8 @@ app.use('/uploads', express.static(uploadDir))
 
 // API routes
 app.use('/api/auth', authRoutes)
+app.use('/api/user', userRoutes)
+app.use('/api/settings', settingsRoutes)
 app.use('/api/promoter', promoterRoutes)
 app.use('/api/sponsor', sponsorRoutes)
 app.use('/api/customer', customerRoutes)

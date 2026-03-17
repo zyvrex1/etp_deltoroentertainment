@@ -22,6 +22,9 @@ const userSchema = new Schema({
     lowercase: true,
     trim: true
   },
+  phone: {
+    type: String,
+  },
   password: {
     type: String,
     required: true
@@ -31,14 +34,39 @@ const userSchema = new Schema({
     enum: ['superadmin', 'admin', 'promoter', 'sponsor', 'customer'],
     required: true
   },
+
+  // ✅ NEW: Security
+  twoFactor: {
+    type: Boolean,
+    default: false
+  },
+
+  // ✅ NEW: Notifications
+  notifications: {
+    email: { type: Boolean, default: true },
+    sms: { type: Boolean, default: false }
+  },
+
   lastLogin: {
     type: Date
-  }
-}, { timestamps: true });
+  },
 
+  avatar: {
+  type: String, 
+  default: '',  
+}
+
+}, { timestamps: true })
 
 // ================= SIGNUP =================
-userSchema.statics.signup = async function (email, password, confirmPassword, role) {
+userSchema.statics.signup = async function (
+  email,
+  password,
+  confirmPassword,
+  role,
+  firstName,
+  lastName
+) {
 
   if (!email || !password || !confirmPassword || !role) {
     throw Error('All fields are required')
@@ -64,7 +92,13 @@ userSchema.statics.signup = async function (email, password, confirmPassword, ro
   const salt = await bcrypt.genSalt(10)
   const hash = await bcrypt.hash(password, salt)
 
-  const user = await this.create({ email, password: hash, role })
+  const user = await this.create({
+    email,
+    password: hash,
+    role,
+    firstName,
+    lastName
+  })
 
   return user
 }

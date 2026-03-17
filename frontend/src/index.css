@@ -346,3 +346,47 @@ li {
   font-weight: 600;
 }
 }
+
+.settings-profile-avatar {
+  position: relative;
+  width: 120px;  /* adjust size */
+  height: 120px;
+  border-radius: 50%;  /* makes circle */
+  overflow: hidden;    /* keeps image inside circle */
+  border: 2px solid #ccc; /* optional */
+}
+
+/* Uploaded image */
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;  /* ensures image covers circle */
+}
+
+.avatar-icon {
+  width: 100%;
+  height: 100%;
+  font-size: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+}
+
+/* Camera icon overlay */
+.avatar-upload {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+}
+
+.camera-btn {
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  padding: 6px;
+  cursor: pointer;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
