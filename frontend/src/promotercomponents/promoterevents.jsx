@@ -83,7 +83,7 @@ const PromoterEvents = () => {
 
   const filteredEvents = sampleEvents.filter((evt) => {
     const q = searchQuery.toLowerCase();
-    
+
     const matchesFilter = (() => {
       if (activeFilter === "all") return true;
       if (activeFilter === "active") return evt.status === "Active";
@@ -114,145 +114,176 @@ const PromoterEvents = () => {
       </div>
       <div className="pe-card-main">
         <div className="pe-toolbar">
-            <div className="pe-toolbar-left">
-                <div className="pe-search">
-                    <Icon icon="mdi:magnify" />
-                    <input
-                        type="text"
-                        placeholder="Search events..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="small-body-text"
-                    />
-                </div>
+          <div className="pe-toolbar-left">
+            <div className="pe-search">
+              <Icon icon="mdi:magnify" />
+              <input
+                type="text"
+                placeholder="Search events..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="small-body-text"
+              />
             </div>
+          </div>
 
-            <div className="pe-toolbar-right">
-                <div className="pe-filter-dropdown" ref={dropdownRef}>
+          <div className="pe-toolbar-right">
+            <div className="pe-filter-dropdown" ref={dropdownRef}>
+              <button
+                className="pe-filter-dropdown-btn"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              >
+                <span className="truncate-text">
+                  {filterOptions.find(opt => opt.value === activeFilter)?.label || "All Events"}
+                </span>
+                <Icon
+                  icon="mdi:chevron-down"
+                  className={`dropdown-icon ${isDropdownOpen ? "open" : ""}`}
+                />
+              </button>
+
+              {isDropdownOpen && (
+                <div className="pe-filter-dropdown-menu">
+                  {filterOptions.map((option) => (
                     <button
-                        className="pe-filter-dropdown-btn"
-                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      key={option.value}
+                      className={`pe-filter-dropdown-item small-body-text ${activeFilter === option.value ? "active" : ""}`}
+                      onClick={() => {
+                        setActiveFilter(option.value);
+                        setIsDropdownOpen(false);
+                      }}
                     >
-                        <span className="truncate-text">
-                            {filterOptions.find(opt => opt.value === activeFilter)?.label || "All Events"}
-                        </span>
-                        <Icon
-                            icon="mdi:chevron-down"
-                            className={`dropdown-icon ${isDropdownOpen ? "open" : ""}`}
-                        />
+                      {option.label}
                     </button>
-
-                    {isDropdownOpen && (
-                        <div className="pe-filter-dropdown-menu">
-                            {filterOptions.map((option) => (
-                                <button
-                                    key={option.value}
-                                    className={`pe-filter-dropdown-item small-body-text ${activeFilter === option.value ? "active" : ""}`}
-                                    onClick={() => {
-                                        setActiveFilter(option.value);
-                                        setIsDropdownOpen(false);
-                                    }}
-                                >
-                                    {option.label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                  ))}
                 </div>
+              )}
             </div>
+          </div>
         </div>
-
-        <div className="pe-grid">
-          {filteredEvents.map((evt) => {
-
-            const status = evt?.status?.trim().toLowerCase() || "";
-
-            const percent =
-              evt.totalTickets > 0
-                ? Math.round((evt.ticketsSold / evt.totalTickets) * 100)
-                : 0;
-
-            return (
-              <div key={evt.id} className="pe-card">
-                <div className="pe-card-image">
-
-                  <div className="pe-card-top">
-                    <span className={`button-label pe-status-pill ${status}`}>
-                      {evt.status}
-                    </span>
-
-                    {["pending", "draft", "active"].includes(status) && (
-                      <button className="pe-edit-top" onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedEventToEdit(evt);
-                        setIsEditOpen(true);
-                      }}>
-                        <Icon icon="mdi:pencil-outline" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="pe-card-body">
-                  <h4>{evt.title}</h4>
-                  <div className="pe-card-meta">
-                    <div className="pe-meta-row">
-                      <Icon icon="mdi:calendar-month-outline" />
-                      <span className="small-body-text">{evt.date}</span>
-                    </div>
-                    <div className="pe-meta-row">
-                      <Icon icon="mdi:map-marker-outline" />
-                      <span className="small-body-text">{evt.location}</span>
-                    </div>
-                  </div>
-
-                  {evt.totalTickets > 0 && (
-                    <>
-                      <div className="pe-progress-row">
-                        <span className="small-body-text">
-                          {evt.ticketsSold} / {evt.totalTickets} tickets
-                        </span>
-                        <span>{percent}%</span>
-                      </div>
-                      <div className="pe-progress">
-                        <div style={{ width: `${percent}%` }} />
-                      </div>
-                    </>
-                  )}
-
-                  <div className="pe-card-actions">
-                    <NavLink to="/promoter/promoter-ticketsetup"><button type="button" className="outlined-button pe-card-btn">
-                      Tickets
-                    </button></NavLink>
-                    <NavLink to="/promoter/promoter-boothlayout"><button type="button" className="outlined-button pe-card-btn">
-                      Booths
-                    </button></NavLink>
-                    {evt?.status?.toLowerCase() === "active" && (
-                      <NavLink to="/promoter/promoter-scan"><button type="button" className="outlined-button pe-card-btn pe-scan-btn">
-                        Scan
-                      </button></NavLink>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          <button
-            type="button"
-            className="pe-card pe-create-card"
-            onClick={() => setIsCreateOpen(true)}
-          >
-            <div className="pe-create-inner">
-              <div className="pe-create-icon">
-                <Icon icon="mdi:plus" />
-              </div>
-              <h4>Create New Event</h4>
+        {filteredEvents.length === 0 ? (
+          <div className="pe-empty-wrapper">
+            <div className="empty-state">
+              <Icon icon="mdi:magnify-close" width="48" />
+              <h4>No events found</h4>
               <p className="small-body-text">
-                Start selling tickets for your next big experience.
-              </p>
+                No events match "<strong>{searchQuery}</strong>".
+                <span
+                  className="pe-empty-add-btn"
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  Add event
+                </span></p>
             </div>
-          </button>
-        </div>
+          </div>
+        ) : (
+          <div className="pe-grid">
+            <>
+              {filteredEvents.map((evt) => {
+                const status = evt?.status?.trim().toLowerCase() || "";
+                const percent =
+                  evt.totalTickets > 0
+                    ? Math.round((evt.ticketsSold / evt.totalTickets) * 100)
+                    : 0;
+
+                return (
+                  <div key={evt.id} className="pe-card">
+                    <div className="pe-card-image">
+                      <div className="pe-card-top">
+                        <span className={`button-label pe-status-pill ${status}`}>
+                          {evt.status}
+                        </span>
+
+                        {["pending", "draft", "active"].includes(status) && (
+                          <button
+                            className="pe-edit-top"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedEventToEdit(evt);
+                              setIsEditOpen(true);
+                            }}
+                          >
+                            <Icon icon="mdi:pencil-outline" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pe-card-body">
+                      <h4>{evt.title}</h4>
+
+                      <div className="pe-card-meta">
+                        <div className="pe-meta-row">
+                          <Icon icon="mdi:calendar-month-outline" />
+                          <span className="small-body-text">{evt.date}</span>
+                        </div>
+
+                        <div className="pe-meta-row">
+                          <Icon icon="mdi:map-marker-outline" />
+                          <span className="small-body-text">{evt.location}</span>
+                        </div>
+                      </div>
+
+                      {evt.totalTickets > 0 && (
+                        <>
+                          <div className="pe-progress-row">
+                            <span className="small-body-text">
+                              {evt.ticketsSold} / {evt.totalTickets} tickets
+                            </span>
+                            <span>{percent}%</span>
+                          </div>
+                          <div className="pe-progress">
+                            <div style={{ width: `${percent}%` }} />
+                          </div>
+                        </>
+                      )}
+
+                      <div className="pe-card-actions">
+                        <NavLink to="/promoter/promoter-ticketsetup">
+                          <button type="button" className="outlined-button pe-card-btn">
+                            Tickets
+                          </button>
+                        </NavLink>
+
+                        <NavLink to="/promoter/promoter-boothlayout">
+                          <button type="button" className="outlined-button pe-card-btn">
+                            Booths
+                          </button>
+                        </NavLink>
+
+                        {evt?.status?.toLowerCase() === "active" && (
+                          <NavLink to="/promoter/promoter-scan">
+                            <button type="button" className="outlined-button pe-card-btn pe-scan-btn">
+                              Scan
+                            </button>
+                          </NavLink>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* CREATE CARD AS LAST CARD */}
+              <button
+                type="button"
+                className="pe-card pe-create-card"
+                onClick={() => setIsCreateOpen(true)}
+              >
+                <div className="pe-create-inner">
+                  <div className="pe-create-icon">
+                    <Icon icon="mdi:plus" />
+                  </div>
+                  <h4>Create New Event</h4>
+                  <p className="small-body-text">
+                    Start selling tickets for your next big experience.
+                  </p>
+                </div>
+              </button>
+            </>
+
+          </div>
+        )}
       </div>
       <PromoterCreateEventModal
         isOpen={isCreateOpen}

@@ -330,6 +330,7 @@
 
   .pe-create-inner {
     padding: 32px 16px;
+    
 
     .pe-create-icon {
       width: fit-content;
@@ -346,6 +347,9 @@
 
     h4{
       text-align: center;
+    }
+    p{
+      color: var(--color-black-secondary);
     }
   }
 }
@@ -456,3 +460,24 @@
   }
 
 }
+
+
+.pe-grid:has(.pe-empty-wrapper) {
+  display: grid;
+  place-items: center;
+  min-height: 400px; /* adjust depending on your layout */
+
+  
+}
+
+.pe-empty-wrapper {
+  text-align: center;
+
+  span{
+    margin-left: 6px;
+    color: var(--color-red-primary);
+    cursor: pointer;
+    font-weight: 700;
+  }
+}
+

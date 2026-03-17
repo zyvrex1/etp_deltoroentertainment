@@ -17,10 +17,10 @@ const Payments = () => {
     { id: 4, promoter: "James Wilson", amount: "$5,000.00", method: "Wire Transfer", status: "pending", requested: "Oct 20, 2024" },
     { id: 5, promoter: "Sarah Chen", amount: "$10,000.00", method: "Wire Transfer", status: "processing", requested: "Oct 22, 2024" },
     { id: 6, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
-     { id: 7, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
+    { id: 7, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
     { id: 8, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
 
- 
+
   ]);
 
   const [selectedPayout, setSelectedPayout] = useState(null);
@@ -53,7 +53,7 @@ const Payments = () => {
 
   if (searchQuery) {
     const query = searchQuery.toLowerCase();
-    filteredData = filteredData.filter(item => 
+    filteredData = filteredData.filter(item =>
       item.promoter.toLowerCase().includes(query) ||
       (item.event && item.event.toLowerCase().includes(query)) ||
       item.amount.toLowerCase().includes(query) ||
@@ -88,13 +88,13 @@ const Payments = () => {
 
   const handleApprove = async (id, promoter, amount) => {
     const confirmResult = await showApproveConfirmAlert(promoter, amount);
-    
+
     if (!confirmResult.isConfirmed) {
       return;
     }
-    
+
     try {
-      setPayoutRequests(prev => 
+      setPayoutRequests(prev =>
         prev.map(req => req.id === id ? { ...req, status: "paid" } : req)
       );
       await showSuccessAlert('Payment Approved', 'The payment request has been approved and marked as paid.');
@@ -115,7 +115,7 @@ const Payments = () => {
     }
 
     try {
-      setPayoutRequests(prev => 
+      setPayoutRequests(prev =>
         prev.map(req => req.id === selectedPayout.id ? { ...req, status: "rejected", rejectionReason } : req)
       );
       await showSuccessAlert('Payment Rejected', `Payment request for ${selectedPayout.promoter} (${selectedPayout.amount}) has been rejected. Reason: ${rejectionReason}`);
@@ -229,106 +229,106 @@ const Payments = () => {
         </div>
 
         <div className="table-wrapper">
-            {paginatedData.length === 0 ? (
-                                  // Empty state outside table for mobile-friendly display
-                                  <div className="empty-state">
-                                      <Icon icon="mdi:magnify-close" width="48" />
-                                      <h4>No payments found</h4>
-                                      <p className="small-body-text">
-                                          No payments match "<strong>{searchQuery}</strong>".
-                                      </p>
-                                  </div>
-                              ) : (
-          <table className="data-table">
-            {activeTab === "payout-requests" ? (
-              <>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Promoter</th>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Status</th>
-                    <th>Requested</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedData.map((row) => (
-                    <tr key={row.id} className={expandedRow === row.id ? "expanded" : ""}>
-                      <td className="small-body-text id-td" data-label="ID">
-                        <div className="mobile-expand-icon" onClick={() => toggleRow(row.id)}>
-                          <Icon icon={expandedRow === row.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
-                        </div>
-                        <span>#{row.id.toString().padStart(2, "0")}</span>
-                      </td>
-                      <td data-label="Promoter" className="regular-body-text name-td">{row.promoter}</td>
-                      <td data-label="Amount" className="regular-body-text pay-amount">{row.amount}</td>
-                      <td data-label="Method" className="small-body-text">{row.method}</td>
-                      <td data-label="Status">
-                        <span className={getStatusClass(row.status)}>{row.status}</span>
-                      </td>
-                      <td data-label="Requested" className="regular-body-text">{row.requested}</td>
-                      <td data-label="Actions">
-                        {row.status === "pending" ? (
-                          <div className="pay-actions">
-                            <button 
-                              className="button-label pay-btn-approve" 
-                              onClick={() => handleApprove(row.id, row.promoter, row.amount)}
-                            >
-                              Approve
-                            </button>
-                            <button 
-                              className="button-label pay-btn-reject" 
-                              onClick={() => handleRejectClick(row)}
-                            >
-                              Reject
-                            </button>
+          {paginatedData.length === 0 ? (
+            // Empty state outside table for mobile-friendly display
+            <div className="empty-state">
+              <Icon icon="mdi:magnify-close" width="48" />
+              <h4>No payments found</h4>
+              <p className="small-body-text">
+                No payments match "<strong>{searchQuery}</strong>".
+              </p>
+            </div>
+          ) : (
+            <table className="data-table">
+              {activeTab === "payout-requests" ? (
+                <>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Promoter</th>
+                      <th>Amount</th>
+                      <th>Method</th>
+                      <th>Status</th>
+                      <th>Requested</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedData.map((row) => (
+                      <tr key={row.id} className={expandedRow === row.id ? "expanded" : ""}>
+                        <td className="small-body-text id-td" data-label="ID">
+                          <div className="mobile-expand-icon" onClick={() => toggleRow(row.id)}>
+                            <Icon icon={expandedRow === row.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                           </div>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
+                          <span>#{row.id.toString().padStart(2, "0")}</span>
+                        </td>
+                        <td data-label="Promoter" className="regular-body-text name-td">{row.promoter}</td>
+                        <td data-label="Amount" className="regular-body-text pay-amount">{row.amount}</td>
+                        <td data-label="Method" className="small-body-text">{row.method}</td>
+                        <td data-label="Status">
+                          <span className={getStatusClass(row.status)}>{row.status}</span>
+                        </td>
+                        <td data-label="Requested" className="regular-body-text">{row.requested}</td>
+                        <td data-label="Actions">
+                          {row.status === "pending" ? (
+                            <div className="pay-actions">
+                              <button
+                                className="button-label pay-btn-approve"
+                                onClick={() => handleApprove(row.id, row.promoter, row.amount)}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                className="button-label pay-btn-reject"
+                                onClick={() => handleRejectClick(row)}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </>
+              ) : (
+                <>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Promoter</th>
+                      <th>Event</th>
+                      <th>Amount</th>
+                      <th>Method</th>
+                      <th>Status</th>
+                      <th>Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </>
-            ) : (
-              <>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Promoter</th>
-                    <th>Event</th>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedData.map((row) => (
-                    <tr key={row.id} className={expandedRow === row.id ? "expanded" : ""}>
-                      <td className="small-body-text id-td" data-label="ID">
-                        <div className="mobile-expand-icon" onClick={() => toggleRow(row.id)}>
-                          <Icon icon={expandedRow === row.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
-                        </div>
-                        <span>#{row.id.toString().padStart(2, "0")}</span>
-                      </td>
-                      <td data-label="Promoter" className="regular-body-text name-td">{row.promoter}</td>
-                      <td data-label="Event" className="small-body-text">{row.event}</td>
-                      <td data-label="Amount" className="pay-amount regular-body-text">{row.amount}</td>
-                      <td data-label="Method" className="small-body-text">{row.method}</td>
-                      <td data-label="Status">
-                        <span className={getStatusClass(row.status)}>{row.status}</span>
-                      </td>
-                      <td data-label="Date" className="small-body-text">{row.date}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </>
-            )}
-          </table>
+                  </thead>
+                  <tbody>
+                    {paginatedData.map((row) => (
+                      <tr key={row.id} className={expandedRow === row.id ? "expanded" : ""}>
+                        <td className="small-body-text id-td" data-label="ID">
+                          <div className="mobile-expand-icon" onClick={() => toggleRow(row.id)}>
+                            <Icon icon={expandedRow === row.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                          </div>
+                          <span>#{row.id.toString().padStart(2, "0")}</span>
+                        </td>
+                        <td data-label="Promoter" className="regular-body-text name-td">{row.promoter}</td>
+                        <td data-label="Event" className="small-body-text">{row.event}</td>
+                        <td data-label="Amount" className="pay-amount regular-body-text">{row.amount}</td>
+                        <td data-label="Method" className="small-body-text">{row.method}</td>
+                        <td data-label="Status">
+                          <span className={getStatusClass(row.status)}>{row.status}</span>
+                        </td>
+                        <td data-label="Date" className="small-body-text">{row.date}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </>
+              )}
+            </table>
           )}
         </div>
 
