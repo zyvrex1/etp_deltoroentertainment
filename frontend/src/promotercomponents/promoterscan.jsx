@@ -23,10 +23,6 @@ const PromoterScan = () => {
         };
     }, [isEventDropdownOpen]);
 
-    const eventOptions = [
-        { value: "techstart", label: "TechStart Summit 2026" },
-        { value: "techstart_creator", label: "TechStart Summit 2026 Creator Economy Expo SaaS Growth Meetup" },
-    ];
 
     const getSelectedEventLabel = () => {
         const option = eventOptions.find(opt => opt.value === selectedEvent);
@@ -101,31 +97,6 @@ const handleUndo = (index) => {
                     <p className="small-body-text sc-header-subtitle">Scan tickets and manage attendee entry</p>
                 </div>
                 <div className="sc-header-controls">
-                    <div className="sc-filter-dropdown" ref={eventDropdownRef}>
-                        <button
-                            className="sc-filter-dropdown-btn"
-                            onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
-                        >
-                            <span className="truncate-text">{getSelectedEventLabel()}</span>
-                            <Icon
-                                icon="mdi:chevron-down"
-                                className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
-                            />
-                        </button>
-                        {isEventDropdownOpen && (
-                            <div className="sc-filter-dropdown-menu">
-                                {eventOptions.map((option) => (
-                                    <button
-                                        key={option.value}
-                                        className={`sc-filter-dropdown-item ${selectedEvent === option.value ? "active" : ""}`}
-                                        onClick={() => handleEventChange(option.value)}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
                 </div>
             </div>
 

@@ -579,7 +579,7 @@
     .sales-event-banner {
         flex-direction: column;
         /* stack items vertically */
-        align-items: flex-start;
+        align-items: flex-start !important;
         /* left align text/content */
         gap: 16px;
         /* space between top and bottom sections */

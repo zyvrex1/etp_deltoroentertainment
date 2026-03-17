@@ -64,10 +64,6 @@ const PromoterTicketSetup = () => {
         };
     }, [isEventDropdownOpen]);
 
-    const eventOptions = [
-        { value: "techstart", label: "TechStart Summit 2024" },
-        { value: "devcon", label: "DevCon 2024" },
-    ];
 
     const getSelectedEventLabel = () => {
         const option = eventOptions.find(opt => opt.value === selectedEvent);
@@ -87,31 +83,7 @@ const PromoterTicketSetup = () => {
                     <p className="small-body-text ts-header-subtitle">Here's what's happening with your events today.</p>
                 </div>
                 <div className="ts-header-controls">
-                    <div className="ts-filter-dropdown" ref={eventDropdownRef}>
-                        <button
-                            className="ts-filter-dropdown-btn"
-                            onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
-                        >
-                            <span>{getSelectedEventLabel()}</span>
-                            <Icon
-                                icon="mdi:chevron-down"
-                                className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
-                            />
-                        </button>
-                        {isEventDropdownOpen && (
-                            <div className="ts-filter-dropdown-menu">
-                                {eventOptions.map((option) => (
-                                    <button
-                                        key={option.value}
-                                        className={`ts-filter-dropdown-item ${selectedEvent === option.value ? "active" : ""}`}
-                                        onClick={() => handleEventChange(option.value)}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                  
                     <button className="primary-button ts-action" onClick={() => setIsAddModalOpen(true)}>Add Ticket Type</button>
                 </div>
             </div>

@@ -434,7 +434,7 @@
 @media (max-width: 768px) {
 
     .ticket-setup-container {
-        padding: 16px;
+        padding: 0;
     }
 
     .ticket-setup-header {

@@ -12,7 +12,7 @@
     .scan-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
 
         h1 {
             color: var(--color-black-primary);
@@ -519,7 +519,7 @@
 /* Responsive Variables */
 @media (max-width: 768px) {
     .scan-container {
-        padding: 16px;
+        padding: 0;
     }
 
     .scan-header {

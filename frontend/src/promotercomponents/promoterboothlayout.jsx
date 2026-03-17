@@ -36,10 +36,6 @@ const PromoterBoothLayout = () => {
         };
     }, [isEventDropdownOpen]);
 
-    const eventOptions = [
-        { value: "techstart", label: "TechStart Summit 2024" },
-        { value: "techstart_creator", label: "TechStart Summit 2024 Creator Economy Expo SaaS Growth Meetup" },
-    ];
 
     const getSelectedEventLabel = () => {
         const option = eventOptions.find(opt => opt.value === selectedEvent);
@@ -59,31 +55,7 @@ const PromoterBoothLayout = () => {
                     <p className="small-body-text bl-header-subtitle">Configure floor map and booth pricing</p>
                 </div>
                 <div className="bl-header-controls">
-                    <div className="bl-filter-dropdown" ref={eventDropdownRef}>
-                        <button
-                            className="bl-filter-dropdown-btn"
-                            onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
-                        >
-                            <span className="truncate-text">{getSelectedEventLabel()}</span>
-                            <Icon
-                                icon="mdi:chevron-down"
-                                className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
-                            />
-                        </button>
-                        {isEventDropdownOpen && (
-                            <div className="bl-filter-dropdown-menu">
-                                {eventOptions.map((option) => (
-                                    <button
-                                        key={option.value}
-                                        className={`bl-filter-dropdown-item ${selectedEvent === option.value ? "active" : ""}`}
-                                        onClick={() => handleEventChange(option.value)}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+
                     <button className="outlined-button bl-action upload-btn" onClick={() => setIsUploadModalOpen(true)}>
                         <Icon icon="mdi:upload" /> Upload Map
                     </button>

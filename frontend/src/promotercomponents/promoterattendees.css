@@ -172,13 +172,6 @@
     }
 }
 
-
-
-
-
-
-
-
 .att-cards-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -206,9 +199,6 @@
         }
     }
 }
-
-
-
 
 .att-table-container {
     background: var(--color-white-primary);
@@ -522,7 +512,7 @@
 
     .att-event-banner {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: flex-start !important;
         gap: 20px;
         padding: 20px;
     }
@@ -540,9 +530,6 @@
         justify-content: center;
     }
 
-    .att-cards-container {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
 
     
 .att-table-container {
@@ -689,17 +676,15 @@
 }
 
 @media (max-width: 480px) {
-    .att-banner-left h3 {
-        font-size: 18px;
-    }
 
-    .att-banner-stats {
-        gap: 16px !important;
-    }
+
 
 
 
     .att-cards-container {
-        grid-template-columns: 1fr !important;
-    }
+gap: 12px;    }
+
+.att-card{
+    padding: 12px !important;
+}
 }
