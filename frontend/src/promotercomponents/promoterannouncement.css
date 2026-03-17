@@ -1,0 +1,229 @@
+.pa-container {
+  padding: 32px;
+  background-color: var(--color-bg-light);
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.pa-header {
+  margin-bottom: 32px;
+  text-align: left;
+}
+
+.pa-header h1 {
+  color: var(--color-black-primary);
+  margin-bottom: 8px;
+}
+
+.pa-subtitle {
+  color: var(--color-black-tertiary);
+  font-size: 14px;
+  margin: 0;
+}
+
+.pa-tabs-container {
+  border-bottom: 1px solid var(--color-black-quaternary);
+  margin-bottom: 24px;
+}
+
+.pa-tabs {
+  display: flex;
+  gap: 32px;
+}
+
+.pa-tab {
+  padding: 12px 0;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  color: var(--color-black-secondary, #475569);
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.pa-tab:hover {
+  color: var(--color-black-primary, #0f172a);
+}
+
+.pa-tab.active {
+  border-bottom-color: var(--color-red-primary, #ef4444);
+  color: var(--color-red-primary, #ef4444);
+}
+
+.pa-tab-count {
+  background-color: var(--color-bg-light, #f1f5f9);
+  color: var(--color-black-secondary, #475569);
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.pa-tab-count.active {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-red-primary, #ef4444);
+}
+
+.pa-content {
+  margin-top: 16px;
+}
+
+.pa-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.pa-card {
+  background: var(--color-white-primary, #ffffff);
+  border: 1px solid var(--color-black-quaternary, #e2e8f0);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-align: left;
+}
+
+.pa-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.pa-card-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pa-card-top.align-start {
+  align-items: flex-start;
+}
+
+.pa-card-icon-container {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: var(--color-bg-light, #f1f5f9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pa-card-icon-container.document-icon {
+  background: var(--color-white-primary, #ffffff);
+  border: 1px solid var(--color-black-quaternary, #e2e8f0);
+}
+
+.pa-card-icon {
+  font-size: 24px;
+  color: var(--color-black-secondary, #475569);
+}
+
+.pa-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pa-card-title {
+  font-size: 16px;
+  color: var(--color-black-primary, #0f172a);
+  margin: 0;
+  font-weight: 700;
+}
+
+.pa-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-black-tertiary, #64748b);
+  font-size: 12px;
+}
+
+.pa-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.pa-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.pa-badge.update {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.pa-badge.alert {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.pa-badge.maintenance {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.pa-badge.news {
+  background: #ede9fe;
+  color: #8b5cf6;
+}
+
+.pa-badge.general {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.pa-card-text {
+  font-size: 14px;
+  color: var(--color-black-secondary, #475569);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.pa-read-more-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--color-white-primary, #ffffff);
+  border: 1px solid var(--color-black-quaternary, #e2e8f0);
+  color: var(--color-black-primary, #0f172a);
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: auto;
+}
+
+.pa-read-more-btn:hover {
+  background: var(--color-bg-light, #f1f5f9);
+}
+
+/* Responsive Styles */
+@media (max-width: 1024px) {
+  .pa-container {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pa-grid {
+    grid-template-columns: 1fr;
+  }
+}
