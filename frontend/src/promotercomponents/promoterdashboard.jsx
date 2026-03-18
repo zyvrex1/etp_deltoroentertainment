@@ -10,7 +10,12 @@ import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.j
 export default function PromoterDashboard() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [expandedSponsorRow, setExpandedSponsorRow] = useState(null);
   const navigate = useNavigate();
+
+  const toggleSponsorRow = (index) => {
+    setExpandedSponsorRow(expandedSponsorRow === index ? null : index);
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -430,11 +435,16 @@ export default function PromoterDashboard() {
                   </thead>
                   <tbody>
                     {topSponsorsData.map((s, i) => (
-                      <tr key={i}>
-                        <td style={{ padding: '16px 10px' }}><h6 className="left-aligned">{s.sponsor}</h6></td>
-                        <td style={{ padding: '16px 10px' }}><span className={`button-label pd-tier-pill ${s.tier.toLowerCase()}`}>{s.tier}</span></td>
-                        <td className="small-body-text left-aligned" style={{ padding: '16px 10px' }}>{s.event}</td>
-                        <td className="regular-body-text pd-black-price left-aligned" style={{ padding: '16px 10px' }}><strong>{s.amount}</strong></td>
+                      <tr key={i} className={expandedSponsorRow === i ? 'expanded' : ''}>
+                        <td data-label="Sponsor" className="sponsor-name-td" style={{ padding: '16px 10px' }}>
+                          <div className="mobile-expand-icon" onClick={() => toggleSponsorRow(i)}>
+                            <Icon icon={expandedSponsorRow === i ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                          </div>
+                          <h6 className="left-aligned">{s.sponsor}</h6>
+                        </td>
+                        <td data-label="Tier" style={{ padding: '16px 10px' }}><span className={`button-label pd-tier-pill ${s.tier.toLowerCase()}`}>{s.tier}</span></td>
+                        <td data-label="Event" className="small-body-text left-aligned" style={{ padding: '16px 10px' }}>{s.event}</td>
+                        <td data-label="Amount" className="regular-body-text pd-black-price left-aligned" style={{ padding: '16px 10px' }}><strong>{s.amount}</strong></td>
                       </tr>
                     ))}
                   </tbody>

@@ -328,7 +328,6 @@
     .activity-item {
         display: flex;
         justify-content: space-between;
-        align-items: center;
         padding-bottom: 12px;
         border-bottom: 1px solid var(--color-black-quaternary);
         min-width: 0;
@@ -611,6 +610,10 @@
     color: var(--color-black-primary);
   }
 
+  .mobile-expand-icon {
+    display: none;
+  }
+
   .pd-type-pill {
     background: var(--color-blue-tertiary);
     color: var(--color-blue-primary);
@@ -809,10 +812,70 @@
   }
 
   .pd-table-wrapper-noshow {
-    overflow-x: auto;
+    overflow-x: hidden;
   }
   .pd-table-wrapper-noshow .pd-transactions-table {
-    min-width: 500px;
+    min-width: unset;
+    thead { display: none; }
+    tbody {
+      tr {
+        display: block;
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        padding: 16px;
+        &:last-child { margin-bottom: 0; }
+        &:not(.expanded) td:not(.sponsor-name-td) { display: none; }
+      }
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 12px 0 !important;
+        border-bottom: 1px solid var(--color-black-quaternary);
+        &:last-child { border-bottom: none; }
+        &::before {
+          content: attr(data-label);
+          color: var(--color-black-primary);
+        }
+        &.sponsor-name-td {
+          justify-content: flex-start;
+          flex-wrap: nowrap;
+          border-bottom: none;
+          align-items: center;
+
+          .mobile-expand-icon {
+            order: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            color: var(--color-black-primary);
+            font-size: 16px;
+            cursor: pointer;
+            flex-shrink: 0;
+          }
+          &::before {
+            order: 2;
+            margin-left: 12px;
+            margin-right: auto;
+          }
+          h6 {
+            order: 3;
+            margin: 0;
+          }
+        }
+        &:not(.sponsor-name-td) {
+          text-align: right;
+          justify-content: space-between;
+        }
+      }
+      tr.expanded td.sponsor-name-td {
+        border-bottom: 1px solid var(--color-black-quaternary);
+      }
+    }
   }
 
     .activity-icon {
