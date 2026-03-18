@@ -33,9 +33,8 @@ import AdminEventApproval from "./admincomponents/eventapproval.jsx";
 import PromoterDashboard from "./promotercomponents/promoterdashboard.jsx";
 import PromoterSettings from "./promotercomponents/promotersettings.jsx";
 import PromoterEvents from "./promotercomponents/promoterevents.jsx";
-import PromoterTicketSetup from "./promotercomponents/promoterticketsetup.jsx";
-import PromoterBoothLayout from "./promotercomponents/promoterboothlayout.jsx";
-import PromoterScan from "./promotercomponents/promoterscan.jsx";
+import PromoterEventManagement from "./promotercomponents/promotereventmanagement.jsx";
+import PromoterAnnouncement from "./promotercomponents/promoterannouncement.jsx";
 import PromoterSales from "./promotercomponents/promotersales.jsx";
 import PromoterAttendees from "./promotercomponents/promoterattendees.jsx";
 import PromoterSponsors from "./promotercomponents/promotersponsors.jsx";
@@ -114,9 +113,8 @@ function App() {
           <Route index element={<PromoterDashboard />} />
           <Route path="settings" element={<PromoterSettings />} />
           <Route path="promoter-events" element={<PromoterEvents />} />
-          <Route path="promoter-ticketsetup" element={<PromoterTicketSetup />} />
-          <Route path="promoter-boothlayout" element={<PromoterBoothLayout />} />
-          <Route path="promoter-scan" element={<PromoterScan />} />
+          <Route path="promoter-eventmanagement" element={<PromoterEventManagement />} />
+          <Route path="promoter-announcement" element={<PromoterAnnouncement />} />
           <Route path="promoter-sales" element={<PromoterSales />} />
           <Route path="promoter-attendees" element={<PromoterAttendees />} />
           <Route path="promoter-sponsors" element={<PromoterSponsors />} />

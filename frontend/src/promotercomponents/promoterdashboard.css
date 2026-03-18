@@ -521,6 +521,7 @@
   gap: 10px;
   margin-top: 12px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .pd-event-actions button {

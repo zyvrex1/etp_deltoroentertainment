@@ -239,25 +239,11 @@ const PromoterEvents = () => {
                       )}
 
                       <div className="pe-card-actions">
-                        <NavLink to="/promoter/promoter-ticketsetup">
+                        <NavLink to="/promoter/promoter-eventmanagement">
                           <button type="button" className="outlined-button pe-card-btn">
-                            Tickets
+                            Manage
                           </button>
                         </NavLink>
-
-                        <NavLink to="/promoter/promoter-boothlayout">
-                          <button type="button" className="outlined-button pe-card-btn">
-                            Booths
-                          </button>
-                        </NavLink>
-
-                        {evt?.status?.toLowerCase() === "active" && (
-                          <NavLink to="/promoter/promoter-scan">
-                            <button type="button" className="outlined-button pe-card-btn pe-scan-btn">
-                              Scan
-                            </button>
-                          </NavLink>
-                        )}
                       </div>
                     </div>
                   </div>

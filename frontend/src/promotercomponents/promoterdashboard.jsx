@@ -6,6 +6,7 @@ import "./promoterdashboard.css";
 import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.jsx";
 
 
+
 export default function PromoterDashboard() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -19,6 +20,8 @@ export default function PromoterDashboard() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+
 
   const stats = [
     {
@@ -162,7 +165,7 @@ export default function PromoterDashboard() {
       amount: "$149",
       status: "completed",
     },
-       {
+    {
       customer: "Alex Johnson",
       email: "alex@creator.tv",
       event: "Creator Economy Expo",
@@ -170,7 +173,7 @@ export default function PromoterDashboard() {
       amount: "$149",
       status: "completed",
     },
-       {
+    {
       customer: "Alex Johnson",
       email: "alex@creator.tv",
       event: "Creator Economy Expo",
@@ -178,7 +181,7 @@ export default function PromoterDashboard() {
       amount: "$149",
       status: "completed",
     },
-       {
+    {
       customer: "Alex Johnson",
       email: "alex@creator.tv",
       event: "Creator Economy Expo",
@@ -186,7 +189,7 @@ export default function PromoterDashboard() {
       amount: "$149",
       status: "completed",
     },
-       {
+    {
       customer: "Alex Johnson",
       email: "alex@creator.tv",
       event: "Creator Economy Expo",
@@ -194,7 +197,7 @@ export default function PromoterDashboard() {
       amount: "$149",
       status: "completed",
     },
-       {
+    {
       customer: "Alex Johnson",
       email: "alex@creator.tv",
       event: "Creator Economy Expo",
@@ -202,7 +205,7 @@ export default function PromoterDashboard() {
       amount: "$149",
       status: "completed",
     },
-       {
+    {
       customer: "Alex Johnson",
       email: "alex@creator.tv",
       event: "Creator Economy Expo",
@@ -210,7 +213,7 @@ export default function PromoterDashboard() {
       amount: "$149",
       status: "completed",
     },
-       {
+    {
       customer: "Alex Johnson",
       email: "alex@creator.tv",
       event: "Creator Economy Expo",
@@ -231,10 +234,6 @@ export default function PromoterDashboard() {
         </div>
 
         <div className="pd-actions">
-          <NavLink to="/promoter/promoter-ticketsetup"><button type="button" className="outlined-button pd-action-btn scan-btn">
-            <Icon icon="mdi:qrcode-scan" />
-            <span>Scan Tickets</span>
-          </button></NavLink>
           <button type="button" className="primary-button pd-action-btn" onClick={() => setIsCreateOpen(true)}>
             <Icon icon="mdi:plus" />
             <span>Create Event</span>
@@ -391,9 +390,20 @@ export default function PromoterDashboard() {
                   </div>
 
                   <div className="pd-event-actions">
-                    <NavLink to="/promoter/promoter-ticketsetup"><button type="button" className="outlined-button">Manage Tickets</button></NavLink>
-                    <NavLink to="/promoter/promoter-boothlayout"><button type="button" className="outlined-button">Booth Layout</button></NavLink>
-                    <NavLink to="/promoter/promoter-scan"><button type="button" className="outlined-button">Check-In</button></NavLink>
+                    <button
+                      type="button"
+                      className="outlined-button"
+                      onClick={() =>
+                        navigate("/promoter/promoter-eventmanagement", {
+                          state: {
+                            event: evt,           // <-- Pass the full event object
+                            defaultTab: "ticket-setup", // optional: default tab
+                          },
+                        })
+                      }
+                    >
+                      View Event
+                    </button>
                   </div>
                 </div>
               ))}
@@ -421,10 +431,10 @@ export default function PromoterDashboard() {
                   <tbody>
                     {topSponsorsData.map((s, i) => (
                       <tr key={i}>
-                        <td style={{ padding: '16px 10px'}}><h6 className="left-aligned">{s.sponsor}</h6></td>
-                        <td style={{ padding: '16px 10px'}}><span className={`button-label pd-tier-pill ${s.tier.toLowerCase()}`}>{s.tier}</span></td>
-                        <td className="small-body-text left-aligned" style={{ padding: '16px 10px'}}>{s.event}</td>
-                        <td className="regular-body-text pd-black-price left-aligned" style={{ padding: '16px 10px'}}><strong>{s.amount}</strong></td>
+                        <td style={{ padding: '16px 10px' }}><h6 className="left-aligned">{s.sponsor}</h6></td>
+                        <td style={{ padding: '16px 10px' }}><span className={`button-label pd-tier-pill ${s.tier.toLowerCase()}`}>{s.tier}</span></td>
+                        <td className="small-body-text left-aligned" style={{ padding: '16px 10px' }}>{s.event}</td>
+                        <td className="regular-body-text pd-black-price left-aligned" style={{ padding: '16px 10px' }}><strong>{s.amount}</strong></td>
                       </tr>
                     ))}
                   </tbody>
@@ -439,22 +449,22 @@ export default function PromoterDashboard() {
           <div className="quick-actions-card pd-card">
             <h4 className="left-aligned">Quick Actions</h4>
             <div className="pd-quick-actions-container">
-              <button 
-                className="outlined-button link-btn left-aligned-flex" 
+              <button
+                className="outlined-button link-btn left-aligned-flex"
                 onClick={() => setIsCreateOpen(true)}
               >
                 <Icon icon="mdi:plus-circle-outline" /> <span>Create New Event</span>
               </button>
-              
-              <button 
-                className="outlined-button link-btn left-aligned-flex" 
-                onClick={() => navigate("/promoter/promoter-scan")}
+
+              <button
+                className="outlined-button link-btn left-aligned-flex"
+                onClick={() => navigate("/promoter/promoter-eventmanagement")}
               >
-                <Icon icon="mdi:qrcode-scan" /> <span>Check-in Attendees</span>
+                <Icon icon="mdi:event-multiple-check" /> <span>Check Events</span>
               </button>
-              
-              <button 
-                className="outlined-button link-btn left-aligned-flex" 
+
+              <button
+                className="outlined-button link-btn left-aligned-flex"
                 onClick={() => navigate("/promoter/promoter-revenue")}
               >
                 <Icon icon="mdi:currency-usd" /> <span>View Revenue</span>
@@ -466,7 +476,7 @@ export default function PromoterDashboard() {
           <div className="pd-card recent-activity-card">
             <div className="pd-card-header">
               <h4 className="left-aligned">Recent Transaction</h4>
-              <a href="/promoter/promoter-sales" style={{color: 'var(--color-red-primary)', fontSize: '13px', fontWeight: '500', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px'}}>
+              <a href="/promoter/promoter-sales" style={{ color: 'var(--color-red-primary)', fontSize: '13px', fontWeight: '500', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 View all <Icon icon="mdi:arrow-right" />
               </a>
             </div>
