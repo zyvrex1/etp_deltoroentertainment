@@ -17,7 +17,6 @@
         h1 {
             color: var(--color-black-primary);
             text-align: left;
-
         }
 
         p {
@@ -53,7 +52,6 @@
                         display: inline-block;
                         max-width: 90%;
                     }
-
 
                     .dropdown-icon {
                         font-size: 18px;
@@ -100,7 +98,6 @@
                     background-color: var(--color-red-quaternary);
                     color: var(--color-red-primary);
                     font-weight: 500;
-
                 }
             }
 
@@ -113,7 +110,6 @@
                 border-radius: 8px;
                 background-color: var(--color-white-primary);
             }
-
         }
     }
 }
@@ -155,16 +151,33 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-bg-icon {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 80px;
+        pointer-events: none;
+    }
+    
+    .card-content {
+        position: relative;
+        z-index: 1;
     }
 
     h3 {
         color: var(--color-black-primary);
-        margin-bottom: 8px;
+        margin: 0 0 8px 0;
         text-align: left;
     }
 
     p {
         color: var(--color-black-tertiary);
+        margin: 0;
         text-align: left;
     }
 
@@ -183,15 +196,16 @@
     .rep-card-trend.gray {
         color: var(--color-black-secondary);
     }
-
 }
 
+
 .rep-analytics-overview {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    justify-content: space-between;
     gap: 16px;
 
     .rep-analytics-card {
+        flex: 1;
         background-color: var(--color-white-primary);
         border: 1px solid #e5e7eb;
         border-radius: 12px;
@@ -199,6 +213,10 @@
         display: flex;
         align-items: center;
         gap: 16px;
+
+        &.ticket-card { background-color: var(--color-blue-quaternary); border-color: var(--color-blue-primary); }
+        &.booth-card { background-color: var(--color-red-quaternary); border-color: var(--color-red-primary); }
+        &.sponsor-card { background-color: var(--color-green-quaternary); border-color: var(--color-green-primary); }
     }
 
     .rep-analytics-icon-box {
@@ -208,32 +226,30 @@
         align-items: center;
         justify-content: center;
         font-size: 24px;
-    }
+        background: var(--color-white-primary);
 
-    .rep-analytics-icon-box.green {
-        color: var(--color-green-primary);
-        background-color: var(--color-green-tertiary);
-    }
-
-    .rep-analytics-icon-box.red {
-        color: var(--color-red-primary);
-        background-color: var(--color-red-tertiary);
+        &.blue { color: #0059ff; }
+        &.red { color: #e62e2d; }
+        &.green { color: #4ca626; }
     }
 
     .rep-analytics-info {
-        display: flex;
-        flex-direction: column;
+        flex: 1;
+        text-align: left;
 
-        h3 {
+        h6 {
             color: var(--color-black-primary);
-            text-align: left;
+            margin: 0 0 4px 0;
         }
 
         p {
-            color: var(--color-black-tertiary);
-            text-align: left;
-
+            color: var(--color-black-secondary);
+            margin: 0;
         }
+    }
+    h4 {
+        margin: 0;
+        color: var(--color-black-primary);
     }
 }
 
@@ -248,6 +264,8 @@
         border: 1px solid #e5e7eb;
         border-radius: 12px;
         padding: 24px;
+        display: flex;
+        flex-direction: column;
 
         h4 {
             color: var(--color-black-primary);
@@ -256,92 +274,97 @@
         }
     }
 
-    .rep-left-col {
-        flex: 1.2;
+    .rep-card-header {
         display: flex;
-        flex-direction: column;
-        gap: 24px;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 24px;
 
-        .rep-source-list {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-
-            .rep-source-item {
-                display: flex;
-                align-items: center;
-                padding: 16px;
-                border-radius: 12px;
-                gap: 16px;
-            }
-
-            .rep-ticket-source {
-                background-color: var(--color-green-quaternary);
-
-                .rep-source-icon-container {
-                    background-color: var(--color-green-tertiary);
-                    color: var(--color-green-primary);
-                }
-            }
-
-            .rep-sponsor-source {
-                background-color: var(--color-blue-quaternary);
-                text-align: left;
-
-                .rep-source-icon-container {
-                    background-color: var(--color-blue-tertiary);
-                    color: var(--color-blue-primary);
-                }
-            }
-
-            .rep-merch-source {
-                background-color: var(--color-yellow-quaternary);
-
-                .rep-source-icon-container {
-                    background-color: var(--color-yellow-tertiary);
-                    color: var(--color-yellow-primary);
-                }
-            }
-        }
-
-        .rep-source-info {
-            flex: 1;
-            text-align: left;
-
-            .rep-source-name {
-                color: var(--color-black-primary);
-                margin-bottom: 4px;
-            }
-
-            .rep-source-percent {
-                color: var(--color-black-secondary);
-
-            }
-        }
-
-        .rep-source-value {
+        .header-text h4 {
+            margin: 0 0 4px 0;
             color: var(--color-black-primary);
         }
+        .header-text p {
+            margin: 0;
+            color: var(--color-black-tertiary);
+            text-align: left;
+        }
 
-        .rep-source-icon-container {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            .rep-source-icon {
-                font-size: 24px;
-            }
+        .header-value h3 {
+            margin: 0 0 4px 0;
+            text-align: right;
+            color: var(--color-black-primary);
+        }
+        .header-value .green-text {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--color-green-primary);
+            display: block;
+            text-align: right;
         }
     }
 
-    .rep-right-col {
-        flex: 1.8;
+    .chart-placeholder {
+        min-height: 250px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .rep-left-col {
+        flex: 2;
         display: flex;
         flex-direction: column;
         gap: 24px;
+        min-width: 0;
+    }
+
+    .rep-right-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        min-width: 0;
+
+        .donut-center-text {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            p { margin: 0 0 4px 0; color: var(--color-black-secondary); }
+            h3 { margin: 0; color: var(--color-black-primary); }
+        }
+
+        .rep-donut-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+            .legend-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                .legend-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 13px;
+                    color: var(--color-black-secondary);
+                    .dot { width: 10px; height: 10px; border-radius: 50%; }
+                }
+                .legend-values {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    .bold-val { font-weight: 600; font-size: 13px; color: var(--color-black-primary); }
+                    .small-pct { font-size: 12px; color: var(--color-black-tertiary); width: 30px; text-align: right; }
+                }
+            }
+        }
 
         .rep-event-list {
             display: flex;
@@ -365,6 +388,7 @@
 
                     .rep-event-val {
                         color: var(--color-black-primary);
+                        text-align: right;
                     }
                 }
             }
@@ -385,9 +409,22 @@
             .rep-event-pct {
                 color: var(--color-black-secondary);
                 text-align: left;
-
             }
         }
+    }
+}
+
+@media (max-width: 1024px) {
+    .rep-content-columns {
+        flex-direction: column;
+    }
+    .rep-left-col,
+    .rep-right-col {
+        width: 100%;
+        flex: none;
+    }
+    .rep-analytics-overview {
+        flex-direction: column;
     }
 }
 
@@ -410,29 +447,6 @@
 
     .rep-summary-cards {
         flex-direction: column;
-    }
-
-    .rep-source-item {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 12px;
-        text-align: left;
-    }
-
-
-
-    .rep-analytics-overview {
-        grid-template-columns: 1fr;
-    }
-
-    .rep-content-columns {
-        flex-direction: column;
-    }
-
-    .rep-left-col,
-    .rep-right-col {
-        width: 100%;
-        flex: none;
     }
 
     .rep-filter-dropdown {
@@ -461,10 +475,6 @@
     .rep-export-btn {
         width: 100%;
         justify-content: center;
-    }
-
-    .rep-analytics-overview {
-        grid-template-columns: 1fr;
     }
 
     .rep-event-banner {
