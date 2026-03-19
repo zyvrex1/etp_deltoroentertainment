@@ -1,5 +1,4 @@
 .scan-container {
-    padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -518,9 +517,7 @@
 
 /* Responsive Variables */
 @media (max-width: 768px) {
-    .scan-container {
-        padding: 0;
-    }
+
 
     .scan-header {
         flex-direction: column;

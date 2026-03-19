@@ -1,5 +1,4 @@
 .booth-layout-container {
-  padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -485,9 +484,7 @@ white-space: nowrap;
 }
 
 @media (max-width: 768px) {
-    .booth-layout-container {
-        padding: 0;
-    }
+
 
     .booth-layout-header {
         flex-direction: column;
