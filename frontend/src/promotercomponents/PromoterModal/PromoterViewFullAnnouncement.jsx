@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import jsPDF from 'jspdf';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast } from '../../admincomponents/utils/pdfExport';
 import './PromoterViewFullAnnouncement.css';
 
 const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
@@ -15,6 +17,47 @@ const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
   }, [isOpen]);
 
   if (!isOpen || !item) return null;
+
+  const downloadPDF = async () => {
+    const loadingToast = showExportToast();
+    try {
+      const logoData = await loadLogo();
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const margin = 15;
+      let y = 45;
+
+      addReportHeader(pdf, type === 'announcement' ? 'Announcement' : 'Policy', logoData);
+
+      pdf.setFontSize(14);
+      pdf.setTextColor(30, 60, 114);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(item.title || 'Document', margin, y);
+      y += 10;
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(50, 50, 50);
+      pdf.setFont('helvetica', 'normal');
+      if (item.date) {
+        pdf.text(`Date: ${item.date}`, margin, y);
+        y += 8;
+      }
+      
+      pdf.setFontSize(11);
+      pdf.setTextColor(0, 0, 0);
+      
+      const contentLines = pdf.splitTextToSize(item.content || '', pdfWidth - 2 * margin);
+      pdf.text(contentLines, margin, y);
+
+      addReportFooter(pdf, 1, 1);
+      pdf.save(`${type === 'announcement' ? 'Announcement' : 'Policy'}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      removeExportToast(loadingToast);
+    }
+  };
 
   return (
     <div className="pvfa-modal-overlay" onClick={onClose}>
@@ -64,14 +107,14 @@ const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
               Close
             </button>
           ) : (
-            <>
+            <div style={{display: 'flex', gap: '8px', marginLeft: 'auto'}}>
               <button className="pvfa-btn-close" onClick={onClose}>
                 Close
               </button>
-              <button className="pvfa-btn-download">
+              <button className="outlined-button" onClick={downloadPDF} style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                 <Icon icon="mdi:download-outline" /> Download PDF
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
