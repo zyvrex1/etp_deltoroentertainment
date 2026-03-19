@@ -1,0 +1,426 @@
+.ppb-page-wrapper {
+    background-color: var(--color-bg-light);
+    min-height: calc(100vh - 80px);
+    width: 100%;
+    color: var(--color-black-primary);
+
+    .ppb-header-top {
+        background-color: var(--color-white-primary);
+        border-bottom: 1px solid #e5e7eb;
+        padding: 24px;
+        margin-bottom: 24px;
+
+        .ppb-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+
+            .ppb-header-left {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+
+                .ppb-back-btn {
+                    background: none;
+                    border: none;
+                    align-items: center;
+                    cursor: pointer;
+                    color: var(--color-black-primary);
+                    font-size: 24px;
+                    transition: background-color 0.2s;
+
+                    &:hover {
+                        background-color: var(--color-bg-light);
+                    }
+                }
+
+                .ppb-title-wrapper {
+                    text-align: left;
+
+                    .ppb-breadcrumbs {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        margin-bottom: 4px;
+
+                        .ppb-breadcrumb-text {
+                            color: var(--color-black-secondary);
+                            cursor: pointer;
+
+                            &:hover {
+                                color: var(--color-red-primary);
+                            }
+                        }
+
+                        .ppb-breadcrumb-icon {
+                            color: var(--color-black-tertiary);
+                            font-size: 14px;
+                        }
+
+                        .ppb-breadcrumb-active {
+                            color: var(--color-red-primary);
+                            font-weight: 500;
+                        }
+                    }
+
+                    .ppb-title {
+                        color: var(--color-black-primary);
+                        font-size: 28px;
+                    }
+                }
+            }
+
+            .ppb-header-right {
+                .ppb-step-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+
+                    .ppb-text-primary {
+                        color: var(--color-black-primary);
+                    }
+
+                    .ppb-step-progress {
+                        width: 140px;
+
+                        .ppb-text-secondary {
+                            color: var(--color-black-secondary);
+                        }
+
+                        .ppb-progress-bar-container {
+                            height: 6px;
+                            background-color: #e5e7eb;
+                            border-radius: 3px;
+                            overflow: hidden;
+
+                            .ppb-progress-bar {
+                                height: 100%;
+                                background-color: var(--color-red-primary);
+                                border-radius: 3px;
+                                transition: width 0.3s ease;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    .ppb-main-container {
+        display: flex;
+        gap: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px 24px;
+        align-items: flex-start;
+
+        .ppb-content-left {
+            flex: 2;
+
+            .ppb-card {
+                background-color: var(--color-white-primary);
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                overflow: hidden;
+
+                .ppb-card-body {
+                    padding: 24px;
+                    text-align: left;
+
+                    h4 {
+                        color: var(--color-black-primary);
+                    }
+
+                    .ppb-payment-option {
+                        border: 1px solid #e5e7eb;
+                        border-radius: 12px;
+                        padding: 16px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+
+                        &.selected {
+                            border-color: var(--color-red-primary);
+                            background-color: var(--color-red-quaternary);
+                        }
+
+                        .ppb-payment-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+
+                            .ppb-radio-group {
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+
+                                .ppb-radio {
+                                    width: 20px;
+                                    height: 20px;
+                                    accent-color: var(--color-red-primary);
+                                    cursor: pointer;
+                                    margin-top: 4px;
+                                }
+
+                                .ppb-d-flex {
+                                    display: flex;
+                                }
+
+                                h5 {
+                                    color: var(--color-black-primary);
+                                }
+
+                                .ppb-text-secondary {
+                                    color: var(--color-black-secondary);
+                                }
+                            }
+
+                            .ppb-card-badges {
+                                display: flex;
+                                gap: 8px;
+
+                                .ppb-badge {
+                                    padding: 4px 8px;
+                                    border-radius: 4px;
+                                    font-weight: 600;
+                                    font-size: 10px;
+
+                                    &.blue {
+                                        background-color: var(--color-bg-dark);
+                                        color: white;
+                                    }
+
+                                    &.orange {
+                                        background-color: var(--color-red-primary);
+                                        color: white;
+                                    }
+
+                                    &.light-blue {
+                                        background-color: var(--color-blue-primary);
+                                        color: white;
+                                    }
+                                }
+                            }
+                        }
+
+                        .ppb-payment-body {
+                            padding-top: 16px;
+                            border-top: 1px solid #e5e7eb;
+                            margin-top: 16px;
+
+                            .ppb-form-group {
+                                display: flex;
+                                flex-direction: column;
+                                text-align: left;
+                                gap: 8px;
+
+                                label {
+                                    font-size: 14px;
+                                    font-weight: 500;
+                                    color: var(--color-black-secondary);
+                                }
+
+                                .ppb-input {
+                                    width: 100%;
+                                    padding: 12px 16px;
+                                    border: 1px solid #e5e7eb;
+                                    border-radius: 8px;
+                                    font-size: 14px;
+                                    background-color: var(--color-white-primary);
+                                    color: var(--color-black-primary);
+                                    font-family: 'Inter', sans-serif;
+
+                                    &:focus {
+                                        outline: none;
+                                        border-color: var(--color-red-primary);
+                                    }
+
+                                    &.with-icon {
+                                        padding-left: 40px;
+                                    }
+                                }
+
+                                .ppb-input-icon-wrapper {
+                                    position: relative;
+                                    display: flex;
+                                    align-items: center;
+
+                                    .ppb-input-icon {
+                                        position: absolute;
+                                        left: 12px;
+                                        font-size: 20px;
+                                        color: var(--color-black-secondary);
+                                    }
+                                }
+                            }
+
+                            .ppb-form-grid {
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 16px;
+                                margin-top: 16px;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        .ppb-content-right {
+            flex: 1;
+
+            .ppb-card {
+                background-color: var(--color-white-primary);
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+
+                .ppb-card-body {
+                    text-align: left;
+                    padding: 24px;
+
+
+                    h4 {
+                        color: var(--color-black-primary);
+                    }
+
+                    .ppb-text-secondary {
+                        color: var(--color-black-secondary);
+                    }
+
+                    .ppb-divider {
+                        border: none;
+                        border-top: 1px solid #e5e7eb;
+                        margin: 16px 0;
+                    }
+
+                    .ppb-price-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 12px;
+
+                        h5 {
+                            color: var(--color-black-primary);
+                        }
+
+                        .ppb-text-red {
+                            color: var(--color-red-primary);
+                        }
+                    }
+
+                    .ppb-pay-btn {
+margin-bottom: 12px;                        
+                    }
+
+                    .ppb-secure-text {
+                        color: var(--color-black-secondary);
+                    }
+                }
+            }
+        }
+    }
+}
+
+.text-red {
+    color: var(--color-red-primary) !important;
+}
+
+.block {
+    display: block;
+}
+
+.ppb-info-alert {
+    background-color: var(--color-blue-quaternary);
+    border: 1px solid var(--color-blue-primary);
+    border-radius: 6px;
+    padding: 12px 15px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    color: var(--color-blue-primary);
+    text-align: left;
+}
+
+.ppb-info-alert .ppb-info-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.ppb-d-flex {
+    display: flex;
+}
+
+.align-items-center {
+    align-items: center;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+    .ppb-page-wrapper {
+        .ppb-main-container {
+            flex-direction: column;
+
+            .ppb-content-left,
+            .ppb-content-right {
+                flex: none;
+                width: 100%;
+            }
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .ppb-page-wrapper {
+        .ppb-header-top {
+            padding: 16px;
+
+            .ppb-header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+
+                .ppb-header-right {
+                    width: 100%;
+
+                    .ppb-step-info {
+                        justify-content: space-between;
+                        width: 100%;
+                    }
+                }
+            }
+        }
+
+        .ppb-main-container {
+            padding: 0 16px 16px;
+
+            .ppb-payment-body .ppb-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .ppb-page-wrapper {
+        .ppb-header-top {
+            .ppb-header-left {
+                .ppb-back-btn {
+                    height: 40px;
+                    width: 40px;
+                }
+
+                .ppb-title-wrapper .ppb-title {
+                    font-size: 20px;
+                }
+            }
+        }
+
+        .ppb-main-container {
+            .ppb-card-body {
+                padding: 12px !important;
+            }
+        }
+    }
+}
