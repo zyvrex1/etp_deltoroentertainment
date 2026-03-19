@@ -137,7 +137,7 @@ const PromoterEventMonitoring = () => {
                                                 <img src="/assets/eventbg.jpg" alt={event.title} />
                                             </div>
                                             <div className="pmon-card-details">
-                                                <div className="prem-card-info">
+                                                <div className="pmon-card-info">
                                                     <h3>{event.title}</h3>
                                                 </div>
                                                 <div className="pmon-card-info">
