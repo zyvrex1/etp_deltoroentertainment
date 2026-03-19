@@ -1,5 +1,4 @@
 .att-container {
-    padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -493,9 +492,7 @@
 
 /* Responsiveness */
 @media (max-width: 768px) {
-    .att-container {
-        padding: 16px;
-    }
+
 
     .att-header {
         flex-direction: column;

@@ -35,9 +35,7 @@ import PromoterSettings from "./promotercomponents/promotersettings.jsx";
 import PromoterEvents from "./promotercomponents/promoterevents.jsx";
 import PromoterEventManagement from "./promotercomponents/promotereventmanagement.jsx";
 import PromoterAnnouncement from "./promotercomponents/promoterannouncement.jsx";
-import PromoterSales from "./promotercomponents/promotersales.jsx";
-import PromoterAttendees from "./promotercomponents/promoterattendees.jsx";
-import PromoterSponsors from "./promotercomponents/promotersponsors.jsx";
+import PromoterEventMonitoring from "./promotercomponents/PromoterEventMonitoring.jsx";
 import PromoterRevenue from "./promotercomponents/promoterrevenuereports.jsx";
 import PromoterPayouts from "./promotercomponents/promoterpayouts.jsx";
 
@@ -115,9 +113,7 @@ function App() {
           <Route path="promoter-events" element={<PromoterEvents />} />
           <Route path="promoter-eventmanagement" element={<PromoterEventManagement />} />
           <Route path="promoter-announcement" element={<PromoterAnnouncement />} />
-          <Route path="promoter-sales" element={<PromoterSales />} />
-          <Route path="promoter-attendees" element={<PromoterAttendees />} />
-          <Route path="promoter-sponsors" element={<PromoterSponsors />} />
+          <Route path="promoter-eventmonitoring" element={<PromoterEventMonitoring />} />
           <Route path="promoter-revenue" element={<PromoterRevenue />} />
           <Route path="promoter-payouts" element={<PromoterPayouts />} />
         </Route>

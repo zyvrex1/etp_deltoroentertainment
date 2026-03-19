@@ -49,10 +49,6 @@ const PromoterSponsors = () => {
         return option ? option.label : "Select Event";
     };
 
-    const handleEventChange = (val) => {
-        setSelectedEvent(val);
-        setIsEventDropdownOpen(false);
-    };
 
     const sponsorStats = [
         { type: "Total", count: "5", checkins: "1 checked in", colorClass: "text-blue", bgClass: "bg-blue-light" },
@@ -186,31 +182,6 @@ const PromoterSponsors = () => {
                     <p className="small-body-text spon-header-subtitle">Manage event sponsors and their booths</p>
                 </div>
                 <div className="spon-header-controls">
-                    <div className="spon-filter-dropdown" ref={eventDropdownRef}>
-                        <button
-                            className="spon-filter-dropdown-btn"
-                            onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
-                        >
-                            <span className="truncate-text">{getSelectedEventLabel()}</span>
-                            <Icon
-                                icon="mdi:chevron-down"
-                                className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
-                            />
-                        </button>
-                        {isEventDropdownOpen && (
-                            <div className="spon-filter-dropdown-menu">
-                                {eventOptions.map((option) => (
-                                    <button
-                                        key={option.value}
-                                        className={`spon-filter-dropdown-item ${selectedEvent === option.value ? "active" : ""}`}
-                                        onClick={() => handleEventChange(option.value)}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
                     <button className="outlined-button spon-export-btn" onClick={exportList}>
                         <Icon icon="mdi:tray-arrow-down" className="export-icon" />
                         Export List

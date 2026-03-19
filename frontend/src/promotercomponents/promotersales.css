@@ -1,5 +1,4 @@
 .sales-container {
-    padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -505,9 +504,7 @@
         padding: 12px;
     }
 
-    .sales-container {
-        padding: 16px;
-    }
+
 
     .sales-header {
         flex-direction: column;

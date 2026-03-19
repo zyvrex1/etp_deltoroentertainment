@@ -49,11 +49,6 @@ const PromoterAttendees = () => {
         return option ? option.label : "Select Event";
     };
 
-    const handleEventChange = (val) => {
-        setSelectedEvent(val);
-        setIsEventDropdownOpen(false);
-    };
-
     const stats = [
         { title: "Early Bird General Admission", count: "1", sub: "1 checked in" },
         { title: "General Admission", count: "3", sub: "2 checked in" },
@@ -173,31 +168,6 @@ const PromoterAttendees = () => {
                     <p className="small-body-text att-header-subtitle">Manage registered attendees</p>
                 </div>
                 <div className="att-header-controls">
-                    <div className="att-filter-dropdown" ref={eventDropdownRef}>
-                        <button
-                            className="att-filter-dropdown-btn"
-                            onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
-                        >
-                            <span className="truncate-text">{getSelectedEventLabel()}</span>
-                            <Icon
-                                icon="mdi:chevron-down"
-                                className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
-                            />
-                        </button>
-                        {isEventDropdownOpen && (
-                            <div className="att-filter-dropdown-menu">
-                                {eventOptions.map((option) => (
-                                    <button
-                                        key={option.value}
-                                        className={`att-filter-dropdown-item ${selectedEvent === option.value ? "active" : ""}`}
-                                        onClick={() => handleEventChange(option.value)}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
                     <button className="outlined-button att-export-btn" onClick={exportList}>
                         <Icon icon="mdi:tray-arrow-down" className="export-icon" />
                         Export List

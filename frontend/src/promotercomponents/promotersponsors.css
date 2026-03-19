@@ -1,5 +1,4 @@
 .spon-container {
-    padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -537,9 +536,7 @@
 
 /* Responsiveness */
 @media (max-width: 768px) {
-    .spon-container {
-        padding: 16px;
-    }
+ 
 
     .spon-header {
         flex-direction: column;

@@ -49,10 +49,6 @@ const PromoterSales = () => {
         return option ? option.label : "Select Event";
     };
 
-    const handleEventChange = (val) => {
-        setSelectedEvent(val);
-        setIsEventDropdownOpen(false);
-    };
 
     const salesStats = [
         { title: "Ticket Sales", amount: "$448", sub: "4 Transactions", icon: "mdi:ticket-confirmation-outline", colorClass: "text-green", bgClass: "bg-green-light" },
@@ -194,31 +190,6 @@ const PromoterSales = () => {
                     <p className="small-body-text sales-header-subtitle">Track all transactions and revenue</p>
                 </div>
                 <div className="sales-header-controls">
-                    <div className="sales-filter-dropdown" ref={eventDropdownRef}>
-                        <button
-                            className="sales-filter-dropdown-btn"
-                            onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
-                        >
-                            <span className="truncate-text">{getSelectedEventLabel()}</span>
-                            <Icon
-                                icon="mdi:chevron-down"
-                                className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
-                            />
-                        </button>
-                        {isEventDropdownOpen && (
-                            <div className="sales-filter-dropdown-menu">
-                                {eventOptions.map((option) => (
-                                    <button
-                                        key={option.value}
-                                        className={`sales-filter-dropdown-item ${selectedEvent === option.value ? "active" : ""}`}
-                                        onClick={() => handleEventChange(option.value)}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
                     <button className="outlined-button sales-export-btn" onClick={exportReport}>
                         <Icon icon="mdi:tray-arrow-up" className="export-icon" />
                         Export Report
