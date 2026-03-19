@@ -1,395 +1,403 @@
 /* Scoped promoter settings styles (do not affect admin) */
 
-.promoter-settings-container {
+.ps-settings-container {
   padding: 32px;
   background-color: var(--color-bg-light);
   min-height: calc(100vh - 80px);
   width: 100%;
+  box-sizing: border-box;
 
-  .promoter-settings-header {
-    text-align: left;
+  * {
+    box-sizing: border-box;
+  }
+
+  .ps-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-
-    p {
-      color: var(--color-black-tertiary);
-    }
+    align-items: flex-start;
+    margin-bottom: 12px;
 
     h1 {
       color: var(--color-black-primary);
       text-align: left;
+
+    }
+
+    p {
+      color: var(--color-black-secondary);
+      text-align: left;
     }
   }
 
-  .form-group {
+  .ps-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .ps-column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .ps-card {
+    background-color: var(--color-white-primary);
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    .ps-card-title {
+      color: var(--color-black-primary);
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .m-0 {
+      margin: 0;
+    }
+
+    .ps-card-header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+  }
+
+  /* Form Elements */
+  .ps-form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    .ps-form-group {
+      flex: 1;
+      margin-bottom: 0;
+    }
+  }
+
+  .ps-form-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin-bottom: 16px;
-    color: var(--color-black-tertiary);
     text-align: left;
-  }
 
-  .input-field {
-    padding: 10px 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-family: "Inter", sans-serif;
-    font-size: 14px;
-    color: var(--color-black-primary);
-    background-color: var(--color-white-primary);
-
-    &:focus {
-      outline: none;
-      border-color: var(--color-black-secondary);
-    }
-  }
-}
-
-.promoter-settings-content {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  margin-bottom: 24px;
-
-  .promoter-settings-card {
-    background-color: var(--color-white-primary);
-    border-radius: 8px;
-    padding: 24px;
-
-    h3 {
+    .ps-label {
+      font-size: 14px;
+      font-weight: 600;
       color: var(--color-black-primary);
-      text-align: left;
-      margin-bottom: 16px;
+      font-family: 'Inter', sans-serif;
     }
 
-    .promoter-account-form-section {
+    .ps-input {
+      padding: 10px 12px;
+      border: 1px solid var(--color-black-tertiary);
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--color-black-primary);
+      background-color: var(--color-white-primary);
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.2s;
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-black-secondary);
+      }
+    }
+  }
+
+  /* Profile Avatar */
+  .ps-avatar-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .ps-avatar-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background-color: var(--color-red-tertiary);
       display: flex;
-      gap: 32px;
-      margin-bottom: 32px;
+      align-items: center;
+      justify-content: center;
 
-      .promoter-profile-photo-section {
-        flex-shrink: 0;
-
-        .promoter-settings-profile-avatar {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          background-color: #e2e8f0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          color: #94a3b8;
-          font-size: 40px;
-
-          .camera-btn {
-            position: absolute;
-            bottom: -4px;
-            right: -4px;
-            background-color: var(--color-white-primary);
-            border: 1px solid #e2e8f0;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--color-black-secondary);
-            cursor: pointer;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-          }
-        }
-      }
-
-      .promoter-top-profile-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        flex-grow: 1;
-
-        .promoter-full-name-group {
-          grid-column: 1;
-        }
-
-        .promoter-email-group {
-          grid-column: 2;
-        }
-
-        .promoter-phone-group {
-          grid-column: 1 / span 2;
-        }
+      .ps-avatar-text {
+        color: var(--color-red-primary);
+        font-size: 24px;
+        font-weight: 600;
+        font-family: 'Poppins', sans-serif;
       }
     }
 
-    .promoter-org-form {
+    .ps-change-photo-btn {
+      color: var(--color-black-primary);
+    }
+  }
+
+  /* Buttons */
+  .ps-save-btn {
+    width: 100%;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+    margin-top: 8px;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  .ps-dark-btn {
+    background-color: #232a3b;
+    color: var(--color-white-primary);
+  }
+
+  /* Payment Methods */
+  .ps-add-card-btn {
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .ps-payment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .ps-payment-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 8px;
+    background-color: #f8fafc;
+
+    .ps-payment-icon {
+      background-color: #1e293b;
+      color: white;
+      width: 40px;
+      height: 30px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+    }
+
+    .ps-payment-info {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 4px;
+      align-items: flex-start;
 
-      .promoter-save-org-btn {
-        align-self: flex-end;
-        margin-top: 8px;
-        background-color: var(--color-red-primary);
-        color: white;
-        border: none;
+      .ps-payment-title-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .ps-payment-type {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-black-primary);
+      }
+
+      .ps-payment-expires {
+        font-size: 12px;
+        color: var(--color-black-secondary);
       }
     }
-  }
 
-  .promoter-account-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 32px;
-
-    .promoter-save-profile-btn {
-      background-color: var(--color-red-primary);
-      color: #ffffff;
-    }
-  }
-}
-
-.promoter-team-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  text-align: left;
-}
-
-
-.promoter-team-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 16px;
-
-  .promoter-team-member-card {
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 16px;
-
-    h4{
-      color: var(--color-black-primary);
-      text-align: left;
-    }
-
-    .promoter-team-card-header {
+    .ps-payment-actions {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      gap: 16px;
 
-
-      .status-invited {
-        color: var(--color-yellow-primary);
-        background-color: var(--color-yellow-tertiary);
+      .ps-set-default-text {
+        color: var(--color-red-primary);
+        cursor: pointer;
       }
 
-      .promoter-team-avatar {
-        width: 54px;
-        height: 54px;
-        border-radius: 999px;
-        background: var(--color-red-tertiary);
+      .ps-icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--color-red-primary);
+        padding: 4px;
+
+        &:hover {
+          opacity: 0.8;
+        }
       }
     }
   }
-}
 
-
-
-.promoter-team-email {
-  color: var(--color-black-tertiary);
-  text-align: left;
-
-}
-
-
-.assigned-events {
-
-  p {
-    color: var(--color-black-tertiary);
+  .ps-secure-storage-msg {
+    background-color: var(--color-blue-quaternary);
+    border: 1px solid var(--color-blue-primary);
+    color: var(--color-blue-primary);
+    padding: 12px 16px;
+    border-radius: 6px;
     text-align: left;
-    margin-bottom: 8px;
-
+    margin-bottom: 24px;
   }
 
-  .event-tags {
-    color: var(--color-red-primary);
-    text-align: left;
+  .ps-payment-footer {
+    display: flex;
+    justify-content: flex-end;
 
+    .ps-save-changes-black-btn {
+      background-color: var(--color-bg-dark);
+      color: white;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
   }
-}
 
-.billing-body {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-
-  .billing-card-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 18px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-
-  p {
-  margin-bottom: 2px;
-  text-align: left;
-  color: var(--color-black-tertiary);
-}
-
-  background: #f9fafb;
-}
-}
-
-.billing-card-brand{
-    display:block;
-  align-items: baseline;
-
-}
-
-.card-pill {
-  display: flex;
-  background: var(--color-bg-dark);
-  font-size: 11px;
-  margin-bottom: 4px;
-}
-
-.default-pill {
-  background: var(--color-green-tertiary);
-  color: var(--color-green-primary);
-  font-size: 11px;
-}
-
-.add-payment-btn{
-  color: var(--color-black-primary);
-  display: flex;
-  align-self: flex-end;
-        margin-top: 8px;
-        background-color: var(--color-red-primary);
-        color: white;
-        border: none;
-  ;
-}
-
-.promoter-layout {
-  display: flex;
-  width: 100%;
-  min-height: 100vh;
-}
-
-/* Main content */
-.promoter-main {
-  flex: 1;
-  width: 100%;
-  overflow-x: hidden;
-}
-
-
-
-
-@media (max-width: 1024px) {
-  .promoter-team-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-
-   .promoter-layout {
+  /* Team Members */
+  .ps-team-list {
+    display: flex;
     flex-direction: column;
-  }
-  .promoter-settings-container {
-    padding: 16px;
-  }
+    gap: 16px;
 
-  .promoter-account-form-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 24px;
+    max-height: 373px;
+    /* adjust this */
+    overflow-y: auto;
   }
 
-  .promoter-top-profile-grid {
-    width: 100%;
-    grid-template-columns: 1fr !important;
-    gap: 0;
+  .ps-team-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+
+    .ps-team-item-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .ps-team-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #ffe4e6;
+        color: var(--color-red-primary);
+        font-size: 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ps-team-details {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+
+        .ps-team-name {
+          color: var(--color-black-primary);
+        }
+
+        .ps-team-email {
+          color: var(--color-black-secondary);
+        }
+      }
+    }
+
+    .ps-team-item-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+
+      .ps-team-event {
+        color: var(--color-black-secondary);
+      }
+    }
   }
 
-  .promoter-full-name-group,
-  .promoter-email-group,
-  .promoter-phone-group {
-    grid-column: 1;
-    margin-bottom: 0;
+  /* Pills */
+
+  .ps-pill-default {
+    background-color: #dcfce7;
+    color: #166534;
   }
 
-  .promoter-team-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .ps-pill-active {
+    background-color: #dcfce7;
+    color: #166534;
   }
 
-  .promoter-team-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-    .promoter-settings-content 
-  .promoter-settings-card 
-  .promoter-account-form-section {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-    .promoter-settings-content 
-  .promoter-settings-card 
-  .promoter-top-profile-grid {
-    grid-template-columns: 1fr !important;
-    width: 100%;
-  }
-
-  /* Make all items take full width */
-  .promoter-settings-content 
-  .promoter-settings-card 
-  .promoter-top-profile-grid > * {
-    grid-column: 1 !important;
-  }
-
- .promoter-account-actions {
-    justify-content: stretch;
-  }
-
-  .promoter-save-profile-btn {
-    width: 100%;
-  }
-
-  /* Organization Save Button */
-  .promoter-save-org-btn {
-    width: 100%;
-    align-self: stretch;
-  }
-
-  /* Billing Add Payment Button */
-  .add-payment-btn {
-    width: 100%;
-    align-self: stretch;
-    justify-content: center;
-  }
-
-}
-
-@media (max-width: 480px) {
-  .promoter-settings-container {
+  /* Responsive Design */
+  @media (max-width: 1024px) {
     padding: 12px;
   }
 
-  .promoter-team-grid {
-    grid-template-columns: minmax(0, 1fr);
+  @media (max-width: 768px) {
+    padding: 12px;
+
+    .ps-card {
+      padding: 12px;
+
+    }
+
+    .ps-main-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .ps-card {
+      padding: 12px;
+
+    }
+
+    .ps-form-row {
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .ps-payment-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+
+      .ps-payment-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
+    .ps-team-item {
+      align-items: flex-start;
+      gap: 12px;
+
+      .ps-team-item-right {
+        width: 100%;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+    }
+
+    .ps-card-header-flex {
+
+      align-items: flex-start;
+      gap: 12px;
+    }
   }
 }

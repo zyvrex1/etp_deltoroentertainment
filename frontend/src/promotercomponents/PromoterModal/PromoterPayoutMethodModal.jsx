@@ -1,40 +1,20 @@
-import { useState } from "react";
-import { Icon } from "@iconify/react";
-import "./PromoterPayoutMethodModal.css"
-
-import {
-    showSuccessAlert,
-    showCancelConfirmAlert,
-    showCreateConfirmAlert,
-} from "../../admincomponents/utils/sweetAlert";
+import React, { useState } from 'react';
+import { Icon } from '@iconify/react';
+import { showConfirmAlert, showSuccessAlert } from '../../admincomponents/utils/sweetAlert';
+import './PromoterPayoutMethodModal.css';
 
 const PromoterPayoutMethodModal = ({ isOpen, onClose }) => {
-    const [cardNumber, setCardNumber] = useState("");
-    const [expiration, setExpiration] = useState("");
-    const [cvc, setCvc] = useState("");
-    const [cardholderName, setCardholderName] = useState("");
-    const [isDefault, setIsDefault] = useState(false);
+    const [selectedMethod, setSelectedMethod] = useState('credit_card');
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const result = await showCreateConfirmAlert(
-            "Add Card?",
-            "Are you sure you want to add this card?"
+    const handleAddMethod = async () => {
+        let methodName = selectedMethod === 'credit_card' ? 'Card' : selectedMethod === 'bank_transfer' ? 'Bank Transfer' : 'PayPal';
+        const result = await showConfirmAlert(
+            `Add ${methodName}?`,
+            `Are you sure you want to add this ${methodName} payout method?`,
+            "Yes, Add It"
         );
-
         if (result.isConfirmed) {
-            await showSuccessAlert("Success", "Card added successfully.");
-            onClose();
-        }
-    };
-
-    const handleClose = async () => {
-        if (cardNumber || expiration || cvc || cardholderName) {
-            const result = await showCancelConfirmAlert();
-            if (result.isConfirmed) {
-                onClose();
-            }
-        } else {
+            await showSuccessAlert("Success", `${methodName} has been added successfully.`);
             onClose();
         }
     };
@@ -42,84 +22,138 @@ const PromoterPayoutMethodModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="po-general-modal-overlay">
-            <div className="po-general-payout-modal-container">
-                <div className="po-general-modal-header">
-                    <h3>Add Payout Method</h3>
-                    <button className="po-close-btn" onClick={handleClose}>
-                        <Icon icon="mdi:close" />
+        <div className="ppmm-modal-overlay">
+            <div className="ppmm-modal-container">
+                <div className="ppmm-header d-flex justify-content-between align-items-center mb-4">
+                    <h4 className="ppmm-title text-black m-0">Add New Payout Method</h4>
+                    <button className="ppmm-close-btn bg-transparent border-0 text-secondary" onClick={onClose} style={{ cursor: 'pointer' }}>
+                        <Icon icon="mdi:close" width="24" />
                     </button>
                 </div>
 
-                <form className="payout-modal-body" onSubmit={handleSubmit}>
-                    <div className="payout-form-group">
-                        <h6>Card Number</h6>
-                        <input
-                            type="text"
-                            required
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(e.target.value)}
-                            placeholder="0000 0000 0000 0000"
-                        />
-                    </div>
-
-                    <div className="payout-form-row">
-                        <div className="payout-form-group">
-                            <h6>Expiration</h6>
-                            <input
-                                type="text"
-                                required
-                                value={expiration}
-                                onChange={(e) => setExpiration(e.target.value)}
-                                placeholder="MM/YY"
-                            />
+                <div className="ppmm-methods-list">
+                    <label className={`ppmm-method-option ${selectedMethod === 'credit_card' ? 'selected' : ''}`}>
+                        <div className="ppmm-method-left">
+                            <Icon icon="logos:visa" width="32" />
+                            <span className="regular-body-text text-black font-medium">Credit/Debit Card</span>
                         </div>
-                        <div className="payout-form-group">
-                            <h6>CVC</h6>
-                            <input
-                                type="text"
-                                required
-                                value={cvc}
-                                onChange={(e) => setCvc(e.target.value)}
-                                placeholder="123"
-                            />
+                        <input
+                            type="radio"
+                            name="payout_method"
+                            value="credit_card"
+                            className="ppmm-custom-radio"
+                            checked={selectedMethod === 'credit_card'}
+                            onChange={() => setSelectedMethod('credit_card')}
+                        />
+                    </label>
+
+                    <label className={`ppmm-method-option ${selectedMethod === 'bank_transfer' ? 'selected' : ''}`}>
+                        <div className="ppmm-method-left">
+                            <Icon icon="mdi:bank" width="32" color="#0059ff" />
+                            <span className="regular-body-text text-black font-medium">Bank Transfer</span>
                         </div>
-                    </div>
-
-                    <div className="payout-form-group">
-                        <h6>Cardholder Name</h6>
                         <input
-                            type="text"
-                            required
-                            value={cardholderName}
-                            onChange={(e) => setCardholderName(e.target.value)}
-                            placeholder="John Doe"
+                            type="radio"
+                            name="payout_method"
+                            value="bank_transfer"
+                            className="ppmm-custom-radio"
+                            checked={selectedMethod === 'bank_transfer'}
+                            onChange={() => setSelectedMethod('bank_transfer')}
                         />
-                    </div>
+                    </label>
 
-                    <div className="payout-checkbox-group">
+                    <label className={`ppmm-method-option ${selectedMethod === 'paypal' ? 'selected' : ''}`}>
+                        <div className="ppmm-method-left">
+                            <Icon icon="logos:paypal" width="32" />
+                            <span className="regular-body-text text-black font-medium">PayPal</span>
+                        </div>
                         <input
-                            type="checkbox"
-                            id="setDefault"
-                            checked={isDefault}
-                            onChange={(e) => setIsDefault(e.target.checked)}
+                            type="radio"
+                            name="payout_method"
+                            value="paypal"
+                            className="ppmm-custom-radio"
+                            checked={selectedMethod === 'paypal'}
+                            onChange={() => setSelectedMethod('paypal')}
                         />
-                        <label htmlFor="setDefault" className="smaller-body-text">Set as default payment method</label>
-                    </div>
+                    </label>
+                </div>
 
-                    <div className="general-modal-footer">
-                        <button
-                            type="button"
-                            className="button cancel-btn"
-                            onClick={handleClose}
-                        >
-                            Cancel
-                        </button>
-                        <button type="submit" className="primary-button save-btn">
-                            Add Card
-                        </button>
-                    </div>
-                </form>
+                <div className="ppmm-form-content">
+                    {selectedMethod === 'credit_card' && (
+                        <>
+                            <div className="ppmm-input-group">
+                                <label className="regular-body-text font-medium text-black">Card Holder Name</label>
+                                <input type="text" className="ppmm-input regular-body-text" placeholder="Enter name here" />
+                            </div>
+                            <div className="ppmm-input-group">
+                                <label className="regular-body-text font-medium text-black">Card Number</label>
+                                <input
+                                    type="text"
+                                    name="cardNumber"
+                                    inputMode="numeric"
+                                    autoComplete="cc-number"
+                                    maxLength="19"
+                                    placeholder="1234 5678 9012 3456"
+                                    onChange={(e) => {
+                                        const value = e.target.value
+                                            .replace(/\D/g, "")
+                                            .replace(/(.{4})/g, "$1 ")
+                                            .trim();
+                                        e.target.value = value;
+                                    }} className="ppmm-input regular-body-text" />
+                            </div>
+                            <div className="ppmm-row">
+                                <div className="ppmm-input-group flex-1">
+                                    <label className="regular-body-text font-medium text-black">Expiration Date</label>
+                                    <input type="text" className="ppmm-input regular-body-text" placeholder="MM/YY" />
+                                </div>
+                                <div className="ppmm-input-group flex-1">
+                                    <label className="regular-body-text font-medium text-black">CVV</label>
+                                    <div className="ppmm-input-icon-wrapper">
+                                        <input type="text" className="ppmm-input regular-body-text pr-icon" placeholder="•••" />
+                                        <Icon icon="mdi:shield-check-outline" className="ppmm-input-icon text-secondary" width="20" />
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {selectedMethod === 'bank_transfer' && (
+                        <>
+                            <div className="ppmm-input-group">
+                                <label className="regular-body-text font-medium text-black">Account Holder Name</label>
+                                <input type="text" className="ppmm-input regular-body-text" placeholder="Enter name here" />
+                            </div>
+                            <div className="ppmm-input-group">
+                                <label className="regular-body-text font-medium text-black">Account Number</label>
+                                <input type="text" className="ppmm-input regular-body-text" placeholder="Enter account number" />
+                            </div>
+                            <div className="ppmm-input-group">
+                                <label className="regular-body-text font-medium text-black">Routing Number</label>
+                                <input type="text" className="ppmm-input regular-body-text" placeholder="Enter routing number" />
+                            </div>
+                        </>
+                    )}
+
+                    {selectedMethod === 'paypal' && (
+                        <>
+                            <div className="ppmm-input-group">
+                                <label className="regular-body-text font-medium text-black">PayPal Email</label>
+                                <input type="email" className="ppmm-input regular-body-text" placeholder="Enter PayPal email address" />
+                            </div>
+                        </>
+                    )}
+
+                    <label className="ppmm-checkbox-container mt-12">
+                        <input type="checkbox" className="ppmm-checkbox" />
+                        <span className="regular-body-text text-black">Set as default payout method</span>
+                    </label>
+                </div>
+
+                <div className="ppmm-form-actions">
+                    <button className="ppmm-cancel-btn regular-body-text font-medium" onClick={onClose}>Cancel</button>
+                    <button className="ppmm-submit-btn regular-body-text font-medium" onClick={handleAddMethod}>Add {selectedMethod === 'credit_card' ? 'Card' : selectedMethod === 'bank_transfer' ? 'Bank Account' : 'PayPal'}</button>
+                </div>
             </div>
         </div>
     );
