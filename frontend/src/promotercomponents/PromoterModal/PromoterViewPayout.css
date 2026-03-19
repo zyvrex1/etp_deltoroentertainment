@@ -1,0 +1,211 @@
+.pvp-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.pvp-modal-container {
+    background-color: var(--color-white-primary);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 32px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    animation: pvpFadeIn 0.2s ease-out;
+    margin: auto;
+    gap: 20px;
+
+    .pvp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+
+        .pvp-title {
+            color: var(--color-black-primary);
+            margin: 0;
+            text-align: left;
+        }
+
+        .pvp-close-btn {
+            background: none;
+            border: none;
+            color: var(--color-black-tertiary);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+
+            &:hover {
+                color: var(--color-black-primary);
+            }
+        }
+    }
+
+    .pvp-modal-body {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .pvp-modal-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+
+            .pvp-pill-bg-green {
+                background: var(--color-green-quaternary);
+                color: var(--color-green-primary);
+            }
+
+            .pvp-pill-bg-red {
+                background: var(--color-red-quaternary);
+                color: var(--color-red-primary);
+            }
+
+            .pvp-pill-bg-orange {
+                background: #fff0e6;
+                color: #cc6600;
+            }
+        }
+
+        .pvp-modal-divider {
+            height: 1px;
+            background-color: var(--color-black-quaternary);
+            margin: 4px 0;
+        }
+
+        .pvp-modal-total {
+            margin-top: 8px;
+
+            .pvp-amount-text {
+                font-size: 18px;
+            }
+        }
+
+        .pvp-modal-column {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+
+            .pvp-comment-label {
+                margin-bottom: 4px;
+            }
+
+            .pvp-comment-box {
+                background-color: var(--color-bg-light);
+                border: 1px solid var(--color-black-quaternary);
+                border-radius: 8px;
+                padding: 12px 16px;
+                color: var(--color-black-primary);
+                min-height: 80px;
+                display: flex;
+                align-items: flex-start;
+                word-wrap: break-word;
+            }
+        }
+    }
+
+    .pvp-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 12px;
+        padding-top: 8px;
+
+        .pvp-download-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: auto;
+        }
+    }
+}
+
+@keyframes pvpFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Helper Text Classes */
+.text-black {
+    color: var(--color-black-primary) !important;
+}
+
+.text-secondary {
+    color: var(--color-black-secondary) !important;
+}
+
+.font-medium {
+    font-weight: 500 !important;
+}
+
+.m-0 {
+    margin: 0;
+}
+
+/* Responsive Styling */
+@media (max-width: 1024px) {
+    .pvp-modal-container {
+        padding: 28px;
+    }
+}
+
+@media (max-width: 768px) {
+    .pvp-modal-container {
+        padding: 24px;
+        margin: auto;
+        max-width: 90%;
+    }
+}
+
+@media (max-width: 480px) {
+    .pvp-modal-container {
+        padding: 20px;
+        margin: auto;
+        max-width: 100%;
+
+        .pvp-modal-body {
+            .pvp-modal-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .pvp-modal-total {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+            }
+        }
+
+        .pvp-modal-footer {
+            .pvp-download-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    }
+}
