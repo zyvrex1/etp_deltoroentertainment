@@ -16,7 +16,6 @@ const sampleEvents = [
   { id: 6, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
   { id: 7, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
   { id: 8, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
-
 ];
 
 const PromoterEventManagement = () => {
