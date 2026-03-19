@@ -16,6 +16,7 @@ const sampleEvents = [
   { id: 6, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
   { id: 7, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
   { id: 8, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
+
 ];
 
 const PromoterEventManagement = () => {
@@ -26,6 +27,8 @@ const PromoterEventManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortFilter, setSortFilter] = useState("Recently Added");
   const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   const eventDropdownRef = useRef(null);
 
 
@@ -69,6 +72,16 @@ const PromoterEventManagement = () => {
   );
 
   const filteredAndSortedEvents = sortEvents(filteredEvents);
+
+  const totalPages = Math.ceil(filteredAndSortedEvents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedData = filteredAndSortedEvents.slice(startIndex, Math.min(startIndex + itemsPerPage, filteredAndSortedEvents.length));
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   return (
     <div className="pem-container">
@@ -133,8 +146,8 @@ const PromoterEventManagement = () => {
             </div>
 
             <div className="pem-events-grid">
-              {filteredAndSortedEvents.length > 0 ? (
-                filteredAndSortedEvents.map((event) => (
+              {paginatedData.length > 0 ? (
+                paginatedData.map((event) => (
                   <div
                     key={event.id}
                     className="pem-event-card"
@@ -171,6 +184,28 @@ const PromoterEventManagement = () => {
                 </div>
               )}
             </div>
+
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="pagination-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                <span className="pagination-info">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  className="pagination-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </div>
       ) : (

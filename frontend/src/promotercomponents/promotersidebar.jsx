@@ -88,23 +88,13 @@ const Promotersidebar = ({ mobileExpanded, setMobileExpanded }) => {
           </NavLink>
         </div>
 
-        {/* INSIGHTS */}
+        {/* SALES & PEOPLE */}
         <div className="sidebar-section">
           <p className="section-title">SALES & PEOPLE</p>
 
-          <NavLink to="/promoter/promoter-sales" className="sidebar-item" onClick={handleLinkClick}>
+          <NavLink to="/promoter/promoter-eventmonitoring" className="sidebar-item" onClick={handleLinkClick}>
             <MdInsights className="icon" />
-            <span>Sales Overview</span>
-          </NavLink>
-
-          <NavLink to="/promoter/promoter-attendees" className="sidebar-item" onClick={handleLinkClick}>
-            <MdPeople className="icon" />
-            <span>Attendees</span>
-          </NavLink>
-
-          <NavLink to="/promoter/promoter-sponsors" className="sidebar-item"onClick={handleLinkClick} >
-            <MdSupport className="icon" />
-            <span>Sponsors</span>
+            <span>Event Monitoring</span>
           </NavLink>
         </div>
 
