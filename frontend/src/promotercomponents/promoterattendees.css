@@ -685,3 +685,29 @@ gap: 12px;    }
     padding: 12px !important;
 }
 }
+
+.att-breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.att-breadcrumb-text {
+    color: var(--color-black-secondary);
+    cursor: pointer;
+}
+
+.att-breadcrumb-text:hover {
+    color: var(--color-red-primary);
+}
+
+.att-breadcrumb-icon {
+    color: var(--color-black-tertiary);
+    font-size: 14px;
+}
+
+.att-breadcrumb-active {
+    color: var(--color-red-primary);
+    font-weight: 500;
+}

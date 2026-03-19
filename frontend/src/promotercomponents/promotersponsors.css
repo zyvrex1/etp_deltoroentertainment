@@ -744,3 +744,29 @@
         font-size: 20px;
     }
 }
+
+.spon-breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.spon-breadcrumb-text {
+    color: var(--color-black-secondary);
+    cursor: pointer;
+}
+
+.spon-breadcrumb-text:hover {
+    color: var(--color-red-primary);
+}
+
+.spon-breadcrumb-icon {
+    color: var(--color-black-tertiary);
+    font-size: 14px;
+}
+
+.spon-breadcrumb-active {
+    color: var(--color-red-primary);
+    font-weight: 500;
+}

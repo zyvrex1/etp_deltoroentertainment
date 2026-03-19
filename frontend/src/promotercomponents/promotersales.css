@@ -732,3 +732,29 @@
         font-size: 20px;
     }
 }
+
+.sales-breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.sales-breadcrumb-text {
+    color: var(--color-black-secondary);
+    cursor: pointer;
+}
+
+.sales-breadcrumb-text:hover {
+    color: var(--color-red-primary);
+}
+
+.sales-breadcrumb-icon {
+    color: var(--color-black-tertiary);
+    font-size: 14px;
+}
+
+.sales-breadcrumb-active {
+    color: var(--color-red-primary);
+    font-weight: 500;
+}
