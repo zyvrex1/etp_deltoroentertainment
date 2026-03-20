@@ -46,6 +46,7 @@ export default function SponsorHeader() {
                 <nav className="sponsor-nav-links">
                     <NavLink to="/sponsor" className="sponsor-nav-link" end>Home</NavLink>
                     <NavLink to="/sponsor/sponsor-events" className="sponsor-nav-link">Browse Events</NavLink>
+                    <NavLink to="/sponsor/store" className="sponsor-nav-link">Store</NavLink>
                 </nav>
 
                 <div className="sponsor-header-actions">
@@ -107,6 +108,7 @@ export default function SponsorHeader() {
                 <div className={`sponsor-mobile-nav ${isMobileMenuOpen ? 'open' : ''}`}>
                     <NavLink to="/sponsor" className="sponsor-mobile-nav-link regular-body-text" onClick={() => setIsMobileMenuOpen(false)} end>Home</NavLink>
                     <NavLink to="/sponsor/sponsor-events" className="sponsor-mobile-nav-link regular-body-text" onClick={() => setIsMobileMenuOpen(false)}>Browse Events</NavLink>
+                    <NavLink to="/sponsor/store" className="sponsor-mobile-nav-link regular-body-text" onClick={() => setIsMobileMenuOpen(false)}>Store</NavLink>
                 </div>
             </div>
         </header>
