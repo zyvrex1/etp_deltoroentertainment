@@ -139,7 +139,7 @@ const SponsorStore = () => {
                   </div>
                 </div>
                 <div className="store-card-details">
-                  <h3 className="store-event-title">{event.title}</h3>
+                  <h5 className="store-event-title">{event.title}</h5>
                   <div className="store-card-info small-body-text">
                     <Icon icon="mdi:calendar-blank-outline" />
                     <span>{event.date}</span>

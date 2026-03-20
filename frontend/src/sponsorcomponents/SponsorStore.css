@@ -33,7 +33,6 @@
         .store-title-desc {
             color: var(--color-black-secondary);
             margin: 0;
-            font-size: 16px;
         }
     }
 
@@ -202,23 +201,21 @@
                     position: absolute;
                     top: 12px;
                     left: 12px;
-
-
                 }
 
                 .store-booth-badge.live {
-                    background-color: var(--color-green-quaternary);
-                    color: var(--color-green-primary);
+                    background-color: var(--color-green-primary);
+                    color: var(--color-white-primary);
                 }
 
                 .store-booth-badge.upcoming {
-                    background-color: var(--color-blue-quaternary);
-                    color: var(--color-blue-primary);
+                    background-color: var(--color-blue-primary);
+                    color: var(--color-white-primary);
                 }
 
                 .store-booth-badge.completed {
-                    background-color: var(--color-bg-light);
-                    color: var(--color-black-primary);
+                    background-color: var(--color-bg-dark);
+                    color: var(--color-white-primary);
                 }
             }
 
@@ -230,10 +227,8 @@
                 flex: 1;
 
                 .store-event-title {
-                    font-size: 16px;
                     color: var(--color-red-primary);
                     margin: 0;
-                    font-weight: 700;
                     text-align: left;
                 }
 
@@ -391,13 +386,6 @@
     .sponsor-store-container {
         padding: 20px 16px;
 
-        .sponsor-store-header-section {
-            .store-header-title {
-                h1 {
-                    font-size: 28px;
-                }
-            }
-        }
 
         .store-toolbar {
             flex-direction: column;

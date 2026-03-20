@@ -109,7 +109,7 @@ const SponsorBrowseEvents = () => {
                                     </div>
                                 </div>
                                 <div className="sbe-card-details">
-                                    <h3 className="sbe-event-title">{event.title}</h3>
+                                    <h5 className="sbe-event-title">{event.title}</h5>
                                     
                                     <div className="sbe-card-info small-body-text">
                                         <Icon icon="mdi:calendar-blank-outline" />

@@ -33,7 +33,6 @@
         .sbe-title-desc {
             color: var(--color-black-secondary);
             margin: 0;
-            font-size: 16px;
         }
     }
 
@@ -178,10 +177,8 @@
                 flex: 1;
 
                 .sbe-event-title {
-                    font-size: 16px;
                     color: var(--color-black-primary);
                     margin: 0;
-                    font-weight: 700;
                     text-align: left;
                 }
 
@@ -339,13 +336,6 @@
     .sponsor-browse-container {
         padding: 20px 16px;
 
-        .sbe-header-section {
-            .sbe-header-title {
-                h1 {
-                    font-size: 28px;
-                }
-            }
-        }
 
         .sbe-toolbar {
             flex-direction: column;
