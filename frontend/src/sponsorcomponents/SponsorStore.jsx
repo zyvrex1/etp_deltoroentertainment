@@ -163,7 +163,10 @@ const SponsorStore = () => {
                     </div>
                   </div>
 
-                  <button className="primary-button store-manage-btn">
+                  <button 
+                    className="primary-button store-manage-btn"
+                    disabled={event.status === "Completed"}
+                  >
                     Manage Store <Icon icon="mdi:arrow-right" />
                   </button>
                 </div>
