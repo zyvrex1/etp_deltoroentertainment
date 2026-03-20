@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import "./SponsorStore.css";
 
@@ -16,6 +16,7 @@ const sampleStoreEvents = [
 ];
 
 const SponsorStore = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -166,6 +167,7 @@ const SponsorStore = () => {
                   <button 
                     className="primary-button store-manage-btn"
                     disabled={event.status === "Completed"}
+                    onClick={() => navigate("/sponsor/store/dashboard")}
                   >
                     Manage Store <Icon icon="mdi:arrow-right" />
                   </button>

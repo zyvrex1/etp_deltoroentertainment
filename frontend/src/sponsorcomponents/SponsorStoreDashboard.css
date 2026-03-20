@@ -1,0 +1,113 @@
+.ssd-container {
+  padding: 15px 30px;
+  background: var(--color-bg-light);
+  min-height: 100vh;
+  margin: 0 auto;
+  box-sizing: border-box;
+  max-width: 1440px;
+  text-align: left;
+
+  .ssd-back-link {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-black-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 24px;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--color-red-primary);
+    }
+  }
+
+  .ssd-header {
+    margin-bottom: 24px;
+
+    h1 {
+      margin: 0 0 8px 0;
+      color: var(--color-bg-dark);
+      text-align: left;
+    }
+    p {
+      margin: 0;
+      color: var(--color-black-secondary);
+      text-align: left;
+    }
+  }
+
+  .ssd-tabs-container {
+    background: var(--color-white-primary);
+    border-radius: 12px;
+    padding: 0 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--color-black-quaternary);
+    
+    .ssd-tabs {
+      display: flex;
+      gap: 32px;
+      overflow-x: auto;
+      
+      .ssd-tab {
+        background: none;
+        border: none;
+        padding: 16px 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+        white-space: nowrap;
+
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -1px;
+          left: 0;
+          width: 100%;
+          height: 2px;
+          background: transparent;
+          transition: background 0.2s;
+        }
+
+        &.active {
+          color: var(--color-red-primary);
+          &::after {
+            background: var(--color-red-primary);
+          }
+        }
+
+        &:hover:not(.active) {
+          color: var(--color-black-primary);
+        }
+      }
+    }
+  }
+
+  .ssd-content {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 768px) {
+    .ssd-tabs-container {
+      padding: 0 16px;
+      .ssd-tabs {
+        gap: 20px;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+  }
+}
