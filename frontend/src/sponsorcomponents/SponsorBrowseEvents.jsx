@@ -7,7 +7,7 @@ import './SponsorBrowseEvents.css';
 const SponsorBrowseEvents = () => {
     const navigate = useNavigate();
 
-    // Mock data for 12 events to demonstrate pagination (6 per page)
+    // Mock data for 12 events to demonstrate pagination (8 per page like SponsorStore)
     const allEvents = Array.from({ length: 12 }, (_, i) => ({
         id: i + 1,
         title: 'TechInnovate Summit 2026',
@@ -21,7 +21,8 @@ const SponsorBrowseEvents = () => {
 
     // Pagination Logic
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
+    const [searchQuery, setSearchQuery] = useState("");
 
     const [dateRange, setDateRange] = useState(() => ({
         preset: 'all',
@@ -35,9 +36,15 @@ const SponsorBrowseEvents = () => {
         setCurrentPage(1);
     };
 
-    const totalPages = Math.ceil(allEvents.length / itemsPerPage);
+    const filteredEvents = allEvents.filter((event) => {
+        const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              event.location.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesSearch;
+    });
+
+    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedEvents = allEvents.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedEvents = filteredEvents.slice(startIndex, startIndex + itemsPerPage);
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -50,61 +57,95 @@ const SponsorBrowseEvents = () => {
     };
 
     return (
-        <div className="sbe-page-wrapper">
-            <div className="sbe-container">
-                <div className="sbe-header">
+        <div className="sponsor-browse-container">
+            <div className="sbe-header-section">
+                <div className="sbe-header-title">
+                    <Icon icon="mdi:calendar-search-outline" className="sbe-title-icon" />
                     <h1>Browse Events</h1>
-                    <p className="regular-body-text">Discover upcoming sponsorship opportunities and find the perfect event for your brand.</p>
                 </div>
+                <p className="regular-body-text sbe-title-desc">
+                    Discover upcoming sponsorship opportunities and find the perfect event for your brand.
+                </p>
+            </div>
 
-                <div className="sbe-controls">
-                    <div className="sbe-search">
-                        <Icon icon="mdi:magnify" />
-                        <input type="text" placeholder="Search events, artist or venue" className="small-body-text" />
-                    </div>
-
-                    <div className="sbe-filters">
-                        <DateRangePicker
-                            value={dateRange}
-                            onChange={handleDateRangeChange}
-                            buttonClassName="sbe-date-picker-btn small-body-text"
-                            placeholder="Date Range"
-                        />
-                    </div>
-                </div>
-
-                <div className="sbe-grid">
-                    {paginatedEvents.map((event) => (
-                        <div key={event.id} className="sbe-card" onClick={() => handleEventClick(event.id)}>
-                            <div className="sbe-card-image-wrapper">
-                                <span className="sbe-category-pill button-label">{event.category}</span>
-                                <img src={event.image} alt={event.title} />
-                            </div>
-                            <div className="sbe-card-content">
-                                <h3 className="sbe-card-title">{event.title}</h3>
-
-                                <div className="sbe-card-info">
-                                    <Icon icon="mdi:calendar" />
-                                    <span className="small-body-text">{event.date}</span>
-                                </div>
-                                <div className="sbe-card-info">
-                                    <Icon icon="mdi:map-marker" />
-                                    <span className="small-body-text">{event.location}</span>
-                                </div>
-                                <div className="sbe-card-info">
-                                    <Icon icon="mdi:account-group" />
-                                    <span className="small-body-text">{event.attendees} Expected Attendees</span>
-                                </div>
-
-                                <hr className="sbe-card-divider" />
-
-                                <div className="sbe-card-footer">
-                                    <span className="sbe-booth-label smaller-body-text">Booths Available</span>
-                                    <h6 className="sbe-booth-spots">{event.spotsLeft} Spot Left</h6>
-                                </div>
-                            </div>
+            <div className="sponsor-browse-content-card">
+                <div className="sbe-toolbar">
+                    <div className="sbe-toolbar-left">
+                        <div className="sbe-search">
+                            <Icon icon="mdi:magnify" />
+                            <input 
+                                type="text" 
+                                placeholder="Search events, artist or venue" 
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="small-body-text sbe-search-input" 
+                            />
                         </div>
-                    ))}
+                    </div>
+
+                    <div className="sbe-toolbar-right">
+                        <div className="sbe-filters">
+                            <DateRangePicker
+                                value={dateRange}
+                                onChange={handleDateRangeChange}
+                                buttonClassName="sbe-filter-dropdown-btn small-body-text"
+                                placeholder="Date Range"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="sbe-events-grid">
+                    {paginatedEvents.length > 0 ? (
+                        paginatedEvents.map((event) => (
+                            <div key={event.id} className="sbe-event-card" onClick={() => handleEventClick(event.id)}>
+                                <div className="sbe-card-image-wrap">
+                                    <img src={event.image} alt={event.title} />
+                                    <div className="sbe-category-badge button-label">
+                                        {event.category}
+                                    </div>
+                                </div>
+                                <div className="sbe-card-details">
+                                    <h3 className="sbe-event-title">{event.title}</h3>
+                                    
+                                    <div className="sbe-card-info small-body-text">
+                                        <Icon icon="mdi:calendar-blank-outline" />
+                                        <span>{event.date}</span>
+                                    </div>
+                                    <div className="sbe-card-info small-body-text">
+                                        <Icon icon="mdi:map-marker-outline" />
+                                        <span>{event.location}</span>
+                                    </div>
+
+                                    <div className="sbe-stats-row">
+                                        <div className="sbe-stat-item">
+                                            <span className="smaller-body-text stat-label">Expected Attendees</span>
+                                            <span className="large-body-text stat-value">{event.attendees}</span>
+                                        </div>
+                                        <div className="sbe-stat-item">
+                                            <span className="smaller-body-text stat-label">Booths Available</span>
+                                            <span className="large-body-text stat-value">{event.spotsLeft}</span>
+                                        </div>
+                                    </div>
+
+                                    <button className="primary-button sbe-view-btn">
+                                        View Details <Icon icon="mdi:arrow-right" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="sbe-empty-state">
+                            <Icon icon="mdi:magnify-close" width="48" />
+                            <h4>No events found</h4>
+                            <p className="small-body-text">
+                                No events match "<strong>{searchQuery}</strong>".
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {totalPages > 1 && (
@@ -116,11 +157,9 @@ const SponsorBrowseEvents = () => {
                         >
                             Previous
                         </button>
-
                         <span className="pagination-info">
                             Page {currentPage} of {totalPages}
                         </span>
-
                         <button
                             className="pagination-btn"
                             onClick={() => handlePageChange(currentPage + 1)}
