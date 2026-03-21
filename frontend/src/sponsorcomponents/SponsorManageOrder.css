@@ -224,7 +224,7 @@
                 .mobile-expand-icon {
                     display: none;
                 }
-                
+
                 .mobile-only-td {
                     display: none;
                 }
@@ -361,6 +361,7 @@
             .smo-table {
 
                 min-width: 200px !important;
+
                 thead {
                     display: none;
                 }
@@ -377,9 +378,6 @@
                             margin-bottom: 0;
                         }
 
-                        &:not(.expanded) td:not(.id-td):not(.name-td):not(.items-td):not(.total-td) {
-                            display: none !important;
-                        }
                     }
 
                     td {
@@ -403,7 +401,8 @@
                         }
 
                         &.mobile-only-td {
-                            display: flex; /* Override desktop display: none */
+                            display: flex;
+                            /* Override desktop display: none */
                         }
 
                         .desktop-only {
@@ -417,9 +416,12 @@
 
                         &.id-td {
                             justify-content: flex-start;
-                            flex-wrap: nowrap; /* Changed from wrap */
-                            border-bottom: none; /* Changed from 1px solid */
-                            padding-bottom: 4px; /* Changed from 12px */
+                            flex-wrap: nowrap;
+                            /* Changed from wrap */
+                            border-bottom: none;
+                            /* Changed from 1px solid */
+                            padding-bottom: 4px;
+                            /* Changed from 12px */
                             align-items: flex-start;
 
                             .mobile-expand-icon {
@@ -475,19 +477,19 @@
                                 justify-content: center !important;
                                 display: flex;
                                 gap: 8px;
-                                
+
                                 button {
                                     flex: 1;
                                 }
                             }
                         }
 
-                        
-                .smo-view-btn {
 
-                    justify-content: flex-end !important;
+                        .smo-view-btn {
 
-                }
+                            justify-content: flex-end !important;
+
+                        }
                     }
 
 
@@ -515,6 +517,7 @@
                                 height: 20px;
                                 font-size: 14px;
                             }
+
                             &::before {
                                 margin-left: 8px;
                             }
