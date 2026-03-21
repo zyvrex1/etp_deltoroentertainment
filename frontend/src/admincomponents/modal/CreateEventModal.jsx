@@ -1,73 +1,73 @@
-  import { useState } from "react";
-  import { Icon } from "@iconify/react";
-  import { useEventsContext } from "../hooks/useEventsContext";
-  import "./CreateEventModal.css";
-  import "./UploadMapModal.css";
-  import {
-    showSuccessAlert,
-    showCancelConfirmAlert,
-    showErrorAlert,
-    showCreateConfirmAlert,
-  } from "../utils/sweetAlert";
-  import { useAuthContext } from "../hooks/useAuthContext";
+import { useState } from "react";
+import { Icon } from "@iconify/react";
+import { useEventsContext } from "../hooks/useEventsContext";
+import "./CreateEventModal.css";
+import "./UploadMapModal.css";
+import {
+  showSuccessAlert,
+  showCancelConfirmAlert,
+  showErrorAlert,
+  showCreateConfirmAlert,
+} from "../utils/sweetAlert";
+import { useAuthContext } from "../hooks/useAuthContext";
 
-  const CreateEventModal = ({ isOpen, onClose }) => {
-    const { dispatch } = useEventsContext();
-    const { user } = useAuthContext();
+const CreateEventModal = ({ isOpen, onClose }) => {
+  const { dispatch } = useEventsContext();
+  const { user } = useAuthContext();
 
-    const today = new Date().toISOString().split("T")[0];
-    const [startDate, setStartDate] = useState(today);
-    const [endDate, setEndDate] = useState(today);
-    const [title, setTitle] = useState("");
-    const [category, setCategory] = useState("");
-    const [description, setDescription] = useState("");
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
-    const [eventType, setEventType] = useState("General Admission");
-    const [ticketPrice, setTicketPrice] = useState("");
-    const [totalTickets, setTotalTickets] = useState("");
-    const [venue, setVenue] = useState({
-      name: "",
-      address: "",
-      city: "",
-      zipCode: "",
-    });
-    const [booths, setBooths] = useState([]);
-    const [seatVariations, setSeatVariations] = useState([]);
-    const [seatMap, setSeatMap] = useState(null);
+  const today = new Date().toISOString().split("T")[0];
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [eventType, setEventType] = useState("General Admission");
+  const [ticketPrice, setTicketPrice] = useState("");
+  const [totalTickets, setTotalTickets] = useState("");
+  const [venue, setVenue] = useState({
+    name: "",
+    address: "",
+    city: "",
+    zipCode: "",
+  });
+  const [booths, setBooths] = useState([]);
+  const [seatVariations, setSeatVariations] = useState([]);
+  const [seatMap, setSeatMap] = useState(null);
 
-    const [imageFile, setImageFile] = useState(null);
-    const [imageDragActive, setImageDragActive] = useState(false);
-    const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imageDragActive, setImageDragActive] = useState(false);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
 
-    const [error, setError] = useState("");
-    const [emptyFields, setEmptyFields] = useState([]);
+  const [error, setError] = useState("");
+  const [emptyFields, setEmptyFields] = useState([]);
 
-    // Image handlers remain the same
-    const handleImageDrag = (e) => { e.preventDefault(); e.stopPropagation(); setImageDragActive(e.type === "dragenter" || e.type === "dragover"); };
-    const handleImageDrop = (e) => { e.preventDefault(); e.stopPropagation(); setImageDragActive(false); if(e.dataTransfer.files[0]){ const file=e.dataTransfer.files[0]; if(imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl); setImageFile(file); setImagePreviewUrl(URL.createObjectURL(file)); } };
-    const handleImageChange = (e) => { e.preventDefault(); if(e.target.files[0]){ const file=e.target.files[0]; if(imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl); setImageFile(file); setImagePreviewUrl(URL.createObjectURL(file)); } };
+  // Image handlers remain the same
+  const handleImageDrag = (e) => { e.preventDefault(); e.stopPropagation(); setImageDragActive(e.type === "dragenter" || e.type === "dragover"); };
+  const handleImageDrop = (e) => { e.preventDefault(); e.stopPropagation(); setImageDragActive(false); if (e.dataTransfer.files[0]) { const file = e.dataTransfer.files[0]; if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl); setImageFile(file); setImagePreviewUrl(URL.createObjectURL(file)); } };
+  const handleImageChange = (e) => { e.preventDefault(); if (e.target.files[0]) { const file = e.target.files[0]; if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl); setImageFile(file); setImagePreviewUrl(URL.createObjectURL(file)); } };
 
-    // Booths
-    const addBooth = () => 
-  setBooths([
-    ...booths,
-    {
-      code: null,
-      type: "standard",
-      status: "available",
-      size: "",
-      price: 0,
-      quantity: 1,
-    }
-  ]);
-    const updateBooth = (index, field, value) => { const updated=[...booths]; updated[index][field]=value; setBooths(updated); };
-    const removeBooth = (index) => { const updated=[...booths]; updated.splice(index,1); setBooths(updated); };
+  // Booths
+  const addBooth = () =>
+    setBooths([
+      ...booths,
+      {
+        code: null,
+        type: "standard",
+        status: "available",
+        size: "",
+        price: 0,
+        quantity: 1,
+      }
+    ]);
+  const updateBooth = (index, field, value) => { const updated = [...booths]; updated[index][field] = value; setBooths(updated); };
+  const removeBooth = (index) => { const updated = [...booths]; updated.splice(index, 1); setBooths(updated); };
 
-    // Seat Variations (for Seating Arrangement)
-    const addSeat = () => setSeatVariations([...seatVariations, { seatNumber: "", price: "" }]);
-    const updateSeat = (index, field, value) => { const updated=[...seatVariations]; updated[index][field]=value; setSeatVariations(updated); };
-    const removeSeat = (index) => { const updated=[...seatVariations]; updated.splice(index,1); setSeatVariations(updated); };
+  // Seat Variations (for Seating Arrangement)
+  const addSeat = () => setSeatVariations([...seatVariations, { seatNumber: "", price: "" }]);
+  const updateSeat = (index, field, value) => { const updated = [...seatVariations]; updated[index][field] = value; setSeatVariations(updated); };
+  const removeSeat = (index) => { const updated = [...seatVariations]; updated.splice(index, 1); setSeatVariations(updated); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,19 +89,19 @@
     if (eventType === "General Admission") fieldsToCheck.ticketPrice = ticketPrice;
 
     if (eventType === "Seating Arrangement") {
-    fieldsToCheck.seatVariations = seatVariations.length > 0 ? "ok" : "";
-  }
+      fieldsToCheck.seatVariations = seatVariations.length > 0 ? "ok" : "";
+    }
 
     booths.forEach((b, index) => {
-  if (b.size || b.price || b.quantity || b.code || b.status || b.type) {
-    if (!b.size || b.price === undefined || b.price < 0 || !b.quantity || !b.code || !b.status || !b.type) {
-      fieldsToCheck[`booths[${index}]`] = "";
-    }
-  }
-});
+      if (b.size || b.price || b.quantity || b.code || b.status || b.type) {
+        if (!b.size || b.price === undefined || b.price < 0 || !b.quantity || !b.code || !b.status || !b.type) {
+          fieldsToCheck[`booths[${index}]`] = "";
+        }
+      }
+    });
 
     const empty = Object.entries(fieldsToCheck)
-      .filter(([_, value]) => !value || value === "")
+      .filter(([_, value]) => value === "" || value === null || value === undefined)
       .map(([key]) => key);
 
     if (empty.length > 0) {
@@ -134,34 +134,34 @@
     try {
       const formData = new FormData();
 
-formData.append("title", title);
-formData.append("description", description);
-formData.append("category", category);
-formData.append("startDate", startDate);
-formData.append("endDate", endDate);
-formData.append("startTime", startTime);
-formData.append("endTime", endTime);
-formData.append("eventType", eventType);
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("startDate", startDate);
+      formData.append("endDate", endDate);
+      formData.append("startTime", startTime);
+      formData.append("endTime", endTime);
+      formData.append("eventType", eventType);
 
-formData.append("ticketPrice", Number(ticketPrice) || 0);
-formData.append("totalTickets", Number(totalTickets) || 0);
+      formData.append("ticketPrice", Number(ticketPrice) || 0);
+      formData.append("totalTickets", Number(totalTickets) || 0);
 
-formData.append("venue", JSON.stringify(venue));
-formData.append("seatVariations", JSON.stringify(seatVariations));
-formData.append("booths", JSON.stringify(booths));
-formData.append("seatMap", JSON.stringify(seatMap));
+      formData.append("venue", JSON.stringify(venue));
+      formData.append("seatVariations", JSON.stringify(seatVariations));
+      formData.append("booths", JSON.stringify(booths));
+      formData.append("seatMap", JSON.stringify(seatMap));
 
-if (imageFile) {
-  formData.append("image", imageFile);
-}
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
 
-const response = await fetch("/api/events", {
-  method: "POST",
-  body: formData,
-  headers: {
-    Authorization: `Bearer ${user.token}`
-  }
-});
+      const response = await fetch("/api/events", {
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${user.token}`
+        }
+      });
 
       const json = await response.json();
 
@@ -210,280 +210,318 @@ const response = await fetch("/api/events", {
     }
   };
 
-    if(!isOpen) return null;
+  if (!isOpen) return null;
 
-    return (
-      <div className="general-modal-overlay">
-    <div className="general-event-modal-container">
-      <div className="general-modal-header">
-        <h3>Create New Event</h3>
-        <button
-          className="close-btn"
-          onClick={async () => {
-            const hasChanges =
-              title ||
-              description ||
-              venue.name ||
-              startTime ||
-              endTime ||
-              ticketPrice ||
-              totalTickets ||
-              imageFile;
-            if (hasChanges) {
-              const result = await showCancelConfirmAlert();
-              if (result.isConfirmed) onClose();
-            } else onClose();
-          }}
-        >
-          <Icon icon="mdi:close" />
-        </button>
-      </div>
-
-      <form className="add-event-modal-body add-event-form" onSubmit={handleSubmit}>
-        
-        {/* Event Image */}
-        <div className="section-box">
-          <h5 className="modal-section-title">Event Image</h5>
-          <div
-            className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
-            onDragEnter={handleImageDrag}
-            onDragLeave={handleImageDrag}
-            onDragOver={handleImageDrag}
-            onDrop={handleImageDrop}
-            onClick={() => document.getElementById("event-image-input")?.click()}
+  return (
+    <div className="general-modal-overlay">
+      <div className="general-event-modal-container">
+        <div className="general-modal-header">
+          <h3>Create New Event</h3>
+          <button
+            className="close-btn"
+            onClick={async () => {
+              const hasChanges =
+                title ||
+                description ||
+                venue.name ||
+                startTime ||
+                endTime ||
+                ticketPrice ||
+                totalTickets ||
+                imageFile;
+              if (hasChanges) {
+                const result = await showCancelConfirmAlert();
+                if (result.isConfirmed) onClose();
+              } else onClose();
+            }}
           >
-            <input
-              id="event-image-input"
-              type="file"
-              accept="image/png, image/jpeg, image/webp"
-              onChange={handleImageChange}
-              style={{ display: "none" }}
-            />
-            {imageFile ? (
-              <div className="file-preview">
-                {imagePreviewUrl ? (
-                  <img
-                    src={imagePreviewUrl}
-                    alt="Event Preview"
-                    className="preview-image"
-                    style={{ width: "100%", maxHeight: "300px", objectFit: "contain", borderRadius: "8px" }}
-                  />
-                ) : (
-                  <Icon icon="mdi:file-image" width="48" height="48" className="preview-icon" />
-                )}
-                <p className="file-name">{imageFile.name}</p>
-                <p className="file-size">{((imageFile.size || 0) / 1024 / 1024).toFixed(2)} MB</p>
-                <button type="button" className="remove-file-btn" onClick={(e) => {
-                  e.stopPropagation();
-                  if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-                  setImageFile(null);
-                  setImagePreviewUrl(null);
-                }}>Remove</button>
-              </div>
-            ) : (
-              <div className="upload-placeholder">
-                <div className="icon-circle">
-                  <Icon icon="mdi:image-area" width="32" height="32" />
-                </div>
-                <p className="upload-title">Click or drag an image here</p>
-                <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>
-              </div>
-            )}
-          </div>
+            <Icon icon="mdi:close" />
+          </button>
         </div>
 
-        {/* Title & Category */}
-        <div className="add-event-form-row">
-          <div className="add-event-form-group">
-            <h6>Event Title</h6>
-            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Tech Summit 2024" className={emptyFields.includes("title") ? "error" : ""} />
-          </div>
-          <div className="add-event-form-group">
-            <h6>Category</h6>
-            <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Concert, Conference, Festival" className={emptyFields.includes("category") ? "error" : ""} />
-          </div>
-        </div>
+        <form className="add-event-modal-body add-event-form" onSubmit={handleSubmit}>
 
-        {/* Dates */}
-        <div className="add-event-form-row">
-          <div className="add-event-form-group">
-            <h6>Start Date</h6>
-            <input type="date" min={today} value={startDate} onChange={(e) => { setStartDate(e.target.value); if (endDate < e.target.value) setEndDate(e.target.value); }} className={emptyFields.includes("startDate") ? "error" : ""} />
-          </div>
-          <div className="add-event-form-group">
-            <h6>End Date</h6>
-            <input type="date" min={startDate} value={endDate} onChange={(e) => setEndDate(e.target.value)} className={emptyFields.includes("endDate") ? "error" : ""} />
-          </div>
-        </div>
-
-        {/* Times */}
-        <div className="add-event-form-row">
-          <div className="add-event-form-group">
-            <h6>Start Time</h6>
-            <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={emptyFields.includes("startTime") ? "error" : ""} />
-          </div>
-          <div className="add-event-form-group">
-            <h6>End Time</h6>
-            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className={emptyFields.includes("endTime") ? "error" : ""} />
-          </div>
-        </div>
-
-        {/* Description */}
-        <div className="add-event-form-group add-event-full-width">
-          <h6>About The Event</h6>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Event description..." rows="3" className={emptyFields.includes("description") ? "error" : ""}></textarea>
-        </div>
-
-        {/* Venue */}
-        <div className="section-box">
-          <h5 className="modal-section-title">Venue Details</h5>
-          <div className="add-event-form-group">
-            <input type="text" placeholder="Venue Name" value={venue.name} onChange={(e) => setVenue({ ...venue, name: e.target.value })} className={emptyFields.includes("venueName") ? "error" : ""} />
-          </div>
-          <div className="add-event-form-group">
-            <input type="text" placeholder="Street Address" value={venue.address} onChange={(e) => setVenue({ ...venue, address: e.target.value })} className={emptyFields.includes("venueAddress") ? "error" : ""} />
-          </div>
-          <div className="add-event-form-row">
-            <div className="add-event-form-group">
-              <input type="text" placeholder="City" value={venue.city} onChange={(e) => setVenue({ ...venue, city: e.target.value })} className={emptyFields.includes("venueCity") ? "error" : ""} />
-            </div>
-            <div className="add-event-form-group">
-              <input type="text" placeholder="Zip Code" value={venue.zipCode} onChange={(e) => setVenue({ ...venue, zipCode: e.target.value })} className={emptyFields.includes("venueZip") ? "error" : ""} />
-            </div>
-          </div>
-        </div>
-
-        {/* Event Type */}
-        <div className="add-event-form-group">
-    <h6>Event Type</h6>
-    <div style={{ display: "flex", gap: "20px", marginTop: "5px" }}>
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "5px",
-          cursor: "pointer",
-          color: "black", // text color
-        }}
-      >
-        <input
-          type="radio"
-          name="eventType"
-          value="General Admission"
-          checked={eventType === "General Admission"}
-          onChange={() => setEventType("General Admission")}
-        />
-        General Admission
-      </label>
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "5px",
-          cursor: "pointer",
-          color: "black", // text color
-        }}
-      >
-        <input
-          type="radio"
-          name="eventType"
-          value="Seating Arrangement"
-          checked={eventType === "Seating Arrangement"}
-          onChange={() => setEventType("Seating Arrangement")}
-        />
-        Assigned Seating
-      </label>
-    </div>
-  </div>
-
-        {/* Ticket Price / Total Tickets */}
-        {eventType === "General Admission" && (
-          <div className="add-event-form-row">
-            <div className="add-event-form-group">
-              <h6>Ticket Price ($)</h6>
-              <input type="number" min="0" value={ticketPrice === 0 ? "" : ticketPrice} onChange={(e) => setTicketPrice(e.target.value === "" ? "" : Number(e.target.value))} className={emptyFields.includes("ticketPrice") ? "error" : ""} />
-            </div>
-            <div className="add-event-form-group">
-              <h6>Total Capacity</h6>
-              <input type="number" min="1" value={totalTickets === 0 ? "" : totalTickets} onChange={(e) => setTotalTickets(e.target.value === "" ? "" : Number(e.target.value))} className={emptyFields.includes("totalTickets") ? "error" : ""} />
-            </div>
-          </div>
-        )}
-
-        {/* Seating Arrangement */}
-        {eventType === "Seating Arrangement" && (
+          {/* Event Image */}
           <div className="section-box">
-            <h5 className="modal-section-title">Seat Map & Variations</h5>
-            {seatVariations.map((seat, index) => (
+            <h5 className="modal-section-title">Event Image</h5>
+            <div
+              className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
+              onDragEnter={handleImageDrag}
+              onDragLeave={handleImageDrag}
+              onDragOver={handleImageDrag}
+              onDrop={handleImageDrop}
+              onClick={() => document.getElementById("event-image-input")?.click()}
+            >
+              <input
+                id="event-image-input"
+                type="file"
+                accept="image/png, image/jpeg, image/webp"
+                onChange={handleImageChange}
+                style={{ display: "none" }}
+              />
+              {imageFile ? (
+                <div className="file-preview">
+                  {imagePreviewUrl ? (
+                    <img
+                      src={imagePreviewUrl}
+                      alt="Event Preview"
+                      className="preview-image"
+                      style={{ width: "100%", maxHeight: "300px", objectFit: "contain", borderRadius: "8px" }}
+                    />
+                  ) : (
+                    <Icon icon="mdi:file-image" width="48" height="48" className="preview-icon" />
+                  )}
+                  <p className="file-name">{imageFile.name}</p>
+                  <p className="file-size">{((imageFile.size || 0) / 1024 / 1024).toFixed(2)} MB</p>
+                  <button type="button" className="remove-file-btn" onClick={(e) => {
+                    e.stopPropagation();
+                    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+                    setImageFile(null);
+                    setImagePreviewUrl(null);
+                  }}>Remove</button>
+                </div>
+              ) : (
+                <div className="upload-placeholder">
+                  <div className="icon-circle">
+                    <Icon icon="mdi:image-area" width="32" height="32" />
+                  </div>
+                  <p className="upload-title">Click or drag an image here</p>
+                  <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Title & Category */}
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
+              <h6>Event Title</h6>
+              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Tech Summit 2024" className={emptyFields.includes("title") ? "error" : ""} />
+            </div>
+            <div className="add-event-form-group">
+              <h6>Category</h6>
+              <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Concert, Conference, Festival" className={emptyFields.includes("category") ? "error" : ""} />
+            </div>
+          </div>
+
+          {/* Dates */}
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
+              <h6>Start Date</h6>
+              <input type="date" min={today} value={startDate} onChange={(e) => { setStartDate(e.target.value); if (endDate < e.target.value) setEndDate(e.target.value); }} className={emptyFields.includes("startDate") ? "error" : ""} />
+            </div>
+            <div className="add-event-form-group">
+              <h6>End Date</h6>
+              <input type="date" min={startDate} value={endDate} onChange={(e) => setEndDate(e.target.value)} className={emptyFields.includes("endDate") ? "error" : ""} />
+            </div>
+          </div>
+
+          {/* Times */}
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
+              <h6>Start Time</h6>
+              <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={emptyFields.includes("startTime") ? "error" : ""} />
+            </div>
+            <div className="add-event-form-group">
+              <h6>End Time</h6>
+              <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className={emptyFields.includes("endTime") ? "error" : ""} />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="add-event-form-group add-event-full-width">
+            <h6>About The Event</h6>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Event description..." rows="3" className={emptyFields.includes("description") ? "error" : ""}></textarea>
+          </div>
+
+          {/* Venue */}
+          <div className="section-box">
+            <h5 className="modal-section-title">Venue Details</h5>
+            <div className="add-event-form-group">
+              <input type="text" placeholder="Venue Name" value={venue.name} onChange={(e) => setVenue({ ...venue, name: e.target.value })} className={emptyFields.includes("venueName") ? "error" : ""} />
+            </div>
+            <div className="add-event-form-group">
+              <input type="text" placeholder="Street Address" value={venue.address} onChange={(e) => setVenue({ ...venue, address: e.target.value })} className={emptyFields.includes("venueAddress") ? "error" : ""} />
+            </div>
+            <div className="add-event-form-row">
+              <div className="add-event-form-group">
+                <input type="text" placeholder="City" value={venue.city} onChange={(e) => setVenue({ ...venue, city: e.target.value })} className={emptyFields.includes("venueCity") ? "error" : ""} />
+              </div>
+              <div className="add-event-form-group">
+                <input type="text" placeholder="Zip Code" value={venue.zipCode} onChange={(e) => setVenue({ ...venue, zipCode: e.target.value })} className={emptyFields.includes("venueZip") ? "error" : ""} />
+              </div>
+            </div>
+          </div>
+
+          {/* Event Type */}
+          <div className="add-event-form-group">
+            <h6>Event Type</h6>
+            <div style={{ display: "flex", gap: "20px", marginTop: "5px" }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  cursor: "pointer",
+                  color: "black", // text color
+                }}
+              >
+                <input
+                  type="radio"
+                  name="eventType"
+                  value="General Admission"
+                  checked={eventType === "General Admission"}
+                  onChange={() => setEventType("General Admission")}
+                />
+                General Admission
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  cursor: "pointer",
+                  color: "black", // text color
+                }}
+              >
+                <input
+                  type="radio"
+                  name="eventType"
+                  value="Seating Arrangement"
+                  checked={eventType === "Seating Arrangement"}
+                  onChange={() => setEventType("Seating Arrangement")}
+                />
+                Assigned Seating
+              </label>
+            </div>
+          </div>
+
+          {/* Ticket Price / Total Tickets */}
+          {eventType === "General Admission" && (
+            <div className="add-event-form-row">
+              <div className="add-event-form-group">
+                <h6>Ticket Price ($)</h6>
+                <input type="number" min="0" value={ticketPrice === 0 ? "" : ticketPrice} onChange={(e) => setTicketPrice(e.target.value === "" ? "" : Number(e.target.value))} className={emptyFields.includes("ticketPrice") ? "error" : ""} />
+              </div>
+              <div className="add-event-form-group">
+                <h6>Total Capacity</h6>
+                <input type="number" min="1" value={totalTickets === 0 ? "" : totalTickets} onChange={(e) => setTotalTickets(e.target.value === "" ? "" : Number(e.target.value))} className={emptyFields.includes("totalTickets") ? "error" : ""} />
+              </div>
+            </div>
+          )}
+
+          {/* Seating Arrangement */}
+          {eventType === "Seating Arrangement" && (
+            <div className="section-box">
+              <h5 className="modal-section-title">Seat Map & Variations</h5>
+              {seatVariations.map((seat, index) => (
+                <div key={index} className="booth-row">
+                  <input type="text" placeholder="Seat Number" value={seat.seatNumber} onChange={e => updateSeat(index, "seatNumber", e.target.value)} />
+                  <input type="number" placeholder="Price" value={seat.price} onChange={e => updateSeat(index, "price", e.target.value)} />
+                  <button type="button" className="remove-boothseat-btn" onClick={() => removeSeat(index)}>Remove</button>
+                </div>
+              ))}
+              <button type="button" className="add-boothseat-btn" onClick={addSeat}>Add Seat</button>
+            </div>
+          )}
+
+          {/* Optional Booths */}
+          {/* Optional Booths */}
+          <div className="section-box">
+            <h5 className="modal-section-title">Booths (Optional)</h5>
+
+            {booths.map((booth, index) => (
               <div key={index} className="booth-row">
-                <input type="text" placeholder="Seat Number" value={seat.seatNumber} onChange={e => updateSeat(index, "seatNumber", e.target.value)} />
-                <input type="number" placeholder="Price" value={seat.price} onChange={e => updateSeat(index, "price", e.target.value)} />
-                <button type="button" onClick={() => removeSeat(index)}>Remove</button>
+
+                <div className="add-event-form-group">
+                  <h6>Booth Code</h6>
+                  <input
+                    type="text"
+                    placeholder="ex. VIP401"
+                    value={booth.code || ""}
+                    onChange={e => updateBooth(index, "code", e.target.value)}
+                  />
+                </div>
+
+                <div className="add-event-form-group">
+                  <h6>Size</h6>
+                  <input
+                    type="text"
+                    placeholder="ex. 20x20"
+                    value={booth.size || ""}
+                    onChange={e => updateBooth(index, "size", e.target.value)}
+                  />
+                </div>
+
+                <div className="add-event-form-group">
+                  <h6>Price</h6>
+                  <input
+                    type="number"
+                    min="0"
+                    value={booth.price !== undefined ? booth.price : 0}
+                    onChange={e => updateBooth(index, "price", Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="add-event-form-group">
+                  <h6>Quantity</h6>
+                  <input
+                    type="number"
+                    min="1"
+                    value={booth.quantity !== undefined ? booth.quantity : 1}
+                    onChange={e => updateBooth(index, "quantity", Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="add-event-form-group">
+                  <h6>Type</h6>
+                  <select
+                    value={booth.type || "standard"}
+                    onChange={e => updateBooth(index, "type", e.target.value)}
+                  >
+                    <option value="standard">Inline</option>
+                    <option value="vip">VIP</option>
+                    <option value="premium">Corner</option>
+                  </select>
+                </div>
+
+                <div className="add-event-form-group">
+                  <h6>Status</h6>
+                  <select
+                    value={booth.status || "available"}
+                    onChange={e => updateBooth(index, "status", e.target.value)}
+                  >
+                    <option value="available">Available</option>
+                    <option value="reserved">Reserved</option>
+                    <option value="sold">Sold</option>
+                  </select>
+                </div>
+
+                <button type="button" className="remove-boothseat-btn" onClick={() => removeBooth(index)}>
+                  Remove
+                </button>
               </div>
             ))}
-            <button type="button" onClick={addSeat}>Add Seat</button>
+
+            <button
+              type="button"
+              className="add-boothseat-btn"
+              onClick={addBooth}
+            >
+              Add Booth
+            </button>
           </div>
-        )}
 
-        {/* Optional Booths */}
-        <div className="section-box">
-          <h5 className="modal-section-title">Booths (Optional)</h5>
-          {booths.map((booth, index) => (
-  <div key={index} className="booth-row">
-    <input
-      type="text"
-      placeholder="Booth Code"
-      value={booth.code || ""}
-      onChange={e => updateBooth(index, "code", e.target.value)}
-    />
-    <input
-      type="text"
-      placeholder="Size"
-      value={booth.size || ""}
-      onChange={e => updateBooth(index, "size", e.target.value)}
-    />
-    <input
-      type="number"
-      placeholder="Price"
-      min="0"
-      value={booth.price !== undefined ? booth.price : 0}
-      onChange={e => updateBooth(index, "price", Number(e.target.value))}
-    />
-    <input
-      type="number"
-      placeholder="Quantity"
-      min="1"
-      value={booth.quantity !== undefined ? booth.quantity : 1}
-      onChange={e => updateBooth(index, "quantity", Number(e.target.value))}
-    />
-    <input
-      type="text"
-      placeholder="Type"
-      value={booth.type || "standard"}
-      onChange={e => updateBooth(index, "type", e.target.value)}
-    />
-    <input
-      type="text"
-      placeholder="Status"
-      value={booth.status || "available"}
-      onChange={e => updateBooth(index, "status", e.target.value)}
-    />
-    <button type="button" onClick={() => removeBooth(index)}>Remove</button>
-  </div>
-))}
-          <button type="button" onClick={addBooth}>Add Booth</button>
-        </div>
+          {error && <div className="error-message" style={{ color: "red", marginTop: "10px" }}>{error}</div>}
 
-        {error && <div className="error-message" style={{ color: "red", marginTop: "10px" }}>{error}</div>}
-
-        <div className="general-event-modal-footer">
-          <button type="button" className="button cancel-btn" onClick={onClose}>Cancel</button>
-          <button type="submit" className="primary-button save-btn">Create Event</button>
-        </div>
-      </form>
+          <div className="general-event-modal-footer">
+            <button type="button" className="button cancel-btn" onClick={onClose}>Cancel</button>
+            <button type="submit" className="primary-button save-btn">Create Event</button>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
-    );
-  };
+  );
+};
 
-  export default CreateEventModal;
+export default CreateEventModal;

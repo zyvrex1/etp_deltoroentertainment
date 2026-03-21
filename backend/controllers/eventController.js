@@ -119,6 +119,9 @@ const createEvent = async (req, res) => {
       startTime,
       endTime,
       eventType = "General Admission",
+      ticketPrice,
+      totalTickets,
+      seatVariations,
       priceLevels,
       seatMap = {},
       booths = [],
@@ -129,9 +132,33 @@ const createEvent = async (req, res) => {
        PARSE JSON (FormData safe)
     ========================= */
     if (typeof venue === "string") venue = JSON.parse(venue);
+    if (typeof seatVariations === "string") seatVariations = JSON.parse(seatVariations);
     if (typeof priceLevels === "string") priceLevels = JSON.parse(priceLevels);
     if (typeof booths === "string") booths = JSON.parse(booths);
     if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
+
+    /* =========================
+       MAP FRONTEND FIELDS TO PRICELEVELS
+    ========================= */
+    if (!priceLevels || priceLevels.length === 0) {
+      if (eventType === "General Admission") {
+        priceLevels = [{
+          priceName: "Standard",
+          facePrice: Number(ticketPrice) || 0,
+          quantityAvailable: Number(totalTickets) || 0,
+          isActive: true
+        }];
+      } else if (eventType === "Seating Arrangement" && seatVariations) {
+        priceLevels = seatVariations.map(sv => ({
+          priceName: `Seat ${sv.seatNumber}`,
+          facePrice: Number(sv.price) || 0,
+          quantityAvailable: 1,
+          isActive: true
+        }));
+      } else {
+        priceLevels = [];
+      }
+    }
 
     const image = req.file ? req.file.filename : null;
 
@@ -163,7 +190,8 @@ const createEvent = async (req, res) => {
        SEATING VALIDATION
     ========================= */
     if (eventType === "Seating Arrangement" && (!seatMap || Object.keys(seatMap).length === 0)) {
-      emptyFields.push("seatMap");
+      // NOTE: SeatMap might be optional during initial creation in some flows
+      // emptyFields.push("seatMap"); 
     }
 
     /* =========================
@@ -191,14 +219,19 @@ const createEvent = async (req, res) => {
     }
 
     /* =========================
-       BOOTH VALIDATION
+       BOOTH VALIDATION & ID MAPPING
     ========================= */
     let invalidBooths = [];
     if (Array.isArray(booths)) {
-      booths.forEach((b, index) => {
+      booths = booths.map((b, index) => {
         const price = Number(b.price);
         if (b.price !== undefined && (isNaN(price) || price < 0)) invalidBooths.push(`booths[${index}].price`);
-        if (!b.id) invalidBooths.push(`booths[${index}].id`);
+        
+        // Auto-generate ID if missing
+        if (!b.id) {
+          b.id = `booth-${Date.now()}-${index}`;
+        }
+        return b;
       });
     }
 
@@ -207,6 +240,7 @@ const createEvent = async (req, res) => {
     ========================= */
     const allErrors = [...emptyFields, ...emptyVenueFields, ...invalidBooths];
     if (allErrors.length) {
+      console.log("Validation failed:", allErrors);
       return res.status(400).json({
         error: "Validation failed",
         fields: allErrors
@@ -217,8 +251,9 @@ const createEvent = async (req, res) => {
        USER INFO
     ========================= */
     const userId = req.user._id;
-    const creatorModel = req.user.role === "superadmin" ? "Superadmin" :
-                         req.user.role === "admin" ? "Admin" : "Promoter";
+    const roleLower = (req.user.role || "").toLowerCase();
+    const creatorModel = roleLower === "superadmin" ? "Superadmin" :
+                         roleLower === "admin" ? "Admin" : "Promoter";
 
     /* =========================
        BOOTH CALCULATIONS
@@ -256,21 +291,21 @@ const createEvent = async (req, res) => {
         quantitySold: Number(p.quantitySold || 0),
         isActive: p.isActive !== undefined ? p.isActive : true
       })),
-      seatMap,
+      seatMap: (seatMap && Object.keys(seatMap).length > 0) ? seatMap : null,
       booths: hasBooths ? booths.map(b => ({
         id: b.id,
         code: b.code || null,
         type: b.type || "standard",
         status: b.status || "available",
-        x: b.x != null ? b.x : 0,
-        y: b.y != null ? b.y : 0,
-        width: b.width != null ? b.width : 50,
-        height: b.height != null ? b.height : 50,
+        x: b.x != null ? Number(b.x) : 0,
+        y: b.y != null ? Number(b.y) : 0,
+        width: b.width != null ? Number(b.width) : 50,
+        height: b.height != null ? Number(b.height) : 50,
         price: Number(b.price)
       })) : [],
       hasBooths,
       maxBooths,
-      isFeatured,
+      isFeatured: isFeatured === "true" || isFeatured === true,
       createdBy: userId,
       creatorModel
     });

@@ -60,51 +60,51 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
   };
 
   const addSeat = () => {
-  setFormData({
-    ...formData,
-    seatVariations: [
-      ...formData.seatVariations,
-      { seatNumber: "", price: 0 }
-    ]
-  });
-};
+    setFormData({
+      ...formData,
+      seatVariations: [
+        ...formData.seatVariations,
+        { seatNumber: "", price: 0 }
+      ]
+    });
+  };
 
-const updateSeat = (index, field, value) => {
-  const updated = [...formData.seatVariations];
-  updated[index][field] = value;
+  const updateSeat = (index, field, value) => {
+    const updated = [...formData.seatVariations];
+    updated[index][field] = value;
 
-  setFormData({
-    ...formData,
-    seatVariations: updated
-  });
-};
+    setFormData({
+      ...formData,
+      seatVariations: updated
+    });
+  };
 
-const removeSeat = (index) => {
-  const updated = [...formData.seatVariations];
-  updated.splice(index, 1);
+  const removeSeat = (index) => {
+    const updated = [...formData.seatVariations];
+    updated.splice(index, 1);
 
-  setFormData({
-    ...formData,
-    seatVariations: updated
-  });
-};
+    setFormData({
+      ...formData,
+      seatVariations: updated
+    });
+  };
 
   const addBooth = () => {
-  setFormData({
-    ...formData,
-    booths: [
-      ...formData.booths,
-      {
-        code: null,
-        type: "standard",
-        status: "available",
-        size: "",
-        price: 0,
-        quantity: 1,
-      },
-    ],
-  });
-};
+    setFormData({
+      ...formData,
+      booths: [
+        ...formData.booths,
+        {
+          code: null,
+          type: "standard",
+          status: "available",
+          size: "",
+          price: 0,
+          quantity: 1,
+        },
+      ],
+    });
+  };
 
   const updateBooth = (index, field, value) => {
     const updated = [...formData.booths];
@@ -177,13 +177,13 @@ const removeSeat = (index) => {
             price: s.price !== undefined ? String(s.price) : "",
           })) || [],
         booths: event.booths?.map((b) => ({
-  code: b.code || "",
-  type: b.type || "standard",
-  status: b.status || "available",
-  size: b.size || "",
-  price: b.price !== undefined ? String(b.price) : "",
-  quantity: b.quantity !== undefined ? String(b.quantity) : "",
-})) || [],
+          code: b.code || "",
+          type: b.type || "standard",
+          status: b.status || "available",
+          size: b.size || "",
+          price: b.price !== undefined ? String(b.price) : "",
+          quantity: b.quantity !== undefined ? String(b.quantity) : "",
+        })) || [],
       });
 
       setError("");
@@ -254,24 +254,24 @@ const removeSeat = (index) => {
 
     // Booth validation
     booths?.forEach((b, i) => {
-  if (
-    !b.code?.trim() ||
-    !b.size?.trim() ||
-    Number(b.price) < 0 ||
-    Number(b.quantity) < 1 ||
-    !b.type?.trim() ||
-    !b.status?.trim()
-  ) {
-    empty.push(`booths[${i}]`);
-  }
-});
+      if (
+        !b.code?.trim() ||
+        !b.size?.trim() ||
+        Number(b.price) < 0 ||
+        Number(b.quantity) < 1 ||
+        !b.type?.trim() ||
+        !b.status?.trim()
+      ) {
+        empty.push(`booths[${i}]`);
+      }
+    });
 
     if (empty.length > 0) {
-  console.log("Empty fields detected:", empty);
-  setEmptyFields(empty);
-  setError("Please fill in all required fields.");
-  return;
-}
+      console.log("Empty fields detected:", empty);
+      setEmptyFields(empty);
+      setError("Please fill in all required fields.");
+      return;
+    }
 
     setEmptyFields([]);
     setError("");
@@ -330,18 +330,18 @@ const removeSeat = (index) => {
 
     // Booths
     formDataToSend.append(
-  "booths",
-  JSON.stringify(
-    booths?.map((b) => ({
-      code: b.code || null,
-      type: b.type || "standard",
-      status: b.status || "available",
-      size: b.size || null,
-      price: Number(b.price),
-      quantity: Number(b.quantity),
-    })) || []
-  )
-);
+      "booths",
+      JSON.stringify(
+        booths?.map((b) => ({
+          code: b.code || null,
+          type: b.type || "standard",
+          status: b.status || "available",
+          size: b.size || null,
+          price: Number(b.price),
+          quantity: Number(b.quantity),
+        })) || []
+      )
+    );
 
     // Image fallback: send existing filename if no new file
     if (imageFile) {
@@ -352,30 +352,30 @@ const removeSeat = (index) => {
 
     // 5️⃣ Send PATCH request
     try {
-  const response = await fetch(`/api/events/${event._id}`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${user.token}`,
-    },
-    body: formDataToSend,
-  });
+      const response = await fetch(`/api/events/${event._id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: formDataToSend,
+      });
 
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.error || "Error updating event");
-  }
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Error updating event");
+      }
 
-  const updatedEvent = await response.json();
-  showSuccessAlert("Event updated successfully!");
+      const updatedEvent = await response.json();
+      showSuccessAlert("Event updated successfully!");
 
-  console.log("Updated event:", updatedEvent);
+      console.log("Updated event:", updatedEvent);
 
-  // ✅ Close the modal after successful save
-  onClose();
-} catch (err) {
-  console.error(err);
-  showErrorAlert(err.message);
-}
+      // ✅ Close the modal after successful save
+      onClose();
+    } catch (err) {
+      console.error(err);
+      showErrorAlert(err.message);
+    }
   };
 
   return (
@@ -510,14 +510,14 @@ const removeSeat = (index) => {
                 min={today}
                 value={formData.startDate}
                 onChange={(e) => {
-  const newStart = e.target.value;
+                  const newStart = e.target.value;
 
-  setFormData((prev) => ({
-    ...prev,
-    startDate: newStart,
-    endDate: prev.endDate < newStart ? newStart : prev.endDate,
-  }));
-}}
+                  setFormData((prev) => ({
+                    ...prev,
+                    startDate: newStart,
+                    endDate: prev.endDate < newStart ? newStart : prev.endDate,
+                  }));
+                }}
                 className={emptyFields.includes("startDate") ? "error" : ""}
               />
             </div>
@@ -749,12 +749,12 @@ const removeSeat = (index) => {
                     value={seat.price}
                     onChange={(e) => updateSeat(index, "price", e.target.value)}
                   />
-                  <button type="button" onClick={() => removeSeat(index)}>
+                  <button type="button" className="remove-boothseat-btn" onClick={() => removeSeat(index)}>
                     Remove
                   </button>
                 </div>
               ))}
-              <button type="button" onClick={addSeat}>
+              <button type="button" className="add-boothseat-btn" onClick={addSeat}>
                 Add Seat
               </button>
             </div>
@@ -763,51 +763,83 @@ const removeSeat = (index) => {
           <div className="section-box">
             <h5 className="modal-section-title">Booths (Optional)</h5>
             {formData.booths.map((booth, index) => (
-  <div key={index} className="booth-row">
-    <input
-      type="text"
-      placeholder="Booth Code"
-      value={booth.code || ""}
-      onChange={(e) => updateBooth(index, "code", e.target.value)}
-    />
-    <input
-      type="text"
-      placeholder="Size"
-      value={booth.size || ""}
-      onChange={(e) => updateBooth(index, "size", e.target.value)}
-    />
-    <input
-      type="number"
-      placeholder="Price"
-      min="0"
-      value={booth.price !== undefined ? booth.price : 0}
-      onChange={(e) => updateBooth(index, "price", Number(e.target.value))}
-    />
-    <input
-      type="number"
-      placeholder="Quantity"
-      min="1"
-      value={booth.quantity !== undefined ? booth.quantity : 1}
-      onChange={(e) => updateBooth(index, "quantity", Number(e.target.value))}
-    />
-    <input
-      type="text"
-      placeholder="Type"
-      value={booth.type || "standard"}
-      onChange={(e) => updateBooth(index, "type", e.target.value)}
-    />
-    <input
-      type="text"
-      placeholder="Status"
-      value={booth.status || "available"}
-      onChange={(e) => updateBooth(index, "status", e.target.value)}
-    />
-    <button type="button" onClick={() => removeBooth(index)}>
-      Remove
-    </button>
-  </div>
-))}
-            <button type="button" onClick={addBooth}>
+              <div key={index} className="booth-row">
+
+                <div className="add-event-form-group">
+                  <h6>Booth Code</h6>
+                  <input
+                    type="text"
+                    placeholder="ex. VIP401"
+                    value={booth.code || ""}
+                    onChange={e => updateBooth(index, "code", e.target.value)}
+                  />
+                </div>
+
+                <div className="add-event-form-group">
+                  <h6>Size</h6>
+                  <input
+                    type="text"
+                    placeholder="ex. 20x20"
+                    value={booth.size || ""}
+                    onChange={e => updateBooth(index, "size", e.target.value)}
+                  />
+                </div>
+
+                <div className="add-event-form-group">
+                  <h6>Price</h6>
+                  <input
+                    type="number"
+                    min="0"
+                    value={booth.price !== undefined ? booth.price : 0}
+                    onChange={e => updateBooth(index, "price", Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="add-event-form-group">
+                  <h6>Quantity</h6>
+                  <input
+                    type="number"
+                    min="1"
+                    value={booth.quantity !== undefined ? booth.quantity : 1}
+                    onChange={e => updateBooth(index, "quantity", Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="add-event-form-group">
+                  <h6>Type</h6>
+                  <select
+                    value={booth.type || "standard"}
+                    onChange={e => updateBooth(index, "type", e.target.value)}
+                  >
+                    <option value="standard">Inline</option>
+                    <option value="vip">VIP</option>
+                    <option value="premium">Corner</option>
+                  </select>
+                </div>
+
+                <div className="add-event-form-group">
+                  <h6>Status</h6>
+                  <select
+                    value={booth.status || "available"}
+                    onChange={e => updateBooth(index, "status", e.target.value)}
+                  >
+                    <option value="available">Available</option>
+                    <option value="reserved">Reserved</option>
+                    <option value="sold">Sold</option>
+                  </select>
+                </div>
+
+                <button type="button" className="remove-boothseat-btn" onClick={() => removeBooth(index)}>
+                  Remove
+                </button>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              className="add-boothseat-btn"
+              onClick={addBooth}
+            >
               Add Booth
             </button>
           </div>

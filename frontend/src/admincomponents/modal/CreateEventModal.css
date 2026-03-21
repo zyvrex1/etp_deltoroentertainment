@@ -156,6 +156,68 @@
     }
 }
 
+.booth-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    align-items: center;
+
+    input {
+        padding: 10px 12px;
+        border: 1px solid var(--color-black-tertiary);
+        border-radius: 6px;
+        font-size: 14px;
+        color: var(--color-black-primary);
+        font-family: inherit;
+        background-color: var(--color-white-primary);
+        transition: border-color 0.2s;
+
+        &:focus {
+            outline: none;
+            border-color: var(--color-black-primary);
+        }
+    }
+}
+
+
+.remove-boothseat-btn {
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: none;
+    background-color: transparent;
+    color: var(--color-black-primary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s ease;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    grid-column: 1 / -1;
+
+    :hover {
+        opacity: 0.9;
+    }
+}
+
+.add-boothseat-btn {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: none;
+    background-color: var(--color-black-primary);
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+
+
+
+/* Responsive */
+
 /* 6. Section Box */
 .section-box {
     background-color: var(--color-bg-light);
@@ -212,5 +274,10 @@
     .extra-actions-row {
         flex-direction: column;
         gap: 12px;
+    }
+
+    .booth-row {
+        grid-template-columns: 1fr;
+
     }
 }

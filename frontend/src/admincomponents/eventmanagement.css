@@ -36,12 +36,58 @@
   border-radius: 12px;
   padding: 24px;
 
-  .em-toolbar {
+  .tabs-container {
+    display: flex;
+    gap: 0;
+  }
+
+  .tab {
     display: flex;
     align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    color: var(--color-black-secondary);
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin-bottom: 24px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      color: var(--color-black-primary);
+      background: var(--color-bg-light);
+    }
+
+    &.active {
+      border-bottom-color: var(--color-red-primary);
+      color: var(--color-red-primary);
+    }
+
+    .badge-count {
+      background: var(--color-red-primary);
+      color: white;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+  }
+
+  .em-toolbar {
+    display: flex;
+    align-items: stretch;
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 24px;
+
+
 
     .em-toolbar-left {
       flex: 1;
@@ -288,6 +334,10 @@
   font-weight: 500;
 }
 
+.regular-body-text.green-label {
+  color: var(--color-green-primary) !important;
+}
+
 /* Actions */
 .em-actions {
   display: flex;
@@ -465,8 +515,27 @@
 }
 
 
-.status-pending { background:var(--color-yellow-tertiary); color:var(--color-yellow-primary); }
-.status-approved { background:var(--color-green-tertiary); color:var(--color-green-primary); }
-.status-rejected { background:var(--color-red-tertiary); color:var(--color-red-primary); }
-.status-cancelled { background:var(--color-bg-light); color: var(--color-black-primary); }
-.status-completed { background:var(--color-bg-dark); color:var(--color-white-primary); }
+.status-pending {
+  background: var(--color-yellow-tertiary);
+  color: var(--color-yellow-primary);
+}
+
+.status-approved {
+  background: var(--color-green-tertiary);
+  color: var(--color-green-primary);
+}
+
+.status-rejected {
+  background: var(--color-red-tertiary);
+  color: var(--color-red-primary);
+}
+
+.status-cancelled {
+  background: var(--color-bg-light);
+  color: var(--color-black-primary);
+}
+
+.status-completed {
+  background: var(--color-bg-dark);
+  color: var(--color-white-primary);
+}

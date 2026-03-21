@@ -1,11 +1,17 @@
 import { useEffect, useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import "./eventmanagement.css";
-import CreateEventModal from "./modal/CreateEventModal";
-import EditEventModal from "./modal/EditEventModal";
+import CreateEventModal from "./Modal/CreateEventModal";
+import EditEventModal from "./Modal/EditEventModal";
 
 import { useEventsContext } from "../admincomponents/hooks/useEventsContext"
 import { useAuthContext } from "./hooks/useAuthContext";
+
+import {
+  showDeleteConfirmAlert,
+  showSuccessAlert,
+  showConfirmAlert
+} from "./utils/sweetAlert";
 
 const formatEventDate = (startDate, endDate) => {
   const start = new Date(startDate);
@@ -99,21 +105,27 @@ const EventManagement = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm("Are you sure you want to delete this event?")) return;
+  const handleDeleteEvent = async (event) => {
+    const result = await showDeleteConfirmAlert(
+      "Delete Event",
+      `Are you sure you want to delete "${event.title}"?`
+    );
+
+    if (!result.isConfirmed) return;
 
     try {
-      const response = await fetch(`/api/events/${eventId}`, {
+      const response = await fetch(`/api/events/${event._id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${user.token}`
+          Authorization: `Bearer ${user.token}`
         }
       });
 
       const json = await response.json();
 
       if (response.ok) {
-        dispatch({ type: 'DELETE_EVENT', payload: eventId });
+        dispatch({ type: 'DELETE_EVENT', payload: event._id });
+        await showSuccessAlert("Deleted!", "Event deleted successfully.");
       } else {
         alert(json.error || "Failed to delete event.");
       }
@@ -123,11 +135,16 @@ const EventManagement = () => {
     }
   };
 
-  const handleApproveEvent = async (eventId) => {
-    if (!window.confirm("Are you sure you want to approve this event?")) return;
+  const handleApproveEvent = async (event) => {
+    const result = await showConfirmAlert(
+      "Approve Event",
+      `Are you sure you want to approve "${event.title}"?`
+    );
+
+    if (!result.isConfirmed) return;
 
     try {
-      const response = await fetch(`/api/events/${eventId}`, {
+      const response = await fetch(`/api/events/${event._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -140,6 +157,7 @@ const EventManagement = () => {
 
       if (response.ok) {
         dispatch({ type: "UPDATE_EVENT", payload: json });
+        await showSuccessAlert("Approved!", "Event has been approved.");
       } else {
         alert(json.error || "Failed to approve event.");
       }
@@ -149,11 +167,16 @@ const EventManagement = () => {
     }
   };
 
-  const handleRejectEvent = async (eventId) => {
-    if (!window.confirm("Are you sure you want to reject this event?")) return;
+  const handleRejectEvent = async (event) => {
+    const result = await showDeleteConfirmAlert(
+      "Reject Event",
+      `Are you sure you want to reject "${event.title}"?`
+    );
+
+    if (!result.isConfirmed) return;
 
     try {
-      const response = await fetch(`/api/events/${eventId}`, {
+      const response = await fetch(`/api/events/${event._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -166,6 +189,7 @@ const EventManagement = () => {
 
       if (response.ok) {
         dispatch({ type: "UPDATE_EVENT", payload: json });
+        await showSuccessAlert("Rejected!", "Event has been rejected.");
       } else {
         alert(json.error || "Failed to reject event.");
       }
@@ -336,7 +360,7 @@ const EventManagement = () => {
 
                       <td data-label="Venue">
                         <div className="venue-cell">
-                          <p className="regular-body-text">
+                          <p className="regular-body-text green-label">
                             {event.venue?.name || "No Venue"}
                           </p>
                           <p className="smaller-body-text">
@@ -359,7 +383,7 @@ const EventManagement = () => {
                       </td>
 
                       <td data-label="Status">
-                        <span className={`status-badge ${statusClass}`}>
+                        <span className={`button-label ${statusClass}`}>
                           {event.status}
                         </span>
                       </td>
@@ -396,7 +420,7 @@ const EventManagement = () => {
 
                               <button
                                 className="em-action-btn"
-                                onClick={() => handleDeleteEvent(event._id)}
+                                onClick={() => handleDeleteEvent(event)}
                                 title="Delete Event"
                               >
                                 <Icon icon="mdi:delete" />
@@ -417,14 +441,14 @@ const EventManagement = () => {
                                 <>
                                   <button
                                     className="em-action-btn approve-btn"
-                                    onClick={() => handleApproveEvent(event._id)}
+                                    onClick={() => handleApproveEvent(event)}
                                     title="Approve Event"
                                   >
                                     <Icon icon="mdi:check-circle-outline" />
                                   </button>
                                   <button
                                     className="em-action-btn reject-btn"
-                                    onClick={() => handleRejectEvent(event._id)}
+                                    onClick={() => handleRejectEvent(event)}
                                     title="Reject Event"
                                   >
                                     <Icon icon="mdi:close-circle-outline" />
@@ -476,47 +500,55 @@ const EventManagement = () => {
         </div>
       </div>
 
-      <div className="um-content">
+      <div className="em-content">
         {/* Tabs */}
-        <div className="tabs-search-row">
-          <div className="tabs-container">
-            {eventTabs.map((tab) => (
-              <button
-                key={tab.id}
-                className={`tab ${activeTab === tab.id ? "active" : ""}`}
-                onClick={() => handleTabChange(tab.id)}
-              >
-                <Icon
-                  icon={
-                    tab.id === "all-events"
-                      ? "mdi:calendar-multiple"
-                      : tab.id === "pending-events"
-                        ? "mdi:clock-outline"
-                        : tab.id === "approved-events"
-                          ? "mdi:check-circle-outline"
-                          : tab.id === "rejected-events"
-                            ? "mdi:close-circle-outline"
-                            : tab.id === "cancelled-events"
-                              ? "mdi:cancel"
-                              : tab.id === "completed-events"
-                                ? "mdi:flag-checkered"
-                                : "mdi:calendar"
-                  }
-                />
-                <span>{tab.label}</span>
-                <span className="badge-count">{tab.count}</span>
-              </button>
-            ))}
-          </div>
+        {/* Tabs */}
+        <div className="tabs-container">
+          {eventTabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`tab ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => handleTabChange(tab.id)}
+            >
+              <Icon
+                icon={
+                  tab.id === "all-events"
+                    ? "mdi:calendar-multiple"
+                    : tab.id === "pending-events"
+                      ? "mdi:clock-outline"
+                      : tab.id === "approved-events"
+                        ? "mdi:check-circle-outline"
+                        : tab.id === "rejected-events"
+                          ? "mdi:close-circle-outline"
+                          : tab.id === "cancelled-events"
+                            ? "mdi:cancel"
+                            : tab.id === "completed-events"
+                              ? "mdi:flag-checkered"
+                              : "mdi:calendar"
+                }
+              />
+              <span>{tab.label}</span>
+              <span className="badge-count">{tab.count}</span>
+            </button>
+          ))}
+        </div>
 
-          <div className="outlined-button search-container">
-            <Icon icon="mdi:magnify" />
-            <input
-              type="text"
-              placeholder="Search events..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        {/* Toolbar (like Payments) */}
+        <div className="em-toolbar">
+          <div className="em-toolbar-left">
+            <div className="em-search">
+              <Icon icon="mdi:magnify" />
+              <input
+                type="text"
+                placeholder="Search events..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="small-body-text"
+              />
+            </div>
           </div>
         </div>
 

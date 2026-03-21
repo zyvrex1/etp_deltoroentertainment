@@ -32,26 +32,8 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
 
       setIsSaving(true);
 
-      // Save to backend
-      const res = await fetch(`/api/policies/${policyKey}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedPolicy),
-      });
-
-      let savedPolicy;
-      try {
-        savedPolicy = await res.json();
-      } catch (err) {
-        const text = await res.text();
-        console.error("Unexpected response:", res.status, text);
-        throw new Error(text || "Failed to parse response from server");
-      }
-
-      if (!res.ok) throw new Error(savedPolicy?.error || "Failed to update policy");
-
-      // Update parent state
-      onSave(savedPolicy);
+      // Pass the updated policy object back to parent to handle save
+      await onSave(updatedPolicy);
 
       await showSuccessAlert(
         "Policy Updated",
