@@ -4,8 +4,9 @@ import { Icon } from "@iconify/react";
 import { useLogout } from "./hooks/useLogout";
 import { useAuthContext } from "./hooks/useAuthContext";
 import "./header.css";
+import { showLogoutConfirmAlert } from "./utils/sweetAlert";
 
-const Header = () => {
+const Header = ({ mobileExpanded, setMobileExpanded }) => {
   const { logout } = useLogout();
   const { user: authUser } = useAuthContext();
   const navigate = useNavigate();
@@ -24,15 +25,36 @@ const Header = () => {
 
   const handleToggleDropdown = () => setIsDropdownOpen((prev) => !prev);
 
+  // const handleSignOut = async () => {
+  //   setIsSigningOut(true);
+  //   try {
+  //     await logout();
+  //     setIsDropdownOpen(false);
+  //     navigate("/");
+  //   } catch (err) {
+  //     console.error(err);
+  //     setIsSigningOut(false);
+  //   }
+  // };
+
+
   const handleSignOut = async () => {
-    setIsSigningOut(true);
-    try {
-      await logout();
-      setIsDropdownOpen(false);
-      navigate("/");
-    } catch (err) {
-      console.error(err);
-      setIsSigningOut(false);
+    const result = await showLogoutConfirmAlert(
+      "Logout",
+      "Are you sure you want to logout?"
+    );
+
+    if (result.isConfirmed) {
+      setIsSigningOut(true);
+      try {
+        await logout();
+        setIsDropdownOpen(false);
+
+        window.location.href = "/";
+      } catch (err) {
+        console.error(err);
+        setIsSigningOut(false);
+      }
     }
   };
 
@@ -51,6 +73,14 @@ const Header = () => {
 
   return (
     <header className="app-header">
+      <div className="header-left-mobile">
+        <button
+          className="mobile-header-toggle"
+          onClick={() => setMobileExpanded(!mobileExpanded)}
+        >
+          <Icon icon={mobileExpanded ? "mdi:close" : "mdi:menu"} width="28" />
+        </button>
+      </div>
       <div className="header-profile" ref={dropdownRef}>
         <button className="profile-info profile-toggle" onClick={handleToggleDropdown}>
           <div className="profile-details">
@@ -86,6 +116,8 @@ const Header = () => {
               className="dropdown-item dropdown-signout"
               onClick={handleSignOut}
               disabled={isSigningOut}
+
+
             >
               <Icon icon="mdi:logout" className="dropdown-icon" />
               <span>{isSigningOut ? "Signing out..." : "Sign out"}</span>

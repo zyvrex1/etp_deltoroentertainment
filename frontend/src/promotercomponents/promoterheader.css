@@ -195,13 +195,7 @@
     padding: 10px 12px;
   }
 
-  .profile-details {
-    align-items: flex-start;
-  }
 
-  .profile-email {
-    display: none;
-  }
 
   .profile-avatar,
   .avatar-initials,
