@@ -163,3 +163,16 @@ export const showRejectConfirmAlert = (promoter, amount) => {
         cancelButtonText: 'Cancel'
     });
 };
+
+export const showLogoutConfirmAlert = () => {
+    return Swal.fire({
+        title: 'Confirm Logout?',
+        text: 'Are you sure you want to logout?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Logout',
+        cancelButtonText: 'Cancel'
+    });
+};

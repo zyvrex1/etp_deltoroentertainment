@@ -14,6 +14,11 @@ const createUser = async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
+    // Enforce role boundaries
+    if (req.user.role === 'admin' && role.toLowerCase() === 'superadmin') {
+      return res.status(403).json({ error: 'Admins cannot create Superadmin accounts' });
+    }
+
     const exists = await User.findOne({ email });
     if (exists) {
       return res.status(400).json({ error: 'Email already in use' });
@@ -61,22 +66,33 @@ const createUser = async (req, res) => {
       });
     }
 
-    // ✅ 3. Send email
-    await sendEmail({
-      to: email,
-      subject: 'Your new account',
-      text: `Hello ${firstName},
+    // ✅ 3. Send email (Try-catch so registration doesn't fail if email fails)
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Your new account',
+        text: `Hello ${firstName},
 
 Your account has been created.
 Temporary password: ${tempPassword}
 
 Please log in and change your password immediately.`
-    });
+      });
 
-    return res.status(201).json({
-      message: `${role} created successfully.`,
-      user: newUser
-    });
+      return res.status(201).json({
+        message: `${role} created successfully and email sent.`,
+        user: newUser
+      });
+
+    } catch (emailError) {
+      console.error('Registration email failed to send:', emailError);
+      return res.status(201).json({
+        message: `${role} created successfully, but Welcome Email failed.`,
+        user: newUser,
+        temporaryPassword: tempPassword, // Fallback so admin can give it manually
+        warning: 'Could not send the welcome email due to server configuration.'
+      });
+    }
 
   } catch (err) {
     console.error(err);
@@ -89,59 +105,47 @@ module.exports = { createUser };
 // Get all users
 const getAllUsers = async (req, res) => {
   try {
-    // Admin cannot see superadmins
-    let usersQuery = {};
-    if (req.user.role === 'admin') {
-      usersQuery.role = { $ne: 'superadmin' };
-    }
+    const isRequesterAdmin = req.user.role === 'admin';
 
     // Fetch all role documents
-    const customers = await Customer.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt');
-    const promoters = await Promoter.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt');
-    const sponsors = await Sponsor.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt');
-    
-    // Fetch admins (excluding superadmins if current user is admin)
-    const adminFilter = req.user.role === 'admin' ? { role: 'admin' } : { role: { $in: ['admin', 'superadmin'] } };
+    const [customers, promoters, sponsors] = await Promise.all([
+      Customer.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt'),
+      Promoter.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt'),
+      Sponsor.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt')
+    ]);
+
+    // Fetch admins (excluding superadmins if requester is admin)
+    const adminFilter = isRequesterAdmin ? { role: 'admin' } : { role: { $in: ['admin', 'superadmin'] } };
     const admins = await User.find(adminFilter).select('firstName lastName email role lastLogin createdAt updatedAt');
+
+    // Helper to map and filter role-based users
+    const mapRoleUser = (docs, roleType) => {
+      return docs
+        .filter(doc => doc.userId) // Ensure userId exists and was populated
+        .filter(doc => !isRequesterAdmin || doc.userId.role !== 'superadmin') // Respect admin boundary
+        .map(doc => ({
+          _id: doc.userId._id,
+          firstName: doc.userId.firstName,
+          lastName: doc.userId.lastName,
+          email: doc.userId.email,
+          role: doc.userId.role,
+          lastLogin: doc.userId.lastLogin,
+          createdAt: doc.userId.createdAt,
+          updatedAt: doc.userId.updatedAt,
+          roleDetails: roleType === 'customer' 
+            ? { phone: doc.phone, ticketsPurchased: doc.ticketsPurchased, totalSpent: doc.totalSpent }
+            : roleType === 'promoter'
+            ? { phone: doc.phone, companyName: doc.companyName, industry: doc.industry, numberOfEvents: doc.numberOfEvents }
+            : { phone: doc.phone, companyName: doc.companyName, industry: doc.industry },
+          roleType
+        }));
+    };
 
     // Merge into one array
     const allUsers = [
-      ...customers.map(c => ({
-        _id: c.userId._id,
-        firstName: c.userId.firstName,
-        lastName: c.userId.lastName,
-        email: c.userId.email,
-        role: c.userId.role,
-        lastLogin: c.userId.lastLogin,
-        createdAt: c.userId.createdAt,
-        updatedAt: c.userId.updatedAt,
-        roleDetails: { phone: c.phone, ticketsPurchased: c.ticketsPurchased, totalSpent: c.totalSpent },
-        roleType: 'customer'
-      })),
-      ...promoters.map(p => ({
-        _id: p.userId._id,
-        firstName: p.userId.firstName,
-        lastName: p.userId.lastName,
-        email: p.userId.email,
-        role: p.userId.role,
-        lastLogin: p.userId.lastLogin,
-        createdAt: p.userId.createdAt,
-        updatedAt: p.userId.updatedAt,
-        roleDetails: { phone: p.phone, companyName: p.companyName, industry: p.industry, numberOfEvents: p.numberOfEvents },
-        roleType: 'promoter'
-      })),
-      ...sponsors.map(s => ({
-        _id: s.userId._id,
-        firstName: s.userId.firstName,
-        lastName: s.userId.lastName,
-        email: s.userId.email,
-        role: s.userId.role,
-        lastLogin: s.userId.lastLogin,
-        createdAt: s.userId.createdAt,
-        updatedAt: s.userId.updatedAt,
-        roleDetails: { phone: s.phone, companyName: s.companyName, industry: s.industry },
-        roleType: 'sponsor'
-      })),
+      ...mapRoleUser(customers, 'customer'),
+      ...mapRoleUser(promoters, 'promoter'),
+      ...mapRoleUser(sponsors, 'sponsor'),
       ...admins.map(a => ({
         _id: a._id,
         firstName: a.firstName,
@@ -158,8 +162,8 @@ const getAllUsers = async (req, res) => {
 
     res.status(200).json(allUsers);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Error in getAllUsers:", err);
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
 
