@@ -208,13 +208,8 @@ const UserManagement = () => {
                     </td>
                     <td data-label="Status">
                       <span
-                        className={`button-label status-${getUserStatus(user.lastLogin)}`}
-                        style={{
-                          backgroundColor:
-                            getUserStatus(user.lastLogin) === "active"
-                              ? "green"
-                              : "gray",
-                        }}
+                        className={`button-label em-status-${getUserStatus(user.lastLogin)}`}
+
                       >
                         {getUserStatus(user.lastLogin).charAt(0).toUpperCase() +
                           getUserStatus(user.lastLogin).slice(1)}
@@ -477,7 +472,7 @@ const UserManagement = () => {
                     </td>
                     <td data-label="Status">
                       <span
-                        className={`button-label status-${getUserStatus(sponsor.lastLogin)}`}
+                        className={`button-label em-status-${getUserStatus(sponsor.lastLogin)}`}
                         style={{
                           backgroundColor:
                             getUserStatus(user.lastLogin) === "active"
@@ -534,42 +529,48 @@ const UserManagement = () => {
 
       <div className="um-content">
         {/* Tabs */}
-        <div className="tabs-search-row">
-          <div className="tabs-container">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                className={`tab ${activeTab === tab.id ? "active" : ""}`}
-                onClick={() => handleTabChange(tab.id)}
-              >
-                <Icon
-                  icon={
-                    tab.id === "all-users"
-                      ? "mdi:account-multiple"
-                      : tab.id === "admins"
-                        ? "mdi:shield-account"
-                        : tab.id === "customers"
-                          ? "mdi:account"
-                          : tab.id === "sponsors"
-                            ? "mdi:office-building"
-                            : "mdi:briefcase"
-                  }
-                />
-                <span>{tab.label}</span>
-                <span className="badge-count">{tab.count}</span>
-              </button>
-            ))}
-          </div>
+        <div className="tabs-container">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`tab ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => handleTabChange(tab.id)}
+            >
+              <Icon
+                icon={
+                  tab.id === "all-users"
+                    ? "mdi:account-multiple"
+                    : tab.id === "admins"
+                      ? "mdi:shield-account"
+                      : tab.id === "customers"
+                        ? "mdi:account"
+                        : tab.id === "sponsors"
+                          ? "mdi:office-building"
+                          : "mdi:briefcase"
+                }
+              />
+              <span>{tab.label}</span>
+              <span className="badge-count">{tab.count}</span>
+            </button>
+          ))}
+        </div>
 
-          {/* Search Bar */}
-          <div className="outlined-button search-container">
-            <Icon icon="mdi:magnify" />
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        {/* Search Bar */}
+        <div className="um-toolbar">
+          <div className="um-toolbar-left">
+            <div className="um-search">
+              <Icon icon="mdi:magnify" />
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1); // ✅ IMPORTANT (same as EventManagement)
+                }}
+                className="small-body-text"
+              />
+            </div>
           </div>
         </div>
 

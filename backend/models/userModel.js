@@ -84,7 +84,8 @@ userSchema.statics.signup = async function (
     throw Error('Password is not strong enough')
   }
 
-  const exists = await this.findOne({ email })
+  const normalizedEmail = email.toLowerCase().trim()
+  const exists = await this.findOne({ email: normalizedEmail })
   if (exists) {
     throw Error('Email already in use')
   }
@@ -107,8 +108,17 @@ userSchema.statics.signup = async function (
 userSchema.statics.login = async function (email, password) {
   if (!email || !password) throw Error('All fields must be filled')
 
-  const user = await this.findOne({ email })
-  if (!user) throw Error('Incorrect email')
+  const normalizedEmail = email.toLowerCase().trim()
+  console.log('--- LOGIN DEBUG ---')
+  console.log('Querying for:', `"${normalizedEmail}"`)
+  console.log('Connection Host:', this.db.host)
+  console.log('Database Name:', this.db.name)
+  
+  const user = await this.findOne({ email: normalizedEmail })
+  if (!user) {
+    console.error('FAILED: User not found in DB for:', normalizedEmail)
+    throw Error('Incorrect email')
+  }
 
   const match = await bcrypt.compare(password, user.password)
   if (!match) throw Error('Incorrect password')
