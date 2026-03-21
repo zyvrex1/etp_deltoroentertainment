@@ -1,6 +1,41 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
+const priceLevelSchema = new Schema(
+  {
+    priceName: { type: String, required: true },
+    description: String,
+    color: String,
+
+    facePrice: { type: Number, required: true, min: 0 },
+    serviceCharge: { type: Number, default: 0 },
+
+    isFlexible: { type: Boolean, default: false },
+
+    saleStart: Date,
+    saleEnd: {
+      type: Date,
+      validate: {
+        validator: function (value) {
+          return !this.saleStart || value >= this.saleStart;
+        },
+        message: "saleEnd must be after saleStart",
+      },
+    },
+
+    minPerOrder: { type: Number, default: 1 },
+    maxPerOrder: { type: Number, default: 30 },
+    increment: { type: Number, default: 1 },
+
+  
+    quantityAvailable: { type: Number, default: 0 },
+    quantitySold: { type: Number, default: 0 },
+
+    isActive: { type: Boolean, default: true },
+  },
+  { _id: true }
+);
+
 const eventSchema = new Schema(
   {
     createdBy: {
@@ -21,6 +56,12 @@ const eventSchema = new Schema(
       trim: true,
     },
 
+    eventType: {
+      type: String,
+      enum: ["General Admission", "Seating Arrangement"],
+      default: "General Admission",
+    },
+
     description: {
       type: String,
       required: true,
@@ -33,74 +74,84 @@ const eventSchema = new Schema(
     },
 
     venue: {
-      name: { type: String, required: true },
-      address: { type: String, required: true },
-      city: { type: String, required: true },
-      zipCode: { type: String, required: true },
+      type: {
+        _id: { type: Schema.Types.ObjectId, ref: "Venue" }, // optional reference
+        name: String,
+        address: String,
+        city: String,
+        zipCode: String,
+      },
+      required: true,
     },
 
     startDate: { type: Date, required: true },
-    endDate: { type: Date, required: true },
-
-    startTime: { type: String, required: true },
-    endTime: { type: String, required: true },
-
-    image: String,
-
-    eventType: {
-      type: String,
-      enum: ["General Admission", "Seating Arrangement"],
-      default: "General Admission",
-    },
-
-    ticketPrice: {
-      type: Number,
-      default: 0,
+    endDate: {
+      type: Date,
+      required: true,
       validate: {
         validator: function (value) {
-          if (this.eventType === "General Admission") {
-            return value !== null && value !== undefined;
-          }
-          return true; // optional for Seating Arrangement
+          return value >= this.startDate;
         },
-        message: "ticketPrice is required for General Admission events",
+        message: "End date must be after start date",
       },
     },
 
-    totalTickets: { type: Number, default: 0 },
+    startTime: {
+      type: String,
+      required: true,
+      match: /^([01]\d|2[0-3]):([0-5]\d)$/,
+    },
+    endTime: {
+      type: String,
+      required: true,
+      match: /^([01]\d|2[0-3]):([0-5]\d)$/,
+    },
+
+    image: String,
+
+    priceLevels: {
+      type: [priceLevelSchema],
+      default: [],
+      validate: {
+        validator: function (value) {
+          return value.length > 0;
+        },
+        message: "At least one price level is required",
+      },
+    },
 
     seatMap: {
       type: Schema.Types.Mixed,
       default: null,
     },
 
-    seatVariations: [
+    hasBooths: { type: Boolean, default: false },
+    maxBooths: { type: Number, default: 0 },
+
+    booths: [
       {
-        seatNumber: String,
-        price: Number,
-        isAvailable: { type: Boolean, default: true },
+        id: { type: String, required: true },
+
+        code: { type: String, default: null },
+        type: { type: String, default: "standard" },
+
+        status: {
+          type: String,
+          enum: ["available", "reserved", "sold"],
+          default: "available",
+        },
+
+        x: Number,
+        y: Number,
+        width: Number,
+        height: Number,
+
+        price: { type: Number, required: true, min: 0 },
       },
     ],
 
     ticketsSold: { type: Number, default: 0 },
     revenue: { type: Number, default: 0 },
-
-    // -----------------------------
-    // Booths: number per size & price
-    // -----------------------------
-    booths: [
-      {
-        code: { type: String, default: null },       // e.g., "B001"
-        type: { type: String, default: "standard" }, // e.g., "standard", "premium"
-        status: { type: String, default: "available" }, // e.g., "available", "booked"
-        size: { type: String, default: null },       // e.g., "Small", "Medium", "Large"
-        price: { type: Number, required: true, min: 0 },
-        quantity: { type: Number, required: true, min: 1 }, // number of booths of this type
-      },
-    ],
-
-    hasBooths: { type: Boolean, default: false },    // true if booths exist
-    maxBooths: { type: Number, default: 0 },         // total booths (sum of quantities)
 
     status: {
       type: String,
@@ -112,5 +163,31 @@ const eventSchema = new Schema(
   },
   { timestamps: true }
 );
+
+eventSchema.pre("save", function (next) {
+  if (this.eventType === "Seating Arrangement" && !this.seatMap) {
+    return next(new Error("Seat map is required for seating arrangement events"));
+  }
+
+  if (this.hasBooths && this.booths.length === 0) {
+    return next(new Error("Booths are required when hasBooths is true"));
+  }
+
+  next();
+});
+
+eventSchema.virtual("totalTickets").get(function () {
+  if (this.eventType === "General Admission") {
+    return this.priceLevels.reduce(
+      (sum, p) => sum + (p.quantityAvailable || 0),
+      0
+    );
+  }
+  return null;
+});
+
+eventSchema.index({ startDate: 1 });
+eventSchema.index({ status: 1 });
+eventSchema.index({ createdBy: 1 });
 
 module.exports = mongoose.model("Event", eventSchema);
