@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
+import Swal from "sweetalert2";
 import "./SponsorManageProduct.css";
+import SponsorAddProduct from "./SponsorModal/SponsorAddProduct";
+import SponsorEditProduct from "./SponsorModal/SponsorEditProduct";
 
 const initialProducts = [
   { id: 1, image: "/assets/eventbg.jpg", category: "Food", name: "Gourmet Burger", price: "$12.99", description: "Premium beef patty with artisan cheese and house sauce.", stock: 40, stockStatus: "Medium Stock", active: true },
@@ -22,11 +25,17 @@ const productStats = [
 ];
 
 const SponsorManageProduct = () => {
+  const [products, setProducts] = useState(initialProducts);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All Categories");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef(null);
+
+  // Modal states
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const itemsPerPage = 8;
 
@@ -40,7 +49,7 @@ const SponsorManageProduct = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredProducts = initialProducts.filter((product) => {
+  const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           product.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterCategory === "All Categories" || product.category === filterCategory;
@@ -55,6 +64,47 @@ const SponsorManageProduct = () => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
+  };
+
+  const handleAddProduct = (newProductData) => {
+    const newProduct = {
+      ...newProductData,
+      id: Date.now(),
+      image: newProductData.image || "/assets/eventbg.jpg",
+      price: `$${newProductData.price || "0.00"}`,
+      stockStatus: newProductData.stock > 50 ? "High Stock" : newProductData.stock > 0 ? "Medium Stock" : "Out of Stock",
+    };
+    setProducts([newProduct, ...products]);
+  };
+
+  const handleEditProduct = (updatedProduct) => {
+    setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+  };
+
+  const handleDeleteProduct = (productId) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#c62828',
+      cancelButtonColor: '#4a5161',
+      confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setProducts(products.filter(p => p.id !== productId));
+        Swal.fire(
+          'Deleted!',
+          'Your product has been deleted.',
+          'success'
+        );
+      }
+    });
+  };
+
+  const openEditModal = (product) => {
+    setSelectedProduct(product);
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -78,7 +128,10 @@ const SponsorManageProduct = () => {
           <h1>Products Inventory</h1>
           <p className="regular-body-text">Manage your booth's food, drinks, and merchandise.</p>
         </div>
-        <button className="primary-button add-product-btn">
+        <button 
+          className="primary-button add-product-btn"
+          onClick={() => setIsAddModalOpen(true)}
+        >
           <Icon icon="mdi:plus" /> Add Product
         </button>
       </div>
@@ -166,8 +219,12 @@ const SponsorManageProduct = () => {
                 <div className="smp-card-actions">
                   
                   <div className="smp-action-icons">
-                    <button className="smp-icon-btn"><Icon icon="mdi:square-edit-outline" /></button>
-                    <button className="smp-icon-btn"><Icon icon="mdi:trash-can-outline" /></button>
+                    <button className="smp-icon-btn" onClick={() => openEditModal(product)}>
+                      <Icon icon="mdi:square-edit-outline" />
+                    </button>
+                    <button className="smp-icon-btn" onClick={() => handleDeleteProduct(product.id)}>
+                      <Icon icon="mdi:trash-can-outline" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -203,6 +260,20 @@ const SponsorManageProduct = () => {
         </div>
       )}
       </div>
+
+      <SponsorAddProduct 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onAdd={handleAddProduct} 
+      />
+
+      <SponsorEditProduct 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        product={selectedProduct} 
+        onSave={handleEditProduct} 
+      />
+
     </div>
   );
 };
