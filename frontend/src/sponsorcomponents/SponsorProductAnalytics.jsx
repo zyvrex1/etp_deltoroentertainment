@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
+import jsPDF from "jspdf";
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from "../admincomponents/utils/pdfExport";
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, Legend } from 'recharts';
 import "./SponsorProductAnalytics.css";
 
@@ -83,6 +85,52 @@ const SponsorProductAnalytics = () => {
     { label: "Orders Today", value: "24", icon: "mdi:calendar-today", color: "orange", extra: "Today" }
   ];
 
+  const exportToPDF = async () => {
+    const loadingToast = showExportToast();
+    try {
+      const logoData = await loadLogo();
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      addReportHeader(pdf, "Product Analytics Report", logoData);
+
+      const headers = ["Product", "Category", "Stock", "Sales", "Revenue", "Status"];
+      const pdfData = filteredInventory.map((item) => [
+        item.name,
+        item.category,
+        item.stock.toString(),
+        item.sales.toString(),
+        item.revenue,
+        item.status,
+      ]);
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      let currentY = 50; // below header
+      
+      currentY = drawTable(
+        pdf,
+        currentY,
+        headers,
+        pdfData,
+        15, // margin
+        pdfWidth,
+        pdfHeight,
+        15 // footer height
+      );
+
+      addReportFooter(pdf, 1, 1);
+      
+      const fileName = `product_analytics_report_${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdf.save(fileName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      removeExportToast(loadingToast);
+    }
+  };
+
   return (
     <div className="spa-container">
       <div className="spa-header-section">
@@ -90,9 +138,7 @@ const SponsorProductAnalytics = () => {
           <h1>Analytics & Reports</h1>
           <p className="regular-body-text">Track your store's performance, sales, and customer engagement.</p>
         </div>
-        <button className="primary-button spa-export-btn">
-          <Icon icon="mdi:download" /> Export to PDF
-        </button>
+        
       </div>
 
       <div className="spa-stats-grid">
@@ -238,6 +284,10 @@ const SponsorProductAnalytics = () => {
               )}
             </div>
           </div>
+
+          <button className="primary-button spa-export-btn" onClick={exportToPDF}>
+          <Icon icon="mdi:download" /> Export to PDF
+        </button>
         </div>
 
         <div className="spa-table-wrapper-full">
@@ -280,7 +330,10 @@ const SponsorProductAnalytics = () => {
               ) : (
                 <tr>
                   <td colSpan="6" style={{ textAlign: 'center', padding: '40px 0' }}>
-                    No products match your search.
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--color-black-tertiary)' }}>
+                      <Icon icon="mdi:magnify-close" width="48" style={{ marginBottom: '16px' }} />
+                      <p className="regular-body-text" style={{ marginTop: '0' }}>No products found matching your search.</p>
+                    </div>
                   </td>
                 </tr>
               )}
