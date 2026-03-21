@@ -39,20 +39,8 @@ const CreatePolicyModal = ({
     try {
       const newPolicy = { title, content, policyKey };
 
-      // Save to backend
-      const res = await fetch("/api/policies", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newPolicy),
-      });
-
-      const savedPolicy = await res.json();
-
-      if (!res.ok)
-        throw new Error(savedPolicy.error || "Failed to create policy");
-
-      // Update parent state
-      onSave(savedPolicy);
+      // Pass the policy object back to parent to handle save
+      await onSave(newPolicy);
 
       await showSuccessAlert(
         "Policy Added",

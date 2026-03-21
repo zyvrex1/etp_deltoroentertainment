@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import './Home.css';
 import { Icon } from "@iconify/react";
+import announcementService from '../services/announcementService';
+import policyService from '../services/policyService';
 
 const Home = () => {
   const { openAuthModal } = useOutletContext() || { openAuthModal: () => { } };
@@ -22,21 +24,63 @@ const Home = () => {
     setModalData(null);
   };
 
-  const policies = [
-    { title: "Refund Policy", content: "If an event is canceled or postponed, you may be eligible for a refund depending on the event organizer's policy. Contact support for more info." },
-    { title: "Privacy Policy", content: "Your data is important to us. We secure your information and do not share it with third parties without your consent." },
-    { title: "Terms of Service", content: "By using our platform, you agree to our terms of service which ensure a safe and reliable environment for everyone." },
-    { title: "Event Guidelines", content: "All events must adhere to local laws and community guidelines. Any violation may result in the event being taken down." },
-    { title: "Sponsor Guidelines", content: "Sponsors must provide accurate information and honor their commitments to event organizers as outlined in their agreements." },
-    { title: "Security Policies", content: "We use advanced encryption and security protocols to ensure your transactions and data are safe." }
-  ];
+  const [policies, setPolicies] = useState([]);
 
-  const announcements = [
-    { type: "New Feature", badgeClass: "red-badge", title: "Event analytics are now live!", content: "Track your performance natively. You can now see real-time insights on ticket sales, demographic breakdowns, and campaign ROI right from your dashboard." },
-    { type: "Platform Update", badgeClass: "blue-badge", title: "New updates to our dashboard UI.", content: "Experience the redesign today. We have streamlined the navigation menus and improved contrast to make your workflow faster and more intuitive." },
-    { type: "System Note", badgeClass: "green-badge", title: "Upcoming server maintenance", content: "Server maintenance scheduled for tonight at 2 AM EST. The platform will experience a brief downtime of approximately 15 minutes." },
-    { type: "Feature Update", badgeClass: "blue-badge", title: "Added new ticket tier options", content: "You can now define up to 10 unique ticket tiers for your events, including early bird specials and VIP access with custom delivery methods." }
-  ];
+  // Initial state for announcements
+  const [announcements, setAnnouncements] = useState([]);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const data = await announcementService.getAnnouncements();
+        if (data && data.length > 0) {
+          const mappedAnnouncements = data.map(ann => {
+            let badgeClass = "blue-badge";
+            if (ann.contentcategory === "Maintenance") badgeClass = "green-badge";
+            if (ann.contentcategory === "News" || ann.contentcategory === "News") badgeClass = "purple-badge";
+            if (ann.contentcategory === "Update" || ann.contentcategory === "Update") badgeClass = "yellow-badge";
+            if (ann.contentcategory === "Alert" || ann.contentcategory === "Alert") badgeClass = "red-badge";
+            if (ann.contentcategory === "General" || ann.contentcategory === "General") badgeClass = "blue-badge";
+
+            return {
+              type: ann.contentcategory,
+              badgeClass,
+              title: ann.title,
+              content: ann.content
+            };
+          });
+          setAnnouncements(mappedAnnouncements);
+        } else {
+          setAnnouncements([]);
+        }
+      } catch (error) {
+        console.error("Failed to load live announcements:", error);
+      }
+    };
+
+    fetchAnnouncements();
+  }, []);
+
+  useEffect(() => {
+    const fetchPolicies = async () => {
+      try {
+        const data = await policyService.getPolicies();
+        if (data && data.length > 0) {
+          const mappedPolicies = data.map(policy => ({
+            title: policy.title,
+            content: policy.content
+          }));
+          setPolicies(mappedPolicies);
+        } else {
+          setPolicies([]);
+        }
+      } catch (error) {
+        console.error("Failed to load live policies:", error);
+      }
+    };
+
+    fetchPolicies();
+  }, []);
 
   const events = [
     { tag: "TECH", title: "Neon Cyber Punk Night", date: "Nov 12", location: "San Francisco, CA" },
@@ -162,22 +206,29 @@ const Home = () => {
 
       {/* Latest Announcements Marquee/List */}
       <section className="latest-announcements">
-        <div className="announcements-container">
-          {[...announcements,].map((ann, idx) => (
-            <div
-              className="announcement-item clickable"
-              key={idx}
-              onClick={() => openModal(ann.title, ann.content)}
-            >
-              <span
-                className={`button-label announcement-badge ${ann.badgeClass}`}
+        <div className={`announcements-container ${announcements.length > 0 ? 'scrolling' : ''}`}>
+          {announcements.length > 0 ? (
+            announcements.map((ann, idx) => (
+              <div
+                className="announcement-item clickable"
+                key={idx}
+                onClick={() => openModal(ann.title, ann.content)}
               >
-                {ann.type}
-              </span>
+                <span
+                  className={`button-label announcement-badge ${ann.badgeClass}`}
+                >
+                  {ann.type}
+                </span>
 
-              <p className="announcement-text">{ann.title}</p>
+                <h5 className="announcement-text">{ann.title}</h5>
+                <p className="small-body-text announcement-desc">{ann.content}</p>
+              </div>
+            ))
+          ) : (
+            <div className="no-announcements">
+              <h3>There is no announcement yet</h3>
             </div>
-          ))}
+          )}
         </div>
       </section>
 
@@ -351,12 +402,18 @@ const Home = () => {
         </div>
 
         <div className="policy-grid">
-          {policies.map((policy, idx) => (
-            <div className="policy-item" key={idx} onClick={() => openModal(policy.title, policy.content)}>
-              <span className="policy-icon">📄</span>
-              <h4 className="policy-title">{policy.title}</h4>
+          {policies.length > 0 ? (
+            policies.map((policy, idx) => (
+              <div className="policy-item" key={idx} onClick={() => openModal(policy.title, policy.content)}>
+                <span className="policy-icon">📄</span>
+                <h4 className="policy-title">{policy.title}</h4>
+              </div>
+            ))
+          ) : (
+            <div className="no-policies">
+              <h3>There is no policy yet</h3>
             </div>
-          ))}
+          )}
         </div>
       </section>
 
@@ -435,12 +492,12 @@ const Home = () => {
       <footer className="landing-footer-section">
         <div className="footer-top">
           <div className="footer-logo-col">
-                        <img src="/logo/Logo1.png" alt="App Logo" className="sponsor-logo" />
-                        <p className="small-body-text footer-desc">
-                            The easiest way to discover and book tickets for your favorite events.
-                            Secure, fast, and reliable.
-                        </p>
-                    </div>
+            <img src="/logo/Logo1.png" alt="App Logo" className="sponsor-logo" />
+            <p className="small-body-text footer-desc">
+              The easiest way to discover and book tickets for your favorite events.
+              Secure, fast, and reliable.
+            </p>
+          </div>
           <div className="footer-column">
             <h4>Platform</h4>
             <a href="#home">Home</a>
@@ -465,7 +522,7 @@ const Home = () => {
             <a href="#home">Help Center</a>
             <a href="#home">Contact Us</a>
           </div>
-           <div className="footer-column">
+          <div className="footer-column">
             <h4>Contact Us</h4>
             <p>
               717 South 12th St Suite 3<br />
@@ -528,6 +585,8 @@ const Home = () => {
             <div className="info-modal-body">
               <p>{modalData.content}</p>
             </div>
+            <button className="info-modal-close-btn" onClick={closeModal}>Close</button>
+
           </div>
         </div>
       )}

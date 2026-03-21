@@ -37,19 +37,8 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
         if (!result.isConfirmed) return;
 
         try {
-            // --- Call backend to create the announcement ---
-            const res = await fetch('/api/announcements', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-
-            if (!res.ok) throw new Error('Failed to create announcement');
-
-            const savedAnnouncement = await res.json();
-
-            // --- Pass the saved announcement object back to parent ---
-            await onSave(savedAnnouncement);
+            // --- Pass the announcement object back to parent to handle save ---
+            await onSave(formData);
 
             await showSuccessAlert(
                 'Announcement Created',

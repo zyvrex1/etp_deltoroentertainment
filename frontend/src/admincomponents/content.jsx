@@ -11,8 +11,13 @@ import EditAnnouncementModal from "./Modal/EditAnnouncementModal";
 import CreatePolicyModal from "./modal/CreatePolicyModal";
 import EditPolicyModal from "./modal/EditPolicyModal";
 import { showDeleteConfirmAlert, showSuccessAlert } from "./utils/sweetAlert";
+import announcementService from "../services/announcementService";
+import policyService from "../services/policyService";
+import { useAuthContext } from "./hooks/useAuthContext";
 
 const ContentManager = () => {
+  const { user } = useAuthContext();
+
   // --- Announcement states ---
   const [announcements, setAnnouncements] = useState([]);
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
@@ -26,9 +31,7 @@ const ContentManager = () => {
   // --- Fetch Announcements ---
   const fetchAnnouncements = async () => {
     try {
-      const res = await fetch("/api/announcements");
-      if (!res.ok) throw new Error("Failed to fetch announcements");
-      const data = await res.json();
+      const data = await announcementService.getAnnouncements();
       setAnnouncements(data.map((a) => ({ id: a._id, ...a })));
     } catch (err) {
       console.error("Error fetching announcements:", err);
@@ -38,9 +41,7 @@ const ContentManager = () => {
   // --- Fetch Policies ---
   const fetchPolicies = async () => {
     try {
-      const res = await fetch("/api/policies");
-      if (!res.ok) throw new Error("Failed to fetch policies");
-      const data = await res.json();
+      const data = await policyService.getPolicies();
       const icons = {
         tos: <FaFileContract />,
         privacy: <FaShieldAlt />,
@@ -63,13 +64,7 @@ const ContentManager = () => {
   // Announcement Handler
   const handleSaveAnnouncement = async (formData) => {
     try {
-      const res = await fetch("/api/announcements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      if (!res.ok) throw new Error("Failed to create announcement");
-      await res.json();
+      await announcementService.createAnnouncement(formData, user?.token);
       await fetchAnnouncements(); // <-- refresh announcements
     } catch (err) {
       console.error("Error creating announcement:", err);
@@ -78,13 +73,11 @@ const ContentManager = () => {
 
   const handleUpdateAnnouncement = async (updatedAnnouncement) => {
     try {
-      const res = await fetch(`/api/announcements/${updatedAnnouncement.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedAnnouncement),
-      });
-      if (!res.ok) throw new Error("Failed to update announcement");
-      await res.json();
+      await announcementService.updateAnnouncement(
+        updatedAnnouncement.id,
+        updatedAnnouncement,
+        user?.token
+      );
       await fetchAnnouncements(); // <-- refresh announcements
       setEditingAnnouncement(null);
     } catch (err) {
@@ -100,11 +93,7 @@ const ContentManager = () => {
     if (!result.isConfirmed) return;
 
     try {
-      const res = await fetch(`/api/announcements/${announcement.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete announcement");
-      await res.json();
+      await announcementService.deleteAnnouncement(announcement.id, user?.token);
       await fetchAnnouncements(); // <-- refresh announcements
       await showSuccessAlert("Deleted!", "Announcement deleted successfully.");
     } catch (err) {
@@ -115,13 +104,7 @@ const ContentManager = () => {
   // --- Policy Handlers ---
   const handleAddPolicy = async (newPolicy) => {
     try {
-      const res = await fetch("/api/policies", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newPolicy),
-      });
-      if (!res.ok) throw new Error("Failed to create policy");
-      const createdPolicy = await res.json();
+      const createdPolicy = await policyService.createPolicy(newPolicy, user?.token);
 
       const icons = {
         tos: <FaFileContract />,
@@ -145,13 +128,11 @@ const ContentManager = () => {
 
   const handleUpdatePolicy = async (updatedPolicy) => {
     try {
-      const res = await fetch(`/api/policies/${updatedPolicy.policyKey}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedPolicy),
-      });
-      if (!res.ok) throw new Error("Failed to update policy");
-      await res.json();
+      await policyService.updatePolicy(
+        updatedPolicy.policyKey,
+        updatedPolicy,
+        user?.token
+      );
       await fetchPolicies(); // <-- refresh policies
       setEditingPolicy(null);
     } catch (err) {
@@ -167,11 +148,7 @@ const ContentManager = () => {
     if (!result.isConfirmed) return;
 
     try {
-      const res = await fetch(`/api/policies/${policy.policyKey}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete policy");
-      await res.json();
+      await policyService.deletePolicy(policy.policyKey, user?.token);
       await fetchPolicies(); // <-- refresh policies
       await showSuccessAlert("Deleted!", "Policy deleted successfully.");
     } catch (err) {
@@ -236,7 +213,7 @@ const ContentManager = () => {
                     </div>
                   </div>
                 </div>
-                <p className="small-body-text announcement-desc">{a.content}</p>
+                <p className="small-body-text announcement-desc" title={a.content}>{a.content}</p>
               </div>
             ))}
           </div>
@@ -281,7 +258,7 @@ const ContentManager = () => {
                     </div>
                   </div>
                 </div>
-                <p className="small-body-text legal-desc">{p.content}</p>
+                <p className="small-body-text legal-desc" title={p.content}>{p.content}</p>
               </div>
             ))}
           </div>

@@ -2,6 +2,7 @@ require('dotenv').config()
 
 const express = require('express')
 const mongoose = require('mongoose')
+const cors = require('cors')
 const path = require('path')
 const fs = require('fs')
 
@@ -28,6 +29,10 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // middleware
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+}))
 app.use(express.json())
 
 // request logger

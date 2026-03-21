@@ -142,6 +142,16 @@
                     background: var(--color-red-tertiary, #fce4ec);
                     color: var(--color-red-primary, #dc3545);
                 }
+
+                .announcement-desc {
+                    display: -webkit-box;
+                    -webkit-line-clamp: 1;
+                    line-clamp: 1;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    margin-top: 8px;
+                }
             }
         }
 
@@ -224,6 +234,16 @@
                 .legal-action-btn.delete:hover {
                     background: var(--color-red-tertiary, #fce4ec);
                     color: var(--color-red-primary, #dc3545);
+                }
+
+                .legal-desc {
+                    display: -webkit-box;
+                    -webkit-line-clamp: 1;
+                    line-clamp: 1;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    margin-top: 8px;
                 }
                 
             }
