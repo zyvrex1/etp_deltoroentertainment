@@ -37,12 +37,12 @@ const signupUser = async (req, res) => {
 
     if (role === 'customer') {
       if (!firstName || !lastName || !phone) throw Error('Missing customer fields')
-      await Customer.create({ user: user._id, firstName, lastName, phone, email })
+      await Customer.create({ userId: user._id, phone })
     }
 
     if (role === 'sponsor') {
       if (!firstName || !lastName || !phone || !companyName || !industry) throw Error('Missing sponsor fields')
-      await Sponsor.create({ user: user._id, firstName, lastName, phone, companyName, industry, email })
+      await Sponsor.create({ userId: user._id, phone, companyName, industry })
     }
 
     const token = createToken(user)
@@ -88,7 +88,8 @@ const loginUser = async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Login error:', err.message, 'for email:', email);
+    res.status(401).json({ error: err.message });
   }
 };
 
