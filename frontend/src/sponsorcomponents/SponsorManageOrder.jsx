@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
+import jsPDF from "jspdf";
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from "../admincomponents/utils/pdfExport";
 import "./SponsorManageOrder.css";
+import SponsorViewOrder from "./SponsorModal/SponsorViewOrder";
 
 const initialOrders = [
   { id: "ORD-8902", customer: "Sarah Jenkins", time: "10:45 AM", items: "3 items", itemDesc: "2x Gourmet Burger, 1x Truffle Fri...", total: "$45.95", payment: "Paid", status: "Pending" },
@@ -26,6 +29,9 @@ const SponsorManageOrder = () => {
     setExpandedRow(expandedRow === id ? null : id);
   };
 
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
   const itemsPerPage = 7;
 
   useEffect(() => {
@@ -40,6 +46,10 @@ const SponsorManageOrder = () => {
 
   const handleOrderChange = (id, field, value) => {
     setOrders(prev => prev.map(order => order.id === id ? { ...order, [field]: value } : order));
+    // Also update selected order in modal if it's currently open
+    if (selectedOrder && selectedOrder.id === id) {
+       setSelectedOrder(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const filteredOrders = orders.filter((order) => {
@@ -66,6 +76,58 @@ const SponsorManageOrder = () => {
       case "Ready for Pickup": return "status-ready";
       case "Completed": return "status-completed";
       default: return "";
+    }
+  };
+
+  const openViewModal = (order) => {
+    setSelectedOrder(order);
+    setIsViewModalOpen(true);
+  };
+
+  const exportToPDF = async () => {
+    const loadingToast = showExportToast();
+    try {
+      const logoData = await loadLogo();
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      addReportHeader(pdf, "Orders Report", logoData);
+
+      const headers = ["Order ID", "Customer", "Time", "Items", "Total", "Payment", "Status"];
+      const pdfData = filteredOrders.map((order) => [
+        order.id,
+        order.customer,
+        order.time,
+        order.items,
+        order.total,
+        order.payment,
+        order.status,
+      ]);
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      let currentY = 50; // below header
+      
+      currentY = drawTable(
+        pdf,
+        currentY,
+        headers,
+        pdfData,
+        15, // margin
+        pdfWidth,
+        pdfHeight,
+        15 // footer height
+      );
+
+      addReportFooter(pdf, 1, 1);
+      
+      const fileName = `orders_report_${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdf.save(fileName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      removeExportToast(loadingToast);
     }
   };
 
@@ -124,7 +186,11 @@ const SponsorManageOrder = () => {
                 </div>
               )}
             </div>
-            <button className="primary-button export-btn" style={{ padding: '8px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', height: '100%' }}>
+            <button 
+              className="primary-button export-btn" 
+              style={{ padding: '8px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', height: '100%' }}
+              onClick={exportToPDF}
+            >
               <Icon icon="mdi:download" /> Export Report
             </button>
           </div>
@@ -201,7 +267,7 @@ const SponsorManageOrder = () => {
                     </td>
                     <td data-label="ACTIONS">
                       <div className="smo-actions-col">
-                        <button className="smo-view-btn regular-body-text" >
+                        <button className="smo-view-btn regular-body-text" onClick={() => openViewModal(order)}>
                           <Icon icon="mdi:eye-outline" /> View
                         </button>
                       </div>
@@ -244,6 +310,14 @@ const SponsorManageOrder = () => {
           </div>
         )}
       </div>
+
+      <SponsorViewOrder 
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        order={selectedOrder}
+        onStatusChange={(id, newStatus) => handleOrderChange(id, 'status', newStatus)}
+        onPaymentChange={(id, newPayment) => handleOrderChange(id, 'payment', newPayment)}
+      />
     </div>
   );
 };
