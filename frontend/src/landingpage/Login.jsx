@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { useLogin } from "../admincomponents/hooks/useLogin";
 import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import { showSuccessAlert, showErrorAlert } from "../admincomponents/utils/sweetAlert";
 
 const ROLES = {
     customer: {
@@ -47,24 +48,37 @@ const Login = ({ role, onBack }) => {
         e.preventDefault();
 
         if (isForgotPassword) {
-            // Simulate sending temporary password
             if (!email) {
-                alert("Please enter your email to receive a temporary password.");
+                showErrorAlert("Input Required", "Please enter your email to receive a temporary password.");
                 return;
             }
-            alert(`A temporary password has been sent to ${email}`);
+            showSuccessAlert("Success", `A temporary password has been sent to ${email}`);
             setIsForgotPassword(false);
             return;
         }
 
-        await login(email, password);
+        try {
+            await login(email, password);
+        } catch (err) {
+            // Error is handled by the hook and displayed via useEffect or below
+        }
     };
+
+    // Handle Login Error Toast
+    useEffect(() => {
+        if (error) {
+            showErrorAlert("Login Failed", error);
+        }
+    }, [error]);
 
     useEffect(() => {
         if (user) {
             // Close modal if it exists
             const closeModalEvent = new CustomEvent("closeLoginModal");
             window.dispatchEvent(closeModalEvent);
+
+            // Show success toast
+            showSuccessAlert("Login Successful", `Welcome ${user.firstName || 'User'}`);
 
             if (user.role === "admin") {
                 navigate("/admin");
