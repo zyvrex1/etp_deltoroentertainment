@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
-import Swal from "sweetalert2";
+import { showDeleteConfirmAlert, showSuccessAlert } from "../admincomponents/utils/sweetAlert";
 import "./SponsorManageProduct.css";
 import SponsorAddProduct from "./SponsorModal/SponsorAddProduct";
 import SponsorEditProduct from "./SponsorModal/SponsorEditProduct";
@@ -82,22 +82,13 @@ const SponsorManageProduct = () => {
   };
 
   const handleDeleteProduct = (productId) => {
-    Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#c62828',
-      cancelButtonColor: '#4a5161',
-      confirmButtonText: 'Yes, delete it!'
-    }).then((result) => {
+    showDeleteConfirmAlert(
+      "Delete Product?",
+      "Are you sure you want to delete this product from your inventory?"
+    ).then((result) => {
       if (result.isConfirmed) {
         setProducts(products.filter(p => p.id !== productId));
-        Swal.fire(
-          'Deleted!',
-          'Your product has been deleted.',
-          'success'
-        );
+        showSuccessAlert("Deleted!", "Your product has been deleted successfully.");
       }
     });
   };

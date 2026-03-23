@@ -407,41 +407,43 @@
       }
     }
 
-  
+
   }
+
   .spa-chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+
+    .spa-legend-item {
       display: flex;
-      justify-content: center;
-      gap: 16px;
-      margin-top: 16px;
-      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--color-black-secondary);
 
-      .spa-legend-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        color: var(--color-black-secondary);
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
 
-        .dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
+        &.blue {
+          background: var(--color-blue-primary);
+        }
 
-          &.blue {
-            background: var(--color-blue-primary);
-          }
+        &.red {
+          background: var(--color-red-primary);
+        }
 
-          &.red {
-            background: var(--color-red-primary);
-          }
-
-          &.yellow {
-            background: var(--color-yellow-secondary);
-          }
+        &.yellow {
+          background: var(--color-yellow-secondary);
         }
       }
     }
+  }
+
   @media (max-width: 1024px) {
     .spa-stats-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -493,9 +495,6 @@
               margin-bottom: 0;
             }
 
-            &:not(.expanded) td:not(.id-td):not(.revenue-td) {
-              display: none !important;
-            }
           }
 
           td {

@@ -6,6 +6,7 @@ import "./SponsorStoreDashboard.css";
 import SponsorManageProduct from "./SponsorManageProduct";
 import SponsorManageOrder from "./SponsorManageOrder";
 import SponsorProductAnalytics from "./SponsorProductAnalytics";
+import SponsorPaymentInfo from "./SponsorPaymentInfo";
 
 const SponsorStoreDashboard = () => {
   const navigate = useNavigate();
@@ -46,10 +47,10 @@ const SponsorStoreDashboard = () => {
             <Icon icon="mdi:chart-bar" /> Analytics
           </button>
           <button 
-            className={`ssd-tab ${activeTab === 'Payments' ? 'active' : ''}`}
-            onClick={() => setActiveTab('Payments')}
+            className={`ssd-tab ${activeTab === 'Info' ? 'active' : ''}`}
+            onClick={() => setActiveTab('Info')}
           >
-            <Icon icon="mdi:credit-card-outline" /> Payments
+            <Icon icon="mdi:information-outline" /> Info
           </button>
         </div>
       </div>
@@ -58,12 +59,7 @@ const SponsorStoreDashboard = () => {
         {activeTab === 'Products' && <SponsorManageProduct />}
         {activeTab === 'Orders' && <SponsorManageOrder />}
         {activeTab === 'Analytics' && <SponsorProductAnalytics />}
-        {activeTab === 'Payments' && (
-          <div style={{padding: '40px', textAlign: 'center', background: 'var(--color-white-primary)', borderRadius: '12px'}}>
-            <h4>Payments Details</h4>
-            <p className="regular-body-text">Coming soon...</p>
-          </div>
-        )}
+        {activeTab === 'Info' && <SponsorPaymentInfo />}
       </div>
     </div>
   );
