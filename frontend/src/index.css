@@ -316,22 +316,22 @@ li {
 
 
 .empty-state {
-    width: 100%;
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--color-black-secondary);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+  width: 100%;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-black-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 
-    h4 {
+  h4 {
     font-weight: 600;
-}
+  }
 }
 
 
-    .bt-empty-state{
+.bt-empty-state {
   width: 100%;
   grid-column: 1 / -1;
   text-align: center;
@@ -342,25 +342,30 @@ li {
   align-items: center;
   gap: 8px;
 
-  h4{
-  font-weight: 600;
-}
+  h4 {
+    font-weight: 600;
+  }
 }
 
 .settings-profile-avatar {
   position: relative;
-  width: 120px;  /* adjust size */
+  width: 120px;
+  /* adjust size */
   height: 120px;
-  border-radius: 50%;  /* makes circle */
-  overflow: hidden;    /* keeps image inside circle */
-  border: 2px solid #ccc; /* optional */
+  border-radius: 50%;
+  /* makes circle */
+  overflow: hidden;
+  /* keeps image inside circle */
+  border: 2px solid #ccc;
+  /* optional */
 }
 
 /* Uploaded image */
 .avatar-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;  /* ensures image covers circle */
+  object-fit: cover;
+  /* ensures image covers circle */
 }
 
 .avatar-icon {
@@ -381,7 +386,7 @@ li {
 }
 
 .camera-btn {
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   border-radius: 50%;
   padding: 6px;
   cursor: pointer;
@@ -389,4 +394,189 @@ li {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Custom SweetAlert styles */
+.swal2-toast-custom {
+  border-radius: 12px !important;
+  padding: 1rem !important;
+  background: white !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.swal2-toast-success-custom {
+  background-color: var(--color-green-quaternary) !important;
+  border: 1px solid var(--color-green-primary) !important;
+}
+
+.swal2-toast-error-custom {
+  background-color: var(--color-red-quaternary) !important;
+  border: 1px solid var(--color-red-primary) !important;
+}
+
+.swal2-popup.swal2-toast-custom {
+  display: flex !important;
+  align-items: center !important;
+  width: auto !important;
+  min-width: 350px !important;
+  padding: 12px 20px !important;
+}
+
+.swal2-popup.swal2-toast-custom .swal2-title {
+  font-family: 'Poppins', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: var(--color-black-primary) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  flex-grow: 1 !important;
+}
+
+.swal2-popup.swal2-toast-custom .swal2-icon {
+  margin: 0 12px 0 0 !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Success Toast Icon */
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-success {
+  background-color: var(--color-green-quaternary) !important;
+}
+
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-success .swal2-success-ring {
+  display: none !important;
+}
+
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-success .swal2-success-line-tip,
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-success .swal2-success-line-long {
+  background-color: var(--color-green-primary) !important;
+  height: 2px !important;
+}
+
+/* Error Toast Icon */
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-error {
+  background-color: var(--color-red-quaternary) !important;
+}
+
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+  background-color: var(--color-red-primary) !important;
+  height: 2px !important;
+}
+
+/* Close button - custom x */
+.swal2-popup.swal2-toast-custom .swal2-close {
+  color: var(--color-black-tertiary) !important;
+  font-size: 20px !important;
+  transition: color 0.2s !important;
+  order: 3 !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.swal2-popup.swal2-toast-custom .swal2-close:hover {
+  color: var(--color-red-primary) !important;
+}
+
+/* Confirmation Dialog Custom Icons/Banners */
+.swal2-modal.swal2-confirm-modal-custom {
+  border-radius: 12px !important;
+  padding: 24px !important;
+}
+
+.swal2-modal.swal2-confirm-modal-custom .swal2-title {
+  font-family: 'Poppins', sans-serif !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+  padding: 0 !important;
+  margin-bottom: 16px !important;
+}
+
+.swal2-modal.swal2-confirm-modal-custom .swal2-html-container {
+  font-family: 'Inter', sans-serif !important;
+  text-align: left !important;
+  margin: 0 0 24px 0 !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+}
+
+/* Banner style for confirmation/warning in HTML container */
+.confirm-banner-warning {
+  background-color: var(--color-red-quaternary) !important;
+  color: var(--color-red-primary) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  font-weight: 500 !important;
+  padding: 12px !important;
+}
+
+.confirm-banner-info {
+  background-color: var(--color-blue-quaternary) !important;
+  color: var(--color-blue-primary) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  font-weight: 500 !important;
+  font-weight: 500 !important;
+
+}
+
+.confirm-banner-success {
+  background-color: var(--color-green-quaternary) !important;
+  color: var(--color-green-primary) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  font-weight: 500 !important;
+  padding: 12px !important;
+
+}
+
+.swal2-actions {
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+.swal2-confirm,
+.swal2-cancel {
+  border-radius: 8px !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 10px 20px !important;
+  text-transform: uppercase !important;
+}
+
+.swal2-confirm-red {
+  background-color: var(--color-red-primary) !important;
+  box-shadow: none !important;
+}
+
+.swal2-confirm-green {
+  background-color: var(--color-green-primary) !important;
+  box-shadow: none !important;
+}
+
+.swal2-cancel-custom {
+  background-color: transparent !important;
+  color: var(--color-black-secondary) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.swal2-cancel-custom:hover {
+  background-color: var(--color-bg-light) !important;
 }
