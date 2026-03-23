@@ -19,6 +19,11 @@ const UserManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
+  const [expandedRow, setExpandedRow] = useState(null);
+
+  const toggleRow = (id) => {
+    setExpandedRow(expandedRow === id ? null : id);
+  };
 
   const fetchUsers = async () => {
     if (!user?.token) return;
@@ -134,6 +139,7 @@ const UserManagement = () => {
     setActiveTab(tabId);
     setCurrentPage(1);
     setSearchQuery("");
+    setExpandedRow(null);
   };
 
   const handleViewUser = (user) => {
@@ -180,8 +186,11 @@ const UserManagement = () => {
               </thead>
               <tbody>
                 {paginatedData.map((user) => (
-                  <tr key={user._id}>
-                    <td data-label="User">
+                  <tr key={user._id} className={expandedRow === user._id ? "expanded" : ""}>
+                    <td data-label="User" className="id-td">
+                      <div className="mobile-expand-icon" onClick={() => toggleRow(user._id)}>
+                        <Icon icon={expandedRow === user._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                      </div>
                       <div className="user-cell">
                         <span className="avatar">
                           {getInitial(user.firstName, user.lastName)}
@@ -193,7 +202,7 @@ const UserManagement = () => {
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Email" className="name-td">
                       <h5 className="smaller-body-text">{user.email}</h5>
                     </td>
                     <td data-label="Role">
@@ -268,8 +277,11 @@ const UserManagement = () => {
               </thead>
               <tbody>
                 {paginatedData.map((customer) => (
-                  <tr key={customer._id}>
-                    <td data-label="Customer">
+                  <tr key={customer._id} className={expandedRow === customer._id ? "expanded" : ""}>
+                    <td data-label="Customer" className="id-td">
+                      <div className="mobile-expand-icon" onClick={() => toggleRow(customer._id)}>
+                        <Icon icon={expandedRow === customer._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                      </div>
                       <div className="user-cell">
                         <span className="avatar">
                           {" "}
@@ -282,7 +294,7 @@ const UserManagement = () => {
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Email" className="name-td">
                       <h5 className="smaller-body-text">{customer.email}</h5>
                     </td>
                     <td data-label="Total Spent" className="regular-body-text">
@@ -297,13 +309,7 @@ const UserManagement = () => {
                     </td>
                     <td data-label="Status">
                       <span
-                        className={`button-label status-${getUserStatus(customer.lastLogin)}`}
-                        style={{
-                          backgroundColor:
-                            getUserStatus(user.lastLogin) === "active"
-                              ? "green"
-                              : "gray",
-                        }}
+                        className={`button-label em-status-${getUserStatus(customer.lastLogin)}`}
                       >
                         {getUserStatus(customer.lastLogin).charAt(0).toUpperCase() +
                           getUserStatus(customer.lastLogin).slice(1)}
@@ -361,8 +367,11 @@ const UserManagement = () => {
               </thead>
               <tbody>
                 {paginatedData.map((promoter) => (
-                  <tr key={promoter._id}>
-                    <td data-label="User">
+                  <tr key={promoter._id} className={expandedRow === promoter._id ? "expanded" : ""}>
+                    <td data-label="User" className="id-td">
+                      <div className="mobile-expand-icon" onClick={() => toggleRow(promoter._id)}>
+                        <Icon icon={expandedRow === promoter._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                      </div>
                       <div className="user-cell">
                         <span className="avatar">
                           {getInitial(promoter.firstName, promoter.lastName)}
@@ -374,7 +383,7 @@ const UserManagement = () => {
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Email" className="name-td">
                       <h5 className="smaller-body-text">{promoter.email}</h5>
                     </td>
                     <td data-label="Organization" className="small-body-text">
@@ -385,13 +394,7 @@ const UserManagement = () => {
                     </td>
                     <td data-label="Status">
                       <span
-                        className={`button-label status-${getUserStatus(promoter.lastLogin)}`}
-                        style={{
-                          backgroundColor:
-                            getUserStatus(user.lastLogin) === "active"
-                              ? "gray"
-                              : "green",
-                        }}
+                        className={`button-label em-status-${getUserStatus(promoter.lastLogin)}`}
                       >
                         {getUserStatus(promoter.lastLogin).charAt(0).toUpperCase() +
                           getUserStatus(promoter.lastLogin).slice(1)}
@@ -448,8 +451,11 @@ const UserManagement = () => {
               </thead>
               <tbody>
                 {paginatedData.map((sponsor) => (
-                  <tr key={sponsor._id}>
-                    <td data-label="User">
+                  <tr key={sponsor._id} className={expandedRow === sponsor._id ? "expanded" : ""}>
+                    <td data-label="User" className="id-td">
+                      <div className="mobile-expand-icon" onClick={() => toggleRow(sponsor._id)}>
+                        <Icon icon={expandedRow === sponsor._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                      </div>
                       <div className="user-cell">
                         <span className="avatar">
                           {getInitial(sponsor.firstName, sponsor.lastName)}
@@ -461,7 +467,7 @@ const UserManagement = () => {
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Email" className="name-td">
                       <h5 className="smaller-body-text">{sponsor.email}</h5>
                     </td>
                     <td data-label="Organization" className="small-body-text">
@@ -473,12 +479,6 @@ const UserManagement = () => {
                     <td data-label="Status">
                       <span
                         className={`button-label em-status-${getUserStatus(sponsor.lastLogin)}`}
-                        style={{
-                          backgroundColor:
-                            getUserStatus(user.lastLogin) === "active"
-                              ? "green"
-                              : "gray",
-                        }}
                       >
                         {getUserStatus(sponsor.lastLogin).charAt(0).toUpperCase() +
                           getUserStatus(sponsor.lastLogin).slice(1)}

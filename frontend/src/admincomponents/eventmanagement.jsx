@@ -66,10 +66,16 @@ const EventManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
   const [activeTab, setActiveTab] = useState("all-events");
+  const [expandedRow, setExpandedRow] = useState(null);
+
+  const toggleRow = (id) => {
+    setExpandedRow(expandedRow === id ? null : id);
+  };
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     setCurrentPage(1);
     setSearchQuery("");
+    setExpandedRow(null);
   };
 
   useEffect(() => {
@@ -343,10 +349,13 @@ const EventManagement = () => {
                   const statusClass = `status-${event.status}`;
 
                   return (
-                    <tr key={event._id}>
-                      <td data-label="Event">
+                    <tr key={event._id} className={expandedRow === event._id ? "expanded" : ""}>
+                      <td data-label="Event" className="id-td">
+                        <div className="mobile-expand-icon" onClick={() => toggleRow(event._id)}>
+                          <Icon icon={expandedRow === event._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                        </div>
                         <div className="event-cell">
-                          <h6 className="event-name">{event.title}</h6>
+                          <h5 className="event-name">{event.title}</h5>
                           <p className="smaller-body-text event-category">
                             {event.category || "No Category"}
                           </p>
@@ -358,7 +367,7 @@ const EventManagement = () => {
                         </div>
                       </td>
 
-                      <td data-label="Venue">
+                      <td data-label="Venue" className="name-td">
                         <div className="venue-cell">
                           <p className="regular-body-text green-label">
                             {event.venue?.name || "No Venue"}

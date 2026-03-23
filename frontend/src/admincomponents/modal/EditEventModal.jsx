@@ -366,12 +366,8 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
       }
 
       const updatedEvent = await response.json();
-      showSuccessAlert("Event updated successfully!");
-
-      console.log("Updated event:", updatedEvent);
-
-      // ✅ Close the modal after successful save
       onClose();
+      showSuccessAlert("Event updated successfully!");
     } catch (err) {
       console.error(err);
       showErrorAlert(err.message);

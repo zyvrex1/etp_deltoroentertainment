@@ -39,8 +39,8 @@ const EditAnnouncementModal = ({ isOpen, onClose, onSave, announcement }) => {
 
         try {
             await onSave({ ...formData, id: announcement?.id });
-            await showSuccessAlert('Announcement Updated', 'The announcement has been updated successfully.');
             onClose();
+            showSuccessAlert('Announcement Updated', 'The announcement has been updated successfully.');
         } catch (error) {
             console.error('Error updating announcement:', error);
         }

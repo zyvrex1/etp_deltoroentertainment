@@ -196,12 +196,12 @@ const CreateEventModal = ({ isOpen, onClose }) => {
       setError(null);
       setEmptyFields([]);
 
-      await showSuccessAlert(
+      onClose();
+
+      showSuccessAlert(
         "Event Created",
         "The event has been created successfully."
       );
-
-      onClose();
 
       dispatch({ type: "CREATE_EVENT", payload: json.event });
     } catch (err) {

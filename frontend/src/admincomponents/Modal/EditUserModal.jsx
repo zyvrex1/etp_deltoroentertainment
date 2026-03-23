@@ -77,8 +77,8 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
 
         try {
             // Here you would typically send the data to your API
-            await showSuccessAlert('User Updated', 'The user information has been updated successfully.');
             onClose();
+            showSuccessAlert('User Updated', 'The user information has been updated successfully.');
         } catch (error) {
             console.error('Error updating user:', error);
         }

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
+import { showDeleteConfirmAlert, showSuccessAlert, showCheckoutConfirmAlert, showQuestionAlert } from '../admincomponents/utils/sweetAlert';
 import './CustomerCart.css';
 
 export default function CustomerCart() {
     const navigate = useNavigate();
 
     const [selectedTickets, setSelectedTickets] = useState([false, true, true, true]);
-    const [isCartEmpty, setIsCartEmpty] = useState(true);
+    const [isCartEmpty, setIsCartEmpty] = useState(false); // Changed to false for testing/viewing
 
     const countSelected = selectedTickets.filter(Boolean).length;
     const subtotal = (selectedTickets[0] ? 150 : 0) + (selectedTickets[1] ? 65 : 0) + (selectedTickets[2] ? 150 : 0) + (selectedTickets[3] ? 150 : 0);
@@ -21,58 +21,35 @@ export default function CustomerCart() {
         setSelectedTickets(newSelected);
     };
 
-    const handleDeleteTicket = () => {
-        Swal.fire({
-            title: 'Remove Ticket?',
-            text: 'Are you sure you want to remove this ticket from your cart?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#9A212E',
-            cancelButtonColor: '#aaa',
-            confirmButtonText: 'Yes, remove it'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Removed!',
-                    text: 'The ticket has been removed.',
-                    icon: 'success',
-                    confirmButtonColor: '#9A212E'
-                });
-            }
-        });
+    const handleDeleteTicket = async () => {
+        const result = await showDeleteConfirmAlert(
+            'Remove Ticket?',
+            'Are you sure you want to remove this ticket from your cart?'
+        );
+
+        if (result.isConfirmed) {
+            showSuccessAlert('Removed!', 'The ticket has been removed.');
+        }
     };
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         if (countSelected === 0) return;
-        Swal.fire({
-            title: 'Proceed to Checkout?',
-            text: `Are you sure you want to proceed to checkout with ${countSelected} ticket(s)?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#9A212E',
-            cancelButtonColor: '#aaa',
-            confirmButtonText: 'Yes, proceed'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                navigate('/customer/checkout');
-            }
-        });
+        
+        const result = await showCheckoutConfirmAlert(countSelected);
+        if (result.isConfirmed) {
+            navigate('/customer/checkout');
+        }
     };
 
-    const handleContinueShopping = () => {
-        Swal.fire({
-            title: 'Continue Shopping?',
-            text: 'Are you sure you want to continue shopping? Your current cart will be saved.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#9A212E',
-            cancelButtonColor: '#aaa',
-            confirmButtonText: 'Yes, continue'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                navigate('/customer/browse-events');
-            }
-        });
+    const handleContinueShopping = async () => {
+        const result = await showQuestionAlert(
+            'Continue Shopping?',
+            'Are you sure you want to continue shopping? Your current cart will be saved.',
+            'Yes, continue'
+        );
+        if (result.isConfirmed) {
+            navigate('/customer/browse-events');
+        }
     };
 
     return (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
+import { showAddToCartConfirmAlert, showSuccessAlert, showQuestionAlert } from '../admincomponents/utils/sweetAlert';
 import './CustomerSeats.css';
 
 const CustomerSeats = () => {
@@ -50,45 +50,26 @@ const CustomerSeats = () => {
     const serviceFees = selectedSeats.length > 0 ? 10 : 0;
     const total = subtotal + serviceFees;
 
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         if (selectedSeats.length === 0) return;
-        Swal.fire({
-            title: 'Add to Cart?',
-            text: `Are you sure you want to add ${selectedSeats.length} ticket(s) to your cart?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#9A212E',
-            cancelButtonColor: '#aaa',
-            confirmButtonText: 'Yes, add them'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Added!',
-                    text: 'Ticket(s) added to your cart.',
-                    icon: 'success',
-                    confirmButtonColor: '#9A212E',
-                }).then(() => {
-                    navigate('/customer/cart');
-                });
-            }
-        });
+        
+        const result = await showAddToCartConfirmAlert(selectedSeats.length);
+        if (result.isConfirmed) {
+            showSuccessAlert('Added!', 'Ticket(s) added to your cart.');
+            navigate('/customer/cart');
+        }
     };
 
-    const handleContinueBrowsing = () => {
+    const handleContinueBrowsing = async () => {
         if (selectedSeats.length > 0) {
-            Swal.fire({
-                title: 'Continue Browsing?',
-                text: 'Are you sure you want to continue browsing? Your selected seats will be held for 10 minutes.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#9A212E',
-                cancelButtonColor: '#aaa',
-                confirmButtonText: 'Yes, continue'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    navigate('/customer/browse-events');
-                }
-            });
+            const result = await showQuestionAlert(
+                'Continue Browsing?',
+                'Are you sure you want to continue browsing? Your selected seats will be held for 10 minutes.',
+                'Yes, continue'
+            );
+            if (result.isConfirmed) {
+                navigate('/customer/browse-events');
+            }
         } else {
             navigate('/customer/browse-events');
         }

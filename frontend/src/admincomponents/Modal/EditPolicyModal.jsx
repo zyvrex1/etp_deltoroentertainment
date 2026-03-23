@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert } from "../utils/sweetAlert";
+import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert, showErrorAlert } from "../utils/sweetAlert";
 
 const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
   const [title, setTitle] = useState("");
@@ -35,15 +35,14 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
       // Pass the updated policy object back to parent to handle save
       await onSave(updatedPolicy);
 
-      await showSuccessAlert(
+      onClose();
+      showSuccessAlert(
         "Policy Updated",
         "The policy has been updated successfully."
       );
-
-      onClose();
     } catch (error) {
       console.error("Error updating policy:", error);
-      alert(error.message);
+      showErrorAlert("Error", error.message);
     } finally {
       setIsSaving(false);
     }

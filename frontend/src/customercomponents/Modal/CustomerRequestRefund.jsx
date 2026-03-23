@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import Swal from 'sweetalert2';
+import { showErrorAlert, showQuestionAlert, showSuccessAlert } from '../../admincomponents/utils/sweetAlert';
 import './CustomerRequestRefund.css';
 
 const CustomerRequestRefund = ({ show, onClose, ticketData }) => {
@@ -18,36 +18,22 @@ const CustomerRequestRefund = ({ show, onClose, ticketData }) => {
         }
     }, [show, ticketData]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!reason.trim()) {
-            Swal.fire({
-                title: 'Error',
-                text: 'Please provide a reason for the refund.',
-                icon: 'error',
-                confirmButtonColor: '#9A212E',
-            });
+            showErrorAlert('Error', 'Please provide a reason for the refund.');
             return;
         }
-        Swal.fire({
-            title: 'Submit Request?',
-            text: 'Are you sure you want to submit this refund request?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#9A212E',
-            cancelButtonColor: '#aaa',
-            confirmButtonText: 'Yes, submit it'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Request Submitted!',
-                    text: 'Your refund request has been successfully submitted.',
-                    icon: 'success',
-                    confirmButtonColor: '#9A212E',
-                }).then(() => {
-                    onClose();
-                });
-            }
-        });
+        
+        const result = await showQuestionAlert(
+            'Submit Request?',
+            'Are you sure you want to submit this refund request?',
+            'Yes, submit it'
+        );
+
+        if (result.isConfirmed) {
+            onClose();
+            showSuccessAlert('Request Submitted!', 'Your refund request has been successfully submitted.');
+        }
     };
 
     if (!show) return null;

@@ -1,16 +1,20 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import './ViewTransactionModal.css';
+import { showRefundConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
 
 const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
     if (!isOpen || !transaction) return null;
 
-    const handleProcessRefund = () => {
-        if (window.confirm('Are you sure you want to process a refund for this transaction?')) {
+    const handleProcessRefund = async () => {
+        const result = await showRefundConfirmAlert(transaction.id, transaction.amount);
+        
+        if (result.isConfirmed) {
             if (onRefund) {
                 onRefund(transaction.id);
             }
             onClose();
+            showSuccessAlert('Refund Processed', `The refund for order #${transaction.id} has been successfully processed.`);
         }
     };
 

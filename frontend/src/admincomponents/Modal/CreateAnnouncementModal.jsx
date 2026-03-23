@@ -40,11 +40,12 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
             // --- Pass the announcement object back to parent to handle save ---
             await onSave(formData);
 
-            await showSuccessAlert(
+            onClose();
+
+            showSuccessAlert(
                 'Announcement Created',
                 'The announcement has been created successfully.'
             );
-            onClose();
 
             // Reset form
             setFormData({

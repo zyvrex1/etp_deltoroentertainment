@@ -166,7 +166,8 @@ const EventApproval = () => {
             'Approve Event',
             `Are you sure you want to approve "${event.name}"? This will make the event live and visible to customers. The promoter will be notified of the approval.`,
             'Confirm Approval',
-            'Cancel'
+            'Cancel',
+            true
         );
 
         if (result.isConfirmed) {

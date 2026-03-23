@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { showSuccessAlert, showCancelConfirmAlert } from "../utils/sweetAlert";
+import { showSuccessAlert, showCancelConfirmAlert, showErrorAlert } from "../utils/sweetAlert";
 import './ManagePolicyModal.css';
 
 const CreatePolicyModal = ({
@@ -32,7 +32,7 @@ const CreatePolicyModal = ({
     e.preventDefault();
 
     if (!policyKey) {
-      alert("All policy keys are already used");
+      showErrorAlert("Error", "All policy keys are already used");
       return;
     }
 
@@ -42,18 +42,18 @@ const CreatePolicyModal = ({
       // Pass the policy object back to parent to handle save
       await onSave(newPolicy);
 
-      await showSuccessAlert(
+      onClose();
+      showSuccessAlert(
         "Policy Added",
         "The policy has been added successfully.",
       );
-      onClose();
 
       // Reset form
       setTitle("");
       setContent("");
     } catch (error) {
       console.error("Error adding policy:", error);
-      alert(error.message);
+      showErrorAlert("Error", error.message);
     }
   };
 

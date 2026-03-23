@@ -62,18 +62,18 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
 
       if (!response.ok) throw new Error(data.error || "Failed to create user");
 
-      await showSuccessAlert("User Created", data.message);
+      showSuccessAlert("User Created", data.message);
+      onClose();
 
       // 🔥 THIS IS THE IMPORTANT PART
       if (onUserCreated) {
         onUserCreated();
       }
 
-      onClose();
       setFormData({});
     } catch (error) {
       console.error("Error creating user:", error);
-      alert(error.message);
+      showErrorAlert("Error", error.message);
     }
   };
 

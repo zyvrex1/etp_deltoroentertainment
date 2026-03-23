@@ -33,25 +33,32 @@
         gap: 16px;
         margin-bottom: 24px;
 
+        @media (max-width: 600px) {
+            grid-template-columns: 1fr;
+        }
+
         .pay-card {
             border-radius: 12px;
             padding: 24px;
             display: flex;
             flex-direction: column;
             gap: 8px;
+            border: 1px solid transparent;
 
             &.pay-card-pending {
                 background: var(--color-bg-dark);
                 color: var(--color-white-primary);
-                align-items: baseline;
+                align-items: flex-start;
 
                 .pay-card-title,
                 .pay-card-meta {
                     color: var(--color-white-secondary);
+                    text-align: left;
                 }
 
                 .pay-card-amount {
                     color: var(--color-white-primary);
+                    margin: 0;
                 }
 
                 .pay-card-meta {
@@ -70,14 +77,16 @@
                 background: var(--color-white-primary);
                 border: 1px solid var(--color-black-quaternary);
                 color: var(--color-black-primary);
-                align-items: baseline;
+                align-items: flex-start;
 
                 .pay-card-title {
                     color: var(--color-black-secondary);
+                    text-align: left;
                 }
 
                 .pay-card-amount {
                     color: var(--color-black-primary);
+                    margin: 0;
                 }
 
                 .pay-card-meta {

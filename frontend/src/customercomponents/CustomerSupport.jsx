@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
-import Swal from 'sweetalert2';
+import { showSendMessageConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
 import './CustomerSupport.css';
 
 export default function CustomerSupport() {
@@ -33,25 +33,11 @@ export default function CustomerSupport() {
         }
     ];
 
-    const handleSendMessage = () => {
-        Swal.fire({
-            title: 'Send Message?',
-            text: 'Are you sure you want to send this message to our support team?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#9A212E',
-            cancelButtonColor: '#aaa',
-            confirmButtonText: 'Yes, send it'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Message Sent!',
-                    text: 'Our support team will get back to you within 24 hours.',
-                    icon: 'success',
-                    confirmButtonColor: '#9A212E',
-                });
-            }
-        });
+    const handleSendMessage = async () => {
+        const result = await showSendMessageConfirmAlert();
+        if (result.isConfirmed) {
+            showSuccessAlert('Message Sent!', 'Our support team will get back to you within 24 hours.');
+        }
     };
 
     return (
