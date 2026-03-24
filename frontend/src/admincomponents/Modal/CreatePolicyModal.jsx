@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { showSuccessAlert, showCancelConfirmAlert, showErrorAlert } from "../utils/sweetAlert";
+import { showSuccessAlert, showCancelConfirmAlert, showErrorAlert, showCreateConfirmAlert } from "../utils/sweetAlert";
 import './ManagePolicyModal.css';
 
 const CreatePolicyModal = ({
@@ -35,6 +35,13 @@ const CreatePolicyModal = ({
       showErrorAlert("Error", "All policy keys are already used");
       return;
     }
+
+    const result = await showCreateConfirmAlert(
+      "Add Policy?",
+      `Are you sure you want to add the "${title}" policy?`
+    );
+
+    if (!result.isConfirmed) return;
 
     try {
       const newPolicy = { title, content, policyKey };
