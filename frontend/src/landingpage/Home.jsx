@@ -4,6 +4,9 @@ import './Home.css';
 import { Icon } from "@iconify/react";
 import announcementService from '../services/announcementService';
 import policyService from '../services/policyService';
+import eventsService from '../services/eventsService';
+
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "";
 
 const Home = () => {
   const { openAuthModal } = useOutletContext() || { openAuthModal: () => { } };
@@ -28,6 +31,9 @@ const Home = () => {
 
   // Initial state for announcements
   const [announcements, setAnnouncements] = useState([]);
+
+  // Initial state for events
+  const [liveEvents, setLiveEvents] = useState([]);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -82,14 +88,40 @@ const Home = () => {
     fetchPolicies();
   }, []);
 
-  const events = [
-    { tag: "TECH", title: "Neon Cyber Punk Night", date: "Nov 12", location: "San Francisco, CA" },
-    { tag: "MUSIC", title: "Future Tech Summit 2024", date: "Dec 05", location: "Los Angeles, CA" },
-    { tag: "SPORTS", title: "Global Food Festival", date: "Jan 15", location: "Downtown Park, Seattle" },
-    { tag: "TECH", title: "Abstract Art Gallery Opening", date: "Feb 20", location: "Museum of Modern Art, NY" },
-    { tag: "GAMING", title: "Startup Pitch Competition", date: "Mar 10", location: "Innovation Hub, Austin" },
-    { tag: "ART", title: "Marathon for Charity", date: "Apr 22", location: "City Center, Boston" }
-  ];
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const data = await eventsService.getEvents();
+        // data might be { events: [...] } or just [...]
+        const eventsArray = data.events || data;
+
+        if (Array.isArray(eventsArray) && eventsArray.length > 0) {
+          // Get only the recent 6 events added (backend already sorts by createdAt: -1)
+          const recentEvents = eventsArray.slice(0, 6).map(evt => {
+            // Format date for the badge (e.g., "Nov 12")
+            const dateObj = new Date(evt.startDate);
+            const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+
+            return {
+              tag: evt.category?.toUpperCase() || "EVENT",
+              title: evt.title,
+              date: formattedDate,
+              location: `${evt.venue?.city || ""}, ${evt.venue?.address || ""}`.trim() || "Location TBD",
+              image: evt.image ? `${BASE_URL}/uploads/${evt.image}` : '/assets/eventbg.jpg'
+            };
+          });
+          setLiveEvents(recentEvents);
+        } else {
+          setLiveEvents([]);
+        }
+      } catch (error) {
+        console.error("Failed to load live events:", error);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
 
   return (
     <div className="landing-page">
@@ -243,22 +275,32 @@ const Home = () => {
         </div>
 
         <div className="events-grid">
-          {events.map((evt, idx) => (
-            <div className="event-card" key={idx}>
-              <div
-                className="event-image"
-                style={{ backgroundImage: `url('/assets/eventbg.jpg')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-              >
-                <span className="button-label event-date-badge">{evt.date}</span>
+          {liveEvents.length > 0 ? (
+            liveEvents.map((evt, idx) => (
+              <div className="event-card" key={idx}>
+                <div
+                  className="event-image"
+                  style={{ 
+                    backgroundImage: `url('${evt.image}')`, 
+                    backgroundSize: 'cover', 
+                    backgroundPosition: 'center' 
+                  }}
+                >
+                  <span className="button-label event-date-badge">{evt.date}</span>
+                </div>
+                <div className="event-details">
+                  <span className="button-label event-tag">{evt.tag}</span>
+                  <h4>{evt.title}</h4>
+                  <p className="event-location">📍 {evt.location}</p>
+                  <button className="primary-button full-width-btn">Get Tickets</button>
+                </div>
               </div>
-              <div className="event-details">
-                <span className="button-label event-tag">{evt.tag}</span>
-                <h4>{evt.title}</h4>
-                <p className="event-location">📍 {evt.location}</p>
-                <button className="primary-button full-width-btn">Get Tickets</button>
-              </div>
+            ))
+          ) : (
+            <div className="no-events-container" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+               <h3 className="medium-body-text">No upcoming events at the moment.</h3>
             </div>
-          ))}
+          )}
         </div>
       </section>
 

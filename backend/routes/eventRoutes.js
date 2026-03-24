@@ -14,12 +14,16 @@ const {
 
 // Middleware
 const requireAuth = require('../middleware/requireAuth')
+const optionalAuth = require('../middleware/optionalAuth')
+
+// GET all events (Public access for guests)
+router.get('/', optionalAuth, getEvents)
 
 // Protect all routes
 router.use(requireAuth)
 
 // GET all events
-router.get('/', getEvents)
+// router.get('/', getEvents)
 
 // GET single event
 router.get('/:id', getEvent)

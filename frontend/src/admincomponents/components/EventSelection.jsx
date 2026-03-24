@@ -119,9 +119,8 @@ const EventSelection = ({ setSelectedEvent }) => {
                 <span className="truncate-text">{sortFilter}</span>
                 <Icon
                   icon="mdi:chevron-down"
-                  className={`dropdown-icon ${
-                    isEventDropdownOpen ? "open" : ""
-                  }`}
+                  className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""
+                    }`}
                 />
               </button>
 
@@ -130,9 +129,8 @@ const EventSelection = ({ setSelectedEvent }) => {
                   {["Recently Added", "A-Z", "Z-A"].map((option) => (
                     <button
                       key={option}
-                      className={`bt-filter-dropdown-item small-body-text ${
-                        sortFilter === option ? "active" : ""
-                      }`}
+                      className={`bt-filter-dropdown-item small-body-text ${sortFilter === option ? "active" : ""
+                        }`}
                       onClick={() => {
                         setSortFilter(option);
                         setIsEventDropdownOpen(false);
@@ -168,16 +166,16 @@ const EventSelection = ({ setSelectedEvent }) => {
 
                 <div className="bt-card-details">
                   <div className="bt-card-info">
-                    <h3>{event.title}</h3>
+                    <h4>{event.title}</h4>
                   </div>
 
-                  <div className="bt-card-info">
+                  <div className="bt-card-info small-body-text">
                     <span>{event.category || "No category"}</span>
                   </div>
 
                   <div className="bt-card-info">
                     <Icon icon="mdi:calendar" />
-                    <span className="event-dates">
+                    <span className="event-dates small-body-text">
                       {new Date(event.startDate).toLocaleDateString()} -{" "}
                       {new Date(event.endDate).toLocaleDateString()}
                     </span>
@@ -185,14 +183,14 @@ const EventSelection = ({ setSelectedEvent }) => {
 
                   <div className="bt-card-info">
                     <Icon icon="mdi:clock-outline" />
-                    <span className="event-times">
+                    <span className="event-times small-body-text">
                       {event.startTime || "N/A"} - {event.endTime || "N/A"}
                     </span>
                   </div>
 
                   <div className="bt-card-info">
                     <Icon icon="mdi:map-marker" />
-                    <span>{event.venue?.name || "No Venue"}</span>
+                    <span className="small-body-text">{event.venue?.name || "No Venue"}</span>
                   </div>
                 </div>
               </div>

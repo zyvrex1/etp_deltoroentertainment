@@ -39,20 +39,24 @@ const upload = multer({
 const getEvents = async (req, res) => {
   try {
     const user = req.user;
-    const role = user.role?.toLowerCase();
-
-    console.log("Decoded user:", user);
-
     let eventsQuery;
 
-    if (role === "superadmin" || role === "admin") {
-      eventsQuery = Event.find({}).sort({ createdAt: -1 });
-    } else if (role === "promoter") {
-      eventsQuery = Event.find({ createdBy: user._id }).sort({ createdAt: -1 });
-    } else if (role === "customer" || role === "sponsor") {
-      eventsQuery = Event.find({ status: "approved" }).sort({ createdAt: -1 });
+    if (user) {
+      const role = user.role?.toLowerCase();
+      console.log("Decoded user role:", role);
+
+      if (role === "superadmin" || role === "admin") {
+        eventsQuery = Event.find({}).sort({ createdAt: -1 });
+      } else if (role === "promoter") {
+        eventsQuery = Event.find({ createdBy: user._id }).sort({ createdAt: -1 });
+      } else if (role === "customer" || role === "sponsor") {
+        eventsQuery = Event.find({ status: "approved" }).sort({ createdAt: -1 });
+      } else {
+        return res.status(403).json({ error: "Unauthorized role" });
+      }
     } else {
-      return res.status(403).json({ error: "Unauthorized role" });
+      // Public access
+      eventsQuery = Event.find({ status: "approved" }).sort({ createdAt: -1 });
     }
 
     // Populate createdBy to get firstName, lastName, and role
@@ -255,6 +259,9 @@ const createEvent = async (req, res) => {
     const creatorModel = roleLower === "superadmin" ? "Superadmin" :
                          roleLower === "admin" ? "Admin" : "Promoter";
 
+    // Auto-approve if created by admin or superadmin
+    const status = (roleLower === "admin" || roleLower === "superadmin") ? "approved" : "pending";
+
     /* =========================
        BOOTH CALCULATIONS
     ========================= */
@@ -307,7 +314,8 @@ const createEvent = async (req, res) => {
       maxBooths,
       isFeatured: isFeatured === "true" || isFeatured === true,
       createdBy: userId,
-      creatorModel
+      creatorModel,
+      status // Use the derived status
     });
 
     return res.status(201).json({ event });
@@ -388,15 +396,18 @@ const updateEvent = async (req, res) => {
     ];
 
     requiredFields.forEach((field) => {
-      if (!req.body[field] || String(req.body[field]).trim() === "") {
+      // For PATCH, only validate if the field is actually sent in the request
+      if (req.body.hasOwnProperty(field) && (String(req.body[field]).trim() === "")) {
         emptyFields.push(field);
       }
     });
 
-    if (!image) emptyFields.push("image");
+    // If it's a status-only update, we don't need image/priceLevels/venue validation
+    const hasDetails = requiredFields.some(f => req.body.hasOwnProperty(f));
+    
+    if (hasDetails && !image && req.body.hasOwnProperty('image')) emptyFields.push("image");
 
-    // Price levels required
-    if (!Array.isArray(priceLevels) || priceLevels.length === 0) {
+    if (hasDetails && req.body.hasOwnProperty('priceLevels') && (!Array.isArray(priceLevels) || priceLevels.length === 0)) {
       emptyFields.push("priceLevels");
     }
 
@@ -413,18 +424,20 @@ const updateEvent = async (req, res) => {
     const venueFields = ["name", "address", "city", "zipCode"];
     let emptyVenueFields = [];
 
-    venueFields.forEach((field) => {
-      if (!venue || !venue[field] || String(venue[field]).trim() === "") {
-        emptyVenueFields.push(`venue.${field}`);
-      }
-    });
+    if (req.body.hasOwnProperty('venue')) {
+      venueFields.forEach((field) => {
+        if (!venue || !venue[field] || String(venue[field]).trim() === "") {
+          emptyVenueFields.push(`venue.${field}`);
+        }
+      });
+    }
 
     /* =========================
        BOOTH VALIDATION
     ========================= */
     let invalidBooths = [];
 
-    if (Array.isArray(booths)) {
+    if (req.body.hasOwnProperty('booths') && Array.isArray(booths)) {
       booths.forEach((b, index) => {
         if (!b.id) invalidBooths.push(`booths[${index}].id`);
         if (b.price === undefined || b.price < 0) {
@@ -449,45 +462,26 @@ const updateEvent = async (req, res) => {
        BOOTH CALCULATIONS
     ========================= */
     const hasBooths = Array.isArray(booths) && booths.length > 0;
-
     const maxBooths = hasBooths ? booths.length : 0;
 
     /* =========================
-       PREPARE UPDATE DATA
+       PREPARE UPDATE DATA (DYNAMIC)
     ========================= */
-    const updatedData = {
-      title,
-      description,
-      category,
-      venue,
-      startDate,
-      endDate,
-      startTime,
-      endTime,
-      image,
-      eventType,
+    const updatedData = {};
 
-      priceLevels: priceLevels.map((p) => ({
-        priceName: p.priceName,
-        description: p.description || "",
-        color: p.color || "#000000",
-        facePrice: Number(p.facePrice),
-        serviceCharge: Number(p.serviceCharge || 0),
-        isFlexible: p.isFlexible || false,
-        saleStart: p.saleStart || null,
-        saleEnd: p.saleEnd || null,
-        minPerOrder: p.minPerOrder || 1,
-        maxPerOrder: p.maxPerOrder || 30,
-        increment: p.increment || 1,
-        quantityAvailable: Number(p.quantityAvailable || 0),
-        quantitySold: Number(p.quantitySold || 0),
-      })),
+    // Map each possible field from req.body if it exists
+    const directFields = ["title", "description", "category", "startDate", "endDate", "startTime", "endTime", "eventType", "isFeatured", "status"];
+    directFields.forEach(f => {
+      if (req.body.hasOwnProperty(f)) {
+        updatedData[f] = req.body[f];
+      }
+    });
 
-      // allow updating seatMap (or keep existing if not provided)
-      ...(seatMap !== undefined && { seatMap }),
-
-      booths: hasBooths
-        ? booths.map((b) => ({
+    if (image !== undefined) updatedData.image = image;
+    if (venue !== undefined) updatedData.venue = venue;
+    if (seatMap !== undefined) updatedData.seatMap = seatMap;
+    if (req.body.hasOwnProperty('booths')) {
+        updatedData.booths = booths.map(b => ({
             id: b.id,
             code: b.code || null,
             type: b.type || "standard",
@@ -496,15 +490,29 @@ const updateEvent = async (req, res) => {
             y: b.y || 0,
             width: b.width || 50,
             height: b.height || 50,
-            price: Number(b.price),
-          }))
-        : [],
+            price: Number(b.price)
+        }));
+        updatedData.hasBooths = hasBooths;
+        updatedData.maxBooths = maxBooths;
+    }
 
-      hasBooths,
-      maxBooths,
-
-      isFeatured: isFeatured || false
-    };
+    if (req.body.hasOwnProperty('priceLevels')) {
+        updatedData.priceLevels = priceLevels.map((p) => ({
+            priceName: p.priceName,
+            description: p.description || "",
+            color: p.color || "#000000",
+            facePrice: Number(p.facePrice),
+            serviceCharge: Number(p.serviceCharge || 0),
+            isFlexible: p.isFlexible || false,
+            saleStart: p.saleStart || null,
+            saleEnd: p.saleEnd || null,
+            minPerOrder: p.minPerOrder || 1,
+            maxPerOrder: p.maxPerOrder || 30,
+            increment: p.increment || 1,
+            quantityAvailable: Number(p.quantityAvailable || 0),
+            quantitySold: Number(p.quantitySold || 0),
+        }));
+    }
 
     /* =========================
        UPDATE EVENT
