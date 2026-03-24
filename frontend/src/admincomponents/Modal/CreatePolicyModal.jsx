@@ -13,7 +13,7 @@ const CreatePolicyModal = ({
   const [content, setContent] = useState("");
 
   const usedKeys = existingPolicies.map((p) => p.policyKey);
-  const availableKeys = ["tos", "privacy", "refund"].filter(
+  const availableKeys = ["tos", "privacy", "refund", "coc", "guidelines", "sponsor"].filter(
     (key) => !usedKeys.includes(key),
   );
 
@@ -97,7 +97,7 @@ const CreatePolicyModal = ({
                     onChange={(e) => setPolicyKey(e.target.value)}
                     required
                   >
-                    {["tos", "privacy", "refund"].map((key) => (
+                    {["tos", "privacy", "refund", "coc", "guidelines", "sponsor"].map((key) => (
                       <option
                         key={key}
                         value={key}
@@ -107,7 +107,13 @@ const CreatePolicyModal = ({
                           ? "Terms of Service"
                           : key === "privacy"
                             ? "Privacy Policy"
-                            : "Refund Policy"}{" "}
+                            : key === "refund"
+                              ? "Refund Policy"
+                              : key === "coc"
+                                ? "Code of Conduct"
+                                : key === "guidelines"
+                                  ? "Event Guidelines"
+                                  : "Sponsor Agreement"}{" "}
                         {existingPolicies.some((p) => p.policyKey === key)
                           ? "(Already used)"
                           : ""}

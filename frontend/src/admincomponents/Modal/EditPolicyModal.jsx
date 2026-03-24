@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert, showErrorAlert } from "../utils/sweetAlert";
+import './ManagePolicyModal.css';
 
 const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
   const [title, setTitle] = useState("");
@@ -65,12 +66,18 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
     key === "tos"
       ? "Terms of Service"
       : key === "privacy"
-      ? "Privacy Policy"
-      : "Refund Policy";
+        ? "Privacy Policy"
+        : key === "coc"
+          ? "Code of Conduct"
+          : key === "guidelines"
+            ? "Event Guidelines"
+            : key === "sponsor"
+              ? "Sponsor Agreement"
+              : "Refund Policy";
 
   return (
     <div className="general-modal-overlay">
-      <div className="general-modal-container">
+      <div className="general-announcement-modal-container">
         <div className="general-modal-header">
           <h3>Edit Policy</h3>
           <button className="close-btn" onClick={handleCancel}>
@@ -79,14 +86,31 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
         </div>
 
         <div className="modal-body">
-          <form id="edit-policy-form" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <h4>Policy Key</h4>
-              <input type="text" value={policyLabel(policyKey)} disabled />
+          <form className="create-announcement-form" onSubmit={handleSubmit}>
+            <div className="announcement-form-row">
+              <div className="announcement-form-group">
+                <h6>Policy Key</h6>
+                <input type="text" value={policyLabel(policyKey)} disabled />
+              </div>
+               <div className="announcement-form-group">
+                <h6>Updated Date</h6>
+                <input
+                  type="date"
+                  value={new Date().toISOString().split('T')[0]}
+                  readOnly
+                  disabled
+                  style={{
+                    backgroundColor: '#f5f5f5',
+                    cursor: 'not-allowed',
+                    color: '#666'
+                  }}
+                  required
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <h4>Policy Title</h4>
+            <div className="announcement-form-group">
+              <h6>Policy Title</h6>
               <input
                 type="text"
                 value={title}
@@ -96,8 +120,8 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
               />
             </div>
 
-            <div className="form-group">
-              <h4>Policy Content</h4>
+            <div className="announcement-form-group">
+              <h6>Policy Content</h6>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -106,7 +130,7 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
               ></textarea>
             </div>
 
-            <div className="policy-modal-footer">
+            <div className="general-announcement-modal-footer">
               <button
                 type="button"
                 className="button cancel-btn"

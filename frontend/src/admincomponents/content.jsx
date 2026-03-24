@@ -8,8 +8,8 @@ import { Icon } from "@iconify/react";
 import "./content.css";
 import CreateAnnouncementModal from "./Modal/CreateAnnouncementModal";
 import EditAnnouncementModal from "./Modal/EditAnnouncementModal";
-import CreatePolicyModal from "./modal/CreatePolicyModal";
-import EditPolicyModal from "./modal/EditPolicyModal";
+import CreatePolicyModal from "./Modal/CreatePolicyModal";
+import EditPolicyModal from "./Modal/EditPolicyModal";
 import { showDeleteConfirmAlert, showSuccessAlert } from "./utils/sweetAlert";
 import announcementService from "../services/announcementService";
 import policyService from "../services/policyService";
@@ -46,6 +46,9 @@ const ContentManager = () => {
         tos: <FaFileContract />,
         privacy: <FaShieldAlt />,
         refund: <FaFileInvoiceDollar />,
+        coc: <Icon icon="mdi:gavel" />,
+        guidelines: <Icon icon="mdi:book-open-variant" />,
+        sponsor: <Icon icon="mdi:handshake" />
       };
       setPolicies(
         data.map((p) => ({ id: p.policyKey, ...p, icon: icons[p.policyKey] })),
@@ -68,6 +71,7 @@ const ContentManager = () => {
       await fetchAnnouncements(); // <-- refresh announcements
     } catch (err) {
       console.error("Error creating announcement:", err);
+      throw err; // Re-throw so the modal can catch it
     }
   };
 
@@ -82,6 +86,7 @@ const ContentManager = () => {
       setEditingAnnouncement(null);
     } catch (err) {
       console.error("Error updating announcement:", err);
+      throw err;
     }
   };
 
@@ -110,6 +115,9 @@ const ContentManager = () => {
         tos: <FaFileContract />,
         privacy: <FaShieldAlt />,
         refund: <FaFileInvoiceDollar />,
+        coc: <Icon icon="mdi:gavel" />,
+        guidelines: <Icon icon="mdi:book-open-variant" />,
+        sponsor: <Icon icon="mdi:handshake" />
       };
       setPolicies((prev) => [
         ...prev,
@@ -123,6 +131,7 @@ const ContentManager = () => {
       setIsAddPolicyOpen(false);
     } catch (err) {
       console.error("Error adding policy:", err);
+      throw err;
     }
   };
 
@@ -137,6 +146,7 @@ const ContentManager = () => {
       setEditingPolicy(null);
     } catch (err) {
       console.error("Error updating policy:", err);
+      throw err;
     }
   };
 
