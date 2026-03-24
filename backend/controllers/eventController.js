@@ -46,7 +46,9 @@ const getEvents = async (req, res) => {
       console.log("Decoded user role:", role);
 
       if (role === "superadmin" || role === "admin") {
-        eventsQuery = Event.find({}).sort({ createdAt: -1 });
+        const { status } = req.query;
+        const filter = status ? { status } : {};
+        eventsQuery = Event.find(filter).sort({ createdAt: -1 });
       } else if (role === "promoter") {
         eventsQuery = Event.find({ createdBy: user._id }).sort({ createdAt: -1 });
       } else if (role === "customer" || role === "sponsor") {

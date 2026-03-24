@@ -20,7 +20,7 @@ const EventSelection = ({ setSelectedEvent }) => {
 
     const fetchEvents = async () => {
       try {
-        const response = await fetch("/api/events", {
+        const response = await fetch("/api/events?status=approved", {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -78,6 +78,7 @@ const EventSelection = ({ setSelectedEvent }) => {
   // Filter events based on search
   const filteredEvents = sortEvents(
     events?.filter((event) =>
+      event.status === "approved" && // Ensure only approved events are shown
       event.title?.toLowerCase().includes(searchQuery.toLowerCase())
     )
   );
