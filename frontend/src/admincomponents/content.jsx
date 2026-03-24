@@ -46,7 +46,7 @@ const ContentManager = () => {
         tos: <FaFileContract />,
         privacy: <FaShieldAlt />,
         refund: <FaFileInvoiceDollar />,
-        coc: <Icon icon="mdi:gavel" />,
+        cp: <Icon icon="material-symbols:cookie-outline" />,
         guidelines: <Icon icon="mdi:book-open-variant" />,
         sponsor: <Icon icon="mdi:handshake" />
       };
@@ -115,7 +115,7 @@ const ContentManager = () => {
         tos: <FaFileContract />,
         privacy: <FaShieldAlt />,
         refund: <FaFileInvoiceDollar />,
-        coc: <Icon icon="mdi:gavel" />,
+        cp: <Icon icon="material-symbols:cookie-outline" />,
         guidelines: <Icon icon="mdi:book-open-variant" />,
         sponsor: <Icon icon="mdi:handshake" />
       };
