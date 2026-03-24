@@ -269,7 +269,6 @@
     .content-manager .content-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 16px;
     }
 
 
@@ -284,6 +283,8 @@
 
     .content-grid .content-card {
         padding: 20px;
+            max-height: 600px !important;
+
     }
 }
 
