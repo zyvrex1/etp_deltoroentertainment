@@ -5,11 +5,24 @@ import { Icon } from "@iconify/react";
 import announcementService from '../services/announcementService';
 import policyService from '../services/policyService';
 import eventsService from '../services/eventsService';
+import { showSuccessAlert } from '../admincomponents/utils/sweetAlert';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "";
 
 const Home = () => {
   const { openAuthModal } = useOutletContext() || { openAuthModal: () => { } };
+
+  // Check for logout success message from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('logout') === 'success') {
+      showSuccessAlert("Logged Out", "Logged out successfully");
+      
+      // Clean up the URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, []);
 
   // Hero Mockup Toggle State
   const [heroTab, setHeroTab] = useState('customer');
@@ -74,7 +87,8 @@ const Home = () => {
         if (data && data.length > 0) {
           const mappedPolicies = data.map(policy => ({
             title: policy.title,
-            content: policy.content
+            content: policy.content,
+            key: policy.policyKey
           }));
           setPolicies(mappedPolicies);
         } else {
@@ -456,7 +470,15 @@ const Home = () => {
           {policies.length > 0 ? (
             policies.map((policy, idx) => (
               <div className="policy-item" key={idx} onClick={() => openModal(policy.title, policy.content)}>
-                <span className="policy-icon">📄</span>
+                <span className="policy-icon">
+                  {policy.key === "tos" && <Icon icon="mdi:file-certificate" />}
+                  {policy.key === "privacy" && <Icon icon="mdi:shield-check" />}
+                  {policy.key === "refund" && <Icon icon="mdi:cash-refund" />}
+                  {policy.key === "coc" && <Icon icon="mdi:gavel" />}
+                  {policy.key === "guidelines" && <Icon icon="mdi:book-open-variant" />}
+                  {policy.key === "sponsor" && <Icon icon="mdi:handshake" />}
+                  {!["tos", "privacy", "refund", "coc", "guidelines", "sponsor"].includes(policy.key) && <Icon icon="mdi:file-document-outline" />}
+                </span>
                 <h4 className="policy-title">{policy.title}</h4>
               </div>
             ))

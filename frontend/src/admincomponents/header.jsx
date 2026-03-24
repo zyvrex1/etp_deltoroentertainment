@@ -50,7 +50,7 @@ const Header = ({ mobileExpanded, setMobileExpanded }) => {
         await logout();
         setIsDropdownOpen(false);
 
-        window.location.href = "/";
+        window.location.href = "/?logout=success";
       } catch (err) {
         console.error(err);
         setIsSigningOut(false);

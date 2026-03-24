@@ -4,7 +4,10 @@ import { Icon } from '@iconify/react';
 import { showConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
 import './CustomerHeader.css';
 
+import { useLogout } from '../admincomponents/hooks/useLogout';
+
 export default function CustomerHeader() {
+    const { logout } = useLogout();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -14,8 +17,8 @@ export default function CustomerHeader() {
         setIsDropdownOpen(false);
         const result = await showConfirmAlert("Sign Out?", "Are you sure you want to sign out?", "Yes, Sign Out");
         if (result.isConfirmed) {
-            await showSuccessAlert("Signed Out", "You have been signed out successfully.");
-            navigate('/');
+            logout();
+            window.location.href = "/?logout=success";
         }
     };
 
