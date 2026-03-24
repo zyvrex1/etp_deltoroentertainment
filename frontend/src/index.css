@@ -548,6 +548,7 @@ li {
 .swal2-actions {
   justify-content: flex-end !important;
   gap: 12px !important;
+  width: 100%;
 }
 
 .swal2-confirm,
