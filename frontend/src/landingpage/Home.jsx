@@ -308,7 +308,7 @@ const Home = () => {
                   <span className="button-label event-tag">{evt.tag}</span>
                   <h4>{evt.title}</h4>
                   <p className="event-location">📍 {evt.location}</p>
-                  <div className="bt-card-info">
+                  <div className="event-time">
                     <Icon icon="mdi:clock-outline" />
                     <span className="event-times small-body-text">
                       {evt.startTime || "N/A"} - {evt.endTime || "N/A"}
@@ -474,10 +474,10 @@ const Home = () => {
                   {policy.key === "tos" && <Icon icon="mdi:file-certificate" />}
                   {policy.key === "privacy" && <Icon icon="mdi:shield-check" />}
                   {policy.key === "refund" && <Icon icon="mdi:cash-refund" />}
-                  {policy.key === "coc" && <Icon icon="mdi:gavel" />}
+                  {policy.key === "cp" && <Icon icon="material-symbols:cookie-outline" />}
                   {policy.key === "guidelines" && <Icon icon="mdi:book-open-variant" />}
                   {policy.key === "sponsor" && <Icon icon="mdi:handshake" />}
-                  {!["tos", "privacy", "refund", "coc", "guidelines", "sponsor"].includes(policy.key) && <Icon icon="mdi:file-document-outline" />}
+                  {!["tos", "privacy", "refund", "cp", "guidelines", "sponsor"].includes(policy.key) && <Icon icon="mdi:file-document-outline" />}
                 </span>
                 <h4 className="policy-title">{policy.title}</h4>
               </div>

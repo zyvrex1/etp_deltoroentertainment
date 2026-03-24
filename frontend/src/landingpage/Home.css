@@ -391,6 +391,7 @@ html {
                 display: flex;
                 flex-direction: column;
                 flex-grow: 1;
+                gap: 10px;
 
                 .event-tag {
                     background-color: var(--color-bg-dark);
@@ -406,7 +407,6 @@ html {
 
                 .event-location {
                     color: var(--color-black-secondary);
-                    margin: 0 0 20px;
                     text-align: left;
 
                 }
@@ -414,6 +414,14 @@ html {
                 .full-width-btn {
                     width: 100%;
                     margin-top: auto;
+                }
+
+                .event-time {
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    color: var(--color-black-secondary);
+                    text-align: left;
                 }
             }
         }
