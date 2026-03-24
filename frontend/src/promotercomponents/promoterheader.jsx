@@ -3,8 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import "./promoterheader.css";
 import { showConfirmAlert, showSuccessAlert } from "../admincomponents/utils/sweetAlert";
+import { useLogout } from "../admincomponents/hooks/useLogout";
 
 const PromoterHeader = ({ user = null, mobileExpanded, setMobileExpanded }) => {
+  const { logout } = useLogout();
   const currentUser = user || {
     name: "Alex Thompson",
     email: "alex@ticketspro.com",
@@ -38,8 +40,8 @@ const PromoterHeader = ({ user = null, mobileExpanded, setMobileExpanded }) => {
     );
 
     if (result.isConfirmed) {
-      await showSuccessAlert("Signed Out", "You have been successfully signed out.");
-      navigate("/login");
+      logout();
+      window.location.href = "/?logout=success";
     }
   };
 
