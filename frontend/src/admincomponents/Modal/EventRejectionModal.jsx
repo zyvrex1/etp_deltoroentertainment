@@ -13,8 +13,8 @@ const EventRejectionModal = ({ event, onClose, onConfirm }) => {
 
         const result = await showConfirmAlert(
             'Reject Event',
-            `Are you sure you want to reject "${event.name}"?`,
-            'Reject Event',
+            `Are you sure you want to reject "${event.title}"?`,
+            'Yes, Reject It',
             'Cancel'
         );
 
@@ -35,7 +35,7 @@ const EventRejectionModal = ({ event, onClose, onConfirm }) => {
 
                 <div className="event-rejection-modal-body">
                     <p className="regular-body-text rejection-instruction">
-                        Please provide a reason for rejecting <strong>{event.name}</strong>.
+                        Please provide a reason for rejecting <strong>{event.title}</strong>.
                     </p>
                     <div className="rejection-form-group">
                         <textarea

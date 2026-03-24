@@ -107,7 +107,9 @@ const Home = () => {
               title: evt.title,
               date: formattedDate,
               location: `${evt.venue?.city || ""}, ${evt.venue?.address || ""}`.trim() || "Location TBD",
-              image: evt.image ? `${BASE_URL}/uploads/${evt.image}` : '/assets/eventbg.jpg'
+              image: evt.image ? `${BASE_URL}/uploads/${evt.image}` : '/assets/eventbg.jpg',
+              startTime: evt.startTime,
+              endTime: evt.endTime
             };
           });
           setLiveEvents(recentEvents);
@@ -292,7 +294,14 @@ const Home = () => {
                   <span className="button-label event-tag">{evt.tag}</span>
                   <h4>{evt.title}</h4>
                   <p className="event-location">📍 {evt.location}</p>
+                  <div className="bt-card-info">
+                    <Icon icon="mdi:clock-outline" />
+                    <span className="event-times small-body-text">
+                      {evt.startTime || "N/A"} - {evt.endTime || "N/A"}
+                    </span>
+                  </div>
                   <button className="primary-button full-width-btn">Get Tickets</button>
+
                 </div>
               </div>
             ))

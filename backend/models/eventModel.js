@@ -159,6 +159,11 @@ const eventSchema = new Schema(
       default: "pending",
     },
 
+    rejectionReason: {
+      type: String,
+      default: null,
+    },
+
     isFeatured: { type: Boolean, default: false },
   },
   { timestamps: true }

@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 import "./eventmanagement.css";
 import CreateEventModal from "./Modal/CreateEventModal";
 import EditEventModal from "./Modal/EditEventModal";
+import EventRejectionModal from "./Modal/EventRejectionModal";
 
 import { useEventsContext } from "../admincomponents/hooks/useEventsContext"
 import { useAuthContext } from "./hooks/useAuthContext";
@@ -60,6 +61,8 @@ const EventManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
+  const [rejectionEvent, setRejectionEvent] = useState(null);
 
   const allEvents = events || [];
   const [searchQuery, setSearchQuery] = useState("");
@@ -144,7 +147,10 @@ const EventManagement = () => {
   const handleApproveEvent = async (event) => {
     const result = await showConfirmAlert(
       "Approve Event",
-      `Are you sure you want to approve "${event.title}"?`
+      `Are you sure you want to approve "${event.title}"?`,
+      "Yes, Approve It",
+      "Cancel",
+      true
     );
 
     if (!result.isConfirmed) return;
@@ -173,22 +179,22 @@ const EventManagement = () => {
     }
   };
 
-  const handleRejectEvent = async (event) => {
-    const result = await showDeleteConfirmAlert(
-      "Reject Event",
-      `Are you sure you want to reject "${event.title}"?`
-    );
+  const handleRejectEvent = (event) => {
+    setRejectionEvent(event);
+    setIsRejectionModalOpen(true);
+  };
 
-    if (!result.isConfirmed) return;
+  const confirmRejection = async (reason) => {
+    if (!rejectionEvent) return;
 
     try {
-      const response = await fetch(`/api/events/${event._id}`, {
+      const response = await fetch(`/api/events/${rejectionEvent._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify({ status: "rejected" }),
+        body: JSON.stringify({ status: "rejected", rejectionReason: reason }),
       });
 
       const json = await response.json();
@@ -196,6 +202,8 @@ const EventManagement = () => {
       if (response.ok) {
         dispatch({ type: "UPDATE_EVENT", payload: json });
         await showSuccessAlert("Rejected!", "Event has been rejected.");
+        setIsRejectionModalOpen(false);
+        setRejectionEvent(null);
       } else {
         alert(json.error || "Failed to reject event.");
       }
@@ -593,6 +601,13 @@ const EventManagement = () => {
         event={selectedEvent}
         onClose={() => { setIsEditModalOpen(false); setSelectedEvent(null); }}
       />
+      {isRejectionModalOpen && (
+        <EventRejectionModal
+          event={rejectionEvent}
+          onClose={() => { setIsRejectionModalOpen(false); setRejectionEvent(null); }}
+          onConfirm={confirmRejection}
+        />
+      )}
     </div>
   );
 };

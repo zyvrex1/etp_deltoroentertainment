@@ -59,7 +59,37 @@ const getEvents = async (req, res) => {
       eventsQuery = Event.find({ status: "approved" }).sort({ createdAt: -1 });
     }
 
-    // Populate createdBy to get firstName, lastName, and role
+    // Mark past due approved events as completed
+    const now = new Date();
+    
+    // Fetch all approved events and check their times in memory
+    const approvedEvents = await Event.find({ status: "approved" });
+
+    const completedIds = [];
+    for (const event of approvedEvents) {
+      if (event.endDate && event.endTime) {
+        const [hours, minutes] = event.endTime.split(':').map(Number);
+        const endDateTime = new Date(event.endDate);
+        endDateTime.setHours(hours, minutes, 0, 0);
+
+        if (endDateTime < now) {
+          completedIds.push(event._id);
+        }
+      } else if (event.endDate && event.endDate < now) {
+        // Fallback for events without specific times
+        completedIds.push(event._id);
+      }
+    }
+
+    if (completedIds.length > 0) {
+      await Event.updateMany(
+        { _id: { $in: completedIds } },
+        { status: "completed" }
+      );
+    }
+
+    // Re-run the filter if it was a public/approved query to ensure completed items don't show up
+    // Or just re-fetch the query to be safe
     const events = await eventsQuery.populate({
       path: "createdBy",
       select: "firstName lastName role",
@@ -102,6 +132,23 @@ const getEvents = async (req, res) => {
 
     if (!event) {
       return res.status(404).json({ error: "No such event" });
+    }
+
+    // Mark as completed if past due
+    if (event.status === "approved" && event.endDate && event.endTime) {
+      const now = new Date();
+      const [hours, minutes] = event.endTime.split(':').map(Number);
+      const endDateTime = new Date(event.endDate);
+      endDateTime.setHours(hours, minutes, 0, 0);
+
+      if (endDateTime < now) {
+        event.status = "completed";
+        await event.save();
+      }
+    } else if (event.status === "approved" && event.endDate < new Date()) {
+      // Fallback
+      event.status = "completed";
+      await event.save();
     }
 
     return res.status(200).json(event);
@@ -470,7 +517,7 @@ const updateEvent = async (req, res) => {
     const updatedData = {};
 
     // Map each possible field from req.body if it exists
-    const directFields = ["title", "description", "category", "startDate", "endDate", "startTime", "endTime", "eventType", "isFeatured", "status"];
+    const directFields = ["title", "description", "category", "startDate", "endDate", "startTime", "endTime", "eventType", "isFeatured", "status", "rejectionReason"];
     directFields.forEach(f => {
       if (req.body.hasOwnProperty(f)) {
         updatedData[f] = req.body[f];
