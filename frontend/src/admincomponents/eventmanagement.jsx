@@ -214,7 +214,15 @@ const EventManagement = () => {
   };
 
   const handleCancelEvent = async (eventId) => {
-    if (!window.confirm("Are you sure you want to cancel this event?")) return;
+    const result = await showConfirmAlert(
+      "Cancel Event",
+      "Are you sure you want to cancel this event? This action will set the status to cancelled.",
+      "Yes, Cancel Event",
+      "No, Keep It",
+      false
+    );
+
+    if (!result.isConfirmed) return;
 
     try {
       const response = await fetch(`/api/events/${eventId}`, {
@@ -230,6 +238,7 @@ const EventManagement = () => {
 
       if (response.ok) {
         dispatch({ type: "UPDATE_EVENT", payload: json });
+        await showSuccessAlert("Cancelled!", "Event has been cancelled.");
       } else {
         alert(json.error || "Failed to cancel event.");
       }
