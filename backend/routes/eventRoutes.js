@@ -1,7 +1,5 @@
 const express = require('express')
 const router = express.Router()
-
-// Controllers
 const {
   getEvents,
   getEvent,
@@ -12,34 +10,24 @@ const {
   upload,
 } = require('../controllers/eventController')
 
-// Middleware
+const { addPriceLevels } = require('../controllers/ticketController') // <-- import
 const requireAuth = require('../middleware/requireAuth')
 const optionalAuth = require('../middleware/optionalAuth')
 
-// GET all events (Public access for guests)
 router.get('/', optionalAuth, getEvents)
 
-// Protect all routes
 router.use(requireAuth)
 
-// GET all events
-// router.get('/', getEvents)
-
-// GET single event
 router.get('/:id', getEvent)
 
-// CREATE event (with image upload)
 router.post('/', upload.single('image'), createEvent)
 
-// DELETE event
 router.delete('/:id', deleteEvent)
 
-// UPDATE event (optional image update)
 router.patch('/:id', upload.single('image'), updateEvent)
 
-// ==============================
-// UPDATE seatMap only
-// ==============================
 router.patch('/:id/seatmap', updateSeatMap)
+
+router.post('/:eventId/price-levels', addPriceLevels) // <-- new route
 
 module.exports = router

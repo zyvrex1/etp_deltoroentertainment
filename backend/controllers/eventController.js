@@ -1,6 +1,6 @@
+const mongoose = require('mongoose')
 const { v4: uuidv4 } = require("uuid");
 const Event = require('../models/eventModel')
-const mongoose = require('mongoose')
 
 const multer = require("multer");
 const path = require("path");
@@ -172,12 +172,9 @@ const createEvent = async (req, res) => {
       startTime,
       endTime,
       eventType,
-
-      priceLevels = [],   // ✅ NEW (single source)
-
+      priceLevels = [],   // ✅ Single source
       seatMap = null,
       booths = [],
-
       isFeatured = false
     } = req.body;
 
@@ -220,7 +217,7 @@ const createEvent = async (req, res) => {
     }
 
     /* =========================
-       PRICE LEVEL VALIDATION
+       PRICE LEVEL VALIDATION + ID GENERATION
     ========================= */
     if (!priceLevels.length) {
       errors.push("priceLevels required");
@@ -230,7 +227,18 @@ const createEvent = async (req, res) => {
       errors.push("General Admission allows maximum of 2 price levels only");
     }
 
-    const priceLevelIds = priceLevels.map(p => p._id || null);
+    // Ensure every priceLevel has a valid _id
+    priceLevels = priceLevels.map(p => ({
+      ...p,
+      _id: p._id ? mongoose.Types.ObjectId(p._id) : new mongoose.Types.ObjectId(),
+      facePrice: Number(p.facePrice),
+      serviceCharge: Number(p.serviceCharge || 0),
+      quantityAvailable: Number(p.quantityAvailable || 0),
+      quantitySold: Number(p.quantitySold || 0),
+      isActive: p.isActive !== false
+    }));
+
+    const priceLevelIds = priceLevels.map(p => p._id);
 
     /* =========================
        SEAT MAP VALIDATION
@@ -251,12 +259,12 @@ const createEvent = async (req, res) => {
             errors.push(`seatMap.sections[${sIndex}].seats[${i}].id`);
           }
 
-          // ✅ Auto assign first price level if missing
+          // Auto assign first price level if missing
           if (priceLevels.length > 0 && !seat.priceLevelId) {
             seat.priceLevelId = priceLevelIds[0];
           }
 
-          if (!priceLevelIds.includes(seat.priceLevelId)) {
+          if (!priceLevelIds.some(id => id.equals(seat.priceLevelId))) {
             errors.push(`seatMap.sections[${sIndex}].seats[${i}].invalidPriceLevelId`);
           }
         });
@@ -279,12 +287,12 @@ const createEvent = async (req, res) => {
           errors.push(`booths[${i}].id`);
         }
 
-        // ✅ Auto assign first price level
+        // Auto assign first price level if missing
         if (priceLevels.length > 0 && !b.priceLevelId) {
           b.priceLevelId = priceLevelIds[0];
         }
 
-        if (!priceLevelIds.includes(b.priceLevelId)) {
+        if (!priceLevelIds.some(id => id.equals(b.priceLevelId))) {
           errors.push(`booths[${i}].invalidPriceLevelId`);
         }
       });
@@ -333,21 +341,15 @@ const createEvent = async (req, res) => {
       eventType,
       image,
 
-      // ✅ SINGLE PRICE LEVEL ARRAY
-      priceLevels: priceLevels.map(p => ({
-        ...p,
-        facePrice: Number(p.facePrice),
-        serviceCharge: Number(p.serviceCharge || 0),
-        quantityAvailable: Number(p.quantityAvailable || 0),
-        quantitySold: Number(p.quantitySold || 0),
-      })),
+      // Price levels with guaranteed _id
+      priceLevels,
 
       seatMap: eventType === "Seating Arrangement" ? seatMap : null,
 
       booths: hasBooths ? booths : [],
       hasBooths,
 
-      isFeatured: isFeatured === "true" || isFeatured === true,
+      isFeatured: Boolean(isFeatured),
 
       createdBy: userId,
       creatorModel,

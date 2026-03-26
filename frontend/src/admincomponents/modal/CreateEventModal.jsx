@@ -24,7 +24,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   const [endDate, setEndDate] = useState(today);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [eventType, setEventType] = useState("General Admission");
+  const [eventType, setEventType] = useState("");
   const [venue, setVenue] = useState({
     name: "",
     address: "",
@@ -117,12 +117,6 @@ const handleSubmit = async (e) => {
   setError("");
   setEmptyFields([]);
 
-  // Remove tempId before sending to backend
-  const updatedPriceLevels = priceLevels.map(({ tempId, ...rest }) => ({ ...rest }));
-
-  /* =========================
-     REQUIRED FIELDS
-  ========================= */
   const fieldsToCheck = {
     title,
     description,
@@ -164,24 +158,13 @@ const handleSubmit = async (e) => {
     return;
   }
 
-  /* =========================
-     PRICE LEVEL RULES
-  ========================= */
-  if (updatedPriceLevels.length === 0) {
-    setError("At least one price level is required.");
-    return;
-  }
-
-  if (eventType === "General Admission" && updatedPriceLevels.length > 2) {
+  if (eventType === "General Admission" && updatedPriceLevels.length > 1) {
     setError("General Admission allows a maximum of 2 price levels only.");
     return;
   }
 
   const priceLevelIds = priceLevels.map((p) => String(p.tempId || p._id));
 
-  /* =========================
-     SEAT MAP VALIDATION
-  ========================= */
   if (eventType === "Seating Arrangement") {
     if (!seatMap || !seatMap.sections || seatMap.sections.length === 0) {
       setError("Seat map with sections is required for Seating Arrangement.");
@@ -257,7 +240,6 @@ const handleSubmit = async (e) => {
     formData.append("endTime", endTime);
     formData.append("eventType", eventType);
     formData.append("venue", JSON.stringify(venue));
-    formData.append("priceLevels", JSON.stringify(updatedPriceLevels));
     formData.append(
       "seatMap",
       JSON.stringify(eventType === "Seating Arrangement" ? seatMap : null)

@@ -32,11 +32,7 @@ const priceLevelSchema = new Schema({
   isActive: { type: Boolean, default: true },
 });
 
-/* =========================
-   SEAT MAP
-========================= */
 const seatSchema = new Schema({
-  id: { type: String, required: true },
   row: String,
   number: Number,
   label: String,
@@ -47,7 +43,7 @@ const seatSchema = new Schema({
     default: "available",
   },
 
-  // ✅ NO ref (embedded system)
+  // ✅ Embedded system
   priceLevelId: { type: Schema.Types.ObjectId },
 
   x: Number,
@@ -127,7 +123,7 @@ const eventSchema = new Schema(
     image: String,
 
     /* =========================
-       ✅ ONE SOURCE OF TRUTH
+       ONE SOURCE OF TRUTH
     ========================= */
     priceLevels: { type: [priceLevelSchema], default: [] },
 
@@ -137,7 +133,6 @@ const eventSchema = new Schema(
 
     booths: [
       {
-        id: String,
         code: String,
         label: String,
         type: String,
@@ -154,7 +149,6 @@ const eventSchema = new Schema(
         height: Number,
         rotation: { type: Number, default: 0 },
 
-        // ✅ SAME SYSTEM AS SEATS
         priceLevelId: { type: Schema.Types.ObjectId },
       },
     ],
@@ -189,7 +183,11 @@ eventSchema.pre("save", function (next) {
           seat.priceLevelId &&
           !priceIds.includes(seat.priceLevelId.toString())
         ) {
-          return next(new Error(`Seat ${seat.id} has invalid priceLevelId`));
+          return next(
+            new Error(
+              `Seat ${seat.label || `${seat.row}-${seat.number}`} has invalid priceLevelId`
+            )
+          );
         }
       }
     }
@@ -212,7 +210,9 @@ eventSchema.pre("save", function (next) {
         booth.priceLevelId &&
         !priceIds.includes(booth.priceLevelId.toString())
       ) {
-        return next(new Error(`Booth ${booth.id} has invalid priceLevelId`));
+        return next(
+          new Error(`Booth ${booth.code || booth.label} has invalid priceLevelId`)
+        );
       }
     }
   }
@@ -268,6 +268,10 @@ eventSchema.virtual("totalTickets").get(function () {
     );
   }
   return null;
+});
+
+eventSchema.virtual("totalRevenue").get(function () {
+  return this.seatRevenue + this.boothRevenue;
 });
 
 /* =========================
