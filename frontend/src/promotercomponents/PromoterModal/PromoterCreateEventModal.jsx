@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import "./PromoterCreateEventModal.css"
+import "./PromoterCreateEventModal.css";
+import { useAuthContext } from "../../admincomponents/hooks/useAuthContext";
+import { useEventsContext } from "../../admincomponents/hooks/useEventsContext";
+import eventsService from "../../services/eventsService";
 
 import {
   showSuccessAlert,
@@ -10,12 +13,13 @@ import {
 } from "../../admincomponents/utils/sweetAlert";
 
 const PromoterCreateEventModal = ({ isOpen, onClose }) => {
-  // const { dispatch } = useEventsContext();
+  const { user } = useAuthContext();
+  const { dispatch } = useEventsContext();
 
   const today = new Date().toISOString().split("T")[0];
 
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("other");
+  const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
@@ -78,6 +82,11 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!user) {
+      setError("You must be logged in.");
+      return;
+    }
+
     const fieldsToCheck = {
       title,
       category,
@@ -95,7 +104,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
     };
 
     const empty = Object.entries(fieldsToCheck)
-      .filter(([, value]) => value === "" || value === null)
+      .filter(([, value]) => value === "" || value === null || value === undefined)
       .map(([key]) => key);
 
     if (empty.length > 0) {
@@ -106,9 +115,6 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
 
     setEmptyFields([]);
     setError("");
-
-    const startDateTime = new Date(`${startDate}T${startTime}`);
-    const endDateTime = new Date(`${endDate}T${endTime}`);
 
     if (endDate < startDate) {
       setError("End date cannot be earlier than start date.");
@@ -124,43 +130,39 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    const event = {
-      title,
-      description,
-      category,
-      venue: {
-        name: venue.name,
-        address: venue.address,
-        city: venue.city,
-        zipCode: venue.zipCode,
-      },
-      startDate,
-      endDate,
-      startTime: startDateTime,
-      endTime: endDateTime,
-      ticketPrice: Number(ticketPrice),
-      totalTickets: Number(totalTickets),
-      imageUrl: imageFile ? imageFile.name : undefined,
-    };
+    try {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("venue", JSON.stringify(venue));
+      formData.append("startDate", startDate);
+      formData.append("endDate", endDate);
+      formData.append("startTime", startTime);
+      formData.append("endTime", endTime);
+      formData.append("eventType", "General Admission");
 
-    const response = await fetch("/api/events", {
-      method: "POST",
-      body: JSON.stringify(event),
-      headers: { "Content-Type": "application/json" },
-    });
+      // Wrap ticketPrice and totalTickets into priceLevels for backend compatibility
+      const priceLevels = [
+        {
+          priceName: "General Admission",
+          facePrice: Number(ticketPrice),
+          quantityAvailable: Number(totalTickets),
+          serviceCharge: 0,
+          isActive: true
+        }
+      ];
+      formData.append("priceLevels", JSON.stringify(priceLevels));
 
-    const json = await response.json();
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
 
-    if (!response.ok) {
-      setError(json.error);
-      setEmptyFields(json.emptyFields || []);
-      await showErrorAlert(
-        "Error Creating Event",
-        json.error || "Failed to create event."
-      );
-    } else {
+      const response = await eventsService.createEvent(formData, user.token);
+
       setTitle("");
       setDescription("");
+      setCategory("");
       setVenue({ name: "", address: "", city: "", zipCode: "" });
       setStartTime("");
       setEndTime("");
@@ -175,14 +177,50 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       setImagePreviewUrl(null);
       setError(null);
       setEmptyFields([]);
+
+      if (dispatch) {
+        dispatch({ type: "CREATE_EVENT", payload: response.event });
+      }
+      
+      onClose();
+
       await showSuccessAlert(
         "Event Created",
-        "The event has been created successfully."
+        "The event has been submitted for approval successfully."
       );
-      onClose();
-      dispatch({ type: "CREATE_EVENT", payload: json });
+    } catch (err) {
+      console.error("Submission error:", err);
+      
+      // Map backend fields to frontend ones
+      const backendToFrontendMap = {
+        "title": "title",
+        "description": "description",
+        "category": "category",
+        "startDate": "startDate",
+        "endDate": "endDate",
+        "startTime": "startTime",
+        "endTime": "endTime",
+        "venue.name": "venueName",
+        "venue.address": "venueAddress",
+        "venue.city": "venueCity",
+        "venue.zipCode": "venueZip",
+        "priceLevels required": "ticketPrice"
+      };
+
+      let mappedFields = [];
+      if (err.fields) {
+        mappedFields = err.fields.map(f => backendToFrontendMap[f] || f);
+      }
+      
+      setError(err.message || "Failed to create event.");
+      setEmptyFields(mappedFields);
+      await showErrorAlert(
+        "Error Creating Event",
+        err.message || "Failed to create event."
+      );
     }
   };
+
 
   if (!isOpen) return null;
 
@@ -235,18 +273,14 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
             </div>
             <div className="add-event-form-group">
               <h6>Category</h6>
-              <select
+              <input
+                type="text"
+                placeholder="e.g. Concert, Festival, Seminar"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 className={emptyFields.includes("category") ? "error" : ""}
-              >
-                <option value="concert">Concert</option>
-                <option value="comedy">Comedy</option>
-                <option value="festival">Festival</option>
-                <option value="conference">Conference</option>
-                <option value="sports">Sports</option>
-                <option value="other">Other</option>
-              </select>
+                required
+              />
             </div>
           </div>
 
@@ -314,7 +348,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
                 onChange={(e) =>
                   setVenue({ ...venue, name: e.target.value })
                 }
-                className={emptyFields.includes("venue") ? "error" : ""}
+                className={emptyFields.includes("venueName") ? "error" : ""}
               />
             </div>
 
@@ -327,7 +361,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
                 onChange={(e) =>
                   setVenue({ ...venue, address: e.target.value })
                 }
-                className={emptyFields.includes("venue") ? "error" : ""}
+                className={emptyFields.includes("venueAddress") ? "error" : ""}
               />
             </div>
 
@@ -340,7 +374,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
                   onChange={(e) =>
                     setVenue({ ...venue, city: e.target.value })
                   }
-                  className={emptyFields.includes("venue") ? "error" : ""}
+                  className={emptyFields.includes("venueCity") ? "error" : ""}
                 />
               </div>
               <div className="add-event-form-group">
@@ -351,7 +385,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
                   onChange={(e) =>
                     setVenue({ ...venue, zipCode: e.target.value })
                   }
-                  className={emptyFields.includes("venue") ? "error" : ""}
+                  className={emptyFields.includes("venueZip") ? "error" : ""}
                 />
               </div>
             </div>

@@ -71,7 +71,9 @@ const eventsService = {
       const json = await response.json();
 
       if (!response.ok) {
-        throw new Error(json.error || "Failed to create event");
+        const error = new Error(json.error || "Failed to create event");
+        error.fields = json.fields;
+        throw error;
       }
 
       return json;
@@ -103,7 +105,9 @@ const eventsService = {
       const json = await response.json();
 
       if (!response.ok) {
-        throw new Error(json.error || "Failed to update event");
+        const error = new Error(json.error || "Failed to update event");
+        error.fields = json.fields;
+        throw error;
       }
 
       return json;

@@ -201,9 +201,9 @@ const EventManagement = () => {
 
       if (response.ok) {
         dispatch({ type: "UPDATE_EVENT", payload: json });
-        await showSuccessAlert("Rejected!", "Event has been rejected.");
         setIsRejectionModalOpen(false);
         setRejectionEvent(null);
+        await showSuccessAlert("Rejected!", "Event has been rejected.");
       } else {
         alert(json.error || "Failed to reject event.");
       }

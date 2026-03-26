@@ -136,9 +136,14 @@ const handleSubmit = async (e) => {
     .filter(([_, value]) => value === "" || value === null || value === undefined)
     .map(([key]) => key);
 
+  if (priceLevels.length === 0) {
+    empty.push("priceLevels");
+    setError("Please add at least one price level.");
+  }
+
   if (empty.length > 0) {
     setEmptyFields(empty);
-    setError("Please fill in all required fields.");
+    if (!error) setError("Please fill in all required fields and add price levels.");
     return;
   }
 
@@ -158,7 +163,7 @@ const handleSubmit = async (e) => {
     return;
   }
 
-  if (eventType === "General Admission" && updatedPriceLevels.length > 1) {
+  if (eventType === "General Admission" && priceLevels.length > 2) {
     setError("General Admission allows a maximum of 2 price levels only.");
     return;
   }
@@ -244,6 +249,7 @@ const handleSubmit = async (e) => {
       "seatMap",
       JSON.stringify(eventType === "Seating Arrangement" ? seatMap : null)
     );
+    formData.append("priceLevels", JSON.stringify(priceLevels));
     formData.append("booths", JSON.stringify(booths));
 
     if (imageFile) formData.append("image", imageFile);
@@ -257,8 +263,27 @@ const handleSubmit = async (e) => {
     const json = await response.json();
 
     if (!response.ok) {
+      // Map backend fields to frontend ones
+      const backendToFrontendMap = {
+        "title": "title",
+        "description": "description",
+        "category": "category",
+        "startDate": "startDate",
+        "endDate": "endDate",
+        "startTime": "startTime",
+        "endTime": "endTime",
+        "eventType": "eventType",
+        "venue.name": "venueName",
+        "venue.address": "venueAddress",
+        "venue.city": "venueCity",
+        "venue.zipCode": "venueZip",
+        "priceLevels required": "priceLevels"
+      };
+
+      const mappedFields = (json.fields || []).map(f => backendToFrontendMap[f] || f);
+      
       setError(json.error || "Failed to create event.");
-      setEmptyFields(json.fields || []);
+      setEmptyFields(mappedFields);
       await showErrorAlert(
         "Error Creating Event",
         json.error || "Failed to create event."

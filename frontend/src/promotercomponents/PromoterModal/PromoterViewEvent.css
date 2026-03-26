@@ -1,0 +1,269 @@
+.promoter-view-event-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.promoter-view-event-container {
+  background-color: var(--color-white-primary);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  animation: slideInViewEvent 0.3s ease-out;
+}
+
+@keyframes slideInViewEvent {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.promoter-view-event-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-black-quaternary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pve-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pve-header-left h3 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--color-black-primary);
+}
+
+.pve-status-badge {
+   text-transform: capitalize;
+  letter-spacing: 0.5px;
+}
+
+.pve-status-badge.active {
+  background: var(--color-green-tertiary);
+  color: var(--color-green-primary);
+}
+
+.pve-status-badge.pending {
+  background: var(--color-yellow-tertiary);
+  color: var(--color-yellow-primary);
+}
+
+.pve-status-badge.draft {
+  background: var(--color-red-tertiary);
+  color: var(--color-red-primary);
+}
+
+.pve-status-badge.past {
+  background: var(--color-bg-light);
+  color: var(--color-black-secondary);
+}
+
+.pve-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-black-tertiary);
+  cursor: pointer;
+  display: flex;
+  transition: transform 0.2s;
+}
+
+.pve-close-btn:hover {
+  color: var(--color-black-primary);
+  transform: rotate(90deg);
+}
+
+.promoter-view-event-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Rejection / Feedback Box */
+.pve-rejection-box {
+  background-color: var(--color-bg-light); /* Default fallback */
+  border: 1px solid var(--color-black-quaternary);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.pve-rejection-box.rejected {
+  background-color: #fff5f5;
+  border-color: #feb2b2;
+}
+
+.pve-rejection-box.approved {
+  background-color: #f0fff4;
+  border-color: #9ae6b4;
+}
+
+.pve-rejection-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.pve-rejection-header.rejected {
+  color: var(--color-red-primary);
+}
+
+.pve-rejection-header.approved {
+  color: var(--color-green-primary);
+}
+
+.pve-rejection-header h6 {
+  margin: 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.pve-rejection-box p {
+  color: var(--color-black-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.pve-rejection-box.rejected p {
+  color: #c53030;
+}
+
+.pve-rejection-box.approved p {
+  color: #276749;
+}
+
+/* Image Section */
+.pve-image-section {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  height: 200px;
+  border: 1px solid var(--color-black-quaternary);
+}
+
+.pve-event-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Info Grid */
+.pve-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.pve-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.pve-info-item h6 {
+  margin: 0;
+  color: var(--color-black-tertiary);
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.pve-info-item p {
+  margin: 0;
+  color: var(--color-black-primary);
+  text-align: left;
+}
+
+.pve-icon-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-black-secondary);
+}
+
+.pve-icon-text svg {
+  font-size: 18px;
+  color: var(--color-red-primary);
+}
+
+.pve-description {
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Stats Row */
+.pve-stats-row {
+    text-align: left;
+  display: flex;
+  gap: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-black-quaternary);
+}
+
+.pve-stat h6 {
+  margin: 0;
+  color: var(--color-black-tertiary);
+  font-size: 11px;
+}
+
+.pve-stat .ticket-sold {
+  margin: 0;
+  color: var(--color-black-primary);
+  text-align: left;
+}
+
+.promoter-view-event-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--color-black-quaternary);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pve-done-btn {
+  min-width: 120px;
+}
+
+/* Status colors in stats */
+.pve-status-active { color: var(--color-green-primary); font-weight: 600; }
+.pve-status-pending { color: var(--color-yellow-primary); font-weight: 600; }
+.pve-status-draft { color: var(--color-red-primary); font-weight: 600; }
+.pve-status-past { color: var(--color-black-tertiary); font-weight: 600; }
+
+@media (max-width: 600px) {
+  .pve-info-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -6,20 +6,15 @@ import PromoterSales from "./promotersales.jsx";
 import PromoterAttendees from "./promoterattendees.jsx";
 import PromoterSponsors from "./promotersponsors.jsx";
 
-const sampleEvents = [
-    { id: 1, title: "TechStart Summit 2026", date: "Jun 16, 2026", location: "Starlight Arena, Los Angeles, CA", category: "Technology" },
-    { id: 2, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
-    { id: 3, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
-    { id: 4, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
-    { id: 5, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
-    { id: 6, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
-    { id: 7, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
-    { id: 8, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
-    { id: 9, title: "Future of Work 2025", date: "Oct 15, 2025", location: "O2 Arena, London", category: "Business" },
-];
+import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
+import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import eventsService from "../services/eventsService";
 
 const PromoterEventMonitoring = () => {
+    const { events, dispatch } = useEventsContext();
+    const { user } = useAuthContext();
     const [selectedEvent, setSelectedEvent] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("sales");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortFilter, setSortFilter] = useState("Recently Added");
@@ -28,13 +23,30 @@ const PromoterEventMonitoring = () => {
     const itemsPerPage = 8;
     const eventDropdownRef = useRef(null);
 
+    useEffect(() => {
+        const fetchEvents = async () => {
+            if (!user) return;
+            setLoading(true);
+            try {
+                const data = await eventsService.getEvents(user.token);
+                dispatch({ type: "SET_EVENTS", payload: data });
+            } catch (error) {
+                console.error("Error fetching events:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEvents();
+    }, [user, dispatch]);
+
     const sortEvents = (eventsList) => {
         if (!eventsList) return [];
         const sorted = [...eventsList];
         switch (sortFilter) {
             case "A-Z": return sorted.sort((a, b) => a.title?.localeCompare(b.title));
             case "Z-A": return sorted.sort((a, b) => b.title?.localeCompare(a.title));
-            case "Recently Added": default: return sorted;
+            case "Recently Added": default: return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         }
     };
 
@@ -48,9 +60,11 @@ const PromoterEventMonitoring = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const filteredEvents = sampleEvents.filter((event) =>
-        event.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredEvents = (events || []).filter((event) => {
+        const isApproved = event.status?.toLowerCase() === "approved";
+        const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
+        return isApproved && matchesSearch;
+    });
 
     const filteredAndSortedEvents = sortEvents(filteredEvents);
 
@@ -125,45 +139,66 @@ const PromoterEventMonitoring = () => {
                                 </div>
                             </div>
 
-                            <div className="pmon-events-grid">
-                                {paginatedData.length > 0 ? (
-                                    paginatedData.map((event) => (
-                                        <div
-                                            key={event.id}
-                                            className="pmon-event-card"
-                                            onClick={() => setSelectedEvent(event)}
-                                        >
-                                            <div className="pmon-card-image-wrap">
-                                                <img src="/assets/eventbg.jpg" alt={event.title} />
-                                            </div>
-                                            <div className="pmon-card-details">
-                                                <div className="pmon-card-info">
-                                                    <h3>{event.title}</h3>
+                            {loading ? (
+                                <div className="pmon-loading-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', gap: '16px' }}>
+                                    <Icon icon="line-md:loading-twotone-loop" width="48" style={{ color: "var(--color-red-primary)" }} />
+                                    <p className="large-body-text">Loading your events...</p>
+                                </div>
+                            ) : (
+                                <div className="pmon-events-grid">
+                                    {paginatedData.length > 0 ? (
+                                        paginatedData.map((event) => {
+                                            const eventDate = new Date(event.startDate).toLocaleDateString("en-US", {
+                                                month: "short",
+                                                day: "numeric",
+                                                year: "numeric"
+                                            });
+                                            const eventLocation = event.venue 
+                                                ? `${event.venue.name}, ${event.venue.city}` 
+                                                : "TBA";
+                                            const imageUrl = event.image 
+                                                ? `${import.meta.env.VITE_BACKEND_URL || ""}/uploads/${event.image}` 
+                                                : "/assets/eventbg.jpg";
+
+                                            return (
+                                                <div
+                                                    key={event._id}
+                                                    className="pmon-event-card"
+                                                    onClick={() => setSelectedEvent(event)}
+                                                >
+                                                    <div className="pmon-card-image-wrap">
+                                                        <img src={imageUrl} alt={event.title} />
+                                                    </div>
+                                                    <div className="pmon-card-details">
+                                                        <div className="pmon-card-info">
+                                                            <h3>{event.title}</h3>
+                                                        </div>
+                                                        <div className="pmon-card-info">
+                                                            <span>{event.category || "No category"}</span>
+                                                        </div>
+                                                        <div className="pmon-card-info">
+                                                            <Icon icon="mdi:calendar" />
+                                                            <span className="event-dates">{eventDate}</span>
+                                                        </div>
+                                                        <div className="pmon-card-info">
+                                                            <Icon icon="mdi:map-marker" />
+                                                            <span>{eventLocation}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="pmon-card-info">
-                                                    <span>{event.category || "No category"}</span>
-                                                </div>
-                                                <div className="pmon-card-info">
-                                                    <Icon icon="mdi:calendar" />
-                                                    <span className="event-dates">{event.date}</span>
-                                                </div>
-                                                <div className="pmon-card-info">
-                                                    <Icon icon="mdi:map-marker" />
-                                                    <span>{event.location}</span>
-                                                </div>
-                                            </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="pmon-empty-state">
+                                            <Icon icon="mdi:magnify-close" width="48" />
+                                            <h4>No events found</h4>
+                                            <p className="small-body-text">
+                                                No events match "<strong>{searchQuery}</strong>".
+                                            </p>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="pmon-empty-state">
-                                        <Icon icon="mdi:magnify-close" width="48" />
-                                        <h4>No events found</h4>
-                                        <p className="small-body-text">
-                                            No events match "<strong>{searchQuery}</strong>".
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            )}
 
                             {totalPages > 1 && (
                                 <div className="pagination">

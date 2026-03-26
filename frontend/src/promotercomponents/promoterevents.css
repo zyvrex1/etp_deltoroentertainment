@@ -106,6 +106,9 @@
 
     .pe-toolbar-right {
       flex-shrink: 0;
+      display: flex;
+      gap: 12px;
+      align-items: center;
 
       .pe-filter-dropdown {
         position: relative;
@@ -250,6 +253,11 @@
         background: var(--color-bg-light);
         color: var(--color-black-primary);
       }
+
+      .pe-status-pill.cancelled {
+        background: var(--color-bg-light);
+        color: var(--color-black-primary);
+      }
     }
 
     h4 {
@@ -310,14 +318,30 @@
   gap: 8px;
   padding: 10px 14px 14px;
   width: 100%;
-  align-items: stretch;
-  display: flex;
+  align-items: center;
+
+  a {
+    flex: 1;
+    text-decoration: none;
+    display: flex;
+  }
+
+  .disabled-nav-link {
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
+  }
 
   .pe-card-btn {
     flex: 1;
-    color: var(--color-black-primary);  
+    font-size: 13px;
+    padding: 8px;
+    white-space: nowrap;
   }
 
+  .outlined-button.pe-card-btn{
+    color: var(--color-black-primary);
+  }
 }
 
 
@@ -389,9 +413,19 @@
   .pe-toolbar {
     flex-direction: column;
     align-items: stretch;
+          width: 100%;
+
+          .pe-toolbar-left{
+            width: 100%;
+                  align-items: stretch;
+
+          }
+
 
     .pe-toolbar-right {
       width: 100%;
+      flex-direction: column;
+      align-items: stretch;
 
       .pe-filter-dropdown,
       .pe-filter-dropdown-btn,
@@ -482,3 +516,100 @@
 }
 
 
+
+/* Pagination Styling */
+.pe-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: 40px 0;
+  margin-top: 20px;
+  border-top: 1px solid var(--color-black-quaternary);
+}
+
+.pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-number {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--color-black-quaternary);
+  background: var(--color-white-primary);
+  color: var(--color-black-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-number:hover {
+  border-color: var(--color-red-primary);
+  color: var(--color-red-primary);
+}
+
+.pagination-number.active {
+  background: var(--color-red-primary);
+  color: white;
+  border-color: var(--color-red-primary);
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-black-quaternary);
+  background: var(--color-white-primary);
+  color: var(--color-black-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--color-bg-light);
+  border-color: var(--color-black-tertiary);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-btn svg {
+  font-size: 18px;
+}
+
+@media (max-width: 1024px) {
+  .pe-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .pe-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pe-pagination {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pe-grid {
+    grid-template-columns: 1fr;
+  }
+  .pagination-btn span {
+    display: none;
+  }
+}
