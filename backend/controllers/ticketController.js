@@ -1,6 +1,15 @@
 const mongoose = require("mongoose");
 const Event = require("../models/eventModel");
 
+// Helper to safely convert to ObjectId
+const toObjectId = (id) => {
+  try {
+    return id ? new mongoose.Types.ObjectId(id) : new mongoose.Types.ObjectId();
+  } catch {
+    return new mongoose.Types.ObjectId(); // fallback if invalid
+  }
+};
+
 const addPriceLevels = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -16,9 +25,9 @@ const addPriceLevels = async (req, res) => {
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ error: "Event not found" });
 
-    // Map incoming price levels with type safety
+    // Map incoming price levels with safe ObjectId
     const mappedPriceLevels = priceLevels.map(p => ({
-      _id: p._id ? mongoose.Types.ObjectId(p._id) : new mongoose.Types.ObjectId(),
+      _id: toObjectId(p._id),
       priceName: p.priceName,
       description: p.description,
       color: p.color,
@@ -45,9 +54,9 @@ const addPriceLevels = async (req, res) => {
 
     return res.status(200).json({ event });
   } catch (err) {
-    console.error(err);
+    console.error("Add PriceLevels Error:", err);
     return res.status(500).json({ error: "Server error", message: err.message });
   }
 };
 
-module.exports = { addPriceLevels }
+module.exports = { addPriceLevels };
