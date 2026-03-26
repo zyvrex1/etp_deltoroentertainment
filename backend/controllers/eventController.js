@@ -1,6 +1,6 @@
-const Event = require('../models/eventModel')
-// const Booth = require("../models/boothModel"); 
 const mongoose = require('mongoose')
+const { v4: uuidv4 } = require("uuid");
+const Event = require('../models/eventModel')
 
 const multer = require("multer");
 const path = require("path");
@@ -171,12 +171,9 @@ const createEvent = async (req, res) => {
       endDate,
       startTime,
       endTime,
-      eventType = "General Admission",
-      ticketPrice,
-      totalTickets,
-      seatVariations,
-      priceLevels,
-      seatMap = {},
+      eventType,
+      priceLevels = [],   // ✅ Single source
+      seatMap = null,
       booths = [],
       isFeatured = false
     } = req.body;
@@ -185,118 +182,129 @@ const createEvent = async (req, res) => {
        PARSE JSON (FormData safe)
     ========================= */
     if (typeof venue === "string") venue = JSON.parse(venue);
-    if (typeof seatVariations === "string") seatVariations = JSON.parse(seatVariations);
     if (typeof priceLevels === "string") priceLevels = JSON.parse(priceLevels);
     if (typeof booths === "string") booths = JSON.parse(booths);
     if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
-
-    /* =========================
-       MAP FRONTEND FIELDS TO PRICELEVELS
-    ========================= */
-    if (!priceLevels || priceLevels.length === 0) {
-      if (eventType === "General Admission") {
-        priceLevels = [{
-          priceName: "Standard",
-          facePrice: Number(ticketPrice) || 0,
-          quantityAvailable: Number(totalTickets) || 0,
-          isActive: true
-        }];
-      } else if (eventType === "Seating Arrangement" && seatVariations) {
-        priceLevels = seatVariations.map(sv => ({
-          priceName: `Seat ${sv.seatNumber}`,
-          facePrice: Number(sv.price) || 0,
-          quantityAvailable: 1,
-          isActive: true
-        }));
-      } else {
-        priceLevels = [];
-      }
-    }
 
     const image = req.file ? req.file.filename : null;
 
     /* =========================
        REQUIRED FIELD VALIDATION
     ========================= */
-    const requiredFields = ["title", "description", "category", "startDate", "endDate", "startTime", "endTime"];
-    let emptyFields = [];
+    const requiredFields = [
+      "title","description","category",
+      "startDate","endDate","startTime","endTime","eventType"
+    ];
+
+    let errors = [];
 
     requiredFields.forEach(field => {
       if (!req.body[field] || String(req.body[field]).trim() === "") {
-        emptyFields.push(field);
+        errors.push(field);
       }
     });
 
     /* =========================
-       PRICE LEVEL VALIDATION
-    ========================= */
-    if (!Array.isArray(priceLevels) || priceLevels.length === 0) {
-      emptyFields.push("priceLevels");
-    } else {
-      priceLevels.forEach((p, index) => {
-        if (!p.priceName || String(p.priceName).trim() === "") emptyFields.push(`priceLevels[${index}].priceName`);
-        if (p.facePrice === undefined || isNaN(Number(p.facePrice))) emptyFields.push(`priceLevels[${index}].facePrice`);
-      });
-    }
-
-    /* =========================
-       SEATING VALIDATION
-    ========================= */
-    if (eventType === "Seating Arrangement" && (!seatMap || Object.keys(seatMap).length === 0)) {
-      // NOTE: SeatMap might be optional during initial creation in some flows
-      // emptyFields.push("seatMap"); 
-    }
-
-    /* =========================
-       VENUE VALIDATION (Hybrid)
+       VENUE VALIDATION
     ========================= */
     const venueFields = ["name", "address", "city", "zipCode"];
-    let emptyVenueFields = [];
-
     if (!venue || typeof venue !== "object") {
-      emptyVenueFields = venueFields.map(f => `venue.${f}`);
+      venueFields.forEach(f => errors.push(`venue.${f}`));
     } else {
-      venueFields.forEach(field => {
-        if (!venue[field] || String(venue[field]).trim() === "") emptyVenueFields.push(`venue.${field}`);
+      venueFields.forEach(f => {
+        if (!venue[f]) errors.push(`venue.${f}`);
       });
-      // Keep _id if present (hybrid)
-      if (venue._id) {
-        venue = {
-          _id: venue._id,
-          name: venue.name,
-          address: venue.address,
-          city: venue.city,
-          zipCode: venue.zipCode
-        };
+    }
+
+    /* =========================
+       PRICE LEVEL VALIDATION + ID GENERATION
+    ========================= */
+    if (!priceLevels.length) {
+      errors.push("priceLevels required");
+    }
+
+    if (eventType === "General Admission" && priceLevels.length > 2) {
+      errors.push("General Admission allows maximum of 2 price levels only");
+    }
+
+    // Ensure every priceLevel has a valid _id
+    priceLevels = priceLevels.map(p => ({
+      ...p,
+      _id: p._id ? mongoose.Types.ObjectId(p._id) : new mongoose.Types.ObjectId(),
+      facePrice: Number(p.facePrice),
+      serviceCharge: Number(p.serviceCharge || 0),
+      quantityAvailable: Number(p.quantityAvailable || 0),
+      quantitySold: Number(p.quantitySold || 0),
+      isActive: p.isActive !== false
+    }));
+
+    const priceLevelIds = priceLevels.map(p => p._id);
+
+    /* =========================
+       SEAT MAP VALIDATION
+    ========================= */
+    if (eventType === "Seating Arrangement") {
+      if (!seatMap) {
+        errors.push("seatMap required for Seating Arrangement");
       }
+
+      if (seatMap && (!seatMap.sections || seatMap.sections.length === 0)) {
+        errors.push("seatMap.sections");
+      }
+
+      seatMap?.sections?.forEach((section, sIndex) => {
+        section.seats?.forEach((seat, i) => {
+
+          if (!seat.id) {
+            errors.push(`seatMap.sections[${sIndex}].seats[${i}].id`);
+          }
+
+          // Auto assign first price level if missing
+          if (priceLevels.length > 0 && !seat.priceLevelId) {
+            seat.priceLevelId = priceLevelIds[0];
+          }
+
+          if (!priceLevelIds.some(id => id.equals(seat.priceLevelId))) {
+            errors.push(`seatMap.sections[${sIndex}].seats[${i}].invalidPriceLevelId`);
+          }
+        });
+      });
+    }
+
+    if (eventType === "General Admission" && seatMap) {
+      errors.push("seatMap not allowed for General Admission");
     }
 
     /* =========================
-       BOOTH VALIDATION & ID MAPPING
+       BOOTH VALIDATION
     ========================= */
-    let invalidBooths = [];
-    if (Array.isArray(booths)) {
-      booths = booths.map((b, index) => {
-        const price = Number(b.price);
-        if (b.price !== undefined && (isNaN(price) || price < 0)) invalidBooths.push(`booths[${index}].price`);
-        
-        // Auto-generate ID if missing
+    const hasBooths = Array.isArray(booths) && booths.length > 0;
+
+    if (hasBooths) {
+      booths.forEach((b, i) => {
+
         if (!b.id) {
-          b.id = `booth-${Date.now()}-${index}`;
+          errors.push(`booths[${i}].id`);
         }
-        return b;
+
+        // Auto assign first price level if missing
+        if (priceLevels.length > 0 && !b.priceLevelId) {
+          b.priceLevelId = priceLevelIds[0];
+        }
+
+        if (!priceLevelIds.some(id => id.equals(b.priceLevelId))) {
+          errors.push(`booths[${i}].invalidPriceLevelId`);
+        }
       });
     }
 
     /* =========================
-       RETURN VALIDATION ERRORS
+       RETURN ERRORS
     ========================= */
-    const allErrors = [...emptyFields, ...emptyVenueFields, ...invalidBooths];
-    if (allErrors.length) {
-      console.log("Validation failed:", allErrors);
+    if (errors.length) {
       return res.status(400).json({
         error: "Validation failed",
-        fields: allErrors
+        fields: errors
       });
     }
 
@@ -305,22 +313,23 @@ const createEvent = async (req, res) => {
     ========================= */
     const userId = req.user._id;
     const roleLower = (req.user.role || "").toLowerCase();
-    const creatorModel = roleLower === "superadmin" ? "Superadmin" :
-                         roleLower === "admin" ? "Admin" : "Promoter";
 
-    // Auto-approve if created by admin or superadmin
-    const status = (roleLower === "admin" || roleLower === "superadmin") ? "approved" : "pending";
+    const creatorModel =
+      roleLower === "superadmin"
+        ? "Superadmin"
+        : roleLower === "admin"
+        ? "Admin"
+        : "Promoter";
 
-    /* =========================
-       BOOTH CALCULATIONS
-    ========================= */
-    const hasBooths = Array.isArray(booths) && booths.length > 0;
-    const maxBooths = hasBooths ? booths.length : 0;
+    const status =
+      roleLower === "admin" || roleLower === "superadmin"
+        ? "approved"
+        : "pending";
 
     /* =========================
        CREATE EVENT
     ========================= */
-    const event = await Event.create({
+    const newEvent = await Event.create({
       title,
       description,
       category,
@@ -331,46 +340,32 @@ const createEvent = async (req, res) => {
       endTime,
       eventType,
       image,
-      priceLevels: priceLevels.map(p => ({
-        priceName: p.priceName,
-        description: p.description || "",
-        color: p.color || "#000000",
-        facePrice: Number(p.facePrice),
-        serviceCharge: Number(p.serviceCharge || 0),
-        isFlexible: p.isFlexible || false,
-        saleStart: p.saleStart || null,
-        saleEnd: p.saleEnd || null,
-        minPerOrder: p.minPerOrder || 1,
-        maxPerOrder: p.maxPerOrder || 30,
-        increment: p.increment || 1,
-        quantityAvailable: Number(p.quantityAvailable || 0),
-        quantitySold: Number(p.quantitySold || 0),
-        isActive: p.isActive !== undefined ? p.isActive : true
-      })),
-      seatMap: (seatMap && Object.keys(seatMap).length > 0) ? seatMap : null,
-      booths: hasBooths ? booths.map(b => ({
-        id: b.id,
-        code: b.code || null,
-        type: b.type || "standard",
-        status: b.status || "available",
-        x: b.x != null ? Number(b.x) : 0,
-        y: b.y != null ? Number(b.y) : 0,
-        width: b.width != null ? Number(b.width) : 50,
-        height: b.height != null ? Number(b.height) : 50,
-        price: Number(b.price)
-      })) : [],
+
+      // Price levels with guaranteed _id
+      priceLevels,
+
+      seatMap: eventType === "Seating Arrangement" ? seatMap : null,
+
+      booths: hasBooths ? booths : [],
       hasBooths,
-      maxBooths,
-      isFeatured: isFeatured === "true" || isFeatured === true,
+
+      isFeatured: Boolean(isFeatured),
+
       createdBy: userId,
       creatorModel,
-      status // Use the derived status
+      status
     });
 
-    return res.status(201).json({ event });
+    const populatedEvent = await newEvent.populate(
+      "createdBy",
+      "firstName lastName role"
+    );
+
+    return res.status(201).json({ event: populatedEvent });
 
   } catch (error) {
     console.error("Create Event Error:", error);
+
     return res.status(500).json({
       error: "Server error while creating event",
       message: error.message
@@ -403,6 +398,10 @@ const updateEvent = async (req, res) => {
   }
 
   try {
+    // Fetch existing event
+    const existingEvent = await Event.findById(id);
+    if (!existingEvent) return res.status(404).json({ error: "No such event" });
+
     let {
       title,
       description,
@@ -413,174 +412,149 @@ const updateEvent = async (req, res) => {
       startTime,
       endTime,
       eventType,
-      priceLevels,
+      priceLevels, // single unified array
       seatMap,
-      booths = [],
-      isFeatured
+      booths,
+      isFeatured,
+      image
     } = req.body;
 
-    /* =========================
-       PARSE JSON (FormData safe)
-    ========================= */
+    // Parse JSON if sent as string (FormData-safe)
     if (typeof venue === "string") venue = JSON.parse(venue);
     if (typeof priceLevels === "string") priceLevels = JSON.parse(priceLevels);
     if (typeof booths === "string") booths = JSON.parse(booths);
     if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
 
-    const image = req.file ? req.file.filename : req.body.image;
+    // Update image if new file uploaded
+    image = req.file ? req.file.filename : image || existingEvent.image;
 
-    /* =========================
-       VALIDATION
-    ========================= */
-    let emptyFields = [];
+    // Merge incoming data with existing data
+    const finalEventType = eventType || existingEvent.eventType;
+    const finalPriceLevels = Array.isArray(priceLevels) && priceLevels.length > 0
+      ? priceLevels
+      : existingEvent.priceLevels || [];
+    const finalSeatMap = seatMap !== undefined ? seatMap : existingEvent.seatMap;
+    const finalBooths = booths !== undefined ? booths : existingEvent.booths;
+    const finalVenue = venue !== undefined ? venue : existingEvent.venue;
 
-    const requiredFields = [
-      "title",
-      "description",
-      "category",
-      "startDate",
-      "endDate",
-      "startTime",
-      "endTime"
-    ];
+    const errors = [];
 
-    requiredFields.forEach((field) => {
-      // For PATCH, only validate if the field is actually sent in the request
-      if (req.body.hasOwnProperty(field) && (String(req.body[field]).trim() === "")) {
-        emptyFields.push(field);
-      }
+    // =========================
+    // REQUIRED FIELD VALIDATION
+    // =========================
+    const requiredFields = ["title", "description", "category", "startDate", "endDate", "startTime", "endTime"];
+    requiredFields.forEach(field => {
+      const value = req.body[field] !== undefined ? req.body[field] : existingEvent[field];
+      if (!value || String(value).trim() === "") errors.push(field);
     });
 
-    // If it's a status-only update, we don't need image/priceLevels/venue validation
-    const hasDetails = requiredFields.some(f => req.body.hasOwnProperty(f));
-    
-    if (hasDetails && !image && req.body.hasOwnProperty('image')) emptyFields.push("image");
-
-    if (hasDetails && req.body.hasOwnProperty('priceLevels') && (!Array.isArray(priceLevels) || priceLevels.length === 0)) {
-      emptyFields.push("priceLevels");
-    }
-
-    // Seating validation (seatMap optional based on your flow)
-    if (eventType === "Seating Arrangement") {
-      if (seatMap && typeof seatMap !== "object") {
-        emptyFields.push("seatMap");
-      }
-    }
-
-    /* =========================
-       VENUE VALIDATION
-    ========================= */
+    // =========================
+    // VENUE VALIDATION
+    // =========================
     const venueFields = ["name", "address", "city", "zipCode"];
-    let emptyVenueFields = [];
-
-    if (req.body.hasOwnProperty('venue')) {
-      venueFields.forEach((field) => {
-        if (!venue || !venue[field] || String(venue[field]).trim() === "") {
-          emptyVenueFields.push(`venue.${field}`);
-        }
-      });
-    }
-
-    /* =========================
-       BOOTH VALIDATION
-    ========================= */
-    let invalidBooths = [];
-
-    if (req.body.hasOwnProperty('booths') && Array.isArray(booths)) {
-      booths.forEach((b, index) => {
-        if (!b.id) invalidBooths.push(`booths[${index}].id`);
-        if (b.price === undefined || b.price < 0) {
-          invalidBooths.push(`booths[${index}].price`);
-        }
-      });
-    }
-
-    /* =========================
-       RETURN ERRORS
-    ========================= */
-    if (emptyFields.length || emptyVenueFields.length || invalidBooths.length) {
-      return res.status(400).json({
-        error: "Validation failed",
-        emptyFields,
-        emptyVenueFields,
-        invalidBooths
-      });
-    }
-
-    /* =========================
-       BOOTH CALCULATIONS
-    ========================= */
-    const hasBooths = Array.isArray(booths) && booths.length > 0;
-    const maxBooths = hasBooths ? booths.length : 0;
-
-    /* =========================
-       PREPARE UPDATE DATA (DYNAMIC)
-    ========================= */
-    const updatedData = {};
-
-    // Map each possible field from req.body if it exists
-    const directFields = ["title", "description", "category", "startDate", "endDate", "startTime", "endTime", "eventType", "isFeatured", "status", "rejectionReason"];
-    directFields.forEach(f => {
-      if (req.body.hasOwnProperty(f)) {
-        updatedData[f] = req.body[f];
+    venueFields.forEach(f => {
+      if (!finalVenue || !finalVenue[f] || String(finalVenue[f]).trim() === "") {
+        errors.push(`venue.${f}`);
       }
     });
 
-    if (image !== undefined) updatedData.image = image;
-    if (venue !== undefined) updatedData.venue = venue;
-    if (seatMap !== undefined) updatedData.seatMap = seatMap;
-    if (req.body.hasOwnProperty('booths')) {
-        updatedData.booths = booths.map(b => ({
-            id: b.id,
-            code: b.code || null,
-            type: b.type || "standard",
-            status: b.status || "available",
-            x: b.x || 0,
-            y: b.y || 0,
-            width: b.width || 50,
-            height: b.height || 50,
-            price: Number(b.price)
-        }));
-        updatedData.hasBooths = hasBooths;
-        updatedData.maxBooths = maxBooths;
+    // =========================
+    // PRICE LEVEL VALIDATION
+    // =========================
+    if (finalPriceLevels.length === 0) errors.push("priceLevels required");
+    if (finalEventType === "General Admission" && finalPriceLevels.length > 2) {
+      errors.push("General Admission allows maximum of 2 price levels only");
     }
 
-    if (req.body.hasOwnProperty('priceLevels')) {
-        updatedData.priceLevels = priceLevels.map((p) => ({
-            priceName: p.priceName,
-            description: p.description || "",
-            color: p.color || "#000000",
-            facePrice: Number(p.facePrice),
-            serviceCharge: Number(p.serviceCharge || 0),
-            isFlexible: p.isFlexible || false,
-            saleStart: p.saleStart || null,
-            saleEnd: p.saleEnd || null,
-            minPerOrder: p.minPerOrder || 1,
-            maxPerOrder: p.maxPerOrder || 30,
-            increment: p.increment || 1,
-            quantityAvailable: Number(p.quantityAvailable || 0),
-            quantitySold: Number(p.quantitySold || 0),
-        }));
+    // Assign temporary UUIDs for new price levels if missing
+    const priceLevelIds = finalPriceLevels.map(p => p._id || uuidv4());
+    finalPriceLevels.forEach((p, i) => {
+      if (!p._id) p._id = priceLevelIds[i];
+      p.facePrice = Number(p.facePrice || 0);
+      p.serviceCharge = Number(p.serviceCharge || 0);
+      p.quantityAvailable = Number(p.quantityAvailable || 0);
+      p.quantitySold = Number(p.quantitySold || 0);
+    });
+
+    // =========================
+    // SEAT MAP VALIDATION
+    // =========================
+    if (finalEventType === "Seating Arrangement") {
+      if (!finalSeatMap) errors.push("seatMap required for Seating Arrangement");
+      else if (!Array.isArray(finalSeatMap.sections) || finalSeatMap.sections.length === 0) {
+        errors.push("seatMap.sections");
+      } else {
+        finalSeatMap.sections.forEach((section, sIndex) => {
+          if (!Array.isArray(section.seats)) return;
+          section.seats.forEach((seat, i) => {
+            if (!seat.id) errors.push(`seatMap.sections[${sIndex}].seats[${i}].id`);
+            // Auto assign first price level if missing
+            if (finalPriceLevels.length > 0 && !seat.priceLevelId) seat.priceLevelId = priceLevelIds[0];
+            if (!priceLevelIds.includes(seat.priceLevelId)) {
+              errors.push(`seatMap.sections[${sIndex}].seats[${i}].invalidPriceLevelId`);
+            }
+          });
+        });
+      }
     }
 
-    /* =========================
-       UPDATE EVENT
-    ========================= */
-    const event = await Event.findOneAndUpdate(
+    if (finalEventType === "General Admission" && finalSeatMap) {
+      errors.push("seatMap not allowed for General Admission");
+    }
+
+    // =========================
+    // BOOTH VALIDATION
+    // =========================
+    const hasBooths = Array.isArray(finalBooths) && finalBooths.length > 0;
+    if (hasBooths) {
+      finalBooths.forEach((b, i) => {
+        if (!b.id) errors.push(`booths[${i}].id`);
+        // Auto assign first price level if missing
+        if (finalPriceLevels.length > 0 && !b.priceLevelId) b.priceLevelId = priceLevelIds[0];
+        if (!priceLevelIds.includes(b.priceLevelId)) errors.push(`booths[${i}].invalidPriceLevelId`);
+        if (b.priceOverride !== undefined && (isNaN(Number(b.priceOverride)) || Number(b.priceOverride) < 0)) {
+          errors.push(`booths[${i}].priceOverride`);
+        }
+      });
+    }
+
+    // Return errors if any
+    if (errors.length) return res.status(400).json({ error: "Validation failed", fields: errors });
+
+    // =========================
+    // PREPARE UPDATED DATA
+    // =========================
+    const updatedData = {
+      title: title || existingEvent.title,
+      description: description || existingEvent.description,
+      category: category || existingEvent.category,
+      startDate: startDate || existingEvent.startDate,
+      endDate: endDate || existingEvent.endDate,
+      startTime: startTime || existingEvent.startTime,
+      endTime: endTime || existingEvent.endTime,
+      eventType: finalEventType,
+      priceLevels: finalPriceLevels,
+      seatMap: finalEventType === "Seating Arrangement" ? finalSeatMap : null,
+      booths: hasBooths ? finalBooths : [],
+      hasBooths,
+      maxBooths: hasBooths ? finalBooths.length : 0,
+      venue: finalVenue,
+      isFeatured: ["true", true].includes(isFeatured) || existingEvent.isFeatured,
+      image
+    };
+
+    // =========================
+    // UPDATE EVENT
+    // =========================
+    const updatedEvent = await Event.findOneAndUpdate(
       { _id: id },
       updatedData,
       { new: true, runValidators: true }
     );
 
-    if (!event) {
-      return res.status(404).json({ error: "No such event" });
-    }
-
-    res.status(200).json({ event });
-
+    res.status(200).json({ event: updatedEvent });
   } catch (error) {
     console.error("Update Event Error:", error);
-
     res.status(500).json({
       error: "Server error while updating event",
       message: error.message
@@ -628,7 +602,7 @@ const updateSeatMap = async (req, res) => {
     /* =========================
        VALIDATE PRICE LEVEL IDS
     ========================= */
-    const validPriceLevelIds = event.priceLevels.map((p) =>
+    const validPriceLevelIds = event.seatPriceLevels.map((p) =>
       p._id.toString()
     );
 
@@ -646,7 +620,9 @@ const updateSeatMap = async (req, res) => {
             if (!seat.priceLevelId) {
               invalidSeats.push(`sections[${sIndex}].seats[${index}].priceLevelId`);
             } else if (!validPriceLevelIds.includes(seat.priceLevelId)) {
-              invalidSeats.push(`sections[${sIndex}].seats[${index}].priceLevelId INVALID`);
+              invalidSeats.push(
+                `sections[${sIndex}].seats[${index}].priceLevelId INVALID`
+              );
             }
           });
         }
