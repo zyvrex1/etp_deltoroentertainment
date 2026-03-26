@@ -2,28 +2,24 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import "./promoterheader.css";
-import { showConfirmAlert, showSuccessAlert } from "../admincomponents/utils/sweetAlert";
+import { showLogoutConfirmAlert } from "../admincomponents/utils/sweetAlert";
 import { useLogout } from "../admincomponents/hooks/useLogout";
+import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
 
-const PromoterHeader = ({ user = null, mobileExpanded, setMobileExpanded }) => {
+const PromoterHeader = ({ mobileExpanded, setMobileExpanded }) => {
   const { logout } = useLogout();
-  const currentUser = user || {
-    name: "Alex Thompson",
-    email: "alex@ticketspro.com",
-    role: "Promoter",
-  };
-
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const { user: authUser } = useAuthContext();
   const navigate = useNavigate();
 
-  const getInitials = (name) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const getInitials = (firstName, lastName) => {
+    if (!firstName && !lastName) return "";
+    const firstInitial = firstName ? firstName[0] : "";
+    const lastInitial = lastName ? lastName[0] : "";
+    return (firstInitial + lastInitial).toUpperCase();
   };
 
   const handleToggleDropdown = () => {
@@ -31,17 +27,18 @@ const PromoterHeader = ({ user = null, mobileExpanded, setMobileExpanded }) => {
   };
 
   const handleSignOut = async () => {
-    setIsDropdownOpen(false);
-    const result = await showConfirmAlert(
-      "Sign Out?",
-      "Are you sure you want to sign out?",
-      "Yes, Sign Out",
-      "Cancel"
-    );
+    const result = await showLogoutConfirmAlert();
 
     if (result.isConfirmed) {
-      logout();
-      window.location.href = "/?logout=success";
+      setIsSigningOut(true);
+      try {
+        await logout();
+        setIsDropdownOpen(false);
+        window.location.href = "/?logout=success";
+      } catch (err) {
+        console.error(err);
+        setIsSigningOut(false);
+      }
     }
   };
 
@@ -61,6 +58,8 @@ const PromoterHeader = ({ user = null, mobileExpanded, setMobileExpanded }) => {
     };
   }, []);
 
+  if (!authUser) return null;
+
   return (
     <header className="app-header">
       <div className="header-left-mobile">
@@ -79,19 +78,19 @@ const PromoterHeader = ({ user = null, mobileExpanded, setMobileExpanded }) => {
           onClick={handleToggleDropdown}
         >
           <div className="profile-details">
-            <h4 className="profile-name">{currentUser.name}</h4>
-            <div className="profile-meta">
-              <p className="small-body-text profile-email">
-                {currentUser.email}
-              </p>
-              <p className="small-body-text profile-role">
-                <strong>{currentUser.role}</strong>
-              </p>
-            </div>
+            <h4 className="profile-name">
+              {authUser.firstName && authUser.lastName
+                ? `${authUser.firstName} ${authUser.lastName}`
+                : "User"}
+            </h4>
+            <p className="small-body-text profile-email">{authUser.email}</p>
+            <p className="small-body-text profile-role">
+              <strong>{authUser.role}</strong>
+            </p>
           </div>
           <div className="profile-avatar">
             <span className="avatar-initials">
-              {getInitials(currentUser.name)}
+              {getInitials(authUser.firstName, authUser.lastName)}
             </span>
             <Icon icon="mdi:account-circle" className="avatar-icon" />
           </div>
@@ -111,9 +110,10 @@ const PromoterHeader = ({ user = null, mobileExpanded, setMobileExpanded }) => {
               type="button"
               className="dropdown-item dropdown-signout"
               onClick={handleSignOut}
+              disabled={isSigningOut}
             >
               <Icon icon="mdi:logout" className="dropdown-icon" />
-              <span>Sign out</span>
+              <span>{isSigningOut ? "Signing out..." : "Sign out"}</span>
             </button>
           </div>
         )}
@@ -123,3 +123,4 @@ const PromoterHeader = ({ user = null, mobileExpanded, setMobileExpanded }) => {
 };
 
 export default PromoterHeader;
+
