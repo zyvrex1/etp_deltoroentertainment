@@ -1,9 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-/* =========================
-   PRICE LEVEL (SHARED)
-========================= */
 const priceLevelSchema = new Schema({
   priceName: { type: String, required: true },
   description: String,
@@ -43,7 +40,6 @@ const seatSchema = new Schema({
     default: "available",
   },
 
-  // ✅ Embedded system
   priceLevelId: { type: Schema.Types.ObjectId },
 
   x: Number,
@@ -64,17 +60,26 @@ const seatMapSchema = new Schema({
   sections: [sectionSchema],
 });
 
-/* =========================
-   EVENT
-========================= */
+const boothSchema = new mongoose.Schema({
+  code: String,
+  label: String,
+  type: String,
+  status: {
+    type: String,
+    enum: ["available", "reserved", "sold", "blocked"],
+    default: "available"
+  },
+  x: Number,
+  y: Number,
+  width: Number,
+  height: Number,
+  rotation: { type: Number, default: 0 },
+  priceLevelId: { type: mongoose.Schema.Types.ObjectId, ref: "PriceLevel" },
+});
+
 const eventSchema = new Schema(
   {
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    creatorModel: {
-      type: String,
-      enum: ["Promoter", "Admin", "Superadmin"],
-      required: true,
-    },
 
     title: { type: String, required: true, trim: true },
     eventType: {
@@ -122,36 +127,13 @@ const eventSchema = new Schema(
 
     image: String,
 
-    /* =========================
-       ONE SOURCE OF TRUTH
-    ========================= */
     priceLevels: { type: [priceLevelSchema], default: [] },
 
     seatMap: { type: seatMapSchema, default: null },
 
     hasBooths: { type: Boolean, default: false },
 
-    booths: [
-      {
-        code: String,
-        label: String,
-        type: String,
-
-        status: {
-          type: String,
-          enum: ["available", "reserved", "sold", "blocked"],
-          default: "available",
-        },
-
-        x: Number,
-        y: Number,
-        width: Number,
-        height: Number,
-        rotation: { type: Number, default: 0 },
-
-        priceLevelId: { type: Schema.Types.ObjectId },
-      },
-    ],
+    booths: { type: [boothSchema], default: [] },
 
     ticketsSold: { type: Number, default: 0 },
 
@@ -169,39 +151,34 @@ const eventSchema = new Schema(
   { timestamps: true }
 );
 
-/* =========================
-   VALIDATION + LOGIC
-========================= */
 eventSchema.pre("save", function (next) {
-  const priceIds = this.priceLevels.map((p) => p._id.toString());
+  const priceIds = (this.priceLevels || [])
+    .map((p) => (p && p._id ? p._id.toString() : null))
+    .filter(Boolean);
 
-  /* ===== SEAT VALIDATION ===== */
-  if (this.eventType === "Seating Arrangement" && this.seatMap) {
+
+  if (this.eventType === "Seating Arrangement" && this.seatMap && this.seatMap.sections) {
     for (const section of this.seatMap.sections) {
+      if (!section.seats) continue; // Skip if no seats array
       for (const seat of section.seats) {
         if (
           seat.priceLevelId &&
           !priceIds.includes(seat.priceLevelId.toString())
         ) {
           return next(
-            new Error(
-              `Seat ${seat.label || `${seat.row}-${seat.number}`} has invalid priceLevelId`
-            )
+            new Error(`Seat ${seat.label || `${seat.row}-${seat.number}`} has invalid priceLevelId`)
           );
         }
       }
     }
   }
 
-  if (this.eventType === "General Admission" && this.seatMap) {
-    return next(
-      new Error("Seat map is not allowed for General Admission events")
-    );
+  if (this.eventType === "General Admission") {
+    this.seatMap = null; 
   }
 
-  /* ===== BOOTH VALIDATION ===== */
   if (this.hasBooths) {
-    if (!this.booths.length) {
+    if (!this.booths || !this.booths.length) {
       return next(new Error("Booths are required when hasBooths is true"));
     }
 
@@ -217,36 +194,37 @@ eventSchema.pre("save", function (next) {
     }
   }
 
-  /* ===== AUTO SET hasBooths ===== */
-  this.hasBooths = this.booths && this.booths.length > 0;
-
-  /* ===== REVENUE CALCULATION ===== */
   let seatRevenue = 0;
   let boothRevenue = 0;
 
   const priceMap = {};
   this.priceLevels.forEach((p) => {
-    priceMap[p._id.toString()] = p;
+    if (p && p._id) {
+      priceMap[p._id.toString()] = p;
+    }
   });
 
-  if (this.seatMap) {
+  if (this.seatMap && this.seatMap.sections) {
     for (const section of this.seatMap.sections) {
+      if (!section.seats) continue;
       for (const seat of section.seats) {
         if (seat.status === "sold" && seat.priceLevelId) {
           const p = priceMap[seat.priceLevelId.toString()];
           if (p) {
-            seatRevenue += p.facePrice + p.serviceCharge;
+            seatRevenue += (p.facePrice || 0) + (p.serviceCharge || 0);
           }
         }
       }
     }
   }
 
-  for (const booth of this.booths) {
-    if (booth.status === "sold" && booth.priceLevelId) {
-      const p = priceMap[booth.priceLevelId.toString()];
-      if (p) {
-        boothRevenue += p.facePrice + p.serviceCharge;
+  if (this.booths) {
+    for (const booth of this.booths) {
+      if (booth.status === "sold" && booth.priceLevelId) {
+        const p = priceMap[booth.priceLevelId.toString()];
+        if (p) {
+          boothRevenue += (p.facePrice || 0) + (p.serviceCharge || 0);
+        }
       }
     }
   }
@@ -257,9 +235,7 @@ eventSchema.pre("save", function (next) {
   next();
 });
 
-/* =========================
-   VIRTUALS
-========================= */
+
 eventSchema.virtual("totalTickets").get(function () {
   if (this.eventType === "General Admission") {
     return this.priceLevels.reduce(

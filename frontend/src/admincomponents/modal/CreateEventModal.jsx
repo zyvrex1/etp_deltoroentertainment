@@ -136,20 +136,12 @@ const handleSubmit = async (e) => {
     .filter(([_, value]) => value === "" || value === null || value === undefined)
     .map(([key]) => key);
 
-  if (priceLevels.length === 0) {
-    empty.push("priceLevels");
-    setError("Please add at least one price level.");
-  }
-
   if (empty.length > 0) {
     setEmptyFields(empty);
-    if (!error) setError("Please fill in all required fields and add price levels.");
+    setError("Please fill in all required fields.");
     return;
   }
 
-  /* =========================
-     DATE VALIDATION
-  ========================= */
   const startDateTime = new Date(`${startDate}T${startTime}`);
   const endDateTime = new Date(`${endDate}T${endTime}`);
 
@@ -163,70 +155,38 @@ const handleSubmit = async (e) => {
     return;
   }
 
+  const priceLevelIds = priceLevels.map((p) => String(p.tempId || p._id));
+
   if (eventType === "General Admission" && priceLevels.length > 2) {
     setError("General Admission allows a maximum of 2 price levels only.");
     return;
   }
 
-  const priceLevelIds = priceLevels.map((p) => String(p.tempId || p._id));
-
-  if (eventType === "Seating Arrangement") {
-    if (!seatMap || !seatMap.sections || seatMap.sections.length === 0) {
-      setError("Seat map with sections is required for Seating Arrangement.");
-      return;
-    }
-
+  if (eventType === "Seating Arrangement" && seatMap && seatMap.sections?.length > 0) {
     for (const section of seatMap.sections) {
       const seats = section.seats || [];
-      for (let i = 0; i < seats.length; i++) {
-        const seat = seats[i];
-
-        if (!seat.id) {
-          setError("Each seat must have an id.");
-          return;
+      for (const seat of seats) {
+        if (seat && !seat.id && !seat._id) { 
+          setError("Each seat in the map must have an identifier."); 
+          return; 
         }
-
-        if (!seat.priceLevelId) {
-          setError("Each seat must have a priceLevelId.");
-          return;
-        }
-
-        if (!priceLevelIds.includes(String(seat.priceLevelId))) {
+        if (seat.priceLevelId && !priceLevelIds.includes(String(seat.priceLevelId))) {
           setError("Invalid seat price level assignment.");
           return;
         }
       }
     }
-  } else if (eventType === "General Admission" && seatMap?.sections?.length) {
-    setError("Seat map is not allowed for General Admission.");
-    return;
   }
 
-  /* =========================
-     BOOTH VALIDATION
-  ========================= */
-  if (booths.length > 0) {
+  if (booths && booths.length > 0) {
     for (const booth of booths) {
-      if (!booth.id) {
-        setError("Each booth must have an id.");
-        return;
-      }
-
-      if (!booth.priceLevelId) {
-        setError("Each booth must have a priceLevelId.");
-        return;
-      }
-
-      if (!priceLevelIds.includes(String(booth.priceLevelId))) {
-        setError("Invalid booth price level assignment.");
+      if (booth.priceLevelId && !priceLevelIds.includes(String(booth.priceLevelId))) {
+        setError("One or more booths have an invalid price level assignment.");
         return;
       }
     }
   }
 
-  /* =========================
-     CONFIRM AND SUBMIT
-  ========================= */
   const result = await showCreateConfirmAlert(
     "Create Event?",
     `Are you sure you want to create "${title}"?`
@@ -235,7 +195,6 @@ const handleSubmit = async (e) => {
 
   try {
     const formData = new FormData();
-
     formData.append("title", title);
     formData.append("description", description);
     formData.append("category", category);
@@ -245,12 +204,11 @@ const handleSubmit = async (e) => {
     formData.append("endTime", endTime);
     formData.append("eventType", eventType);
     formData.append("venue", JSON.stringify(venue));
-    formData.append(
-      "seatMap",
-      JSON.stringify(eventType === "Seating Arrangement" ? seatMap : null)
-    );
-    formData.append("priceLevels", JSON.stringify(priceLevels));
-    formData.append("booths", JSON.stringify(booths));
+    
+    // Sends seatMap if Seating Arrangement, otherwise null
+    formData.append("seatMap", JSON.stringify(eventType === "Seating Arrangement" ? seatMap : null));
+    formData.append("priceLevels", JSON.stringify(priceLevels)); 
+    formData.append("booths", JSON.stringify(booths || []));
 
     if (imageFile) formData.append("image", imageFile);
 
@@ -263,56 +221,17 @@ const handleSubmit = async (e) => {
     const json = await response.json();
 
     if (!response.ok) {
-      // Map backend fields to frontend ones
-      const backendToFrontendMap = {
-        "title": "title",
-        "description": "description",
-        "category": "category",
-        "startDate": "startDate",
-        "endDate": "endDate",
-        "startTime": "startTime",
-        "endTime": "endTime",
-        "eventType": "eventType",
-        "venue.name": "venueName",
-        "venue.address": "venueAddress",
-        "venue.city": "venueCity",
-        "venue.zipCode": "venueZip",
-        "priceLevels required": "priceLevels"
-      };
-
-      const mappedFields = (json.fields || []).map(f => backendToFrontendMap[f] || f);
-      
       setError(json.error || "Failed to create event.");
-      setEmptyFields(mappedFields);
-      await showErrorAlert(
-        "Error Creating Event",
-        json.error || "Failed to create event."
-      );
+      await showErrorAlert("Error Creating Event", json.error || "Failed to create event.");
       return;
     }
-
-    // RESET FORM
-    setTitle("");
-    setDescription("");
-    setCategory("");
-    setStartDate(today);
-    setEndDate(today);
-    setStartTime("");
-    setEndTime("");
-    setPriceLevels([]);
-    setVenue({ name: "", address: "", city: "", zipCode: "" });
-    setSeatMap({ sections: [] });
-    setBooths([]);
-    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-    setImageFile(null);
-    setImagePreviewUrl(null);
-    setError(null);
-    setEmptyFields([]);
 
     onClose();
     showSuccessAlert("Event Created", "The event has been created successfully.");
     dispatch({ type: "CREATE_EVENT", payload: json.event });
+    
   } catch (err) {
+    console.error(err);
     setError("Network error. Please try again.");
     await showErrorAlert("Network Error", "Unable to connect to the server.");
   }
