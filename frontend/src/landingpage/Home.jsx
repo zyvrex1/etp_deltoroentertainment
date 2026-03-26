@@ -6,6 +6,7 @@ import announcementService from '../services/announcementService';
 import policyService from '../services/policyService';
 import eventsService from '../services/eventsService';
 import { showSuccessAlert } from '../admincomponents/utils/sweetAlert';
+import PromoterViewFullAnnouncement from '../promotercomponents/PromoterModal/PromoterViewFullAnnouncement';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "";
 
@@ -32,9 +33,11 @@ const Home = () => {
 
   // Modal State for Policies & Announcements
   const [modalData, setModalData] = useState(null);
+  const [modalType, setModalType] = useState('announcement');
 
-  const openModal = (title, content) => {
-    setModalData({ title, content });
+  const openModal = (item, type) => {
+    setModalData(item);
+    setModalType(type);
   };
   const closeModal = () => {
     setModalData(null);
@@ -62,10 +65,13 @@ const Home = () => {
             if (ann.contentcategory === "General" || ann.contentcategory === "General") badgeClass = "blue-badge";
 
             return {
+              id: ann._id,
               type: ann.contentcategory,
               badgeClass,
               title: ann.title,
-              content: ann.content
+              content: ann.content,
+              date: new Date(ann.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+              icon: "mdi:bullhorn-outline"
             };
           });
           setAnnouncements(mappedAnnouncements);
@@ -86,9 +92,12 @@ const Home = () => {
         const data = await policyService.getPolicies();
         if (data && data.length > 0) {
           const mappedPolicies = data.map(policy => ({
+            id: policy._id,
             title: policy.title,
             content: policy.content,
-            key: policy.policyKey
+            key: policy.policyKey,
+            date: new Date(policy.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+            icon: "mdi:file-document-outline"
           }));
           setPolicies(mappedPolicies);
         } else {
@@ -256,20 +265,27 @@ const Home = () => {
       <section className="latest-announcements">
         <div className={`announcements-container ${announcements.length > 0 ? 'scrolling' : ''}`}>
           {announcements.length > 0 ? (
-            announcements.map((ann, idx) => (
-              <div
-                className="announcement-item clickable"
-                key={idx}
-                onClick={() => openModal(ann.title, ann.content)}
-              >
-                <span
-                  className={`button-label announcement-badge ${ann.badgeClass}`}
-                >
-                  {ann.type}
-                </span>
-
-                <h5 className="announcement-text">{ann.title}</h5>
-                <p className="small-body-text announcement-desc">{ann.content}</p>
+            announcements.map((item, idx) => (
+              <div key={item.id || idx} className="hp-card" onClick={() => openModal(item, 'announcement')}>
+                <div className="hp-card-top">
+                  <div className="hp-card-icon-container">
+                    <Icon icon={item.icon} className="hp-card-icon" />
+                  </div>
+                  <div className="hp-card-meta">
+                    <h3 className="hp-card-title">{item.title}</h3>
+                    <span className="hp-date">
+                      <Icon icon="mdi:calendar-outline" /> {item.date}
+                    </span>
+                  </div>
+                </div>
+                <div className="hp-card-body">
+                  <span className={`hp-badge button-label ${item.type?.toLowerCase()}`}>
+                    {item.type}
+                  </span>
+                  <p className="hp-card-text">
+                    {item.content}
+                  </p>
+                </div>
               </div>
             ))
           ) : (
@@ -470,18 +486,22 @@ const Home = () => {
 
         <div className="policy-grid">
           {policies.length > 0 ? (
-            policies.map((policy, idx) => (
-              <div className="policy-item" key={idx} onClick={() => openModal(policy.title, policy.content)}>
-                <span className="policy-icon">
-                  {policy.key === "tos" && <Icon icon="mdi:file-certificate" />}
-                  {policy.key === "privacy" && <Icon icon="mdi:shield-check" />}
-                  {policy.key === "refund" && <Icon icon="mdi:cash-refund" />}
-                  {policy.key === "cp" && <Icon icon="material-symbols:cookie-outline" />}
-                  {policy.key === "guidelines" && <Icon icon="mdi:book-open-variant" />}
-                  {policy.key === "sponsor" && <Icon icon="mdi:handshake" />}
-                  {!["tos", "privacy", "refund", "cp", "guidelines", "sponsor"].includes(policy.key) && <Icon icon="mdi:file-document-outline" />}
-                </span>
-                <h4 className="policy-title">{policy.title}</h4>
+            policies.map((item, idx) => (
+              <div key={item.id || idx} className="hp-card" onClick={() => openModal(item, 'policy')}>
+                <div className="hp-card-top align-start">
+                  <div className="hp-card-icon-container document-icon">
+                    <Icon icon={item.icon} className="hp-card-icon" />
+                  </div>
+                  <div className="hp-card-meta">
+                    <h3 className="hp-card-title">{item.title}</h3>
+                    <span className="hp-date">
+                      Updated Last: {item.date}
+                    </span>
+                  </div>
+                </div>
+                <div className="hp-card-body">
+                  <p className="hp-card-text">{item.content}</p>
+                </div>
               </div>
             ))
           ) : (
@@ -651,21 +671,12 @@ const Home = () => {
       </footer>
 
       {/* Reusable Info Modal for Policies and Announcements */}
-      {modalData && (
-        <div className="info-modal-overlay" onClick={closeModal}>
-          <div className="info-modal-content" onClick={e => e.stopPropagation()}>
-            <div className="info-modal-header">
-              <h3>{modalData.title}</h3>
-              <button className="info-modal-close" onClick={closeModal}>✕</button>
-            </div>
-            <div className="info-modal-body">
-              <p>{modalData.content}</p>
-            </div>
-            <button className="info-modal-close-btn" onClick={closeModal}>Close</button>
-
-          </div>
-        </div>
-      )}
+      <PromoterViewFullAnnouncement
+        isOpen={!!modalData}
+        onClose={closeModal}
+        item={modalData}
+        type={modalType}
+      />
     </div>
   )
 }

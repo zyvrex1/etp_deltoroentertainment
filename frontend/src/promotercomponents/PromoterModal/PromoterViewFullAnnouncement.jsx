@@ -111,7 +111,7 @@ const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
               <button className="pvfa-btn-close" onClick={onClose}>
                 Close
               </button>
-              <button className="outlined-button" onClick={downloadPDF} style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <button className="primary-button" onClick={downloadPDF} style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                 <Icon icon="mdi:download-outline" /> Download PDF
               </button>
             </div>

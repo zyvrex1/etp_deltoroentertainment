@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import "./promoterdashboard.css";
 import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.jsx";
-
-
+import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
+import eventsService from "../services/eventsService";
 
 export default function PromoterDashboard() {
+  const { user } = useAuthContext();
+  const { events, dispatch } = useEventsContext();
+  const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [expandedSponsorRow, setExpandedSponsorRow] = useState(null);
@@ -26,27 +30,98 @@ export default function PromoterDashboard() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  useEffect(() => {
+    const fetchEvents = async () => {
+      if (!user) return;
+      try {
+        const data = await eventsService.getEvents(user.token);
+        if (dispatch) {
+          dispatch({ type: "SET_EVENTS", payload: data });
+        }
+      } catch (err) {
+        console.error("Error fetching events:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchEvents();
+  }, [user, dispatch]);
+
+  const approvedEvents = events 
+    ? events.filter(e => e.status === "approved") 
+    : [];
+
+  const displayEvents = [...approvedEvents]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5)
+    .map(evt => {
+      // Calculate capacity and sold
+      let totalCapacity = 0;
+      let totalSold = 0;
+      
+      if (evt.eventType === "General Admission") {
+        totalCapacity = evt.priceLevels.reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
+        totalSold = evt.priceLevels.reduce((sum, p) => sum + (p.quantitySold || 0), 0);
+      } else {
+        // Seating Arrangement
+        if (evt.seatMap && evt.seatMap.sections) {
+          evt.seatMap.sections.forEach(sec => {
+            if (sec.seats) {
+              totalCapacity += sec.seats.length;
+              totalSold += sec.seats.filter(s => s.status === "sold").length;
+            }
+          });
+        }
+      }
+
+      const progress = totalCapacity > 0 ? Math.round((totalSold / totalCapacity) * 100) : 0;
+      const totalRevenue = (evt.seatRevenue || 0) + (evt.boothRevenue || 0);
+
+      // Format date
+      const dateStr = new Date(evt.startDate).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      return {
+        _id: evt._id,
+        name: evt.title,
+        date: dateStr,
+        location: evt.venue?.name || "Multiple Locations",
+        amount: `$ ${totalRevenue.toLocaleString()}`,
+        statusLabel: evt.status === "completed" ? "Completed" : "Active",
+        statusColor: evt.status === "completed" ? "gray" : "green",
+        soldText: `${totalSold} / ${totalCapacity} tickets sold`,
+        progress: progress,
+        subStats: [
+          `${evt.ticketsSold || totalSold} checked in`, 
+          `${evt.booths?.filter(b => b.status === "sold").length || 0}/${evt.booths?.length || 0} booths sold`
+        ],
+        raw: evt
+      };
+    });
 
   const stats = [
     {
       label: "Total Revenue",
-      value: "$138,580",
+      value: `$${approvedEvents.reduce((sum, e) => sum + (e.seatRevenue || 0) + (e.boothRevenue || 0), 0).toLocaleString()}`,
       delta: "+12.5%",
       icon: "mdi:currency-usd",
       color: "green",
     },
     {
       label: "Tickets Sold",
-      value: "655",
+      value: approvedEvents.reduce((sum, e) => sum + (e.ticketsSold || 0), 0).toLocaleString(),
       delta: "+8.2%",
       icon: "mdi:ticket-confirmation-outline",
       color: "blue",
     },
     {
       label: "Active Events",
-      value: "2",
-      delta: "+2",
+      value: approvedEvents.filter(e => e.status === "approved").length.toString(),
+      delta: `+${approvedEvents.filter(e => e.status === "approved").length}`,
       icon: "mdi:calendar-month-outline",
       color: "red",
     },
@@ -57,31 +132,6 @@ export default function PromoterDashboard() {
       icon: "mdi:chart-line",
       color: "purple",
       isNeutral: true,
-    },
-  ];
-
-  const activeEvents = [
-    {
-      name: "TechStart Summit 2024",
-      date: "Oct 12, 2024",
-      location: "Moscone Center, San Francisco",
-      amount: "$ 103,550",
-      statusLabel: "Selling Fast",
-      statusColor: "green",
-      soldText: "450 / 600 tickets sold",
-      progress: 75,
-      subStats: ["5 checked in", "5/10 booths sold"],
-    },
-    {
-      name: "Creator Economy Expo",
-      date: "Nov 05, 2024",
-      location: "Austin Convention Center",
-      amount: "$ 33,230",
-      statusLabel: "On Track",
-      statusColor: "blue",
-      soldText: "120 / 500 tickets sold",
-      progress: 24,
-      subStats: ["0 checked in", "1/5 booths sold"],
     },
   ];
 
@@ -124,10 +174,28 @@ export default function PromoterDashboard() {
     { month: 'Oct 14', total: 138580 },
   ];
 
-  const ticketSalesData = [
-    { name: 'TechStart', sold: 450, remaining: 150 },
-    { name: 'Creator Expo', sold: 120, remaining: 380 },
-  ];
+  const ticketSalesData = approvedEvents.map(e => {
+    let sold = 0;
+    let total = 0;
+    if (e.eventType === "General Admission") {
+      sold = e.priceLevels.reduce((sum, p) => sum + (p.quantitySold || 0), 0);
+      total = e.priceLevels.reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
+    } else {
+      if (e.seatMap && e.seatMap.sections) {
+        e.seatMap.sections.forEach(sec => {
+          if (sec.seats) {
+            total += sec.seats.length;
+            sold += sec.seats.filter(s => s.status === "sold").length;
+          }
+        });
+      }
+    }
+    return {
+      name: e.title.substring(0, 10),
+      sold: sold,
+      remaining: Math.max(0, total - sold)
+    };
+  });
 
   const transactions = [
     {
@@ -232,7 +300,7 @@ export default function PromoterDashboard() {
     <div className="promoter-dashboard">
       <div className="pd-topbar">
         <div className="pd-title">
-          <h1>Welcome back, Alex</h1>
+          <h1>Welcome back, {user?.firstName || "Alex"}</h1>
           <p className="small-body-text">
             Here's what's happening with your events today.
           </p>
@@ -357,8 +425,8 @@ export default function PromoterDashboard() {
             </div>
 
             <div className="pd-events">
-              {activeEvents.map((evt, idx) => (
-                <div key={evt.name} className="pd-event" style={{ borderLeft: '4px solid var(--color-red-primary)' }}>
+              {displayEvents.map((evt, idx) => (
+                <div key={evt._id} className="pd-event" style={{ borderLeft: '4px solid var(--color-red-primary)' }}>
                   <div className="pd-event-top">
                     <div className="pd-event-title-row">
                       <div className="pd-event-meta left-aligned">

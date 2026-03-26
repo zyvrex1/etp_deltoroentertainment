@@ -17,6 +17,10 @@ const policySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    date: {
+      type: Date,
+      default: Date.now
+    }
   },
   { timestamps: true }
 );
