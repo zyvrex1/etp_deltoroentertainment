@@ -1613,8 +1613,23 @@
             font-size: 24px;
         }
 
+        .bt-card-image-wrap {
+            height: 100px;
+        }
+
         .bt-events-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px !important;
+        }
+
+        .bt-card-details {
+            text-align: left;
+            padding: 12px !important;
+            gap: 6px !important;
+
+            svg{
+                display: none;
+            }
         }
 
         .bt-content-first-page {

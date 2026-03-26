@@ -274,6 +274,7 @@ const Home = () => {
             ))
           ) : (
             <div className="no-announcements">
+              <Icon icon="mdi:announcement-outline" className="empty-icon" />
               <h3>There is no announcement yet</h3>
             </div>
           )}
@@ -320,7 +321,8 @@ const Home = () => {
               </div>
             ))
           ) : (
-            <div className="no-events-container" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+            <div className="no-events-container">
+               <Icon icon="mdi:calendar-blank-outline" className="empty-icon" />
                <h3 className="medium-body-text">No upcoming events at the moment.</h3>
             </div>
           )}
@@ -484,6 +486,7 @@ const Home = () => {
             ))
           ) : (
             <div className="no-policies">
+              <Icon icon="mdi:file-document-outline" className="empty-icon" />
               <h3>There is no policy yet</h3>
             </div>
           )}
