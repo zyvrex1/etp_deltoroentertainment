@@ -1,106 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import "./promoterannouncement.css";
 import PromoterViewFullAnnouncement from "./PromoterModal/PromoterViewFullAnnouncement";
-
-const announcementsData = [
-  {
-    id: 1,
-    title: "Platform Maintenance Scheduled",
-    date: "Oct 15, 2024",
-    type: "Update",
-    content: "The platform will undergo scheduled maintenance on October 20th from 2:00 AM to 6:00 AM EST. During this time, ticket sales and check-in features will be temporarily unavailable.\n\nDuring the maintenance window, the following services will be affected: Ticket purchasing and sales processing, QR code check-in scanning, Real-time analytics dashboard, Payment processing and refunds. All event pages will display a maintenance notice to visitors.\n\nWe recommend completing any urgent transactions before the maintenance window. If you have events scheduled during this period, please ensure all check-in preparations are completed in advance. For any concerns, contact support@eticketspro.com.",
-    icon: "mdi:bullhorn-outline"
-  },
-  {
-    id: 2,
-    title: "New Feature: QR Code Batch Printing",
-    date: "Oct 15, 2024",
-    type: "Alert",
-    content: "Governs the use of the eTicketsPro platform including event creation, ticket sales, and attendee management.",
-    icon: "mdi:bullhorn-outline"
-  },
-  {
-    id: 3,
-    title: "New Feature: QR Code Batch Printing",
-    date: "Oct 15, 2024",
-    type: "Maintenance",
-    content: "Governs the use of the eTicketsPro platform including event creation, ticket sales, and attendee management.",
-    icon: "mdi:bullhorn-outline"
-  },
-  {
-    id: 4,
-    title: "New Feature: QR Code Batch Printing",
-    date: "Oct 15, 2024",
-    type: "News",
-    content: "Governs the use of the eTicketsPro platform including event creation, ticket sales, and attendee management.",
-    icon: "mdi:bullhorn-outline"
-  },
-  {
-    id: 5,
-    title: "New Feature: QR Code Batch Printing",
-    date: "Oct 15, 2024",
-    type: "General",
-    content: "Governs the use of the eTicketsPro platform including event creation, ticket sales, and attendee management.",
-    icon: "mdi:bullhorn-outline"
-  }
-];
-
-const policiesData = [
-  {
-    id: 1,
-    title: "Terms of Service",
-    date: "Jan 1, 2024",
-    content: "1. Acceptance of Terms\n\nBy accessing or using the eTicketsPro platform, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this site.\n\n2. Account Registration\n\nYou must register for an account to create events or purchase tickets. You are responsible for maintaining the confidentiality of your account and password and for restricting access to your computer. You agree to accept responsibility for all activities that occur under your account.\n\n3. Event Creation\n\nEvent organizers are responsible for the accuracy of event information, including dates, times, locations, and ticket prices. eTicketsPro reserves the right to remove any event that violates our community guidelines or local laws.\n\n4. Ticket Sales\n\nAll ticket sales are processed through our secure payment system.",
-    icon: "mdi:file-document-outline"
-  },
-  {
-    id: 2,
-    title: "Privacy Policy",
-    date: "Jan 1, 2024",
-    content: "Governs the use of the eTicketsPro platform including event creation, ticket sales, and attendee management. event creation, ticket sales, and attendee management. event creation, ticket sales, and attendee management.",
-    icon: "mdi:file-document-outline"
-  },
-  {
-    id: 3,
-    title: "Refund & Cancellation Policy",
-    date: "Jan 1, 2024",
-    content: "Governs the use of the eTicketsPro platform including event creation, ticket sales, and attendee management. event creation, ticket sales, and attendee management. event creation, ticket sales, and attendee management.",
-    icon: "mdi:file-document-outline"
-  },
-  {
-    id: 4,
-    title: "Event Safety & Compliance",
-    date: "Jan 1, 2024",
-    content: "Governs the use of the eTicketsPro platform including event creation, ticket sales, and attendee management. event creation, ticket sales, and attendee management. event creation, ticket sales, and attendee management.",
-    icon: "mdi:file-document-outline"
-  },
-  {
-    id: 5,
-    title: "Vendor & Sponsor Agreement",
-    date: "Jan 1, 2024",
-    content: "Governs the use of the eTicketsPro platform including event creation, ticket sales, and attendee management. event creation, ticket sales, and attendee management. event creation, ticket sales, and attendee management.",
-    icon: "mdi:file-document-outline"
-  },
-  {
-    id: 6,
-    title: "Data Retention Policy",
-    date: "Jan 1, 2024",
-    content: "Governs the use of the eTicketsPro platform including event creation, ticket sales, and attendee management. event creation, ticket sales, and attendee management. event creation, ticket sales, and attendee management.",
-    icon: "mdi:file-document-outline"
-  }
-];
+import announcementService from "../services/announcementService";
+import policyService from "../services/policyService";
 
 const PromoterAnnouncement = () => {
   const [activeTab, setActiveTab] = useState("announcements");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const filterDropdownRef = React.useRef(null);
+  const filterDropdownRef = useRef(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  React.useEffect(() => {
+  const [announcements, setAnnouncements] = useState([]);
+  const [policies, setPolicies] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [annData, polData] = await Promise.all([
+        announcementService.getAnnouncements(),
+        policyService.getPolicies()
+      ]);
+      
+      // Map backend names/fields to match UI expectations
+      const mappedAnn = annData.map(ann => ({
+        id: ann._id,
+        title: ann.title,
+        date: new Date(ann.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        type: ann.contentcategory,
+        content: ann.content,
+        icon: "mdi:bullhorn-outline"
+      }));
+
+      const mappedPol = polData.map(pol => ({
+        id: pol._id,
+        title: pol.title,
+        date: new Date(pol.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        content: pol.content,
+        key: pol.policyKey,
+        icon: "mdi:file-document-outline"
+      }));
+
+      setAnnouncements(mappedAnn);
+      setPolicies(mappedPol);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
         setIsFilterDropdownOpen(false);
@@ -125,7 +83,7 @@ const PromoterAnnouncement = () => {
     setIsModalOpen(true);
   };
 
-  const filteredAnnouncements = announcementsData.filter((item) => {
+  const filteredAnnouncements = announcements.filter((item) => {
     const q = searchQuery.toLowerCase();
     const matchesFilter = activeFilter === "All" || item.type === activeFilter;
     if (!matchesFilter) return false;
@@ -133,13 +91,12 @@ const PromoterAnnouncement = () => {
     return item.title.toLowerCase().includes(q) || item.content.toLowerCase().includes(q);
   });
 
-  const filteredPolicies = policiesData.filter((item) => {
+  const filteredPolicies = policies.filter((item) => {
     const q = searchQuery.toLowerCase();
     if (!q) return true;
     return item.title.toLowerCase().includes(q) || item.content.toLowerCase().includes(q);
   });
 
-  // Since we also need to implement the pop up, I should just set up the basic layout first.
   return (
     <div className="pa-container">
       <div className="pa-header">
@@ -157,7 +114,7 @@ const PromoterAnnouncement = () => {
               setActiveFilter('All');
             }}
           >
-            Announcements <span className={`pa-tab-count ${activeTab === 'announcements' ? 'active' : ''}`}>{announcementsData.length}</span>
+            Announcements <span className={`pa-tab-count ${activeTab === 'announcements' ? 'active' : ''}`}>{announcements.length}</span>
           </button>
           <button
             className={`pa-tab ${activeTab === 'policies' ? 'active' : ''}`}
@@ -166,7 +123,7 @@ const PromoterAnnouncement = () => {
               setSearchQuery('');
             }}
           >
-            Policies <span className={`pa-tab-count ${activeTab === 'policies' ? 'active' : ''}`}>{policiesData.length}</span>
+            Policies <span className={`pa-tab-count ${activeTab === 'policies' ? 'active' : ''}`}>{policies.length}</span>
           </button>
         </div>
       </div>
@@ -224,83 +181,111 @@ const PromoterAnnouncement = () => {
             )}
           </div>
 
-          {activeTab === 'announcements' && filteredAnnouncements.length === 0 && (
-            <div className="empty-state">
-              <Icon icon="mdi:magnify-close" width="48" />
-              <h4>No Announcement(s) found</h4>
-              <p className="small-body-text">
-                No Announcement(s) match "<strong>{searchQuery}</strong>".
-              </p>
-            </div>
-          )}
-
-          {activeTab === 'policies' && filteredPolicies.length === 0 && (
-            <div className="empty-state">
-              <Icon icon="mdi:magnify-close" width="48" />
-              <h4>No Policy(s) found</h4>
-              <p className="small-body-text">
-                No Policy(s) match "<strong>{searchQuery}</strong>".
-              </p>
-            </div>
-          )}
-
-          {(activeTab === 'announcements' && filteredAnnouncements.length > 0) || (activeTab === 'policies' && filteredPolicies.length > 0) ? (
-            <div className="pa-grid">
-              {activeTab === 'announcements' && (
-                filteredAnnouncements.map((item) => (
-                  <div key={item.id} className="pa-card">
-                    <div className="pa-card-top">
-                      <div className="pa-card-icon-container">
-                        <Icon icon={item.icon} className="pa-card-icon" />
-                      </div>
-                      <div className="pa-card-meta">
-                        <h3 className="pa-card-title">{item.title}</h3>
-                        <span className="pa-date">
-                          <Icon icon="mdi:calendar-outline" /> {item.date}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="pa-card-body">
-                      <span className={`pa-badge button-label ${item.type.toLowerCase()}`}>
-                        {item.type}
-                      </span>
-                      <p className="pa-card-text">
-                        {item.content.length > 150
-                          ? item.content.substring(0, 150) + '...'
-                          : item.content}
-                      </p>
-                      <button
-                        className="pa-read-more-btn"
-                        onClick={() => handleOpenModal(item)}
-                      >
-                        View Full Announcement
-                      </button>
-                    </div>
-                  </div>
-                ))
+          {loading ? (
+             <div className="pa-loading-state" style={{ padding: "80px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                <Icon icon="line-md:loading-twotone-loop" width="48" style={{ color: "var(--color-red-primary)" }} />
+                <p className="large-body-text">Loading {activeTab}...</p>
+             </div>
+          ) : (
+            <>
+              {/* Announcements Empty State (No Announcements at all) */}
+              {activeTab === 'announcements' && announcements.length === 0 && (
+                <div className="empty-state">
+                  <Icon icon="mdi:announcement-outline" width="48" />
+                  <h4>There is no announcement yet</h4>
+                  <p className="small-body-text">Check back later for important platform updates.</p>
+                </div>
               )}
 
-              {activeTab === 'policies' && filteredPolicies.map((item) => (
-                <div key={item.id} className="pa-card">
-                  <div className="pa-card-top align-start">
-                    <div className="pa-card-icon-container document-icon">
-                      <Icon icon={item.icon} className="pa-card-icon" />
-                    </div>
-                    <div className="pa-card-meta">
-                      <h3 className="pa-card-title">{item.title}</h3>
-                      <span className="pa-date">
-                        Updated Last: {item.date}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="pa-card-body">
-                    <p className="pa-card-text">{item.content.length > 100 ? item.content.substring(0, 100) + '...' : item.content}</p>
-                    <button className="pa-read-more-btn" onClick={() => handleOpenModal(item)}>View Full Policy</button>
-                  </div>
+              {/* Policies Empty State (No Policies at all) */}
+              {activeTab === 'policies' && policies.length === 0 && (
+                <div className="empty-state">
+                  <Icon icon="mdi:file-document-outline" width="48" />
+                  <h4>There is no policy yet</h4>
+                  <p className="small-body-text">Platform policies will appear here once published.</p>
                 </div>
-              ))}
-            </div>
-          ) : null}
+              )}
+
+              {/* Search Result Empty States */}
+              {activeTab === 'announcements' && announcements.length > 0 && filteredAnnouncements.length === 0 && (
+                <div className="empty-state">
+                  <Icon icon="mdi:magnify-close" width="48" />
+                  <h4>No Announcement(s) found</h4>
+                  <p className="small-body-text">
+                    No Announcement(s) match "<strong>{searchQuery}</strong>".
+                  </p>
+                </div>
+              )}
+
+              {activeTab === 'policies' && policies.length > 0 && filteredPolicies.length === 0 && (
+                <div className="empty-state">
+                  <Icon icon="mdi:magnify-close" width="48" />
+                  <h4>No Policy(s) found</h4>
+                  <p className="small-body-text">
+                    No Policy(s) match "<strong>{searchQuery}</strong>".
+                  </p>
+                </div>
+              )}
+
+              {(activeTab === 'announcements' && filteredAnnouncements.length > 0) || (activeTab === 'policies' && filteredPolicies.length > 0) ? (
+                <div className="pa-grid">
+                  {activeTab === 'announcements' && (
+                    filteredAnnouncements.map((item) => (
+                      <div key={item.id} className="pa-card">
+                        <div className="pa-card-top">
+                          <div className="pa-card-icon-container">
+                            <Icon icon={item.icon} className="pa-card-icon" />
+                          </div>
+                          <div className="pa-card-meta">
+                            <h3 className="pa-card-title">{item.title}</h3>
+                            <span className="pa-date">
+                              <Icon icon="mdi:calendar-outline" /> {item.date}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="pa-card-body">
+                          <span className={`pa-badge button-label ${item.type.toLowerCase()}`}>
+                            {item.type}
+                          </span>
+                          <p className="pa-card-text">
+                            {item.content.length > 150
+                              ? item.content.substring(0, 150) + '...'
+                              : item.content}
+                          </p>
+                          <button
+                            className="pa-read-more-btn"
+                            onClick={() => handleOpenModal(item)}
+                          >
+                            View Full Announcement
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+
+                  {activeTab === 'policies' && filteredPolicies.map((item) => (
+                    <div key={item.id} className="pa-card">
+                      <div className="pa-card-top align-start">
+                        <div className="pa-card-icon-container document-icon">
+                          <Icon icon={item.icon} className="pa-card-icon" />
+                        </div>
+                        <div className="pa-card-meta">
+                          <h3 className="pa-card-title">{item.title}</h3>
+                          <span className="pa-date">
+                            Updated Last: {item.date}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="pa-card-body">
+                        <p className="pa-card-text">{item.content.length > 100 ? item.content.substring(0, 100) + '...' : item.content}</p>
+                        <button className="pa-read-more-btn" onClick={() => handleOpenModal(item)}>View Full Policy</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          )}
         </div>
       </div>
 
@@ -315,3 +300,5 @@ const PromoterAnnouncement = () => {
 };
 
 export default PromoterAnnouncement;
+
+
