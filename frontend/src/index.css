@@ -581,3 +581,15 @@ li {
 .swal2-cancel-custom:hover {
   background-color: var(--color-bg-light) !important;
 }
+
+.general-event-modal-container {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.em-content {
+  overflow-y: auto;
+  max-height: calc(90vh - 70px); /* adjust based on header height */
+  padding-right: 5px; /* prevents scrollbar overlap */
+}

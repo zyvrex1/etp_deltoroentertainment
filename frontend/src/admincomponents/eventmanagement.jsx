@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import "./eventmanagement.css";
-import CreateEventModal from "./Modal/CreateEventModal";
+import CreateEventModal from "./modal/CreateEventModal";
 import EditEventModal from "./Modal/EditEventModal";
 import EventRejectionModal from "./Modal/EventRejectionModal";
 
