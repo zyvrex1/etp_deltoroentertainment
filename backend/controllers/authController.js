@@ -93,4 +93,133 @@ const loginUser = async (req, res) => {
   }
 };
 
-module.exports = { signupUser, loginUser }
+// ================= PROFILE =================
+const getProfile = async (req, res) => {
+  const { _id } = req.user
+
+  try {
+    const user = await User.findById(_id).select('-password')
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    let profileData = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      avatar: user.avatar,
+      notifications: user.notifications,
+      twoFactor: user.twoFactor
+    }
+
+    // Attach promoter-specific data if needed
+    if (user.role === 'promoter') {
+      const promoter = await Promoter.findOne({ userId: _id })
+      if (promoter) {
+        profileData.companyName = promoter.companyName
+        profileData.industry = promoter.industry
+        // Pull phone from promoter record if available (source of truth for promoters)
+        if (promoter.phone) profileData.phone = promoter.phone
+      }
+    }
+
+    res.status(200).json(profileData)
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+}
+
+const updateProfile = async (req, res) => {
+  const { _id } = req.user
+  const { firstName, lastName, email, phone, companyName, industry } = req.body
+
+  try {
+    const user = await User.findById(_id)
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    // Update user generic fields
+    if (firstName) user.firstName = firstName
+    if (lastName) user.lastName = lastName
+    if (email) {
+      const emailExists = await User.findOne({ email, _id: { $ne: _id } })
+      if (emailExists) throw Error('Email already in use')
+      user.email = email
+    }
+    if (phone) user.phone = phone
+
+    await user.save()
+
+    // Update promoter-specific fields if applicable
+    if (user.role === 'promoter') {
+      const promoter = await Promoter.findOne({ userId: _id })
+      if (promoter) {
+        if (companyName) promoter.companyName = companyName
+        if (industry) promoter.industry = industry
+        if (phone) promoter.phone = phone
+        await promoter.save()
+      }
+    }
+
+    res.status(200).json({
+      message: 'Profile updated successfully',
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone
+      }
+    })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+}
+
+// ================= SECURITY =================
+const updatePassword = async (req, res) => {
+  const { _id } = req.user
+  const { currentPassword, newPassword, confirmNewPassword } = req.body || {}
+
+  try {
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      throw Error('All fields are required')
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      throw Error('New passwords do not match')
+    }
+
+    const user = await User.findById(_id)
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    const match = await bcrypt.compare(currentPassword, user.password)
+    if (!match) {
+      throw Error('Incorrect current password')
+    }
+
+    // Check if new password is strong
+    const validator = require('validator') // Keeping it here is fine too but I'll add a log
+    if (!validator.isStrongPassword(newPassword)) {
+      throw Error('New password is not strong enough (min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol)')
+    }
+
+    const salt = await bcrypt.genSalt(10)
+    const hash = await bcrypt.hash(newPassword, salt)
+
+    user.password = hash
+    await user.save()
+
+    res.status(200).json({ message: 'Password updated successfully' })
+  } catch (err) {
+    console.error('Update Password Error:', err.message)
+    res.status(400).json({ error: err.message })
+  }
+}
+
+
+module.exports = { signupUser, loginUser, getProfile, updateProfile, updatePassword }

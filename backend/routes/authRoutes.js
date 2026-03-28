@@ -1,6 +1,7 @@
 const express = require('express')
 
-const { signupUser, loginUser, updateNotifications, updateProfile, updateSecurity } = require('../controllers/authController')
+const { signupUser, loginUser, getProfile, updateProfile, updatePassword } = require('../controllers/authController')
+const requireAuth = require('../middleware/requireAuth')
 
 const router = express.Router()
 
@@ -8,4 +9,9 @@ const router = express.Router()
 router.post('/login', loginUser)
 router.post('/signup', signupUser)
 
-module.exports = router
+// Protected routes
+router.get('/profile', requireAuth, getProfile)
+router.put('/update-profile', requireAuth, updateProfile)
+router.put('/update-password', requireAuth, updatePassword)
+
+module.exports = router

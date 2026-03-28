@@ -1,17 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./promotersettings.css";
 import PromoterPayoutMethodModal from "./PromoterModal/PromoterPayoutMethodModal.jsx";
-import { showConfirmAlert, showSuccessAlert } from "../admincomponents/utils/sweetAlert";
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../admincomponents/utils/sweetAlert";
+import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import * as authService from "../services/authService";
 
 const PromoterSettings = () => {
+  const { user } = useAuthContext();
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [profile, setProfile] = useState({
-    firstName: "Alex",
-    lastName: "Thompson",
-    email: "alex@eventpro.com",
-    phone: "+1 (555) 123-4567",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    companyName: "",
+    industry: ""
   });
 
   const [passwords, setPasswords] = useState({
@@ -19,6 +25,10 @@ const PromoterSettings = () => {
     new: "",
     confirm: ""
   });
+
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [paymentMethods, setPaymentMethods] = useState([
     {
@@ -90,7 +100,42 @@ const PromoterSettings = () => {
     }
   ];
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.token) return;
+      try {
+        const response = await authService.getProfile(user.token);
+        setProfile({
+          firstName: response.data.firstName || "",
+          lastName: response.data.lastName || "",
+          email: response.data.email || "",
+          phone: response.data.phone || "",
+          companyName: response.data.companyName || "",
+          industry: response.data.industry || "",
+        });
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  const getPasswordCriteria = (password) => {
+    return [
+      { label: "At least 8 characters", met: password.length >= 8 },
+      { label: "One uppercase letter", met: /[A-Z]/.test(password) },
+      { label: "One lowercase letter", met: /[a-z]/.test(password) },
+      { label: "One number", met: /[0-9]/.test(password) },
+      { label: "One special character", met: /[^A-Za-z0-9]/.test(password) },
+    ];
+  };
+
   const handleSaveProfile = async () => {
+    if (!user?.token) return;
+
     const result = await showConfirmAlert(
       "Save Profile?",
       "Are you sure you want to update your profile information?",
@@ -99,14 +144,29 @@ const PromoterSettings = () => {
     );
 
     if (result.isConfirmed) {
-      await showSuccessAlert(
-        "Profile Saved",
-        "Your profile has been saved successfully."
-      );
+      try {
+        await authService.updateProfile(profile, user.token);
+        await showSuccessAlert(
+          "Profile Saved",
+          "Your profile has been saved successfully."
+        );
+      } catch (error) {
+        showErrorAlert("Update Failed", error.response?.data?.error || "An error occurred while updating profile.");
+      }
     }
   };
 
   const handleUpdatePassword = async () => {
+    if (!user?.token) return;
+
+    if (!passwords.current || !passwords.new || !passwords.confirm) {
+      return showErrorAlert("Required Fields", "Please fill in all password fields.");
+    }
+
+    if (passwords.new !== passwords.confirm) {
+      return showErrorAlert("Mismatch", "New password and confirmation do not match.");
+    }
+
     const result = await showConfirmAlert(
       "Update Password?",
       "Are you sure you want to update your password?",
@@ -115,11 +175,21 @@ const PromoterSettings = () => {
     );
 
     if (result.isConfirmed) {
-      await showSuccessAlert(
-        "Password Updated",
-        "Your password has been updated successfully."
-      );
-      setPasswords({ current: "", new: "", confirm: "" });
+      try {
+        await authService.updatePassword({
+          currentPassword: passwords.current,
+          newPassword: passwords.new,
+          confirmNewPassword: passwords.confirm
+        }, user.token);
+
+        await showSuccessAlert(
+          "Password Updated",
+          "Your password has been updated successfully."
+        );
+        setPasswords({ current: "", new: "", confirm: "" });
+      } catch (error) {
+        showErrorAlert("Update Failed", error.response?.data?.error || "An error occurred while updating password.");
+      }
     }
   };
 
@@ -139,10 +209,13 @@ const PromoterSettings = () => {
 
             <div className="ps-avatar-section">
               <div className="ps-avatar-circle">
-                <span className="ps-avatar-text">AT</span>
+                <span className="ps-avatar-text">
+                  {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
+                </span>
               </div>
               <button type="button" className="ps-change-photo-btn outlined-button">Change Photo</button>
             </div>
+
 
             <div className="ps-form-row">
               <div className="ps-form-group">
@@ -185,6 +258,31 @@ const PromoterSettings = () => {
               />
             </div>
 
+            {user?.role === 'promoter' && (
+              <>
+                <div className="ps-form-row">
+                  <div className="ps-form-group">
+                    <label className="ps-label">Company Name</label>
+                    <input
+                      type="text"
+                      className="ps-input"
+                      value={profile.companyName}
+                      onChange={(e) => setProfile({ ...profile, companyName: e.target.value })}
+                    />
+                  </div>
+                  <div className="ps-form-group">
+                    <label className="ps-label">Industry</label>
+                    <input
+                      type="text"
+                      className="ps-input"
+                      value={profile.industry}
+                      onChange={(e) => setProfile({ ...profile, industry: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
             <button type="button" className="ps-save-btn primary-button" onClick={handleSaveProfile}>
               Save Changes
             </button>
@@ -196,32 +294,72 @@ const PromoterSettings = () => {
 
             <div className="ps-form-group">
               <label className="ps-label">Current Password</label>
-              <input
-                type="password"
-                className="ps-input"
-                value={passwords.current}
-                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-              />
+              <div className="ps-input-wrapper">
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  className="ps-input"
+                  value={passwords.current}
+                  onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="ps-password-toggle"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  <Icon icon={showCurrentPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"} width="20" />
+                </button>
+              </div>
             </div>
 
             <div className="ps-form-group">
               <label className="ps-label">New Password</label>
-              <input
-                type="password"
-                className="ps-input"
-                value={passwords.new}
-                onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-              />
+              <div className="ps-input-wrapper">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  className="ps-input"
+                  value={passwords.new}
+                  onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="ps-password-toggle"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  <Icon icon={showNewPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"} width="20" />
+                </button>
+              </div>
+              
+              {/* Password Strength Indicators */}
+              <div className="ps-password-criteria">
+                {getPasswordCriteria(passwords.new).map((crit, idx) => (
+                  <div key={idx} className={`ps-criteria-item ${crit.met ? "met" : ""}`}>
+                    <Icon 
+                      icon={crit.met ? "mdi:check-circle" : "mdi:circle-outline"} 
+                      width="14" 
+                    />
+                    <span className="smaller-body-text">{crit.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="ps-form-group">
               <label className="ps-label">Confirm New Password</label>
-              <input
-                type="password"
-                className="ps-input"
-                value={passwords.confirm}
-                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-              />
+              <div className="ps-input-wrapper">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  className="ps-input"
+                  value={passwords.confirm}
+                  onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="ps-password-toggle"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <Icon icon={showConfirmPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"} width="20" />
+                </button>
+              </div>
             </div>
 
             <button type="button" className="ps-save-btn ps-dark-btn" onClick={handleUpdatePassword}>
