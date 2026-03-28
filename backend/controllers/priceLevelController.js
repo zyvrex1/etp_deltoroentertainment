@@ -1,12 +1,11 @@
 const mongoose = require("mongoose");
 const Event = require("../models/eventModel");
 
-// Helper to safely convert to ObjectId
 const toObjectId = (id) => {
   try {
     return id ? new mongoose.Types.ObjectId(id) : new mongoose.Types.ObjectId();
   } catch {
-    return new mongoose.Types.ObjectId(); // fallback if invalid
+    return new mongoose.Types.ObjectId();
   }
 };
 
@@ -59,4 +58,61 @@ const addPriceLevels = async (req, res) => {
   }
 };
 
-module.exports = { addPriceLevels };
+const getPriceLevels = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const event = await Event.findById(eventId).select("priceLevels");
+
+    if (!event) return res.status(404).json({ error: "Event not found" });
+
+    res.status(200).json(event.priceLevels);
+  } catch (err) {
+    res.status(500).json({ error: "Server error", message: err.message });
+  }
+};
+
+const updatePriceLevel = async (req, res) => {
+  try {
+    const { eventId, priceLevelId } = req.params;
+    const updateData = req.body;
+
+    // Remove _id from body to prevent Mongoose errors during $set
+    delete updateData._id;
+
+    const event = await Event.findOneAndUpdate(
+      { _id: eventId, "priceLevels._id": priceLevelId },
+      {
+        $set: {
+          "priceLevels.$": { ...updateData, _id: priceLevelId }
+        }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!event) return res.status(404).json({ error: "Event or Price Level not found" });
+
+    res.status(200).json({ message: "Price level updated", event });
+  } catch (err) {
+    res.status(500).json({ error: "Update failed", message: err.message });
+  }
+};
+
+const deletePriceLevel = async (req, res) => {
+  try {
+    const { eventId, priceLevelId } = req.params;
+
+    const event = await Event.findByIdAndUpdate(
+      eventId,
+      { $pull: { priceLevels: { _id: priceLevelId } } },
+      { new: true }
+    );
+
+    if (!event) return res.status(404).json({ error: "Event not found" });
+
+    res.status(200).json({ message: "Price level removed", event });
+  } catch (err) {
+    res.status(500).json({ error: "Delete failed", message: err.message });
+  }
+};
+
+module.exports = { addPriceLevels, getPriceLevels, updatePriceLevel, deletePriceLevel };

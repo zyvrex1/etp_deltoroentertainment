@@ -180,9 +180,6 @@ const createEvent = async (req, res) => {
       isFeatured = false,
     } = req.body;
 
-    /* =========================
-       PARSE JSON (FormData safe)
-    ========================= */
     if (typeof venue === "string") venue = JSON.parse(venue);
     if (typeof priceLevels === "string") priceLevels = JSON.parse(priceLevels);
     if (typeof booths === "string") booths = JSON.parse(booths);
@@ -244,15 +241,19 @@ const priceLevelIdStrings = (priceLevels || []).map((p) => p._id?.toString()).fi
 if (eventType === "Seating Arrangement" && seatMap) {
   seatMap.sections?.forEach((section, sIndex) => {
     section.seats?.forEach((seat, i) => {
-      // Use optional chaining to prevent "toString of null"
       const seatPillarId = seat.priceLevelId?.toString();
 
       if (seatPillarId) {
-        if (priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(seatPillarId)) {
+        // If it's not "none", validate it against your actual price levels
+        if (seatPillarId !== "none" && priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(seatPillarId)) {
           errors.push(`seatMap.sections[${sIndex}].seats[${i}].invalidPriceLevelId`);
         }
-        // Safely convert to ObjectId
-        seat.priceLevelId = toObjectId(seat.priceLevelId);
+        
+        // THE FIX: If it's "none", keep it as "none". Otherwise, convert to ObjectId.
+        seat.priceLevelId = seat.priceLevelId === "none" ? "none" : toObjectId(seat.priceLevelId);
+      } else {
+        // If it's completely missing, we can default it to "none" here too
+        seat.priceLevelId = "none";
       }
     });
   });
@@ -262,18 +263,19 @@ if (eventType === "Seating Arrangement" && seatMap) {
 const hasBooths = Array.isArray(booths) && booths.length > 0;
 if (hasBooths) {
   booths.forEach((b, i) => {
-    if (b.priceLevelId) {
-      const boothPidString = b.priceLevelId.toString();
-      
-      // Fixed: Using priceLevelIdStrings which actually exists
-      if (priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(boothPidString)) {
+    const boothPidString = b.priceLevelId?.toString();
+
+    if (boothPidString) {
+      if (boothPidString !== "none" && priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(boothPidString)) {
         errors.push(`booths[${i}].invalidPriceLevelId`);
       }
       
-      b.priceLevelId = toObjectId(b.priceLevelId);
-    } else if (priceLevelIdStrings.length > 0) {
-      // Default to first price level if none provided
-      b.priceLevelId = toObjectId(priceLevelIdStrings[0]);
+      // THE FIX: Apply the same logic for booths
+      b.priceLevelId = b.priceLevelId === "none" ? "none" : toObjectId(b.priceLevelId);
+    } else {
+      // Defaulting to "none" instead of the first price level 
+      // is safer if you want to allow unassigned booths.
+      b.priceLevelId = "none";
     }
   });
 }
@@ -365,9 +367,6 @@ const updateEvent = async (req, res) => {
       isFeatured, image,
     } = req.body;
 
-    /* =========================
-        PARSE JSON (FormData safe)
-    ========================= */
     if (typeof venue === "string") venue = JSON.parse(venue);
     if (typeof priceLevels === "string") priceLevels = JSON.parse(priceLevels);
     if (typeof booths === "string") booths = JSON.parse(booths);
@@ -447,39 +446,43 @@ const updateEvent = async (req, res) => {
         SMART SEATING VALIDATION
     ========================= */
     if (finalEventType === "Seating Arrangement" && finalSeatMap?.sections) {
-      finalSeatMap.sections.forEach((section, sIndex) => {
-        section.seats?.forEach((seat, i) => {
-          // Check if it exists
-          if (!seat.priceLevelId) {
-             errors.push(`seatMap.sections[${sIndex}].seats[${i}] is missing a priceLevelId`);
-          } 
-          // If it is NOT "none", validate it against existing IDs
-          else if (seat.priceLevelId !== "none") {
-            const seatPillarId = seat.priceLevelId.toString();
-            if (priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(seatPillarId)) {
-              errors.push(`seatMap.sections[${sIndex}].seats[${i}] has an invalid priceLevelId`);
-            }
-            seat.priceLevelId = new mongoose.Types.ObjectId(seat.priceLevelId);
-          }
-          // If it IS "none", it passes (kept as string "none")
-        });
-      });
-    }
+  finalSeatMap.sections.forEach((section, sIndex) => {
+    section.seats?.forEach((seat, i) => {
+      if (!seat.priceLevelId) {
+        // Fallback to "none" instead of pushing an error if you want to allow it
+        seat.priceLevelId = "none"; 
+      } else if (seat.priceLevelId !== "none") {
+        const seatPillarId = seat.priceLevelId.toString();
+        
+        if (priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(seatPillarId)) {
+          errors.push(`seatMap.sections[${sIndex}].seats[${i}] has an invalid priceLevelId`);
+        }
+        
+        // Use your utility to avoid the deprecation warning
+        seat.priceLevelId = toObjectId(seat.priceLevelId);
+      }
+      // If it's "none", we do nothing (it stays a string "none")
+    });
+  });
+}
 
     // Process Booths similarly
     if (Array.isArray(finalBooths) && finalEventType === "Booth-Style") {
-      finalBooths.forEach((b, i) => {
-        if (!b.priceLevelId) {
-          errors.push(`booth[${i}] is missing a priceLevelId`);
-        } else if (b.priceLevelId !== "none") {
-          const boothPidString = b.priceLevelId.toString();
-          if (priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(boothPidString)) {
-            errors.push(`booths[${i}].invalidPriceLevelId`);
-          }
-          b.priceLevelId = new mongoose.Types.ObjectId(b.priceLevelId);
-        }
-      });
+  finalBooths.forEach((b, i) => {
+    if (!b.priceLevelId) {
+      b.priceLevelId = "none";
+    } else if (b.priceLevelId !== "none") {
+      const boothPidString = b.priceLevelId.toString();
+      
+      if (priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(boothPidString)) {
+        errors.push(`booths[${i}].invalidPriceLevelId`);
+      }
+      
+      // Use your utility here too
+      b.priceLevelId = toObjectId(b.priceLevelId);
     }
+  });
+}
 
     if (errors.length) {
       return res.status(400).json({ error: "Validation failed", fields: errors });
