@@ -14,6 +14,7 @@ import {
   showExportToast,
   removeExportToast,
   drawTable,
+  finalizeReport,
 } from "../admincomponents/utils/pdfExport";
 import PromoterViewPayout from "./PromoterModal/PromoterViewPayout.jsx";
 

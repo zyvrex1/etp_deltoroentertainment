@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 import SponsorViewFullHistory from './SponsorModal/SponsorViewFullHistory';
 import DateRangePicker from '../admincomponents/DateRangePicker';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../admincomponents/utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../admincomponents/utils/pdfExport';
 import './SponsorEventHistory.css';
 
 export default function SponsorEventHistory() {

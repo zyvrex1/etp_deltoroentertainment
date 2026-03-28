@@ -3,7 +3,7 @@ import { Icon } from "@iconify/react";
 import "./transaction.css";
 import ViewTransactionModal from "./Modal/ViewTransactionModal";
 import jsPDF from "jspdf";
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from './utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from './utils/pdfExport';
 
 const TransactionMonitoring = () => {
   const [searchQuery, setSearchQuery] = useState("");

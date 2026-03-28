@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react';
 import './audit.css';
 import DateRangePicker from './DateRangePicker';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from './utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from './utils/pdfExport';
 
 const AuditLogs = () => {
     const [dateRange, setDateRange] = useState(() => ({

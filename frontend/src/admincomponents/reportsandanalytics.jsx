@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./reportsandanalytics.css";
 import { Icon } from "@iconify/react";
 import jsPDF from "jspdf";
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from "./utils/pdfExport";
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "./utils/pdfExport";
 import {
     XAxis,
     YAxis,

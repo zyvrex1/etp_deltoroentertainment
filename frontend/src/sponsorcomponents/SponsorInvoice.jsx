@@ -4,7 +4,7 @@ import './SponsorInvoice.css';
 import SponsorViewInvoiceReceipt from './SponsorModal/SponsorViewInvoiceReceipt';
 import DateRangePicker from '../admincomponents/DateRangePicker';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../admincomponents/utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../admincomponents/utils/pdfExport';
 
 export default function SponsorInvoice() {
     // Mock Data

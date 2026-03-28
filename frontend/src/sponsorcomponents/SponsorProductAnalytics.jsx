@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import jsPDF from "jspdf";
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from "../admincomponents/utils/pdfExport";
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "../admincomponents/utils/pdfExport";
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, Legend } from 'recharts';
 import "./SponsorProductAnalytics.css";
 

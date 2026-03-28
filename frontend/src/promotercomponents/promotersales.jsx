@@ -8,6 +8,7 @@ import {
   showExportToast,
   removeExportToast,
   drawTable,
+  finalizeReport,
 } from "../admincomponents/utils/pdfExport";
 import "./promotersales.css";
 
