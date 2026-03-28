@@ -17,6 +17,7 @@ export default function SponsorEventHistory() {
 
     const exportHistoryToPDF = async () => {
         const loadingToast = showExportToast();
+        const REPORT_TITLE = 'Sponsorship History';
         try {
             const logoData = await loadLogo();
             const pdf = new jsPDF('p', 'mm', 'a4');
@@ -25,7 +26,7 @@ export default function SponsorEventHistory() {
             const MARGIN = 15;
             let y = 45;
 
-            addReportHeader(pdf, 'Sponsorship History', logoData);
+            addReportHeader(pdf, REPORT_TITLE, logoData);
 
             pdf.setFontSize(14);
             pdf.setTextColor(30, 60, 114);
@@ -44,9 +45,9 @@ export default function SponsorEventHistory() {
                 item.paymentStatus
             ]);
 
-            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5);
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5, logoData, REPORT_TITLE);
 
-            addReportFooter(pdf, 1, 1);
+            finalizeReport(pdf);
             pdf.save(`Sponsorship_History_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);
@@ -58,13 +59,14 @@ export default function SponsorEventHistory() {
 
     const downloadHistoryItemPDF = async (item) => {
         const loadingToast = showExportToast();
+        const INVOICE_TITLE = 'Invoice Receipt';
         try {
             const logoData = await loadLogo();
             const pdf = new jsPDF('p', 'mm', 'a4');
             const MARGIN = 15;
             let y = 45;
 
-            addReportHeader(pdf, 'Invoice Receipt', logoData);
+            addReportHeader(pdf, INVOICE_TITLE, logoData);
 
             pdf.setFontSize(14);
             pdf.setTextColor(30, 60, 114);
@@ -144,9 +146,9 @@ export default function SponsorEventHistory() {
                 ['Tax', '$425.00'],
                 ['Total Paid', item.amount]
             ];
-            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5);
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5, logoData, INVOICE_TITLE);
 
-            addReportFooter(pdf, 1, 1);
+            finalizeReport(pdf);
             pdf.save(`Invoice_${item.invoiceRef}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);

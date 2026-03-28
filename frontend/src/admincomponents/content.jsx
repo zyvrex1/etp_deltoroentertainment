@@ -14,6 +14,8 @@ import { showDeleteConfirmAlert, showSuccessAlert } from "./utils/sweetAlert";
 import announcementService from "../services/announcementService";
 import policyService from "../services/policyService";
 import { useAuthContext } from "./hooks/useAuthContext";
+import { loadLogo, addReportHeader, showExportToast, removeExportToast, drawLongText, finalizeReport } from "./utils/pdfExport";
+import jsPDF from 'jspdf';
 
 const ContentManager = () => {
   const { user } = useAuthContext();
@@ -166,6 +168,82 @@ const ContentManager = () => {
     }
   };
 
+  const handleDownloadPolicy = async (policy) => {
+    const loadingToast = showExportToast();
+    const DOCUMENT_TITLE = 'Policy';
+    try {
+      const logoData = await loadLogo();
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const FOOTER_HEIGHT = 15;
+      let y = 45;
+
+      addReportHeader(pdf, DOCUMENT_TITLE, logoData);
+
+      pdf.setFontSize(14);
+      pdf.setTextColor(30, 60, 114);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(policy.title || 'Document', margin, y);
+      y += 10;
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(50, 50, 50);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Updated: ${formatDate(policy.date)}`, margin, y);
+      y += 8;
+      
+      y = drawLongText(pdf, y, policy.content || '', margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 11, logoData, DOCUMENT_TITLE);
+
+      finalizeReport(pdf);
+      pdf.save(`Policy_${policy.policyKey}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      removeExportToast(loadingToast);
+    }
+  };
+
+  const handleDownloadAnnouncement = async (ann) => {
+    const loadingToast = showExportToast();
+    const DOCUMENT_TITLE = 'Announcement';
+    try {
+      const logoData = await loadLogo();
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const FOOTER_HEIGHT = 15;
+      let y = 45;
+
+      addReportHeader(pdf, DOCUMENT_TITLE, logoData);
+
+      pdf.setFontSize(14);
+      pdf.setTextColor(30, 60, 114);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(ann.title || 'Announcement', margin, y);
+      y += 10;
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(50, 50, 50);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Date: ${formatDate(ann.date)}`, margin, y);
+      y += 8;
+      
+      y = drawLongText(pdf, y, ann.content || '', margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 11, logoData, DOCUMENT_TITLE);
+
+      finalizeReport(pdf);
+      pdf.save(`Announcement_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      removeExportToast(loadingToast);
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -208,6 +286,12 @@ const ContentManager = () => {
                       {formatDate(a.date)}
                     </span>
                     <div className="announcement-actions">
+                      <button
+                        className="announcement-action-btn"
+                        onClick={() => handleDownloadAnnouncement(a)}
+                      >
+                        <Icon icon="mdi:download" width="18" />
+                      </button>
                       <button
                         className="announcement-action-btn"
                         onClick={() => setEditingAnnouncement(a)}
@@ -253,6 +337,12 @@ const ContentManager = () => {
                       {formatDate(p.date)}
                     </span>
                     <div className="legal-actions">
+                      <button
+                        className="legal-action-btn"
+                        onClick={() => handleDownloadPolicy(p)}
+                      >
+                        <Icon icon="mdi:download" width="18" />
+                      </button>
                       <button
                         className="legal-action-btn"
                         onClick={() => setEditingPolicy(p)}

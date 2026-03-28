@@ -150,6 +150,7 @@ const PromoterPayouts = () => {
 
   const exportReport = async () => {
     const loadingToast = showExportToast();
+    const REPORT_TITLE = "Payouts Report";
     try {
       const logoData = await loadLogo();
       const pdf = new jsPDF("p", "mm", "a4");
@@ -160,7 +161,7 @@ const PromoterPayouts = () => {
       let y = 45;
       const lineHeight = 6;
 
-      addReportHeader(pdf, "Payouts Report", logoData);
+      addReportHeader(pdf, REPORT_TITLE, logoData);
 
       pdf.setFontSize(12);
       pdf.setTextColor(30, 60, 114);
@@ -217,9 +218,13 @@ const PromoterPayouts = () => {
         pdfWidth,
         pdfHeight,
         FOOTER_HEIGHT,
+        10,
+        3,
+        logoData,
+        REPORT_TITLE
       );
 
-      y += 4;
+      y += 10;
       pdf.setFontSize(9);
       pdf.setTextColor(100, 100, 100);
       pdf.setFont("helvetica", "normal");
@@ -230,7 +235,7 @@ const PromoterPayouts = () => {
         { maxWidth: pdfWidth - 2 * margin },
       );
 
-      addReportFooter(pdf, 1, 1);
+      finalizeReport(pdf);
       pdf.save(`Payouts_Report_${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -242,6 +247,7 @@ const PromoterPayouts = () => {
 
   const handleDownloadInvoice = async (payout) => {
     const loadingToast = showExportToast();
+    const INVOICE_TITLE = "Payout Invoice Receipt";
     try {
       const logoData = await loadLogo();
       const doc = new jsPDF("p", "mm", "a4");
@@ -249,7 +255,7 @@ const PromoterPayouts = () => {
       const margin = 15;
       let y = 45;
 
-      addReportHeader(doc, "Payout Invoice Receipt", logoData);
+      addReportHeader(doc, INVOICE_TITLE, logoData);
 
       doc.setFontSize(12);
       doc.setTextColor(100, 100, 100);
@@ -291,7 +297,7 @@ const PromoterPayouts = () => {
       doc.setTextColor(150, 150, 150);
       doc.text("Thank you for using our platform.", margin, y);
 
-      addReportFooter(doc, 1, 1);
+      finalizeReport(doc);
       doc.save(
         `Payout_Invoice_${payout.date.replace(/, /g, "_").replace(/ /g, "_")}.pdf`,
       );

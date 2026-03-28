@@ -194,6 +194,7 @@ const TransactionMonitoring = () => {
 
   const handleExportReport = async () => {
     const loadingToast = showExportToast();
+    const REPORT_TITLE = 'Transactions Report';
     try {
         const logoData = await loadLogo();
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -203,7 +204,7 @@ const TransactionMonitoring = () => {
         const FOOTER_HEIGHT = 15;
         let y = 45;
 
-        addReportHeader(pdf, 'Transactions Report', logoData);
+        addReportHeader(pdf, REPORT_TITLE, logoData);
 
         pdf.setFontSize(12);
         pdf.setTextColor(30, 60, 114);
@@ -223,14 +224,14 @@ const TransactionMonitoring = () => {
             tx.date,
         ]);
 
-        y = drawTable(pdf, y, tableColumn, tableRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+        y = drawTable(pdf, y, tableColumn, tableRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, REPORT_TITLE);
 
-        y += 4;
+        y += 10;
         pdf.setFontSize(9);
         pdf.setTextColor(100, 100, 100);
         pdf.text(`Report generated from Transaction Monitoring. ${transactions.length} entries.`, margin, y, { maxWidth: pdfWidth - 2 * margin });
 
-        addReportFooter(pdf, 1, 1);
+        finalizeReport(pdf);
         pdf.save(`Transaction_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
         console.error('Error generating PDF:', error);

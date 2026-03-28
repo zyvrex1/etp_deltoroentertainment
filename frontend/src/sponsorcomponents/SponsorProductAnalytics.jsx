@@ -87,11 +87,14 @@ const SponsorProductAnalytics = () => {
 
   const exportToPDF = async () => {
     const loadingToast = showExportToast();
+    const REPORT_TITLE = "Product Analytics Report";
     try {
       const logoData = await loadLogo();
       const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      addReportHeader(pdf, "Product Analytics Report", logoData);
+      addReportHeader(pdf, REPORT_TITLE, logoData);
 
       const headers = ["Product", "Category", "Stock", "Sales", "Revenue", "Status"];
       const pdfData = filteredInventory.map((item) => [
@@ -103,9 +106,6 @@ const SponsorProductAnalytics = () => {
         item.status,
       ]);
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
       let currentY = 50; // below header
       
       currentY = drawTable(
@@ -116,10 +116,14 @@ const SponsorProductAnalytics = () => {
         15, // margin
         pdfWidth,
         pdfHeight,
-        15 // footer height
+        15, // footer height
+        10, // row height
+        3,  // padding Y
+        logoData,
+        REPORT_TITLE
       );
 
-      addReportFooter(pdf, 1, 1);
+      finalizeReport(pdf);
       
       const fileName = `product_analytics_report_${new Date().toISOString().slice(0, 10)}.pdf`;
       pdf.save(fileName);

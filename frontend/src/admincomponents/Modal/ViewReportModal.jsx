@@ -2,7 +2,7 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import './ViewReportModal.css';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
 
 const ViewReportModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
@@ -38,6 +38,8 @@ const ViewReportModal = ({ isOpen, onClose }) => {
         { name: 'EventPro Solutions', email: 'hello@eventpro.com', badge: 'Top Rated' },
     ];
 
+    const PAGE_TITLE = 'Dashboard Report';
+
     const exportToPDF = async () => {
         const loadingToast = showExportToast();
         try {
@@ -52,9 +54,16 @@ const ViewReportModal = ({ isOpen, onClose }) => {
             const lineHeight = 6;
             let y = contentTop;
 
-            addReportHeader(pdf, 'Dashboard Report', logoData);
+            addReportHeader(pdf, PAGE_TITLE, logoData);
 
             const section = (title) => {
+                // Check for page overflow before drawing section title
+                if (y + 20 > pdfHeight - FOOTER_HEIGHT - 10) {
+                    pdf.addPage();
+                    addReportHeader(pdf, PAGE_TITLE, logoData);
+                    y = contentTop;
+                }
+                
                 y += 4;
                 pdf.setFontSize(12);
                 pdf.setTextColor(30, 60, 114);
@@ -84,7 +93,7 @@ const ViewReportModal = ({ isOpen, onClose }) => {
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
             pdf.text('Top Sponsors', MARGIN, y);
-            y += 14; // bottom margin after section title
+            y += 10;
             
             const sponsorHeaders = ['Name', 'Event', 'Type'];
             const sponsorRows = topSponsors.map(s => [
@@ -92,15 +101,15 @@ const ViewReportModal = ({ isOpen, onClose }) => {
                 s.event,
                 s.type
             ]);
-            y = drawTable(pdf, y, sponsorHeaders, sponsorRows, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+            y = drawTable(pdf, y, sponsorHeaders, sponsorRows, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, PAGE_TITLE);
 
             // Top Promoters Table
-            y += 6;
+            y += 10;
             pdf.setFontSize(12);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
             pdf.text('Top Promoters', MARGIN, y);
-            y += 14; // bottom margin after section title
+            y += 10;
             
             const promoterHeaders = ['Name', 'Email', 'Badge'];
             const promoterRows = topPromoters.map(p => [
@@ -108,14 +117,14 @@ const ViewReportModal = ({ isOpen, onClose }) => {
                 p.email,
                 p.badge
             ]);
-            y = drawTable(pdf, y, promoterHeaders, promoterRows, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+            y = drawTable(pdf, y, promoterHeaders, promoterRows, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, PAGE_TITLE);
 
-            y += 4;
+            y += 10;
             pdf.setFontSize(9);
             pdf.setTextColor(100, 100, 100);
             pdf.text('Report generated from dashboard data. Use the main dashboard for real-time updates.', MARGIN, y, { maxWidth: pdfWidth - 2 * MARGIN });
 
-            addReportFooter(pdf, 1, 1);
+            finalizeReport(pdf);
             pdf.save(`Dashboard_Report_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);

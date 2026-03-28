@@ -32,6 +32,7 @@ export default function SponsorInvoice() {
 
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const PAGE_TITLE = 'Invoices Report';
 
     const exportAllInvoicesToPDF = async () => {
         const loadingToast = showExportToast();
@@ -43,7 +44,7 @@ export default function SponsorInvoice() {
             const MARGIN = 15;
             let y = 45;
 
-            addReportHeader(pdf, 'Invoices Report', logoData);
+            addReportHeader(pdf, PAGE_TITLE, logoData);
 
             pdf.setFontSize(14);
             pdf.setTextColor(30, 60, 114);
@@ -61,9 +62,9 @@ export default function SponsorInvoice() {
                 item.paidDate
             ]);
 
-            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5);
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5, logoData, PAGE_TITLE);
 
-            addReportFooter(pdf, 1, 1);
+            finalizeReport(pdf);
             pdf.save(`Invoices_Report_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);
@@ -75,13 +76,14 @@ export default function SponsorInvoice() {
 
     const downloadInvoicePDF = async (item) => {
         const loadingToast = showExportToast();
+        const INVOICE_TITLE = 'Invoice';
         try {
             const logoData = await loadLogo();
             const pdf = new jsPDF('p', 'mm', 'a4');
             const MARGIN = 15;
             let y = 45;
 
-            addReportHeader(pdf, 'Invoice', logoData);
+            addReportHeader(pdf, INVOICE_TITLE, logoData);
 
             pdf.setFontSize(14);
             pdf.setTextColor(30, 60, 114);
@@ -115,18 +117,17 @@ export default function SponsorInvoice() {
                 i.total
             ]);
 
-            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5);
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5, logoData, INVOICE_TITLE);
 
-            y += 10;
-            y += 10;
+            y += 20;
             pdf.setFontSize(12);
             pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
             pdf.text(`Total Due: ${item.totalDue}`, MARGIN, y);
 
             y += 15;
             pdf.setFontSize(10);
             pdf.setTextColor(30, 60, 114);
-            pdf.setFont('helvetica', 'bold');
             pdf.text('Payment Instructions:', MARGIN, y);
             y += 6;
             pdf.setFontSize(9);
@@ -137,8 +138,9 @@ export default function SponsorInvoice() {
             pdf.text('ACH: Use invoice number as reference', MARGIN, y);
             y += 5;
             pdf.text('Questions? Contact us at billing@eticketspro.com or call +1 (555) 123-4567', MARGIN, y);
+            y += 10;
 
-            addReportFooter(pdf, 1, 1);
+            finalizeReport(pdf);
             pdf.save(`Invoice_${item.invoiceRef}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);

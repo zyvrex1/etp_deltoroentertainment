@@ -212,6 +212,7 @@ const PromoterSponsors = () => {
 
   const exportList = async () => {
     const loadingToast = showExportToast();
+    const REPORT_TITLE = "Sponsors & Exhibitors";
     try {
       const logoData = await loadLogo();
       const pdf = new jsPDF("p", "mm", "a4");
@@ -222,7 +223,7 @@ const PromoterSponsors = () => {
       let y = 45;
       const lineHeight = 6;
 
-      addReportHeader(pdf, "Sponsors & Exhibitors", logoData);
+      addReportHeader(pdf, REPORT_TITLE, logoData);
 
       pdf.setFontSize(12);
       pdf.setTextColor(30, 60, 114);
@@ -274,9 +275,13 @@ const PromoterSponsors = () => {
         pdfWidth,
         pdfHeight,
         FOOTER_HEIGHT,
+        10,
+        3,
+        logoData,
+        REPORT_TITLE
       );
 
-      y += 4;
+      y += 10;
       pdf.setFontSize(9);
       pdf.setTextColor(100, 100, 100);
       pdf.setFont("helvetica", "normal");
@@ -287,7 +292,7 @@ const PromoterSponsors = () => {
         { maxWidth: pdfWidth - 2 * margin },
       );
 
-      addReportFooter(pdf, 1, 1);
+      finalizeReport(pdf);
       pdf.save(`Sponsors_List_${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);

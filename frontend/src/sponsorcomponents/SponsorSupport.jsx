@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import SponsorDocuments from './SponsorModal/SponsorDocuments';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast } from '../admincomponents/utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawLongText, finalizeReport } from '../admincomponents/utils/pdfExport';
 import './SponsorSupport.css';
 
 export default function SponsorSupport() {
@@ -12,13 +12,17 @@ export default function SponsorSupport() {
 
     const exportDocumentToPDF = async (doc) => {
         const loadingToast = showExportToast();
+        const DOCUMENT_TITLE = doc.title;
         try {
             const logoData = await loadLogo();
             const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
             const MARGIN = 15;
+            const FOOTER_HEIGHT = 15;
             let y = 45;
 
-            addReportHeader(pdf, doc.title, logoData);
+            addReportHeader(pdf, DOCUMENT_TITLE, logoData);
 
             pdf.setFontSize(14);
             pdf.setTextColor(30, 60, 114);
@@ -27,36 +31,29 @@ export default function SponsorSupport() {
             y += 10;
 
             doc.sections.forEach(sec => {
-                if (y > pdf.internal.pageSize.getHeight() - 30) {
+                // Check if we need a new page for the section title
+                if (y > pdfHeight - FOOTER_HEIGHT - 20) {
                     pdf.addPage();
-                    y = 20;
+                    addReportHeader(pdf, DOCUMENT_TITLE, logoData);
+                    y = 45;
                 }
+
                 pdf.setFontSize(12);
                 pdf.setTextColor(30, 60, 114);
                 pdf.setFont('helvetica', 'bold');
                 pdf.text(sec.title, MARGIN, y);
                 y += 6;
 
-                pdf.setFontSize(10);
-                pdf.setTextColor(50, 50, 50);
-                pdf.setFont('helvetica', 'normal');
-                if (sec.pdfContent && sec.pdfContent.length > 0) {
-                    sec.pdfContent.forEach(line => {
-                        const splitLines = pdf.splitTextToSize(line, pdf.internal.pageSize.getWidth() - 2 * MARGIN);
-                        pdf.text(splitLines, MARGIN, y);
-                        y += splitLines.length * 4.5;
-                    });
-                } else {
-                    const splitLines = pdf.splitTextToSize('Please refer to the application portal for the full detailed content of this section.', pdf.internal.pageSize.getWidth() - 2 * MARGIN);
-                    pdf.text(splitLines, MARGIN, y);
-                    y += splitLines.length * 4.5;
-                }
+                const sectionContent = sec.pdfContent && sec.pdfContent.length > 0 
+                    ? sec.pdfContent.join('\n') 
+                    : 'Please refer to the application portal for the full detailed content of this section.';
 
-                y += 6;
+                y = drawLongText(pdf, y, sectionContent, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, logoData, DOCUMENT_TITLE);
+                y += 8; // Extra padding between sections
             });
 
-            addReportFooter(pdf, 1, 1);
-            pdf.save(`${doc.title.replace(/\s+/g, '_')}.pdf`);
+            finalizeReport(pdf);
+            pdf.save(`${DOCUMENT_TITLE.replace(/\s+/g, '_')}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('Failed to generate PDF. Please try again.');
@@ -64,6 +61,7 @@ export default function SponsorSupport() {
             removeExportToast(loadingToast);
         }
     };
+
 
     const faqs = [
         {

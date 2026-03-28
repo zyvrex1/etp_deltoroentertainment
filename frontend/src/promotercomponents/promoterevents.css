@@ -203,6 +203,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    
 
     .pe-card-image {
       height: 150px;
@@ -272,11 +273,13 @@
       flex-direction: column;
       gap: 4px;
       color: #64748b;
-
+      
       .pe-meta-row {
         display: flex;
         align-items: center;
         gap: 6px;
+              text-align: left;
+
 
         svg {
           font-size: 20px;
@@ -324,6 +327,10 @@
     flex: 1;
     text-decoration: none;
     display: flex;
+          width: 100%;
+                align-items: stretch;
+
+
   }
 
   .disabled-nav-link {
@@ -337,6 +344,8 @@
     font-size: 13px;
     padding: 8px;
     white-space: nowrap;
+    
+   
   }
 
   .outlined-button.pe-card-btn{
@@ -406,9 +415,7 @@
     padding: 20px;
   }
 
-  .pe-grid {
-    grid-template-columns: 1fr;
-  }
+
 
   .pe-toolbar {
     flex-direction: column;
@@ -474,7 +481,8 @@
   }
 
   .pe-card-image {
-    height: 130px;
+    height: 90px !important;
+    padding: 8px !important;
   }
 
   .pe-card-actions {
@@ -606,9 +614,7 @@
 }
 
 @media (max-width: 480px) {
-  .pe-grid {
-    grid-template-columns: 1fr;
-  }
+ 
   .pagination-btn span {
     display: none;
   }

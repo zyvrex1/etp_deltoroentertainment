@@ -85,6 +85,7 @@ const PromoterRevenueReports = () => {
 
     const exportReport = async () => {
         const loadingToast = showExportToast();
+        const REPORT_TITLE = 'Revenue Reports';
         try {
             const logoData = await loadLogo();
             const pdf = new jsPDF('p', 'mm', 'a4');
@@ -95,7 +96,7 @@ const PromoterRevenueReports = () => {
             let y = 45;
             const lineHeight = 6;
 
-            addReportHeader(pdf, 'Revenue Reports', logoData);
+            addReportHeader(pdf, REPORT_TITLE, logoData);
 
             pdf.setFontSize(12);
             pdf.setTextColor(30, 60, 114);
@@ -127,9 +128,9 @@ const PromoterRevenueReports = () => {
                 ['Sponsorships', '29%', '$30,000'],
                 ['Booth Sales', '9%', '$9,500'],
             ];
-            y = drawTable(pdf, y, sourceHeaders, sourceRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+            y = drawTable(pdf, y, sourceHeaders, sourceRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, REPORT_TITLE);
 
-            y += 6;
+            y += 10;
             pdf.setFontSize(12);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
@@ -142,15 +143,15 @@ const PromoterRevenueReports = () => {
                 item.revenue,
                 item.percentage
             ]);
-            y = drawTable(pdf, y, eventHeaders, eventRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT);
+            y = drawTable(pdf, y, eventHeaders, eventRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, REPORT_TITLE);
 
-            y += 4;
+            y += 10;
             pdf.setFontSize(9);
             pdf.setTextColor(100, 100, 100);
             pdf.setFont('helvetica', 'normal');
             pdf.text('Revenue report export. Use the dashboard for interactive charts and real-time data.', margin, y, { maxWidth: pdfWidth - 2 * margin });
 
-            addReportFooter(pdf, 1, 1);
+            finalizeReport(pdf);
             pdf.save(`Revenue_Report_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);

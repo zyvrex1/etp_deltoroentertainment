@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast } from '../../admincomponents/utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawLongText, finalizeReport } from '../../admincomponents/utils/pdfExport';
 import './PromoterViewFullAnnouncement.css';
 
 const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
@@ -20,14 +20,17 @@ const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
 
   const downloadPDF = async () => {
     const loadingToast = showExportToast();
+    const DOCUMENT_TITLE = type === 'announcement' ? 'Announcement' : 'Policy';
     try {
       const logoData = await loadLogo();
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       const margin = 15;
+      const FOOTER_HEIGHT = 15;
       let y = 45;
 
-      addReportHeader(pdf, type === 'announcement' ? 'Announcement' : 'Policy', logoData);
+      addReportHeader(pdf, DOCUMENT_TITLE, logoData);
 
       pdf.setFontSize(14);
       pdf.setTextColor(30, 60, 114);
@@ -43,14 +46,10 @@ const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
         y += 8;
       }
       
-      pdf.setFontSize(11);
-      pdf.setTextColor(0, 0, 0);
-      
-      const contentLines = pdf.splitTextToSize(item.content || '', pdfWidth - 2 * margin);
-      pdf.text(contentLines, margin, y);
+      y = drawLongText(pdf, y, item.content || '', margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 11, logoData, DOCUMENT_TITLE);
 
-      addReportFooter(pdf, 1, 1);
-      pdf.save(`${type === 'announcement' ? 'Announcement' : 'Policy'}_${new Date().toISOString().split('T')[0]}.pdf`);
+      finalizeReport(pdf);
+      pdf.save(`${DOCUMENT_TITLE}_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');
@@ -58,6 +57,7 @@ const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
       removeExportToast(loadingToast);
     }
   };
+
 
   return (
     <div className="pvfa-modal-overlay" onClick={onClose}>
@@ -102,20 +102,12 @@ const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
         </div>
 
         <div className="pvfa-modal-footer">
-          {type === 'announcement' ? (
-            <button className="pvfa-btn-close" onClick={onClose}>
-              Close
-            </button>
-          ) : (
-            <div style={{display: 'flex', gap: '8px', marginLeft: 'auto'}}>
-              <button className="pvfa-btn-close" onClick={onClose}>
-                Close
-              </button>
-              <button className="primary-button" onClick={downloadPDF} style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <Icon icon="mdi:download-outline" /> Download PDF
-              </button>
-            </div>
-          )}
+          <button className="pvfa-btn-close" onClick={onClose}>
+            Close
+          </button>
+          <button className="primary-button" onClick={downloadPDF} style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <Icon icon="mdi:download-outline" /> Download PDF
+          </button>
         </div>
       </div>
     </div>
