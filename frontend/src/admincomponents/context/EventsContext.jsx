@@ -12,12 +12,18 @@ export const eventsReducer = (state, action) => {
             return {
                 events: [action.payload, ...(state.events || [])]
             }
+        case 'UPDATE_EVENT':
+            return {
+                events: state.events.map((event) => 
+                    event._id === action.payload._id ? action.payload : event
+                )
+            }
         case 'DELETE_EVENT':
             return {
                 events: state.events.filter((w) => w._id !== action.payload)
             }
         default: 
-        return state    
+            return state    
     }
 }
 

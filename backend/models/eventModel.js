@@ -104,15 +104,31 @@ const eventSchema = new Schema(
 
     startDate: { type: Date, required: true },
     endDate: {
-      type: Date,
-      required: true,
-      validate: {
-        validator: function (value) {
-          return value >= this.startDate;
-        },
-        message: "End date must be after start date",
-      },
+  type: Date,
+  required: true,
+  validate: {
+    validator: function (value) {
+      // 1. If we are creating a NEW document
+      if (this.startDate) {
+        return value >= this.startDate;
+      }
+      
+      // 2. If we are UPDATING an existing document
+      // Get the update object from the query context
+      const update = this.getUpdate ? this.getUpdate() : null;
+      
+      // If we are updating startDate in this request, use that.
+      // Otherwise, we skip this check and rely on the Controller logic 
+      // because the validator can't easily see the old value in the DB.
+      if (update && update.$set && update.$set.startDate) {
+        return value >= new Date(update.$set.startDate);
+      }
+
+      return true; 
     },
+    message: "End date must be after start date",
+  },
+},
 
     startTime: {
       type: String,

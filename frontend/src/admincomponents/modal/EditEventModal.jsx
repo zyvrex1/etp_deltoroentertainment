@@ -16,6 +16,7 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
   const today = new Date().toISOString().split("T")[0];
   const [error, setError] = useState("");
   const [emptyFields, setEmptyFields] = useState([]);
+  const [activeTab, setActiveTab] = useState("information");
   const [imageDragActive, setImageDragActive] = useState(false);
 
   const handleImageDrag = (e) => {
@@ -59,65 +60,6 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
     setFormData({ ...formData, imageFile: null, imagePreviewUrl: null });
   };
 
-  const addSeat = () => {
-    setFormData({
-      ...formData,
-      seatVariations: [
-        ...formData.seatVariations,
-        { seatNumber: "", price: 0 }
-      ]
-    });
-  };
-
-  const updateSeat = (index, field, value) => {
-    const updated = [...formData.seatVariations];
-    updated[index][field] = value;
-
-    setFormData({
-      ...formData,
-      seatVariations: updated
-    });
-  };
-
-  const removeSeat = (index) => {
-    const updated = [...formData.seatVariations];
-    updated.splice(index, 1);
-
-    setFormData({
-      ...formData,
-      seatVariations: updated
-    });
-  };
-
-  const addBooth = () => {
-    setFormData({
-      ...formData,
-      booths: [
-        ...formData.booths,
-        {
-          code: null,
-          type: "standard",
-          status: "available",
-          size: "",
-          price: 0,
-          quantity: 1,
-        },
-      ],
-    });
-  };
-
-  const updateBooth = (index, field, value) => {
-    const updated = [...formData.booths];
-    updated[index][field] = value;
-    setFormData({ ...formData, booths: updated });
-  };
-
-  const removeBooth = (index) => {
-    const updated = [...formData.booths];
-    updated.splice(index, 1);
-    setFormData({ ...formData, booths: updated });
-  };
-
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -126,7 +68,7 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
     endDate: today,
     startTime: "",
     endTime: "",
-    eventType: "General Admission", // default event type
+    eventType: "", 
     ticketPrice: "",
     totalTickets: "",
     venue: {
@@ -143,236 +85,189 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
   });
 
   useEffect(() => {
-    if (event) {
-      const formatDate = (isoDate) =>
-        isoDate ? new Date(isoDate).toISOString().split("T")[0] : today;
+  if (event) {
+    const formatDate = (isoDate) =>
+      isoDate ? new Date(isoDate).toISOString().split("T")[0] : today;
 
-      setFormData({
-        title: event.title || "",
-        category: event.category || "other",
-        description: event.description || "",
-        startDate: formatDate(event.startDate),
-        endDate: formatDate(event.endDate),
-        startTime: event.startTime || "",
-        endTime: event.endTime || "",
-        eventType: event.eventType || "General Admission", // include eventType
-        ticketPrice:
-          event.ticketPrice !== undefined ? String(event.ticketPrice) : "",
-        totalTickets:
-          event.totalTickets !== undefined ? String(event.totalTickets) : "",
-        venue: {
-          name: event.venue?.name || "",
-          address: event.venue?.address || "",
-          city: event.venue?.city || "",
-          zipCode: event.venue?.zipCode || "",
-        },
-        imageFile: null,
-        imagePreviewUrl: event.image
-          ? `http://localhost:4000/uploads/${event.image}`
-          : null,
-        seatMap: event.seatMap || null, // include seatMap
-        seatVariations:
-          event.seatVariations?.map((s) => ({
-            seatNumber: s.seatNumber || "",
-            price: s.price !== undefined ? String(s.price) : "",
-          })) || [],
-        booths: event.booths?.map((b) => ({
-          code: b.code || "",
-          type: b.type || "standard",
-          status: b.status || "available",
-          size: b.size || "",
-          price: b.price !== undefined ? String(b.price) : "",
-          quantity: b.quantity !== undefined ? String(b.quantity) : "",
-        })) || [],
-      });
+    setFormData({
+      title: event.title || "",
+      category: event.category || "other",
+      description: event.description || "",
+      startDate: formatDate(event.startDate),
+      endDate: formatDate(event.endDate),
+      startTime: event.startTime || "",
+      endTime: event.endTime || "",
+      eventType: event.eventType || "General Admission",
+      
+      // ✅ CRITICAL: Load Price Levels so the Ticket tab and validation work
+      priceLevels: event.priceLevels || [], 
 
-      setError("");
-      setEmptyFields([]);
-    }
-  }, [event, today]);
+      ticketPrice: event.ticketPrice !== undefined ? String(event.ticketPrice) : "",
+      totalTickets: event.totalTickets !== undefined ? String(event.totalTickets) : "",
+      
+      venue: {
+        name: event.venue?.name || "",
+        address: event.venue?.address || "",
+        city: event.venue?.city || "",
+        zipCode: event.venue?.zipCode || "",
+      },
+      
+      imageFile: null,
+      imagePreviewUrl: event.image
+        ? `http://localhost:4000/uploads/${event.image}`
+        : null,
 
-  if (!isOpen) return null;
+      seatMap: event.seatMap || null, 
+      
+      // Ensure your seatVariations/booths maintain their priceLevelId references
+      seatVariations: event.seatVariations?.map((s) => ({
+        seatNumber: s.seatNumber || "",
+        price: s.price !== undefined ? String(s.price) : "",
+        priceLevelId: s.priceLevelId || null, // Keep the link!
+      })) || [],
 
-  const handleSaveChanges = async (e) => {
-    e.preventDefault();
-
-    if (!user) {
-      setError("You must be logged in");
-      return;
-    }
-
-    const {
-      title,
-      category,
-      description,
-      startDate,
-      endDate,
-      startTime,
-      endTime,
-      eventType,
-      ticketPrice,
-      totalTickets,
-      venue,
-      seatMap,
-      seatVariations,
-      booths,
-      imageFile,
-    } = formData;
-
-    // 1️⃣ Validate required fields
-    let empty = [];
-
-    if (!title?.trim()) empty.push("title");
-    if (!category?.trim()) empty.push("category");
-    if (!description?.trim()) empty.push("description");
-    if (!startDate) empty.push("startDate");
-    if (!endDate) empty.push("endDate");
-    if (!startTime) empty.push("startTime");
-    if (!endTime) empty.push("endTime");
-
-    // Venue validation
-    if (!venue?.name?.trim()) empty.push("venue.name");
-    if (!venue?.address?.trim()) empty.push("venue.address");
-    if (!venue?.city?.trim()) empty.push("venue.city");
-    if (!venue?.zipCode?.trim()) empty.push("venue.zipCode");
-
-    // Event type-specific validation
-    if (eventType === "General Admission") {
-      if (ticketPrice === "" || Number(ticketPrice) < 0) empty.push("ticketPrice");
-    }
-
-    if (eventType === "Seating Arrangement") {
-      if (!seatVariations || seatVariations.length === 0)
-        empty.push("seatVariations");
-
-      seatVariations?.forEach((s, i) => {
-        if (!s.seatNumber?.trim() || Number(s.price) < 0) {
-          empty.push(`seatVariations[${i}]`);
-        }
-      });
-    }
-
-    // Booth validation
-    booths?.forEach((b, i) => {
-      if (
-        !b.code?.trim() ||
-        !b.size?.trim() ||
-        Number(b.price) < 0 ||
-        Number(b.quantity) < 1 ||
-        !b.type?.trim() ||
-        !b.status?.trim()
-      ) {
-        empty.push(`booths[${i}]`);
-      }
+      booths: event.booths?.map((b) => ({
+        code: b.code || "",
+        type: b.type || "standard",
+        status: b.status || "available",
+        size: b.size || "",
+        price: b.price !== undefined ? String(b.price) : "",
+        quantity: b.quantity !== undefined ? String(b.quantity) : "",
+        priceLevelId: b.priceLevelId || null, // Keep the link!
+      })) || [],
     });
 
-    if (empty.length > 0) {
-      console.log("Empty fields detected:", empty);
-      setEmptyFields(empty);
-      setError("Please fill in all required fields.");
-      return;
-    }
-
-    setEmptyFields([]);
     setError("");
+    setEmptyFields([]);
+  }
+}, [event, today]);
 
-    // 2️⃣ Validate start/end date
-    const startDateTime = new Date(`${startDate}T${startTime}`);
-    const endDateTime = new Date(`${endDate}T${endTime}`);
-    if (endDateTime <= startDateTime) {
-      setError("End date/time must be after the start date/time.");
-      return;
-    }
+const handleSaveChanges = async (e) => {
+  e.preventDefault();
 
-    // 3️⃣ Confirm update
-    const result = await showCreateConfirmAlert(
-      "Update Event?",
-      `Are you sure you want to update "${title}"?`,
-    );
-    if (!result.isConfirmed) return;
+  if (!user) {
+    setError("You must be logged in");
+    return;
+  }
 
-    // 4️⃣ Prepare FormData payload
-    const formDataToSend = new FormData();
+  setError("");
+  setEmptyFields([]);
 
-    formDataToSend.append("title", title.trim());
-    formDataToSend.append("description", description.trim());
-    formDataToSend.append("category", category.trim());
-    formDataToSend.append("startDate", startDate);
-    formDataToSend.append("endDate", endDate);
-    formDataToSend.append("startTime", startTime);
-    formDataToSend.append("endTime", endTime);
-    formDataToSend.append("eventType", eventType);
-    formDataToSend.append("ticketPrice", Number(ticketPrice) || 0);
-
-    // totalTickets for seating arrangement
-    const totalTicketsToSend =
-      Number(totalTickets) || seatVariations?.length || 0;
-
-    formDataToSend.append("totalTickets", totalTicketsToSend);
-
-    // ✅ Send venue fields individually so backend parses correctly
-    formDataToSend.append("venue[name]", venue.name?.trim() || "");
-    formDataToSend.append("venue[address]", venue.address?.trim() || "");
-    formDataToSend.append("venue[city]", venue.city?.trim() || "");
-    formDataToSend.append("venue[zipCode]", venue.zipCode?.trim() || "");
-
-    // Seating arrangement
-    if (seatMap) formDataToSend.append("seatMap", JSON.stringify(seatMap));
-    formDataToSend.append(
-      "seatVariations",
-      JSON.stringify(
-        seatVariations?.map((s) => ({
-          seatNumber: s.seatNumber,
-          price: Number(s.price),
-        })) || [],
-      ),
-    );
-
-    // Booths
-    formDataToSend.append(
-      "booths",
-      JSON.stringify(
-        booths?.map((b) => ({
-          code: b.code || null,
-          type: b.type || "standard",
-          status: b.status || "available",
-          size: b.size || null,
-          price: Number(b.price),
-          quantity: Number(b.quantity),
-        })) || []
-      )
-    );
-
-    // Image fallback: send existing filename if no new file
-    if (imageFile) {
-      formDataToSend.append("image", imageFile);
-    } else if (event.image) {
-      formDataToSend.append("image", event.image);
-    }
-
-    // 5️⃣ Send PATCH request
-    try {
-      const response = await fetch(`/api/events/${event._id}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: formDataToSend,
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Error updating event");
-      }
-
-      const updatedEvent = await response.json();
-      onClose();
-      showSuccessAlert("Event updated successfully!");
-    } catch (err) {
-      console.error(err);
-      showErrorAlert(err.message);
-    }
+  // 1️⃣ Define fields to validate
+  const fieldsToCheck = {
+    title: formData.title,
+    description: formData.description,
+    category: formData.category,
+    startDate: formData.startDate,
+    endDate: formData.endDate,
+    startTime: formData.startTime,
+    endTime: formData.endTime,
+    eventType: formData.eventType,
+    venueName: formData.venue?.name,
+    venueAddress: formData.venue?.address,
+    venueCity: formData.venue?.city,
+    venueZip: formData.venue?.zipCode,
   };
+
+  // 2️⃣ Run dynamic validation
+  const empty = Object.entries(fieldsToCheck)
+    .filter(([_, value]) => value === "" || value === null || value === undefined)
+    .map(([key]) => key);
+
+  if (empty.length > 0) {
+    setEmptyFields(empty);
+    setError("Please fill in all required fields.");
+    return;
+  }
+
+  // 3️⃣ Date Logic
+  const startDateTime = new Date(`${formData.startDate}T${formData.startTime}`);
+  const endDateTime = new Date(`${formData.endDate}T${formData.endTime}`);
+  
+  if (endDateTime <= startDateTime) {
+    setError("End date/time must be after the start date/time.");
+    return;
+  }
+
+  // 4️⃣ Data Preparation & Cleanup
+  const priceLevels = formData.priceLevels || [];
+  const priceLevelIds = priceLevels.map((p) => String(p.tempId || p._id));
+
+  // Cleanup SeatMap: Ensure every seat has at least "none"
+  const cleanedSeatMap = formData.seatMap ? {
+    ...formData.seatMap,
+    sections: formData.seatMap.sections.map(section => ({
+      ...section,
+      seats: section.seats.map(seat => ({
+        ...seat,
+        priceLevelId: seat.priceLevelId || "none" 
+      }))
+    }))
+  } : null;
+
+  // 5️⃣ Confirmation
+  const result = await showCreateConfirmAlert(
+    "Update Event?",
+    `Are you sure you want to update "${formData.title}"?`
+  );
+  if (!result.isConfirmed) return;
+
+  // 6️⃣ Execute Request
+  try {
+    const formDataToSend = new FormData(); // Move this ABOVE the appends
+
+    formDataToSend.append("title", formData.title);
+    formDataToSend.append("description", formData.description);
+    formDataToSend.append("category", formData.category);
+    formDataToSend.append("startDate", formData.startDate);
+    formDataToSend.append("endDate", formData.endDate);
+    formDataToSend.append("startTime", formData.startTime);
+    formDataToSend.append("endTime", formData.endTime);
+    formDataToSend.append("eventType", formData.eventType);
+    
+    formDataToSend.append("venue", JSON.stringify(formData.venue));
+    formDataToSend.append("priceLevels", JSON.stringify(priceLevels));
+    formDataToSend.append("booths", JSON.stringify(formData.booths || []));
+    
+    // Use the CLEANED seat map here
+    formDataToSend.append(
+      "seatMap", 
+      JSON.stringify(formData.eventType === "Seating Arrangement" ? cleanedSeatMap : null)
+    );
+
+    if (formData.imageFile) {
+      formDataToSend.append("image", formData.imageFile);
+    }
+
+    const response = await fetch(`/api/events/${event._id}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${user.token}` },
+      body: formDataToSend,
+    });
+
+    const json = await response.json();
+
+    if (!response.ok) {
+      throw new Error(json.error || "Error updating event");
+    }
+
+    onClose();
+    showSuccessAlert("Event updated successfully!");
+    dispatch({ type: "UPDATE_EVENT", payload: json.event });
+    
+  } catch (err) {
+    console.error(err);
+    setError(err.message);
+    showErrorAlert("Update Failed", err.message);
+  }
+};
+
+  const eventDetailsTabs = [
+    { id: "information", label: "Information" },
+    { id: "tickets", label: "Tickets" },
+  ];
+
+  if (!isOpen) return null;
 
   return (
     <div className="general-modal-overlay">
@@ -387,14 +282,75 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
           </button>
         </div>
 
-        <form
-          className="add-event-modal-body add-event-form"
-          onSubmit={handleSaveChanges}
-        >
-          {/* Event Image */}
-          <div className="section-box">
-            <h5 className="modal-section-title">Event Image</h5>
-            <div
+        <div className="em-content">
+          <div className="tabs-container">
+            {eventDetailsTabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={`tab ${activeTab === tab.id ? "active" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "information" && (
+            <form
+              className="add-event-modal-body add-event-form"
+               onSubmit={handleSaveChanges}
+            >
+              <div className="add-event-form-group">
+                <h6>Event Type</h6>
+                <div style={{ display: "flex", gap: "20px", marginTop: "5px" }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  cursor: "pointer",
+                  color: "black",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="eventType"
+                  value="General Admission"
+                  checked={formData.eventType === "General Admission"}
+                  onChange={() =>
+                    setFormData({ ...formData, eventType: "General Admission" })
+                  }
+                />
+                General Admission
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  cursor: "pointer",
+                  color: "black",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="eventType"
+                  value="Seating Arrangement"
+                  checked={formData.eventType === "Seating Arrangement"}
+                  onChange={() =>
+                    setFormData({
+                      ...formData,
+                      eventType: "Seating Arrangement",
+                    })
+                  }
+                />
+                Assigned Seating
+              </label>
+            </div>
+              </div>
+
+              <div className="section-box">
+                <div
               className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
               onDragEnter={handleImageDrag}
               onDragLeave={handleImageDrag}
@@ -469,39 +425,40 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
             </div>
           </div>
 
-          {/* Title & Category */}
-          <div className="add-event-form-row">
-            <div className="add-event-form-group">
-              <h6>Event Title</h6>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                placeholder="Event title..."
-                className={emptyFields.includes("title") ? "error" : ""}
-              />
-            </div>
-            <div className="add-event-form-group">
-              <h6>Category</h6>
-              <input
-                type="text"
-                value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
-                className={emptyFields.includes("category") ? "error" : ""}
-                placeholder="Enter category (e.g., Concert, Comedy)"
-              />
-            </div>
-          </div>
+              {/* Title & Category */}
+              <div className="add-event-form-row">
+                <div className="add-event-form-group">
+                  <h6>Event Title</h6>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    placeholder="Event title..."
+                    className={emptyFields.includes("title") ? "error" : ""}
+                  />
+                </div>
 
-          {/* Dates & Times */}
-          <div className="add-event-form-row">
-            <div className="add-event-form-group">
-              <h6>Start Date</h6>
-              <input
+                <div className="add-event-form-group">
+                  <h6>Category</h6>
+                  <input
+                    type="text"
+                    value={formData.category}
+                    onChange={(e) =>
+                      setFormData({ ...formData, category: e.target.value })
+                    }
+                    className={emptyFields.includes("category") ? "error" : ""}
+                    placeholder="Enter category (e.g., Concert, Comedy)"
+                  />
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="add-event-form-row">
+                <div className="add-event-form-group">
+                  <h6>Start Date</h6>
+                  <input
                 type="date"
                 min={today}
                 value={formData.startDate}
@@ -516,10 +473,10 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                 }}
                 className={emptyFields.includes("startDate") ? "error" : ""}
               />
-            </div>
-            <div className="add-event-form-group">
-              <h6>End Date</h6>
-              <input
+                </div>
+                <div className="add-event-form-group">
+                  <h6>End Date</h6>
+                  <input
                 type="date"
                 min={formData.startDate}
                 value={formData.endDate}
@@ -528,13 +485,14 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                 }
                 className={emptyFields.includes("endDate") ? "error" : ""}
               />
-            </div>
-          </div>
+                </div>
+              </div>
 
-          <div className="add-event-form-row">
-            <div className="add-event-form-group">
-              <h6>Start Time</h6>
-              <input
+              {/* Times */}
+              <div className="add-event-form-row">
+                <div className="add-event-form-group">
+                  <h6>Start Time</h6>
+                  <input
                 type="time"
                 value={formData.startTime}
                 onChange={(e) =>
@@ -542,10 +500,10 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                 }
                 className={emptyFields.includes("startTime") ? "error" : ""}
               />
-            </div>
-            <div className="add-event-form-group">
-              <h6>End Time</h6>
-              <input
+                </div>
+                <div className="add-event-form-group">
+                  <h6>End Time</h6>
+                  <input
                 type="time"
                 value={formData.endTime}
                 onChange={(e) =>
@@ -553,13 +511,13 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                 }
                 className={emptyFields.includes("endTime") ? "error" : ""}
               />
-            </div>
-          </div>
+                </div>
+              </div>
 
-          {/* Description */}
-          <div className="add-event-form-group add-event-full-width">
-            <h6>About The Event</h6>
-            <textarea
+              {/* Description */}
+              <div className="add-event-form-group add-event-full-width">
+                <h6>About the Event</h6>
+               <textarea
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
@@ -567,14 +525,12 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
               rows="3"
               className={emptyFields.includes("description") ? "error" : ""}
             ></textarea>
-          </div>
+              </div>
 
-          {/* Venue Details */}
-          <div className="section-box">
-            <h5 className="modal-section-title">Venue Details</h5>
-
-            <div className="add-event-form-group">
-              <input
+              {/* Venue */}
+              <div className="add-event-form-group add-event-full-width">
+                <h6>Venue Details</h6>
+               <input
                 type="text"
                 placeholder="Venue Name"
                 value={formData.venue.name}
@@ -586,10 +542,7 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                 }
                 className={emptyFields.includes("venue.name") ? "error" : ""}
               />
-            </div>
-
-            <div className="add-event-form-group">
-              <input
+               <input
                 type="text"
                 placeholder="Street Address"
                 value={formData.venue.address}
@@ -601,11 +554,8 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                 }
                 className={emptyFields.includes("venue.address") ? "error" : ""}
               />
-            </div>
-
-            <div className="add-event-form-row">
-              <div className="add-event-form-group">
-                <input
+                <div className="add-event-form-row">
+                 <input
                   type="text"
                   placeholder="City"
                   value={formData.venue.city}
@@ -617,10 +567,7 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                   }
                   className={emptyFields.includes("venue.city") ? "error" : ""}
                 />
-              </div>
-
-              <div className="add-event-form-group">
-                <input
+                  <input
                   type="text"
                   placeholder="Zip Code"
                   value={formData.venue.zipCode}
@@ -634,236 +581,196 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                     emptyFields.includes("venue.zipCode") ? "error" : ""
                   }
                 />
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Event Type */}
-          <div className="add-event-form-group">
-            <h6>Event Type</h6>
-            <div style={{ display: "flex", gap: "20px", marginTop: "5px" }}>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  cursor: "pointer",
-                  color: "black",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="eventType"
-                  value="General Admission"
-                  checked={formData.eventType === "General Admission"}
-                  onChange={() =>
-                    setFormData({ ...formData, eventType: "General Admission" })
-                  }
-                />
-                General Admission
-              </label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  cursor: "pointer",
-                  color: "black",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="eventType"
-                  value="Seating Arrangement"
-                  checked={formData.eventType === "Seating Arrangement"}
-                  onChange={() =>
-                    setFormData({
-                      ...formData,
-                      eventType: "Seating Arrangement",
-                    })
-                  }
-                />
-                Assigned Seating
-              </label>
-            </div>
-          </div>
-
-          {/* Tickets / Seating */}
-          {formData.eventType === "General Admission" && (
-            <div className="add-event-form-row">
-              <div className="add-event-form-group">
-                <h6>Ticket Price ($)</h6>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.ticketPrice === 0 ? "" : formData.ticketPrice}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      ticketPrice:
-                        e.target.value === "" ? "" : Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-              <div className="add-event-form-group">
-                <h6>Total Capacity</h6>
-                <input
-                  type="number"
-                  min="1"
-                  value={
-                    formData.totalTickets === 0 ? "" : formData.totalTickets
-                  }
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      totalTickets:
-                        e.target.value === "" ? "" : Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-            </div>
-          )}
-
-          {formData.eventType === "Seating Arrangement" && (
-            <div className="section-box">
-              <h5 className="modal-section-title">Seat Map & Variations</h5>
-              {formData.seatVariations.map((seat, index) => (
-                <div key={index} className="booth-row">
-                  <input
-                    type="text"
-                    placeholder="Seat Number"
-                    value={seat.seatNumber}
-                    onChange={(e) =>
-                      updateSeat(index, "seatNumber", e.target.value)
-                    }
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    value={seat.price}
-                    onChange={(e) => updateSeat(index, "price", e.target.value)}
-                  />
-                  <button type="button" className="remove-boothseat-btn" onClick={() => removeSeat(index)}>
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button type="button" className="add-boothseat-btn" onClick={addSeat}>
-                Add Seat
-              </button>
-            </div>
-          )}
-
-          <div className="section-box">
-            <h5 className="modal-section-title">Booths (Optional)</h5>
-            {formData.booths.map((booth, index) => (
-              <div key={index} className="booth-row">
-
-                <div className="add-event-form-group">
-                  <h6>Booth Code</h6>
-                  <input
-                    type="text"
-                    placeholder="ex. VIP401"
-                    value={booth.code || ""}
-                    onChange={e => updateBooth(index, "code", e.target.value)}
-                  />
-                </div>
-
-                <div className="add-event-form-group">
-                  <h6>Size</h6>
-                  <input
-                    type="text"
-                    placeholder="ex. 20x20"
-                    value={booth.size || ""}
-                    onChange={e => updateBooth(index, "size", e.target.value)}
-                  />
-                </div>
-
-                <div className="add-event-form-group">
-                  <h6>Price</h6>
-                  <input
-                    type="number"
-                    min="0"
-                    value={booth.price !== undefined ? booth.price : 0}
-                    onChange={e => updateBooth(index, "price", Number(e.target.value))}
-                  />
-                </div>
-
-                <div className="add-event-form-group">
-                  <h6>Quantity</h6>
-                  <input
-                    type="number"
-                    min="1"
-                    value={booth.quantity !== undefined ? booth.quantity : 1}
-                    onChange={e => updateBooth(index, "quantity", Number(e.target.value))}
-                  />
-                </div>
-
-                <div className="add-event-form-group">
-                  <h6>Type</h6>
-                  <select
-                    value={booth.type || "standard"}
-                    onChange={e => updateBooth(index, "type", e.target.value)}
-                  >
-                    <option value="standard">Inline</option>
-                    <option value="vip">VIP</option>
-                    <option value="premium">Corner</option>
-                  </select>
-                </div>
-
-                <div className="add-event-form-group">
-                  <h6>Status</h6>
-                  <select
-                    value={booth.status || "available"}
-                    onChange={e => updateBooth(index, "status", e.target.value)}
-                  >
-                    <option value="available">Available</option>
-                    <option value="reserved">Reserved</option>
-                    <option value="sold">Sold</option>
-                  </select>
-                </div>
-
-                <button type="button" className="remove-boothseat-btn" onClick={() => removeBooth(index)}>
-                  Remove
+              {/* Display errors */}
+              {error && (
+                <div style={{ color: "red", marginTop: "10px" }}>{error}</div>
+              )}
+              <div className="general-event-modal-footer">
+                <button
+                  type="button"
+                  className="button cancel-btn"
+                  onClick={onClose}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="primary-button save-btn">
+                  Save Changes
                 </button>
               </div>
-            ))}
-
-            <button
-              type="button"
-              className="add-boothseat-btn"
-              onClick={addBooth}
-            >
-              Add Booth
-            </button>
-          </div>
-
-          {error && (
-            <div
-              className="error-message"
-              style={{ color: "red", marginTop: "10px" }}
-            >
-              {error}
-            </div>
+            </form>
           )}
 
-          <div className="general-event-modal-footer">
+         {activeTab === "tickets" && (
+  <div className="add-event-modal-body">
+    <h6>Price Levels</h6>
+
+    {priceLevels.length === 0 ? (
+      <p>No Price Level Added Yet.</p>
+    ) : (
+      priceLevels.map((level, index) => (
+  <div
+    key={level.tempId || index}
+          className="ticket-level-card"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            border: "1px solid #ccc",
+            padding: "10px",
+            marginBottom: "10px",
+            borderRadius: "5px",
+          }}
+        >
+          <div>
+            <strong>{level.priceName}</strong>
+            <p style={{ margin: 0 }}>
+              ₱{level.facePrice} (+{level.serviceCharge})
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: "5px" }}>
+            <button type="button" onClick={() => handleEdit(index)}>
+              Edit
+            </button>
+
             <button
               type="button"
-              className="button cancel-btn"
-              onClick={onClose}
+              onClick={() => handleDelete(index)}
+              style={{ background: "red", color: "#fff" }}
             >
-              Cancel
-            </button>
-            <button type="submit" className="primary-button save-btn">
-              Save Changes
+              Delete
             </button>
           </div>
-        </form>
+        </div>
+      ))
+    )}
+
+    <button
+      type="button"
+      className="primary-button"
+      onClick={() => {
+        setEditingIndex(null);
+        setFormData({
+          priceName: "",
+          color: "#000000",
+          facePrice: 0,
+          serviceCharge: 0,
+          quantityAvailable: 0,
+          quantitySold: 0,
+        });
+        setShowPriceModal(true);
+      }}
+    >
+      Add Price Level
+    </button>
+  </div>
+)}
+
+{/* {showPriceModal && (
+  <div className="general-modal-overlay">
+    <div className="general-event-modal-container">
+      <h3>{editingIndex !== null ? "Edit" : "Add"} Price Level</h3>
+
+      <div className="add-event-form-group">
+        <h6>Price Name</h6>
+        <input
+          type="text"
+          value={formData.priceName}
+          onChange={(e) =>
+            setFormData({ ...formData, priceName: e.target.value })
+          }
+        />
+      </div>
+
+      <div className="add-event-form-group">
+        <h6>Color</h6>
+        <input
+          type="color"
+          value={formData.color}
+          onChange={(e) =>
+            setFormData({ ...formData, color: e.target.value })
+          }
+        />
+      </div>
+
+      <div className="add-event-form-group">
+        <h6>Face Price</h6>
+        <input
+          type="number"
+          value={formData.facePrice}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              facePrice: Number(e.target.value),
+            })
+          }
+        />
+      </div>
+
+      <div className="add-event-form-group">
+        <h6>Service Charge</h6>
+        <input
+          type="number"
+          value={formData.serviceCharge}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              serviceCharge: Number(e.target.value),
+            })
+          }
+        />
+      </div>
+
+      <div className="add-event-form-group">
+        <h6>Quantity Available</h6>
+        <input
+          type="number"
+          value={formData.quantityAvailable}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              quantityAvailable: Number(e.target.value),
+            })
+          }
+        />
+      </div>
+
+      <div className="add-event-form-group">
+        <h6>Quantity Sold</h6>
+        <input
+          type="number"
+          value={formData.quantitySold}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              quantitySold: Number(e.target.value),
+            })
+          }
+        />
+      </div>
+
+      <div style={{ marginTop: "15px" }}>
+        <button onClick={handleSave} className="primary-button">
+          Save
+        </button>
+
+        <button
+          onClick={() => setShowPriceModal(false)}
+          style={{ marginLeft: "10px" }}
+        >
+          Cancel
+        </button>
       </div>
     </div>
+  </div>
+)} */}
+        </div>
+      </div>
+    </div>
+    
   );
 };
 
