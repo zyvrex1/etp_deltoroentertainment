@@ -14,7 +14,17 @@ export async function loadLogo() {
                 const blob = await res.blob();
                 return await new Promise((resolve) => {
                     const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
+                    reader.onloadend = () => {
+                        const img = new Image();
+                        img.onload = () => {
+                            resolve({
+                                data: reader.result,
+                                width: img.width,
+                                height: img.height
+                            });
+                        };
+                        img.src = reader.result;
+                    };
                     reader.readAsDataURL(blob);
                 });
             }
@@ -31,10 +41,30 @@ export async function loadLogo() {
 export function addReportHeader(pdf, title, logoData) {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     if (logoData) {
-        const logoHeight = 16;
-        const logoWidth = 32; // 1:1 aspect ratio - not stretched
-        const format = logoData.includes('image/jpeg') || logoData.includes('image/jpg') ? 'JPEG' : 'PNG';
-        pdf.addImage(logoData, format, MARGIN, 8, logoWidth, logoHeight);
+        let finalLogoWidth = 32; // Default fallback
+        let finalLogoHeight = 16; // Default fallback
+        let finalLogoData = logoData;
+
+        if (typeof logoData === 'object' && logoData.width && logoData.height) {
+            const aspect = logoData.width / logoData.height;
+            const targetHeight = 16;
+            const maxWidth = 65; 
+
+            // Start with target height
+            finalLogoHeight = targetHeight;
+            finalLogoWidth = targetHeight * aspect;
+
+            // If still too wide, cap it and shrink height proportionally
+            if (finalLogoWidth > maxWidth) {
+                finalLogoWidth = maxWidth;
+                finalLogoHeight = maxWidth / aspect;
+            }
+            
+            finalLogoData = logoData.data;
+        }
+
+        const format = finalLogoData.includes('image/jpeg') || finalLogoData.includes('image/jpg') ? 'JPEG' : 'PNG';
+        pdf.addImage(finalLogoData, format, MARGIN, 8, finalLogoWidth, finalLogoHeight);
     }
     pdf.setFontSize(20);
     pdf.setTextColor(30, 60, 114);
