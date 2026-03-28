@@ -6,60 +6,26 @@ import { useEventsContext } from "../hooks/useEventsContext";
 import {
   showSuccessAlert,
   showErrorAlert,
-  showCancelConfirmAlert,
   showCreateConfirmAlert,
 } from "../utils/sweetAlert";
+import AddPriceLevelModal from "./AddPriceLevelModal";
+import EditPriceLevelModal from "./EditPriceLevelModal";
 
 const EditEventModal = ({ isOpen, onClose, event }) => {
   const { user } = useAuthContext();
   const { dispatch } = useEventsContext();
   const today = new Date().toISOString().split("T")[0];
+
   const [error, setError] = useState("");
   const [emptyFields, setEmptyFields] = useState([]);
   const [activeTab, setActiveTab] = useState("information");
   const [imageDragActive, setImageDragActive] = useState(false);
 
-  const handleImageDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setImageDragActive(e.type === "dragenter" || e.type === "dragover");
-  };
+  const [showPriceModal, setShowPriceModal] = useState(false);
+  const [showEditPriceModal, setShowEditPriceModal] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
 
-  const handleImageDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setImageDragActive(false);
-    if (e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (formData.imagePreviewUrl)
-        URL.revokeObjectURL(formData.imagePreviewUrl);
-      setFormData({
-        ...formData,
-        imageFile: file,
-        imagePreviewUrl: URL.createObjectURL(file),
-      });
-    }
-  };
-
-  const handleImageChange = (e) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-
-      // Revoke previous preview URL
-      if (formData.imagePreviewUrl)
-        URL.revokeObjectURL(formData.imagePreviewUrl);
-
-      setFormData({ ...formData, imageFile: file, imagePreviewUrl: url });
-    }
-  };
-
-  const handleImageRemove = () => {
-    if (formData.imagePreviewUrl) URL.revokeObjectURL(formData.imagePreviewUrl);
-    setFormData({ ...formData, imageFile: null, imagePreviewUrl: null });
-  };
-
+  // Single formData state
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -68,204 +34,172 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
     endDate: today,
     startTime: "",
     endTime: "",
-    eventType: "", 
-    ticketPrice: "",
-    totalTickets: "",
-    venue: {
-      name: "",
-      address: "",
-      city: "",
-      zipCode: "",
-    },
+    eventType: "General Admission",
+    priceLevels: [], // Hold price levels here
+    venue: { name: "", address: "", city: "", zipCode: "" },
     imageFile: null,
     imagePreviewUrl: null,
     seatMap: null,
-    seatVariations: [], // for Seating Arrangement type
     booths: [],
   });
 
+  // Sync data when event prop changes
   useEffect(() => {
-  if (event) {
-    const formatDate = (isoDate) =>
-      isoDate ? new Date(isoDate).toISOString().split("T")[0] : today;
+    if (event) {
+      const formatDate = (isoDate) =>
+        isoDate ? new Date(isoDate).toISOString().split("T")[0] : today;
 
-    setFormData({
-      title: event.title || "",
-      category: event.category || "other",
-      description: event.description || "",
-      startDate: formatDate(event.startDate),
-      endDate: formatDate(event.endDate),
-      startTime: event.startTime || "",
-      endTime: event.endTime || "",
-      eventType: event.eventType || "General Admission",
-      
-      // ✅ CRITICAL: Load Price Levels so the Ticket tab and validation work
-      priceLevels: event.priceLevels || [], 
+      setFormData({
+        title: event.title || "",
+        category: event.category || "other",
+        description: event.description || "",
+        startDate: formatDate(event.startDate),
+        endDate: formatDate(event.endDate),
+        startTime: event.startTime || "",
+        endTime: event.endTime || "",
+        eventType: event.eventType || "General Admission",
+        priceLevels: event.priceLevels || [],
+        venue: {
+          name: event.venue?.name || "",
+          address: event.venue?.address || "",
+          city: event.venue?.city || "",
+          zipCode: event.venue?.zipCode || "",
+        },
+        imageFile: null,
+        imagePreviewUrl: event.image ? `http://localhost:4000/uploads/${event.image}` : null,
+        seatMap: event.seatMap || null,
+        booths: event.booths || [],
+      });
+    }
+  }, [event, today]);
 
-      ticketPrice: event.ticketPrice !== undefined ? String(event.ticketPrice) : "",
-      totalTickets: event.totalTickets !== undefined ? String(event.totalTickets) : "",
-      
-      venue: {
-        name: event.venue?.name || "",
-        address: event.venue?.address || "",
-        city: event.venue?.city || "",
-        zipCode: event.venue?.zipCode || "",
-      },
-      
-      imageFile: null,
-      imagePreviewUrl: event.image
-        ? `http://localhost:4000/uploads/${event.image}`
-        : null,
-
-      seatMap: event.seatMap || null, 
-      
-      // Ensure your seatVariations/booths maintain their priceLevelId references
-      seatVariations: event.seatVariations?.map((s) => ({
-        seatNumber: s.seatNumber || "",
-        price: s.price !== undefined ? String(s.price) : "",
-        priceLevelId: s.priceLevelId || null, // Keep the link!
-      })) || [],
-
-      booths: event.booths?.map((b) => ({
-        code: b.code || "",
-        type: b.type || "standard",
-        status: b.status || "available",
-        size: b.size || "",
-        price: b.price !== undefined ? String(b.price) : "",
-        quantity: b.quantity !== undefined ? String(b.quantity) : "",
-        priceLevelId: b.priceLevelId || null, // Keep the link!
-      })) || [],
-    });
-
-    setError("");
-    setEmptyFields([]);
-  }
-}, [event, today]);
-
-const handleSaveChanges = async (e) => {
-  e.preventDefault();
-
-  if (!user) {
-    setError("You must be logged in");
-    return;
-  }
-
-  setError("");
-  setEmptyFields([]);
-
-  // 1️⃣ Define fields to validate
-  const fieldsToCheck = {
-    title: formData.title,
-    description: formData.description,
-    category: formData.category,
-    startDate: formData.startDate,
-    endDate: formData.endDate,
-    startTime: formData.startTime,
-    endTime: formData.endTime,
-    eventType: formData.eventType,
-    venueName: formData.venue?.name,
-    venueAddress: formData.venue?.address,
-    venueCity: formData.venue?.city,
-    venueZip: formData.venue?.zipCode,
+  // 1. Handle Drag Events (Prevent default to allow drop)
+  const handleImageDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setImageDragActive(true);
+    } else if (e.type === "dragleave") {
+      setImageDragActive(false);
+    }
   };
 
-  // 2️⃣ Run dynamic validation
-  const empty = Object.entries(fieldsToCheck)
-    .filter(([_, value]) => value === "" || value === null || value === undefined)
-    .map(([key]) => key);
+  // 2. Handle Drop Event
+  const handleImageDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageDragActive(false);
 
-  if (empty.length > 0) {
-    setEmptyFields(empty);
-    setError("Please fill in all required fields.");
-    return;
-  }
-
-  // 3️⃣ Date Logic
-  const startDateTime = new Date(`${formData.startDate}T${formData.startTime}`);
-  const endDateTime = new Date(`${formData.endDate}T${formData.endTime}`);
-  
-  if (endDateTime <= startDateTime) {
-    setError("End date/time must be after the start date/time.");
-    return;
-  }
-
-  // 4️⃣ Data Preparation & Cleanup
-  const priceLevels = formData.priceLevels || [];
-  const priceLevelIds = priceLevels.map((p) => String(p.tempId || p._id));
-
-  // Cleanup SeatMap: Ensure every seat has at least "none"
-  const cleanedSeatMap = formData.seatMap ? {
-    ...formData.seatMap,
-    sections: formData.seatMap.sections.map(section => ({
-      ...section,
-      seats: section.seats.map(seat => ({
-        ...seat,
-        priceLevelId: seat.priceLevelId || "none" 
-      }))
-    }))
-  } : null;
-
-  // 5️⃣ Confirmation
-  const result = await showCreateConfirmAlert(
-    "Update Event?",
-    `Are you sure you want to update "${formData.title}"?`
-  );
-  if (!result.isConfirmed) return;
-
-  // 6️⃣ Execute Request
-  try {
-    const formDataToSend = new FormData(); // Move this ABOVE the appends
-
-    formDataToSend.append("title", formData.title);
-    formDataToSend.append("description", formData.description);
-    formDataToSend.append("category", formData.category);
-    formDataToSend.append("startDate", formData.startDate);
-    formDataToSend.append("endDate", formData.endDate);
-    formDataToSend.append("startTime", formData.startTime);
-    formDataToSend.append("endTime", formData.endTime);
-    formDataToSend.append("eventType", formData.eventType);
-    
-    formDataToSend.append("venue", JSON.stringify(formData.venue));
-    formDataToSend.append("priceLevels", JSON.stringify(priceLevels));
-    formDataToSend.append("booths", JSON.stringify(formData.booths || []));
-    
-    // Use the CLEANED seat map here
-    formDataToSend.append(
-      "seatMap", 
-      JSON.stringify(formData.eventType === "Seating Arrangement" ? cleanedSeatMap : null)
-    );
-
-    if (formData.imageFile) {
-      formDataToSend.append("image", formData.imageFile);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      setFormData({ 
+        ...formData, 
+        imageFile: file, 
+        imagePreviewUrl: URL.createObjectURL(file) 
+      });
     }
+  };
 
-    const response = await fetch(`/api/events/${event._id}`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${user.token}` },
-      body: formDataToSend,
+  // 3. Handle Remove (Also missing based on your JSX)
+  const handleImageRemove = () => {
+    setFormData({
+      ...formData,
+      imageFile: null,
+      imagePreviewUrl: null
     });
+  };
 
-    const json = await response.json();
+  
 
-    if (!response.ok) {
-      throw new Error(json.error || "Error updating event");
+  // Price Level Handlers
+  const handleDeletePriceLevel = (index) => {
+    const updatedLevels = formData.priceLevels.filter((_, i) => i !== index);
+    setFormData({ ...formData, priceLevels: updatedLevels });
+  };
+
+  const handleEditPriceLevel = (index) => {
+    setEditingIndex(index);
+    setShowEditPriceModal(true); // Open the specific Edit modal
+  };
+
+  // Logic to handle the updated data from EditPriceLevelModal
+  const handleUpdatePriceLevel = (updatedLevelData) => {
+    const updatedLevels = [...formData.priceLevels];
+    updatedLevels[editingIndex] = updatedLevelData;
+    
+    setFormData({ ...formData, priceLevels: updatedLevels });
+    setShowEditPriceModal(false);
+    setEditingIndex(null);
+  };
+
+  const handleSavePriceLevel = (levelData) => {
+    let updatedLevels = [...formData.priceLevels];
+
+    if (editingIndex !== null) {
+      // Update existing
+      updatedLevels[editingIndex] = { ...levelData };
+    } else {
+      // Add new
+      const newLevel = {
+        ...levelData,
+        tempId: `temp-${crypto.randomUUID()}`,
+      };
+      updatedLevels.push(newLevel);
     }
 
-    onClose();
-    showSuccessAlert("Event updated successfully!");
-    dispatch({ type: "UPDATE_EVENT", payload: json.event });
-    
-  } catch (err) {
-    console.error(err);
-    setError(err.message);
-    showErrorAlert("Update Failed", err.message);
-  }
-};
+    setFormData({ ...formData, priceLevels: updatedLevels });
+    setShowPriceModal(false);
+    setEditingIndex(null);
+  };
 
-  const eventDetailsTabs = [
-    { id: "information", label: "Information" },
-    { id: "tickets", label: "Tickets" },
-  ];
+  // Image Handlers
+  const handleImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFormData({ 
+        ...formData, 
+        imageFile: file, 
+        imagePreviewUrl: URL.createObjectURL(file) 
+      });
+    }
+  };
+
+  const handleSaveChanges = async (e) => {
+    e.preventDefault();
+    if (!user) return setError("You must be logged in");
+
+    const result = await showCreateConfirmAlert("Update Event?", `Update "${formData.title}"?`);
+    if (!result.isConfirmed) return;
+
+    try {
+      const formDataToSend = new FormData();
+      // Append basic fields
+      Object.keys(formData).forEach(key => {
+        if (['venue', 'priceLevels', 'booths', 'seatMap'].includes(key)) {
+          formDataToSend.append(key, JSON.stringify(formData[key]));
+        } else if (key === 'imageFile' && formData.imageFile) {
+          formDataToSend.append('image', formData.imageFile);
+        } else if (key !== 'imagePreviewUrl') {
+          formDataToSend.append(key, formData[key]);
+        }
+      });
+
+      const response = await fetch(`/api/events/${event._id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${user.token}` },
+        body: formDataToSend,
+      });
+
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error);
+
+      onClose();
+      showSuccessAlert("Event updated!");
+      dispatch({ type: "UPDATE_EVENT", payload: json.event });
+    } catch (err) {
+      showErrorAlert("Update Failed", err.message);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -274,28 +208,18 @@ const handleSaveChanges = async (e) => {
       <div className="general-event-modal-container">
         <div className="general-modal-header">
           <h3>Edit Event</h3>
-          <button
-            className="close-btn"
-            onClick={onClose} // directly call onClose
-          >
+          <button className="close-btn" onClick={onClose}>
             <Icon icon="mdi:close" width="24" height="24" />
           </button>
         </div>
 
         <div className="em-content">
           <div className="tabs-container">
-            {eventDetailsTabs.map((tab) => (
-              <button
-                key={tab.id}
-                className={`tab ${activeTab === tab.id ? "active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                <span>{tab.label}</span>
-              </button>
-            ))}
+            <button className={`tab ${activeTab === "information" ? "active" : ""}`} onClick={() => setActiveTab("information")}>Information</button>
+            <button className={`tab ${activeTab === "tickets" ? "active" : ""}`} onClick={() => setActiveTab("tickets")}>Tickets</button>
           </div>
 
-          {activeTab === "information" && (
+            {activeTab === "information" && (
             <form
               className="add-event-modal-body add-event-form"
                onSubmit={handleSaveChanges}
@@ -603,174 +527,113 @@ const handleSaveChanges = async (e) => {
             </form>
           )}
 
-         {activeTab === "tickets" && (
-  <div className="add-event-modal-body">
-    <h6>Price Levels</h6>
+          {activeTab === "tickets" && (
+            <div className="add-event-modal-body">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "15px",
+                }}
+              >
+                <h6>Price Levels</h6>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => { setEditingIndex(null); setShowPriceModal(true); }}
+                >
+                  <Icon icon="mdi:plus" /> Add Level
+                </button>
+              </div>
+             {formData.priceLevels.length === 0 ? (
+                <p className="no-data-text">
+                  No Price Levels added. Click "Add Level" to start.
+                </p>
+              ) : (
+                <div className="price-levels-list">
+                  {formData.priceLevels.map((level, index) => (
+                    <div
+                      key={level.tempId || index}
+                      className="ticket-level-card"
+                    >
+                      <div className="level-info">
+                        <span
+                          className="color-indicator"
+                          style={{ backgroundColor: level.color }}
+                        ></span>
+                        <div>
+                          <strong>{level.priceName}</strong>
+                          <p>
+                            ₱{level.facePrice} (+₱{level.serviceCharge}) • Qty:{" "}
+                            {level.quantityAvailable}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="level-actions">
+                        <button
+                          type="button"
+                          className="edit-icon-btn"
+                          onClick={() => handleEditPriceLevel(index)}
+                        >
+                          <Icon icon="mdi:pencil" />
+                        </button>
+                        <button
+                          type="button"
+                          className="delete-icon-btn"
+                          onClick={() => handleDeletePriceLevel(index)}
+                        >
+                          <Icon icon="mdi:trash-can" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-    {priceLevels.length === 0 ? (
-      <p>No Price Level Added Yet.</p>
-    ) : (
-      priceLevels.map((level, index) => (
-  <div
-    key={level.tempId || index}
-          className="ticket-level-card"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            border: "1px solid #ccc",
-            padding: "10px",
-            marginBottom: "10px",
-            borderRadius: "5px",
-          }}
-        >
-          <div>
-            <strong>{level.priceName}</strong>
-            <p style={{ margin: 0 }}>
-              ₱{level.facePrice} (+{level.serviceCharge})
-            </p>
-          </div>
-
-          <div style={{ display: "flex", gap: "5px" }}>
-            <button type="button" onClick={() => handleEdit(index)}>
-              Edit
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleDelete(index)}
-              style={{ background: "red", color: "#fff" }}
-            >
-              Delete
-            </button>
-          </div>
+              {/* {formData.priceLevels.length === 0 ? (
+                <p>No Price Level Added Yet.</p>
+              ) : (
+                formData.priceLevels.map((level, index) => (
+                  <div key={index} className="ticket-level-card" style={{ display: "flex", justifyContent: "space-between", padding: "10px", border: "1px solid #eee", marginBottom: "10px" }}>
+                    <div>
+                      <strong>{level.priceName}</strong>
+                      <p>${level.facePrice} + ${level.serviceCharge} Fee</p>
+                    </div>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <button type="button" onClick={() => handleEditPriceLevel(index)}>Edit</button>
+                      <button type="button" style={{ color: "red" }} onClick={() => handleDeletePriceLevel(index)}>Delete</button>
+                    </div>
+                  </div>
+                ))
+              )} */}
+            </div>
+          )}
         </div>
-      ))
-    )}
+      </div>
 
-    <button
-      type="button"
-      className="primary-button"
-      onClick={() => {
+      {/* RENDER THE SUB-MODAL HERE */}
+      {showPriceModal && (
+    <AddPriceLevelModal
+      isOpen={showPriceModal}
+      onClose={() => setShowPriceModal(false)}
+      onSave={handleSavePriceLevel}
+    />
+  )}
+
+  {/* RENDER THE EDIT MODAL */}
+  {showEditPriceModal && (
+    <EditPriceLevelModal
+      isOpen={showEditPriceModal}
+      onClose={() => {
+        setShowEditPriceModal(false);
         setEditingIndex(null);
-        setFormData({
-          priceName: "",
-          color: "#000000",
-          facePrice: 0,
-          serviceCharge: 0,
-          quantityAvailable: 0,
-          quantitySold: 0,
-        });
-        setShowPriceModal(true);
       }}
-    >
-      Add Price Level
-    </button>
-  </div>
-)}
-
-{/* {showPriceModal && (
-  <div className="general-modal-overlay">
-    <div className="general-event-modal-container">
-      <h3>{editingIndex !== null ? "Edit" : "Add"} Price Level</h3>
-
-      <div className="add-event-form-group">
-        <h6>Price Name</h6>
-        <input
-          type="text"
-          value={formData.priceName}
-          onChange={(e) =>
-            setFormData({ ...formData, priceName: e.target.value })
-          }
-        />
-      </div>
-
-      <div className="add-event-form-group">
-        <h6>Color</h6>
-        <input
-          type="color"
-          value={formData.color}
-          onChange={(e) =>
-            setFormData({ ...formData, color: e.target.value })
-          }
-        />
-      </div>
-
-      <div className="add-event-form-group">
-        <h6>Face Price</h6>
-        <input
-          type="number"
-          value={formData.facePrice}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              facePrice: Number(e.target.value),
-            })
-          }
-        />
-      </div>
-
-      <div className="add-event-form-group">
-        <h6>Service Charge</h6>
-        <input
-          type="number"
-          value={formData.serviceCharge}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              serviceCharge: Number(e.target.value),
-            })
-          }
-        />
-      </div>
-
-      <div className="add-event-form-group">
-        <h6>Quantity Available</h6>
-        <input
-          type="number"
-          value={formData.quantityAvailable}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              quantityAvailable: Number(e.target.value),
-            })
-          }
-        />
-      </div>
-
-      <div className="add-event-form-group">
-        <h6>Quantity Sold</h6>
-        <input
-          type="number"
-          value={formData.quantitySold}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              quantitySold: Number(e.target.value),
-            })
-          }
-        />
-      </div>
-
-      <div style={{ marginTop: "15px" }}>
-        <button onClick={handleSave} className="primary-button">
-          Save
-        </button>
-
-        <button
-          onClick={() => setShowPriceModal(false)}
-          style={{ marginLeft: "10px" }}
-        >
-          Cancel
-        </button>
-      </div>
+      onSave={handleUpdatePriceLevel}
+      initialData={formData.priceLevels[editingIndex]}
+    />
+  )}
     </div>
-  </div>
-)} */}
-        </div>
-      </div>
-    </div>
-    
   );
 };
 

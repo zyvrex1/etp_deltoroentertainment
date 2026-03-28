@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import "./eventmanagement.css";
 import CreateEventModal from "./modal/CreateEventModal";
-import EditEventModal from "./Modal/EditEventModal";
+import EditEventModal from "./modal/EditEventModal";
 import EventRejectionModal from "./Modal/EventRejectionModal";
 
 import { useEventsContext } from "../admincomponents/hooks/useEventsContext"

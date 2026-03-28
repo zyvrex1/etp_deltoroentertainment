@@ -10,6 +10,8 @@ import {
   showCreateConfirmAlert,
 } from "../utils/sweetAlert";
 import { useAuthContext } from "../hooks/useAuthContext";
+import AddPriceLevelModal from "./AddPriceLevelModal";
+import EditPriceLevelModal from "./EditPriceLevelModal";
 
 const CreateEventModal = ({ isOpen, onClose }) => {
   const { dispatch } = useEventsContext();
@@ -41,6 +43,8 @@ const CreateEventModal = ({ isOpen, onClose }) => {
 
   const [activeTab, setActiveTab] = useState("information");
   const [showPriceModal, setShowPriceModal] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingLevel, setEditingLevel] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -82,160 +86,184 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleDelete = (index) => {
-    setPriceLevels(priceLevels.filter((_, i) => i !== index));
+
+const handleSave = (levelData) => {
+  const newLevel = {
+    ...levelData,
+    tempId: `temp-${crypto.randomUUID()}`,
   };
-
-  const handleEdit = (index) => {
-    setEditingIndex(index);
-    setFormData(priceLevels[index]);
-    setShowPriceModal(true);
-  };
-
-  const handleSave = () => {
-  if (editingIndex !== null) {
-    const updated = [...priceLevels];
-    updated[editingIndex] = {
-      ...formData,
-      tempId: updated[editingIndex].tempId || `temp-${crypto.randomUUID()}`,
-    };
-    setPriceLevels(updated);
-  } else {
-    const newLevel = {
-      ...formData,
-      tempId: `temp-${crypto.randomUUID()}`,
-    };
-    setPriceLevels([...priceLevels, newLevel]);
-  }
-
+  setPriceLevels([...priceLevels, newLevel]);
   setShowPriceModal(false);
 };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+const handleEditPriceLevel = (index) => {
+   setEditingIndex(index);
+  setEditingLevel(priceLevels[index]); // Assuming 'priceLevels' is your array
+  setIsEditModalOpen(true);
+};
 
-  setError("");
-  setEmptyFields([]);
+// Use this for Editing (which you already have)
+const handleUpdatePriceLevel = (updatedData) => {
+  const updatedList = [...priceLevels];
+  updatedList[editingIndex] = updatedData;
+  setPriceLevels(updatedList);
+  setIsEditModalOpen(false);
+  setEditingIndex(null); // Clear the index
+};
 
-  const fieldsToCheck = {
-    title,
-    description,
-    category,
-    startDate,
-    endDate,
-    startTime,
-    endTime,
-    eventType,
-    venueName: venue.name,
-    venueAddress: venue.address,
-    venueCity: venue.city,
-    venueZip: venue.zipCode,
+const handleDelete = (index) => {
+    setPriceLevels(priceLevels.filter((_, i) => i !== index));
   };
 
-  const empty = Object.entries(fieldsToCheck)
-    .filter(([_, value]) => value === "" || value === null || value === undefined)
-    .map(([key]) => key);
+  
 
-  if (empty.length > 0) {
-    setEmptyFields(empty);
-    setError("Please fill in all required fields.");
-    return;
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const startDateTime = new Date(`${startDate}T${startTime}`);
-  const endDateTime = new Date(`${endDate}T${endTime}`);
+    setError("");
+    setEmptyFields([]);
 
-  if (endDateTime <= startDateTime) {
-    setError("End date/time must be after the start date/time.");
-    return;
-  }
+    const fieldsToCheck = {
+      title,
+      description,
+      category,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      eventType,
+      venueName: venue.name,
+      venueAddress: venue.address,
+      venueCity: venue.city,
+      venueZip: venue.zipCode,
+    };
 
-  if (!user) {
-    setError("You must be logged in.");
-    return;
-  }
+    const empty = Object.entries(fieldsToCheck)
+      .filter(
+        ([_, value]) => value === "" || value === null || value === undefined,
+      )
+      .map(([key]) => key);
 
-  const priceLevelIds = priceLevels.map((p) => String(p.tempId || p._id));
+    if (empty.length > 0) {
+      setEmptyFields(empty);
+      setError("Please fill in all required fields.");
+      return;
+    }
 
-  if (eventType === "General Admission" && priceLevels.length > 2) {
-    setError("General Admission allows a maximum of 2 price levels only.");
-    return;
-  }
+    const startDateTime = new Date(`${startDate}T${startTime}`);
+    const endDateTime = new Date(`${endDate}T${endTime}`);
 
-  if (eventType === "Seating Arrangement" && seatMap && seatMap.sections?.length > 0) {
-    for (const section of seatMap.sections) {
-      const seats = section.seats || [];
-      for (const seat of seats) {
-        if (seat && !seat.id && !seat._id) { 
-          setError("Each seat in the map must have an identifier."); 
-          return; 
+    if (endDateTime <= startDateTime) {
+      setError("End date/time must be after the start date/time.");
+      return;
+    }
+
+    if (!user) {
+      setError("You must be logged in.");
+      return;
+    }
+
+    const priceLevelIds = priceLevels.map((p) => String(p.tempId || p._id));
+
+    if (eventType === "General Admission" && priceLevels.length > 2) {
+      setError("General Admission allows a maximum of 2 price levels only.");
+      return;
+    }
+
+    if (
+      eventType === "Seating Arrangement" &&
+      seatMap &&
+      seatMap.sections?.length > 0
+    ) {
+      for (const section of seatMap.sections) {
+        const seats = section.seats || [];
+        for (const seat of seats) {
+          if (seat && !seat.id && !seat._id) {
+            setError("Each seat in the map must have an identifier.");
+            return;
+          }
+          if (
+            seat.priceLevelId &&
+            !priceLevelIds.includes(String(seat.priceLevelId))
+          ) {
+            setError("Invalid seat price level assignment.");
+            return;
+          }
         }
-        if (seat.priceLevelId && !priceLevelIds.includes(String(seat.priceLevelId))) {
-          setError("Invalid seat price level assignment.");
+      }
+    }
+
+    if (booths && booths.length > 0) {
+      for (const booth of booths) {
+        if (
+          booth.priceLevelId &&
+          !priceLevelIds.includes(String(booth.priceLevelId))
+        ) {
+          setError(
+            "One or more booths have an invalid price level assignment.",
+          );
           return;
         }
       }
     }
-  }
 
-  if (booths && booths.length > 0) {
-    for (const booth of booths) {
-      if (booth.priceLevelId && !priceLevelIds.includes(String(booth.priceLevelId))) {
-        setError("One or more booths have an invalid price level assignment.");
+    const result = await showCreateConfirmAlert(
+      "Create Event?",
+      `Are you sure you want to create "${title}"?`,
+    );
+    if (!result.isConfirmed) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("startDate", startDate);
+      formData.append("endDate", endDate);
+      formData.append("startTime", startTime);
+      formData.append("endTime", endTime);
+      formData.append("eventType", eventType);
+      formData.append("venue", JSON.stringify(venue));
+
+      // Sends seatMap if Seating Arrangement, otherwise null
+      formData.append(
+        "seatMap",
+        JSON.stringify(eventType === "Seating Arrangement" ? seatMap : null),
+      );
+      formData.append("priceLevels", JSON.stringify(priceLevels));
+      formData.append("booths", JSON.stringify(booths || []));
+
+      if (imageFile) formData.append("image", imageFile);
+
+      const response = await fetch("/api/events", {
+        method: "POST",
+        body: formData,
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        setError(json.error || "Failed to create event.");
+        await showErrorAlert(
+          "Error Creating Event",
+          json.error || "Failed to create event.",
+        );
         return;
       }
+
+      onClose();
+      showSuccessAlert(
+        "Event Created",
+        "The event has been created successfully.",
+      );
+      dispatch({ type: "CREATE_EVENT", payload: json.event });
+    } catch (err) {
+      console.error(err);
+      setError("Network error. Please try again.");
+      await showErrorAlert("Network Error", "Unable to connect to the server.");
     }
-  }
-
-  const result = await showCreateConfirmAlert(
-    "Create Event?",
-    `Are you sure you want to create "${title}"?`
-  );
-  if (!result.isConfirmed) return;
-
-  try {
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("category", category);
-    formData.append("startDate", startDate);
-    formData.append("endDate", endDate);
-    formData.append("startTime", startTime);
-    formData.append("endTime", endTime);
-    formData.append("eventType", eventType);
-    formData.append("venue", JSON.stringify(venue));
-    
-    // Sends seatMap if Seating Arrangement, otherwise null
-    formData.append("seatMap", JSON.stringify(eventType === "Seating Arrangement" ? seatMap : null));
-    formData.append("priceLevels", JSON.stringify(priceLevels)); 
-    formData.append("booths", JSON.stringify(booths || []));
-
-    if (imageFile) formData.append("image", imageFile);
-
-    const response = await fetch("/api/events", {
-      method: "POST",
-      body: formData,
-      headers: { Authorization: `Bearer ${user.token}` },
-    });
-
-    const json = await response.json();
-
-    if (!response.ok) {
-      setError(json.error || "Failed to create event.");
-      await showErrorAlert("Error Creating Event", json.error || "Failed to create event.");
-      return;
-    }
-
-    onClose();
-    showSuccessAlert("Event Created", "The event has been created successfully.");
-    dispatch({ type: "CREATE_EVENT", payload: json.event });
-    
-  } catch (err) {
-    console.error(err);
-    setError("Network error. Please try again.");
-    await showErrorAlert("Network Error", "Unable to connect to the server.");
-  }
-};
+  };
 
   if (!isOpen) return null;
 
@@ -539,170 +567,89 @@ const handleSubmit = async (e) => {
             </form>
           )}
 
-         {activeTab === "tickets" && (
-  <div className="add-event-modal-body">
-    <h6>Price Levels</h6>
+          {activeTab === "tickets" && (
+            <div className="add-event-modal-body">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "15px",
+                }}
+              >
+                <h6>Price Levels</h6>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => {
+                    setEditingIndex(null); // Ensure we aren't in "edit mode"
+                    setShowPriceModal(true);
+                  }}
+                >
+                  <Icon icon="mdi:plus" /> Add Price Level
+                </button>
+              </div>
 
-    {priceLevels.length === 0 ? (
-      <p>No Price Level Added Yet.</p>
-    ) : (
-      priceLevels.map((level, index) => (
-  <div
-    key={level.tempId || index}
-          className="ticket-level-card"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            border: "1px solid #ccc",
-            padding: "10px",
-            marginBottom: "10px",
-            borderRadius: "5px",
-          }}
-        >
-          <div>
-            <strong>{level.priceName}</strong>
-            <p style={{ margin: 0 }}>
-              ₱{level.facePrice} (+{level.serviceCharge})
-            </p>
-          </div>
+              {priceLevels.length === 0 ? (
+                <p className="no-data-text">
+                  No Price Levels added. Click "Add Level" to start.
+                </p>
+              ) : (
+                <div className="price-levels-list">
+                  {priceLevels.map((level, index) => (
+                    <div
+                      key={level.tempId || index}
+                      className="ticket-level-card"
+                    >
+                      <div className="level-info">
+                        <span
+                          className="color-indicator"
+                          style={{ backgroundColor: level.color }}
+                        ></span>
+                        <div>
+                          <strong>{level.priceName}</strong>
+                          <p>
+                            ${level.facePrice} (+${level.serviceCharge}) • Qty:{" "}
+                            {level.quantityAvailable}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="level-actions">
+                        <button
+                          type="button"
+                          className="edit-icon-btn"
+                          onClick={() => handleEditPriceLevel(index)}
+                        >
+                          <Icon icon="mdi:pencil" />
+                        </button>
+                        <button
+                          type="button"
+                          className="delete-icon-btn"
+                          onClick={() => handleDelete(index)}
+                        >
+                          <Icon icon="mdi:trash-can" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-          <div style={{ display: "flex", gap: "5px" }}>
-            <button type="button" onClick={() => handleEdit(index)}>
-              Edit
-            </button>
+         <AddPriceLevelModal
+  isOpen={showPriceModal}
+  onClose={() => setShowPriceModal(false)}
+  onSave={handleSave}
+/>
 
-            <button
-              type="button"
-              onClick={() => handleDelete(index)}
-              style={{ background: "red", color: "#fff" }}
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ))
-    )}
-
-    <button
-      type="button"
-      className="primary-button"
-      onClick={() => {
-        setEditingIndex(null);
-        setFormData({
-          priceName: "",
-          color: "#000000",
-          facePrice: 0,
-          serviceCharge: 0,
-          quantityAvailable: 0,
-          quantitySold: 0,
-        });
-        setShowPriceModal(true);
-      }}
-    >
-      Add Price Level
-    </button>
-  </div>
-)}
-
-{showPriceModal && (
-  <div className="general-modal-overlay">
-    <div className="general-event-modal-container">
-      <h3>{editingIndex !== null ? "Edit" : "Add"} Price Level</h3>
-
-      <div className="add-event-form-group">
-        <h6>Price Name</h6>
-        <input
-          type="text"
-          value={formData.priceName}
-          onChange={(e) =>
-            setFormData({ ...formData, priceName: e.target.value })
-          }
-        />
-      </div>
-
-      <div className="add-event-form-group">
-        <h6>Color</h6>
-        <input
-          type="color"
-          value={formData.color}
-          onChange={(e) =>
-            setFormData({ ...formData, color: e.target.value })
-          }
-        />
-      </div>
-
-      <div className="add-event-form-group">
-        <h6>Face Price</h6>
-        <input
-          type="number"
-          value={formData.facePrice}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              facePrice: Number(e.target.value),
-            })
-          }
-        />
-      </div>
-
-      <div className="add-event-form-group">
-        <h6>Service Charge</h6>
-        <input
-          type="number"
-          value={formData.serviceCharge}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              serviceCharge: Number(e.target.value),
-            })
-          }
-        />
-      </div>
-
-      <div className="add-event-form-group">
-        <h6>Quantity Available</h6>
-        <input
-          type="number"
-          value={formData.quantityAvailable}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              quantityAvailable: Number(e.target.value),
-            })
-          }
-        />
-      </div>
-
-      <div className="add-event-form-group">
-        <h6>Quantity Sold</h6>
-        <input
-          type="number"
-          value={formData.quantitySold}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              quantitySold: Number(e.target.value),
-            })
-          }
-        />
-      </div>
-
-      <div style={{ marginTop: "15px" }}>
-        <button onClick={handleSave} className="primary-button">
-          Save
-        </button>
-
-        <button
-          onClick={() => setShowPriceModal(false)}
-          style={{ marginLeft: "10px" }}
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+{/* KEEP THIS: This is your actual edit handler */}
+<EditPriceLevelModal
+  isOpen={isEditModalOpen}
+  initialData={editingLevel}
+  onClose={() => setIsEditModalOpen(false)}
+  onSave={handleUpdatePriceLevel}
+/>
         </div>
       </div>
     </div>
