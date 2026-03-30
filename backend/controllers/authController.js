@@ -61,7 +61,7 @@ const signupUser = async (req, res) => {
 
 // ================= LOGIN =================
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'All fields must be filled' });
@@ -69,6 +69,11 @@ const loginUser = async (req, res) => {
 
   try {
     const user = await User.login(email, password);
+
+    // Role verification
+    if (role && user.role !== role) {
+      throw Error(`Unauthorized. This account is registered as a ${user.role}.`);
+    }
 
     const token = createToken(user);
 
@@ -133,7 +138,7 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   const { _id } = req.user
-  const { firstName, lastName, email, phone, companyName, industry } = req.body
+  const { firstName, lastName, email, phone, companyName, industry, avatar } = req.body
 
   try {
     const user = await User.findById(_id)
@@ -150,6 +155,7 @@ const updateProfile = async (req, res) => {
       user.email = email
     }
     if (phone) user.phone = phone
+    if (avatar !== undefined) user.avatar = avatar
 
     await user.save()
 
@@ -167,10 +173,15 @@ const updateProfile = async (req, res) => {
     res.status(200).json({
       message: 'Profile updated successfully',
       user: {
+        _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        avatar: user.avatar,
+        role: user.role,
+        twoFactor: user.twoFactor,
+        notifications: user.notifications
       }
     })
   } catch (err) {

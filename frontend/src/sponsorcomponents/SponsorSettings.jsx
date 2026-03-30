@@ -1,12 +1,25 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
-import { showSuccessAlert, showConfirmAlert } from '../admincomponents/utils/sweetAlert';
+import { showSuccessAlert, showConfirmAlert, showErrorAlert } from '../admincomponents/utils/sweetAlert';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import * as authService from '../services/authService';
 import './SponsorSettings.css';
 import SponsorAddPaymentMethod from './SponsorModal/SponsorAddPaymentMethod';
 
 export default function SponsorSettings() {
+    const { user, dispatch } = useAuthContext();
     const [activeTab, setActiveTab] = useState('companyInfo');
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+    const [profile, setProfile] = useState({
+        firstName: user?.firstName || "",
+        lastName: user?.lastName || "",
+        email: user?.email || "",
+        phone: user?.phone || "",
+        companyName: user?.companyName || "",
+        industry: user?.industry || "",
+        avatar: user?.avatar || ""
+    });
 
     const tabs = [
         { id: 'companyInfo', label: 'Company Info', icon: 'mdi:domain' },
@@ -15,10 +28,36 @@ export default function SponsorSettings() {
         { id: 'notifications', label: 'Notifications', icon: 'mdi:bell-outline' }
     ];
 
-    const handleSave = async (itemName) => {
-        const result = await showConfirmAlert("Save Changes?", `Are you sure you want to save changes to your ${itemName}?`, "Yes, Save");
+    const handlePhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) { // 2MB Limit
+                return showErrorAlert("File Too Large", "Please upload an image smaller than 2MB.");
+            }
+            
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setProfile({ ...profile, avatar: reader.result });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSave = async () => {
+        const result = await showConfirmAlert("Save Changes?", "Are you sure you want to update your profile?", "Yes, Save");
         if (result.isConfirmed) {
-            await showSuccessAlert("Saved", `Your ${itemName} have been saved successfully.`);
+            try {
+                const response = await authService.updateProfile(profile, user.token);
+                
+                // Update context and storage
+                const updatedUser = { ...user, ...response.data.user };
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+                dispatch({ type: "LOGIN", payload: updatedUser });
+
+                await showSuccessAlert("Saved", "Your profile has been saved successfully.");
+            } catch (error) {
+                showErrorAlert("Update Failed", error.response?.data?.error || "Failed to update profile.");
+            }
         }
     };
 
@@ -32,11 +71,21 @@ export default function SponsorSettings() {
                             <div className="settings-input-row">
                                 <div className="settings-input-field">
                                     <label className="small-body-text">Company Name</label>
-                                    <input type="text" className="settings-input regular-body-text" defaultValue="TechCorp Inc." />
+                                    <input 
+                                        type="text" 
+                                        className="settings-input regular-body-text" 
+                                        value={profile.companyName} 
+                                        onChange={(e) => setProfile({ ...profile, companyName: e.target.value })}
+                                    />
                                 </div>
                                 <div className="settings-input-field">
                                     <label className="small-body-text">Industry</label>
-                                    <select className="settings-input settings-select regular-body-text" defaultValue="Technology">
+                                    <select 
+                                        className="settings-input settings-select regular-body-text" 
+                                        value={profile.industry} 
+                                        onChange={(e) => setProfile({ ...profile, industry: e.target.value })}
+                                    >
+                                        <option value="">Select Industry</option>
                                         <option value="Technology">Technology</option>
                                         <option value="Healthcare">Healthcare</option>
                                         <option value="Finance">Finance</option>
@@ -55,7 +104,7 @@ export default function SponsorSettings() {
                             </div>
                         </div>
                         <div className="settings-form-actions">
-                            <button className="button settings-save-btn" onClick={() => handleSave('company information')}>
+                            <button className="button settings-save-btn" onClick={handleSave}>
                                 <Icon icon="mdi:content-save-outline" width="20" /> Save Changes
                             </button>
                         </div>
@@ -65,28 +114,75 @@ export default function SponsorSettings() {
                 return (
                     <div className="settings-content-pane">
                         <h4 className="settings-pane-title">Contact Details</h4>
+                        
+                        <div className="settings-avatar-section">
+                            <div className="settings-avatar-circle">
+                                {profile.avatar ? (
+                                    <img src={profile.avatar} alt="Profile" className="settings-avatar-image" />
+                                ) : (
+                                    <span className="settings-avatar-text">
+                                        {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
+                                    </span>
+                                )}
+                            </div>
+                            <input
+                                type="file"
+                                id="avatarInput"
+                                hidden
+                                accept="image/*"
+                                onChange={handlePhotoChange}
+                            />
+                            <button 
+                                type="button" 
+                                className="settings-change-photo-btn"
+                                onClick={() => document.getElementById('avatarInput').click()}
+                            >
+                                Change Photo
+                            </button>
+                        </div>
+
                         <div className="settings-form-group">
                             <div className="settings-input-row">
                                 <div className="settings-input-field">
                                     <label className="small-body-text">First Name</label>
-                                    <input type="text" className="settings-input regular-body-text" defaultValue="Alex" />
+                                    <input 
+                                        type="text" 
+                                        className="settings-input regular-body-text" 
+                                        value={profile.firstName} 
+                                        onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                                    />
                                 </div>
                                 <div className="settings-input-field">
                                     <label className="small-body-text">Last Name</label>
-                                    <input type="text" className="settings-input regular-body-text" defaultValue="Johnson" />
+                                    <input 
+                                        type="text" 
+                                        className="settings-input regular-body-text" 
+                                        value={profile.lastName} 
+                                        onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                                    />
                                 </div>
                             </div>
                             <div className="settings-input-field">
                                 <label className="small-body-text">Email Address</label>
-                                <input type="email" className="settings-input regular-body-text" defaultValue="alex.johnson@techcorp.com" />
+                                <input 
+                                    type="email" 
+                                    className="settings-input regular-body-text" 
+                                    value={profile.email} 
+                                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                                />
                             </div>
                             <div className="settings-input-field">
                                 <label className="small-body-text">Phone Number</label>
-                                <input type="tel" className="settings-input regular-body-text" defaultValue="+1 (555) 123-4567" />
+                                <input 
+                                    type="tel" 
+                                    className="settings-input regular-body-text" 
+                                    value={profile.phone} 
+                                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                                />
                             </div>
                         </div>
                         <div className="settings-form-actions">
-                            <button className="settings-save-btn regular-body-text" onClick={() => handleSave('contact details')}>
+                            <button className="settings-save-btn regular-body-text" onClick={handleSave}>
                                 <Icon icon="mdi:content-save-outline" width="20" /> Save Changes
                             </button>
                         </div>

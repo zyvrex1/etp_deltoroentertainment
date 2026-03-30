@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { useAuthContext } from "../admincomponents/hooks/useAuthContext"
 import "./settings.css";
-import { showConfirmAlert, showSuccessAlert } from "./utils/sweetAlert";
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "./utils/sweetAlert";
+import * as authService from "../services/authService";
 
 const Settings = () => {
-  const { user } = useAuthContext();
+  const { user, dispatch } = useAuthContext();
   const [loading, setLoading] = useState(true); // ✅ Loading state
-  const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [showPassword, setShowPassword] = useState({
     current: false,
     new: false,
@@ -52,34 +52,24 @@ const Settings = () => {
 
     try {
       // Profile
-      const profileRes = await fetch(`/api/user/${user._id}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user.token}`,
-        },
+      const profileRes = await authService.getProfile(user.token);
+      const profileData = profileRes.data;
+
+      setProfile({
+        firstName: profileData.firstName || "",
+        lastName: profileData.lastName || "",
+        email: profileData.email || "",
+        phone: profileData.phone || "",
+        avatar: profileData.avatar || "",
       });
-
-      const profileJson = await profileRes.json();
-
-      if (profileRes.ok) {
-        setProfile({
-          firstName: profileJson.firstName || "",
-          lastName: profileJson.lastName || "",
-          email: profileJson.email || "",
-          phone: profileJson.phone || "",
-          avatar: profileJson.avatar || "",
-        });
-        setNotifications({
-          email: profileJson.notifications?.email || false,
-          sms: profileJson.notifications?.sms || false,
-        });
-        setSecurity((prev) => ({
-          ...prev,
-          twoFactor: profileJson.twoFactor || false,
-        }));
-      } else {
-        console.error("Failed to fetch profile:", profileJson.error);
-      }
+      setNotifications({
+        email: profileData.notifications?.email || false,
+        sms: profileData.notifications?.sms || false,
+      });
+      setSecurity((prev) => ({
+        ...prev,
+        twoFactor: profileData.twoFactor || false,
+      }));
 
       // General settings (optional)
       // const settingsRes = await fetch("/api/settings", {
@@ -115,10 +105,10 @@ const Settings = () => {
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) return alert("Please select an image file");
-
-    setSelectedAvatar(file);
-
+    if (file.size > 2 * 1024 * 1024) {
+      return showErrorAlert("File Too Large", "Please upload an image smaller than 2MB.");
+    }
+    
     const reader = new FileReader();
     reader.onloadend = () => setProfile((prev) => ({ ...prev, avatar: reader.result }));
     reader.readAsDataURL(file);
@@ -126,38 +116,21 @@ const Settings = () => {
 
   // ------------------ Save Profile ------------------
   const handleSaveProfile = async () => {
-    const result = await showConfirmAlert("Save Profile?", "Are you sure?", "Yes", "Cancel");
+    const result = await showConfirmAlert("Save Profile?", "Are you sure you want to save your changes?", "Yes, Save", "Cancel");
     if (!result.isConfirmed) return;
 
     try {
-      const formData = new FormData();
-      formData.append("firstName", profile.firstName);
-      formData.append("lastName", profile.lastName);
-      formData.append("email", profile.email);
-      formData.append("phone", profile.phone);
-      if (selectedAvatar) formData.append("avatar", selectedAvatar);
+      const response = await authService.updateProfile(profile, user.token);
+      
+      // Update user context and local storage
+      const updatedUser = { ...user, ...response.data.user };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      dispatch({ type: "LOGIN", payload: updatedUser });
 
-      const res = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${user.token}` },
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        await showSuccessAlert("Profile Saved", "Profile updated!");
-        setProfile({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          phone: data.phone,
-          avatar: data.avatar || profile.avatar,
-        });
-      } else {
-        console.error("Failed to update profile:", data.error);
-      }
+      await showSuccessAlert("Profile Saved", "Your profile has been updated successfully!");
     } catch (err) {
       console.error("Error saving profile:", err);
+      showErrorAlert("Save Failed", err.response?.data?.error || "Failed to update profile.");
     }
   };
 
@@ -287,7 +260,9 @@ const Settings = () => {
         className="avatar-img"
       />
     ) : (
-      <Icon icon="ph:user" className="avatar-icon" />
+      <span className="avatar-text">
+        {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
+      </span>
     )}
 
     {/* Camera Upload */}

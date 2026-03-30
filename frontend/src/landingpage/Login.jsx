@@ -58,7 +58,7 @@ const Login = ({ role, onBack }) => {
         }
 
         try {
-            await login(email, password);
+            await login(email, password, role);
         } catch (err) {
             // Error is handled by the hook and displayed via useEffect or below
         }

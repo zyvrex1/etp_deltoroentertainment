@@ -73,13 +73,23 @@
 
             .sponsor-avatar {
                 background-color: var(--color-white-primary);
-                color: var(--color-black-primary);
+                color: var(--color-red-primary);
                 border-radius: 50%;
                 width: 36px;
                 height: 36px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                overflow: hidden;
+                font-weight: 600;
+                font-size: 14px;
+                font-family: 'Poppins', sans-serif;
+            }
+
+            .sponsor-avatar-img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
             }
 
             .sponsor-user-name {

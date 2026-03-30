@@ -7,7 +7,7 @@ import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
 import * as authService from "../services/authService";
 
 const PromoterSettings = () => {
-  const { user } = useAuthContext();
+  const { user, dispatch } = useAuthContext();
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -17,7 +17,8 @@ const PromoterSettings = () => {
     email: "",
     phone: "",
     companyName: "",
-    industry: ""
+    industry: "",
+    avatar: ""
   });
 
   const [passwords, setPasswords] = useState({
@@ -112,6 +113,7 @@ const PromoterSettings = () => {
           phone: response.data.phone || "",
           companyName: response.data.companyName || "",
           industry: response.data.industry || "",
+          avatar: response.data.avatar || "",
         });
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -145,7 +147,13 @@ const PromoterSettings = () => {
 
     if (result.isConfirmed) {
       try {
-        await authService.updateProfile(profile, user.token);
+        const response = await authService.updateProfile(profile, user.token);
+        
+        // Update user context and local storage
+        const updatedUser = { ...user, ...response.data.user };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        dispatch({ type: "LOGIN", payload: updatedUser });
+
         await showSuccessAlert(
           "Profile Saved",
           "Your profile has been saved successfully."
@@ -193,6 +201,21 @@ const PromoterSettings = () => {
     }
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB Limit
+        return showErrorAlert("File Too Large", "Please upload an image smaller than 2MB.");
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfile({ ...profile, avatar: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="ps-settings-container">
       <div className="ps-header">
@@ -209,11 +232,28 @@ const PromoterSettings = () => {
 
             <div className="ps-avatar-section">
               <div className="ps-avatar-circle">
-                <span className="ps-avatar-text">
-                  {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
-                </span>
+                {profile.avatar ? (
+                  <img src={profile.avatar} alt="Profile" className="ps-avatar-image" />
+                ) : (
+                  <span className="ps-avatar-text">
+                    {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
+                  </span>
+                )}
               </div>
-              <button type="button" className="ps-change-photo-btn outlined-button">Change Photo</button>
+              <input
+                type="file"
+                id="avatarInput"
+                hidden
+                accept="image/*"
+                onChange={handlePhotoChange}
+              />
+              <button 
+                type="button" 
+                className="ps-change-photo-btn outlined-button"
+                onClick={() => document.getElementById('avatarInput').click()}
+              >
+                Change Photo
+              </button>
             </div>
 
 

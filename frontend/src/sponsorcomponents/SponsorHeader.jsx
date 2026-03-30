@@ -2,20 +2,29 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { showConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
 import './SponsorHeader.css';
 
 export default function SponsorHeader() {
+    const { user: authUser } = useAuthContext();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
+    const getInitials = (firstName, lastName) => {
+        if (!firstName && !lastName) return "";
+        const firstInitial = firstName ? firstName[0] : "";
+        const lastInitial = lastName ? lastName[0] : "";
+        return (firstInitial + lastInitial).toUpperCase();
+    };
+
     const handleSignOut = async () => {
         setIsDropdownOpen(false);
         const result = await showConfirmAlert("Sign Out?", "Are you sure you want to sign out?", "Yes, Sign Out");
         if (result.isConfirmed) {
-            await showSuccessAlert("Signed Out", "You have been signed out successfully.");
-            navigate('/');
+            localStorage.removeItem('user');
+            window.location.href = "/?logout=success";
         }
     };
 
@@ -33,6 +42,8 @@ export default function SponsorHeader() {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    if (!authUser) return null;
 
     return (
         <header className="sponsor-header">
@@ -53,16 +64,22 @@ export default function SponsorHeader() {
                     <div className="sponsor-profile-container" ref={dropdownRef}>
                         <button className="sponsor-profile-btn" onClick={toggleDropdown}>
                             <div className="sponsor-avatar">
-                                <Icon icon="mdi:account-outline" width="20" />
+                                {authUser.avatar ? (
+                                    <img src={authUser.avatar} alt="Profile" className="sponsor-avatar-img" />
+                                ) : (
+                                    getInitials(authUser.firstName, authUser.lastName)
+                                )}
                             </div>
-                            <h6 className="sponsor-user-name">Zyvrex Perez</h6>
+                            <h6 className="sponsor-user-name">
+                                {authUser.firstName} {authUser.lastName}
+                            </h6>
                         </button>
 
                         {isDropdownOpen && (
                             <div className="sponsor-profile-dropdown">
                                 <div className="dropdown-user-info">
-                                    <h6 className="dropdown-name">Zyvrex Perez</h6>
-                                    <p className="small-body-text dropdown-email">zyvrex.p@example.com</p>
+                                    <h6 className="dropdown-name">{authUser.firstName} {authUser.lastName}</h6>
+                                    <p className="small-body-text dropdown-email">{authUser.email}</p>
                                 </div>
                                 <ul className="dropdown-menu-list regular-body-text">
                                     <li>

@@ -2,16 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { showConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
 import './CustomerHeader.css';
 
 import { useLogout } from '../admincomponents/hooks/useLogout';
 
 export default function CustomerHeader() {
+    const { user: authUser } = useAuthContext();
     const { logout } = useLogout();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
+
+    const getInitials = (firstName, lastName) => {
+        if (!firstName && !lastName) return "";
+        const firstInitial = firstName ? firstName[0] : "";
+        const lastInitial = lastName ? lastName[0] : "";
+        return (firstInitial + lastInitial).toUpperCase();
+    };
 
     const handleSignOut = async () => {
         setIsDropdownOpen(false);
@@ -37,6 +46,8 @@ export default function CustomerHeader() {
         };
     }, []);
 
+    if (!authUser) return null;
+
     return (
         <header className="customer-header">
             <div className="customer-header-container">
@@ -61,16 +72,22 @@ export default function CustomerHeader() {
                     <div className="customer-profile-container" ref={dropdownRef}>
                         <button className="customer-profile-btn" onClick={toggleDropdown}>
                             <div className="customer-avatar">
-                                <Icon icon="mdi:account-outline" width="20" />
+                                {authUser.avatar ? (
+                                    <img src={authUser.avatar} alt="Profile" className="customer-avatar-img" />
+                                ) : (
+                                    getInitials(authUser.firstName, authUser.lastName)
+                                )}
                             </div>
-                            <h6 className="customer-user-name">Zyvrex Perez</h6>
+                            <h6 className="customer-user-name">
+                                {authUser.firstName} {authUser.lastName}
+                            </h6>
                         </button>
 
                         {isDropdownOpen && (
                             <div className="customer-profile-dropdown">
                                 <div className="dropdown-user-info">
-                                    <h6 className="dropdown-name">Zyvrex Perez</h6>
-                                    <p className="small-body-text dropdown-email">zyvrex.p@example.com</p>
+                                    <h6 className="dropdown-name">{authUser.firstName} {authUser.lastName}</h6>
+                                    <p className="small-body-text dropdown-email">{authUser.email}</p>
                                 </div>
                                 <ul className="dropdown-menu-list regular-body-text">
                                     <li>

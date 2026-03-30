@@ -95,10 +95,16 @@ const Header = ({ mobileExpanded, setMobileExpanded }) => {
             </p>
           </div>
           <div className="profile-avatar">
-            <span className="avatar-initials">
-              {getInitials(authUser.firstName, authUser.lastName)}
-            </span>
-            <Icon icon="mdi:account-circle" className="avatar-icon" />
+            {authUser.avatar ? (
+              <img src={authUser.avatar} alt="Profile" className="header-avatar-img" />
+            ) : (
+              <>
+                <span className="avatar-initials">
+                  {getInitials(authUser.firstName, authUser.lastName)}
+                </span>
+                <Icon icon="mdi:account-circle" className="avatar-icon" />
+              </>
+            )}
           </div>
         </button>
 
