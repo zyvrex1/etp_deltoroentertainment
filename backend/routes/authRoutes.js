@@ -1,6 +1,6 @@
 const express = require('express')
 
-const { signupUser, loginUser, getProfile, updateProfile, updatePassword } = require('../controllers/authController')
+const { signupUser, loginUser, getProfile, updateProfile, updatePassword, forgotPassword } = require('../controllers/authController')
 const requireAuth = require('../middleware/requireAuth')
 
 const router = express.Router()
@@ -8,6 +8,7 @@ const router = express.Router()
 // Public routes
 router.post('/login', loginUser)
 router.post('/signup', signupUser)
+router.post('/forgot-password', forgotPassword)
 
 // Protected routes
 router.get('/profile', requireAuth, getProfile)

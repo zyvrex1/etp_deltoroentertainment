@@ -4,6 +4,8 @@ const Sponsor = require('../models/sponsorModel')
 const Customer = require('../models/customerModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
+const { sendEmail } = require('../utils/email')
+const crypto = require('crypto')
 
 // Create JWT token
 const createToken = (user) => {
@@ -232,5 +234,54 @@ const updatePassword = async (req, res) => {
   }
 }
 
+// ================= FORGOT PASSWORD =================
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
 
-module.exports = { signupUser, loginUser, getProfile, updateProfile, updatePassword }
+  if (!email) {
+    return res.status(400).json({ error: 'Please provide your email address' });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // For security reasons, don't reveal if a user exists or not
+      return res.status(200).json({ message: `If an account is associated with ${email}, a temporary password has been sent.` });
+    }
+
+    // Generate a random temporary password
+    const tempPassword = crypto.randomBytes(4).toString('hex'); // 8 characters
+
+    // Hash the temporary password
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(tempPassword, salt);
+
+    // Update user's password in database
+    user.password = hash;
+    await user.save();
+
+    // Send the email
+    await sendEmail({
+      to: email,
+      subject: 'Temporary Password - eTicketsPro',
+      text: `Hello ${user.firstName || 'User'},\n\nYour temporary password is: ${tempPassword}\n\nPlease log in and change your password immediately for security reasons.\n\nBest regards,\neTicketsPro Team`,
+      html: `
+        <h3>Hello ${user.firstName || 'User'},</h3>
+        <p>Your temporary password is: <strong>${tempPassword}</strong></p>
+        <p>Please log in and change your password immediately for security reasons.</p>
+        <br/>
+        <p>Best regards,<br/>eTicketsPro Team</p>
+      `
+    });
+
+    res.status(200).json({ message: `A temporary password has been sent to ${email}` });
+
+  } catch (err) {
+    console.error('Forgot Password Error:', err.message);
+    res.status(500).json({ error: 'Something went wrong while resetting your password.' });
+  }
+};
+
+
+module.exports = { signupUser, loginUser, getProfile, updateProfile, updatePassword, forgotPassword }

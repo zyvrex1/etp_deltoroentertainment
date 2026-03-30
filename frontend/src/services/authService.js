@@ -18,4 +18,6 @@ export const updateProfile = (data, token) => API.put("/update-profile", data, {
 
 export const updatePassword = (data, token) => API.put("/update-password", data, {
   headers: { Authorization: `Bearer ${token}` }
-});
+});
+
+export const forgotPassword = (email) => API.post("/forgot-password", { email });

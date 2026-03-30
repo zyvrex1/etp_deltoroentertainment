@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useLogin } from "../admincomponents/hooks/useLogin";
 import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
 import { showSuccessAlert, showErrorAlert } from "../admincomponents/utils/sweetAlert";
+import { forgotPassword } from "../services/authService";
 
 const ROLES = {
     customer: {
@@ -38,9 +39,12 @@ const Login = ({ role, onBack }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
 
-    const { login, error, isLoading } = useLogin();
+    const { login, error, isLoading: loginLoading } = useLogin();
     const { user } = useAuthContext();
     const navigate = useNavigate();
+    const [isResetLoading, setIsResetLoading] = useState(false);
+
+    const isLoading = loginLoading || isResetLoading;
 
     const roleData = ROLES[role];
 
@@ -52,8 +56,17 @@ const Login = ({ role, onBack }) => {
                 showErrorAlert("Input Required", "Please enter your email to receive a temporary password.");
                 return;
             }
-            showSuccessAlert("Success", `A temporary password has been sent to ${email}`);
-            setIsForgotPassword(false);
+
+            setIsResetLoading(true);
+            try {
+                const response = await forgotPassword(email);
+                showSuccessAlert("Success", response.data.message || `A temporary password has been sent to ${email}`);
+                setIsForgotPassword(false);
+            } catch (err) {
+                showErrorAlert("Reset Failed", err.response?.data?.error || "Failed to send reset email.");
+            } finally {
+                setIsResetLoading(false);
+            }
             return;
         }
 
