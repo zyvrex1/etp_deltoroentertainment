@@ -50,9 +50,13 @@ const signupUser = async (req, res) => {
     const token = createToken(user)
 
     res.status(201).json({
+      _id: user._id,
       message: 'User created successfully',
       email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
       role: user.role,
+      avatar: user.avatar,
       token
     })
 
@@ -89,6 +93,7 @@ const loginUser = async (req, res) => {
       lastName: user.lastName,
       role: user.role,
       phone: user.phone,
+      avatar: user.avatar,
       twoFactor: user.twoFactor,
       notifications: user.notifications,
       token
