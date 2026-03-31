@@ -7,13 +7,68 @@ import AddUserModal from './Modal/CreateUserModal';
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, AreaChart, Area, LineChart, Line, PieChart, Pie } from 'recharts';
+import { useAuthContext } from './hooks/useAuthContext';
+import eventsService from '../services/eventsService';
+import adminService from '../services/adminService';
 
 export default function Dashboard() {
+    const { user } = useAuthContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    
+    // Live Stats State
+    const [stats, setStats] = useState({
+        totalEvents: 0,
+        pendingApprovals: 0,
+        totalUsers: 0,
+        eventStatusData: [
+            { name: 'Active', value: 0, color: '#4ca626' },
+            { name: 'Upcoming', value: 0, color: '#0059ff' },
+            { name: 'Completed', value: 0, color: '#b3b3b3' },
+            { name: 'Pending', value: 0, color: '#ffcc00' },
+        ],
+        loading: true
+    });
+
+    useEffect(() => {
+        const fetchDashboardStats = async () => {
+            if (!user?.token) return;
+
+            try {
+                // Fetch events and users in parallel
+                const [events, users] = await Promise.all([
+                    eventsService.getEvents(user.token),
+                    adminService.getUsers(user.token)
+                ]);
+
+                const pendingCount = events.filter(e => e.status === 'pending').length;
+                const activeCount = events.filter(e => e.status === 'approved').length; // or 'active' if status matches approved
+                const completedCount = events.filter(e => e.status === 'completed').length;
+                const upcomingCount = 0; // If you have upcoming logic, add here
+
+                setStats({
+                    totalEvents: events.length,
+                    pendingApprovals: pendingCount,
+                    totalUsers: users.length,
+                    eventStatusData: [
+                        { name: 'Active', value: activeCount, color: '#4ca626' },
+                        { name: 'Upcoming', value: upcomingCount, color: '#0059ff' },
+                        { name: 'Completed', value: completedCount, color: '#b3b3b3' },
+                        { name: 'Pending', value: pendingCount, color: '#ffcc00' },
+                    ],
+                    loading: false
+                });
+            } catch (error) {
+                console.error("Error fetching dashboard stats:", error);
+                setStats(prev => ({ ...prev, loading: false }));
+            }
+        };
+
+        fetchDashboardStats();
+    }, [user]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -31,12 +86,6 @@ export default function Dashboard() {
         { name: 'AI Summit', sold: 30, remaining: 30 },
     ];
 
-    const eventStatusData = [
-        { name: 'Active', value: 80, color: '#4ca626' },
-        { name: 'Upcoming', value: 40, color: '#0059ff' },
-        { name: 'Completed', value: 25, color: '#b3b3b3' },
-        { name: 'Pending', value: 11, color: '#ffcc00' },
-    ];
 
     const revenueData = [
         { month: 'Jun', total: 32000 },
@@ -104,7 +153,7 @@ export default function Dashboard() {
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Total Events</p>
-                            <h3>156</h3>
+                            <h3>{stats.loading ? "..." : stats.totalEvents}</h3>
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
@@ -115,7 +164,7 @@ export default function Dashboard() {
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Pending Approvals</p>
-                            <h3>8</h3>
+                            <h3>{stats.loading ? "..." : stats.pendingApprovals}</h3>
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
@@ -147,8 +196,8 @@ export default function Dashboard() {
                             <span className="trend up"><Icon icon="mdi:trending-up" /> 5.8%</span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Active Users</p>
-                            <h3>8,542</h3>
+                            <p className="regular-body-text left-aligned">Total Users</p>
+                            <h3>{stats.loading ? "..." : stats.totalUsers}</h3>
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
@@ -237,21 +286,21 @@ export default function Dashboard() {
                                 <ResponsiveContainer width="100%" height={isMobile ? 140 : 160}>
                                     <PieChart>
                                         <Pie
-                                            data={eventStatusData}
+                                            data={stats.eventStatusData}
                                             innerRadius={isMobile ? 35 : 45}
                                             outerRadius={isMobile ? 55 : 65}
                                             paddingAngle={5}
                                             dataKey="value"
                                             stroke="none"
                                         >
-                                            {eventStatusData.map((entry, index) => (
+                                            {stats.eventStatusData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                         </Pie>
                                         <RechartsTooltip />
                                     </PieChart>
                                 </ResponsiveContainer>                                <div className="donut-center-text">
-                                    <h3>156</h3>
+                                    <h3>{stats.loading ? "..." : stats.totalEvents}</h3>
                                     <p>Total Events</p>
                                 </div>
                                 <div className="chart-legend multi">
