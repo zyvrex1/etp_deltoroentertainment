@@ -461,14 +461,52 @@ li {
   height: 2px !important;
 }
 
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-success .swal2-success-line-tip {
+    width: 10px !important;
+    left: 4px !important;
+    top: 18px !important;
+    transform: rotate(45deg) !important;
+}
+
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-success .swal2-success-line-long {
+    width: 20px !important;
+    right: 4px !important;
+    top: 14px !important;
+    transform: rotate(-45deg) !important;
+}
+
 /* Error Toast Icon */
 .swal2-popup.swal2-toast-custom .swal2-icon.swal2-error {
   background-color: var(--color-red-quaternary) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-error .swal2-x-mark {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 !important;
 }
 
 .swal2-popup.swal2-toast-custom .swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
   background-color: var(--color-red-primary) !important;
   height: 2px !important;
+  width: 14px !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  position: absolute !important;
+}
+
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-error .swal2-x-mark-line-left {
+  transform: rotate(45deg) !important;
+}
+
+.swal2-popup.swal2-toast-custom .swal2-icon.swal2-error .swal2-x-mark-line-right {
+  transform: rotate(-45deg) !important;
 }
 
 /* Close button - custom x */

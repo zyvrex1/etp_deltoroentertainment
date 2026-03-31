@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { useSignup } from "../admincomponents/hooks/useSignup";
+import policyService from "../services/policyService";
+import PromoterViewFullAnnouncement from "../promotercomponents/PromoterModal/PromoterViewFullAnnouncement";
+
+import { showSuccessAlert, showErrorAlert } from "../admincomponents/utils/sweetAlert";
 
 const ROLES = {
   customer: {
@@ -17,10 +21,12 @@ const ROLES = {
   },
 };
 
-const Signup = ({ role, onBack }) => {
-  const { signup, isLoading, error } = useSignup();
+const Signup = ({ role, onBack, onClose }) => {
+  const { signup, isLoading, error: signupError } = useSignup();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [policyModal, setPolicyModal] = useState({ isOpen: false, item: null, type: "policy" });
 
   const [form, setForm] = useState({
     firstName: "",
@@ -38,8 +44,37 @@ const Signup = ({ role, onBack }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const openPolicy = async (policyKey) => {
+    try {
+      const data = await policyService.getPolicy(policyKey);
+      if (data) {
+        setPolicyModal({
+          isOpen: true,
+          item: {
+            title: data.title,
+            content: data.content,
+            date: new Date(data.updatedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+          },
+          type: "policy",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch policy:", error);
+      showErrorAlert("Error", "Failed to load policy. Please try again later.");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!acceptedTerms) {
+      showErrorAlert("Error", "You must accept the Terms of Service and Privacy Policy to create an account.");
+      return;
+    }
 
     // Basic required validation
     const requiredFields =
@@ -49,22 +84,43 @@ const Signup = ({ role, onBack }) => {
 
     for (let field of requiredFields) {
       if (!form[field]) {
-        alert(`Please fill in the ${field} field.`);
+        showErrorAlert("Required Field", `Please fill in the ${field} field.`);
         return;
       }
     }
 
     if (form.password !== form.confirmPassword) {
-      alert("Passwords do not match");
+      showErrorAlert("Error", "Passwords do not match");
       return;
     }
 
-    // Prepare payload without confirmPassword
-    const { confirmPassword, ...dataToSend } = form;
-    dataToSend.role = role; // ensure role is included
+    const dataToSend = { ...form, role };
 
     // Call signup hook
-    await signup(dataToSend, role);
+    const result = await signup(dataToSend, role);
+
+    if (result.success) {
+      // Close the modal first
+      if (onClose) onClose();
+
+      // Show success alert
+      await showSuccessAlert(
+        "Account Created",
+        `Welcome to eTicketsPro, ${form.firstName}! Your ${role} account has been created successfully.`
+      );
+    } else {
+      showErrorAlert("Signup Failed", result.error || "An error occurred while creating your account.");
+    }
+  };
+
+  const getPasswordCriteria = (password) => {
+    return [
+      { label: "At least 8 characters", met: password.length >= 8 },
+      { label: "One uppercase letter", met: /[A-Z]/.test(password) },
+      { label: "One lowercase letter", met: /[a-z]/.test(password) },
+      { label: "One number", met: /[0-9]/.test(password) },
+      { label: "One special character", met: /[^A-Za-z0-9]/.test(password) },
+    ];
   };
 
   const roleData = ROLES[role];
@@ -204,6 +260,19 @@ const Signup = ({ role, onBack }) => {
               <Icon icon={showPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"} />
             </button>
           </div>
+
+          {/* Password Strength Indicators */}
+          <div className="auth-password-criteria">
+            {getPasswordCriteria(form.password).map((crit, idx) => (
+              <div key={idx} className={`auth-criteria-item ${crit.met ? "met" : ""}`}>
+                <Icon
+                  icon={crit.met ? "mdi:check-circle" : "mdi:circle-outline"}
+                  width="14"
+                />
+                <span>{crit.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Confirm Password */}
@@ -225,18 +294,43 @@ const Signup = ({ role, onBack }) => {
           </div>
         </div>
 
-        {/* Terms */}
-        <p style={{ fontSize: "12px", color: "#ccc" }}>
-          By creating an account, you agree to our <a href="#" style={{ color: "#f00" }}>Terms of Service</a> and <a href="#" style={{ color: "#f00" }}>Privacy Policy</a>.
-        </p>
+        {/* Terms Acceptance */}
+        <div className="auth-terms-acceptance">
+          <label className="auth-checkbox-label">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="auth-checkbox"
+            />
+            <span className="smaller-body-text">
+              I agree to the{" "}
+              <button type="button" className="auth-link-btn" onClick={() => openPolicy("tos")}>
+                Terms of Service
+              </button>{" "}
+              and{" "}
+              <button type="button" className="auth-link-btn" onClick={() => openPolicy("privacy")}>
+                Privacy Policy
+              </button>
+            </span>
+          </label>
+        </div>
 
         {/* Submit */}
         <button type="submit" disabled={isLoading} className={`auth-submit-btn btn-${roleData.id}`}>
           {isLoading ? "Signing up..." : <>Sign Up <Icon icon="mdi:open-in-new" /></>}
         </button>
 
-        {error && <p className="auth-error-msg">{error}</p>}
+        {signupError && <p className="auth-error-msg">{signupError}</p>}
       </form>
+
+      {/* Policy Modal */}
+      <PromoterViewFullAnnouncement
+        isOpen={policyModal.isOpen}
+        onClose={() => setPolicyModal({ ...policyModal, isOpen: false })}
+        item={policyModal.item}
+        type={policyModal.type}
+      />
     </div>
   );
 };

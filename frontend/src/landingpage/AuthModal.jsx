@@ -151,7 +151,7 @@ const AuthModal = ({ isOpen, onClose, initialTab = "login", initialRole = null }
                     ) : activeTab === "login" ? (
                         <Login role={selectedRole} onBack={handleBack} />
                     ) : (
-                        <Signup role={selectedRole} onBack={handleBack} />
+                        <Signup role={selectedRole} onBack={handleBack} onClose={onClose} />
                     )}
 
                     {!selectedRole && (

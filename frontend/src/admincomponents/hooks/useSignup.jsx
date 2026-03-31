@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuthContext } from "./useAuthContext";
+import * as authService from "../../services/authService";
 
 export const useSignup = () => {
   const [error, setError] = useState(null);
@@ -11,30 +12,21 @@ export const useSignup = () => {
     setError(null);
 
     try {
-      // Create the payload
-      const payload = { ...formDataObj, role };
+      const response = await authService.signup(formDataObj);
+      const json = response.data;
 
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload), // send as JSON
-      });
-
-      const json = await response.json();
-
-      if (!response.ok) {
-        setError(json.error);
-        setIsLoading(false);
-        return;
-      }
-
-      // Success
+      // Axios returns success data directly. Success is 201 (from controller)
       localStorage.setItem("user", JSON.stringify(json));
       dispatch({ type: "LOGIN", payload: json });
       setIsLoading(false);
+      return { success: true, data: json };
     } catch (err) {
-      setError(err.message);
+      // Axios error handling
+      const errorMessage =
+        err.response?.data?.error || err.message || "An error occurred during signup";
+      setError(errorMessage);
       setIsLoading(false);
+      return { success: false, error: errorMessage };
     }
   };
 
