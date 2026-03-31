@@ -129,7 +129,7 @@ const Home = () => {
               tag: evt.category?.toUpperCase() || "EVENT",
               title: evt.title,
               date: formattedDate,
-              location: `${evt.venue?.city || ""}, ${evt.venue?.address || ""}`.trim() || "Location TBD",
+              location: `${evt.venue?.name || ""}, ${evt.venue?.address || ""}, ${evt.venue?.city || ""}, ${evt.venue?.zipCode || ""}`.trim().replace(/^, |, $/, "") || "Location TBD",
               image: evt.image ? `${BASE_URL}/uploads/${evt.image}` : '/assets/eventbg.jpg',
               startTime: evt.startTime,
               endTime: evt.endTime
