@@ -239,6 +239,9 @@ const PromoterSettings = () => {
                     {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
                   </span>
                 )}
+                <label htmlFor="avatarInput" className="ps-avatar-upload-overlay">
+                  <Icon icon="mdi:camera" width="20" />
+                </label>
               </div>
               <input
                 type="file"
@@ -247,13 +250,6 @@ const PromoterSettings = () => {
                 accept="image/*"
                 onChange={handlePhotoChange}
               />
-              <button 
-                type="button" 
-                className="ps-change-photo-btn outlined-button"
-                onClick={() => document.getElementById('avatarInput').click()}
-              >
-                Change Photo
-              </button>
             </div>
 
 
