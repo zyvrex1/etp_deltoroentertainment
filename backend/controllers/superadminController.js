@@ -5,6 +5,7 @@ const Customer = require('../models/customerModel')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const { sendEmail } = require('../utils/email')
+const { emitUpdate } = require('../socket')
 
 const createUser = async (req, res) => {
   try {
@@ -79,6 +80,7 @@ Temporary password: ${tempPassword}
 Please log in and change your password immediately.`
       });
 
+      emitUpdate('dashboardUpdate');
       return res.status(201).json({
         message: `${role} created successfully and email sent.`,
         user: newUser
@@ -230,6 +232,7 @@ const updateUser = async (req, res) => {
     if (role) user.role = role
 
     await user.save()
+    emitUpdate('dashboardUpdate');
 
     res.status(200).json({ message: 'User updated successfully', user })
   } catch (err) {
@@ -262,6 +265,7 @@ const deleteUser = async (req, res) => {
     }
 
     await user.deleteOne()
+    emitUpdate('dashboardUpdate');
 
     res.status(200).json({ message: 'User deleted successfully' })
   } catch (err) {

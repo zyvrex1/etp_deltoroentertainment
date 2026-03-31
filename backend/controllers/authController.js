@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const { sendEmail } = require('../utils/email')
 const crypto = require('crypto')
+const { emitUpdate } = require('../socket')
 
 // Create JWT token
 const createToken = (user) => {
@@ -48,6 +49,7 @@ const signupUser = async (req, res) => {
     }
 
     const token = createToken(user)
+    emitUpdate('dashboardUpdate');
 
     res.status(201).json({
       _id: user._id,

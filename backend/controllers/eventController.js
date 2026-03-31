@@ -6,6 +6,7 @@ const { toObjectId } = require("../utils/helpers");
 const fs = require('fs');
 const path = require('path');
 const multer = require("multer");
+const { emitUpdate } = require("../socket");
 
 
 const storage = multer.diskStorage({
@@ -337,6 +338,7 @@ if (hasBooths) {
       "firstName lastName role",
     );
 
+    emitUpdate('dashboardUpdate');
     return res.status(201).json({ event: populatedEvent });
   } catch (error) {
     console.error("Create Event Error:", error);
@@ -360,6 +362,7 @@ const deleteEvent = async (req, res) => {
     return res.status(404).json({ error: "No such event" });
   }
 
+  emitUpdate('dashboardUpdate');
   res.status(200).json(event);
 };
 
@@ -544,6 +547,7 @@ if (req.file) {
       { new: true, runValidators: true }
     ).populate("createdBy", "firstName lastName role");
 
+    emitUpdate('dashboardUpdate');
     res.status(200).json({ event: updatedEvent });
 
   } catch (error) {

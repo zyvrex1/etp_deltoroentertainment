@@ -11,6 +11,10 @@ import { useAuthContext } from './hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import adminService from '../services/adminService';
 
+import { io } from 'socket.io-client';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 export default function Dashboard() {
     const { user } = useAuthContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,41 +37,67 @@ export default function Dashboard() {
         loading: true
     });
 
+    const fetchDashboardStats = async () => {
+        if (!user?.token) return;
+
+        try {
+            // Fetch events and users in parallel
+            const [events, users] = await Promise.all([
+                eventsService.getEvents(user.token),
+                adminService.getUsers(user.token)
+            ]);
+
+            const pendingCount = events.filter(e => e.status === 'pending').length;
+            const activeCount = events.filter(e => e.status === 'approved').length; 
+            const completedCount = events.filter(e => e.status === 'completed').length;
+            const upcomingCount = events.filter(e => {
+                if (e.status !== 'approved' || !e.startDate) return false;
+                const now = new Date();
+                const start = new Date(e.startDate);
+                return start > now;
+            }).length;
+
+            setStats({
+                totalEvents: events.length,
+                pendingApprovals: pendingCount,
+                totalUsers: users.length,
+                eventStatusData: [
+                    { name: 'Active', value: activeCount, color: '#4ca626' },
+                    { name: 'Upcoming', value: upcomingCount, color: '#0059ff' },
+                    { name: 'Completed', value: completedCount, color: '#b3b3b3' },
+                    { name: 'Pending', value: pendingCount, color: '#ffcc00' },
+                ],
+                loading: false
+            });
+        } catch (error) {
+            console.error("Error fetching dashboard stats:", error);
+            setStats(prev => ({ ...prev, loading: false }));
+        }
+    };
+
+    // Initial Fetch
     useEffect(() => {
-        const fetchDashboardStats = async () => {
-            if (!user?.token) return;
-
-            try {
-                // Fetch events and users in parallel
-                const [events, users] = await Promise.all([
-                    eventsService.getEvents(user.token),
-                    adminService.getUsers(user.token)
-                ]);
-
-                const pendingCount = events.filter(e => e.status === 'pending').length;
-                const activeCount = events.filter(e => e.status === 'approved').length; // or 'active' if status matches approved
-                const completedCount = events.filter(e => e.status === 'completed').length;
-                const upcomingCount = 0; // If you have upcoming logic, add here
-
-                setStats({
-                    totalEvents: events.length,
-                    pendingApprovals: pendingCount,
-                    totalUsers: users.length,
-                    eventStatusData: [
-                        { name: 'Active', value: activeCount, color: '#4ca626' },
-                        { name: 'Upcoming', value: upcomingCount, color: '#0059ff' },
-                        { name: 'Completed', value: completedCount, color: '#b3b3b3' },
-                        { name: 'Pending', value: pendingCount, color: '#ffcc00' },
-                    ],
-                    loading: false
-                });
-            } catch (error) {
-                console.error("Error fetching dashboard stats:", error);
-                setStats(prev => ({ ...prev, loading: false }));
-            }
-        };
-
         fetchDashboardStats();
+    }, [user]);
+
+    // WebSocket Real-time Updates
+    useEffect(() => {
+        if (!user?.token) return;
+
+        const socket = io(BACKEND_URL);
+
+        socket.on('connect', () => {
+            console.log('Dashboard connected to WebSocket');
+        });
+
+        socket.on('dashboardUpdate', () => {
+            console.log('Real-time dashboard update received');
+            fetchDashboardStats();
+        });
+
+        return () => {
+            socket.disconnect();
+        };
     }, [user]);
 
     useEffect(() => {

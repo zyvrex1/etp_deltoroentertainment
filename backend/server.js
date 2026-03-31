@@ -74,14 +74,20 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Something went wrong' })
 })
 
+const http = require('http');
+const socket = require('./socket');
+
 // connect to db
 mongoose.connect(process.env.MONGO_URI)
     .then(() => {
         console.log('Connected to MongoDB')
 
-        app.listen(process.env.PORT, () => {
+        const server = http.createServer(app);
+        socket.init(server);
+
+        server.listen(process.env.PORT, () => {
             console.log('Server running on port', process.env.PORT)
-        })
+        });
     })
     .catch((error) => {
         console.error('MongoDB connection error:', error)
