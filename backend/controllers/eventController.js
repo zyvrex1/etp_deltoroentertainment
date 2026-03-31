@@ -3,15 +3,29 @@ const { v4: uuidv4 } = require("uuid");
 const Event = require("../models/eventModel");
 const { toObjectId } = require("../utils/helpers");
 
+const fs = require('fs');
+const path = require('path');
 const multer = require("multer");
-const path = require("path");
+
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+    const originalName = path.parse(file.originalname).name;
+    const cleanName = originalName.replace(/\s+/g, '-').toLowerCase();
+
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const yy = String(now.getFullYear()).slice(-2);
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    
+    const timestamp = `${mm}${dd}${yy}${hh}${min}`;
+
+    cb(null, `${cleanName}-${timestamp}${path.extname(file.originalname)}`);
   },
 });
 
@@ -383,6 +397,8 @@ const updateEvent = async (req, res) => {
         }
     });
 
+    
+
     /* =========================
         DATE & TIME VALIDATION
     ========================= */
@@ -488,6 +504,19 @@ const updateEvent = async (req, res) => {
       return res.status(400).json({ error: "Validation failed", fields: errors });
     }
 
+    let finalImage = existingEvent.image;
+
+if (req.file) {
+  // A new file was uploaded - Replace the old one
+  finalImage = req.file.filename;
+  // OPTIONAL: Call a function here to delete the OLD file from 'uploads/'
+  deleteOldImage(existingEvent.image); 
+} else if (req.body.image === "" || req.body.image === null) {
+  // The user explicitly removed the image
+  finalImage = null; 
+  deleteOldImage(existingEvent.image);
+}
+
     /* =========================
         EXECUTE UPDATE
     ========================= */
@@ -506,7 +535,7 @@ const updateEvent = async (req, res) => {
       hasBooths: finalEventType === "Booth-Style" && finalBooths.length > 0,
       venue: finalVenue,
       isFeatured: String(isFeatured) === "true",
-      image,
+      image: finalImage,
     };
 
     const updatedEvent = await Event.findByIdAndUpdate(
@@ -524,6 +553,22 @@ const updateEvent = async (req, res) => {
       message: error.message,
     });
   }
+};
+
+const deleteOldImage = (filename) => {
+  if (!filename) return;
+  
+  const filePath = path.join(__dirname, '../uploads/', filename);
+  
+  // Check if file exists before trying to delete
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (!err) {
+      fs.unlink(filePath, (err) => {
+        if (err) console.error("Error deleting file:", err);
+        else console.log("Old image deleted from server:", filename);
+      });
+    }
+  });
 };
 
 const updateSeatMap = async (req, res) => {

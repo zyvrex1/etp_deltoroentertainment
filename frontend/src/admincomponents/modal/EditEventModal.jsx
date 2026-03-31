@@ -102,12 +102,15 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
 
   // 3. Handle Remove (Also missing based on your JSX)
   const handleImageRemove = () => {
-    setFormData({
-      ...formData,
-      imageFile: null,
-      imagePreviewUrl: null
-    });
-  };
+  if (formData.imagePreviewUrl && formData.imagePreviewUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(formData.imagePreviewUrl);
+  }
+  setFormData({
+    ...formData,
+    imageFile: null,
+    imagePreviewUrl: null
+  });
+};
 
   
 
@@ -165,24 +168,28 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
   };
 
   const handleSaveChanges = async (e) => {
-    e.preventDefault();
-    if (!user) return setError("You must be logged in");
+   e.preventDefault();
+  if (!user) return setError("You must be logged in");
 
-    const result = await showCreateConfirmAlert("Update Event?", `Update "${formData.title}"?`);
-    if (!result.isConfirmed) return;
+  const result = await showCreateConfirmAlert("Update Event?", `Update "${formData.title}"?`);
+  if (!result.isConfirmed) return;
 
     try {
-      const formDataToSend = new FormData();
-      // Append basic fields
-      Object.keys(formData).forEach(key => {
-        if (['venue', 'priceLevels', 'booths', 'seatMap'].includes(key)) {
-          formDataToSend.append(key, JSON.stringify(formData[key]));
-        } else if (key === 'imageFile' && formData.imageFile) {
-          formDataToSend.append('image', formData.imageFile);
-        } else if (key !== 'imagePreviewUrl') {
-          formDataToSend.append(key, formData[key]);
-        }
-      });
+    const formDataToSend = new FormData();
+    
+    Object.keys(formData).forEach(key => {
+      if (['venue', 'priceLevels', 'booths', 'seatMap'].includes(key)) {
+        formDataToSend.append(key, JSON.stringify(formData[key]));
+      } else if (key === 'imageFile') {
+  if (formData.imageFile) {
+    formDataToSend.append('image', formData.imageFile);
+  } else if (!formData.imagePreviewUrl) {
+    formDataToSend.append('image', ''); 
+  }
+} else if (key !== 'imagePreviewUrl') {
+        formDataToSend.append(key, formData[key]);
+      }
+    });
 
       const response = await fetch(`/api/events/${event._id}`, {
         method: "PATCH",
