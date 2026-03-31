@@ -67,14 +67,14 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
           </div>
 
           {/* APPROVALS */}
-          <div className="sidebar-section">
+          {/* <div className="sidebar-section">
             <p className="section-title">APPROVALS</p>
 
             <NavLink to="/admin/event-approval" className="sidebar-item" onClick={handleLinkClick}>
               <MdEventAvailable className="icon" />
               <span>Event Approval</span>
             </NavLink>
-          </div>
+          </div> */}
 
           {/* OPERATIONS */}
           <div className="sidebar-section">
