@@ -125,60 +125,167 @@
     background-color: var(--color-white-primary);
     border-bottom: 1px solid var(--color-black-quaternary);
     overflow: hidden;
-    padding: 20px 0;
+    padding: 24px 0;
 
     .sponsor-announcements-container {
         display: flex;
-        gap: 15px;
+        gap: 24px;
+        width: 100%;
+    }
+
+    .sponsor-announcements-container.scrolling {
         width: max-content;
-        padding: 0 30px;
-        animation: scrollLeft 25s linear infinite;
+        animation: scrollLeft 30s linear infinite;
+        padding-left: 20px;
+    }
+}
 
-        .sponsor-announcement-item {
-            background-color: var(--color-bg-light);
-            padding: 15px;
+/* HP Card Styles (Shared with Landing Home) */
+.hp-card {
+    background: var(--color-white-primary, #ffffff);
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-align: left;
+    width: 350px;
+    flex-shrink: 0;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .hp-card-top {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        &.align-start {
+            align-items: flex-start;
+        }
+
+        .hp-card-icon-container {
+            width: 48px;
+            height: 48px;
             border-radius: 8px;
-            border: 1px solid var(--color-black-quaternary);
-            flex: 0 0 auto;
-            width: 280px;
-            text-align: center;
+            background: var(--color-bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
 
-            .announcement-badge {
-                display: inline-block;
-                margin-bottom: 10px;
-
+            &.document-icon {
+                background: var(--color-white-primary);
+                border: 1px solid var(--color-black-quaternary);
             }
 
-            .red-badge {
-                background-color: var(--color-red-tertiary);
+            .hp-card-icon {
+                font-size: 24px;
+                color: var(--color-black-secondary);
+            }
+        }
+
+        .hp-card-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+
+            .hp-card-title {
+                font-size: 16px;
+                color: var(--color-black-primary);
+                margin: 0;
+                font-weight: 700;
+            }
+
+            .hp-date {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                color: var(--color-black-tertiary);
+                font-size: 12px;
+            }
+        }
+    }
+
+    .hp-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex: 1;
+
+        .hp-badge {
+            text-transform: capitalize;
+            display: inline-block;
+            align-self: flex-start;
+
+            &.update {
+                background: var(--color-yellow-quaternary);
+                color: var(--color-yellow-primary);
+            }
+            &.alert {
+                background: var(--color-red-quaternary);
                 color: var(--color-red-primary);
             }
-
-            .blue-badge {
-                background-color: var(--color-blue-tertiary);
-                color: var(--color-blue-primary);
-            }
-
-            .green-badge {
-                background-color: var(--color-green-tertiary);
+            &.maintenance {
+                background: var(--color-green-quaternary);
                 color: var(--color-green-primary);
             }
-
-            .announcement-text {
-                color: var(--color-black-secondary);
-                line-height: 1.4;
+            &.news {
+                background: var(--color-purple-quaternary);
+                color: var(--color-purple-primary);
+            }
+            &.general {
+                background: var(--color-blue-quaternary);
+                color: var(--color-blue-primary);
             }
         }
 
-        .announcement-item.clickable {
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-            &:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            }
+        .hp-card-text {
+            font-size: 14px;
+            color: var(--color-black-secondary);
+            line-height: 1.6;
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
+    }
+}
+
+.hp-empty-state {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px;
+    background-color: var(--color-white-primary);
+    border-radius: 12px;
+    border: 1px dashed var(--color-black-quaternary);
+    color: var(--color-black-secondary);
+    gap: 20px;
+    text-align: center;
+
+    &.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .hp-empty-icon {
+        font-size: 3.5rem;
+        color: var(--color-black-tertiary);
+    }
+
+    h3 {
+        margin: 0;
+        font-weight: 500;
+        color: var(--color-black-secondary);
     }
 }
 
@@ -186,16 +293,15 @@
     from {
         transform: translateX(0);
     }
-
     to {
         transform: translateX(-50%);
     }
 }
 
-.sponsor-trending {
-    max-width: 1440px;
-    margin: 80px auto;
-    padding: 0 20px;
+.sponsor-upcoming {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 60px 5%;
 
     .sponsor-section-header {
         display: flex;
@@ -203,43 +309,34 @@
         align-items: flex-end;
         margin-bottom: 40px;
 
-        h2 {
-            text-align: left;
-        }
-
-        p {
-            color: var(--color-black-secondary);
-            margin-top: 10px;
-            text-align: left;
-
-        }
+        h2 { text-align: left; }
+        p { color: var(--color-black-secondary); margin-top: 10px; text-align: left; }
 
         .view-all-link {
             color: var(--color-red-primary);
             font-weight: 500;
-
-
-            &:hover {
-                color: var(--color-red-secondary);
-            }
+            &:hover { color: var(--color-red-secondary); }
         }
     }
 
-    .sponsor-trending-grid {
+    .sponsor-events-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 25px;
+        gap: 30px;
 
         .sponsor-event-card {
             background-color: var(--color-white-primary);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             border: 1px solid var(--color-black-quaternary);
+            display: flex;
+            flex-direction: column;
             transition: transform 0.2s ease;
 
             &:hover {
                 transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             }
 
             .sponsor-event-image {
@@ -248,69 +345,100 @@
                 background-position: center;
                 padding: 15px;
                 display: flex;
+                justify-content: flex-end;
                 align-items: flex-start;
-            }
+                position: relative;
 
-            .event-tag-red {
-                background-color: var(--color-red-primary);
-                color: var(--color-white-primary);
-            }
-
-            .event-tag-green {
-                background-color: var(--color-green-primary);
-                color: var(--color-white-primary);
-            }
-
-            .event-tag-blue {
-                background-color: var(--color-blue-primary);
-                color: var(--color-white-primary);
+                .event-date-badge {
+                    background-color: var(--color-bg-light);
+                    color: var(--color-black-primary);
+                    font-weight: 700;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
             }
 
             .sponsor-event-details {
-                padding: 20px;
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                flex-grow: 1;
+                gap: 12px;
+
+                .event-tag {
+                    align-self: flex-start;
+                    display: inline-block;
+                    font-size: 11px;
+                    
+                    &.tag-red { background-color: var(--color-red-primary); color: white; }
+                    &.tag-green { background-color: var(--color-green-primary); color: white; }
+                    &.tag-blue { background-color: var(--color-blue-primary); color: white; }
+                }
 
                 h4 {
-                    margin-bottom: 15px;
+                    margin: 0;
                     text-align: left;
+                    font-size: 1.25rem;
                 }
 
-                .sponsor-event-info {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                    margin-bottom: 20px;
-                    padding-bottom: 20px;
-                    border-bottom: 1px solid var(--color-black-quaternary);
-
-                    p {
-                        display: flex;
-                        align-items: center;
-                        gap: 10px;
-                        color: var(--color-black-secondary);
-                        margin: 0;
-                    }
+                .event-location {
+                    color: var(--color-black-secondary);
+                    text-align: left;
+                    font-size: 14px;
+                    margin: 0;
                 }
 
-                .sponsor-event-footer {
+                .event-info-row {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
+                    padding-bottom: 15px;
+                    border-bottom: 1px solid var(--color-black-quaternary);
+                    margin-bottom: 5px;
 
-                    p {
-                        color: var(--color-black-secondary);
-                        margin: 0;
+                    .event-time, .event-booths {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        color: var(--color-black-tertiary);
+
+                        svg { font-size: 18px; }
                     }
+                }
+
+                .full-width-btn {
+                    width: 100%;
+                    margin-top: auto;
+                    justify-content: center;
                 }
             }
         }
     }
 }
 
+.no-events-container {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    background-color: var(--color-white-primary);
+    border-radius: 12px;
+    border: 1px dashed var(--color-black-quaternary);
+    color: var(--color-black-secondary);
+    gap: 15px;
+
+    p {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+}
+
 /* -------- POLICIES SECTION -------- */
 .sponsor-policies-section {
-    max-width: 1440px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 0 20px 80px 20px;
+    padding: 60px 5%;
 
     .sponsor-section-header {
         display: flex;
@@ -318,114 +446,17 @@
         margin-bottom: 40px;
         justify-content: space-between;
 
-
-        h2 {
-            text-align: left;
-        }
-
-        p {
-            color: var(--color-black-secondary);
-            margin-top: 10px;
-            text-align: left;
-        }
+        h2 { text-align: left; }
+        p { color: var(--color-black-secondary); margin-top: 10px; text-align: left; }
     }
 
     .sponsor-policies-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
 
-        .sponsor-policy-card {
-            background-color: var(--color-white-primary);
-            border: 1px solid var(--color-black-quaternary);
-            border-radius: 12px;
-            padding: 24px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-
-            &:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-                border-color: var(--color-blue-primary);
-            }
-
-            .policy-icon {
-                color: var(--color-blue-primary);
-            }
-
-            .policy-title {
-                margin: 0;
-            }
-        }
-    }
-}
-
-/* -------- MODAL -------- */
-.sponsor-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 20px;
-    backdrop-filter: blur(4px);
-
-    .sponsor-modal-content {
-        background-color: var(--color-white-primary);
-        border-radius: 12px;
-        width: 100%;
-        max-width: 500px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        animation: modalFadeIn 0.3s ease;
-
-        .sponsor-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--color-black-quaternary);
-
-            h3 {
-                color: var(--color-black-primary);
-                text-align: left;
-                margin: 0;
-            }
-
-            .sponsor-modal-close {
-                background: transparent;
-                border: none;
-                cursor: pointer;
-                padding: 5px;
-                color: var(--color-black-secondary);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 50%;
-                transition: background-color 0.2s ease;
-
-                &:hover {
-                    background-color: var(--color-bg-light);
-                    color: var(--color-black-primary);
-                }
-            }
-        }
-
-        .sponsor-modal-body {
-            padding: 24px;
-
-            p {
-                color: var(--color-black-secondary);
-                line-height: 1.6;
-                text-align: left;
-            }
+        .hp-card {
+            width: auto; /* Grid controlled */
         }
     }
 }

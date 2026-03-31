@@ -1,40 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { NavLink } from 'react-router-dom';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import eventsService from '../services/eventsService';
+import announcementService from '../services/announcementService';
+import policyService from '../services/policyService';
+import PromoterViewFullAnnouncement from '../promotercomponents/PromoterModal/PromoterViewFullAnnouncement';
 
 import './SponsorHome.css';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function SponsorHome() {
+    const { user } = useAuthContext();
     const [modalData, setModalData] = useState(null);
+    const [modalType, setModalType] = useState('announcement');
+    const [liveEvents, setLiveEvents] = useState([]);
+    const [liveAnnouncements, setLiveAnnouncements] = useState([]);
+    const [livePolicies, setLivePolicies] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const openModal = (title, content) => {
-        setModalData({ title, content });
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [eventsData, announcementsData, policiesData] = await Promise.all([
+                    eventsService.getEvents(user?.token),
+                    announcementService.getAnnouncements(),
+                    policyService.getPolicies()
+                ]);
+                
+                // Only show approved events and take top 6 for trending
+                const approvedEvents = eventsData.filter(e => e.status === 'approved').slice(0, 6);
+                setLiveEvents(approvedEvents);
+                
+                // Map announcements with badge classes
+                const mappedAnnouncements = announcementsData.map(ann => {
+                    let badgeClass = "general";
+                    const category = ann.contentcategory?.toLowerCase() || ann.type?.toLowerCase();
+                    if (category === "maintenance") badgeClass = "maintenance";
+                    if (category === "news") badgeClass = "news";
+                    if (category === "update") badgeClass = "update";
+                    if (category === "alert") badgeClass = "alert";
+                    
+                    return {
+                        ...ann,
+                        badgeClass,
+                        type: ann.contentcategory || ann.type || "General",
+                        date: new Date(ann.date || ann.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                        icon: "mdi:bullhorn-outline"
+                    };
+                });
+                setLiveAnnouncements(mappedAnnouncements);
+
+                // Map policies
+                const mappedPolicies = policiesData.map(policy => ({
+                    ...policy,
+                    date: new Date(policy.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                    icon: "mdi:file-document-outline"
+                }));
+                setLivePolicies(mappedPolicies);
+
+            } catch (error) {
+                console.error("Error fetching sponsor home data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [user?.token]);
+
+    const openModal = (item, type) => {
+        setModalData(item);
+        setModalType(type);
     };
     const closeModal = () => {
         setModalData(null);
     };
-
-    const policies = [
-        { title: "Refund Policy", content: "If an event is canceled or postponed, you may be eligible for a refund depending on the event organizer's policy. Contact support for more info." },
-        { title: "Privacy Policy", content: "Your data is important to us. We secure your information and do not share it with third parties without your consent." },
-        { title: "Terms of Service", content: "By using our platform, you agree to our terms of service which ensure a safe and reliable environment for everyone." },
-        { title: "Event Guidelines", content: "All events must adhere to local laws and community guidelines. Any violation may result in the event being taken down." },
-        { title: "Sponsor Guidelines", content: "Sponsors must provide accurate information and honor their commitments to event organizers as outlined in their agreements." },
-        { title: "Security Policies", content: "We use advanced encryption and security protocols to ensure your transactions and data are safe." }
-    ];
-
-    const announcements = [
-        { type: "New Feature", badgeClass: "red-badge", title: "Event analytics are now live!", content: "Track your performance natively. You can now see real-time insights on ticket sales, demographic breakdowns, and campaign ROI right from your dashboard." },
-        { type: "Platform Update", badgeClass: "blue-badge", title: "New updates to our dashboard UI.", content: "Experience the redesign today. We have streamlined the navigation menus and improved contrast to make your workflow faster and more intuitive." },
-        { type: "System Note", badgeClass: "green-badge", title: "Upcoming server maintenance", content: "Server maintenance scheduled for tonight at 2 AM EST. The platform will experience a brief downtime of approximately 15 minutes." },
-        { type: "Feature Update", badgeClass: "blue-badge", title: "Added new ticket tier options", content: "You can now define up to 10 unique ticket tiers for your events, including early bird specials and VIP access with custom delivery methods." }
-    ];
-    const trendingEvents = [
-        { tag: "Concert", title: "TechInnovate Summit 2026", date: "Jun 16, 2026", location: "Starlight Arena, Los Angeles, CA", attendees: "5,000+ Expected Attendees", spots: "12 Spots Left" },
-        { tag: "Sports", title: "Championship Finals 2026", date: "Jul 02, 2026", location: "Grand Stadium, Dallas, TX", attendees: "18,000+ Expected Attendees", spots: "5 Spots Left" },
-        { tag: "Theater", title: "Broadway Nights", date: "Aug 10, 2026", location: "City Arts Center, NY", attendees: "2,000+ Expected Attendees", spots: "20 Spots Left" }
-    ];
 
     const features = [
         { icon: "mdi:magnify", title: "Easy Discovery", desc: "Find the perfect event with our smart search and personalized recommendations.", colorClass: "feature-red", bgClass: "bg-red-light" },
@@ -81,64 +124,107 @@ export default function SponsorHome() {
             </section>
 
             {/* Announcements Section */}
-            {/* Announcements Section */}
             <section className="sponsor-announcements">
-                <div className="sponsor-announcements-container">
-                    {[...announcements].map((ann, idx) => (
-                        <div
-                            className="sponsor-announcement-item clickable"
-                            key={idx}
-                            onClick={() => openModal(ann.title, ann.content)}
-                        >
-                            <span
-                                className={`button-label announcement-badge ${ann.badgeClass}`}
+                <div className={`sponsor-announcements-container ${liveAnnouncements.length > 0 ? 'scrolling' : ''}`}>
+                    {liveAnnouncements.length > 0 ? (
+                        liveAnnouncements.map((item, idx) => (
+                            <div 
+                                key={item._id || idx} 
+                                className="hp-card" 
+                                onClick={() => openModal(item, 'announcement')}
                             >
-                                {ann.type}
-                            </span>
-
-                            <p className="announcement-text">{ann.title}</p>
-                        </div>
-                    ))}
+                                <div className="hp-card-top">
+                                    <div className="hp-card-icon-container">
+                                        <Icon icon={item.icon} className="hp-card-icon" />
+                                    </div>
+                                    <div className="hp-card-meta">
+                                        <h3 className="hp-card-title">{item.title}</h3>
+                                        <span className="hp-date">
+                                            <Icon icon="mdi:calendar-outline" /> {item.date}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="hp-card-body">
+                                    <span className={`hp-badge button-label ${item.badgeClass}`}>
+                                        {item.type}
+                                    </span>
+                                    <p className="hp-card-text">
+                                        {item.content}
+                                    </p>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        !isLoading && (
+                            <div className="hp-empty-state">
+                                <Icon icon="mdi:bullhorn-outline" className="hp-empty-icon" />
+                                <h3>There are no announcements yet</h3>
+                            </div>
+                        )
+                    )}
                 </div>
             </section>
 
-            {/* Trending Now */}
-            <section id="events" className="sponsor-trending">
+            {/* Upcoming Events */}
+            <section id="events" className="sponsor-upcoming">
                 <div className="sponsor-section-header">
                     <div>
-                        <h2>Trending Now</h2>
-                        <p className="regular-body-text">Don't miss out on these hot events</p>
+                        <h2>Upcoming Events</h2>
+                        <p className="regular-body-text">Discover trending events happening soon.</p>
                     </div>
-                    <NavLink to="/sponsor/sponsor-events" className="view-all-link regular-body-text">View All</NavLink>
+                    <NavLink to="/sponsor/sponsor-events" className="view-all-link regular-body-text">View All Events &gt;</NavLink>
                 </div>
-                <div className="sponsor-trending-grid">
-                    {trendingEvents.map((evt, idx) => (
-                        <div className="sponsor-event-card" key={idx}>
-                            <div className="sponsor-event-image" style={{ backgroundImage: `url('/assets/eventbg.jpg')` }}>
-                                <span
-                                    className={`button-label ${evt.tag === "Concert"
-                                        ? "event-tag-red"
-                                        : evt.tag === "Sports"
-                                            ? "event-tag-green"
-                                            : "event-tag-blue"
-                                        }`}>
-                                    {evt.tag}
-                                </span>
-                            </div>
-                            <div className="sponsor-event-details">
-                                <h4>{evt.title}</h4>
-                                <div className="sponsor-event-info">
-                                    <p className="small-body-text"><Icon icon="mdi:calendar-blank-outline" width="16" /> {evt.date}</p>
-                                    <p className="small-body-text"><Icon icon="mdi:map-marker-outline" width="16" /> {evt.location}</p>
-                                    <p className="small-body-text"><Icon icon="mdi:account-group-outline" width="16" /> {evt.attendees}</p>
+                <div className="sponsor-events-grid">
+                    {liveEvents.length > 0 ? (
+                        liveEvents.map((evt, idx) => (
+                            <div className="sponsor-event-card" key={evt._id || idx}>
+                                <div 
+                                    className="sponsor-event-image" 
+                                    style={{ 
+                                        backgroundImage: `url(${evt.image ? `${BACKEND_URL}/uploads/${evt.image}` : '/assets/eventbg.jpg'})` 
+                                    }}
+                                >
+                                    <span className="button-label event-date-badge">
+                                        {new Date(evt.startDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}
+                                    </span>
                                 </div>
-                                <div className="sponsor-event-footer">
-                                    <p className="smaller-body-text">Booths Available</p>
-                                    <h6 className="highlight-red">{evt.spots}</h6>
+                                <div className="sponsor-event-details">
+                                    <span className={`button-label event-tag ${
+                                        evt.category === "Concert" ? "tag-red" : 
+                                        evt.category === "Sports" ? "tag-green" : "tag-blue"
+                                    }`}>
+                                        {evt.category || "Event"}
+                                    </span>
+                                    <h4>{evt.title}</h4>
+                                    <p className="event-location">📍 
+                                        {`${evt.venue?.name || ""}, ${evt.venue?.address || ""}, ${evt.venue?.city || ""}, ${evt.venue?.zipCode || ""}`.trim().replace(/^, |, $/, "") || "TBA"}
+                                    </p>
+                                    
+                                    <div className="event-info-row">
+                                        <div className="event-time">
+                                            <Icon icon="mdi:clock-outline" />
+                                            <span className="small-body-text">{evt.startTime || "TBA"} - {evt.endTime || "TBA"}</span>
+                                        </div>
+                                        <div className="event-booths">
+                                            <Icon icon="mdi:store-outline" />
+                                            <span className="small-body-text">{evt.booths?.length || 0} Booths Available</span>
+                                        </div>
+                                    </div>
+
+                                    <NavLink to={`/sponsor/sponsor-events`} className="primary-button full-width-btn">
+                                        View Details
+                                    </NavLink>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        !isLoading && (
+                            <div className="hp-empty-state full-width">
+                                <Icon icon="mdi:calendar-blank-outline" className="hp-empty-icon" />
+                                <h3>No upcoming events at the moment.</h3>
+                            </div>
+                        )
+                    )}
                 </div>
             </section>
 
@@ -151,29 +237,47 @@ export default function SponsorHome() {
                     </div>
                 </div>
                 <div className="sponsor-policies-grid">
-                    {policies.map((policy, idx) => (
-                        <div className="sponsor-policy-card" key={idx} onClick={() => openModal(policy.title, policy.content)}>
-                            <Icon icon="mdi:file-document-outline" width="24" className="policy-icon" />
-                            <h4 className="policy-title">{policy.title}</h4>
-                        </div>
-                    ))}
+                    {livePolicies.length > 0 ? (
+                        livePolicies.map((item, idx) => (
+                            <div 
+                                key={item._id || idx} 
+                                className="hp-card" 
+                                onClick={() => openModal(item, 'policy')}
+                            >
+                                <div className="hp-card-top align-start">
+                                    <div className="hp-card-icon-container document-icon">
+                                        <Icon icon={item.icon} className="hp-card-icon" />
+                                    </div>
+                                    <div className="hp-card-meta">
+                                        <h3 className="hp-card-title">{item.title}</h3>
+                                        <span className="hp-date">
+                                            Updated Last: {item.date}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="hp-card-body">
+                                    <p className="hp-card-text">{item.content}</p>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        !isLoading && (
+                            <div className="hp-empty-state full-width">
+                                <Icon icon="mdi:file-document-outline" className="hp-empty-icon" />
+                                <h3>There are no policies yet</h3>
+                            </div>
+                        )
+                    )}
                 </div>
             </section>
 
             {/* Reusable Modal for Policies/Announcements */}
-            {modalData && (
-                <div className="sponsor-modal-overlay" onClick={closeModal}>
-                    <div className="sponsor-modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="sponsor-modal-header">
-                            <h3>{modalData.title}</h3>
-                            <button className="sponsor-modal-close" onClick={closeModal}><Icon icon="mdi:close" width="24" /></button>
-                        </div>
-                        <div className="sponsor-modal-body">
-                            <p className="regular-body-text">{modalData.content}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <PromoterViewFullAnnouncement
+                isOpen={!!modalData}
+                onClose={closeModal}
+                item={modalData}
+                type={modalType}
+            />
         </div>
     );
 }
