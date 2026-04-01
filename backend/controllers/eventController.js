@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
     const yy = String(now.getFullYear()).slice(-2);
     const hh = String(now.getHours()).padStart(2, '0');
     const min = String(now.getMinutes()).padStart(2, '0');
-    
+
     const timestamp = `${mm}${dd}${yy}${hh}${min}`;
 
     cb(null, `${cleanName}-${timestamp}${path.extname(file.originalname)}`);
@@ -153,26 +153,38 @@ const getEvent = async (req, res) => {
       return res.status(404).json({ error: "No such event" });
     }
 
-    // Mark as completed if past due
-    if (event.status === "approved" && event.endDate && event.endTime) {
+    // 🔥 Resilient auto-status-update
+    try {
       const now = new Date();
-      const [hours, minutes] = event.endTime.split(":").map(Number);
-      const endDateTime = new Date(event.endDate);
-      endDateTime.setHours(hours, minutes, 0, 0);
+      let shouldUpdate = false;
 
-      if (endDateTime < now) {
-        event.status = "completed";
-        await event.save();
+      if (event.status === "approved") {
+        if (event.endDate && event.endTime) {
+          const [hours, minutes] = event.endTime.split(":").map(Number);
+          const endDateTime = new Date(event.endDate);
+          endDateTime.setHours(hours, minutes, 0, 0);
+
+          if (endDateTime < now) {
+            event.status = "completed";
+            shouldUpdate = true;
+          }
+        } else if (event.endDate && new Date(event.endDate) < now) {
+          event.status = "completed";
+          shouldUpdate = true;
+        }
+
+        if (shouldUpdate) {
+          await event.save();
+        }
       }
-    } else if (event.status === "approved" && event.endDate < new Date()) {
-      // Fallback
-      event.status = "completed";
-      await event.save();
+    } catch (saveError) {
+      console.error("Warning: Failed to auto-update event status:", saveError.message);
+      // We don't crash the request because the event still exists and is fetched.
     }
 
     return res.status(200).json(event);
   } catch (error) {
-    console.error("Error fetching event:", error);
+    console.error("Error fetching event details:", error);
     return res.status(400).json({ error: error.message });
   }
 };
@@ -233,67 +245,67 @@ const createEvent = async (req, res) => {
     }
 
     if (priceLevels && priceLevels.length > 0) {
-  priceLevels = priceLevels.map((p) => {
-    // Ensure we create a fresh ObjectId if one is provided, 
-    // or let Mongoose generate one if not.
-    const newId = p._id ? toObjectId(p._id) : new mongoose.Types.ObjectId();
-    return {
-      ...p,
-      _id: newId,
-      facePrice: Number(p.facePrice || 0),
-      serviceCharge: Number(p.serviceCharge || 0),
-      quantityAvailable: Number(p.quantityAvailable || 0),
-      quantitySold: Number(p.quantitySold || 0),
-      isActive: p.isActive !== false,
-    };
-  });
-}
-
-// 1. Safely generate string IDs for comparison
-const priceLevelIdStrings = (priceLevels || []).map((p) => p._id?.toString()).filter(Boolean);
-
-// 2. Seating Arrangement Logic
-if (eventType === "Seating Arrangement" && seatMap) {
-  seatMap.sections?.forEach((section, sIndex) => {
-    section.seats?.forEach((seat, i) => {
-      const seatPillarId = seat.priceLevelId?.toString();
-
-      if (seatPillarId) {
-        // If it's not "none", validate it against your actual price levels
-        if (seatPillarId !== "none" && priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(seatPillarId)) {
-          errors.push(`seatMap.sections[${sIndex}].seats[${i}].invalidPriceLevelId`);
-        }
-        
-        // THE FIX: If it's "none", keep it as "none". Otherwise, convert to ObjectId.
-        seat.priceLevelId = seat.priceLevelId === "none" ? "none" : toObjectId(seat.priceLevelId);
-      } else {
-        // If it's completely missing, we can default it to "none" here too
-        seat.priceLevelId = "none";
-      }
-    });
-  });
-}
-
-// 3. Booths Logic (Fixed the variable name from priceLevelIds to priceLevelIdStrings)
-const hasBooths = Array.isArray(booths) && booths.length > 0;
-if (hasBooths) {
-  booths.forEach((b, i) => {
-    const boothPidString = b.priceLevelId?.toString();
-
-    if (boothPidString) {
-      if (boothPidString !== "none" && priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(boothPidString)) {
-        errors.push(`booths[${i}].invalidPriceLevelId`);
-      }
-      
-      // THE FIX: Apply the same logic for booths
-      b.priceLevelId = b.priceLevelId === "none" ? "none" : toObjectId(b.priceLevelId);
-    } else {
-      // Defaulting to "none" instead of the first price level 
-      // is safer if you want to allow unassigned booths.
-      b.priceLevelId = "none";
+      priceLevels = priceLevels.map((p) => {
+        // Ensure we create a fresh ObjectId if one is provided, 
+        // or let Mongoose generate one if not.
+        const newId = p._id ? toObjectId(p._id) : new mongoose.Types.ObjectId();
+        return {
+          ...p,
+          _id: newId,
+          facePrice: Number(p.facePrice || 0),
+          serviceCharge: Number(p.serviceCharge || 0),
+          quantityAvailable: Number(p.quantityAvailable || 0),
+          quantitySold: Number(p.quantitySold || 0),
+          isActive: p.isActive !== false,
+        };
+      });
     }
-  });
-}
+
+    // 1. Safely generate string IDs for comparison
+    const priceLevelIdStrings = (priceLevels || []).map((p) => p._id?.toString()).filter(Boolean);
+
+    // 2. Seating Arrangement Logic
+    if (eventType === "Seating Arrangement" && seatMap) {
+      seatMap.sections?.forEach((section, sIndex) => {
+        section.seats?.forEach((seat, i) => {
+          const seatPillarId = seat.priceLevelId?.toString();
+
+          if (seatPillarId) {
+            // If it's not "none", validate it against your actual price levels
+            if (seatPillarId !== "none" && priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(seatPillarId)) {
+              errors.push(`seatMap.sections[${sIndex}].seats[${i}].invalidPriceLevelId`);
+            }
+
+            // THE FIX: If it's "none", keep it as "none". Otherwise, convert to ObjectId.
+            seat.priceLevelId = seat.priceLevelId === "none" ? "none" : toObjectId(seat.priceLevelId);
+          } else {
+            // If it's completely missing, we can default it to "none" here too
+            seat.priceLevelId = "none";
+          }
+        });
+      });
+    }
+
+    // 3. Booths Logic (Fixed the variable name from priceLevelIds to priceLevelIdStrings)
+    const hasBooths = Array.isArray(booths) && booths.length > 0;
+    if (hasBooths) {
+      booths.forEach((b, i) => {
+        const boothPidString = b.priceLevelId?.toString();
+
+        if (boothPidString) {
+          if (boothPidString !== "none" && priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(boothPidString)) {
+            errors.push(`booths[${i}].invalidPriceLevelId`);
+          }
+
+          // THE FIX: Apply the same logic for booths
+          b.priceLevelId = b.priceLevelId === "none" ? "none" : toObjectId(b.priceLevelId);
+        } else {
+          // Defaulting to "none" instead of the first price level 
+          // is safer if you want to allow unassigned booths.
+          b.priceLevelId = "none";
+        }
+      });
+    }
 
     if (errors.length) {
       return res
@@ -307,7 +319,7 @@ if (hasBooths) {
     const userId = req.user._id;
     const roleLower = (req.user.role || "").toLowerCase();
 
-    
+
     const status =
       roleLower === "admin" || roleLower === "superadmin"
         ? "approved"
@@ -391,16 +403,16 @@ const updateEvent = async (req, res) => {
 
     const errors = [];
     const finalEventType = eventType || existingEvent.eventType;
-    
+
     // Check required fields
     const fieldsToCheck = ["title", "description", "category"];
     fieldsToCheck.forEach(field => {
-        if (req.body[field] !== undefined && String(req.body[field]).trim() === "") {
-            errors.push(`${field} cannot be empty`);
-        }
+      if (req.body[field] !== undefined && String(req.body[field]).trim() === "") {
+        errors.push(`${field} cannot be empty`);
+      }
     });
 
-    
+
 
     /* =========================
         DATE & TIME VALIDATION
@@ -437,10 +449,10 @@ const updateEvent = async (req, res) => {
       finalPriceLevels = finalPriceLevels.map((p) => {
         const isValidId = p._id && mongoose.Types.ObjectId.isValid(p._id);
         const newId = isValidId ? new mongoose.Types.ObjectId(p._id) : new mongoose.Types.ObjectId();
-        
+
         const qSold = Number(p.quantitySold || 0);
         const qAvailable = Number(p.quantityAvailable || 0);
-        
+
         if (qAvailable < qSold) {
           errors.push(`Price level ${p.priceName || ''} cannot have less capacity than tickets already sold.`);
         }
@@ -465,43 +477,43 @@ const updateEvent = async (req, res) => {
         SMART SEATING VALIDATION
     ========================= */
     if (finalEventType === "Seating Arrangement" && finalSeatMap?.sections) {
-  finalSeatMap.sections.forEach((section, sIndex) => {
-    section.seats?.forEach((seat, i) => {
-      if (!seat.priceLevelId) {
-        // Fallback to "none" instead of pushing an error if you want to allow it
-        seat.priceLevelId = "none"; 
-      } else if (seat.priceLevelId !== "none") {
-        const seatPillarId = seat.priceLevelId.toString();
-        
-        if (priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(seatPillarId)) {
-          errors.push(`seatMap.sections[${sIndex}].seats[${i}] has an invalid priceLevelId`);
-        }
-        
-        // Use your utility to avoid the deprecation warning
-        seat.priceLevelId = toObjectId(seat.priceLevelId);
-      }
-      // If it's "none", we do nothing (it stays a string "none")
-    });
-  });
-}
+      finalSeatMap.sections.forEach((section, sIndex) => {
+        section.seats?.forEach((seat, i) => {
+          if (!seat.priceLevelId) {
+            // Fallback to "none" instead of pushing an error if you want to allow it
+            seat.priceLevelId = "none";
+          } else if (seat.priceLevelId !== "none") {
+            const seatPillarId = seat.priceLevelId.toString();
+
+            if (priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(seatPillarId)) {
+              errors.push(`seatMap.sections[${sIndex}].seats[${i}] has an invalid priceLevelId`);
+            }
+
+            // Use your utility to avoid the deprecation warning
+            seat.priceLevelId = toObjectId(seat.priceLevelId);
+          }
+          // If it's "none", we do nothing (it stays a string "none")
+        });
+      });
+    }
 
     // Process Booths similarly
     if (Array.isArray(finalBooths) && finalEventType === "Booth-Style") {
-  finalBooths.forEach((b, i) => {
-    if (!b.priceLevelId) {
-      b.priceLevelId = "none";
-    } else if (b.priceLevelId !== "none") {
-      const boothPidString = b.priceLevelId.toString();
-      
-      if (priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(boothPidString)) {
-        errors.push(`booths[${i}].invalidPriceLevelId`);
-      }
-      
-      // Use your utility here too
-      b.priceLevelId = toObjectId(b.priceLevelId);
+      finalBooths.forEach((b, i) => {
+        if (!b.priceLevelId) {
+          b.priceLevelId = "none";
+        } else if (b.priceLevelId !== "none") {
+          const boothPidString = b.priceLevelId.toString();
+
+          if (priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(boothPidString)) {
+            errors.push(`booths[${i}].invalidPriceLevelId`);
+          }
+
+          // Use your utility here too
+          b.priceLevelId = toObjectId(b.priceLevelId);
+        }
+      });
     }
-  });
-}
 
     if (errors.length) {
       return res.status(400).json({ error: "Validation failed", fields: errors });
@@ -509,16 +521,16 @@ const updateEvent = async (req, res) => {
 
     let finalImage = existingEvent.image;
 
-if (req.file) {
-  // A new file was uploaded - Replace the old one
-  finalImage = req.file.filename;
-  // OPTIONAL: Call a function here to delete the OLD file from 'uploads/'
-  deleteOldImage(existingEvent.image); 
-} else if (req.body.image === "" || req.body.image === null) {
-  // The user explicitly removed the image
-  finalImage = null; 
-  deleteOldImage(existingEvent.image);
-}
+    if (req.file) {
+      // A new file was uploaded - Replace the old one
+      finalImage = req.file.filename;
+      // OPTIONAL: Call a function here to delete the OLD file from 'uploads/'
+      deleteOldImage(existingEvent.image);
+    } else if (req.body.image === "" || req.body.image === null) {
+      // The user explicitly removed the image
+      finalImage = null;
+      deleteOldImage(existingEvent.image);
+    }
 
     /* =========================
         EXECUTE UPDATE
@@ -561,9 +573,9 @@ if (req.file) {
 
 const deleteOldImage = (filename) => {
   if (!filename) return;
-  
+
   const filePath = path.join(__dirname, '../uploads/', filename);
-  
+
   // Check if file exists before trying to delete
   fs.access(filePath, fs.constants.F_OK, (err) => {
     if (!err) {
@@ -635,7 +647,7 @@ const updateSeatMap = async (req, res) => {
               invalidSeats.push(
                 `sections[${sIndex}].seats[${index}].priceLevelId is missing`
               );
-            } 
+            }
             // If it's NOT "none", then it MUST be a valid ID from the database
             else if (seat.priceLevelId !== "none" && !validPriceLevelIds.includes(seat.priceLevelId)) {
               invalidSeats.push(
@@ -659,7 +671,7 @@ const updateSeatMap = async (req, res) => {
     ========================= */
     event.seatMap = seatMap;
     // Explicitly mark the path as modified if seatMap is a deeply nested object
-    event.markModified('seatMap'); 
+    event.markModified('seatMap');
 
     await event.save();
 

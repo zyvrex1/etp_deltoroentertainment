@@ -1,25 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 import DateRangePicker from '../admincomponents/DateRangePicker';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import eventsService from '../services/eventsService';
 import './SponsorBrowseEvents.css';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const SponsorBrowseEvents = () => {
     const navigate = useNavigate();
+    const { user } = useAuthContext();
 
-    // Mock data for 12 events to demonstrate pagination (8 per page like SponsorStore)
-    const allEvents = Array.from({ length: 12 }, (_, i) => ({
-        id: i + 1,
-        title: 'TechInnovate Summit 2026',
-        date: 'Jun 16, 2026',
-        location: 'Starlight Arena, Los Angeles, CA',
-        attendees: '5,000+',
-        spotsLeft: 12,
-        category: 'Concert',
-        image: '/assets/eventbg.jpg'
-    }));
-
-    // Pagination Logic
+    const [allEvents, setAllEvents] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
     const [searchQuery, setSearchQuery] = useState("");
@@ -31,6 +25,24 @@ const SponsorBrowseEvents = () => {
         end: new Date(2100, 11, 31),
     }));
 
+    useEffect(() => {
+        const fetchEvents = async () => {
+            setIsLoading(true);
+            try {
+                const data = await eventsService.getEvents(user?.token);
+                // Only show approved events
+                const approvedEvents = data.filter(evt => evt.status === 'approved');
+                setAllEvents(approvedEvents);
+            } catch (error) {
+                console.error("Error fetching events:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchEvents();
+    }, [user?.token]);
+
     const handleDateRangeChange = (newRange) => {
         setDateRange(newRange);
         setCurrentPage(1);
@@ -38,8 +50,14 @@ const SponsorBrowseEvents = () => {
 
     const filteredEvents = allEvents.filter((event) => {
         const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              event.location.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesSearch;
+                              (event.venue?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (event.venue?.city || "").toLowerCase().includes(searchQuery.toLowerCase());
+        
+        // Date range filtering
+        const eventDate = new Date(event.startDate);
+        const matchesDate = eventDate >= dateRange.start && eventDate <= dateRange.end;
+
+        return matchesSearch && matchesDate;
     });
 
     const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
@@ -99,13 +117,21 @@ const SponsorBrowseEvents = () => {
                 </div>
 
                 <div className="sbe-events-grid">
-                    {paginatedEvents.length > 0 ? (
+                    {isLoading ? (
+                        <div className="sbe-loading-state">
+                            <Icon icon="line-md:loading-twotone-loop" width="48" />
+                            <p>Loading events...</p>
+                        </div>
+                    ) : paginatedEvents.length > 0 ? (
                         paginatedEvents.map((event) => (
-                            <div key={event.id} className="sbe-event-card" onClick={() => handleEventClick(event.id)}>
+                            <div key={event._id} className="sbe-event-card" onClick={() => handleEventClick(event._id)}>
                                 <div className="sbe-card-image-wrap">
-                                    <img src={event.image} alt={event.title} />
+                                    <img 
+                                        src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : '/assets/eventbg.jpg'} 
+                                        alt={event.title} 
+                                    />
                                     <div className="sbe-category-badge button-label">
-                                        {event.category}
+                                        {event.category || "Event"}
                                     </div>
                                 </div>
                                 <div className="sbe-card-details">
@@ -113,21 +139,21 @@ const SponsorBrowseEvents = () => {
                                     
                                     <div className="sbe-card-info small-body-text">
                                         <Icon icon="mdi:calendar-blank-outline" />
-                                        <span>{event.date}</span>
+                                        <span>{new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                     </div>
                                     <div className="sbe-card-info small-body-text">
                                         <Icon icon="mdi:map-marker-outline" />
-                                        <span>{event.location}</span>
+                                        <span>{event.venue?.name || "TBA"}</span>
                                     </div>
 
                                     <div className="sbe-stats-row">
                                         <div className="sbe-stat-item">
                                             <span className="smaller-body-text stat-label">Expected Attendees</span>
-                                            <span className="large-body-text stat-value">{event.attendees}</span>
+                                            <span className="large-body-text stat-value">{event.attendees || "TBA"}</span>
                                         </div>
                                         <div className="sbe-stat-item">
                                             <span className="smaller-body-text stat-label">Booths Available</span>
-                                            <span className="large-body-text stat-value">{event.spotsLeft}</span>
+                                            <span className="large-body-text stat-value">{event.booths?.length || 0}</span>
                                         </div>
                                     </div>
 
@@ -142,7 +168,11 @@ const SponsorBrowseEvents = () => {
                             <Icon icon="mdi:magnify-close" width="48" />
                             <h4>No events found</h4>
                             <p className="small-body-text">
-                                No events match "<strong>{searchQuery}</strong>".
+                                {searchQuery ? (
+                                    <>No events match "<strong>{searchQuery}</strong>".</>
+                                ) : (
+                                    <>No events available for the selected dates.</>
+                                )}
                             </p>
                         </div>
                     )}
