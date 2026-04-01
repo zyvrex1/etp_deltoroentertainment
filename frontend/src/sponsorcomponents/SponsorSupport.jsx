@@ -6,9 +6,61 @@ import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExpo
 import './SponsorSupport.css';
 
 export default function SponsorSupport() {
+    const [activeTab, setActiveTab] = useState('My Concerns');
     const [openFaq, setOpenFaq] = useState(0);
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedStatus, setSelectedStatus] = useState("All");
+
+    const tabs = [
+        { name: 'My Concerns', icon: 'mdi:comment-alert-outline', badge: 2 },
+        { name: 'Submit a Concern', icon: 'mdi:plus' },
+        { name: 'Help Center', icon: 'mdi:help-circle-outline' }
+    ];
+
+    const mockTickets = [
+        {
+            id: 'TKT-2024-001',
+            subject: 'Booth electricity not working during setup',
+            category: 'Booth Issue',
+            status: 'In Progress',
+            priority: 'High',
+            date: 'Oct 14, 2024 at 3:22 PM',
+            messages: 4,
+            files: 2
+        },
+        {
+            id: 'TKT-2024-002',
+            subject: 'Invoice discrepancy for booth upgrade',
+            category: 'Billing & Payment',
+            status: 'Open',
+            priority: 'Medium',
+            date: 'Oct 12, 2024 at 11:05 AM',
+            messages: 1,
+            files: 1
+        },
+        {
+            id: 'TKT-2024-003',
+            subject: 'Store product listing not appearing',
+            category: 'Store Issue',
+            status: 'Resolved',
+            priority: 'Low',
+            date: 'Oct 10, 2024 at 2:30 PM',
+            messages: 3,
+            files: 0
+        },
+        {
+            id: 'TKT-2024-004',
+            subject: 'Request for additional exhibitor passes',
+            category: 'Event Concern',
+            status: 'Closed',
+            priority: 'Low',
+            date: 'Oct 5, 2024 at 10:00 AM',
+            messages: 2,
+            files: 1
+        }
+    ];
 
     const exportDocumentToPDF = async (doc) => {
         const loadingToast = showExportToast();
@@ -31,7 +83,6 @@ export default function SponsorSupport() {
             y += 10;
 
             doc.sections.forEach(sec => {
-                // Check if we need a new page for the section title
                 if (y > pdfHeight - FOOTER_HEIGHT - 20) {
                     pdf.addPage();
                     addReportHeader(pdf, DOCUMENT_TITLE, logoData);
@@ -49,7 +100,7 @@ export default function SponsorSupport() {
                     : 'Please refer to the application portal for the full detailed content of this section.';
 
                 y = drawLongText(pdf, y, sectionContent, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, logoData, DOCUMENT_TITLE);
-                y += 8; // Extra padding between sections
+                y += 8;
             });
 
             finalizeReport(pdf);
@@ -61,7 +112,6 @@ export default function SponsorSupport() {
             removeExportToast(loadingToast);
         }
     };
-
 
     const faqs = [
         {
@@ -90,6 +140,7 @@ export default function SponsorSupport() {
         }
     ];
 
+    // Resources from SponsorBoothFullDetails.jsx
     const resources = [
         {
             id: 1,
@@ -101,7 +152,7 @@ export default function SponsorSupport() {
                     title: 'Parties',
                     content: (
                         <div className="sd-parties" >
-                            <p className="small-body-text" style={{ marginBottom: '12px', }}>
+                            <p className="small-body-text" style={{ marginBottom: '12px' }}>
                                 This Sponsorship Agreement ("Agreement") is entered into between:
                             </p>
 
@@ -342,7 +393,7 @@ export default function SponsorSupport() {
                 {
                     title: 'Setup Schedule',
                     content: (
-                        <p className="small-body-text text-secondary" style={{ margin: 0, }}>
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>
                             Premium island exhibitors receive priority setup access. All setup must be completed prior to the final inspection deadline before the hall opens.
                         </p>
                     ),
@@ -404,113 +455,269 @@ export default function SponsorSupport() {
         },
     ];
 
-    return (
-        <div className="sponsor-support-container">
-            <div className="support-header-section">
-                <h2>Support Center</h2>
-                <p className="regular-body-text text-muted">Need help with your sponsorship? Browse our FAQs or get in touch with our dedicated support team.</p>
-            </div>
+    const getStatusIcon = (status) => {
+        switch(status) {
+            case 'Open': return 'mdi:circle-outline';
+            case 'In Progress': return 'mdi:loading';
+            case 'Resolved': return 'mdi:check-circle-outline';
+            case 'Closed': return 'mdi:close-circle-outline';
+            default: return 'mdi:circle-outline';
+        }
+    };
 
-            <div className="support-contact-cards">
-                <div className="contact-card">
-                    <div className="icon-circle icon-email">
-                        <Icon icon="mdi:email-outline" width="32" color="var(--color-green-primary)" />
-                    </div>
-                    <h5>Email Us</h5>
-                    <p className="small-body-text text-muted">Get a response within 24 hours</p>
+    const getStatusColorClass = (status) => {
+        return status.toLowerCase().replace(/\s+/g, '-');
+    };
+
+    const getPriorityColorClass = (priority) => {
+        return priority.toLowerCase();
+    };
+
+    const filteredTickets = mockTickets.filter(ticket => {
+        const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                             ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = selectedStatus === "All" || ticket.status === selectedStatus;
+        return matchesSearch && matchesStatus;
+    });
+
+    const renderMyConcerns = () => (
+        <div className="tab-pane active fade-in">
+            <div className="concerns-card">
+            <div className="concerns-toolbar">
+                <div className="search-box">
+                    <Icon icon="mdi:magnify" width="20" />
+                    <input 
+                        type="text" 
+                        placeholder="Search by ticket ID, subject..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
-                <div className="contact-card">
-                    <div className="icon-circle icon-phone">
-                        <Icon icon="mdi:phone-outline" width="32" color="var(--color-purple-primary)" />
+                <div className="filter-dropdown-wrapper">
+                    <Icon icon="mdi:filter-variant" className="filter-icon" />
+                    <select 
+                        value={selectedStatus} 
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        className="status-dropdown"
+                    >
+                        <option value="All">All Status</option>
+                        <option value="Open">Open</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+                </div>
+
+            <div className="tickets-list">
+                {filteredTickets.map(ticket => (
+                    <div key={ticket.id} className="ticket-card">
+                        <div className="ticket-header">
+                            <span className="ticket-id">{ticket.id}</span>
+                            <div className="badges">
+                                <span className={`status-badge ${getStatusColorClass(ticket.status)}`}>
+                                    <Icon icon={getStatusIcon(ticket.status)} />
+                                    {ticket.status}
+                                </span>
+                                <span className={`priority-badge ${getPriorityColorClass(ticket.priority)}`}>
+                                    {ticket.priority}
+                                </span>
+                            </div>
+                        </div>
+                        <h5 className="ticket-title">{ticket.subject}</h5>
+                        <div className="ticket-footer">
+                            <div className="ticket-meta">
+                                <span className="meta-item"><Icon icon="mdi:tag-outline" /> {ticket.category}</span>
+                                <span className="meta-item"><Icon icon="mdi:clock-outline" /> {ticket.date}</span>
+                                <span className="meta-item"><Icon icon="mdi:message-outline" /> {ticket.messages} messages</span>
+                                {ticket.files > 0 && <span className="meta-item"><Icon icon="mdi:attachment" /> {ticket.files} files</span>}
+                            </div>
+                            <button className="view-ticket-btn">
+                                <Icon icon="mdi:eye-outline" /> View
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            </div>
+        </div>
+    );
+
+    const renderSubmitConcern = () => (
+        <div className="tab-pane active fade-in">
+            <div className="submit-concern-card">
+                <div className="card-header">
+                    <h4>Submit a New Concern</h4>
+                    <p className="small-body-text text-muted">Describe your issue and our team will get back to you as soon as possible.</p>
+                </div>
+                <form className="concern-form">
+                    <div className="form-group">
+                        <label>Subject <span className="required">*</span></label>
+                        <input type="text" placeholder="Brief summary of your concern" />
+                    </div>
+                    <div className="form-row">
+                        <div className="form-group col">
+                            <label>Category</label>
+                            <select>
+                                <option>General Inquiry</option>
+                                <option>Billing & Payment</option>
+                                <option>Technical Support</option>
+                                <option>Booth/Event Issue</option>
+                            </select>
+                        </div>
+                        <div className="form-group col">
+                            <label>Priority</label>
+                            <select defaultValue="Medium">
+                                <option>Low</option>
+                                <option>Medium</option>
+                                <option>High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>Description <span className="required">*</span></label>
+                        <textarea rows="5" placeholder="Provide as much detail as possible about your concern..."></textarea>
+                    </div>
+                    <div className="form-group">
+                        <label>Attachments</label>
+                        <div className="attachment-upload">
+                            <Icon icon="mdi:attachment-plus" width="32" />
+                            <p className="small-body-text">Click to attach files (images, PDFs, documents)</p>
+                            <span className="smaller-body-text text-muted">Max 10MB per file</span>
+                        </div>
+                    </div>
+                    <button type="submit" className="primary-button submit-btn">
+                        <Icon icon="mdi:send-outline" /> Submit Concern
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+
+    const renderHelpCenter = () => (
+        <div className="tab-pane active fade-in">
+            <div className="contact-grid">
+                <div className="contact-card border-red">
+                    <div className="icon-wrap bg-red-q">
+                        <Icon icon="mdi:comment-question-outline" color="var(--color-red-primary)" width="24" />
+                    </div>
+                    <h5>Submit a Concern</h5>
+                    <p className="smaller-body-text text-muted">Report an issue and track its resolution.</p>
+                    <button className="link-btn text-red" onClick={() => setActiveTab('Submit a Concern')}>
+                        Get Started <Icon icon="mdi:arrow-right" />
+                    </button>
+                </div>
+                <div className="contact-card border-green">
+                    <div className="icon-wrap bg-green-q">
+                        <Icon icon="mdi:email-outline" color="var(--color-green-primary)" width="24" />
+                    </div>
+                    <h5>Email Support</h5>
+                    <p className="smaller-body-text text-muted">Response within 24 hours.</p>
+                    <span className="contact-info text-green">support@eticketspro.com</span>
+                </div>
+                <div className="contact-card border-purple">
+                    <div className="icon-wrap bg-purple-q">
+                        <Icon icon="mdi:phone-outline" color="var(--color-purple-primary)" width="24" />
                     </div>
                     <h5>Phone Support</h5>
-                    <p className="small-body-text text-muted">Mon-Fri, 9am - 6pm CST</p>
+                    <p className="smaller-body-text text-muted">Mon-Fri, 9am - 6pm EST</p>
+                    <span className="contact-info text-purple">+1 (555) 123-4567</span>
                 </div>
             </div>
 
-            <div className="support-content-layout">
-                <div className="support-main-col">
-                    <div className="support-card">
-                        <h4 className="card-title">Frequently Asked Questions</h4>
-                        <div className="faq-list">
-                            {faqs.map((faq, index) => (
-                                <div className={`faq-item ${openFaq === index ? 'active' : ''}`} key={index}>
-                                    <button className="faq-toggle" onClick={() => setOpenFaq(openFaq === index ? -1 : index)}>
-                                        <h6 className="faq-question">{faq.question}</h6>
-                                        <Icon
-                                            icon={openFaq === index ? "mdi:chevron-up" : "mdi:chevron-down"}
-                                            width="24"
-                                            color={openFaq === index ? "var(--color-red-primary)" : "var(--color-black-secondary)"}
-                                        />
+            <div className="help-content-layout">
+                <div className="faq-section">
+                    <h4>Frequently Asked Questions</h4>
+                    <div className="faq-list">
+                        {faqs.map((faq, index) => (
+                            <div className={`faq-item ${openFaq === index ? 'active' : ''}`} key={index}>
+                                <button className="faq-toggle" onClick={() => setOpenFaq(openFaq === index ? -1 : index)}>
+                                    <h6 className="faq-question">{faq.question}</h6>
+                                    <Icon
+                                        icon={openFaq === index ? "mdi:chevron-up" : "mdi:chevron-down"}
+                                        width="20"
+                                        color={openFaq === index ? "var(--color-red-primary)" : "var(--color-black-secondary)"}
+                                    />
+                                </button>
+                                {openFaq === index && (
+                                    <div className="faq-answer fade-in">
+                                        <p className="small-body-text text-muted">{faq.answer}</p>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="resources-section">
+                    <h4>Resources</h4>
+                    <div className="resources-list">
+                        {resources.map((item, index) => (
+                            <div className="resource-item" key={index}>
+                                <div className="resource-icon">
+                                    <Icon icon="mdi:file-document-outline" className="text-red" width="24" />
+                                </div>
+                                <div className="resource-info">
+                                    <h6 className="resource-title">{item.title}</h6>
+                                    <span className="smaller-body-text text-muted">PDF • {item.size}</span>
+                                </div>
+                                <div className="resource-actions">
+                                    <button 
+                                        className="download-btn" 
+                                        onClick={() => {
+                                            setSelectedDocument(item);
+                                            setIsDocumentModalOpen(true);
+                                        }}
+                                    >
+                                        <Icon icon="mdi:eye-outline" width="20" />
                                     </button>
-                                    {openFaq === index && (
-                                        <div className="faq-answer">
-                                            <p className="small-body-text text-muted">{faq.answer}</p>
-                                        </div>
-                                    )}
+                                    <button className="download-btn" onClick={() => exportDocumentToPDF(item)}>
+                                        <Icon icon="mdi:download-outline" width="20" />
+                                    </button>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        ))}
                     </div>
-
-                    <div className="support-card">
-                        <h4 className="card-title">Send Us a Message</h4>
-                        <form className="message-form">
-                            <div className="form-group">
-                                <label className="small-body-text text-muted">Subject</label>
-                                <div className="select-wrapper">
-                                    <select className="form-input regular-body-text">
-                                        <option>General Inquiry</option>
-                                        <option>Billing Issue</option>
-                                        <option>Technical Support</option>
-                                    </select>
-                                    <Icon icon="mdi:chevron-down" className="select-icon text-muted" width="20" />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label className="small-body-text text-muted">Message</label>
-                                <textarea className="form-input form-textarea regular-body-text" rows="4" placeholder="How can we help you?"></textarea>
-                            </div>
-                            <button type="button" className="primary-button send-msg-btn">
-                                <Icon icon="mdi:send-outline" width="18" /> Send Message
-                            </button>
-                        </form>
+                    <div className="support-hours">
+                        <div className="hours-header">
+                            <Icon icon="mdi:clock-outline" />
+                            <span className="small-body-text">Support Hours</span>
+                        </div>
+                        <p className="smaller-body-text text-muted">Monday - Friday: 9am - 6pm EST</p>
+                        <p className="smaller-body-text text-muted">Saturday - Sunday: Closed</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    );
 
-                <div className="support-side-col">
-                    <div className="support-card resources-card">
-                        <h4 className="card-title">Resources</h4>
-                        <div className="resources-list">
-                            {resources.map((item, index) => (
-                                <div className={`resource-item ${item.active ? 'active' : ''}`} key={index}>
-                                    <div className="resource-info">
-                                        <h6 className="resource-title">{item.title}</h6>
-                                        <span className="smaller-body-text text-muted">{item.desc}</span>
-                                        <span className="smaller-body-text text-muted format-size">{item.format} • {item.size}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button className="download-btn" onClick={() => { setSelectedDocument(item); setIsDocumentModalOpen(true); }}>
-                                            <Icon icon="mdi:eye-outline" width="20" color={item.active ? "var(--color-red-primary)" : "var(--color-black-secondary)"} />
-                                        </button>
-                                        <button className="download-btn" onClick={() => exportDocumentToPDF(item)}>
-                                            <Icon icon="mdi:download-outline" width="20" color={item.active ? "var(--color-red-primary)" : "var(--color-black-secondary)"} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+    return (
+        <div className="sponsor-support-page">
+            <div className="support-header">
+                <h2>Support Center</h2>
+                <p className="regular-body-text text-muted">Submit concerns, track their status, and communicate with our support team. Browse FAQs or download resources.</p>
+            </div>
 
-                        <div className="support-hours">
-                            <div className="hours-title">
-                                <Icon icon="mdi:clock-outline" width="18" />
-                                <span className="small-body-text">Support Hours</span>
-                            </div>
-                            <p className="smaller-body-text text-muted">Monday - Friday: 9am - 6pm EST</p>
-                            <p className="smaller-body-text text-muted">Saturday - Sunday: Closed</p>
-                        </div>
-                    </div>
+            <div className="support-tabs-container">
+                <div className="support-tabs">
+                    {tabs.map(tab => (
+                        <button 
+                            key={tab.name}
+                            className={`tab-btn ${activeTab === tab.name ? 'active' : ''}`}
+                            onClick={() => setActiveTab(tab.name)}
+                        >
+                            <Icon icon={tab.icon} width="20" />
+                            {tab.name}
+                            {tab.badge && <span className="tab-badge">{tab.badge}</span>}
+                        </button>
+                    ))}
                 </div>
+            </div>
+
+            <div className="support-tab-content">
+                {activeTab === 'My Concerns' && renderMyConcerns()}
+                {activeTab === 'Submit a Concern' && renderSubmitConcern()}
+                {activeTab === 'Help Center' && renderHelpCenter()}
             </div>
 
             <SponsorDocuments

@@ -1,310 +1,781 @@
-.sponsor-support-container {
-    padding: 40px;
+.sponsor-support-page {
+    padding: 30px;
     max-width: 1440px;
     margin: 0 auto;
-    width: 100%;
-    background-color: var(--color-bg-light);
+    background: var(--color-bg-light);
+    min-height: 100vh;
+    box-sizing: border-box;
 
-    .support-header-section {
-        text-align: center;
-        margin-bottom: 40px;
+    .support-header {
+        text-align: left;
+        /* Changed from center to left as requested */
+        margin-bottom: 32px;
+        max-width: 1000px;
+        margin-left: 0;
 
         h2 {
+            margin-bottom: 12px;
             color: var(--color-black-primary);
-            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        p {
+            color: var(--color-black-secondary);
+            text-align: left;
         }
     }
-}
 
-.text-muted {
-    color: var(--color-black-secondary);
-}
-
-
-
-.support-contact-cards {
-    display: flex;
-    gap: 30px;
-    margin-bottom: 40px;
-    justify-content: center;
-
-    .contact-card {
-        background-color: var(--color-white-primary);
-        border: 1px solid var(--color-black-quaternary);
+    .support-tabs-container {
+        max-width: 1440px;
+        margin: 0 auto;
+        background: var(--color-white-primary);
         border-radius: 12px;
-        padding: 30px;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
+        padding: 12px 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 24px;
 
-        .icon-circle {
-            width: 65px;
-            height: 65px;
-            border-radius: 50%;
+        .support-tabs {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-        }
+            gap: 24px;
+            border-bottom: 1px solid var(--color-black-quaternary);
 
-        .icon-email {
-            background-color: var(--color-green-quaternary);
-        }
+            .tab-btn {
+                background: none;
+                border: none;
+                padding: 16px 8px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--color-black-secondary);
+                cursor: pointer;
+                font-family: 'Poppins', sans-serif;
+                font-weight: 500;
+                position: relative;
+                transition: color 0.2s;
 
-        .icon-phone {
-            background-color: var(--color-purple-quaternary);
-        }
-
-        h5 {
-            color: var(--color-black-primary);
-            margin-bottom: 8px;
-        }
-    }
-}
-
-
-
-.support-content-layout {
-    display: flex;
-    gap: 30px;
-
-    .support-main-col {
-        flex: 2;
-        display: flex;
-        flex-direction: column;
-        gap: 30px;
-    }
-
-    .card-title {
-        color: var(--color-black-primary);
-        margin-bottom: 25px;
-        text-align: left;
-    }
-
-    .support-card {
-        background-color: var(--color-white-primary);
-        border: 1px solid var(--color-black-quaternary);
-        border-radius: 12px;
-        padding: 30px;
-
-        .faq-list {
-            display: flex;
-            flex-direction: column;
-
-            .faq-item {
-                border-bottom: 1px solid var(--color-black-quaternary);
-
-                .faq-toggle {
-                    width: 100%;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 20px 0;
-                    background: none;
-                    border: none;
-                    text-align: left;
-                    cursor: pointer;
-                }
-
-                .faq-question {
-                    color: var(--color-black-primary);
-                }
-
-                .faq-item.active .faq-question {
+                &:hover {
                     color: var(--color-red-primary);
                 }
 
-                .faq-answer {
-                    padding-bottom: 20px;
-                    text-align: left;
-                }
-            }
+                &.active {
+                    color: var(--color-red-primary);
 
-            .faq-item:last-child {
-                border-bottom: none;
-            }
-        }
-
-        /* Form */
-        .message-form {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-
-            .form-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                text-align: left;
-
-                label {
-                    font-weight: 500;
-                }
-
-                .select-wrapper {
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-
-                    .select-icon {
+                    &::after {
+                        content: '';
                         position: absolute;
-                        right: 15px;
-                        pointer-events: none;
-                    }
-
-                    .form-textarea {
-                        resize: vertical;
-                    }
-                }
-
-                .form-input {
-                    width: 100%;
-                    padding: 12px 15px;
-                    border: 1px solid var(--color-black-tertiary);
-                    border-radius: 8px;
-                    background-color: var(--color-white-primary);
-                    color: var(--color-black-primary);
-                    outline: none;
-                    appearance: none;
-                    transition: border-color 0.3s ease;
-
-                    &:focus {
-                        border-color: var(--color-black-primary);
+                        bottom: -1px;
+                        left: 0;
+                        width: 100%;
+                        height: 2px;
+                        background: var(--color-red-primary);
                     }
                 }
-            }
 
-            .send-msg-btn {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 8px;
-                padding: 12px;
-                margin-top: 5px;
+                .tab-badge {
+                    background: var(--color-red-quaternary);
+                    color: var(--color-red-primary);
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 12px;
+                    font-weight: 600;
+                }
             }
         }
     }
 
-    .support-side-col {
-        flex: 1;
+    .support-tab-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        /* Center the tabs horizontally */
+        width: 100%;
 
-        .resources-card {
-            padding: 24px;
+        .tab-pane {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
 
-            .resources-list {
+            &.active {
                 display: flex;
-                flex-direction: column;
-                gap: 15px;
-                margin-bottom: 30px;
-                border-bottom: 1px solid var(--color-black-quaternary);
-                padding-bottom: 25px;
+            }
+        }
 
-                .resource-item {
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h4 {
+            text-align: left;
+            margin-bottom: 16px;
+            color: var(--color-black-primary);
+        }
+
+        /* My Concerns Tab */
+
+        .concerns-card {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .concerns-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            background: var(--color-white-primary);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+            .search-box {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                background: var(--color-bg-light);
+                border: 1px solid var(--color-black-quaternary);
+                border-radius: 8px;
+                padding: 10px 16px;
+
+                svg {
+                    color: var(--color-black-tertiary);
+                }
+
+                input {
+                    border: none;
+                    background: none;
+                    width: 100%;
+                    outline: none;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 14px;
+                    color: var(--color-black-primary);
+                }
+            }
+
+            .filter-dropdown-wrapper {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: var(--color-white-primary);
+                border: 1px solid var(--color-black-quaternary);
+                border-radius: 8px;
+                padding: 10px 16px;
+                min-width: 160px;
+                transition: border-color 0.2s;
+
+                &:focus-within {
+                    border-color: var(--color-black-primary);
+                }
+
+                .filter-icon {
+                    font-size: 20px;
+                    color: var(--color-black-tertiary);
+                }
+
+                .status-dropdown {
+                    border: none;
+                    background: none;
+                    outline: none;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 14px;
+                    cursor: pointer;
+                    color: var(--color-black-secondary);
+                    width: 100%;
+                }
+            }
+        }
+
+        .tickets-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+
+            .ticket-card {
+                background: var(--color-white-primary);
+                border-radius: 12px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+                transition: transform 0.2s;
+
+                &:hover {
+                    transform: translateY(-3px);
+                }
+
+                .ticket-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 15px;
-                    border: 1px solid var(--color-black-tertiary);
-                    border-radius: 8px;
-                    transition: all 0.3s ease;
+                    margin-bottom: 12px;
 
-                    .resource-info {
+                    .ticket-id {
+                        font-family: 'Inter', sans-serif;
+                        font-weight: 600;
+                        color: var(--color-black-tertiary);
+                        font-size: 13px;
+                    }
+
+                    .badges {
                         display: flex;
-                        flex-direction: column;
-                        gap: 4px;
-                        text-align: left;
+                        gap: 8px;
 
-                        .resource-title {
-                            color: var(--color-black-primary);
+                        .status-badge,
+                        .priority-badge {
+                            display: flex;
+                            align-items: center;
+                            gap: 4px;
+                            padding: 4px 10px;
+                            border-radius: 6px;
+                            font-size: 11px;
+                            font-weight: 600;
+                            text-transform: uppercase;
+                        }
 
-                            .format-size {
-                                margin-top: 2px;
+                        .status-badge.in-progress {
+                            background: var(--color-yellow-quaternary);
+                            color: var(--color-yellow-primary);
+                        }
+
+                        .status-badge.open {
+                            background: var(--color-blue-quaternary);
+                            color: var(--color-blue-primary);
+                        }
+
+                        .status-badge.resolved {
+                            background: var(--color-green-quaternary);
+                            color: var(--color-green-primary);
+                        }
+
+                        .status-badge.closed {
+                            background: var(--color-black-quaternary);
+                            color: var(--color-black-secondary);
+                        }
+
+                        .priority-badge.high {
+                            background: var(--color-red-quaternary);
+                            color: var(--color-red-primary);
+                        }
+
+                        .priority-badge.medium {
+                            background: var(--color-yellow-quaternary);
+                            color: var(--color-yellow-primary);
+                        }
+
+                        .priority-badge.low {
+                            background: var(--color-green-quaternary);
+                            color: var(--color-green-primary);
+                        }
+                    }
+                }
+
+                .ticket-title {
+                    margin-bottom: 16px;
+                    color: var(--color-black-primary);
+                    text-align: left;
+                }
+
+                .ticket-footer {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+
+                    .ticket-meta {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 16px;
+
+                        .meta-item {
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            font-size: 12px;
+                            color: var(--color-black-secondary);
+
+                            svg {
+                                color: var(--color-black-tertiary);
+                                font-size: 16px;
                             }
                         }
                     }
 
-                    .download-btn {
-                        background: none;
-                        border: none;
-                        cursor: pointer;
+                    .view-ticket-btn {
                         display: flex;
                         align-items: center;
-                        justify-content: center;
-                        padding: 5px;
+                        gap: 6px;
+                        background: none;
+                        border: none;
+                        color: var(--color-black-secondary);
+                        font-weight: 500;
+                        font-size: 13px;
+                        cursor: pointer;
+                        padding: 6px 12px;
+                        border-radius: 6px;
+                        transition: all 0.2s;
+
+                        &:hover {
+                            background: var(--color-bg-light);
+                            color: var(--color-black-primary);
+                        }
+
+                        svg {
+                            font-size: 18px;
+                        }
+                    }
+                }
+            }
+        }
+
+        /* Submit Concern Tab */
+        .submit-concern-card {
+            background: var(--color-white-primary);
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            max-width: 800px;
+            width: 100%;
+            /* Removed align-items: center to keep form content left-aligned inside the 800px card */
+
+            .card-header {
+                margin-bottom: 24px;
+
+                h4 {
+                    margin-bottom: 4px;
+                    text-align: left;
+                }
+
+                p {
+                    color: var(--color-black-secondary);
+                    text-align: left;
+                }
+            }
+
+            .concern-form {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+
+                .form-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+
+                    label {
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: var(--color-black-secondary);
+                        /* Match CreateEventModal h6 style */
+                        text-align: left;
+
+                        .required {
+                            color: var(--color-red-primary);
+                        }
+                    }
+
+                    input,
+                    select,
+                    textarea {
+                        padding: 10px 12px;
+                        /* Match CreateEventModal */
+                        border: 1px solid var(--color-black-tertiary);
+                        border-radius: 6px;
+                        font-size: 14px;
+                        color: var(--color-black-primary);
+                        background-color: var(--color-white-primary);
+                        transition: border-color 0.2s;
+                        font-family: inherit;
+                        outline: none;
+
+                        &:focus {
+                            border-color: var(--color-black-primary);
+                        }
+
+                        &::placeholder {
+                            color: var(--color-black-tertiary);
+                        }
                     }
                 }
 
-                .resource-item.active {
-                    background-color: var(--color-red-quaternary);
-                    border-color: var(--color-red-primary);
+                .form-row {
+                    display: grid;
+                    /* Match CreateEventModal grid style */
+                    grid-template-columns: 1fr 1fr;
+                    gap: 16px;
+                }
+
+                .attachment-upload {
+                    border: 2px dashed var(--color-black-quaternary);
+                    border-radius: 12px;
+                    padding: 32px;
+                    text-align: center;
+                    cursor: pointer;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 8px;
+                    transition: border-color 0.2s;
+                    color: var(--color-black-primary);
+
+                    .text-muted {
+                        color: var(--color-red-secondary);
+                    }
+
+                    &:hover {
+                        border-color: var(--color-black-primary);
+                    }
+
+                    svg {
+                        color: var(--color-black-tertiary);
+                    }
+                }
+
+                .submit-btn {
+                    margin-top: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    align-self: flex-start;
+                    /* Left aligned */
+                }
+            }
+        }
+
+        /* Help Center Tab */
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+            width: 100%;
+            max-width: 1440px;
+
+            .contact-card {
+                background: var(--color-white-primary);
+                border-radius: 12px;
+                padding: 32px;
+                text-align: left;
+                /* Changed to left */
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                /* Alignment left */
+                gap: 12px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+                h5 {
+                    color: var(--color-black-primary);
+                    text-align: left;
+                }
+
+                p {
+                    color: var(--color-black-secondary);
+                    text-align: left;
+
+                }
+
+                &.border-red {
+                    border-top: 4px solid var(--color-red-primary);
+                }
+
+                &.border-green {
+                    border-top: 4px solid var(--color-green-primary);
+                }
+
+                &.border-purple {
+                    border-top: 4px solid var(--color-purple-primary);
+                }
+
+                .icon-wrap {
+                    padding: 16px;
+                    border-radius: 12px;
+
+                    &.bg-red-q {
+                        background: var(--color-red-quaternary);
+                    }
+
+                    &.bg-green-q {
+                        background: var(--color-green-quaternary);
+                    }
+
+                    &.bg-purple-q {
+                        background: var(--color-purple-quaternary);
+                    }
+                }
+
+                .contact-info {
+                    font-family: 'Poppins', sans-serif;
+                    font-weight: 600;
+                    font-size: 14px;
+
+                    &.text-red {
+                        color: var(--color-red-primary);
+                    }
+
+                    &.text-green {
+                        color: var(--color-green-primary);
+                    }
+
+                    &.text-purple {
+                        color: var(--color-purple-primary);
+                    }
+                }
+
+                .link-btn {
+                    background: none;
+                    border: none;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    padding: 0;
+
+                    &.text-red {
+                        color: var(--color-red-primary);
+                    }
+                }
+            }
+        }
+
+        .help-content-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            width: 100%;
+            max-width: 1440px;
+
+            .faq-section,
+            .resources-section {
+                background: var(--color-white-primary);
+                border-radius: 12px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+                h4 {
+                    margin-top: 0;
+                }
+            }
+
+            .faq-list {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+
+                .faq-item {
+                    border: 1px solid var(--color-black-quaternary);
+                    border-radius: 8px;
+                    overflow: hidden;
+
+                    .faq-toggle {
+                        width: 100%;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 16px;
+                        background: none;
+                        border: none;
+                        cursor: pointer;
+                        text-align: left;
+
+                        h6 {
+                            margin: 0;
+                            color: var(--color-black-primary);
+                        }
+                    }
+
+                    .faq-answer {
+                        padding: 0 16px 16px;
+                        color: var(--color-black-secondary);
+                        text-align: left;
+                    }
+
+                    &.active {
+                        border-color: var(--color-red-primary);
+                        background: #fdfdfd;
+                    }
+                }
+            }
+
+            .resources-list {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin-bottom: 24px;
+
+                .resource-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    padding: 12px;
+                    border: 1px solid var(--color-black-quaternary);
+                    border-radius: 8px;
+                    transition: all 0.2s;
+
+                    &:hover {
+                        border-color: var(--color-red-primary);
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                    }
+
+                    .resource-icon {
+                        color: var(--color-red-primary);
+                        background: var(--color-red-quaternary);
+                        padding: 8px;
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+
+                    .resource-info {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        text-align: left;
+
+                        .resource-title {
+                            margin: 0;
+                            color: var(--color-black-primary);
+                        }
+
+                        .text-muted {
+                            color: var(--color-black-secondary);
+                        }
+                    }
+
+                    .resource-actions {
+                        display: flex;
+                        gap: 4px;
+
+                        .download-btn {
+                            background: none;
+                            border: none;
+                            padding: 6px;
+                            color: var(--color-black-tertiary);
+                            cursor: pointer;
+                            border-radius: 4px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+
+                            &:hover {
+                                background: var(--color-bg-light);
+                                color: var(--color-red-primary);
+                            }
+                        }
+                    }
                 }
             }
 
             .support-hours {
+                background: var(--color-bg-light);
+                padding: 16px;
+                border-radius: 8px;
                 text-align: left;
-                display: flex;
-                flex-direction: column;
-                gap: 5px;
 
-                .hours-title {
+                .hours-header {
                     display: flex;
                     align-items: center;
                     gap: 8px;
+                    margin-bottom: 8px;
                     color: var(--color-black-primary);
-                    margin-bottom: 5px;
-                    font-weight: 500;
+                    font-weight: 600;
+                }
+
+                p {
+                    margin: 0;
+                    color: var(--color-black-secondary);
                 }
             }
         }
     }
 }
 
-.sd-list {
-    margin: 0;
-    padding-left: 20px;
-}
-
-.sd-list li {
-    margin: 0 0 8px 0;   
-    line-height: 1.6;   
-    font-size: 14px !important;
-}
-
-
+/* RESPONSIVE STYLES */
 @media (max-width: 1024px) {
-    .support-content-layout {
-        flex-direction: column;
-    }
-
-    .support-main-col,
-    .support-side-col {
-        flex: auto;
+    .sponsor-support-page {
+        .help-content-layout {
+            grid-template-columns: 1fr !important;
+        }
     }
 }
 
 @media (max-width: 768px) {
-    .sponsor-support-container {
-        padding: 24px;
-    }
+    .sponsor-support-page {
+        padding: 20px;
 
-    .support-contact-cards {
-        flex-direction: column;
-        align-items: stretch;
-    }
+        .concerns-toolbar {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
 
-    .contact-card {
-        max-width: 100%;
+        .tickets-list .ticket-card .ticket-footer {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+
+            .view-ticket-btn {
+                align-self: flex-end;
+            }
+        }
+
+        .submit-concern-card .concern-form .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .contact-grid {
+            grid-template-columns: 1fr !important
+            ;
+        }
     }
 }
 
 @media (max-width: 480px) {
-    .sponsor-support-container {
-        padding: 20px 5%;
-    }
+    .sponsor-support-page {
+        padding: 15px;
 
-    .support-card {
-        padding: 20px;
+        .support-tabs {
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+
+            .tab-btn {
+                white-space: nowrap;
+                padding: 12px 4px;
+            }
+        }
+
+        .tickets-list .ticket-card {
+            padding: 16px;
+
+            .ticket-header {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 8px;
+            }
+
+            .ticket-meta {
+                gap: 12px;
+            }
+        }
+
+        .submit-concern-card {
+            padding: 20px;
+        }
     }
 }
