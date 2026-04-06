@@ -139,6 +139,16 @@ const getProfile = async (req, res) => {
       }
     }
 
+    // 🔥 Attach sponsor-specific data if needed
+    if (user.role === 'sponsor') {
+      const sponsor = await Sponsor.findOne({ userId: _id })
+      if (sponsor) {
+        profileData.companyName = sponsor.companyName
+        profileData.industry = sponsor.industry
+        if (sponsor.phone) profileData.phone = sponsor.phone
+      }
+    }
+
     res.status(200).json(profileData)
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -176,6 +186,26 @@ const updateProfile = async (req, res) => {
         if (industry) promoter.industry = industry
         if (phone) promoter.phone = phone
         await promoter.save()
+      }
+    }
+
+    // 🔥 Update sponsor-specific fields if applicable
+    if (user.role === 'sponsor') {
+      let sponsor = await Sponsor.findOne({ userId: _id })
+      
+      if (sponsor) {
+        if (companyName) sponsor.companyName = companyName
+        if (industry) sponsor.industry = industry
+        if (phone) sponsor.phone = phone
+        await sponsor.save()
+      } else if (companyName && industry) {
+        // Create it if it doesn't exist yet but form data is provided
+        await Sponsor.create({ 
+          userId: _id, 
+          companyName, 
+          industry, 
+          phone: phone || user.phone 
+        })
       }
     }
 
