@@ -1,40 +1,108 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import SponsorKit from './SponsorModal/SponsorKit';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import eventsService from '../services/eventsService';
 import './SponsorEventDetails.css';
 
 const SponsorEventDetails = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
+    const { user } = useAuthContext();
     const [activeTab, setActiveTab] = useState('Overview');
     const [isSponsorKitModalOpen, setIsSponsorKitModalOpen] = useState(false);
+    const [event, setEvent] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     const tabs = ['Overview', 'Sponsorship Benefits', 'Pricing'];
+
+    useEffect(() => {
+        const fetchEvent = async () => {
+            if (!id || !user?.token) return;
+            setIsLoading(true);
+            try {
+                const data = await eventsService.getEvent(id, user.token);
+                setEvent(data);
+            } catch (error) {
+                console.error("Error fetching event:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchEvent();
+    }, [id, user?.token]);
 
     const handleViewMap = () => {
         navigate('/sponsor/sponsor-venue-layout');
     };
 
+    const handleBack = () => {
+        navigate('/sponsor/sponsor-events');
+    };
+
+    if (isLoading) {
+        return (
+            <div className="sed-loading-container">
+                <Icon icon="line-md:loading-twotone-loop" width="48" />
+                <p>Loading event details...</p>
+            </div>
+        );
+    }
+
+    if (!event) {
+        return (
+            <div className="sed-error-container">
+                <Icon icon="mdi:alert-circle-outline" width="48" />
+                <h3>Event not found</h3>
+                <button className="primary-button" onClick={handleBack}>Go Back</button>
+            </div>
+        );
+    }
+
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
     return (
         <div className="sed-page-wrapper">
-            <div className="sed-hero-banner">
+            <div className="sed-top-header">
+                <div className="sed-header-left">
+                    <button className="sed-back-btn" onClick={handleBack}>
+                        <Icon icon="mdi:arrow-left" width="24" />
+                    </button>
+                    <h1>{event.title}</h1>
+                </div>
+            </div>
+
+            <div 
+                className="sed-hero-banner"
+                style={{ 
+                    backgroundImage: event.image 
+                        ? `url(${BACKEND_URL}/uploads/${event.image})` 
+                        : "url('/assets/eventbg.jpg')" 
+                }}
+            >
                 <div className="sed-hero-overlay"></div>
                 <div className="sed-hero-content">
-                    <span className="sed-open-pill button-label">SPONSORSHIP OPEN</span>
-                    <h1 className="sed-hero-title">TechInnovate Summit 2024</h1>
+                    <span className="sed-open-pill button-label">
+                        {event.category?.toUpperCase() || "SPONSORSHIP OPEN"}
+                    </span>
+                    <h1 className="sed-hero-title">{event.title}</h1>
 
                     <div className="sed-hero-info">
                         <div className="sed-hero-info-item">
                             <Icon icon="mdi:calendar" />
-                            <span className="regular-body-text">Jun 16, 2026</span>
+                            <span className="regular-body-text">
+                                {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
                         </div>
                         <div className="sed-hero-info-item">
                             <Icon icon="mdi:map-marker" />
-                            <span className="regular-body-text">Starlight Arena, Los Angeles, CA</span>
+                            <span className="regular-body-text">{event.venue?.name || "TBA"}, {event.venue?.city || ""}, {event.venue?.state || ""}</span>
                         </div>
                         <div className="sed-hero-info-item">
-                            <Icon icon="mdi:account-group" />
-                            <span className="regular-body-text">5,000+ Expected Attendees</span>
+                            <Icon icon="mdi:clock-outline" />
+                            <span className="regular-body-text">{event.startTime || "TBA"} - {event.endTime || "TBA"}</span>
                         </div>
                     </div>
                 </div>
@@ -59,7 +127,7 @@ const SponsorEventDetails = () => {
                             <div className="sed-tab-pane">
                                 <h3>About the Event</h3>
                                 <p className="regular-body-text text-secondary sed-desc">
-                                    The premier technology conference bringing together industry leaders, startups, and investors for three days of innovation and networking
+                                    {event.description || "No description available for this event."}
                                 </p>
 
                                 <h4>Attendee Demographics</h4>
@@ -167,7 +235,11 @@ const SponsorEventDetails = () => {
                 </div>
             </div>
 
-            <SponsorKit isOpen={isSponsorKitModalOpen} onClose={() => setIsSponsorKitModalOpen(false)} />
+            <SponsorKit 
+                isOpen={isSponsorKitModalOpen} 
+                onClose={() => setIsSponsorKitModalOpen(false)} 
+                event={event}
+            />
         </div>
     );
 };

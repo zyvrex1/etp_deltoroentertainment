@@ -130,18 +130,27 @@ const getEvent = async (req, res) => {
 
   try {
     const user = req.user;
-    const role = user.role?.toLowerCase();
+    const role = user?.role?.toLowerCase() || "guest";
 
     let eventQuery;
 
     if (role === "superadmin" || role === "admin") {
       eventQuery = Event.findById(id);
     } else if (role === "promoter") {
-      eventQuery = Event.findOne({ _id: id, createdBy: user._id });
-    } else if (role === "customer" || role === "sponsor") {
-      eventQuery = Event.findOne({ _id: id, status: "approved" });
+      // Promoter owns it or it's approved/completed
+      eventQuery = Event.findOne({
+        _id: id,
+        $or: [
+          { createdBy: user._id },
+          { status: { $in: ["approved", "completed"] } }
+        ]
+      });
     } else {
-      return res.status(403).json({ error: "Unauthorized role" });
+      // Guest, Customer, or Sponsor can see approved/completed events
+      eventQuery = Event.findOne({ 
+        _id: id, 
+        status: { $in: ["approved", "completed"] } 
+      });
     }
 
     const event = await eventQuery.populate({

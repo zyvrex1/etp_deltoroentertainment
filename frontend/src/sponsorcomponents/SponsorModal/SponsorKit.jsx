@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import './SponsorKit.css';
 
-const SponsorKit = ({ isOpen, onClose }) => {
+const SponsorKit = ({ isOpen, onClose, event }) => {
         const navigate = useNavigate();
     if (!isOpen) return null;
 
@@ -21,7 +21,7 @@ const SponsorKit = ({ isOpen, onClose }) => {
                 <div className="sponsor-kit-header-sticky">
                     <div className="sponsor-kit-header-title">
                         <h3>Sponsorship Kit</h3>
-                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>TechInnovate Summit 2024</p>
+                        <p className="small-body-text text-secondary" style={{ margin: 0 }}>{event?.title}</p>
                     </div>
                     <button className="kit-close-btn" onClick={onClose}>
                         <Icon icon="mdi:close" />
@@ -30,24 +30,24 @@ const SponsorKit = ({ isOpen, onClose }) => {
 
                 <div className="sponsor-kit-body">
                     <div className="sk-hero">
-                        <div className="button-label sk-sponsored-by bg-red-primary text-white">Sponsored by Q1 2024</div>
-                        <h2>TechInnovate Summit 2024</h2>
+                        <div className="button-label sk-sponsored-by bg-red-primary text-white">SPONSORSHIP OPEN</div>
+                        <h2>{event?.title}</h2>
                         <div className="sk-hero-details">
-                            <span><Icon icon="mdi:calendar" /> Oct 15-17, 2024</span>
-                            <span><Icon icon="mdi:map-marker" /> Moscone Center, SF</span>
-                            <span><Icon icon="mdi:account-group" /> 5,000+ Attendees</span>
+                            <span><Icon icon="mdi:calendar" /> {event?.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ""}</span>
+                            <span><Icon icon="mdi:map-marker" /> {event?.venue?.name}, {event?.venue?.city}</span>
+                            <span><Icon icon="mdi:clock-outline" /> {event?.startTime || "TBA"} - {event?.endTime || "TBA"}</span>
                         </div>
                     </div>
 
                     <div className="sk-section">
                         <h3 className="sk-section-title">About the Event</h3>
                         <p className="regular-body-text text-secondary mb-3">
-                            TechInnovate Summit is the West Coast's most influential technology conference, bringing together the brightest minds in software, hardware, AI, and venture capital. Now in its 8th year, the Summit has grown into a must-attend event for anyone shaping the future of technology.
+                            {event?.description || "No description available for this event."}
                         </p>
                         <div className="sk-stats-grid">
                             <div className="sk-stat-card sk-stat-red">
-                                <h3 className="text-red">5,000+</h3>
-                                <p className="smaller-body-text text-secondary">Attendees</p>
+                                <h4 className="text-red" style={{ fontSize: '1rem', margin: '0' }}>{event?.startTime} - {event?.endTime}</h4>
+                                <p className="smaller-body-text text-secondary">Event Time</p>
                             </div>
                             <div className="sk-stat-card sk-stat-blue">
                                 <h3 className="text-blue">3 Days</h3>

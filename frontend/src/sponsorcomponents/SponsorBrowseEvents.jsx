@@ -146,16 +146,16 @@ const SponsorBrowseEvents = () => {
                                         <span>{event.venue?.name || "TBA"}</span>
                                     </div>
 
-                                    <div className="sbe-stats-row">
-                                        <div className="sbe-stat-item">
-                                            <span className="smaller-body-text stat-label">Expected Attendees</span>
-                                            <span className="large-body-text stat-value">{event.attendees || "TBA"}</span>
+                                        <div className="sbe-stats-row">
+                                            <div className="sbe-stat-item">
+                                                <span className="smaller-body-text stat-label">Time</span>
+                                                <span className="large-body-text stat-value">{event.startTime || "TBA"} - {event.endTime || "TBA"}</span>
+                                            </div>
+                                            <div className="sbe-stat-item">
+                                                <span className="smaller-body-text stat-label">Booths Available</span>
+                                                <span className="large-body-text stat-value">{event.booths?.length || 0}</span>
+                                            </div>
                                         </div>
-                                        <div className="sbe-stat-item">
-                                            <span className="smaller-body-text stat-label">Booths Available</span>
-                                            <span className="large-body-text stat-value">{event.booths?.length || 0}</span>
-                                        </div>
-                                    </div>
 
                                     <button className="primary-button sbe-view-btn">
                                         View Details <Icon icon="mdi:arrow-right" />

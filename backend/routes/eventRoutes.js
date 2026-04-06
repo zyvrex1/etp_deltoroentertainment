@@ -28,7 +28,7 @@ const optionalAuth = require('../middleware/optionalAuth')
    ========================= */
 // Move these ABOVE requireAuth so guests can see events
 router.get('/', optionalAuth, getEvents)
-router.get('/:id', getEvent)
+router.get('/:id', optionalAuth, getEvent)
 router.get("/:eventId/price-levels", getPriceLevels);
 
 /* =========================
