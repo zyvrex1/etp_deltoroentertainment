@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
-import { showDeleteConfirmAlert, showSuccessAlert } from "../admincomponents/utils/sweetAlert";
+import { showDeleteConfirmAlert, showSuccessAlert, showErrorAlert } from "../admincomponents/utils/sweetAlert";
 import "./SponsorManageProduct.css";
 import SponsorAddProduct from "./SponsorModal/SponsorAddProduct";
 import SponsorEditProduct from "./SponsorModal/SponsorEditProduct";
+import merchandiseService from "../services/merchandiseService";
+import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
 
 const initialProducts = [
   { id: 1, image: "/assets/eventbg.jpg", category: "Food", name: "Gourmet Burger", price: "$12.99", description: "Premium beef patty with artisan cheese and house sauce.", stock: 40, stockStatus: "Medium Stock", active: true },
@@ -17,15 +19,16 @@ const initialProducts = [
   { id: 9, image: "/assets/eventbg.jpg", category: "Drinks", name: "Bottled Water", price: "$2.99", description: "Spring water.", stock: 150, stockStatus: "High Stock", active: true },
 ];
 
-const productStats = [
-  { label: "Total Products", value: "10", icon: "mdi:cube-outline", color: "blue" },
-  { label: "Potential Revenue", value: "$6,950.55", icon: "mdi:currency-usd", color: "green" },
-  { label: "Low Stock Items", value: "0", icon: "mdi:alert-outline", color: "orange" },
-  { label: "Out of Stock", value: "0", icon: "mdi:close-circle-outline", color: "red" },
-];
-
-const SponsorManageProduct = () => {
-  const [products, setProducts] = useState(initialProducts);
+const SponsorManageProduct = ({ eventId }) => {
+  const { user } = useAuthContext();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState([
+    { label: "Total Products", value: "0", icon: "mdi:cube-outline", color: "blue" },
+    { label: "Potential Revenue", value: "$0.00", icon: "mdi:currency-usd", color: "green" },
+    { label: "Low Stock Items", value: "0", icon: "mdi:alert-outline", color: "orange" },
+    { label: "Out of Stock", value: "0", icon: "mdi:close-circle-outline", color: "red" },
+  ]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All Categories");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -38,6 +41,42 @@ const SponsorManageProduct = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const itemsPerPage = 8;
+
+  const fetchProducts = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      // Fetch products filter by event if eventId provided
+      const filters = eventId ? { eventId } : {};
+      const data = await merchandiseService.getMerchandises(user.token, filters);
+      
+      setProducts(data);
+      updateStats(data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      showErrorAlert("Error", "Failed to load products inventory.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStats = (items) => {
+    const total = items.length;
+    const revenue = items.reduce((sum, item) => sum + (item.price * item.stock), 0);
+    const lowStock = items.filter(item => item.stock > 0 && item.stock <= 10).length;
+    const outOfStock = items.filter(item => item.stock <= 0).length;
+
+    setStats([
+      { label: "Total Products", value: total.toString(), icon: "mdi:cube-outline", color: "blue" },
+      { label: "Potential Revenue", value: `$${revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, icon: "mdi:currency-usd", color: "green" },
+      { label: "Low Stock Items", value: lowStock.toString(), icon: "mdi:alert-outline", color: "orange" },
+      { label: "Out of Stock", value: outOfStock.toString(), icon: "mdi:close-circle-outline", color: "red" },
+    ]);
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [user, eventId]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -66,29 +105,59 @@ const SponsorManageProduct = () => {
     }
   };
 
-  const handleAddProduct = (newProductData) => {
-    const newProduct = {
-      ...newProductData,
-      id: Date.now(),
-      image: newProductData.image || "/assets/eventbg.jpg",
-      price: `$${newProductData.price || "0.00"}`,
-      stockStatus: newProductData.stock > 50 ? "High Stock" : newProductData.stock > 0 ? "Medium Stock" : "Out of Stock",
-    };
-    setProducts([newProduct, ...products]);
+  const handleAddProduct = async (newProductData) => {
+    try {
+      if (!eventId) {
+        showErrorAlert("Error", "No event selected. Please select a store first.");
+        return;
+      }
+
+      const payload = {
+        ...newProductData,
+        eventId: eventId,
+        status: newProductData.stock > 0 ? "Available" : "Out of Stock"
+      };
+
+      const response = await merchandiseService.createMerchandise(payload, user.token);
+      setProducts([response, ...products]);
+      updateStats([response, ...products]);
+      showSuccessAlert("Success", "Product added to inventory.");
+      setIsAddModalOpen(false);
+    } catch (error) {
+      showErrorAlert("Error", error.message || "Failed to add product.");
+    }
   };
 
-  const handleEditProduct = (updatedProduct) => {
-    setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+  const handleEditProduct = async (updatedProduct) => {
+    try {
+      const { _id, ...updateData } = updatedProduct;
+      const response = await merchandiseService.updateMerchandise(_id, updateData, user.token);
+      
+      const newProducts = products.map(p => p._id === _id ? response : p);
+      setProducts(newProducts);
+      updateStats(newProducts);
+      showSuccessAlert("Updated", "Product details updated.");
+      setIsEditModalOpen(false);
+    } catch (error) {
+      showErrorAlert("Error", error.message || "Failed to update product.");
+    }
   };
 
   const handleDeleteProduct = (productId) => {
     showDeleteConfirmAlert(
       "Delete Product?",
       "Are you sure you want to delete this product from your inventory?"
-    ).then((result) => {
+    ).then(async (result) => {
       if (result.isConfirmed) {
-        setProducts(products.filter(p => p.id !== productId));
-        showSuccessAlert("Deleted!", "Your product has been deleted successfully.");
+        try {
+          await merchandiseService.deleteMerchandise(productId, user.token);
+          const newProducts = products.filter(p => p._id !== productId);
+          setProducts(newProducts);
+          updateStats(newProducts);
+          showSuccessAlert("Deleted!", "Your product has been deleted successfully.");
+        } catch (error) {
+          showErrorAlert("Error", error.message || "Failed to delete product.");
+        }
       }
     });
   };
@@ -101,7 +170,7 @@ const SponsorManageProduct = () => {
   return (
     <div className="smp-container">
       <div className="smp-stats-grid">
-        {productStats.map((stat, idx) => (
+        {stats.map((stat, idx) => (
           <div key={idx} className="smp-stat-card">
             <div className={`smp-stat-icon-wrap ${stat.color}`}>
               <Icon icon={stat.icon} />
@@ -176,17 +245,22 @@ const SponsorManageProduct = () => {
       </div>
 
       <div className="smp-grid">
-        {paginatedData.length > 0 ? (
+        {loading ? (
+          <div className="smp-loading">
+            <Icon icon="mdi:loading" className="smp-spin" width="48" />
+            <p>Loading inventory...</p>
+          </div>
+        ) : paginatedData.length > 0 ? (
           paginatedData.map((product) => (
-            <div key={product.id} className="smp-card">
+            <div key={product._id} className="smp-card">
               <div className="smp-card-img-wrap">
-                <img src={product.image} alt={product.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                <img src={product.image || "/assets/eventbg.jpg"} alt={product.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
                 <div className={`smp-category-badge button-label ${product.category.toLowerCase()}`}>{product.category}</div>
               </div>
               <div className="smp-card-content">
                 <div className="smp-title-row">
                   <h6 className="left-aligned">{product.name}</h6>
-                  <span className="smp-price">{product.price}</span>
+                  <span className="smp-price">${product.price.toFixed(2)}</span>
                 </div>
                 <p className="smaller-body-text smp-desc">{product.description}</p>
                 
@@ -194,16 +268,16 @@ const SponsorManageProduct = () => {
                   <span>
                     <Icon icon="mdi:package-variant-closed" /> Stock: {product.stock}
                   </span>
-                  <span className={`smp-stock-status ${product.stockStatus.replace(/\s+/g, '-').toLowerCase()}`}>
-                    {product.stockStatus}
+                  <span className={`smp-stock-status ${product.stock <= 0 ? 'out-of-stock' : product.stock <= 10 ? 'low-stock' : 'high-stock'}`}>
+                    {product.stock <= 0 ? 'Out of Stock' : product.stock <= 10 ? 'Low Stock' : 'In Stock'}
                   </span>
                 </div>
 
                 {/* Simulated Stock Progress bar */}
                 <div className="smp-stock-progress">
                   <div 
-                    className={`smp-stock-bar ${product.stockStatus.replace(/\s+/g, '-').toLowerCase()}`}
-                    style={{width: `${Math.min((product.stock / 200) * 100, 100)}%`}}
+                    className={`smp-stock-bar ${product.stock <= 0 ? 'out-of-stock' : product.stock <= 10 ? 'low-stock' : 'high-stock'}`}
+                    style={{width: `${Math.min((product.stock / 100) * 100, 100)}%`}}
                   ></div>
                 </div>
 
@@ -213,7 +287,7 @@ const SponsorManageProduct = () => {
                     <button className="smp-icon-btn" onClick={() => openEditModal(product)}>
                       <Icon icon="mdi:square-edit-outline" />
                     </button>
-                    <button className="smp-icon-btn" onClick={() => handleDeleteProduct(product.id)}>
+                    <button className="smp-icon-btn" onClick={() => handleDeleteProduct(product._id)}>
                       <Icon icon="mdi:trash-can-outline" />
                     </button>
                   </div>

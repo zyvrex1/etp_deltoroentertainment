@@ -173,48 +173,102 @@
   color: var(--color-black-primary);
 }
 
-/* Upload Box */
-.sap-upload-box {
+/* Upload Area Styles (from Admin Module) */
+.upload-area {
   border: 2px dashed #d1d5db;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  width: 100%;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f9fafb;
+}
+
+.upload-area:hover,
+.upload-area.drag-active {
+  border-color: var(--color-red-primary);
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+.icon-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-color: #E0E0E0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  color: var(--color-black-secondary);
+}
+
+.upload-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-black-primary);
+  margin: 0 0 4px 0;
+}
+
+.upload-subtitle {
+  font-size: 12px;
+  color: var(--color-black-tertiary);
+  margin: 0;
+}
+
+/* File Preview Styles */
+.file-preview {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  background-color: #f9fafb; /* gray-50 */
-  cursor: pointer;
-  transition: border-color 0.2s, background-color 0.2s;
+  gap: 4px;
+  width: 100%;
 }
 
-.sap-upload-box:hover {
-  border-color: var(--color-red-secondary);
-  background-color: #fff1f1; /* light red tint */
+.file-preview .preview-image {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  margin-bottom: 8px;
 }
 
-.sap-upload-icon {
-  font-size: 40px;
+.file-preview .file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-black-primary);
+  margin: 0;
+  word-break: break-all;
+}
+
+.file-preview .file-size {
+  font-size: 11px;
   color: var(--color-black-tertiary);
-  margin-bottom: 12px;
+  margin: 0;
 }
 
-.sap-upload-text {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  color: var(--color-black-secondary);
-  margin-bottom: 4px;
-}
-
-.sap-upload-link {
+.remove-file-btn {
+  margin-top: 8px;
+  padding: 6px 16px;
+  background-color: transparent;
+  border: 1px solid var(--color-red-primary);
   color: var(--color-red-primary);
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.sap-upload-hint {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  color: var(--color-black-tertiary);
+.remove-file-btn:hover {
+  background-color: var(--color-red-primary);
+  color: white;
 }
 
 /* Footer & Buttons */

@@ -18,6 +18,7 @@ const superadminRoutes = require('./routes/superadminRoutes')
 const eventRoutes = require('./routes/eventRoutes')
 const announcementRoutes = require('./routes/announcementsRoutes')
 const policiesRoutes = require("./routes/policiesRoutes");
+const merchandiseRoutes = require('./routes/merchandiseRoutes');
 
 // express app
 const app = express()
@@ -55,9 +56,9 @@ app.use('/api/customer', customerRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/superadmin', superadminRoutes)
 app.use('/api/events', eventRoutes)
-
 app.use('/api/announcements', announcementRoutes)
-app.use('/api/policies', policiesRoutes) 
+app.use('/api/policies', policiesRoutes)
+app.use('/api/merchandise', merchandiseRoutes)
 
 // Global error handler
 app.use((err, req, res, next) => {

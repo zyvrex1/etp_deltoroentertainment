@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import "./SponsorStoreDashboard.css";
 
@@ -10,10 +10,14 @@ import SponsorPaymentInfo from "./SponsorPaymentInfo";
 
 const SponsorStoreDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("Products");
 
-  // Mock event data, but could be dynamic
-  const eventName = "TechInnovate Summit 2024";
+  // Get event data from navigation state
+  const { eventId, eventName } = location.state || { 
+    eventId: null, 
+    eventName: "General Inventory" 
+  };
 
   return (
     <div className="ssd-container">
@@ -56,7 +60,7 @@ const SponsorStoreDashboard = () => {
       </div>
 
       <div className="ssd-content">
-        {activeTab === 'Products' && <SponsorManageProduct />}
+        {activeTab === 'Products' && <SponsorManageProduct eventId={eventId} />}
         {activeTab === 'Orders' && <SponsorManageOrder />}
         {activeTab === 'Analytics' && <SponsorProductAnalytics />}
         {activeTab === 'Info' && <SponsorPaymentInfo />}

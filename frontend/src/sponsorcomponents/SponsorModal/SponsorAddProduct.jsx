@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./SponsorAddProduct.css";
 
 const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
-  const [productData, setProductData] = useState({
+  const initialData = {
     name: "",
     category: "Food",
     price: "",
@@ -11,7 +11,19 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
     active: true,
     description: "",
     image: null,
-  });
+    fileName: "",
+    fileSize: 0
+  };
+
+  const [productData, setProductData] = useState(initialData);
+  const [imageDragActive, setImageDragActive] = useState(false);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setProductData(initialData);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -23,9 +35,58 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
     }));
   };
 
+  const handleImageDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageDragActive(e.type === "dragenter" || e.type === "dragover");
+  };
+
+  const handleImageDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageDragActive(false);
+    if (e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handlePhotoChange = (e) => {
+    if (e.target.files[0]) {
+      processFile(e.target.files[0]);
+    }
+  };
+
+  const processFile = (file) => {
+    if (file.size > 5 * 1024 * 1024) { // 5MB Limit to match CreateEventModal
+      alert("File too large. Max 5MB.");
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProductData({ 
+        ...productData, 
+        image: reader.result,
+        fileName: file.name,
+        fileSize: file.size
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (e) => {
+    e.stopPropagation();
+    setProductData({ ...productData, image: null, fileName: "", fileSize: 0 });
+  };
+
   const handleAdd = () => {
-    // Basic validation could go here
-    onAdd(productData);
+    const cleanData = {
+      ...productData,
+      price: Number(productData.price) || 0,
+      stock: Number(productData.stock) || 0
+    }
+    onAdd(cleanData);
+    setProductData(initialData);
     onClose();
   };
 
@@ -105,12 +166,40 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
 
           <div className="sap-form-group">
             <label>Product Image</label>
-            <div className="sap-upload-box">
-              <Icon icon="mdi:image-outline" className="sap-upload-icon" />
-              <p className="sap-upload-text">
-                <span className="sap-upload-link">Upload a file</span> or drag and drop
-              </p>
-              <p className="sap-upload-hint">PNG, JPG, GIF up to 10MB</p>
+            <div 
+              className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
+              onDragEnter={handleImageDrag}
+              onDragLeave={handleImageDrag}
+              onDragOver={handleImageDrag}
+              onDrop={handleImageDrop}
+              onClick={() => document.getElementById("sap-photo-upload")?.click()}
+            >
+              <input 
+                type="file" 
+                id="sap-photo-upload" 
+                hidden 
+                accept="image/*"
+                onChange={handlePhotoChange}
+              />
+              
+              {productData.image ? (
+                <div className="file-preview">
+                  <img src={productData.image} alt="preview" className="preview-image" />
+                  <p className="file-name">{productData.fileName}</p>
+                  <p className="file-size">{(productData.fileSize / 1024 / 1024).toFixed(2)} MB</p>
+                  <button type="button" className="remove-file-btn" onClick={handleRemoveImage}>
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="upload-placeholder">
+                  <div className="icon-circle">
+                    <Icon icon="mdi:image-area" width="32" height="32" />
+                  </div>
+                  <p className="upload-title">Click or drag an image here</p>
+                  <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>
+                </div>
+              )}
             </div>
           </div>
 

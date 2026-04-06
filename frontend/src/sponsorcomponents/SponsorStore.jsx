@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
+import merchandiseService from "../services/merchandiseService";
+import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
 import "./SponsorStore.css";
 
 const sampleStoreEvents = [
@@ -16,26 +18,54 @@ const sampleStoreEvents = [
 ];
 
 const SponsorStore = () => {
+  const { user } = useAuthContext();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [merchandise, setMerchandise] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [eventData, setEventData] = useState(sampleStoreEvents);
+  
   const itemsPerPage = 8;
   const dropdownRef = useRef(null);
 
   const getStatusClass = (status) => {
     switch (status) {
-      case "Live":
-        return "live";
-      case "Upcoming":
-        return "upcoming";
-      case "Completed":
-        return "completed";
-      default:
-        return "";
+      case "Live": return "live";
+      case "Upcoming": return "upcoming";
+      case "Completed": return "completed";
+      default: return "";
     }
   };
+
+  useEffect(() => {
+    const fetchAllData = async () => {
+      if (!user) return;
+      try {
+        setLoading(true);
+        // Fetch ALL merchandise for this sponsor to count them per store
+        const merchData = await merchandiseService.getMerchandises(user.token);
+        setMerchandise(merchData);
+        
+        // Update product counts in our event listing
+        const updatedEvents = sampleStoreEvents.map(event => {
+          // In a real app, match by event._id. Using id for mock comparison here.
+          const count = merchData.filter(m => m.eventId?._id === event._id || m.eventId === event._id).length;
+          return { ...event, products: count };
+        });
+        setEventData(updatedEvents);
+
+      } catch (error) {
+        console.error("Error fetching store data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllData();
+  }, [user]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -48,7 +78,7 @@ const SponsorStore = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredEvents = sampleStoreEvents.filter((event) => {
+  const filteredEvents = eventData.filter((event) => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.location.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "All" || event.status === statusFilter;
@@ -167,7 +197,9 @@ const SponsorStore = () => {
                   <button 
                     className="primary-button store-manage-btn"
                     disabled={event.status === "Completed"}
-                    onClick={() => navigate("/sponsor/store/dashboard")}
+                    onClick={() => navigate("/sponsor/store/dashboard", { 
+                      state: { eventId: event._id || event.id, eventName: event.title } 
+                    })}
                   >
                     Manage Store <Icon icon="mdi:arrow-right" />
                   </button>

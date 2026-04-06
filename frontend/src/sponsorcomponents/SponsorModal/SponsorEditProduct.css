@@ -158,6 +158,166 @@
   transition: .4s;
   border-radius: 50%;
 }
+.sep-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.sep-modal-content {
+  background-color: var(--color-white-primary);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.sep-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid var(--color-black-quaternary);
+}
+
+.sep-modal-header h2 {
+  font-size: 20px;
+  color: var(--color-black-primary);
+  margin: 0;
+}
+
+.sep-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-black-tertiary);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  transition: background-color 0.2s;
+}
+
+.sep-close-btn:hover {
+  background-color: var(--color-bg-light);
+  color: var(--color-black-primary);
+}
+
+.sep-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sep-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sep-form-group label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--color-black-secondary);
+}
+
+.sep-form-group input,
+.sep-form-group select,
+.sep-form-group textarea {
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--color-black-primary);
+  background-color: var(--color-white-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sep-form-group input:focus,
+.sep-form-group select:focus,
+.sep-form-group textarea:focus {
+  border-color: var(--color-red-primary);
+}
+
+.sep-form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.sep-form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.sep-form-row .half-width {
+  flex: 1;
+}
+
+/* Status Toggle */
+.sep-status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 42px;
+}
+
+.sep-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.sep-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.sep-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.sep-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
 
 .sep-toggle-switch input:checked + .sep-slider {
   background-color: var(--color-red-primary);
@@ -173,77 +333,102 @@
   color: var(--color-black-primary);
 }
 
-/* Upload Box */
-.sep-upload-box {
+/* Upload Area Styles (from Admin Module) */
+.upload-area {
   border: 2px dashed #d1d5db;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  width: 100%;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f9fafb;
+}
+
+.upload-area:hover,
+.upload-area.drag-active {
+  border-color: var(--color-red-primary);
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+.icon-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-color: #E0E0E0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  color: var(--color-black-secondary);
+}
+
+.upload-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-black-primary);
+  margin: 0 0 4px 0;
+}
+
+.upload-subtitle {
+  font-size: 12px;
+  color: var(--color-black-tertiary);
+  margin: 0;
+}
+
+/* File Preview Styles */
+.file-preview {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  background-color: #f9fafb;
-  cursor: pointer;
-  transition: border-color 0.2s, background-color 0.2s;
-}
-
-.sep-upload-box:hover {
-  border-color: var(--color-red-secondary);
-  background-color: #fff1f1;
-}
-
-.sep-upload-icon {
-  font-size: 40px;
-  color: var(--color-black-tertiary);
-  margin-bottom: 12px;
-}
-
-.sep-upload-text {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  color: var(--color-black-secondary);
-  margin-bottom: 4px;
-}
-
-.sep-upload-link {
-  color: var(--color-red-primary);
-  font-weight: 500;
-}
-
-.sep-upload-hint {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  color: var(--color-black-tertiary);
-}
-
-/* Image Uploaded Success Message */
-.sep-image-success {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.sep-img-preview {
-  width: 40px;
-  height: 40px;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid var(--color-black-quaternary);
-}
-
-.sep-img-preview img {
+  gap: 4px;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
-.sep-success-text {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  color: var(--color-green-primary);
+.file-preview .preview-image {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  margin-bottom: 8px;
+}
+
+.file-preview .file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-black-primary);
+  margin: 0;
+  word-break: break-all;
+}
+
+.file-preview .file-size {
+  font-size: 11px;
+  color: var(--color-black-tertiary);
+  margin: 0;
+}
+
+.remove-file-btn {
+  margin-top: 8px;
+  padding: 6px 16px;
+  background-color: transparent;
+  border: 1px solid var(--color-red-primary);
+  color: var(--color-red-primary);
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.remove-file-btn:hover {
+  background-color: var(--color-red-primary);
+  color: white;
 }
 
 /* Footer & Buttons */
