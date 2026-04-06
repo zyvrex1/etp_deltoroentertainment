@@ -4,9 +4,11 @@ import SponsorDocuments from './SponsorModal/SponsorDocuments';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawLongText, finalizeReport } from '../admincomponents/utils/pdfExport';
 import './SponsorSupport.css';
+import SponsorViewConcern from './SponsorViewConcern';
 
 export default function SponsorSupport() {
     const [activeTab, setActiveTab] = useState('My Concerns');
+    const [selectedConcern, setSelectedConcern] = useState(null);
     const [openFaq, setOpenFaq] = useState(0);
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
@@ -140,7 +142,6 @@ export default function SponsorSupport() {
         }
     ];
 
-    // Resources from SponsorBoothFullDetails.jsx
     const resources = [
         {
             id: 1,
@@ -473,6 +474,14 @@ export default function SponsorSupport() {
         return priority.toLowerCase();
     };
 
+    const handleViewConcern = (ticket) => {
+        setSelectedConcern(ticket);
+    };
+
+    const handleBackToSupport = () => {
+        setSelectedConcern(null);
+    };
+
     const filteredTickets = mockTickets.filter(ticket => {
         const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) || 
                              ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
@@ -480,65 +489,74 @@ export default function SponsorSupport() {
         return matchesSearch && matchesStatus;
     });
 
+    if (selectedConcern) {
+        return (
+            <SponsorViewConcern 
+                concern={selectedConcern} 
+                onBack={handleBackToSupport} 
+            />
+        );
+    }
+
     const renderMyConcerns = () => (
         <div className="tab-pane active fade-in">
             <div className="concerns-card">
-            <div className="concerns-toolbar">
-                <div className="search-box">
-                    <Icon icon="mdi:magnify" width="20" />
-                    <input 
-                        type="text" 
-                        placeholder="Search by ticket ID, subject..." 
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                </div>
-                <div className="filter-dropdown-wrapper">
-                    <Icon icon="mdi:filter-variant" className="filter-icon" />
-                    <select 
-                        value={selectedStatus} 
-                        onChange={(e) => setSelectedStatus(e.target.value)}
-                        className="status-dropdown"
-                    >
-                        <option value="All">All Status</option>
-                        <option value="Open">Open</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Resolved">Resolved</option>
-                        <option value="Closed">Closed</option>
-                    </select>
-                </div>
+                <div className="concerns-toolbar">
+                    <div className="search-box">
+                        <Icon icon="mdi:magnify" width="20" />
+                        <input 
+                            type="text" 
+                            placeholder="Search by ticket ID, subject..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <div className="filter-dropdown-wrapper">
+                        <Icon icon="mdi:filter-variant" className="filter-icon" />
+                        <select 
+                            value={selectedStatus} 
+                            onChange={(e) => setSelectedStatus(e.target.value)}
+                            className="status-dropdown"
+                        >
+                            <option value="All">All Status</option>
+                            <option value="Open">Open</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
                 </div>
 
-            <div className="tickets-list">
-                {filteredTickets.map(ticket => (
-                    <div key={ticket.id} className="ticket-card">
-                        <div className="ticket-header">
-                            <span className="ticket-id">{ticket.id}</span>
-                            <div className="badges">
-                                <span className={`status-badge ${getStatusColorClass(ticket.status)}`}>
-                                    <Icon icon={getStatusIcon(ticket.status)} />
-                                    {ticket.status}
-                                </span>
-                                <span className={`priority-badge ${getPriorityColorClass(ticket.priority)}`}>
-                                    {ticket.priority}
-                                </span>
+                <div className="tickets-list">
+                    {filteredTickets.map(ticket => (
+                        <div key={ticket.id} className="ticket-card">
+                            <div className="ticket-header">
+                                <span className="ticket-id">{ticket.id}</span>
+                                <div className="badges">
+                                    <span className={`status-badge ${getStatusColorClass(ticket.status)}`}>
+                                        <Icon icon={getStatusIcon(ticket.status)} />
+                                        {ticket.status}
+                                    </span>
+                                    <span className={`priority-badge ${getPriorityColorClass(ticket.priority)}`}>
+                                        {ticket.priority}
+                                    </span>
+                                </div>
+                            </div>
+                            <h5 className="ticket-title">{ticket.subject}</h5>
+                            <div className="ticket-footer">
+                                <div className="ticket-meta">
+                                    <span className="meta-item"><Icon icon="mdi:tag-outline" /> {ticket.category}</span>
+                                    <span className="meta-item"><Icon icon="mdi:clock-outline" /> {ticket.date}</span>
+                                    <span className="meta-item"><Icon icon="mdi:message-outline" /> {ticket.messages} messages</span>
+                                    {ticket.files > 0 && <span className="meta-item"><Icon icon="mdi:attachment" /> {ticket.files} files</span>}
+                                </div>
+                                <button className="view-ticket-btn" onClick={() => handleViewConcern(ticket)}>
+                                    <Icon icon="mdi:eye-outline" /> View
+                                </button>
                             </div>
                         </div>
-                        <h5 className="ticket-title">{ticket.subject}</h5>
-                        <div className="ticket-footer">
-                            <div className="ticket-meta">
-                                <span className="meta-item"><Icon icon="mdi:tag-outline" /> {ticket.category}</span>
-                                <span className="meta-item"><Icon icon="mdi:clock-outline" /> {ticket.date}</span>
-                                <span className="meta-item"><Icon icon="mdi:message-outline" /> {ticket.messages} messages</span>
-                                {ticket.files > 0 && <span className="meta-item"><Icon icon="mdi:attachment" /> {ticket.files} files</span>}
-                            </div>
-                            <button className="view-ticket-btn">
-                                <Icon icon="mdi:eye-outline" /> View
-                            </button>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
             </div>
         </div>
     );
