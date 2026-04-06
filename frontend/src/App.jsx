@@ -132,19 +132,19 @@ function App() {
         >
           <Route index element={<SponsorHome />} />
           <Route path="sponsor-events" element={<SponsorEvents />} />
-          <Route path="/sponsor/sponsor-event/:id" element={<SponsorEventDetails />} />
-          <Route path="/sponsor/sponsor-venue-layout" element={<SponsorVenueLayout />} />
-          <Route path="/sponsor/sponsor-confirm-selection" element={<SponsorConfirmSelection />} />
-          <Route path="/sponsor/sponsor-reservation" element={<SponsorReservationSummary />} />
-          <Route path="/sponsor/sponsor-venue-billing" element={<SponsorVenueBilling />} />
-          <Route path="/sponsor/sponsor-my-booths" element={<SponsorMyBooth />} />
-          <Route path="/sponsor/sponsor-booth-details" element={<SponsorBoothFullDetails />} />
-          <Route path="/sponsor/sponsor-history" element={<SponsorEventHistory />} />
-          <Route path="/sponsor/sponsor-invoices" element={<SponsorInvoice />} />
-          <Route path="/sponsor/settings" element={<SponsorSettings />} />
-          <Route path="/sponsor/support" element={<SponsorSupport />} />
-          <Route path="/sponsor/store" element={<SponsorStore />} />
-          <Route path="/sponsor/store/dashboard" element={<SponsorStoreDashboard />} />
+          <Route path="sponsor-event/:id" element={<SponsorEventDetails />} />
+          <Route path="sponsor-venue-layout" element={<SponsorVenueLayout />} />
+          <Route path="sponsor-confirm-selection" element={<SponsorConfirmSelection />} />
+          <Route path="sponsor-reservation" element={<SponsorReservationSummary />} />
+          <Route path="sponsor-venue-billing" element={<SponsorVenueBilling />} />
+          <Route path="sponsor-my-booths" element={<SponsorMyBooth />} />
+          <Route path="sponsor-booth-details" element={<SponsorBoothFullDetails />} />
+          <Route path="sponsor-history" element={<SponsorEventHistory />} />
+          <Route path="sponsor-invoices" element={<SponsorInvoice />} />
+          <Route path="settings" element={<SponsorSettings />} />
+          <Route path="support" element={<SponsorSupport />} />
+          <Route path="store" element={<SponsorStore />} />
+          <Route path="store/dashboard" element={<SponsorStoreDashboard />} />
 
         </Route>
 

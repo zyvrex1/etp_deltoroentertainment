@@ -1,10 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { showSendMessageConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
 import './CustomerSupport.css';
 
 export default function CustomerSupport() {
+    const location = useLocation();
     const [openFaq, setOpenFaq] = useState(0);
+    const [formData, setFormData] = useState({
+        subject: 'Ticket Issue',
+        message: ''
+    });
+
+    useEffect(() => {
+        if (location.state?.prefill) {
+            setFormData(prev => ({
+                ...prev,
+                ...location.state.prefill
+            }));
+        }
+    }, [location.state]);
 
     const faqs = [
         {
@@ -97,9 +112,15 @@ export default function CustomerSupport() {
                             <div className="form-group">
                                 <label className="small-body-text text-muted">Subject</label>
                                 <div className="select-wrapper">
-                                    <select className="form-input regular-body-text">
+                                    <select 
+                                        className="form-input regular-body-text"
+                                        value={formData.subject}
+                                        onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                                    >
                                         <option>Ticket Issue</option>
                                         <option>Refund Request</option>
+                                        <option>Billing & Payment</option>
+                                        <option>Refund Booth</option>
                                         <option>Account Assistance</option>
                                         <option>General Inquiry</option>
                                     </select>
@@ -107,8 +128,24 @@ export default function CustomerSupport() {
                                 </div>
                             </div>
                             <div className="form-group">
+                                <label className="small-body-text text-muted">Event (if applicable)</label>
+                                <input 
+                                    type="text" 
+                                    className="form-input regular-body-text" 
+                                    placeholder="e.g. Neon Dreams Tour" 
+                                    value={formData.event}
+                                    onChange={(e) => setFormData({...formData, event: e.target.value})}
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label className="small-body-text text-muted">Message</label>
-                                <textarea className="form-input form-textarea regular-body-text" rows="4" placeholder="How can we help you today?"></textarea>
+                                <textarea 
+                                    className="form-input form-textarea regular-body-text" 
+                                    rows="4" 
+                                    placeholder="How can we help you today?"
+                                    value={formData.message}
+                                    onChange={(e) => setFormData({...formData, message: e.target.value})}
+                                ></textarea>
                             </div>
                             <button type="button" className="primary-button send-msg-btn" onClick={handleSendMessage}>
                                 <Icon icon="mdi:send-outline" width="18" /> Send Message

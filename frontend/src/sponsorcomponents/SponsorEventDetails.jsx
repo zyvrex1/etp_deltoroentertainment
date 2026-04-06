@@ -231,6 +231,21 @@ const SponsorEventDetails = () => {
                         <button className="primary-button sed-full-btn" onClick={handleViewMap}>View Booth Map</button>
 
                         <button className="outlined-button sed-view-kit mt-3" onClick={() => setIsSponsorKitModalOpen(true)}>View Sponsorship Kit</button>
+
+                        <div className="sed-help-link mt-4">
+                            <span className="smaller-body-text text-secondary">Need help with this event?</span>
+                            <button 
+                                className="link-btn text-red smaller-body-text" 
+                                onClick={() => navigate('/sponsor/support', { 
+                                    state: { 
+                                        tab: 'Submit a Concern', 
+                                        prefill: { event: event.title } 
+                                    } 
+                                })}
+                            >
+                                Contact Support
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

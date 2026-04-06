@@ -204,17 +204,17 @@ const CustomerEventDetails = () => {
                         </div>
                     </div>
 
-
-                    {/* <div className="ced-marketplace-live-card">
-                        <div className="flex row align-center gap-2 mb-2">
-                            <Icon icon="mdi:storefront-outline" className="text-red" width="24" />
-                            <h6 className="text-primary m-0">Marketplace is LIVE</h6>
-                        </div>
-                        <p className="smaller-body-text text-secondary mb-3">
-                            Order food, drinks, and merch right now and skip the lines!
-                        </p>
-                        <button className="primary-button ced-full-btn">Shop Now</button>
-                    </div> */}
+                    <div className="ced-help-support-card mt-l">
+                        <span className="smaller-body-text text-secondary">Need help with this event?</span>
+                        <button 
+                            className="link-btn text-red smaller-body-text" 
+                            onClick={() => navigate('/customer/support', { 
+                                state: { prefill: { event: 'Neon Dreams Tour' } } 
+                            })}
+                        >
+                            Contact Support
+                        </button>
+                    </div>
 
                 </div>
             </div>

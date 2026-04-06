@@ -1,10 +1,24 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import './CustomerViewEventFullDetails.css';
 
 const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
+    const navigate = useNavigate();
+
     if (!show) return null;
+
+    const handleRequestRefund = () => {
+        onClose();
+        navigate('/customer/support', { 
+            state: { 
+                prefill: { 
+                    subject: 'Refund Booth',
+                    event: eventData?.title || 'Neon Dreams Tour'
+                } 
+            } 
+        });
+    };
 
     return (
         <div className="cved-modal-overlay" onClick={onClose}>
@@ -81,13 +95,20 @@ const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
                         </div>
 
                         <div className="cved-ticket-actions">
-                            <NavLink to="/sponsor/sponsor-events" className="outlined-button cved-seatmap-btn" onClick={onClose}>
+                            <NavLink to="/customer/browse-events" className="outlined-button cved-seatmap-btn" onClick={onClose}>
                                 <Icon icon="mdi:eye-outline" width="20" /> View Seatmap
                             </NavLink>
-                            <NavLink to="/sponsor/sponsor-events" className="primary-button cved-buy-btn" onClick={onClose}>
+                            <NavLink to="/customer/event-details" className="primary-button cved-buy-btn" onClick={onClose}>
                                 <Icon icon="mdi:cart-outline" width="20" /> Buy Tickets
                             </NavLink>
                         </div>
+                        
+                        <div className="cved-refund-action" style={{ marginTop: '12px' }}>
+                            <button className="outlined-button" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={handleRequestRefund}>
+                                <Icon icon="mdi:cash-refund" width="20" /> Request Refund
+                            </button>
+                        </div>
+
                         <p className="smaller-body-text cved-ticket-note">
                             Browse available seats and pricing before committing to purchase
                         </p>

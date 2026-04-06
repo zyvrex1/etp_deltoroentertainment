@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import SponsorDocuments from './SponsorModal/SponsorDocuments';
 import jsPDF from 'jspdf';
@@ -7,6 +8,7 @@ import './SponsorSupport.css';
 import SponsorViewConcern from './SponsorViewConcern';
 
 export default function SponsorSupport() {
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState('My Concerns');
     const [selectedConcern, setSelectedConcern] = useState(null);
     const [openFaq, setOpenFaq] = useState(0);
@@ -14,6 +16,25 @@ export default function SponsorSupport() {
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("All");
+
+    const [formData, setFormData] = useState({
+        subject: '',
+        category: 'General Inquiry',
+        priority: 'Medium',
+        description: ''
+    });
+
+    useEffect(() => {
+        if (location.state?.tab) {
+            setActiveTab(location.state.tab);
+            if (location.state.prefill) {
+                setFormData(prev => ({
+                    ...prev,
+                    ...location.state.prefill
+                }));
+            }
+        }
+    }, [location.state]);
 
     const tabs = [
         { name: 'My Concerns', icon: 'mdi:comment-alert-outline', badge: 2 },
@@ -568,15 +589,32 @@ export default function SponsorSupport() {
                     <h4>Submit a New Concern</h4>
                     <p className="small-body-text text-muted">Describe your issue and our team will get back to you as soon as possible.</p>
                 </div>
-                <form className="concern-form">
+                <form className="concern-form" onSubmit={(e) => e.preventDefault()}>
                     <div className="form-group">
                         <label>Subject <span className="required">*</span></label>
-                        <input type="text" placeholder="Brief summary of your concern" />
+                        <input 
+                            type="text" 
+                            placeholder="Brief summary of your concern" 
+                            value={formData.subject}
+                            onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Involved Event</label>
+                        <input 
+                            type="text" 
+                            placeholder="e.g. TechInnovate Summit 2026" 
+                            value={formData.event}
+                            onChange={(e) => setFormData({...formData, event: e.target.value})}
+                        />
                     </div>
                     <div className="form-row">
                         <div className="form-group col">
                             <label>Category</label>
-                            <select>
+                            <select 
+                                value={formData.category}
+                                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                            >
                                 <option>General Inquiry</option>
                                 <option>Billing & Payment</option>
                                 <option>Technical Support</option>
@@ -585,7 +623,10 @@ export default function SponsorSupport() {
                         </div>
                         <div className="form-group col">
                             <label>Priority</label>
-                            <select defaultValue="Medium">
+                            <select 
+                                value={formData.priority}
+                                onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                            >
                                 <option>Low</option>
                                 <option>Medium</option>
                                 <option>High</option>
@@ -594,7 +635,12 @@ export default function SponsorSupport() {
                     </div>
                     <div className="form-group">
                         <label>Description <span className="required">*</span></label>
-                        <textarea rows="5" placeholder="Provide as much detail as possible about your concern..."></textarea>
+                        <textarea 
+                            rows="5" 
+                            placeholder="Provide as much detail as possible about your concern..."
+                            value={formData.description}
+                            onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        ></textarea>
                     </div>
                     <div className="form-group">
                         <label>Attachments</label>
