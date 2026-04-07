@@ -11,9 +11,8 @@ const requireAuth = async (req, res, next) => {
   const token = authorization.split(' ')[1];
 
   try {
-    const { _id, role } = jwt.verify(token, process.env.SECRET);
-
-    req.user = { _id, role }; // 🔥 attach role
+    const { _id } = jwt.verify(token, process.env.SECRET);
+    req.user = await User.findOne({ _id }).select('_id role firstName lastName email');
     next();
 
   } catch (error) {

@@ -2,12 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import SponsorDocuments from './SponsorModal/SponsorDocuments';
-import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawLongText, finalizeReport } from '../admincomponents/utils/pdfExport';
-import './SponsorSupport.css';
 import SponsorViewConcern from './SponsorViewConcern';
+import { io } from 'socket.io-client';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import concernService from '../services/concernService';
+import jsPDF from 'jspdf';
+import './SponsorSupport.css';
+import { 
+    loadLogo, 
+    addReportHeader, 
+    finalizeReport, 
+    showExportToast, 
+    removeExportToast, 
+    drawLongText 
+} from '../admincomponents/utils/pdfExport';
+import { showSuccessAlert, showErrorAlert } from '../admincomponents/utils/sweetAlert';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function SponsorSupport() {
+    const { user } = useAuthContext();
     const location = useLocation();
     const [activeTab, setActiveTab] = useState('My Concerns');
     const [selectedConcern, setSelectedConcern] = useState(null);
@@ -16,13 +30,46 @@ export default function SponsorSupport() {
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("All");
+    const [concerns, setConcerns] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
         subject: '',
         category: 'General Inquiry',
         priority: 'Medium',
-        description: ''
+        description: '',
+        event: ''
     });
+
+    const fetchConcerns = async () => {
+        if (!user?.token) return;
+        setLoading(true);
+        try {
+            const data = await concernService.getSponsorConcerns(user.token);
+            setConcerns(data);
+        } catch (error) {
+            console.error("Error fetching concerns:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchConcerns();
+    }, [user]);
+
+    // Socket for real-time updates to the list
+    useEffect(() => {
+        if (!user?.token) return;
+        const socket = io(BACKEND_URL);
+
+        socket.on('newMessage', () => fetchConcerns());
+        socket.on('statusUpdate', () => fetchConcerns());
+
+        return () => socket.disconnect();
+    }, [user]);
 
     useEffect(() => {
         if (location.state?.tab) {
@@ -37,53 +84,12 @@ export default function SponsorSupport() {
     }, [location.state]);
 
     const tabs = [
-        { name: 'My Concerns', icon: 'mdi:comment-alert-outline', badge: 2 },
+        { name: 'My Concerns', icon: 'mdi:comment-alert-outline', badge: concerns.filter(c => c.status !== 'closed' && c.status !== 'resolved').length },
         { name: 'Submit a Concern', icon: 'mdi:plus' },
         { name: 'Help Center', icon: 'mdi:help-circle-outline' }
     ];
 
-    const mockTickets = [
-        {
-            id: 'TKT-2024-001',
-            subject: 'Booth electricity not working during setup',
-            category: 'Booth Issue',
-            status: 'In Progress',
-            priority: 'High',
-            date: 'Oct 14, 2024 at 3:22 PM',
-            messages: 4,
-            files: 2
-        },
-        {
-            id: 'TKT-2024-002',
-            subject: 'Invoice discrepancy for booth upgrade',
-            category: 'Billing & Payment',
-            status: 'Open',
-            priority: 'Medium',
-            date: 'Oct 12, 2024 at 11:05 AM',
-            messages: 1,
-            files: 1
-        },
-        {
-            id: 'TKT-2024-003',
-            subject: 'Store product listing not appearing',
-            category: 'Store Issue',
-            status: 'Resolved',
-            priority: 'Low',
-            date: 'Oct 10, 2024 at 2:30 PM',
-            messages: 3,
-            files: 0
-        },
-        {
-            id: 'TKT-2024-004',
-            subject: 'Request for additional exhibitor passes',
-            category: 'Event Concern',
-            status: 'Closed',
-            priority: 'Low',
-            date: 'Oct 5, 2024 at 10:00 AM',
-            messages: 2,
-            files: 1
-        }
-    ];
+    // Remove mockTickets
 
     const exportDocumentToPDF = async (doc) => {
         const loadingToast = showExportToast();
@@ -492,7 +498,7 @@ export default function SponsorSupport() {
     };
 
     const getPriorityColorClass = (priority) => {
-        return priority.toLowerCase();
+        return priority?.toLowerCase() || 'medium';
     };
 
     const handleViewConcern = (ticket) => {
@@ -503,10 +509,10 @@ export default function SponsorSupport() {
         setSelectedConcern(null);
     };
 
-    const filteredTickets = mockTickets.filter(ticket => {
+    const filteredTickets = concerns.filter(ticket => {
         const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = selectedStatus === "All" || ticket.status === selectedStatus;
+                             ticket._id.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = selectedStatus === "All" || ticket.status.toLowerCase() === selectedStatus.toLowerCase();
         return matchesSearch && matchesStatus;
     });
 
@@ -549,34 +555,45 @@ export default function SponsorSupport() {
                 </div>
 
                 <div className="tickets-list">
-                    {filteredTickets.map(ticket => (
-                        <div key={ticket.id} className="ticket-card">
-                            <div className="ticket-header">
-                                <span className="ticket-id">{ticket.id}</span>
-                                <div className="badges">
-                                    <span className={`status-badge ${getStatusColorClass(ticket.status)}`}>
-                                        <Icon icon={getStatusIcon(ticket.status)} />
-                                        {ticket.status}
-                                    </span>
-                                    <span className={`priority-badge ${getPriorityColorClass(ticket.priority)}`}>
-                                        {ticket.priority}
-                                    </span>
-                                </div>
-                            </div>
-                            <h5 className="ticket-title">{ticket.subject}</h5>
-                            <div className="ticket-footer">
-                                <div className="ticket-meta">
-                                    <span className="meta-item"><Icon icon="mdi:tag-outline" /> {ticket.category}</span>
-                                    <span className="meta-item"><Icon icon="mdi:clock-outline" /> {ticket.date}</span>
-                                    <span className="meta-item"><Icon icon="mdi:message-outline" /> {ticket.messages} messages</span>
-                                    {ticket.files > 0 && <span className="meta-item"><Icon icon="mdi:attachment" /> {ticket.files} files</span>}
-                                </div>
-                                <button className="view-ticket-btn" onClick={() => handleViewConcern(ticket)}>
-                                    <Icon icon="mdi:eye-outline" /> View
-                                </button>
-                            </div>
+                    {loading ? (
+                        <div className="loading-state">
+                            <Icon icon="mdi:loading" className="spin" />
+                            <p>Loading concerns...</p>
                         </div>
-                    ))}
+                    ) : filteredTickets.length === 0 ? (
+                        <div className="empty-state">
+                            <Icon icon="mdi:comment-alert-outline" width="48" />
+                            <p>No concerns found.</p>
+                        </div>
+                    ) : (
+                        filteredTickets.map(ticket => (
+                            <div key={ticket._id} className="ticket-card">
+                                <div className="ticket-header">
+                                    <span className="ticket-id">#{ticket._id.slice(-6).toUpperCase()}</span>
+                                    <div className="badges">
+                                        <span className={`status-badge ${getStatusColorClass(ticket.status)}`}>
+                                            <Icon icon={getStatusIcon(ticket.status)} />
+                                            {ticket.status}
+                                        </span>
+                                        <span className={`priority-badge ${getPriorityColorClass(ticket.priority)}`}>
+                                            {ticket.priority || 'Medium'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <h5 className="ticket-title">{ticket.subject}</h5>
+                                <div className="ticket-footer">
+                                    <div className="ticket-meta">
+                                        <span className="meta-item"><Icon icon="mdi:tag-outline" /> {ticket.category}</span>
+                                        <span className="meta-item"><Icon icon="mdi:clock-outline" /> {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                                        <span className="meta-item"><Icon icon="mdi:message-outline" /> {ticket.messages.length} messages</span>
+                                    </div>
+                                    <button className="view-ticket-btn" onClick={() => handleViewConcern(ticket)}>
+                                        <Icon icon="mdi:eye-outline" /> View
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>
@@ -589,11 +606,45 @@ export default function SponsorSupport() {
                     <h4>Submit a New Concern</h4>
                     <p className="small-body-text text-muted">Describe your issue and our team will get back to you as soon as possible.</p>
                 </div>
-                <form className="concern-form" onSubmit={(e) => e.preventDefault()}>
+                <form className="concern-form" onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!user?.token) return;
+                    setIsSubmitting(true);
+                    try {
+                        const submitData = new FormData();
+                        submitData.append('subject', formData.subject);
+                        submitData.append('category', formData.category);
+                        submitData.append('priority', formData.priority);
+                        submitData.append('description', formData.description);
+                        submitData.append('event', formData.event);
+                        
+                        selectedFiles.forEach(file => {
+                            submitData.append('attachments', file);
+                        });
+
+                        await concernService.createConcern(submitData, user.token);
+                        showSuccessAlert("Success", "Your concern has been submitted successfully.");
+                        setFormData({
+                            subject: '',
+                            category: 'General Inquiry',
+                            priority: 'Medium',
+                            description: '',
+                            event: ''
+                        });
+                        setSelectedFiles([]);
+                        setActiveTab('My Concerns');
+                        fetchConcerns();
+                    } catch (error) {
+                        showErrorAlert("Error", error.message);
+                    } finally {
+                        setIsSubmitting(false);
+                    }
+                }}>
                     <div className="form-group">
                         <label>Subject <span className="required">*</span></label>
                         <input 
                             type="text" 
+                            required
                             placeholder="Brief summary of your concern" 
                             value={formData.subject}
                             onChange={(e) => setFormData({...formData, subject: e.target.value})}
@@ -636,6 +687,7 @@ export default function SponsorSupport() {
                     <div className="form-group">
                         <label>Description <span className="required">*</span></label>
                         <textarea 
+                            required
                             rows="5" 
                             placeholder="Provide as much detail as possible about your concern..."
                             value={formData.description}
@@ -643,15 +695,50 @@ export default function SponsorSupport() {
                         ></textarea>
                     </div>
                     <div className="form-group">
-                        <label>Attachments</label>
-                        <div className="attachment-upload">
+                        <label>Attachments (Optional)</label>
+                        <div 
+                            className="attachment-upload"
+                            onClick={() => document.getElementById('file-upload').click()}
+                        >
                             <Icon icon="mdi:attachment-plus" width="32" />
                             <p className="small-body-text">Click to attach files (images, PDFs, documents)</p>
-                            <span className="smaller-body-text text-muted">Max 10MB per file</span>
+                            <span className="smaller-body-text text-muted">Max 5 files, 10MB each</span>
+                            <input 
+                                type="file" 
+                                id="file-upload" 
+                                multiple 
+                                style={{ display: 'none' }} 
+                                onChange={(e) => {
+                                    const files = Array.from(e.target.files);
+                                    if (selectedFiles.length + files.length > 5) {
+                                        showErrorAlert("Limit Exceeded", "You can only upload up to 5 files.");
+                                        return;
+                                    }
+                                    setSelectedFiles([...selectedFiles, ...files]);
+                                }}
+                            />
                         </div>
+                        {selectedFiles.length > 0 && (
+                            <div className="selected-files-preview">
+                                {selectedFiles.map((file, idx) => (
+                                    <div key={idx} className="file-preview-item">
+                                        <Icon icon="mdi:file-document-outline" />
+                                        <span className="smaller-body-text truncate-text">{file.name}</span>
+                                        <button 
+                                            type="button" 
+                                            className="remove-file-btn"
+                                            onClick={() => setSelectedFiles(selectedFiles.filter((_, i) => i !== idx))}
+                                        >
+                                            <Icon icon="mdi:close-circle" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    <button type="submit" className="primary-button submit-btn">
-                        <Icon icon="mdi:send-outline" /> Submit Concern
+                    <button type="submit" className="primary-button submit-btn" disabled={isSubmitting}>
+                        <Icon icon={isSubmitting ? "mdi:loading" : "mdi:send-outline"} className={isSubmitting ? "spin" : ""} />
+                        {isSubmitting ? "Submitting..." : "Submit Concern"}
                     </button>
                 </form>
             </div>

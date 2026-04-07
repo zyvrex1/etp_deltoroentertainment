@@ -1,0 +1,84 @@
+const mongoose = require('mongoose')
+
+const Schema = mongoose.Schema
+
+const messageSchema = new Schema({
+  sender: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  senderName: {
+    type: String,
+    required: true
+  },
+  text: {
+    type: String,
+    required: true
+  },
+  isSystem: {
+    type: Boolean,
+    default: false
+  },
+  attachments: [{
+    name: String,
+    path: String,
+    size: String
+  }]
+}, { timestamps: true })
+
+const concernSchema = new Schema({
+  sponsorId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  sponsorName: {
+    type: String,
+    required: true
+  },
+  subject: {
+    type: String,
+    required: true
+  },
+  category: {
+    type: String,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['open', 'in-progress', 'resolved', 'closed'],
+    default: 'open'
+  },
+  description: {
+    type: String,
+    required: true
+  },
+  assignedTo: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  assignedName: {
+    type: String,
+    default: 'Unassigned'
+  },
+  attachments: [{
+    name: String,
+    path: String,
+    size: String
+  }],
+  messages: [messageSchema],
+  internalNotes: [{
+    adminId: { type: Schema.Types.ObjectId, ref: 'User' },
+    adminName: String,
+    text: String,
+    createdAt: { type: Date, default: Date.now }
+  }],
+  lastMessageAt: {
+    type: Date,
+    default: Date.now
+  }
+}, { timestamps: true })
+
+module.exports = mongoose.model('Concern', concernSchema)

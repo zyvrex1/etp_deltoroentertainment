@@ -262,6 +262,8 @@
             display: flex;
             flex-direction: column;
             gap: 0;
+            max-height: 500px;
+            overflow-y: auto;
         }
 
         .svc-timeline-item {
@@ -455,9 +457,26 @@
         &.svc-inline-status {
             padding: 2px 8px;
             border-radius: 4px;
+            color: var(--color-black-quaternary);
+
+
+           
         }
+         
     }
 
+      .svc-attach-btn {
+        align-items: center;
+        gap: 8px;
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        border: none;
+        background-color: transparent;
+    }
+
+    .system-badge{
+                color: var(--color-black-secondary) ;
+            }
     /* RESPONSIVE DESIGN */
     @media (max-width: 1200px) {
         .svc-left-col { max-width: 340px; }
@@ -484,8 +503,13 @@
 }
 .svc-timeline-card{
     padding: 16px !important;
+
+
 }
 
+.svc-right-col{
+    order: -1;
+}
 .svc-timeline-content-card:last-child{
     margin-bottom: 0;
 }

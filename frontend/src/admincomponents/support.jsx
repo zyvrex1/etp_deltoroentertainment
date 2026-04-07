@@ -3,75 +3,46 @@ import { Icon } from '@iconify/react';
 import './support.css';
 import ViewTicket from './ViewTicket';
 import AssignAdmin from './Modal/AssignAdmin';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import concernService from '../services/concernService';
+import { io } from 'socket.io-client';
+import { showSuccessAlert, showErrorAlert } from '../admincomponents/utils/sweetAlert';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const SupportDisputes = () => {
-    // Mock data for tickets
-    const [tickets, setTickets] = useState([
-        {
-            id: 1,
-            subject: 'Refund Request',
-            user: 'Emily Blunt',
-            status: 'open',
-            assignedTo: 'Robert Chen',
-            created: 'Jan 2, 2026'
-        },
-        {
-            id: 2,
-            subject: 'Booth Layout Issue',
-            user: 'Sarah Chen',
-            status: 'in-progress',
-            assignedTo: 'Michael Brown',
-            created: 'Sep 28, 2024'
-        },
-        {
-            id: 3,
-            subject: 'Sponsorship Inquiry',
-            user: 'Mike Ross',
-            status: 'resolved',
-            assignedTo: 'Robert Chen',
-            created: 'Sep 15, 2024'
-        },
-        {
-            id: 4,
-            subject: 'Login Issues',
-            user: 'James Wilson',
-            status: 'resolved',
-            assignedTo: 'Michael Brown',
-            created: 'Sep 10, 2024'
-        },
-        {
-            id: 5,
-            subject: 'Ticket Not Received',
-            user: 'Sophia Garcia',
-            status: 'open',
-            assignedTo: 'Unassigned',
-            created: 'Oct 5, 2024'
-        },
-        {
-            id: 6,
-            subject: 'Booth Size Question',
-            user: 'Lisa Wang',
-            status: 'in-progress',
-            assignedTo: 'Sophia Garcia',
-            created: 'Oct 1, 2024'
-        },
-        {
-            id: 7,
-            subject: 'Booth Size Question',
-            user: 'Lisa Wang',
-            status: 'in-progress',
-            assignedTo: 'Robert Chen',
-            created: 'Oct 1, 2024'
-        },
-        {
-            id: 8,
-            subject: 'Booth Size Question',
-            user: 'Lisa Wang',
-            status: 'in-progress',
-            assignedTo: 'Michael Brown',
-            created: 'Oct 1, 2024'
+    const { user } = useAuthContext();
+    const [tickets, setTickets] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchTickets = async () => {
+        if (!user?.token) return;
+        setLoading(true);
+        try {
+            const data = await concernService.getAdminConcerns(user.token);
+            setTickets(data);
+        } catch (error) {
+            console.error("Error fetching tickets:", error);
+        } finally {
+            setLoading(false);
         }
-    ]);
+    };
+
+    useEffect(() => {
+        fetchTickets();
+    }, [user]);
+
+    useEffect(() => {
+        if (!user?.token) return;
+        const socket = io(BACKEND_URL);
+
+        socket.on('newConcern', () => fetchTickets());
+        socket.on('newMessage', () => fetchTickets());
+        socket.on('statusUpdate', () => fetchTickets());
+        socket.on('concernAssigned', () => fetchTickets());
+
+        return () => socket.disconnect();
+    }, [user]);
 
     const getStatusBadge = (status) => {
         switch (status) {
@@ -137,9 +108,9 @@ const SupportDisputes = () => {
             if (!q) return true;
 
             return (
-                tx.user.toLowerCase().includes(q) ||
+                tx.sponsorName.toLowerCase().includes(q) ||
                 tx.subject.toLowerCase().includes(q) ||
-                tx.id.toString().includes(q)
+                tx._id.toLowerCase().includes(q)
             );
         });
     }, [tickets, searchQuery, activeFilter]);
@@ -168,7 +139,7 @@ const SupportDisputes = () => {
     const [selectedTicketForAssign, setSelectedTicketForAssign] = useState(null);
 
     const handleViewTicket = (ticket) => {
-        setSelectedTicketId(ticket.id);
+        setSelectedTicketId(ticket._id);
     };
 
     const handleAssignClick = (ticket) => {
@@ -181,30 +152,36 @@ const SupportDisputes = () => {
         setSelectedTicketForAssign(null);
     };
 
-    const handleAssignAdmin = (assignedName) => {
-        const updatedTickets = tickets.map(ticket =>
-            ticket.id === selectedTicketForAssign?.id ? { ...ticket, assignedTo: assignedName } : ticket
-        );
-        setTickets(updatedTickets);
-
-        setIsAssignModalOpen(false);
-        setSelectedTicketForAssign(null);
+    const handleAssignAdmin = async (assignedName, assignedId) => {
+        if (!user?.token || !selectedTicketForAssign) return;
+        try {
+            await concernService.assignConcern(selectedTicketForAssign._id, assignedId, assignedName, user.token);
+            showSuccessAlert("Success", "Ticket assigned successfully.");
+            fetchTickets();
+            setIsAssignModalOpen(false);
+            setSelectedTicketForAssign(null);
+        } catch (error) {
+            showErrorAlert("Error", error.message);
+        }
     };
 
     const handleBackToSupport = () => {
         setSelectedTicketId(null);
     };
 
-    const handleUpdateStatus = (id, newStatus) => {
-        // Update tickets list
-        const updatedTickets = tickets.map(ticket =>
-            ticket.id === id ? { ...ticket, status: newStatus } : ticket
-        );
-        setTickets(updatedTickets);
+    const handleUpdateStatus = async (id, newStatus) => {
+        if (!user?.token) return;
+        try {
+            await concernService.updateStatus(id, newStatus, user.token);
+            showSuccessAlert("Success", `Status updated to ${newStatus}.`);
+            fetchTickets();
+        } catch (error) {
+            showErrorAlert("Error", error.message);
+        }
     };
 
     if (selectedTicketId) {
-        const ticket = tickets.find(t => t.id === selectedTicketId);
+        const ticket = tickets.find(t => t._id === selectedTicketId);
         return (
             <ViewTicket
                 ticket={ticket}
@@ -339,26 +316,26 @@ const SupportDisputes = () => {
                             </thead>
                             <tbody>
                                 {paginatedTickets.map((ticket) => (
-                                    <tr key={ticket.id} className={expandedRow === ticket.id ? "expanded" : ""}>
+                                    <tr key={ticket._id} className={expandedRow === ticket._id ? "expanded" : ""}>
                                         <td className="regular-body-text id-td" data-label="ID">
-                                            <div className="mobile-expand-icon" onClick={() => toggleRow(ticket.id)}>
-                                                <Icon icon={expandedRow === ticket.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                            <div className="mobile-expand-icon" onClick={() => toggleRow(ticket._id)}>
+                                                <Icon icon={expandedRow === ticket._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                                             </div>
-                                            <span>#{ticket.id.toString().padStart(2, "0")}</span>
+                                            <span>#{ticket._id.slice(-6).toUpperCase()}</span>
                                         </td>
-                                        <td className="regular-body-text name-td" data-label="User">{ticket.user}</td>
+                                        <td className="regular-body-text name-td" data-label="User">{ticket.sponsorName}</td>
                                         <td className="subject-cell regular-body-text" data-label="Subject">
                                             <span className="subject-text">{ticket.subject}</span>
                                         </td>
                                         <td className="status-cell" data-label="Status">{getStatusBadge(ticket.status)}</td>
                                         <td className="regular-body-text" data-label="Assigned To">
-                                            {ticket.assignedTo === 'Unassigned' ? (
+                                            {ticket.assignedName === 'Unassigned' ? (
                                                 <span style={{ color: "var(--color-black-tertiary)" }}>Unassigned</span>
                                             ) : (
-                                                ticket.assignedTo
+                                                ticket.assignedName
                                             )}
                                         </td>
-                                        <td className="regular-body-text created-cell" data-label="Created">{ticket.created}</td>
+                                        <td className="regular-body-text created-cell" data-label="Created">{new Date(ticket.createdAt).toLocaleDateString()}</td>
                                         <td className="actions-cell" data-label="Actions">
                                             <div className="actions-flex">
                                                 <button className="outlined-button view-btn" onClick={() => handleViewTicket(ticket)}>

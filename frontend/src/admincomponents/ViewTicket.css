@@ -519,6 +519,15 @@
         cursor: pointer;
     }
 
+    .vt-attach-btn {
+        align-items: center;
+        gap: 8px;
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        border: none;
+        background-color: transparent;
+    }
+
     /* Responsive Overrides */
     @media (max-width: 1024px) {
         .vt-grid {

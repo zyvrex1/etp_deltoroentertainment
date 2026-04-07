@@ -1,49 +1,90 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import { io } from 'socket.io-client';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import concernService from '../services/concernService';
+import { showErrorAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
 import './SponsorViewConcern.css';
 
-export default function SponsorViewConcern({ concern, onBack }) {
-    // Mock data for the timeline as seen in the mockup
-    const timelineData = [
-        {
-            id: 1,
-            author: 'System',
-            status: 'Pending',
-            timestamp: 'Mar 10, 2024, 6:30 PM',
-            message: 'Concern submitted successfully.',
-            isSystem: true
-        },
-        {
-            id: 2,
-            author: 'System',
-            status: 'Under Review',
-            timestamp: 'Mar 10, 2024, 10:15 PM',
-            message: 'Assigned to support agent Sarah.',
-            isSystem: true
-        },
-        {
-            id: 3,
-            author: 'Admin',
-            status: 'In Progress',
-            timestamp: 'Mar 11, 2024, 5:20 PM',
-            message: 'We have identified a sync issue with your account. Our technical team is currently resolving this and your tickets should appear shortly.',
-            isSystem: false,
-            attachments: [
-                { name: 'sync-fix-instructions.pdf', size: '128 KB' }
-            ]
-        }
-    ];
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
-    // Mock data for original request
+export default function SponsorViewConcern({ concern: initialConcern, onBack }) {
+    const { user } = useAuthContext();
+    const [concern, setConcern] = useState(initialConcern);
+    const [replyText, setReplyText] = useState("");
+    const [replyFiles, setReplyFiles] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const fetchConcernDetails = async () => {
+        if (!user?.token || !initialConcern?._id) return;
+        try {
+            const data = await concernService.getConcernById(initialConcern._id, user.token);
+            setConcern(data);
+        } catch (error) {
+            console.error("Error fetching concern details:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchConcernDetails();
+    }, [initialConcern?._id, user]);
+
+    useEffect(() => {
+        if (!user?.token || !concern?._id) return;
+        const socket = io(BACKEND_URL);
+
+        socket.on('newMessage', (data) => {
+            if (data.concernId === concern._id) {
+                setConcern(prev => ({
+                    ...prev,
+                    messages: [...prev.messages, data.message]
+                }));
+            }
+        });
+
+        socket.on('statusUpdate', (data) => {
+            if (data.concernId === concern._id) {
+                setConcern(prev => ({
+                    ...prev,
+                    status: data.status,
+                    messages: [...prev.messages, data.message]
+                }));
+            }
+        });
+
+        return () => socket.disconnect();
+    }, [user, concern?._id]);
+
+    const handleReply = async () => {
+        if (!replyText.trim() && replyFiles.length === 0) return;
+        if (!user?.token) return;
+        setLoading(true);
+        try {
+            const formData = new FormData();
+            formData.append('text', replyText);
+            replyFiles.forEach(file => {
+                formData.append('attachments', file);
+            });
+
+            await concernService.addMessage(concern._id, formData, user.token);
+            setReplyText("");
+            setReplyFiles([]);
+            showSuccessAlert("Success", "Reply sent.");
+        } catch (error) {
+            showErrorAlert("Error", error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!concern) return null;
+
     const originalRequest = {
-        id: concern?.id || 'CON-1001',
-        category: concern?.category || 'Ticket Access',
-        status: concern?.status || 'In Progress',
-        description: 'I purchased 2 VIP tickets for the TechStart Summit, but they are not showing up in my app. I only see the standard admission tickets. Please help me resolve this before the event tomorrow.',
-        attachedFiles: [
-            { name: 'purchase-confirmation.pdf', size: '245 KB', type: 'pdf' },
-            { name: 'ticket-screen-error.png', size: '1.2 MB', type: 'image' }
-        ]
+        id: concern._id.slice(-6).toUpperCase(),
+        category: concern.category,
+        status: concern.status,
+        description: concern.description,
+        attachedFiles: concern.attachments || []
     };
 
     return (
@@ -62,13 +103,13 @@ export default function SponsorViewConcern({ concern, onBack }) {
                 </button>
                 <div className="svc-header-info">
                     <div className="svc-title-row">
-                        <h2 className="svc-page-title">{concern?.subject || 'Unable to access VIP tickets'}</h2>
+                        <h2 className="svc-page-title">{concern.subject}</h2>
                         <span className={`button-label svc-status-pill ${originalRequest.status.toLowerCase().replace(' ', '-')}`}>
                             {originalRequest.status}
                         </span>
                     </div>
                     <p className="svc-metadata smaller-body-text text-secondary">
-                        Submitted on Mar 10, 2024, 6:30 PM • {originalRequest.category}
+                        Submitted on {new Date(concern.createdAt).toLocaleString()} • {originalRequest.category}
                     </p>
                 </div>
             </div>
@@ -106,25 +147,29 @@ export default function SponsorViewConcern({ concern, onBack }) {
                             <label className="svc-detail-label smaller-body-text text-secondary">
                                 <Icon icon="mdi:paperclip" /> ATTACHED FILES ({originalRequest.attachedFiles.length})
                             </label>
-                            <div className="svc-files-list">
-                                {originalRequest.attachedFiles.map((file, idx) => (
-                                    <div key={idx} className="svc-file-card">
-                                        <div className="svc-file-icon-wrap">
-                                            <Icon 
-                                                icon={file.type === 'pdf' ? "mdi:file-pdf-box" : "mdi:image-outline"} 
-                                                className={`svc-file-icon ${file.type === 'pdf' ? 'text-red' : 'text-blue'}`}
-                                            />
-                                        </div>
-                                        <div className="svc-file-info">
-                                            <span className="svc-file-name smaller-body-text fw-600">{file.name}</span>
-                                            <span className="svc-file-size smaller-body-text text-secondary">{file.size}</span>
-                                        </div>
-                                        <button className="svc-file-download-btn">
-                                            <Icon icon="mdi:download-outline" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
+                             <div className="svc-files-list">
+                                 {originalRequest.attachedFiles.map((file, idx) => {
+                                     const isPDF = file.name?.toLowerCase().endsWith('.pdf');
+                                     const downloadUrl = `${BACKEND_URL}/${file.path}`;
+                                     return (
+                                         <div key={idx} className="svc-file-card">
+                                             <div className="svc-file-icon-wrap">
+                                                 <Icon 
+                                                     icon={isPDF ? "mdi:file-pdf-box" : "mdi:image-outline"} 
+                                                     className={`svc-file-icon ${isPDF ? 'text-red' : 'text-blue'}`}
+                                                 />
+                                             </div>
+                                             <div className="svc-file-info">
+                                                 <span className="svc-file-name smaller-body-text fw-600">{file.name}</span>
+                                                 <span className="svc-file-size smaller-body-text text-secondary">{file.size || 'Unknown size'}</span>
+                                             </div>
+                                             <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="svc-file-download-btn">
+                                                 <Icon icon="mdi:download-outline" />
+                                             </a>
+                                         </div>
+                                     );
+                                 })}
+                             </div>
                         </div>
 
                         <div className="svc-help-footer-inline">
@@ -141,11 +186,11 @@ export default function SponsorViewConcern({ concern, onBack }) {
                     <h6 className="svc-card-heading">Update Timeline</h6>
                     <div className="svc-timeline-card">
                         <div className="svc-timeline">
-                            {timelineData.map((item, index) => (
-                                <div key={item.id} className={`svc-timeline-item ${index === timelineData.length - 1 ? 'last-item' : ''}`}>
+                            {concern.messages.map((item, index) => (
+                                <div key={item._id} className={`svc-timeline-item ${index === concern.messages.length - 1 ? 'last-item' : ''}`}>
                                     <div className="svc-timeline-dot-wrapper">
-                                        <div className={`svc-timeline-dot ${index === timelineData.length - 1 ? 'active-dot' : ''}`}></div>
-                                        {index !== timelineData.length - 1 && <div className="svc-timeline-line"></div>}
+                                        <div className={`svc-timeline-dot ${index === concern.messages.length - 1 ? 'active-dot' : ''}`}></div>
+                                        {index !== concern.messages.length - 1 && <div className="svc-timeline-line"></div>}
                                     </div>
                                     <div className="svc-timeline-content-card">
                                         <div className="svc-timeline-header">
@@ -154,17 +199,21 @@ export default function SponsorViewConcern({ concern, onBack }) {
                                                     icon={item.isSystem ? "mdi:clock-outline" : "mdi:shield-account-outline"} 
                                                     className={item.isSystem ? "svc-system-icon" : "svc-admin-icon"} 
                                                 />
-                                                <span className="svc-author-name">{item.author}</span>
-                                                <span className="svc-dot-separator">•</span>
-                                                <span className={`svc-inline-status ${item.status.toLowerCase().replace(' ', '-')}`}>
-                                                    {item.status}
-                                                </span>
+                                                <span className="svc-author-name">{item.senderName}</span>
+                                                {item.isSystem && (
+                                                    <>
+                                                        <span className="svc-dot-separator">•</span>
+                                                        <span className={`svc-inline-status system-badge`}>
+                                                            System
+                                                        </span>
+                                                    </>
+                                                )}
                                             </div>
-                                            <span className="svc-timestamp smaller-body-text text-secondary">{item.timestamp}</span>
+                                            <span className="svc-timestamp smaller-body-text text-secondary">{new Date(item.createdAt).toLocaleString()}</span>
                                         </div>
-                                        <p className="svc-message small-body-text">{item.message}</p>
+                                        <p className="svc-message small-body-text">{item.text}</p>
                                         
-                                        {item.attachments && (
+                                        {item.attachments && item.attachments.length > 0 && (
                                             <div className="svc-timeline-attachments">
                                                 <div className="svc-att-label smaller-body-text text-secondary">
                                                     <Icon icon="mdi:attachment" /> Attachments
@@ -172,15 +221,18 @@ export default function SponsorViewConcern({ concern, onBack }) {
                                                 {item.attachments.map((att, i) => (
                                                     <div key={i} className="svc-attachment-item">
                                                         <div className="svc-att-icon-wrap">
-                                                            <Icon icon="mdi:file-pdf-box" className="svc-att-file-icon text-red" />
+                                                            <Icon 
+                                                                icon={att.name?.toLowerCase().endsWith('.pdf') ? "mdi:file-pdf-box" : "mdi:file-document-outline"} 
+                                                                className={`svc-att-file-icon ${att.name?.toLowerCase().endsWith('.pdf') ? 'text-red' : 'text-blue'}`} 
+                                                            />
                                                         </div>
                                                         <div className="svc-att-info">
                                                             <span className="svc-att-name smaller-body-text">{att.name}</span>
                                                             <span className="svc-att-size smaller-body-text text-tertiary">{att.size}</span>
                                                         </div>
-                                                        <button className="svc-att-download-btn">
+                                                        <a href={`${BACKEND_URL}/${att.path}`} target="_blank" rel="noopener noreferrer" className="svc-att-download-btn">
                                                             <Icon icon="mdi:download-outline" />
-                                                        </button>
+                                                        </a>
                                                     </div>
                                                 ))}
                                             </div>
@@ -195,11 +247,57 @@ export default function SponsorViewConcern({ concern, onBack }) {
                             <textarea 
                                 placeholder="Add a reply or more information..." 
                                 className="svc-reply-input small-body-text"
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                disabled={loading || concern.status === 'closed'}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && e.ctrlKey) {
+                                        handleReply();
+                                    }
+                                }}
                             ></textarea>
+
+                            {replyFiles.length > 0 && (
+                                <div className="svc-reply-files-preview">
+                                    {replyFiles.map((file, idx) => (
+                                        <div key={idx} className="svc-reply-file-item">
+                                            <Icon icon="mdi:paperclip" />
+                                            <span className="smaller-body-text">{file.name}</span>
+                                            <Icon 
+                                                icon="mdi:close" 
+                                                className="svc-remove-file" 
+                                                onClick={() => setReplyFiles(replyFiles.filter((_, i) => i !== idx))} 
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="svc-reply-actions">
-                                <span className="svc-hint smaller-body-text text-secondary">Press Ctrl+Enter to send</span>
-                                <button className="primary-button svc-send-btn">
-                                    <Icon icon="mdi:send" /> Send Reply
+                                <div className="svc-reply-actions-left">
+                                    <button 
+                                        className="svc-attach-btn"
+                                        onClick={() => document.getElementById('svc-reply-upload').click()}
+                                        disabled={loading || concern.status === 'closed'}
+                                    >
+                                        <Icon icon="mdi:paperclip" width="20" />
+                                    </button>
+                                    <input 
+                                        type="file" 
+                                        id="svc-reply-upload" 
+                                        multiple 
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => setReplyFiles([...replyFiles, ...Array.from(e.target.files)])}
+                                    />
+                                    <span className="svc-hint smaller-body-text text-secondary">Press Ctrl+Enter to send</span>
+                                </div>
+                                <button 
+                                    className="primary-button svc-send-btn" 
+                                    onClick={handleReply}
+                                    disabled={loading || (!replyText.trim() && replyFiles.length === 0) || concern.status === 'closed'}
+                                >
+                                    <Icon icon={loading ? "mdi:loading" : "mdi:send"} className={loading ? "spin" : ""} /> 
+                                    {loading ? "Sending..." : "Send Reply"}
                                 </button>
                             </div>
                         </div>

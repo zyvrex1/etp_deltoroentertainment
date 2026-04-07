@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/userModel');
 
 const optionalAuth = async (req, res, next) => {
   const { authorization } = req.headers;
@@ -10,8 +11,8 @@ const optionalAuth = async (req, res, next) => {
   const token = authorization.split(' ')[1];
 
   try {
-    const { _id, role } = jwt.verify(token, process.env.SECRET);
-    req.user = { _id, role };
+    const { _id } = jwt.verify(token, process.env.SECRET);
+    req.user = await User.findOne({ _id }).select('_id role firstName lastName email');
     next();
   } catch (error) {
     // If token is invalid, continue as visitor

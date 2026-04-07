@@ -54,7 +54,7 @@ const AssignAdmin = ({ isOpen, onClose, onAssign, ticket }) => {
     if (onAssign && selectedAdmin) {
       const admin = admins.find(a => a._id === selectedAdmin);
       if (admin) {
-        onAssign(`${admin.firstName} ${admin.lastName}`);
+        onAssign(`${admin.firstName} ${admin.lastName}`, admin._id);
       }
     }
     onClose();
