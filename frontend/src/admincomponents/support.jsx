@@ -181,14 +181,7 @@ const SupportDisputes = () => {
         setSelectedTicketForAssign(null);
     };
 
-    const handleAssignAdmin = (adminId) => {
-        const admins = {
-            "robert_chen": "Robert Chen",
-            "michael_brown": "Michael Brown",
-            "sophia_garcia": "Sophia Garcia",
-        };
-        const assignedName = admins[adminId] || "Unassigned";
-
+    const handleAssignAdmin = (assignedName) => {
         const updatedTickets = tickets.map(ticket =>
             ticket.id === selectedTicketForAssign?.id ? { ...ticket, assignedTo: assignedName } : ticket
         );
