@@ -574,6 +574,11 @@
         font-size: 12px !important;
 
     }
+
+
+    .vt-col-right{
+        order: -1;
+    }
     }
 
     @media (max-width: 480px) {
