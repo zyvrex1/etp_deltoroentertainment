@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
 import { io } from 'socket.io-client';
@@ -10,6 +10,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
     const { user } = useAuthContext();
+    const messagesEndRef = useRef(null);
     const [ticket, setTicket] = useState(initialTicket);
     const [replyText, setReplyText] = useState('');
     const [replyFiles, setReplyFiles] = useState([]);
@@ -17,6 +18,16 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
     const [editingNoteId, setEditingNoteId] = useState(null);
     const [editText, setEditText] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const scrollToBottom = () => {
+        setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        }, 100);
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [ticket.messages]);
 
     useEffect(() => {
         setTicket(initialTicket);
@@ -263,6 +274,7 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
                                     </div>
                                 );
                             })}
+                            <div ref={messagesEndRef} />
                         </div>
 
                         <div className="vt-reply-area">

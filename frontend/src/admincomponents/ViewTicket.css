@@ -348,6 +348,13 @@
         padding: 16px;
         background-color: var(--color-bg-light);
         border-radius: 8px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    .vt-system-message{
+        text-align: center;
+        color: var(--color-black-secondary);
+        margin-bottom: 4px;
     }
 
     .vt-chat-name {
