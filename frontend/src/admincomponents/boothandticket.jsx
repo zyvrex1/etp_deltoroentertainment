@@ -63,14 +63,14 @@ const BoothandTicket = () => {
               className={`bt-tab ${activeTab === "booth-map" ? "active" : ""}`}
               onClick={() => setActiveTab("booth-map")}
             >
-              Booth Map
+              Seat and Booth Map
             </button>
 
             <button
               className={`bt-tab ${activeTab === "seat-map" ? "active" : ""}`}
               onClick={() => setActiveTab("seat-map")}
             >
-              Seat Map
+              Assign Price
             </button>
 
             <button

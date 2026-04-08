@@ -8,7 +8,6 @@ const path = require('path');
 const multer = require("multer");
 const { emitUpdate } = require("../socket");
 
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -48,7 +47,6 @@ const upload = multer({
   storage,
   fileFilter,
 });
-
 
 const getEvents = async (req, res) => {
   try {
@@ -530,16 +528,16 @@ const updateEvent = async (req, res) => {
 
     let finalImage = existingEvent.image;
 
-    if (req.file) {
-      // A new file was uploaded - Replace the old one
-      finalImage = req.file.filename;
-      // OPTIONAL: Call a function here to delete the OLD file from 'uploads/'
-      deleteOldImage(existingEvent.image);
-    } else if (req.body.image === "" || req.body.image === null) {
-      // The user explicitly removed the image
-      finalImage = null;
-      deleteOldImage(existingEvent.image);
-    }
+if (req.file) {
+  // A new file was uploaded - Replace the old one
+  finalImage = req.file.filename;
+  // OPTIONAL: Call a function here to delete the OLD file from 'uploads/'
+  removeEventImage(existingEvent.image); 
+} else if (req.body.image === "" || req.body.image === null) {
+  // The user explicitly removed the image
+  finalImage = null; 
+  removeEventImage(existingEvent.image);
+}
 
     /* =========================
         EXECUTE UPDATE
@@ -580,7 +578,7 @@ const updateEvent = async (req, res) => {
   }
 };
 
-const deleteOldImage = (filename) => {
+const removeEventImage = (filename) => {
   if (!filename) return;
 
   const filePath = path.join(__dirname, '../uploads/', filename);
@@ -596,104 +594,85 @@ const deleteOldImage = (filename) => {
   });
 };
 
-const updateSeatMap = async (req, res) => {
+const saveVenueLayout = async (req, res) => {
   const { id } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(404).json({ error: "Invalid event ID" });
-  }
+  let { localItems } = req.body;
 
   try {
-    let { seatMap } = req.body;
-
-    // Parse JSON if needed
-    if (typeof seatMap === "string") {
-      try {
-        seatMap = JSON.parse(seatMap);
-      } catch {
-        return res.status(400).json({ error: "Invalid seatMap JSON" });
-      }
-    }
-
-    if (!seatMap || typeof seatMap !== "object") {
-      return res.status(400).json({ error: "seatMap is required" });
-    }
+    if (typeof localItems === "string") localItems = JSON.parse(localItems);
 
     const event = await Event.findById(id);
+    if (!event) return res.status(404).json({ error: "Event not found" });
 
-    if (!event) {
-      return res.status(404).json({ error: "Event not found" });
-    }
+    const newSeatMap = {
+      width: 1400,
+      height: 500,
+      sections: [{ name: "Main Section", seats: [] }],
+      layoutItems: [],
+    };
+    const newBooths = [];
 
-    if (event.eventType !== "Seating Arrangement") {
-      return res.status(400).json({
-        error: "Seat map only allowed for Seating Arrangement events",
-      });
-    }
+    localItems.forEach((item) => {
+      // UPDATED: Include scaleX and scaleY in common properties
+      const common = {
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height,
+        rotation: item.rotation || 0,
+        scaleX: item.scaleX ?? 1, // Fallback to 1 if undefined
+        scaleY: item.scaleY ?? 1, // Fallback to 1 if undefined
+        status: item.status || "available",
+        priceLevelId: (item.priceLevelId && item.priceLevelId !== "none") 
+                        ? toObjectId(item.priceLevelId) : null
+      };
 
-    /* =========================
-       VALIDATE PRICE LEVEL IDS
-    ========================= */
-    // Note: Ensure your schema uses event.seatPriceLevels or event.priceLevels consistently
-    const validPriceLevelIds = event.seatPriceLevels.map((p) =>
-      p._id.toString(),
-    );
+      if (item.type === "Seat" || item.type === "Table") {
+        newSeatMap.sections[0].seats.push({
+          ...common,
+          type: item.type,
+          label: item.label || item.code,
+          shape: item.shape || (item.type === "Table" ? "Circle" : "Rect"),
+          seatCount: item.seatCount || 1,
+          color: item.color || "#e0e0e0",
+        });
+      } 
+      else if (item.type === "Booth") {
+        newBooths.push({
+          ...common,
+          code: item.code || item.label,
+          label: item.label || item.code,
+        });
+      } 
+      else if (item.type === "Background") {
+        newSeatMap.layoutItems.push({
+          ...common,
+          type: "Background",
+          subType: item.subType === "Image" ? "Image" : "Shape",
+          imageUrl: item.imageUrl || null,
+          color: item.color || "#2196F3",
+        });
+      }
+    });
 
-    let invalidSeats = [];
+    event.seatMap = newSeatMap;
+    event.booths = newBooths;
+    event.hasBooths = newBooths.length > 0;
 
-    if (seatMap.sections && Array.isArray(seatMap.sections)) {
-      seatMap.sections.forEach((section, sIndex) => {
-        if (section.seats && Array.isArray(section.seats)) {
-          section.seats.forEach((seat, index) => {
-            // 1. Check for seat identifier
-            if (!seat.id) {
-              invalidSeats.push(`sections[${sIndex}].seats[${index}].id`);
-            }
-
-            // 2. Updated Validation Logic for priceLevelId
-            // Check if it exists at all
-            if (!seat.priceLevelId) {
-              invalidSeats.push(
-                `sections[${sIndex}].seats[${index}].priceLevelId is missing`
-              );
-            }
-            // If it's NOT "none", then it MUST be a valid ID from the database
-            else if (seat.priceLevelId !== "none" && !validPriceLevelIds.includes(seat.priceLevelId)) {
-              invalidSeats.push(
-                `sections[${sIndex}].seats[${index}].priceLevelId (${seat.priceLevelId}) is INVALID`
-              );
-            }
-          });
-        }
-      });
-    }
-
-    if (invalidSeats.length > 0) {
-      return res.status(400).json({
-        error: "Invalid seatMap data",
-        invalidSeats,
-      });
-    }
-
-    /* =========================
-       SAVE SEAT MAP
-    ========================= */
-    event.seatMap = seatMap;
-    // Explicitly mark the path as modified if seatMap is a deeply nested object
+    // Explicitly mark as modified since these are sub-documents/nested objects
     event.markModified('seatMap');
+    event.markModified('booths');
 
     await event.save();
-
-    res.status(200).json({
-      message: "Seat map updated successfully",
-      seatMap: event.seatMap,
-    });
+    
+    // Using your socket/util for real-time updates
+    if (typeof emitUpdate === 'function') emitUpdate('dashboardUpdate');
+    
+    // Return the updated event so the frontend Context can update
+    return res.status(200).json(event); 
   } catch (error) {
-    console.error("Update SeatMap Error:", error);
-    res.status(500).json({
-      error: "Server error while updating seat map",
-      message: error.message,
-    });
+    console.error("Save Error:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
@@ -703,6 +682,6 @@ module.exports = {
   createEvent,
   deleteEvent,
   updateEvent,
-  updateSeatMap,
+  saveVenueLayout,
   upload,
 };

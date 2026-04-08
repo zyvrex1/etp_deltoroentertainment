@@ -8,7 +8,7 @@ const {
   createEvent,
   deleteEvent,
   updateEvent,
-  updateSeatMap,
+  saveVenueLayout,
   upload,
 } = require('../controllers/eventController')
 
@@ -39,7 +39,8 @@ router.use(requireAuth) // Everything below this requires a login
 router.post('/', upload.single('image'), createEvent)
 router.delete('/:id', deleteEvent)
 router.patch('/:id', upload.single('image'), updateEvent) // Added upload here
-router.patch('/:id/seatmap', updateSeatMap)
+
+router.put('/:id/layout', saveVenueLayout)
 
 // Price Level Management
 router.post("/:eventId/price-levels", addPriceLevels);

@@ -30,23 +30,27 @@ const priceLevelSchema = new Schema({
 });
 
 const seatSchema = new Schema({
+  type: { type: String, enum: ["Seat", "Table"], default: "Seat" },
+  shape: { type: String, enum: ["Circle", "Rect"], default: "Circle" }, // CRITICAL FOR KONVA
+  seatCount: { type: Number, default: 1 }, 
+  color: String, 
   row: String,
   number: Number,
   label: String,
-
   status: {
     type: String,
     enum: ["available", "reserved", "sold", "blocked"],
     default: "available",
   },
-
-  priceLevelId: { type: Schema.Types.ObjectId },
-
-  x: Number,
-  y: Number,
-  width: { type: Number, default: 20 },
-  height: { type: Number, default: 20 },
+  // Changed to Mixed to allow "none" or Null without casting errors
+  priceLevelId: { type: Schema.Types.Mixed, default: null },
+  x: { type: Number, required: true },
+  y: { type: Number, required: true },
+  width: { type: Number, default: 40 },
+  height: { type: Number, default: 40 },
   rotation: { type: Number, default: 0 },
+  scaleX: { type: Number, default: 1 }, // <--- ADD THIS
+  scaleY: { type: Number, default: 1 }, // <--- ADD THIS
 });
 
 const sectionSchema = new Schema({
@@ -54,16 +58,32 @@ const sectionSchema = new Schema({
   seats: [seatSchema],
 });
 
+const layoutItemSchema = new Schema({
+  type: { type: String, default: "Background" },
+  subType: { type: String, enum: ["Image", "Shape"] },
+  shape: { type: String, enum: ["Circle", "Rect"], default: "Rect" }, // ADDED
+  imageUrl: String, 
+  color: String,    
+  x: Number,
+  y: Number,
+  width: Number,
+  height: Number,
+  rotation: { type: Number, default: 0 },
+  scaleX: { type: Number, default: 1 }, // <--- ADD THIS
+  scaleY: { type: Number, default: 1 }, // <--- ADD THIS
+});
+
+// Update seatMapSchema to include it
 const seatMapSchema = new Schema({
-  width: { type: Number, default: 800 },
-  height: { type: Number, default: 600 },
+  width: { type: Number, default: 1400 }, // Match STAGE_WIDTH
+  height: { type: Number, default: 500 },  // Match STAGE_HEIGHT
   sections: [sectionSchema],
+  layoutItems: [layoutItemSchema], // <--- ADD THIS
 });
 
 const boothSchema = new mongoose.Schema({
   code: String,
   label: String,
-  type: String,
   status: {
     type: String,
     enum: ["available", "reserved", "sold", "blocked"],
@@ -71,10 +91,12 @@ const boothSchema = new mongoose.Schema({
   },
   x: Number,
   y: Number,
-  width: Number,
-  height: Number,
+  width: { type: Number, default: 60 },
+  height: { type: Number, default: 60 },
   rotation: { type: Number, default: 0 },
-  priceLevelId: { type: mongoose.Schema.Types.ObjectId, ref: "PriceLevel" },
+  priceLevelId: { type: Schema.Types.Mixed, default: null }, // Changed to Mixed
+  scaleX: { type: Number, default: 1 }, // <--- ADD THIS
+  scaleY: { type: Number, default: 1 }, // <--- ADD THIS
 });
 
 const eventSchema = new Schema(
@@ -221,18 +243,20 @@ eventSchema.pre("save", function (next) {
   });
 
   if (this.seatMap && this.seatMap.sections) {
-    for (const section of this.seatMap.sections) {
-      if (!section.seats) continue;
-      for (const seat of section.seats) {
-        if (seat.status === "sold" && seat.priceLevelId) {
-          const p = priceMap[seat.priceLevelId.toString()];
-          if (p) {
-            seatRevenue += (p.facePrice || 0) + (p.serviceCharge || 0);
-          }
+  for (const section of this.seatMap.sections) {
+    if (!section.seats) continue;
+    for (const seat of section.seats) {
+      if (seat.status === "sold" && seat.priceLevelId) {
+        const p = priceMap[seat.priceLevelId.toString()];
+        if (p) {
+          // If it's a table, multiply price by seatCount
+          const count = seat.type === "Table" ? (seat.seatCount || 1) : 1;
+          seatRevenue += ((p.facePrice || 0) + (p.serviceCharge || 0)) * count;
         }
       }
     }
   }
+}
 
   if (this.booths) {
     for (const booth of this.booths) {

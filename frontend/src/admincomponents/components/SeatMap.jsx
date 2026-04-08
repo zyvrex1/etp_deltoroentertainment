@@ -141,12 +141,7 @@ const SeatMap = ({
           <Icon icon="mdi:tag-outline" /> Manage Pricing
         </button>
 
-        <button
-          className="outlined-button bt-btn"
-          onClick={handleSave}
-        >
-          <Icon icon="mdi:content-save-outline" /> Save Seat Map
-        </button>
+        
       </div>
     </>
   );
