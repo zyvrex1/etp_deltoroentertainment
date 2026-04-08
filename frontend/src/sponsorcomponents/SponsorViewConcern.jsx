@@ -46,23 +46,48 @@ export default function SponsorViewConcern({ concern: initialConcern, onBack }) 
 
         socket.on('newMessage', (data) => {
             if (data.concernId === concern._id) {
+                const maskedMessage = { ...data.message };
+                // Mask admin name
+                if (maskedMessage.sender !== user._id && !maskedMessage.isSystem && maskedMessage.senderName !== 'System') {
+                    maskedMessage.senderName = 'Admin';
+                }
                 setConcern(prev => ({
                     ...prev,
-                    messages: [...prev.messages, data.message]
+                    messages: [...prev.messages, maskedMessage]
                 }));
             }
         });
 
         socket.on('statusUpdate', (data) => {
             if (data.concernId === concern._id) {
+                const maskedMessage = { ...data.message };
+                if (maskedMessage.isSystem && maskedMessage.text.toLowerCase().includes('assigned to')) {
+                    maskedMessage.text = 'Concern has been assigned to a support agent';
+                }
+
                 setConcern(prev => ({
                     ...prev,
                     status: data.status,
-                    messages: [...prev.messages, data.message]
+                    messages: [...prev.messages, maskedMessage]
                 }));
             }
         });
-
+        
+        socket.on('concernAssigned', (data) => {
+            if (data.concernId === concern._id) {
+                const maskedMessage = { ...data.message };
+                if (maskedMessage.isSystem && maskedMessage.text.toLowerCase().includes('assigned to')) {
+                    maskedMessage.text = 'Concern has been assigned to a support agent';
+                }
+                
+                setConcern(prev => ({
+                    ...prev,
+                    assignedName: 'Staff',
+                    messages: [...prev.messages, maskedMessage]
+                }));
+            }
+        });
+        
         return () => socket.disconnect();
     }, [user, concern?._id]);
 
