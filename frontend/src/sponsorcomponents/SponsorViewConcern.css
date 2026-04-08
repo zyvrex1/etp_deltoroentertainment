@@ -271,6 +271,8 @@
             gap: 20px;
             position: relative;
 
+            word-wrap: break-word;
+
             .svc-timeline-dot-wrapper {
                 display: flex;
                 flex-direction: column;
@@ -345,6 +347,10 @@
                     line-height: 1.6;
                     margin: 0;
                     text-align: left;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    word-break: break-word;
+                    white-space: pre-wrap;
                 }
 
                 .svc-timeline-attachments {
@@ -368,6 +374,7 @@
                         align-items: center;
                         gap: 12px;
                         border: 1px solid var(--color-black-quaternary);
+                        color: var(--color-black-secondary);
 
                         .svc-att-icon-wrap {
                             background: var(--color-bg-light);
@@ -464,6 +471,17 @@
         }
          
     }
+    .svc-reply-file-item{
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background-color: var(--color-red-primary);
+        border-radius: 8px;
+        border: none;
+        color: var(--color-white-primary);
+    }
+
 
       .svc-attach-btn {
         align-items: center;

@@ -66,6 +66,14 @@ export default function SponsorViewConcern({ concern: initialConcern, onBack }) 
         return () => socket.disconnect();
     }, [user, concern?._id]);
 
+    if (!concern) return null;
+
+    // Aggregate all attachments from the initial ticket and all messages
+    const allAttachments = [
+        ...(concern.attachments || []),
+        ...concern.messages.reduce((acc, msg) => [...acc, ...(msg.attachments || [])], [])
+    ];
+
     const handleReply = async () => {
         if (!replyText.trim() && replyFiles.length === 0) return;
         if (!user?.token) return;
@@ -154,33 +162,38 @@ export default function SponsorViewConcern({ concern: initialConcern, onBack }) 
 
                         <div className="svc-divider"></div>
 
-                        <div className="svc-attachments-section">
-                            <label className="svc-detail-label smaller-body-text text-secondary">
-                                <Icon icon="mdi:paperclip" /> ATTACHED FILES ({originalRequest.attachedFiles.length})
-                            </label>
-                             <div className="svc-files-list">
-                                 {originalRequest.attachedFiles.map((file, idx) => {
-                                     const isPDF = file.name?.toLowerCase().endsWith('.pdf');
-                                     const downloadUrl = `${BACKEND_URL}/${file.path}`;
-                                     return (
-                                         <div key={idx} className="svc-file-card">
-                                             <div className="svc-file-icon-wrap">
-                                                 <Icon 
-                                                     icon={isPDF ? "mdi:file-pdf-box" : "mdi:image-outline"} 
-                                                     className={`svc-file-icon ${isPDF ? 'text-red' : 'text-blue'}`}
-                                                 />
-                                             </div>
-                                             <div className="svc-file-info">
-                                                 <span className="svc-file-name smaller-body-text fw-600">{file.name}</span>
-                                                 <span className="svc-file-size smaller-body-text text-secondary">{file.size || 'Unknown size'}</span>
-                                             </div>
-                                             <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="svc-file-download-btn">
-                                                 <Icon icon="mdi:download-outline" />
-                                             </a>
-                                         </div>
-                                     );
-                                 })}
-                             </div>
+                        <div className="svc-detail-group svc-attachments-section">
+                            <span className="svc-detail-label smaller-body-text fw-600">
+                                <Icon icon="mdi:paperclip" /> ATTACHED FILES ({allAttachments.length})
+                            </span>
+                            
+                            {allAttachments.length > 0 ? (
+                                <div className="svc-files-list">
+                                    {allAttachments.map((file, idx) => {
+                                        const isPDF = file.name?.toLowerCase().endsWith('.pdf');
+                                        const downloadUrl = `${BACKEND_URL}/${file.path}`;
+                                        return (
+                                            <div key={idx} className="svc-file-card">
+                                                <div className="svc-file-icon-wrap">
+                                                    <Icon 
+                                                        icon={isPDF ? "mdi:file-pdf-box" : "mdi:file-document-outline"} 
+                                                        className={`svc-file-icon ${isPDF ? 'text-red' : 'text-blue'}`}
+                                                    />
+                                                </div>
+                                                <div className="svc-file-info">
+                                                    <span className="svc-file-name smaller-body-text fw-600">{file.name}</span>
+                                                    <span className="svc-file-size smaller-body-text text-secondary">{file.size || 'Unknown size'}</span>
+                                                </div>
+                                                <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="svc-file-download-btn">
+                                                    <Icon icon="mdi:download-outline" />
+                                                </a>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="smaller-body-text text-muted" style={{ padding: '8px 4px' }}>No attachments provided.</p>
+                            )}
                         </div>
 
                         <div className="svc-help-footer-inline">

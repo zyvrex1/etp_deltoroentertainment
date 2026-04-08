@@ -146,6 +146,12 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
 
     if (!ticket) return null;
 
+    // Aggregate all attachments from the initial ticket and all messages
+    const allAttachments = [
+        ...(ticket.attachments || []),
+        ...ticket.messages.reduce((acc, msg) => [...acc, ...(msg.attachments || [])], [])
+    ];
+
     return (
         <div className="vt-page">
             <div className="vt-header-container">
@@ -226,9 +232,9 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
                     </div>
 
                     <div className="vt-card">
-                        <h6 className="vt-card-heading"><Icon icon="mdi:paperclip" width="16" /> ATTACHMENTS ({ticket.attachments?.length || 0})</h6>
-                        {ticket.attachments && ticket.attachments.length > 0 ? (
-                            ticket.attachments.map((file, idx) => (
+                        <h6 className="vt-card-heading"><Icon icon="mdi:paperclip" width="16" /> ATTACHMENTS ({allAttachments.length})</h6>
+                        {allAttachments.length > 0 ? (
+                            allAttachments.map((file, idx) => (
                                 <div key={idx} className="vt-attachment">
                                     <div className="vt-att-icon">
                                         <Icon icon={file.name.endsWith('.pdf') ? "mdi:file-pdf-box" : "mdi:file-document-outline"} width="24" className="vt-icon-gray" />
@@ -269,6 +275,23 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
                                         <span className={`small-body-text vt-chat-name ${isMe ? 'right-align' : ''}`}>{msg.senderName}</span>
                                         <div className={`vt-message-bubble ${isMe ? 'admin-message' : 'user-message'}`}>
                                             <p className="regular-body-text">{msg.text}</p>
+                                            
+                                            {msg.attachments && msg.attachments.length > 0 && (
+                                                <div className="vt-message-attachments">
+                                                    {msg.attachments.map((att, i) => (
+                                                        <div key={i} className="vt-message-att-item">
+                                                            <Icon 
+                                                                icon={att.name.toLowerCase().endsWith('.pdf') ? "mdi:file-pdf-box" : "mdi:file-document-outline"} 
+                                                                className={`vt-att-file-icon ${att.name.toLowerCase().endsWith('.pdf') ? 'text-red' : 'text-blue'}`} 
+                                                            />
+                                                            <span className="smaller-body-text">{att.name}</span>
+                                                            <a href={`${BACKEND_URL}/${att.path}`} target="_blank" rel="noopener noreferrer" className="vt-att-link">
+                                                                <Icon icon="mdi:download-outline" />
+                                                            </a>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                         <span className={`smaller-body-text vt-message-time ${isMe ? 'right-align' : ''}`}>{new Date(msg.createdAt).toLocaleString()}</span>
                                     </div>
