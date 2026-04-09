@@ -391,7 +391,6 @@
     }
 
     .vt-message-bubble{
-        max-width: 80%;
         width: fit-content;
         word-wrap: break-word;
         overflow-wrap: break-word;
@@ -420,11 +419,13 @@
     .vt-message-wrapper.left {
         align-self: flex-start;
         text-align: left;
+        align-items: flex-start;
     }
 
     .vt-message-wrapper.right {
         align-self: flex-end;
         text-align: right;
+        align-items: flex-end;
     }
 
     .right-align {
@@ -447,6 +448,8 @@
         background-color: var(--color-blue-primary);
         color: var(--color-white-primary);
         border-top-right-radius: 0;
+        text-align: left;
+
     }
 
     .vt-message-time {
