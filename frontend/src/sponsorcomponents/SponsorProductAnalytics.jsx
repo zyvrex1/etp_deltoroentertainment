@@ -3,6 +3,8 @@ import { Icon } from "@iconify/react";
 import jsPDF from "jspdf";
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "../admincomponents/utils/pdfExport";
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, Legend } from 'recharts';
+import merchandiseService from "../services/merchandiseService";
+import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
 import "./SponsorProductAnalytics.css";
 
 const revenueData = [
@@ -22,17 +24,26 @@ const pieData = [
 ];
 const PIE_COLORS = ['#c62828', '#ffdd66', '#0059ff'];
 
-const initialInventoryData = [
-  { id: 1, name: "Gourmet Burger", category: "Food", sales: 84, stock: 40, revenue: "$1091.16", status: "Active" },
-  { id: 2, name: "Event T-Shirt", category: "Merch", sales: 62, stock: 150, revenue: "$1549.38", status: "Active" },
-  { id: 3, name: "Craft Lemonade", category: "Drinks", sales: 145, stock: 100, revenue: "$868.55", status: "Active" },
-  { id: 4, name: "Loaded Nachos", category: "Food", sales: 56, stock: 25, revenue: "$559.44", status: "Active" },
-  { id: 5, name: "Ceramic Mug", category: "Merch", sales: 14, stock: 0, revenue: "$209.86", status: "Inactive" },
-  { id: 6, name: "Cold Brew Coffee", category: "Drinks", sales: 30, stock: 15, revenue: "$179.70", status: "Active" },
-  { id: 7, name: "Bottled Water", category: "Drinks", sales: 120, stock: 125, revenue: "$358.80", status: "Active" },
-];
+// Helper to format currency
+const formatCurrency = (val) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(val);
+};
 
-const SponsorProductAnalytics = () => {
+const SponsorProductAnalytics = ({ eventId }) => {
+  const { user } = useAuthContext();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  const stats = [
+    { label: "Total Revenue", value: "$4,250.00", icon: "mdi:currency-usd", color: "green", delta: "+12.5%", isUp: true },
+    { label: "Total Orders", value: "156", icon: "mdi:shopping-outline", color: "blue", delta: "+8.2%", isUp: true },
+    { label: "Average Order Value", value: "$27.24", icon: "mdi:chart-bar", color: "purple", delta: "-2.4%", isUp: false },
+    { label: "Orders Today", value: "24", icon: "mdi:calendar-today", color: "orange", extra: "Today" }
+  ];
+
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All Categories");
@@ -46,6 +57,24 @@ const SponsorProductAnalytics = () => {
   };
 
   const itemsPerPage = 5;
+
+  const fetchAnalyticsData = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const filters = eventId ? { eventId } : {};
+      const data = await merchandiseService.getMerchandises(user.token, filters);
+      setProducts(data);
+    } catch (error) {
+      console.error("Error fetching analytics data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [user, eventId]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -62,7 +91,7 @@ const SponsorProductAnalytics = () => {
     };
   }, []);
 
-  const filteredInventory = initialInventoryData.filter((item) => {
+  const filteredInventory = products.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterCategory === "All Categories" || item.category === filterCategory;
     return matchesSearch && matchesFilter;
@@ -78,12 +107,7 @@ const SponsorProductAnalytics = () => {
     }
   };
 
-  const stats = [
-    { label: "Total Revenue", value: "$4,250.00", icon: "mdi:currency-usd", color: "green", delta: "+12.5%", isUp: true },
-    { label: "Total Orders", value: "156", icon: "mdi:shopping-outline", color: "blue", delta: "+8.2%", isUp: true },
-    { label: "Average Order Value", value: "$27.24", icon: "mdi:chart-bar", color: "purple", delta: "-2.4%", isUp: false },
-    { label: "Orders Today", value: "24", icon: "mdi:calendar-today", color: "orange", extra: "Today" }
-  ];
+  // Replaced dynamic stats array with the user provided static stats array in the component body
 
   const exportToPDF = async () => {
     const loadingToast = showExportToast();
@@ -96,14 +120,14 @@ const SponsorProductAnalytics = () => {
       
       addReportHeader(pdf, REPORT_TITLE, logoData);
 
-      const headers = ["Product", "Category", "Stock", "Sales", "Revenue", "Status"];
+      const headers = ["Product", "Category", "Stock", "Price", "Sales", "Status"];
       const pdfData = filteredInventory.map((item) => [
         item.name,
         item.category,
         item.stock.toString(),
-        item.sales.toString(),
-        item.revenue,
-        item.status,
+        formatCurrency(item.price),
+        "0", // Static sales for now
+        item.stock > 0 ? "Active" : "Out of Stock",
       ]);
 
       let currentY = 50; // below header
@@ -300,33 +324,40 @@ const SponsorProductAnalytics = () => {
               <tr>
                 <th className="smaller-body-text">PRODUCT</th>
                 <th className="smaller-body-text">CATEGORY</th>
-                <th className="smaller-body-text">STOCK</th>
+                <th className="smaller-body-text">AVAILABLESTOCK</th>
+                <th className="smaller-body-text">PRICE</th>
                 <th className="smaller-body-text">SALES</th>
-                <th className="smaller-body-text">REVENUE</th>
                 <th className="smaller-body-text">STATUS</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedData.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px 0' }}>
+                     <Icon icon="mdi:loading" className="smp-spin" width="48" />
+                     <p>Loading inventory data...</p>
+                  </td>
+                </tr>
+              ) : paginatedData.length > 0 ? (
                 paginatedData.map((item) => (
-                  <tr key={item.id} className={expandedRow === item.id ? "expanded" : ""}>
+                  <tr key={item._id} className={expandedRow === item._id ? "expanded" : ""}>
                     <td className="id-td" data-label="PRODUCT">
-                      <div className="mobile-expand-icon" onClick={() => toggleRow(item.id)}>
-                        <Icon icon={expandedRow === item.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                      <div className="mobile-expand-icon" onClick={() => toggleRow(item._id)}>
+                        <Icon icon={expandedRow === item._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                       </div>
                       <div className="spa-product-details-col regular-body-text">
-                      {item.name}
+                        {item.name}
                       </div>
                     </td>
                     <td data-label="CATEGORY">
                       <span className={`spa-cat-badge button-label ${item.category.toLowerCase()}`}>{item.category}</span>
                     </td>
-                    <td className="small-body-text"data-label="STOCK">{item.stock}</td>
-                    <td className="small-body-text" data-label="SALES">{item.sales}</td>
-                    <td className="revenue-td large-body-text" data-label="REVENUE">{item.revenue}</td>
+                    <td className="small-body-text"data-label="AVAILABLESTOCK">{item.stock}</td>
+                    <td className="small-body-text" data-label="PRICE">{formatCurrency(item.price)}</td>
+                    <td className="small-body-text" data-label="SALES">0</td>
                     <td data-label="STATUS">
-                      <span className={`spa-status-badge button-label ${item.status === 'Active' ? 'active' : 'inactive'}`}>
-                        {item.status}
+                      <span className={`spa-status-badge button-label ${item.stock > 0 ? 'active' : 'inactive'}`}>
+                        {item.stock > 0 ? 'Active' : 'Out of Stock'}
                       </span>
                     </td>
                   </tr>

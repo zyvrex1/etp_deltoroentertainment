@@ -62,7 +62,7 @@ const SponsorStoreDashboard = () => {
       <div className="ssd-content">
         {activeTab === 'Products' && <SponsorManageProduct eventId={eventId} />}
         {activeTab === 'Orders' && <SponsorManageOrder />}
-        {activeTab === 'Analytics' && <SponsorProductAnalytics />}
+        {activeTab === 'Analytics' && <SponsorProductAnalytics eventId={eventId} />}
         {activeTab === 'Info' && <SponsorPaymentInfo />}
       </div>
     </div>
