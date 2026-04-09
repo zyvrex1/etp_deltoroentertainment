@@ -118,6 +118,15 @@
     overflow-x: hidden;
 }
 
+.link-btn {
+    background-color: transparent;
+    color: var(--color-red-primary);
+    display: inline-block;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
 .sed-loading-container,
 .sed-error-container {
     display: flex;
@@ -294,6 +303,11 @@
                 }
             }
         }
+    }
+
+    .sed-help-link {
+        text-align: center;
+        align-items: center;
     }
 
     .sed-content-right {

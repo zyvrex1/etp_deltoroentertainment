@@ -233,7 +233,7 @@ const SponsorEventDetails = () => {
                         <button className="outlined-button sed-view-kit mt-3" onClick={() => setIsSponsorKitModalOpen(true)}>View Sponsorship Kit</button>
 
                         <div className="sed-help-link mt-4">
-                            <span className="smaller-body-text text-secondary">Need help with this event?</span>
+                            <span className="smaller-body-text text-secondary">Need help with this event? </span>
                             <button 
                                 className="link-btn text-red smaller-body-text" 
                                 onClick={() => navigate('/sponsor/support', { 
