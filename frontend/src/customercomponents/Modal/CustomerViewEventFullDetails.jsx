@@ -3,6 +3,8 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import './CustomerViewEventFullDetails.css';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
     const navigate = useNavigate();
 
@@ -31,10 +33,18 @@ const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
                 </div>
 
                 <div className="cved-modal-body">
-                    <div className="cved-banner" style={{ backgroundImage: `url('/assets/eventbg.jpg')` }}>
+                    <div 
+                        className="cved-banner" 
+                        style={{ 
+                            backgroundImage: `url(${eventData?.image ? (eventData.image.startsWith('http') ? eventData.image : `${BACKEND_URL}/uploads/${eventData.image}`) : '/assets/eventbg.jpg'})` 
+                        }}
+                    >
                         <div className="cved-banner-text">
-                            <span className="button-label event-tag-red">{eventData?.tag || 'Concert'}</span>
-                            <h2 className="cved-event-title">{eventData?.title || 'Neon Dreams Tour'}</h2>
+                            <span className={`button-label ${
+                                eventData?.tag === "Concert" ? "event-tag-red" : 
+                                eventData?.tag === "Sports" ? "event-tag-green" : "event-tag-blue"
+                            }`}>{eventData?.tag || 'Event'}</span>
+                            <h2 className="cved-event-title">{eventData?.title || 'Untitled Event'}</h2>
                         </div>
                     </div>
 
@@ -45,7 +55,7 @@ const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
                             </div>
                             <div className="cved-info-text">
                                 <span className="smaller-body-text label-text">DATE</span>
-                                <span className="small-body-text value-text">{eventData?.date ? eventData.date.split(' • ')[0] : 'Saturday, June 15, 2024'}</span>
+                                <span className="small-body-text value-text">{eventData?.date ? eventData.date.split(' • ')[0] : 'TBA'}</span>
                             </div>
                         </div>
                         <div className="cved-info-col">
@@ -54,7 +64,7 @@ const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
                             </div>
                             <div className="cved-info-text">
                                 <span className="smaller-body-text label-text">TIME</span>
-                                <span className="small-body-text value-text">{eventData?.date && eventData.date.includes(' • ') ? eventData.date.split(' • ')[1] : '20:00'}</span>
+                                <span className="small-body-text value-text">{eventData?.date && eventData.date.includes(' • ') ? eventData.date.split(' • ')[1] : 'TBA'}</span>
                             </div>
                         </div>
                         <div className="cved-info-col">
@@ -63,7 +73,7 @@ const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
                             </div>
                             <div className="cved-info-text">
                                 <span className="smaller-body-text label-text">VENUE</span>
-                                <span className="small-body-text value-text">{eventData?.location || 'Starlight Arena, Los Angeles, CA'}</span>
+                                <span className="small-body-text value-text">{eventData?.venue?.name || 'TBA'}</span>
                             </div>
                         </div>
                     </div>
@@ -71,14 +81,16 @@ const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
                     <div className="cved-section">
                         <h3>About the Event</h3>
                         <p className="small-body-text">
-                            Experience the synth-wave sensation of the year with spectacular visuals and sound. Join us for an unforgettable experience at Starlight Arena. This event promises to be a highlight of the year, featuring spectacular performances and an electric atmosphere. Don't miss your chance to be part of the magic.
+                            {eventData?.description || "Join us for an unforgettable experience. This event promises to be a highlight of the season featuring spectacular performances and an electric atmosphere. Don't miss your chance to be part of the magic."}
                         </p>
                     </div>
 
                     <div className="cved-section cved-bg-gray">
                         <h4>Venue Information</h4>
                         <p className="small-body-text">
-                            Located in the heart of Los Angeles, CA, Starlight Arena is a premier destination for live entertainment. The venue features state-of-the-art acoustics, comfortable seating, and excellent sightlines from every angle.
+                            {eventData?.venue 
+                                ? `${eventData.venue.name} is located at ${eventData.venue.address}, ${eventData.venue.city}, ${eventData.venue.zipCode || ""}. The venue is a premier destination for ${eventData?.tag?.toLowerCase() || 'live events'}, providing a world-class environment designed to ensure an exceptional experience for every attendee.` 
+                                : "Venue information is currently being finalized. Please check back soon for more details about the location."}
                         </p>
                         <div className="cved-venue-amenities">
                             <span className="smaller-body-text"><Icon icon="mdi:wheelchair-accessibility" /> Accessible Seating</span>
@@ -90,7 +102,7 @@ const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
                         <div className="cved-ticket-block-header">
                             <div>
                                 <span className="smaller-body-text">Ticket Prices</span>
-                                <h3 className="cved-price">{eventData?.price || '$45 - $150'}</h3>
+                                <h3 className="cved-price">{eventData?.price || 'TBA'}</h3>
                             </div>
                         </div>
 
@@ -103,11 +115,11 @@ const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
                             </NavLink>
                         </div>
                         
-                        <div className="cved-refund-action" style={{ marginTop: '12px' }}>
+                        {/* <div className="cved-refund-action" style={{ marginTop: '12px' }}>
                             <button className="outlined-button" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={handleRequestRefund}>
                                 <Icon icon="mdi:cash-refund" width="20" /> Request Refund
                             </button>
-                        </div>
+                        </div> */}
 
                         <p className="smaller-body-text cved-ticket-note">
                             Browse available seats and pricing before committing to purchase

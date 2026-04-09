@@ -254,7 +254,7 @@
 
             .cved-ticket-note {
                 color: var(--color-black-secondary);
-                text-align: left;
+                text-align: center;
                 margin: 0;
             }
         }
@@ -300,8 +300,7 @@
             }
 
             .cved-info-row {
-                flex-direction: column;
-                gap: 15px;
+                gap: 7px !important;
                 padding: 0 25px 20px 25px;
             }
 
