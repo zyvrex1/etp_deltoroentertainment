@@ -27,6 +27,21 @@ const createAnnouncement = async (req, res) => {
       contentcategory,
     });
 
+    // Create Notification and Emit
+    const notificationController = require('./notificationController');
+    const socket = require('../socket');
+    const creatorName = `${req.user.firstName} ${req.user.lastName}`;
+    
+    const notification = await notificationController.createNotification({
+      title: `${creatorName} shared an update: ${title}`,
+      content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+      type: 'update',
+      path: '/admin/content',
+      unread: true,
+      createdBy: req.user._id
+    });
+    socket.emitUpdate('newNotification', notification);
+
     res.status(201).json(announcement);
   } catch (error) {
     res.status(500).json({ error: error.message });

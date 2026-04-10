@@ -5,8 +5,16 @@ import './ViewNotif.css';
 const ViewNotif = ({ isOpen, onClose, notifications, onNotifClick }) => {
     if (!isOpen) return null;
 
-    const handleItemClick = (path) => {
-        onNotifClick(path);
+    const iconMap = {
+        concern: "mdi:chat-outline",
+        payment: "mdi:wallet-outline",
+        event: "mdi:calendar-outline",
+        user: "mdi:account-plus-outline",
+        update: "mdi:file-document-outline"
+    };
+
+    const handleItemClick = (notif) => {
+        onNotifClick(notif);
         onClose();
     };
 
@@ -36,32 +44,40 @@ const ViewNotif = ({ isOpen, onClose, notifications, onNotifClick }) => {
 
                 <div className="view-notif-body">
                     <div className="notif-full-list">
-                        {notifications.map((notif) => (
-                            <div 
-                                className={`notif-full-item ${notif.unread ? 'unread' : ''}`} 
-                                key={notif.id}
-                                onClick={() => handleItemClick(notif.path)}
-                            >
-                                <div className="notif-item-left">
-                                    <div className="notif-status-indicator"></div>
-                                    <div className={`notif-icon-container ${notif.type}`}>
-                                        <Icon icon={notif.icon} />
+                        {notifications.length > 0 ? (
+                            notifications.map((notif) => (
+                                <div 
+                                    className={`notif-full-item ${notif.unread ? 'unread' : ''}`} 
+                                    key={notif._id}
+                                    onClick={() => handleItemClick(notif)}
+                                >
+                                    <div className="notif-item-left">
+                                        <div className="notif-status-indicator"></div>
+                                        <div className={`notif-icon-container ${notif.type}`}>
+                                            <Icon icon={iconMap[notif.type] || "mdi:bell-outline"} />
+                                        </div>
+                                    </div>
+                                    <div className="notif-item-center">
+                                        <h4 className="notif-item-title">
+                                            {notif.title}
+                                        </h4>
+                                        <p className="notif-item-content">{notif.content}</p>
+                                        <span className="notif-item-date">
+                                            {new Date(notif.createdAt).toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <div className="notif-item-right">
+                                        <button className="notif-action-btn">
+                                            <Icon icon="mdi:dots-vertical" />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="notif-item-center">
-                                    <h4 className="notif-item-title">
-                                        {notif.title}
-                                    </h4>
-                                    <p className="notif-item-content">{notif.content}</p>
-                                    <span className="notif-item-date">{notif.date}</span>
-                                </div>
-                                <div className="notif-item-right">
-                                    <button className="notif-action-btn">
-                                        <Icon icon="mdi:dots-vertical" />
-                                    </button>
-                                </div>
+                            ))
+                        ) : (
+                            <div className="notif-empty" style={{ padding: '2rem', textAlign: 'center', opacity: 0.6 }}>
+                                No notifications found
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
 

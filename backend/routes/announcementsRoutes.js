@@ -8,12 +8,13 @@ const {
   deleteAnnouncement,
 } = require("../controllers/announcementController");
 
-// const requireAuth = require('../middleware/requireAuth')
-
-// // Protect all routes
-// router.use(requireAuth)
-
 router.get("/", getAnnouncements);
+
+const requireAuth = require('../middleware/requireAuth')
+
+// Protect other routes
+router.use(requireAuth)
+
 router.post("/", createAnnouncement);
 router.patch("/:id", updateAnnouncement);
 router.delete("/:id", deleteAnnouncement);

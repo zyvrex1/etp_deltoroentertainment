@@ -51,6 +51,21 @@ const createPolicy = async (req, res) => {
       lastUpdated: new Date(),
     });
 
+    // Create Notification and Emit
+    const notificationController = require('./notificationController');
+    const socket = require('../socket');
+    const creatorName = `${req.user.firstName} ${req.user.lastName}`;
+    
+    const notification = await notificationController.createNotification({
+      title: `${creatorName} created a new policy: ${title}`,
+      content: `A new platform policy has been added.`,
+      type: 'update',
+      path: '/admin/content',
+      unread: true,
+      createdBy: req.user._id
+    });
+    socket.emitUpdate('newNotification', notification);
+
     res.status(201).json(policy);
   } catch (error) {
     // Handle validation errors separately
@@ -81,6 +96,21 @@ const updatePolicy = async (req, res) => {
     if (!updatedPolicy) {
       return res.status(404).json({ error: "Policy not found" });
     }
+
+    // Create Notification and Emit
+    const notificationController = require('./notificationController');
+    const socket = require('../socket');
+    const creatorName = `${req.user.firstName} ${req.user.lastName}`;
+    
+    const notification = await notificationController.createNotification({
+      title: `${creatorName} updated a policy: ${title}`,
+      content: `The policy "${title}" has been modified.`,
+      type: 'update',
+      path: '/admin/content',
+      unread: true,
+      createdBy: req.user._id
+    });
+    socket.emitUpdate('newNotification', notification);
 
     res.status(200).json(updatedPolicy);
   } catch (error) {

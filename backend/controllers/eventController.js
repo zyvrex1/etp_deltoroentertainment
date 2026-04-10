@@ -357,6 +357,21 @@ const createEvent = async (req, res) => {
       "firstName lastName role",
     );
 
+    // Create Notification for admin if event is pending
+    if (status === "pending") {
+      const notificationController = require('./notificationController');
+      const creatorName = populatedEvent.createdBy ? `${populatedEvent.createdBy.firstName} ${populatedEvent.createdBy.lastName}` : "A promoter";
+      const notification = await notificationController.createNotification({
+        title: `New event "${title}" pending approval`,
+        content: `submitted by ${creatorName}`,
+        type: 'event',
+        path: '/admin/events',
+        unread: true,
+        createdBy: populatedEvent.createdBy ? populatedEvent.createdBy._id : null
+      });
+      emitUpdate('newNotification', notification);
+    }
+
     emitUpdate('dashboardUpdate');
     return res.status(201).json({ event: populatedEvent });
   } catch (error) {
@@ -380,6 +395,20 @@ const deleteEvent = async (req, res) => {
   if (!event) {
     return res.status(404).json({ error: "No such event" });
   }
+
+  // Create Notification and Emit
+  const notificationController = require('./notificationController');
+  const creatorName = `${req.user.firstName} ${req.user.lastName}`;
+  
+  const notification = await notificationController.createNotification({
+    title: `${creatorName} deleted event: ${event.title}`,
+    content: `The event has been permanently removed.`,
+    type: 'event',
+    path: '/admin/events',
+    unread: true,
+    createdBy: req.user._id
+  });
+  emitUpdate('newNotification', notification);
 
   emitUpdate('dashboardUpdate');
   res.status(200).json(event);
@@ -565,6 +594,34 @@ if (req.file) {
       { $set: updatedData },
       { new: true, runValidators: true }
     ).populate("createdBy", "firstName lastName role");
+
+    // Create Notification and Emit
+    const notificationController = require('./notificationController');
+    const creatorName = `${req.user.firstName} ${req.user.lastName}`;
+    
+    let notifTitle = `${creatorName} updated event: ${updatedEvent.title}`;
+    let notifContent = `Event details have been modified.`;
+
+    // Special messaging for status changes
+    if (existingEvent.status !== updatedEvent.status) {
+        if (updatedEvent.status === 'approved') {
+            notifTitle = `${creatorName} approved event: ${updatedEvent.title}`;
+            notifContent = `The event is now live.`;
+        } else if (updatedEvent.status === 'rejected') {
+            notifTitle = `${creatorName} rejected event: ${updatedEvent.title}`;
+            notifContent = `Approval was declined for this event.`;
+        }
+    }
+
+    const notification = await notificationController.createNotification({
+      title: notifTitle,
+      content: notifContent,
+      type: 'event',
+      path: '/admin/events',
+      unread: true,
+      createdBy: req.user._id
+    });
+    emitUpdate('newNotification', notification);
 
     emitUpdate('dashboardUpdate');
     res.status(200).json({ event: updatedEvent });

@@ -7,11 +7,17 @@ const {
   updatePolicy,
   deletePolicy,
 } = require("../controllers/policyController");
+const requireAuth = require('../middleware/requireAuth');
+
+// Single policy
+router.get("/:policyKey", getPolicy);
 
 // All policies
 router.get("/", getPolicies);
-// Single policy
-router.get("/:policyKey", getPolicy);
+
+// Protected routes
+router.use(requireAuth);
+
 // Create
 router.post("/", createPolicy);
 // Update

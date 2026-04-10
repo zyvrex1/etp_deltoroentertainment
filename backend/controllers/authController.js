@@ -46,6 +46,18 @@ const signupUser = async (req, res) => {
     if (role === 'sponsor') {
       if (!firstName || !lastName || !phone || !companyName || !industry) throw Error('Missing sponsor fields')
       await Sponsor.create({ userId: user._id, phone, companyName, industry })
+
+      // Create Notification for admin
+      const notificationController = require('./notificationController');
+      const notification = await notificationController.createNotification({
+        title: `New sponsor registered: ${firstName} ${lastName}`,
+        content: `from ${companyName}`,
+        type: 'user',
+        path: '/admin/users',
+        unread: true,
+        createdBy: user._id
+      });
+      emitUpdate('newNotification', notification);
     }
 
     const token = createToken(user)

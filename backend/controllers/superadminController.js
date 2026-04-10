@@ -80,6 +80,21 @@ Temporary password: ${tempPassword}
 Please log in and change your password immediately.`
       });
 
+      // Create Notification and Emit
+      const notificationController = require('./notificationController');
+      const socket = require('../socket');
+      const creatorName = `${req.user.firstName} ${req.user.lastName}`;
+      
+      const notification = await notificationController.createNotification({
+        title: `${creatorName} created a new ${role}: ${firstName} ${lastName}`,
+        content: `A new ${role} account has been registered.`,
+        type: 'user',
+        path: '/admin/users',
+        unread: true,
+        createdBy: req.user._id
+      });
+      socket.emitUpdate('newNotification', notification);
+
       emitUpdate('dashboardUpdate');
       return res.status(201).json({
         message: `${role} created successfully and email sent.`,

@@ -32,7 +32,20 @@ const createConcern = async (req, res) => {
       }]
     });
 
+    // Create Notification for admin
+    const notificationController = require('./notificationController');
+    const roleLabel = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+    const notification = await notificationController.createNotification({
+      title: `New ${roleLabel} support ticket: ${sponsorName}`,
+      content: `"${subject}"`,
+      type: 'concern',
+      path: '/admin/support',
+      unread: true,
+      createdBy: user._id
+    });
+
     // Emit event to all admins
+    socket.emitUpdate('newNotification', notification);
     socket.emitUpdate('newConcern', concern);
 
     res.status(201).json(concern);
@@ -49,7 +62,7 @@ const getSponsorConcerns = async (req, res) => {
     const concerns = await Concern.find({ sponsorId: user._id })
       .select('-internalNotes')
       .sort({ lastMessageAt: -1 });
-    
+
     // Mask admin names for privacy
     const maskedConcerns = concerns.map(c => {
       const obj = c.toObject();
@@ -81,7 +94,7 @@ const getSponsorConcerns = async (req, res) => {
 const getAdminConcerns = async (req, res) => {
   try {
     const concerns = await Concern.find({}).sort({ createdAt: -1 });
-    
+
     // Fallback for legacy "undefined" names
     const sanitizedConcerns = concerns.map(c => {
       const obj = c.toObject();
@@ -108,7 +121,7 @@ const getConcernById = async (req, res) => {
     }
 
     const concernObj = concern.toObject();
-    
+
     // Fallback for legacy "undefined" names
     if (!concernObj.sponsorName || concernObj.sponsorName.includes('undefined')) {
       concernObj.sponsorName = `Sponsor #${concernObj.sponsorId.toString().slice(-4).toUpperCase()}`;
@@ -119,7 +132,7 @@ const getConcernById = async (req, res) => {
       if (concern.sponsorId.toString() !== req.user._id.toString()) {
         return res.status(403).json({ error: 'You are not authorized to view this ticket' });
       }
-      
+
       // Strip internal notes
       delete concernObj.internalNotes;
 
@@ -179,6 +192,19 @@ const addMessage = async (req, res) => {
     concern.lastMessageAt = Date.now();
     await concern.save();
 
+    // Create Notification (Targeted if assigned, otherwise global for admins)
+    const notificationController = require('./notificationController');
+    const notification = await notificationController.createNotification({
+      title: `New message for ticket: ${concern.subject}`,
+      content: `${senderName}: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`,
+      type: 'concern',
+      path: `/admin/support`,
+      unread: true,
+      userId: concern.assignedTo || null, // TARGETED IF ASSIGNED
+      createdBy: user._id
+    });
+    socket.emitUpdate('newNotification', notification);
+
     // Emit socket event to notify other party
     socket.emitUpdate('newMessage', { concernId: id, message: concern.messages[concern.messages.length - 1] });
 
@@ -212,7 +238,7 @@ const updateStatus = async (req, res) => {
       isSystem: true
     };
     concern.messages.push(systemMessage);
-    
+
     await concern.save();
 
     // Emit socket event
@@ -227,35 +253,49 @@ const updateStatus = async (req, res) => {
 // @desc    Assign concern to admin
 // @route   PATCH /api/concerns/:id/assign
 const assignConcern = async (req, res) => {
-    const { id } = req.params;
-    const { adminId, adminName } = req.body;
-  
-    try {
-      const concern = await Concern.findById(id);
-      if (!concern) {
-        return res.status(404).json({ error: 'Concern not found' });
-      }
-  
-      concern.assignedTo = adminId;
-      concern.assignedName = adminName;
-      
-      const systemMessage = {
-        sender: req.user._id,
-        senderName: 'System',
-        text: `Concern assigned to ${adminName}`,
-        isSystem: true
-      };
-      concern.messages.push(systemMessage);
-      
-      await concern.save();
-  
-      socket.emitUpdate('concernAssigned', { concernId: id, assignedTo: adminId, assignedName: adminName, message: systemMessage });
-  
-      res.status(200).json(concern);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+  const { id } = req.params;
+  const { adminId, adminName } = req.body;
+
+  try {
+    const concern = await Concern.findById(id);
+    if (!concern) {
+      return res.status(404).json({ error: 'Concern not found' });
     }
-  };
+
+    concern.assignedTo = adminId;
+    concern.assignedName = adminName;
+
+    const systemMessage = {
+      sender: req.user._id,
+      senderName: 'System',
+      text: `Concern assigned to ${adminName}`,
+      isSystem: true
+    };
+    concern.messages.push(systemMessage);
+
+    await concern.save();
+
+    // Create Targeted Notification for assigned admin
+    const notificationController = require('./notificationController');
+    const notification = await notificationController.createNotification({
+      title: `You have been assigned a new concern`,
+      content: `Ticket: ${concern.subject} (Assigned by ${req.user.firstName})`,
+      type: 'concern',
+      path: `/admin/support`,
+      unread: true,
+      userId: adminId, // TARGETED
+      createdBy: req.user._id
+    });
+    
+    const socket = require('../socket');
+    socket.emitUpdate('newNotification', notification);
+    socket.emitUpdate('concernAssigned', { concernId: id, assignedTo: adminId, assignedName: adminName, message: systemMessage });
+
+    res.status(200).json(concern);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
 const addInternalNote = async (req, res) => {
   const { id } = req.params;

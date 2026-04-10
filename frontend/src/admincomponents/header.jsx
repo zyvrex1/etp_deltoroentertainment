@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { useLogout } from "./hooks/useLogout";
 import { useAuthContext } from "./hooks/useAuthContext";
+import { useNotificationsContext } from "./hooks/useNotificationsContext";
+import axios from "axios";
 import "./header.css";
 import { showLogoutConfirmAlert } from "./utils/sweetAlert";
 import ViewNotif from "./Modal/ViewNotif";
@@ -10,6 +12,7 @@ import ViewNotif from "./Modal/ViewNotif";
 const Header = ({ mobileExpanded, setMobileExpanded }) => {
   const { logout } = useLogout();
   const { user: authUser } = useAuthContext();
+  const { notifications, dispatch } = useNotificationsContext();
   const navigate = useNavigate();
 
   // Hooks must always be at the top
@@ -20,62 +23,67 @@ const Header = ({ mobileExpanded, setMobileExpanded }) => {
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
 
-  const notifications = [
-    {
-      id: 1,
-      type: "concern",
-      title: "New support ticket from William Taylor",
-      content: '"Payment Processing Failed"',
-      date: "10/24/2024",
-      icon: "mdi:chat-outline",
-      unread: true,
-      path: "/admin/support"
-    },
-    {
-      id: 2,
-      type: "payment",
-      title: "Sarah Chen requested a payout",
-      content: "$10,000 for AI Innovation Conference",
-      date: "10/24/2024",
-      icon: "mdi:wallet-outline",
-      unread: true,
-      path: "/admin/payments"
-    },
-    {
-      id: 3,
-      type: "event",
-      title: 'New event "Health & Wellness Expo"',
-      content: "pending approval from James Wilson",
-      date: "10/24/2024",
-      icon: "mdi:calendar-outline",
-      unread: true,
-      path: "/admin/events"
-    },
-    {
-      id: 5,
-      type: "user",
-      title: "New sponsor registered: Tom Cruise",
-      content: "from Action Movies",
-      date: "10/23/2024",
-      icon: "mdi:account-plus-outline",
-      unread: false,
-      path: "/admin/users"
-    },
-    {
-      id: 6,
-      type: "update",
-      title: "Updated Platform Policy",
-      content: "Changes to Sponsor terms of service",
-      date: "10/22/2024",
-      icon: "mdi:file-document-outline",
-      unread: false,
-      path: "/admin/content"
-    }
-  ];
+  const iconMap = {
+    concern: "mdi:chat-outline",
+    payment: "mdi:wallet-outline",
+    event: "mdi:calendar-outline",
+    user: "mdi:account-plus-outline",
+    update: "mdi:file-document-outline"
+  };
 
-  const handleNotifClick = (path) => {
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await axios.get('http://localhost:4000/api/notifications', {
+          headers: {
+            'Authorization': `Bearer ${authUser.token}`
+          }
+        });
+        // Filter out notifications created by the current user
+        const filteredNotifs = response.data.filter(n => !n.createdBy || String(n.createdBy) !== String(authUser._id));
+        dispatch({ type: 'SET_NOTIFICATIONS', payload: filteredNotifs });
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    if (authUser) {
+      fetchNotifications();
+    }
+  }, [authUser, dispatch]);
+
+  const handleMarkRead = async (id) => {
+    try {
+      const response = await axios.patch(`http://localhost:4000/api/notifications/${id}/read`, {}, {
+        headers: {
+          'Authorization': `Bearer ${authUser.token}`
+        }
+      });
+      dispatch({ type: 'MARK_READ', payload: response.data });
+    } catch (error) {
+      console.error('Error marking as read:', error);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await axios.patch('http://localhost:4000/api/notifications/read-all', {}, {
+        headers: {
+          'Authorization': `Bearer ${authUser.token}`
+        }
+      });
+      dispatch({ type: 'MARK_ALL_READ' });
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
+
+  const handleNotifClick = (notif) => {
+    if (notif.unread) {
+      handleMarkRead(notif._id);
+    }
     setIsNotifOpen(false);
-    navigate(path);
+    navigate(notif.path);
   };
 
   const getInitials = (firstName, lastName) => {
@@ -150,39 +158,47 @@ const Header = ({ mobileExpanded, setMobileExpanded }) => {
         <div className="header-notifications" ref={notifRef}>
           <button className="notif-trigger" onClick={() => setIsNotifOpen(!isNotifOpen)}>
             <Icon icon="mdi:bell-outline" width="24" />
-            <span className="notif-badge">4</span>
+            {notifications.filter(n => n.unread).length > 0 && (
+              <span className="notif-badge">{notifications.filter(n => n.unread).length}</span>
+            )}
           </button>
-
+ 
           {isNotifOpen && (
             <div className="notif-dropdown">
               <div className="notif-header">
                 <h5 className="notif-title">Notifications</h5>
-                <button className="notif-mark-read">
+                <button className="notif-mark-read" onClick={handleMarkAllRead}>
                   <Icon icon="mdi:check-all" /> <span>Mark all read</span>
                 </button>
               </div>
-
+ 
               <div className="notif-list">
-                {notifications.slice(0, 5).map((notif) => (
-                  <div 
-                    className={`notif-item ${notif.unread ? 'unread' : ''}`} 
-                    key={notif.id}
-                    onClick={() => handleNotifClick(notif.path)}
-                  >
-                    <div className="notif-status-dot"></div>
-                    <div className={`notif-icon-box ${notif.type}`}>
-                      <Icon icon={notif.icon} />
+                {notifications.length > 0 ? (
+                  notifications.slice(0, 5).map((notif) => (
+                    <div 
+                      className={`notif-item ${notif.unread ? 'unread' : ''}`} 
+                      key={notif._id}
+                      onClick={() => handleNotifClick(notif)}
+                    >
+                      <div className="notif-status-dot"></div>
+                      <div className={`notif-icon-box ${notif.type}`}>
+                        <Icon icon={iconMap[notif.type] || "mdi:bell-outline"} />
+                      </div>
+                      <div className="notif-content">
+                        <p className="notif-text">
+                          <strong>{notif.title}</strong>: {notif.content}
+                        </p>
+                        <span className="smaller-body-text notif-date">
+                          {new Date(notif.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                    <div className="notif-content">
-                      <p className="notif-text">
-                        <strong>{notif.title}</strong>: {notif.content}
-                      </p>
-                      <span className="smaller-body-text notif-date">{notif.date}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <div className="notif-empty">No notifications</div>
+                )}
               </div>
-
+ 
               <button className="view-all-notif-btn" onClick={() => { setIsNotifOpen(false); setShowAllNotifs(true); }}>
                 View all notifications
               </button>
