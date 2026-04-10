@@ -3,23 +3,29 @@ import { Icon } from "@iconify/react";
 import CreateEventModal from './Modal/CreateEventModal';
 import ViewReportModal from './Modal/ViewReportModal';
 import AddUserModal from './Modal/CreateUserModal';
+import ViewNotif from './Modal/ViewNotif';
 
 import { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, AreaChart, Area, LineChart, Line, PieChart, Pie } from 'recharts';
 import { useAuthContext } from './hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import adminService from '../services/adminService';
+import concernService from '../services/concernService';
 
+import { useNotificationsContext } from './hooks/useNotificationsContext';
 import { io } from 'socket.io-client';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function Dashboard() {
     const { user } = useAuthContext();
+    const { notifications } = useNotificationsContext();
+    const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    const [showAllNotifs, setShowAllNotifs] = useState(false);
 
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     
@@ -34,6 +40,7 @@ export default function Dashboard() {
             { name: 'Completed', value: 0, color: '#b3b3b3' },
             { name: 'Pending', value: 0, color: '#ffcc00' },
         ],
+        pendingTickets: 0,
         loading: true
     });
 
@@ -41,10 +48,11 @@ export default function Dashboard() {
         if (!user?.token) return;
 
         try {
-            // Fetch events and users in parallel
-            const [events, users] = await Promise.all([
+            // Fetch events, users, and concerns in parallel
+            const [events, users, concerns] = await Promise.all([
                 eventsService.getEvents(user.token),
-                adminService.getUsers(user.token)
+                adminService.getUsers(user.token),
+                concernService.getAdminConcerns(user.token)
             ]);
 
             const pendingCount = events.filter(e => e.status === 'pending').length;
@@ -67,6 +75,10 @@ export default function Dashboard() {
                     { name: 'Completed', value: completedCount, color: '#b3b3b3' },
                     { name: 'Pending', value: pendingCount, color: '#ffcc00' },
                 ],
+                pendingTickets: concerns.filter(c => 
+                    (c.status === 'open' || c.status === 'in progress') && 
+                    String(c.assignedTo) === String(user._id)
+                ).length,
                 loading: false
             });
         } catch (error) {
@@ -156,6 +168,29 @@ export default function Dashboard() {
         { name: 'Startup Hub', event: 'TechStart', type: 'Silver' },
 
     ];
+
+    const timeAgo = (date) => {
+        const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return Math.floor(interval) + " years ago";
+        interval = seconds / 2592000;
+        if (interval > 1) return Math.floor(interval) + " months ago";
+        interval = seconds / 86400;
+        if (interval > 1) return Math.floor(interval) + " days ago";
+        interval = seconds / 3600;
+        if (interval > 1) return Math.floor(interval) + " hours ago";
+        interval = seconds / 60;
+        if (interval > 1) return Math.floor(interval) + " min ago";
+        return Math.floor(seconds) + " seconds ago";
+    };
+
+    const activityConfig = {
+        concern: { icon: "mdi:chat-outline", color: "yellow-light" },
+        payment: { icon: "mdi:wallet-outline", color: "blue-light" },
+        event: { icon: "mdi:calendar-outline", color: "red-light" },
+        user: { icon: "mdi:account-plus-outline", color: "purple-light" },
+        update: { icon: "mdi:file-document-outline", color: "dark-light" }
+    };
 
     return (
         <div className="admin-dashboard-page">
@@ -259,10 +294,12 @@ export default function Dashboard() {
                             <span className="trend hidden"></span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Support Tickets</p>
-                            <h3>12</h3>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
-                            <span className="view-details">View details <Icon icon="mdi:arrow-right" /></span>
+                            <p className="regular-body-text left-aligned">Pending Tickets</p>
+                            <h3>{stats.loading ? "..." : stats.pendingTickets}</h3>
+                            <p className="smaller-body-text left-aligned">assigned to you</p>
+                            <span className="view-details" onClick={() => navigate('/admin/support')}>
+                                View details <Icon icon="mdi:arrow-right" />
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -520,7 +557,7 @@ export default function Dashboard() {
                     <div className="system-alerts-card">
                         <div className="card-header">
                             <h4 className="left-aligned">System Alerts</h4>
-                            <span className="button-label red">3 Active</span>
+                            <span className="button-label red">{notifications.filter(n => n.unread).length} Active</span>
                         </div>
                         <div className="alerts-list">
                             <div className="alert-item yellow-bg left-aligned-flex">
@@ -556,87 +593,39 @@ export default function Dashboard() {
                     <div className="recent-activity-card">
                         <div className="card-header">
                             <h4 className="left-aligned">Recent Activity</h4>
-                            <span className="view-all">View all <Icon icon="mdi:arrow-right" /></span>
+                            <span className="view-all" onClick={() => setShowAllNotifs(true)}>
+                                View all <Icon icon="mdi:arrow-right" />
+                            </span>
                         </div>
                         <div className="activity-list">
-                            <div className="activity-item">
-                                <div className="activity-left">
-                                    <div className="activity-icon red-light"><Icon icon="mdi:calendar-blank" /></div>
-                                    <div className="activity-details left-aligned">
-                                        <h5 className="left-aligned">New Event Created</h5>
-                                        <p className="left-aligned">Music Festival 2024 submitted</p>
-                                    </div>
-                                </div>
-                                <div className="activity-right">
-                                    <span className="time left-aligned">5 min ago</span>
-                                    <Icon icon="mdi:eye-outline" className="view-icon" />
-                                </div>
-                            </div>
-                            <div className="activity-item">
-                                <div className="activity-left">
-                                    <div className="activity-icon green-light"><Icon icon="mdi:currency-usd" /></div>
-                                    <div className="activity-details left-aligned">
-                                        <h5 className="left-aligned">Payment Received</h5>
-                                        <p className="left-aligned">$2,500 booth payment from TechCorp</p>
-                                    </div>
-                                </div>
-                                <div className="activity-right">
-                                    <span className="time left-aligned">15 min ago</span>
-                                    <Icon icon="mdi:eye-outline" className="view-icon" />
-                                </div>
-                            </div>
-                            <div className="activity-item">
-                                <div className="activity-left">
-                                    <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
-                                    <div className="activity-details left-aligned">
-                                        <h5 className="left-aligned">Tickets Sold</h5>
-                                        <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
-                                    </div>
-                                </div>
-                                <div className="activity-right">
-                                    <span className="time left-aligned">30 min ago</span>
-                                    <Icon icon="mdi:eye-outline" className="view-icon" />
-                                </div>
-                            </div>
-                            <div className="activity-item">
-                                <div className="activity-left">
-                                    <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
-                                    <div className="activity-details left-aligned">
-                                        <h5 className="left-aligned">Tickets Sold</h5>
-                                        <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
-                                    </div>
-                                </div>
-                                <div className="activity-right">
-                                    <span className="time left-aligned">30 min ago</span>
-                                    <Icon icon="mdi:eye-outline" className="view-icon" />
-                                </div>
-                            </div>
-                            <div className="activity-item">
-                                <div className="activity-left">
-                                    <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
-                                    <div className="activity-details left-aligned">
-                                        <h5 className="left-aligned">Tickets Sold</h5>
-                                        <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
-                                    </div>
-                                </div>
-                                <div className="activity-right">
-                                    <span className="time left-aligned">30 min ago</span>
-                                    <Icon icon="mdi:eye-outline" className="view-icon" />
-                                </div>
-                            </div>
-                            <div className="activity-item">
-                                <div className="activity-left">
-                                    <div className="activity-icon blue-light"><Icon icon="mdi:ticket-outline" /></div>
-                                    <div className="activity-details left-aligned">
-                                        <h5 className="left-aligned">Tickets Sold</h5>
-                                        <p className="left-aligned">50 VIP tickets sold for Creator Expo</p>
-                                    </div>
-                                </div>
-                                <div className="activity-right">
-                                    <span className="time left-aligned">30 min ago</span>
-                                    <Icon icon="mdi:eye-outline" className="view-icon" />
-                                </div>
-                            </div>
+                            {notifications.length > 0 ? (
+                                notifications.slice(0, 8).map((notif) => {
+                                    const config = activityConfig[notif.type] || { icon: "mdi:bell-outline", color: "blue-light" };
+                                    return (
+                                        <div className="activity-item" key={notif._id}>
+                                            <div className="activity-left" onClick={() => navigate(notif.path)}>
+                                                <div className={`activity-icon ${config.color}`}>
+                                                    <Icon icon={config.icon} />
+                                                </div>
+                                                <div className="activity-details left-aligned">
+                                                    <h5 className="left-aligned">{notif.title}</h5>
+                                                    <p className="left-aligned">{notif.content}</p>
+                                                </div>
+                                            </div>
+                                            <div className="activity-right">
+                                                <span className="time left-aligned">{timeAgo(notif.createdAt)}</span>
+                                                <Icon 
+                                                    icon="mdi:eye-outline" 
+                                                    className="view-icon" 
+                                                    onClick={() => navigate(notif.path)}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="no-activity">No recent activity</div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -644,6 +633,15 @@ export default function Dashboard() {
             <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
             <ViewReportModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
             <AddUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} />
+            <ViewNotif 
+                isOpen={showAllNotifs} 
+                onClose={() => setShowAllNotifs(false)} 
+                notifications={notifications}
+                onNotifClick={(notif) => {
+                    setShowAllNotifs(false);
+                    navigate(notif.path);
+                }}
+            />
 
         </div>
     );

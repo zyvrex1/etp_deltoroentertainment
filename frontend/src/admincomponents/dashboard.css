@@ -593,6 +593,15 @@
                 /* same height sa promoters list */
                 overflow-y: auto;
                 padding-right: 8px;
+
+                .no-activity {
+                    padding: 20px;
+                    text-align: center;
+                    color: var(--color-black-tertiary);
+                    font-size: 14px;
+                    background: var(--color-bg-light);
+                    border-radius: 8px;
+                }
             }
         }
 
@@ -717,6 +726,16 @@
                 &.purple-light {
                     background: var(--color-purple-quaternary);
                     color: var(--color-purple-primary);
+                }
+
+                &.yellow-light {
+                    background: var(--color-yellow-quaternary);
+                    color: var(--color-yellow-primary);
+                }
+
+                &.dark-light {
+                    background: var(--color-bg-dark);
+                    color: white;
                 }
             }
 
