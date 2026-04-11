@@ -653,35 +653,45 @@ const removeEventImage = (filename) => {
 
 const saveVenueLayout = async (req, res) => {
   const { id } = req.params;
-  let { localItems } = req.body;
+  
+  // Extract 'items' (matching your frontend key) 
+  // and default to an empty array if undefined
+  let { items = [] } = req.body; 
 
   try {
-    if (typeof localItems === "string") localItems = JSON.parse(localItems);
+    // 1. Handle stringified data if sent from certain types of forms
+    if (typeof items === "string") items = JSON.parse(items);
 
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ error: "Event not found" });
 
+    // 2. Initialize the fresh structure
     const newSeatMap = {
       width: 1400,
       height: 500,
       sections: [{ name: "Main Section", seats: [] }],
-      layoutItems: [],
+      elements: [],   
+      backgrounds: [], 
     };
     const newBooths = [];
 
-    localItems.forEach((item) => {
-      // UPDATED: Include scaleX and scaleY in common properties
+    // 3. Process items using the 'items' variable
+    items.forEach((item) => {
+      const idProp = item._id || item.id;
+      const isValidMongoId = mongoose.Types.ObjectId.isValid(idProp);
+      
       const common = {
+        ...(isValidMongoId && { _id: idProp }),
         x: item.x,
         y: item.y,
         width: item.width,
         height: item.height,
         rotation: item.rotation || 0,
-        scaleX: item.scaleX ?? 1, // Fallback to 1 if undefined
-        scaleY: item.scaleY ?? 1, // Fallback to 1 if undefined
+        scaleX: item.scaleX ?? 1,
+        scaleY: item.scaleY ?? 1,
         status: item.status || "available",
-        priceLevelId: (item.priceLevelId && item.priceLevelId !== "none") 
-                        ? toObjectId(item.priceLevelId) : null
+        priceLevelId: (item.priceLevelId && item.priceLevelId !== "none" && item.priceLevelId !== "") 
+                        ? item.priceLevelId : null
       };
 
       if (item.type === "Seat" || item.type === "Table") {
@@ -697,35 +707,43 @@ const saveVenueLayout = async (req, res) => {
       else if (item.type === "Booth") {
         newBooths.push({
           ...common,
+          type: "Booth",
           code: item.code || item.label,
           label: item.label || item.code,
         });
       } 
-      else if (item.type === "Background") {
-        newSeatMap.layoutItems.push({
+      else if (item.type === "Element") {
+        newSeatMap.elements.push({
           ...common,
-          type: "Background",
+          label: item.label || "Element",
+          shape: item.shape || "Rect",
+          color: item.color || "#CCCCCC"
+        });
+      }
+      else if (item.type === "Background" || item.subType === "Image") {
+        newSeatMap.backgrounds.push({
+          ...common,
           subType: item.subType === "Image" ? "Image" : "Shape",
           imageUrl: item.imageUrl || null,
           color: item.color || "#2196F3",
+          opacity: item.opacity ?? 1
         });
       }
     });
 
+    // 4. Update the event document
     event.seatMap = newSeatMap;
     event.booths = newBooths;
     event.hasBooths = newBooths.length > 0;
 
-    // Explicitly mark as modified since these are sub-documents/nested objects
     event.markModified('seatMap');
     event.markModified('booths');
 
     await event.save();
     
-    // Using your socket/util for real-time updates
+    // 5. Trigger your real-time updates if applicable
     if (typeof emitUpdate === 'function') emitUpdate('dashboardUpdate');
     
-    // Return the updated event so the frontend Context can update
     return res.status(200).json(event); 
   } catch (error) {
     console.error("Save Error:", error);

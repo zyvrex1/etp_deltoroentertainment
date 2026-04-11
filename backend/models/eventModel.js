@@ -58,30 +58,48 @@ const sectionSchema = new Schema({
   seats: [seatSchema],
 });
 
+const elementSchema = new Schema({
+  type: { type: String, default: "Element" }, 
+  label: { type: String, required: true },    
+  shape: { type: String, enum: ["Rect", "Circle"], default: "Rect" },
+  color: { type: String, default: "#CCCCCC" },
+  x: { type: Number, required: true },
+  y: { type: Number, required: true },
+  width: { type: Number, required: true },
+  height: { type: Number, required: true },
+  rotation: { type: Number, default: 0 },
+  scaleX: { type: Number, default: 1 },
+  scaleY: { type: Number, default: 1 },
+  isLocked: { type: Boolean, default: false } 
+});
+
+
+
 const layoutItemSchema = new Schema({
   type: { type: String, default: "Background" },
-  subType: { type: String, enum: ["Image", "Shape"] },
-  shape: { type: String, enum: ["Circle", "Rect"], default: "Rect" }, // ADDED
+  subType: { type: String, enum: ["Image", "Shape"], default: "Image" },
   imageUrl: String, 
   color: String,    
-  x: Number,
-  y: Number,
+  x: { type: Number, default: 0 },
+  y: { type: Number, default: 0 },
   width: Number,
   height: Number,
   rotation: { type: Number, default: 0 },
-  scaleX: { type: Number, default: 1 }, // <--- ADD THIS
-  scaleY: { type: Number, default: 1 }, // <--- ADD THIS
+  scaleX: { type: Number, default: 1 },
+  scaleY: { type: Number, default: 1 },
+  opacity: { type: Number, default: 1 }
 });
 
-// Update seatMapSchema to include it
 const seatMapSchema = new Schema({
-  width: { type: Number, default: 1400 }, // Match STAGE_WIDTH
-  height: { type: Number, default: 500 },  // Match STAGE_HEIGHT
+  width: { type: Number, default: 1400 },
+  height: { type: Number, default: 500 },
   sections: [sectionSchema],
-  layoutItems: [layoutItemSchema], // <--- ADD THIS
+  elements: [elementSchema],      // <--- STAGE, BAR, etc.
+  backgrounds: [layoutItemSchema]  // <--- FLOOR PLAN IMAGE
 });
 
 const boothSchema = new mongoose.Schema({
+  type: { type: String, default: "Booth" },
   code: String,
   label: String,
   status: {
@@ -194,27 +212,33 @@ eventSchema.pre("save", function (next) {
     .map((p) => (p && p._id ? p._id.toString() : null))
     .filter(Boolean);
 
-
-  if (this.eventType === "Seating Arrangement" && this.seatMap && this.seatMap.sections) {
-    for (const section of this.seatMap.sections) {
-      if (!section.seats) continue; // Skip if no seats array
-      for (const seat of section.seats) {
-        if (
-          seat.priceLevelId &&
-          !priceIds.includes(seat.priceLevelId.toString())
-        ) {
-          return next(
-            new Error(`Seat ${seat.label || `${seat.row}-${seat.number}`} has invalid priceLevelId`)
-          );
+  // 1. Validation for Seating Arrangement
+  if (this.eventType === "Seating Arrangement" && this.seatMap) {
+    
+    // Validate Seats within Sections
+    if (this.seatMap.sections) {
+      for (const section of this.seatMap.sections) {
+        if (!section.seats) continue;
+        for (const seat of section.seats) {
+          if (seat.priceLevelId && seat.priceLevelId !== "none" && !priceIds.includes(seat.priceLevelId.toString())) {
+            return next(
+              new Error(`Seat ${seat.label || `${seat.row}-${seat.number}`} has invalid priceLevelId`)
+            );
+          }
         }
       }
     }
+
+    // NOTE: Elements (Stages/Bars) and Backgrounds are ignored here 
+    // because they don't have priceLevelIds or inventory status.
   }
 
+  // 2. Logic for General Admission
   if (this.eventType === "General Admission") {
     this.seatMap = null; 
   }
 
+  // 3. Validation for Booths
   if (this.hasBooths) {
     if (!this.booths || !this.booths.length) {
       return next(new Error("Booths are required when hasBooths is true"));
@@ -232,6 +256,7 @@ eventSchema.pre("save", function (next) {
     }
   }
 
+  // 4. Revenue Calculations
   let seatRevenue = 0;
   let boothRevenue = 0;
 
@@ -242,22 +267,23 @@ eventSchema.pre("save", function (next) {
     }
   });
 
+  // Calculate Seat/Table Revenue
   if (this.seatMap && this.seatMap.sections) {
-  for (const section of this.seatMap.sections) {
-    if (!section.seats) continue;
-    for (const seat of section.seats) {
-      if (seat.status === "sold" && seat.priceLevelId) {
-        const p = priceMap[seat.priceLevelId.toString()];
-        if (p) {
-          // If it's a table, multiply price by seatCount
-          const count = seat.type === "Table" ? (seat.seatCount || 1) : 1;
-          seatRevenue += ((p.facePrice || 0) + (p.serviceCharge || 0)) * count;
+    for (const section of this.seatMap.sections) {
+      if (!section.seats) continue;
+      for (const seat of section.seats) {
+        if (seat.status === "sold" && seat.priceLevelId) {
+          const p = priceMap[seat.priceLevelId.toString()];
+          if (p) {
+            const count = seat.type === "Table" ? (seat.seatCount || 1) : 1;
+            seatRevenue += ((p.facePrice || 0) + (p.serviceCharge || 0)) * count;
+          }
         }
       }
     }
   }
-}
 
+  // Calculate Booth Revenue
   if (this.booths) {
     for (const booth of this.booths) {
       if (booth.status === "sold" && booth.priceLevelId) {

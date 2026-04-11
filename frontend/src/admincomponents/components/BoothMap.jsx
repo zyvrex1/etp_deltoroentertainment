@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Stage,
   Layer,
@@ -17,6 +17,8 @@ const BackgroundImage = React.forwardRef(
   ({ item, onClick, onDragEnd, dragBoundFunc, onTransformEnd }, ref) => {
     const [img] = useImage(item.imageUrl);
     const isBg = item.type === "Background";
+    
+    // Maintain your default logic
     const w = item.width || (isBg ? 400 : 45);
     const h = item.height || (isBg ? 300 : 45);
 
@@ -31,6 +33,10 @@ const BackgroundImage = React.forwardRef(
         y={item.y}
         width={w}
         height={h}
+        // ADD THESE TWO LINES:
+        scaleX={item.scaleX || 1}
+        scaleY={item.scaleY || 1}
+        rotation={item.rotation || 0}
         draggable
         onClick={onClick}
         onDragEnd={onDragEnd}
@@ -45,25 +51,50 @@ const BackgroundImage = React.forwardRef(
 const BackgroundShape = React.forwardRef(
   ({ item, onClick, onDragEnd, dragBoundFunc, onTransformEnd }, ref) => {
     const isBg = item.type === "Background";
-    const w = item.width || (isBg ? 400 : 45);
-    const h = item.height || (isBg ? 300 : 45);
+    const isElement = item.type === "Element";
+    
+    // Use the stored width/height directly
+    const w = item.width;
+    const h = item.height;
 
     return (
-      <Rect
+      <Group
         ref={ref}
         id={item.id.toString()}
         x={item.x}
         y={item.y}
-        width={w}
-        height={h}
-        fill={item.color || "#2196F3"}
-        opacity={isBg ? 0.3 : 1}
+        scaleX={item.scaleX || 1}
+        scaleY={item.scaleY || 1}
+        rotation={item.rotation || 0}
         draggable
         onClick={onClick}
         onDragEnd={onDragEnd}
         onTransformEnd={onTransformEnd}
         dragBoundFunc={dragBoundFunc}
-      />
+      >
+        <Rect
+          width={w}
+          height={h}
+          fill={item.color || "#2196F3"}
+          opacity={isBg ? 0.3 : 0.8}
+          stroke={isElement ? "#333" : "transparent"}
+          strokeWidth={1}
+        />
+        {/* Only show text for Elements (Stage, Bar), not Backgrounds */}
+        {isElement && (
+          <Text
+           text={item.label || item.code || ""}
+            width={w}
+            height={h}
+            align="center"
+            verticalAlign="middle"
+            fontSize={14}
+            fill="black"
+            fontStyle="bold"
+            listening={false}
+          />
+        )}
+      </Group>
     );
   },
 );
@@ -104,7 +135,9 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
   const { dispatch } = useEventsContext();
   const { user } = useAuthContext();
   const [localItems, setLocalItems] = useState([]);
-  const [loading, setLoading] = useState(false); // New: Loading state
+  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
@@ -131,13 +164,16 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
       try {
         const response = await fetch(`/api/events/${selectedEvent._id}`);
         const data = await response.json();
+        
+        // Ensure all types of items are flattened into one array for the canvas
         const savedItems = [
           ...(data.seatMap?.sections[0]?.seats || []),
-          ...(data.seatMap?.layoutItems || []),
+          ...(data.seatMap?.elements || []),    // <--- ADD THIS
+          ...(data.seatMap?.backgrounds || []), // <--- ADD THIS
           ...(data.booths || [])
         ].map(item => ({
           ...item,
-          id: item._id || item.id // Ensure we have a consistent ID
+          id: item._id || item.id 
         }));
         
         setLocalItems(savedItems);
@@ -145,45 +181,100 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
         console.error("Error loading layout:", error);
       }
     };
-
     fetchLayout();
   }, [selectedEvent?._id]);
 
-  const handleSaveLayout = async () => {
-  // 1. Safety check for the user
-  if (!user) {
-    alert("You must be logged in to save changes.");
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const response = await fetch(`/api/events/${selectedEvent._id}/layout`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        // 2. Use the token from the AuthContext
-        'Authorization': `Bearer ${user.token}` 
-      },
-      body: JSON.stringify({ localItems }) 
-    });
-
-    const json = await response.json();
-
-    if (response.ok) {
-      // 3. Update the global state so other parts of the admin panel sync up
-      dispatch({ type: 'UPDATE_EVENT', payload: json });
-      alert("Layout saved successfully!");
-    } else {
-      alert(`Save failed: ${json.error || 'Unknown error'}`);
+  useEffect(() => {
+  const handleKeyDown = (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === "z") {
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if (e.key === "y") {
+        redo();
+      }
     }
-  } catch (error) {
-    console.error("Save error:", error);
-    alert("Network error while saving.");
-  } finally {
-    setLoading(false);
-  }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [localItems, history, redoStack]); // Re-bind so functions have fresh state
+
+  const undo = () => {
+  if (history.length === 0) return;
+
+  const previous = history[history.length - 1];
+  const newHistory = history.slice(0, history.length - 1);
+
+  setRedoStack([localItems, ...redoStack]);
+  setLocalItems(previous);
+  setHistory(newHistory);
 };
+
+const redo = () => {
+  if (redoStack.length === 0) return;
+
+  const next = redoStack[0];
+  const newRedoStack = redoStack.slice(1);
+
+  setHistory([...history, localItems]);
+  setLocalItems(next);
+  setRedoStack(newRedoStack);
+};
+
+const updateItemsWithHistory = (newItems) => {
+  setHistory([...history, localItems]);
+  setRedoStack([]); // Clear redo whenever a new action is taken
+  setLocalItems(newItems);
+};
+
+  const handleSaveLayout = async () => {
+    if (!user) {
+      alert("You must be logged in to save changes.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Your controller likely expects a specific body structure
+      // We send the entire localItems array for the backend to sort into seats/booths/layout
+      const response = await fetch(`/api/events/${selectedEvent._id}/layout`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` 
+        },
+        body: JSON.stringify({ items: localItems }) 
+      });
+
+      const json = await response.json();
+
+      if (response.ok) {
+        dispatch({ type: 'UPDATE_EVENT', payload: json });
+        alert("Layout saved successfully!");
+        
+        if (json.seatMap) {
+  const refreshedItems = [
+    ...(json.seatMap.sections[0]?.seats || []),
+    ...(json.seatMap.elements || []),   
+    ...(json.seatMap.backgrounds || []),
+    ...(json.booths || [])
+  ].map(it => ({ ...it, id: it._id || it.id }));
+  setLocalItems(refreshedItems);
+}
+      } else {
+        alert(`Save failed: ${json.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      alert("Network error while saving.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const closeModal = () =>
     setModal({
@@ -233,39 +324,72 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
     return isOverlapping ? { x: item.x, y: item.y } : { x: newX, y: newY };
   };
 
-  const handleTransformEnd = (index, e) => {
+ const handleTransformEnd = (id, e) => {
   const node = e.target;
+  const scaleX = node.scaleX();
+  const scaleY = node.scaleY();
 
-  // We no longer reset scale to 1. 
-  // We keep the node's visual scale and save it to our state.
-  const updatedItems = [...localItems];
-  updatedItems[index] = {
-    ...updatedItems[index],
-    x: node.x(),
-    y: node.y(),
-    rotation: node.rotation(),
-    // Save the scale values directly
-    scaleX: node.scaleX(),
-    scaleY: node.scaleY(),
-    // We still update width/height for bounding box logic, 
-    // but the Group uses scaleX/Y for the visual look.
-    width: node.width(),
-    height: node.height(),
-  };
+  const updatedItems = localItems.map((item) => {
+    if (item.id === id) {
+      // TYPE A: Simple Shapes (Background/Element)
+      // We "bake" the scale into width/height and reset scale to 1
+      if (item.type === "Background" || item.type === "Element") {
+        node.scaleX(1);
+        node.scaleY(1);
+        return {
+          ...item,
+          x: node.x(),
+          y: node.y(),
+          rotation: node.rotation(),
+          width: Math.max(5, (item.width || 40) * scaleX),
+          height: Math.max(5, (item.height || 40) * scaleY),
+          scaleX: 1,
+          scaleY: 1,
+        };
+      }
 
-  setLocalItems(updatedItems);
+      // TYPE B: Complex Groups (Seat, Table, Booth)
+      // We MUST keep the scaleX/scaleY values so the internal 
+      // shapes stay stretched. Do NOT reset node scales here.
+      return {
+        ...item,
+        x: node.x(),
+        y: node.y(),
+        rotation: node.rotation(),
+        scaleX: scaleX,
+        scaleY: scaleY,
+      };
+    }
+    return item;
+  });
+
+  updateItemsWithHistory(updatedItems);
 };
 
   const openAddModal = (type) => {
-    setSelectedId(null); // Clear selection when adding something new
+    setSelectedId(null);
+    
+    let defaultLabel = "";
+    let defaultColor = "#e0e0e0";
+    
+    // Logic for new 'Element' vs 'Background'
+    if (type === "Element") {
+      defaultLabel = "STAGE";
+      defaultColor = "#90caf9"; // Light blue
+    } else if (type === "Background") {
+      defaultLabel = ""; 
+      defaultColor = "#f5f5f5"; // Very light gray
+    } else {
+      defaultLabel = "New " + type;
+    }
+
     setModal({
       visible: true,
       mode: "ADD",
       type: type,
       config: {
-        label: type === "Background" ? "" : "New " + type,
-        // Default to gray for non-backgrounds
-        color: type === "Background" ? "#2196F3" : "#e0e0e0",
+        label: defaultLabel,
+        color: defaultColor,
         shape: type === "Table" || type === "Seat" ? "Circle" : "Rect",
         seatCount: type === "Seat" ? 5 : 4,
         rotation: 0,
@@ -281,7 +405,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
       type: item.type,
       editingId: item.id,
       config: {
-        label: item.code,
+        label: item.label || item.code,
         color: item.color,
         shape: item.shape,
         seatCount: item.seatCount || 4,
@@ -295,23 +419,28 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
     let spawnY = contextMenu.y;
 
     const newItem = {
-      id: Date.now(),
+      id: `temp_${Date.now()}`,
       type: modal.type,
       x: spawnX,
       y: spawnY,
-      label: modal.config.label, // Use 'label' to match seatSchema
-      code: modal.config.label,  // Keep 'code' for booths/compat
+      label: modal.config.label,
+      code: modal.config.label,
       color: modal.config.color,
       shape: modal.config.shape,
-      width: modal.type === "Booth" ? 60 : 40,
-      height: modal.type === "Booth" ? 60 : 40,
+      // Elements and Backgrounds get larger default sizes
+      width: modal.type === "Background" ? 600 : (modal.type === "Element" ? 200 : (modal.type === "Booth" ? 60 : 40)),
+      height: modal.type === "Background" ? 400 : (modal.type === "Element" ? 100 : (modal.type === "Booth" ? 60 : 40)),
       rotation: modal.config.rotation || 0,
       seatCount: modal.config.seatCount,
+      scaleX: 1,
+      scaleY: 1
     };
 
-    if (newItem.type !== "Background") {
+    // Only check collisions for "Physical" items (Seats, Tables, Booths)
+    const physicalTypes = ["Seat", "Table", "Booth"];
+    if (physicalTypes.includes(newItem.type)) {
       const isBlocked = localItems.some(
-        (item) => item.type !== "Background" && haveIntersection(newItem, item),
+        (item) => physicalTypes.includes(item.type) && haveIntersection(newItem, item),
       );
       if (isBlocked) {
         alert("Space is occupied!");
@@ -319,30 +448,30 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
       }
     }
 
-    setLocalItems([...localItems, newItem]);
+    updateItemsWithHistory([...localItems, newItem]);
     closeModal();
   };
 
   const handleUpdateItem = () => {
-    setLocalItems(
-      localItems.map((item) =>
-        item.id === modal.editingId
-          ? {
-              ...item,
-              code: modal.config.label,
-              color: modal.config.color,
-              shape: modal.config.shape,
-              seatCount: modal.config.seatCount,
-              rotation: modal.config.rotation, // Fix: Save rotation on update
-            }
-          : item,
-      ),
-    );
-    closeModal();
-  };
+  setLocalItems(
+    localItems.map((item) =>
+      item.id === modal.editingId
+        ? {
+            ...item,
+            label: modal.config.label, // Update label
+            code: modal.config.label,  // Update code (so it shows on canvas)
+            color: modal.config.color,
+            seatCount: modal.config.seatCount,
+            rotation: modal.config.rotation,
+          }
+        : item
+    )
+  );
+  closeModal();
+};
 
   const handleDeleteItem = () => {
-    setLocalItems(localItems.filter((item) => item.id !== modal.editingId));
+    updateItemsWithHistory(localItems.filter((item) => item.id !== modal.editingId));
 
     setSelectedId(null);
 
@@ -371,31 +500,75 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
     closeContextMenu();
   };
 
-  const handleDragEnd = (index, e) => {
-    const updatedItems = [...localItems];
-    updatedItems[index] = {
-      ...updatedItems[index],
-      x: e.target.x(),
-      y: e.target.y(),
+ const handleDragEnd = (id, e) => {
+  const updatedItems = localItems.map((item) => {
+    if (item.id === id) {
+      return {
+        ...item,
+        x: e.target.x(),
+        y: e.target.y(),
+      };
+    }
+    return item;
+  });
+  updateItemsWithHistory(updatedItems);
+};
+
+const sortedItems = useMemo(() => {
+  return [...localItems].sort((a, b) => {
+    const getWeight = (item) => {
+      if (item.type === "Background") return 1;
+      if (item.type === "Element") return 2;
+      return 3;
     };
-    setLocalItems(updatedItems);
-  };
+    return getWeight(a) - getWeight(b);
+  });
+}, [localItems]);
 
   return (
     <div className="bt-section relative-wrapper" onClick={closeContextMenu}>
       <div className="bt-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 className="bt-section-title">{selectedEvent.venue?.name}</h3>
-          
-          {/* NEW: Save Button */}
-          <button 
-            className="btn-confirm" 
-            onClick={handleSaveLayout}
-            disabled={loading}
-            style={{ padding: '8px 16px', cursor: 'pointer' }}
-          >
-            {loading ? "Saving..." : "Save Layout"}
-          </button>
-      </div>
+  <h3 className="bt-section-title">{selectedEvent.venue?.name}</h3>
+
+  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+    {/* Undo/Redo Group */}
+    <div className="history-buttons" style={{ display: 'flex', gap: '5px' }}>
+      <button 
+        className="btn-secondary"
+        onClick={undo} 
+        disabled={history.length === 0}
+        title="Undo (Ctrl+Z)"
+        style={{ padding: '8px 16px', cursor: 'pointer', opacity: history.length === 0 ? 0.5 : 1 }}
+      >
+        <i className="fa fa-undo"></i> Undo
+      </button>
+      
+      <button 
+        className="btn-secondary"
+        onClick={redo} 
+        disabled={redoStack.length === 0}
+        title="Redo (Ctrl+Y)"
+        style={{ padding: '8px 16px', cursor: 'pointer', opacity: redoStack.length === 0 ? 0.5 : 1 }}
+      >
+        <i className="fa fa-redo"></i> Redo
+      </button>
+    </div>
+
+    {/* Save Button */}
+    <button 
+      className="btn-confirm" 
+      onClick={handleSaveLayout}
+      disabled={loading}
+      style={{ padding: '8px 16px', cursor: 'pointer' }}
+    >
+      {loading ? "Saving..." : "Save Layout"}
+    </button>
+
+
+  </div>
+</div>
+      
+      
       <input
         type="file"
         ref={fileInputRef}
@@ -420,130 +593,133 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
               setContextMenu({ visible: true, x: pos.x, y: pos.y });
             }}
           >
-            <Layer>
-  {localItems
-    .sort((a, b) => (a.type === "Background" ? -1 : 1))
-    .map((item, i) => (
-      <React.Fragment key={item.id || i}>
-        {/* 1. UPLOADED IMAGES */}
-        {item.subType === "Image" ? (
-          <BackgroundImage
-            item={item}
-            onClick={() => {
-              setSelectedId(item.id);
-              openEditModal(item);
-            }}
-            onDragEnd={(e) => handleDragEnd(i, e)}
-            onTransformEnd={(e) => handleTransformEnd(i, e)}
-            dragBoundFunc={(pos) => handleDragBound(pos, item)}
-          />
-        ) : 
-        
-        /* 2. INTERACTIVE UNITS (TABLES, SEATS, BOOTHS) */
-        item.type === "Table" || item.type === "Seat" || item.type === "Booth" ? (
-<Group
-  draggable
-  id={item.id.toString()}
-  x={item.x}
-  y={item.y}
-  // NEW: Pull scale from the item data (defaults to 1)
-  scaleX={item.scaleX || 1}
-  scaleY={item.scaleY || 1}
-  rotation={item.rotation || 0}
-  onDragEnd={(e) => handleDragEnd(i, e)}
-  // NEW: Add the transform end handler here
-  onTransformEnd={(e) => handleTransformEnd(i, e)}
-  onClick={() => {
-    setSelectedId(item.id);
-    openEditModal(item);
-  }}
-  dragBoundFunc={(pos) => {
-    const margin = 35;
-    return {
-      x: Math.max(margin, Math.min(STAGE_WIDTH - margin, pos.x)),
-      y: Math.max(margin, Math.min(STAGE_HEIGHT - margin, pos.y)),
-    };
-  }}
->
-  {item.type === "Table" ? (
-    <>
-      <Circle radius={25} fill="#e0e0e0" stroke="#555" strokeWidth={2} />
-      {calculateTableSeats(0, 0, 25, item.seatCount || 4).map((seat, index) => (
-        <Rect
-          key={index}
-          x={seat.x - 6} y={seat.y - 6}
-          width={12} height={12}
-          fill="#bdbdbd"
-          cornerRadius={2} stroke="#555" strokeWidth={1}
+<Layer>
+  {sortedItems.map((item, i) => (
+    <React.Fragment key={item.id || i}>
+      {/* 1. UPLOADED IMAGES (Background Layer) */}
+      {item.subType === "Image" ? (
+        <BackgroundImage
+          ref={null} // Ref is handled by Transformer findOne
+          item={item}
+          onClick={() => {
+            setSelectedId(item.id);
+            openEditModal(item);
+          }}
+          onDragEnd={(e) => handleDragEnd(item.id, e)}
+          onTransformEnd={(e) => handleTransformEnd(item.id, e)}
+          dragBoundFunc={(pos) => handleDragBound(pos, item)}
         />
-      ))}
-    </>
-  ) : item.type === "Booth" ? (
-    <Rect
-      x={-30} y={-30}
-      width={60} height={60}
-      fill="#e0e0e0"
-      cornerRadius={5} stroke="#555" strokeWidth={2}
-    />
-  ) : (
-    /* Seat Row - Your Original Logic Maintained */
-    Array.from({ length: item.seatCount || 1 }).map((_, idx) => (
-      <Rect
-        key={idx}
-        x={idx * 18 - (item.seatCount * 18) / 2}
-        y={-6}
-        width={15} height={15}
-        fill="#e0e0e0"
-        cornerRadius={3} stroke="#555" strokeWidth={1}
-      />
-    ))
-  )}
-  <Text
-    text={item.code}
-    x={-30}
-    y={item.type === "Booth" ? -5 : (item.type === "Table" ? -5 : 12)}
-    width={60}
-    align="center"
-    fontSize={10}
-    fill="black"
-    fontStyle="bold"
-  />
-</Group>
-        ) : (
-          
-
-          <BackgroundShape
-            item={item}
-            onClick={() => {
-              setSelectedId(item.id);
-              openEditModal(item);
-            }}
-            onDragEnd={(e) => handleDragEnd(i, e)}
-            onTransformEnd={(e) => handleTransformEnd(i, e)}
-            dragBoundFunc={(pos) => handleDragBound(pos, item)}
+      ) : item.type === "Table" || item.type === "Seat" || item.type === "Booth" ? (
+        /* 2. INTERACTIVE UNITS (Top Layer) */
+        <Group
+          draggable
+          id={item.id.toString()}
+          x={item.x}
+          y={item.y}
+          scaleX={item.scaleX || 1}
+          scaleY={item.scaleY || 1}
+          rotation={item.rotation || 0}
+          onDragEnd={(e) => handleDragEnd(item.id, e)}
+          onTransformEnd={(e) => handleTransformEnd(item.id, e)}
+          onClick={() => {
+            setSelectedId(item.id);
+            openEditModal(item);
+          }}
+          dragBoundFunc={(pos) => {
+            const margin = 35;
+            return {
+              x: Math.max(margin, Math.min(STAGE_WIDTH - margin, pos.x)),
+              y: Math.max(margin, Math.min(STAGE_HEIGHT - margin, pos.y)),
+            };
+          }}
+        >
+          {item.type === "Table" ? (
+            <>
+              <Circle radius={25} fill="#e0e0e0" stroke="#555" strokeWidth={2} />
+              {calculateTableSeats(0, 0, 25, item.seatCount || 4).map((seat, index) => (
+                <Rect
+                  key={index}
+                  x={seat.x - 6}
+                  y={seat.y - 6}
+                  width={12}
+                  height={12}
+                  fill="#bdbdbd"
+                  cornerRadius={2}
+                  stroke="#555"
+                  strokeWidth={1}
+                />
+              ))}
+            </>
+          ) : item.type === "Booth" ? (
+            <Rect
+              x={-30}
+              y={-30}
+              width={60}
+              height={60}
+              fill="#e0e0e0"
+              cornerRadius={5}
+              stroke="#555"
+              strokeWidth={2}
+            />
+          ) : (
+            /* Seat Row */
+            Array.from({ length: item.seatCount || 1 }).map((_, idx) => (
+              <Rect
+                key={idx}
+                x={idx * 18 - (item.seatCount * 18) / 2}
+                y={-6}
+                width={15}
+                height={15}
+                fill="#e0e0e0"
+                cornerRadius={3}
+                stroke="#555"
+                strokeWidth={1}
+              />
+            ))
+          )}
+          <Text
+            text={item.label || item.code || ""}
+            x={-30}
+            y={item.type === "Booth" ? -5 : item.type === "Table" ? -5 : 12}
+            width={60}
+            align="center"
+            fontSize={10}
+            fill="black"
+            fontStyle="bold"
           />
-        )}
-      </React.Fragment>
-    ))}
+        </Group>
+      ) : (
+        /* 3. STATIC SHAPES (Backgrounds & Elements) */
+        <BackgroundShape
+          item={item}
+          onClick={() => {
+            setSelectedId(item.id);
+            openEditModal(item);
+          }}
+          onDragEnd={(e) => handleDragEnd(item.id, e)}
+          onTransformEnd={(e) => handleTransformEnd(item.id, e)}
+          dragBoundFunc={(pos) => handleDragBound(pos, item)}
+        />
+      )}
+    </React.Fragment>
+  ))}
 
   {selectedId && (
     <Transformer
       ref={(node) => {
         trRef.current = node;
-        if (node) {
-          const exists = localItems.some((it) => it.id === selectedId);
+        if (node && stageRef.current) {
+          // Look for the node by ID (stringified)
           const selectedNode = stageRef.current.findOne(`#${selectedId}`);
-          if (selectedNode && exists) {
+          if (selectedNode) {
             node.nodes([selectedNode]);
             node.getLayer().batchDraw();
-          } else {
-            node.nodes([]);
           }
         }
       }}
       keepRatio={localItems.find((it) => it.id === selectedId)?.subType === "Image"}
       boundBoxFunc={(oldBox, newBox) => {
-        if (newBox.width < 10 || newBox.height < 10) return oldBox;
+        if (Math.abs(newBox.width) < 10 || Math.abs(newBox.height) < 10) return oldBox;
         return newBox;
       }}
     />
@@ -581,6 +757,10 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                   Add Booth
                 </li>
                 <hr />
+                <li className="context-menu-item" onClick={() => openAddModal("Element")}>
+                  Add Element (Stage, Bar and etc.)
+                </li>
+
                 <li
                   className="context-menu-item"
                   onClick={() => openAddModal("Background")}
