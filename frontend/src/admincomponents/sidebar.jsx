@@ -16,10 +16,42 @@ import {
   MdMenu,
   MdClose,
 } from "react-icons/md";
-
 import "./sidebar.css";
+import { useAuthContext } from "./hooks/useAuthContext";
+import concernService from "../services/concernService";
+import { io } from "socket.io-client";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
+  const { user } = useAuthContext();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadCount = async () => {
+    if (!user?.token) return;
+    try {
+      const { total } = await concernService.getAdminUnreadCount(user.token);
+      setUnreadCount(total);
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user?.token) return;
+    const socket = io(BACKEND_URL);
+
+    socket.on("newConcern", () => fetchUnreadCount());
+    socket.on("newMessage", () => fetchUnreadCount());
+    socket.on("statusUpdate", () => fetchUnreadCount());
+    socket.on("unreadCountUpdate", () => fetchUnreadCount());
+
+    return () => socket.disconnect();
+  }, [user]);
 
   const handleLinkClick = () => {
     if (window.innerWidth <= 768) {
@@ -126,7 +158,10 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
             </NavLink>
 
             <NavLink to="/admin/support" className="sidebar-item" onClick={handleLinkClick}>
-              <MdSupport className="icon" />
+              <div className="icon-with-badge">
+                <MdSupport className="icon" />
+                {unreadCount > 0 && <span className="sidebar-unread-badge">{unreadCount}</span>}
+              </div>
               <span>Support & Disputes</span>
             </NavLink>
 

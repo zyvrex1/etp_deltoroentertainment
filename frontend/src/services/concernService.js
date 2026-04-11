@@ -39,6 +39,17 @@ const concernService = {
     return json;
   },
 
+  getAdminUnreadCount: async (token) => {
+    const response = await fetch(`${API_URL}/admin/unread-count`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const json = await response.json();
+    if (!response.ok) throw new Error(json.error);
+    return json;
+  },
+
   getConcernById: async (id, token) => {
     const response = await fetch(`${API_URL}/${id}`, {
       headers: {

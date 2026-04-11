@@ -138,8 +138,18 @@ const SupportDisputes = () => {
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [selectedTicketForAssign, setSelectedTicketForAssign] = useState(null);
 
-    const handleViewTicket = (ticket) => {
-        setSelectedTicketId(ticket._id);
+    const handleViewTicket = async (ticket) => {
+        if (!user?.token) return;
+        try {
+            // Fetching resets the unread count on the backend
+            const updatedTicket = await concernService.getConcernById(ticket._id, user.token);
+            // Update local tickets list to reflect the reset unread count
+            setTickets(prev => prev.map(t => t._id === updatedTicket._id ? updatedTicket : t));
+            setSelectedTicketId(ticket._id);
+        } catch (error) {
+            console.error("Error fetching ticket details:", error);
+            setSelectedTicketId(ticket._id); // Fallback to current ticket data if fetch fails
+        }
     };
 
     const handleAssignClick = (ticket) => {
@@ -325,7 +335,23 @@ const SupportDisputes = () => {
                                         </td>
                                         <td className="regular-body-text name-td" data-label="User">{ticket.sponsorName}</td>
                                         <td className="subject-cell regular-body-text" data-label="Subject">
-                                            <span className="subject-text">{ticket.subject}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span className="subject-text">{ticket.subject}</span>
+                                                {ticket.unreadCountAdmin > 0 && (
+                                                    <span style={{
+                                                        backgroundColor: 'var(--color-red-primary, #ea4335)',
+                                                        color: 'white',
+                                                        fontSize: '11px',
+                                                        fontWeight: 'bold',
+                                                        padding: '2px 6px',
+                                                        borderRadius: '10px',
+                                                        minWidth: '18px',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                        {ticket.unreadCountAdmin}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="status-cell" data-label="Status">{getStatusBadge(ticket.status)}</td>
                                         <td className="regular-body-text" data-label="Assigned To">

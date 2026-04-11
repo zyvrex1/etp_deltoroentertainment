@@ -29,7 +29,9 @@ const createConcern = async (req, res) => {
         senderName: `${user.firstName} ${user.lastName}`,
         text: description,
         isSystem: false
-      }]
+      }],
+      unreadCountAdmin: 1,
+      unreadCountSponsor: 0
     });
 
     // Create Notification for admin
@@ -110,6 +112,21 @@ const getAdminConcerns = async (req, res) => {
   }
 };
 
+// @desc    Get total unread count for admin
+// @route   GET /api/concerns/admin/unread-count
+const getAdminUnreadCount = async (req, res) => {
+  try {
+    const result = await Concern.aggregate([
+      { $match: { status: { $ne: 'resolved' } } },
+      { $group: { _id: null, total: { $sum: "$unreadCountAdmin" } } }
+    ]);
+    const total = result.length > 0 ? result[0].total : 0;
+    res.status(200).json({ total });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 // @desc    Get a single concern by ID
 // @route   GET /api/concerns/:id
 const getConcernById = async (req, res) => {
@@ -118,6 +135,21 @@ const getConcernById = async (req, res) => {
     const concern = await Concern.findById(id);
     if (!concern) {
       return res.status(404).json({ error: 'Concern not found' });
+    }
+
+    // Reset unread count for the person viewing
+    if (req.user.role === 'admin' || req.user.role === 'superadmin') {
+      if (concern.unreadCountAdmin > 0) {
+        concern.unreadCountAdmin = 0;
+        await concern.save();
+        socket.emitUpdate('unreadCountUpdate');
+      }
+    } else if (concern.sponsorId.toString() === req.user._id.toString()) {
+      if (concern.unreadCountSponsor > 0) {
+        concern.unreadCountSponsor = 0;
+        await concern.save();
+        // socket.emitUpdate('unreadCountUpdate'); // Can add for sponsor side later if needed
+      }
     }
 
     const concernObj = concern.toObject();
@@ -190,6 +222,14 @@ const addMessage = async (req, res) => {
 
     concern.messages.push(newMessage);
     concern.lastMessageAt = Date.now();
+
+    // Increment unread count for the other party
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      concern.unreadCountSponsor += 1;
+    } else {
+      concern.unreadCountAdmin += 1;
+    }
+
     await concern.save();
 
     // Create Notification (Targeted if assigned, otherwise global for admins)
@@ -368,6 +408,7 @@ module.exports = {
   createConcern,
   getSponsorConcerns,
   getAdminConcerns,
+  getAdminUnreadCount,
   getConcernById,
   addMessage,
   updateStatus,

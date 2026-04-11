@@ -78,6 +78,14 @@ const concernSchema = new Schema({
   lastMessageAt: {
     type: Date,
     default: Date.now
+  },
+  unreadCountAdmin: {
+    type: Number,
+    default: 1 // Start with 1 for the initial message
+  },
+  unreadCountSponsor: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true })
 
