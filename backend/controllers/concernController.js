@@ -267,6 +267,10 @@ const updateStatus = async (req, res) => {
       return res.status(404).json({ error: 'Concern not found' });
     }
 
+    if (!concern.assignedTo) {
+      return res.status(400).json({ error: 'Cannot update status of an unassigned ticket. Please assign it to an admin first.' });
+    }
+
     const oldStatus = concern.status;
     concern.status = status;
 
