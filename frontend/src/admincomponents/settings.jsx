@@ -14,7 +14,13 @@ const Settings = () => {
         lastName: "",
         email: "",
         phone: "",
-        avatar: ""
+        avatar: "",
+        notifications: {
+            userUpdates: true,
+            paymentReminders: true,
+            announcements: true,
+            supportMessages: true
+        }
     });
 
     const [passwords, setPasswords] = useState({
@@ -38,6 +44,12 @@ const Settings = () => {
                     email: response.data.email || "",
                     phone: response.data.phone || "",
                     avatar: response.data.avatar || "",
+                    notifications: {
+                        userUpdates: response.data.notifications?.userUpdates !== false,
+                        paymentReminders: response.data.notifications?.paymentReminders !== false,
+                        announcements: response.data.notifications?.announcements !== false,
+                        supportMessages: response.data.notifications?.supportMessages !== false
+                    }
                 });
             } catch (error) {
                 console.error("Error fetching profile:", error);
@@ -57,6 +69,16 @@ const Settings = () => {
             { label: "One number", met: /[0-9]/.test(password) },
             { label: "One special character", met: /[^A-Za-z0-9]/.test(password) },
         ];
+    };
+
+    const handleNotificationToggle = (field) => {
+        setProfile(prev => ({
+            ...prev,
+            notifications: {
+                ...prev.notifications,
+                [field]: !prev.notifications[field]
+            }
+        }));
     };
 
     const handlePhotoChange = (e) => {
@@ -301,6 +323,85 @@ const Settings = () => {
 
                     <button type="button" className="as-save-btn as-dark-btn" onClick={handleUpdatePassword}>
                         Update Password
+                    </button>
+                </div>
+
+                {/* NOTIFICATION PREFERENCES CARD */}
+                <div className="as-card as-notif-card">
+                    <h4 className="as-card-title">Notification Preferences</h4>
+
+                    <div className="as-notif-item">
+                        <div className="as-notif-info">
+                            <span className="as-notif-label">User Updates</span>
+                            <p className="smaller-body-text text-muted">Receive updates about user signup</p>
+                        </div>
+                        <label className="as-toggle">
+                            <input 
+                                type="checkbox" 
+                                checked={profile.notifications.userUpdates}
+                                onChange={() => handleNotificationToggle('userUpdates')}
+                            />
+                            <span className="as-slider"></span>
+                        </label>
+                    </div>
+
+                    <div className="as-notif-divider"></div>
+
+                    <div className="as-notif-item">
+                        <div className="as-notif-info">
+                            <span className="as-notif-label">Payment Reminders</span>
+                            <p className="smaller-body-text text-muted">Get notified about upcoming payments and invoices</p>
+                        </div>
+                        <label className="as-toggle">
+                            <input 
+                                type="checkbox" 
+                                checked={profile.notifications.paymentReminders}
+                                onChange={() => handleNotificationToggle('paymentReminders')}
+                            />
+                            <span className="as-slider"></span>
+                        </label>
+                    </div>
+
+                    <div className="as-notif-divider"></div>
+
+                    <div className="as-notif-item">
+                        <div className="as-notif-info">
+                            <span className="as-notif-label">Support & Dispute Messages</span>
+                            <p className="smaller-body-text text-muted">Get notified when someone messages in support tickets</p>
+                        </div>
+                        <label className="as-toggle">
+                            <input 
+                                type="checkbox" 
+                                checked={profile.notifications.supportMessages}
+                                onChange={() => handleNotificationToggle('supportMessages')}
+                            />
+                            <span className="as-slider"></span>
+                        </label>
+                    </div>
+
+                    <div className="as-notif-divider"></div>
+
+                    <div className="as-notif-item">
+                        <div className="as-notif-info">
+                            <span className="as-notif-label">Message Notifications</span>
+                            <p className="smaller-body-text text-muted">Receive news about new messages</p>
+                        </div>
+                        <label className="as-toggle">
+                            <input 
+                                type="checkbox" 
+                                checked={profile.notifications.announcements}
+                                onChange={() => handleNotificationToggle('announcements')}
+                            />
+                            <span className="as-slider"></span>
+                        </label>
+                    </div>
+
+                    <button 
+                        type="button" 
+                        className="as-save-btn as-dark-btn as-notif-save-btn"
+                        onClick={handleSaveProfile}
+                    >
+                        Save Preferences
                     </button>
                 </div>
             </div>

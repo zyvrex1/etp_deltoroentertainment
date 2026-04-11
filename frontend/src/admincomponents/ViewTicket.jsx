@@ -204,7 +204,13 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
                         <div className="vt-detail-row">
                             <span className="small-body-text vt-label">Status</span>
                             <div className="vt-status-dropdown-wrapper">
-                                <select value={ticket.status} onChange={handleStatusChange} className="vt-select-status">
+                                <select 
+                                    value={ticket.status} 
+                                    onChange={handleStatusChange} 
+                                    className="vt-select-status"
+                                    disabled={!ticket.assignedTo}
+                                    title={!ticket.assignedTo ? "Please assign an admin before updating status" : ""}
+                                >
                                     <option value="open">Open</option>
                                     <option value="in-progress">In Progress</option>
                                     <option value="resolved">Resolved</option>

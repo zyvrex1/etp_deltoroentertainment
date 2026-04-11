@@ -4,13 +4,26 @@ const Notification = require('../models/notificationModel');
 // @route   GET /api/notifications
 const getNotifications = async (req, res) => {
     try {
-        const notifications = await Notification.find({
+        const user = req.user;
+        const preferences = user.notifications || {};
+
+        let notifications = await Notification.find({
             $or: [
                 { userId: null },
-                { userId: req.user._id }
+                { userId: user._id }
             ]
         }).sort({ createdAt: -1 }).limit(50);
-        res.status(200).json(notifications);
+
+        // Filter based on user preferences
+        const filteredNotifications = notifications.filter(notif => {
+            if (notif.type === 'concern' && preferences.supportMessages === false) return false;
+            if (notif.type === 'user' && preferences.userUpdates === false) return false;
+            if (notif.type === 'payment' && preferences.paymentReminders === false) return false;
+            if (notif.type === 'update' && preferences.announcements === false) return false;
+            return true;
+        });
+
+        res.status(200).json(filteredNotifications);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }

@@ -53,6 +53,13 @@ export const NotificationsContextProvider = ({ children }) => {
         return;
       }
 
+      // Check user preferences
+      const preferences = user.notifications || {};
+      if (notification.type === 'concern' && preferences.supportMessages === false) return;
+      if (notification.type === 'user' && preferences.userUpdates === false) return;
+      if (notification.type === 'payment' && preferences.paymentReminders === false) return;
+      if (notification.type === 'update' && preferences.announcements === false) return;
+
       // If it's a targeted notification, only notify the target user
       if (notification.userId && String(notification.userId) !== String(user._id)) {
         return;

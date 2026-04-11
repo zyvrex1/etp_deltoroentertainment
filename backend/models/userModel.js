@@ -44,7 +44,11 @@ const userSchema = new Schema({
   // ✅ NEW: Notifications
   notifications: {
     email: { type: Boolean, default: true },
-    sms: { type: Boolean, default: false }
+    sms: { type: Boolean, default: false },
+    userUpdates: { type: Boolean, default: true },
+    paymentReminders: { type: Boolean, default: true },
+    announcements: { type: Boolean, default: true },
+    supportMessages: { type: Boolean, default: true }
   },
 
   lastLogin: {
