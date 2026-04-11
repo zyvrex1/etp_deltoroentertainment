@@ -28,7 +28,7 @@ export default function Dashboard() {
     const [showAllNotifs, setShowAllNotifs] = useState(false);
 
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-    
+
     // Live Stats State
     const [stats, setStats] = useState({
         totalEvents: 0,
@@ -41,6 +41,11 @@ export default function Dashboard() {
             { name: 'Pending', value: 0, color: '#ffcc00' },
         ],
         pendingTickets: 0,
+        newUsersThisMonth: 0,
+        userTrend: 0,
+        currentYear: new Date().getFullYear(),
+        currentMonthName: '',
+        userGrowthData: [],
         loading: true
     });
 
@@ -56,7 +61,7 @@ export default function Dashboard() {
             ]);
 
             const pendingCount = events.filter(e => e.status === 'pending').length;
-            const activeCount = events.filter(e => e.status === 'approved').length; 
+            const activeCount = events.filter(e => e.status === 'approved').length;
             const completedCount = events.filter(e => e.status === 'completed').length;
             const upcomingCount = events.filter(e => {
                 if (e.status !== 'approved' || !e.startDate) return false;
@@ -65,18 +70,74 @@ export default function Dashboard() {
                 return start > now;
             }).length;
 
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+            const lastMonth = lastMonthDate.getMonth();
+            const lastMonthYear = lastMonthDate.getFullYear();
+
+            const usersThisMonth = users.filter(u => {
+                const d = new Date(u.createdAt);
+                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            }).length;
+
+            const usersLastMonth = users.filter(u => {
+                const d = new Date(u.createdAt);
+                return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+            }).length;
+
+            let userTrend = 0;
+            if (usersLastMonth > 0) {
+                userTrend = ((usersThisMonth - usersLastMonth) / usersLastMonth) * 100;
+            } else if (usersThisMonth > 0) {
+                userTrend = 100;
+            }
+
+            const usersThisYear = users.filter(u => {
+                const d = new Date(u.createdAt);
+                return d.getFullYear() === currentYear;
+            }).length;
+
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const dynamicGrowthData = Array.from({ length: 12 }, (_, i) => {
+                const monthUsers = users.filter(u => {
+                    const d = new Date(u.createdAt);
+                    return d.getMonth() === i && d.getFullYear() === currentYear;
+                });
+
+                return {
+                    month: months[i],
+                    customers: monthUsers.filter(u => u.role === 'customer').length,
+                    sponsors: monthUsers.filter(u => u.role === 'sponsor').length,
+                    promoters: monthUsers.filter(u => u.role === 'promoter').length,
+                    admins: monthUsers.filter(u => ['admin', 'superadmin'].includes(u.role)).length,
+                    total: monthUsers.length
+                };
+            });
+
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const currentMonthName = monthNames[currentMonth];
+
             setStats({
                 totalEvents: events.length,
                 pendingApprovals: pendingCount,
                 totalUsers: users.length,
+                newUsersThisMonth: usersThisMonth,
+                newUsersThisYear: usersThisYear,
+                userTrend: userTrend,
+                currentYear: currentYear,
+                currentMonthName: currentMonthName,
+                userGrowthData: dynamicGrowthData,
                 eventStatusData: [
                     { name: 'Active', value: activeCount, color: '#4ca626' },
                     { name: 'Upcoming', value: upcomingCount, color: '#0059ff' },
                     { name: 'Completed', value: completedCount, color: '#b3b3b3' },
                     { name: 'Pending', value: pendingCount, color: '#ffcc00' },
                 ],
-                pendingTickets: concerns.filter(c => 
-                    (c.status === 'open' || c.status === 'in progress') && 
+                pendingTickets: concerns.filter(c =>
+                    (c.status === 'open' || c.status === 'in-progress') &&
                     String(c.assignedTo) === String(user._id)
                 ).length,
                 loading: false
@@ -130,6 +191,11 @@ export default function Dashboard() {
 
 
     const revenueData = [
+        { month: 'Jan', total: 32000 },
+        { month: 'Feb', total: 32000 },
+        { month: 'Mar', total: 32000 },
+        { month: 'Apr', total: 32000 },
+        { month: 'May', total: 32000 },
         { month: 'Jun', total: 32000 },
         { month: 'Jul', total: 45000 },
         { month: 'Aug', total: 39000 },
@@ -139,15 +205,7 @@ export default function Dashboard() {
         { month: 'Dec', total: 72000 },
     ];
 
-    const userGrowthData = [
-        { month: 'Jun', customers: 5000, sponsors: 150, promoters: 80 },
-        { month: 'Jul', customers: 5500, sponsors: 180, promoters: 95 },
-        { month: 'Aug', customers: 5800, sponsors: 210, promoters: 105 },
-        { month: 'Sep', customers: 6500, sponsors: 240, promoters: 120 },
-        { month: 'Oct', customers: 7200, sponsors: 280, promoters: 135 },
-        { month: 'Nov', customers: 7800, sponsors: 310, promoters: 150 },
-        { month: 'Dec', customers: 8542, sponsors: 345, promoters: 168 },
-    ];
+
 
     const topPromotersData = [
         { name: 'TechStart Inc', email: 'contact@techstart.com', status: 'Top Rated' },
@@ -219,7 +277,6 @@ export default function Dashboard() {
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Total Events</p>
                             <h3>{stats.loading ? "..." : stats.totalEvents}</h3>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
                     <div className="dashboard-stat-card">
@@ -230,7 +287,6 @@ export default function Dashboard() {
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Pending Approvals</p>
                             <h3>{stats.loading ? "..." : stats.pendingApprovals}</h3>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
                     <div className="dashboard-stat-card">
@@ -258,12 +314,17 @@ export default function Dashboard() {
                     <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon purple"><Icon icon="mdi:account-group-outline" width="24" /></span>
-                            <span className="trend up"><Icon icon="mdi:trending-up" /> 5.8%</span>
+                            <span className={`trend ${stats.userTrend >= 0 ? 'up' : 'down'}`}>
+                                <Icon icon={stats.userTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                {stats.loading ? "0%" : `${Math.abs(stats.userTrend).toFixed(1)}%`}
+                            </span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Total Users</p>
-                            <h3>{stats.loading ? "..." : stats.totalUsers}</h3>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
+                            <p className="regular-body-text left-aligned">Total Users this {stats.currentMonthName}</p>
+                            <h3>{stats.loading ? "..." : stats.newUsersThisMonth}</h3>
+                            <p className="smaller-body-text left-aligned">
+                                {stats.loading ? "Calculating..." : `The total created accounts is ${stats.totalUsers} (this ${stats.currentMonthName})`}
+                            </p>
                         </div>
                     </div>
                     <div className="dashboard-stat-card">
@@ -284,8 +345,7 @@ export default function Dashboard() {
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Pending Payouts</p>
-                            <h3>$45,230</h3>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
+                            <h3>5</h3>
                         </div>
                     </div>
                     <div className="dashboard-stat-card">
@@ -424,10 +484,16 @@ export default function Dashboard() {
                     <div className="chart-card wide line">
                         <div className="chart-card-header">
                             <h4 className="left-aligned">User Growth</h4>
+                            <div className="header-stats">
+                                <span className="stat-pill">
+                                    <Icon icon="mdi:account-plus" />
+                                    {stats.loading ? "..." : `${stats.newUsersThisYear} joined in ${stats.currentYear}`}
+                                </span>
+                            </div>
                         </div>
                         <div className="chart-placeholder line-placeholder">
                             <ResponsiveContainer width="100%" height={isMobile ? 170 : 200}>
-                                <LineChart data={userGrowthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <LineChart data={stats.userGrowthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
 
                                     {!isMobile && (
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
@@ -451,6 +517,15 @@ export default function Dashboard() {
 
                                     <Line
                                         type="monotone"
+                                        dataKey="total"
+                                        stroke="#4a4a4a"
+                                        strokeWidth={3}
+                                        strokeDasharray="5 5"
+                                        dot={{ r: isMobile ? 2 : 4, fill: "white", strokeWidth: 2 }}
+                                    />
+
+                                    <Line
+                                        type="monotone"
                                         dataKey="customers"
                                         stroke="#0059ff"
                                         strokeWidth={2}
@@ -468,16 +543,26 @@ export default function Dashboard() {
                                     <Line
                                         type="monotone"
                                         dataKey="promoters"
-                                        stroke="#e67e22"
+                                        stroke="#c62828"
+                                        strokeWidth={2}
+                                        dot={{ r: isMobile ? 2 : 4, fill: "white", strokeWidth: 2 }}
+                                    />
+
+                                    <Line
+                                        type="monotone"
+                                        dataKey="admins"
+                                        stroke="#800080"
                                         strokeWidth={2}
                                         dot={{ r: isMobile ? 2 : 4, fill: "white", strokeWidth: 2 }}
                                     />
 
                                 </LineChart>
                             </ResponsiveContainer>                            <div className="chart-legend">
+                                <span className="legend-item"><span className="dot dash"></span>Total</span>
                                 <span className="legend-item"><span className="dot blue"></span>Customers</span>
                                 <span className="legend-item"><span className="dot green"></span>Sponsors</span>
-                                <span className="legend-item"><span className="dot orange"></span>Promoters</span>
+                                <span className="legend-item"><span className="dot red"></span>Promoters</span>
+                                <span className="legend-item"><span className="dot purple"></span>Admins</span>
                             </div>
                         </div>
                     </div>
@@ -537,7 +622,7 @@ export default function Dashboard() {
                         <NavLink to="/admin/payments" className="outlined-button link-btn left-aligned-flex">
                             <Icon icon="mdi:currency-usd" /> <span>Process Payouts</span>
                         </NavLink>
-
+                        {/* 
                         <div className="alert-card red-alert left-aligned">
                             <div className="alert-header left-aligned">
                                 <Icon icon="mdi:alert-circle" width="24" className="alert-icon" />
@@ -549,7 +634,7 @@ export default function Dashboard() {
                             <NavLink to="/admin/payments" >
                                 <button className="outlined-button red-outline">Review Payouts</button>
                             </NavLink>
-                        </div>
+                        </div> */}
                     </div>
 
 
@@ -563,26 +648,26 @@ export default function Dashboard() {
                             <div className="alert-item yellow-bg left-aligned-flex">
                                 <Icon icon="mdi:alert-outline" className="alert-icon" />
                                 <div className="alert-details left-aligned">
-                                    <h5 className="left-aligned">Pending Approvals</h5>
-                                    <p className="left-aligned">5 events waiting for review</p>
-                                    <span className="time left-aligned">10 min ago</span>
+                                    <h5 className="left-aligned">Pending Concerns</h5>
+                                    <p className="left-aligned">{stats.loading ? "..." : stats.pendingTickets} concerns waiting for your review</p>
+                                    <span className="time left-aligned">Just now</span>
                                 </div>
                                 <Icon icon="mdi:close" className="close-icon" />
                             </div>
                             <div className="alert-item red-bg left-aligned-flex">
                                 <Icon icon="mdi:alert-octagon-outline" className="alert-icon" />
                                 <div className="alert-details left-aligned">
-                                    <h5 className="left-aligned">Payment Failed</h5>
-                                    <p className="left-aligned">Payout to John Doe failed - insufficient funds</p>
-                                    <span className="time left-aligned">1 hour ago</span>
+                                    <h5 className="left-aligned">Pending Approval</h5>
+                                    <p className="left-aligned">{stats.loading ? "..." : stats.pendingApprovals} events waiting for approval</p>
+                                    <span className="time left-aligned">Just now</span>
                                 </div>
                                 <Icon icon="mdi:close" className="close-icon" />
                             </div>
                             <div className="alert-item blue-bg left-aligned-flex">
                                 <Icon icon="mdi:alert-circle-outline" className="alert-icon" />
                                 <div className="alert-details left-aligned">
-                                    <h5 className="left-aligned">High Traffic</h5>
-                                    <p className="left-aligned">TechStart Summit tickets selling fast</p>
+                                    <h5 className="left-aligned">Pending Payout Requests</h5>
+                                    <p className="left-aligned">5 payouts waiting for approval</p>
                                     <span className="time left-aligned">2 hours ago</span>
                                 </div>
                                 <Icon icon="mdi:close" className="close-icon" />
@@ -599,7 +684,7 @@ export default function Dashboard() {
                         </div>
                         <div className="activity-list">
                             {notifications.length > 0 ? (
-                                notifications.slice(0, 8).map((notif) => {
+                                notifications.slice(0, 10).map((notif) => {
                                     const config = activityConfig[notif.type] || { icon: "mdi:bell-outline", color: "blue-light" };
                                     return (
                                         <div className="activity-item" key={notif._id}>
@@ -614,9 +699,9 @@ export default function Dashboard() {
                                             </div>
                                             <div className="activity-right">
                                                 <span className="time left-aligned">{timeAgo(notif.createdAt)}</span>
-                                                <Icon 
-                                                    icon="mdi:eye-outline" 
-                                                    className="view-icon" 
+                                                <Icon
+                                                    icon="mdi:eye-outline"
+                                                    className="view-icon"
                                                     onClick={() => navigate(notif.path)}
                                                 />
                                             </div>
@@ -633,9 +718,9 @@ export default function Dashboard() {
             <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
             <ViewReportModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
             <AddUserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} />
-            <ViewNotif 
-                isOpen={showAllNotifs} 
-                onClose={() => setShowAllNotifs(false)} 
+            <ViewNotif
+                isOpen={showAllNotifs}
+                onClose={() => setShowAllNotifs(false)}
                 notifications={notifications}
                 onNotifClick={(notif) => {
                     setShowAllNotifs(false);
