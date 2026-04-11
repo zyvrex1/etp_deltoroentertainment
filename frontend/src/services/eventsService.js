@@ -7,10 +7,11 @@ const eventsService = {
    * @param {string} token - The authentication token
    * @returns {Promise<Array>} List of events
    */
-  getEvents: async (token) => {
+  getEvents: async (token, status = "") => {
     try {
       const headers = token ? { "Authorization": `Bearer ${token}` } : {};
-      const response = await fetch(`${API_URL}/`, {
+      const url = status ? `${API_URL}/?status=${status}` : `${API_URL}/`;
+      const response = await fetch(url, {
         headers
       });
       const json = await response.json();

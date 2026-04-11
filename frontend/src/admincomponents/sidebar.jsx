@@ -19,6 +19,7 @@ import {
 import "./sidebar.css";
 import { useAuthContext } from "./hooks/useAuthContext";
 import concernService from "../services/concernService";
+import eventsService from "../services/eventsService";
 import { io } from "socket.io-client";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -26,29 +27,38 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
   const { user } = useAuthContext();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingEventsCount, setPendingEventsCount] = useState(0);
 
-  const fetchUnreadCount = async () => {
+  const fetchSidebarCounts = async () => {
     if (!user?.token) return;
     try {
+      // Fetch unread support messages
       const { total } = await concernService.getAdminUnreadCount(user.token);
       setUnreadCount(total);
+
+      // Fetch pending events (only for admins)
+      if (user.role === 'admin' || user.role === 'superadmin') {
+        const events = await eventsService.getEvents(user.token, 'pending');
+        setPendingEventsCount(events.length);
+      }
     } catch (error) {
-      console.error("Error fetching unread count:", error);
+      console.error("Error fetching sidebar counts:", error);
     }
   };
 
   useEffect(() => {
-    fetchUnreadCount();
+    fetchSidebarCounts();
   }, [user]);
 
   useEffect(() => {
     if (!user?.token) return;
     const socket = io(BACKEND_URL);
 
-    socket.on("newConcern", () => fetchUnreadCount());
-    socket.on("newMessage", () => fetchUnreadCount());
-    socket.on("statusUpdate", () => fetchUnreadCount());
-    socket.on("unreadCountUpdate", () => fetchUnreadCount());
+    socket.on("newConcern", () => fetchSidebarCounts());
+    socket.on("newMessage", () => fetchSidebarCounts());
+    socket.on("statusUpdate", () => fetchSidebarCounts());
+    socket.on("unreadCountUpdate", () => fetchSidebarCounts());
+    socket.on("dashboardUpdate", () => fetchSidebarCounts());
 
     return () => socket.disconnect();
   }, [user]);
@@ -118,7 +128,12 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
             </NavLink>
 
             <NavLink to="/admin/events" className="sidebar-item" onClick={handleLinkClick}>
-              <MdEvent className="icon" />
+              <div className="icon-with-badge">
+                <MdEvent className="icon" />
+                {pendingEventsCount > 0 && (
+                  <span className="sidebar-pending-badge">{pendingEventsCount}</span>
+                )}
+              </div>
               <span>Event Management</span>
             </NavLink>
 
