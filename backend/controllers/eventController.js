@@ -653,19 +653,14 @@ const removeEventImage = (filename) => {
 
 const saveVenueLayout = async (req, res) => {
   const { id } = req.params;
-  
-  // Extract 'items' (matching your frontend key) 
-  // and default to an empty array if undefined
   let { items = [] } = req.body; 
 
   try {
-    // 1. Handle stringified data if sent from certain types of forms
     if (typeof items === "string") items = JSON.parse(items);
 
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ error: "Event not found" });
 
-    // 2. Initialize the fresh structure
     const newSeatMap = {
       width: 1400,
       height: 500,
@@ -675,7 +670,6 @@ const saveVenueLayout = async (req, res) => {
     };
     const newBooths = [];
 
-    // 3. Process items using the 'items' variable
     items.forEach((item) => {
       const idProp = item._id || item.id;
       const isValidMongoId = mongoose.Types.ObjectId.isValid(idProp);
@@ -690,8 +684,11 @@ const saveVenueLayout = async (req, res) => {
         scaleX: item.scaleX ?? 1,
         scaleY: item.scaleY ?? 1,
         status: item.status || "available",
+        // Option B: Preserve occupancy if it exists, otherwise 0
+        occupiedSeats: item.occupiedSeats || 0,
+        unassignedIndices: item.unassignedIndices || [], 
         priceLevelId: (item.priceLevelId && item.priceLevelId !== "none" && item.priceLevelId !== "") 
-                        ? item.priceLevelId : null
+                  ? item.priceLevelId : null
       };
 
       if (item.type === "Seat" || item.type === "Table") {
@@ -731,7 +728,6 @@ const saveVenueLayout = async (req, res) => {
       }
     });
 
-    // 4. Update the event document
     event.seatMap = newSeatMap;
     event.booths = newBooths;
     event.hasBooths = newBooths.length > 0;
@@ -741,12 +737,68 @@ const saveVenueLayout = async (req, res) => {
 
     await event.save();
     
-    // 5. Trigger your real-time updates if applicable
     if (typeof emitUpdate === 'function') emitUpdate('dashboardUpdate');
     
     return res.status(200).json(event); 
   } catch (error) {
     console.error("Save Error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+const assignPriceLevels = async (req, res) => {
+  const { id } = req.params;
+  let { seatMap, booths } = req.body;
+
+  try {
+    const event = await Event.findById(id);
+    if (!event) return res.status(404).json({ error: "Event not found" });
+
+    if (seatMap && seatMap.sections) {
+      event.seatMap.sections = seatMap.sections.map((section) => ({
+        ...section,
+        seats: section.seats.map((seat) => ({
+          ...seat,
+          status: seat.status || "available",
+          occupiedSeats: seat.occupiedSeats || 0,
+          // ADD THIS: Ensure gaps are persisted during price assignment
+          unassignedIndices: seat.unassignedIndices || [], 
+          priceLevelId: (seat.priceLevelId && seat.priceLevelId !== "none" && seat.priceLevelId !== "") 
+            ? seat.priceLevelId // Note: Mongoose handles string to ObjectId casting if schema is set
+            : null
+        }))
+      }));
+      
+      if (seatMap.elements) event.seatMap.elements = seatMap.elements;
+      if (seatMap.backgrounds) event.seatMap.backgrounds = seatMap.backgrounds;
+    }
+
+    // 2. Update the Booths Price Levels
+    if (Array.isArray(booths)) {
+      event.booths = booths.map((booth) => ({
+        ...booth,
+        status: booth.status || "available",
+        priceLevelId: (booth.priceLevelId && booth.priceLevelId !== "none" && booth.priceLevelId !== "") 
+          ? booth.priceLevelId 
+          : null
+      }));
+    }
+
+    event.markModified('seatMap');
+    event.markModified('booths');
+
+    // Save will trigger the new Revenue calculation logic in the Model
+    await event.save();
+    return res.status(200).json(event);
+
+    // 3. Notifications (Existing Logic)
+    const creatorName = req.user ? `${req.user.firstName} ${req.user.lastName}` : "Admin";
+    // ... notification code ...
+
+    return res.status(200).json(event); 
+
+  } catch (error) {
+    console.error("Assign Price Error:", error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -758,5 +810,6 @@ module.exports = {
   deleteEvent,
   updateEvent,
   saveVenueLayout,
+  assignPriceLevels,
   upload,
 };

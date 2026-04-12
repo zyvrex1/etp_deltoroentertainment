@@ -32,14 +32,16 @@ const priceLevelSchema = new Schema({
 const seatSchema = new Schema({
   type: { type: String, enum: ["Seat", "Table"], default: "Seat" },
   shape: { type: String, enum: ["Circle", "Rect"], default: "Circle" }, // CRITICAL FOR KONVA
-  seatCount: { type: Number, default: 1 }, 
+  seatCount: { type: Number, default: 1 },
+  occupiedSeats: { type: Number, default: 0 },
+  unassignedIndices: { type: [Number], default: [] },
   color: String, 
   row: String,
   number: Number,
   label: String,
   status: {
     type: String,
-    enum: ["available", "reserved", "sold", "blocked"],
+    enum: ["available", "reserved", "sold", "blocked", "partially-sold"],
     default: "available",
   },
   // Changed to Mixed to allow "none" or Null without casting errors
@@ -272,27 +274,45 @@ eventSchema.pre("save", function (next) {
     for (const section of this.seatMap.sections) {
       if (!section.seats) continue;
       for (const seat of section.seats) {
-        if (seat.status === "sold" && seat.priceLevelId) {
+        if ((seat.status === "sold" || seat.status === "partially-sold") && 
+            seat.priceLevelId && 
+            seat.priceLevelId !== "none") {
+          
           const p = priceMap[seat.priceLevelId.toString()];
           if (p) {
-            const count = seat.type === "Table" ? (seat.seatCount || 1) : 1;
-            seatRevenue += ((p.facePrice || 0) + (p.serviceCharge || 0)) * count;
+            // Use occupiedSeats for tables/rows, or 1 for individual seats
+            const soldCount = (seat.type === "Table" || seat.seatCount > 1) 
+              ? (seat.occupiedSeats || 0) 
+              : 1;
+            
+            seatRevenue += ((p.facePrice || 0) + (p.serviceCharge || 0)) * soldCount;
           }
         }
       }
     }
   }
 
-  // Calculate Booth Revenue
-  if (this.booths) {
+  // Calculate Booth Revenue & Validate
+  if (this.hasBooths && this.booths) {
     for (const booth of this.booths) {
-      if (booth.status === "sold" && booth.priceLevelId) {
+      // 1. Validation Check
+      if (booth.priceLevelId && 
+          booth.priceLevelId !== "none" && 
+          !priceIds.includes(booth.priceLevelId.toString())) {
+        return next(new Error(`Booth ${booth.code || booth.label} has invalid priceLevelId`));
+      }
+
+      // 2. Revenue Accumulation
+      if (booth.status === "sold" && booth.priceLevelId && booth.priceLevelId !== "none") {
         const p = priceMap[booth.priceLevelId.toString()];
         if (p) {
           boothRevenue += (p.facePrice || 0) + (p.serviceCharge || 0);
         }
       }
     }
+  } else if (this.hasBooths && (!this.booths || !this.booths.length)) {
+    // Re-added the strict check if you're out of the draft phase
+    return next(new Error("Booths are required when hasBooths is true"));
   }
 
   this.seatRevenue = seatRevenue;

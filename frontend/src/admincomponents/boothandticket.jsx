@@ -14,10 +14,13 @@ import ManagePricingModal from "./Modal/ManagePricingModal";
 import SetupBoothLayoutModal from "./Modal/SetupBoothLayoutModal";
 import SetupSeatLayoutModal from "./Modal/SetupSeatLayoutModal";
 import EditEventModal from "./modal/EditEventModal";
+import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
 
 const BoothandTicket = () => {
+  const { events } = useEventsContext();
   const [activeTab, setActiveTab] = useState("booth-map");
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedEventId, setSelectedEventId] = useState(null);
+  const selectedEvent = events?.find(e => e._id === selectedEventId);
   const [detailPopup, setDetailPopup] = useState(null);
   const [isEditEventModalOpen, setIsEditEventModalOpen] = useState(false);
 
@@ -41,7 +44,9 @@ const BoothandTicket = () => {
 
   return (
     <div className="booth-ticket-page">
-      {!selectedEvent && <EventSelection setSelectedEvent={setSelectedEvent} />}
+      {!selectedEvent && (
+        <EventSelection setSelectedEvent={(event) => setSelectedEventId(event._id)} />
+      )}
 
       {selectedEvent && (
         <>

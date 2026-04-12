@@ -739,3 +739,45 @@ li {
   border-radius: 4px;
   cursor: pointer;
 }
+
+
+.bt-price-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+
+.price-text {
+  color: #000;
+}
+
+.price-item {
+  color: #000; /* ensures all text inside is black */
+}
+
+.price-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.price-item:hover {
+  background: #f5f5f5;
+}
+
+.price-item.active {
+  background: #eaeaea;
+  font-weight: 600;
+}
+
+.color-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}

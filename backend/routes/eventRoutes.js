@@ -9,6 +9,7 @@ const {
   deleteEvent,
   updateEvent,
   saveVenueLayout,
+  assignPriceLevels, // 1. Import the new controller
   upload,
 } = require('../controllers/eventController')
 
@@ -18,29 +19,22 @@ const {
   updatePriceLevel, 
   deletePriceLevel 
 } = require("../controllers/priceLevelController");
-
-// Middleware
 const requireAuth = require('../middleware/requireAuth')
 const optionalAuth = require('../middleware/optionalAuth')
 
-/* =========================
-    PUBLIC ROUTES
-   ========================= */
-// Move these ABOVE requireAuth so guests can see events
 router.get('/', optionalAuth, getEvents)
 router.get('/:id', optionalAuth, getEvent)
 router.get("/:eventId/price-levels", getPriceLevels);
 
-/* =========================
-    PROTECTED ROUTES
-   ========================= */
 router.use(requireAuth) // Everything below this requires a login
 
 router.post('/', upload.single('image'), createEvent)
 router.delete('/:id', deleteEvent)
-router.patch('/:id', upload.single('image'), updateEvent) // Added upload here
+router.patch('/:id', upload.single('image'), updateEvent) 
 
+// Venue Configuration Routes
 router.put('/:id/layout', saveVenueLayout)
+router.put('/:id/assign-prices', assignPriceLevels)
 
 // Price Level Management
 router.post("/:eventId/price-levels", addPriceLevels);
