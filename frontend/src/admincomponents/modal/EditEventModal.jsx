@@ -8,8 +8,8 @@ import {
   showErrorAlert,
   showCreateConfirmAlert,
 } from "../utils/sweetAlert";
-import AddPriceLevelModal from "./AddPriceLevelModal";
-import EditPriceLevelModal from "./EditPriceLevelModal";
+import AddPriceLevelModal from "../Modal/AddPriceLevelModal";
+import EditPriceLevelModal from "../Modal/EditPriceLevelModal";
 
 const EditEventModal = ({ isOpen, onClose, event }) => {
   const { user } = useAuthContext();
