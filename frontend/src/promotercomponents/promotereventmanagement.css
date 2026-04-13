@@ -374,3 +374,41 @@
     gap: 0;
   }
 }
+
+.pem-status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pem-status-badge.status-pending {
+  background: var(--color-yellow-tertiary);
+  color: var(--color-yellow-primary);
+}
+
+.pem-status-badge.status-approved {
+  background: var(--color-green-tertiary);
+  color: var(--color-green-primary);
+}
+
+.pem-status-badge.status-rejected {
+  background: var(--color-red-tertiary);
+  color: var(--color-red-primary);
+}
+
+.pem-status-badge.status-cancelled {
+  background: var(--color-bg-light);
+  color: var(--color-black-primary);
+}
+
+.pem-status-badge.status-completed {
+  background: var(--color-bg-dark);
+  color: var(--color-white-primary);
+}

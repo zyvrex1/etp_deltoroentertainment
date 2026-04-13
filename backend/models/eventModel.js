@@ -205,6 +205,7 @@ const eventSchema = new Schema(
     },
 
     isFeatured: { type: Boolean, default: false },
+    assignedPromoters: { type: [{ type: Schema.Types.ObjectId, ref: "User" }], default: [] },
   },
   { timestamps: true }
 );

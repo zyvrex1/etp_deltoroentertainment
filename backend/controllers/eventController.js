@@ -62,7 +62,12 @@ const getEvents = async (req, res) => {
         const filter = status ? { status } : {};
         eventsQuery = Event.find(filter).sort({ createdAt: -1 });
       } else if (role === "promoter") {
-        eventsQuery = Event.find({ createdBy: user._id }).sort({
+        eventsQuery = Event.find({ 
+          $or: [
+            { createdBy: user._id }, 
+            { assignedPromoters: user._id, status: "approved" }
+          ] 
+        }).sort({
           createdAt: -1,
         });
       } else if (role === "customer" || role === "sponsor") {
@@ -108,10 +113,16 @@ const getEvents = async (req, res) => {
 
     // Re-run the filter if it was a public/approved query to ensure completed items don't show up
     // Or just re-fetch the query to be safe
-    const events = await eventsQuery.populate({
-      path: "createdBy",
-      select: "firstName lastName role",
-    });
+    const events = await eventsQuery.populate([
+      {
+        path: "createdBy",
+        select: "firstName lastName role",
+      },
+      {
+        path: "assignedPromoters",
+        select: "firstName lastName email",
+      }
+    ]);
 
     return res.status(200).json(events);
   } catch (error) {
@@ -151,10 +162,16 @@ const getEvent = async (req, res) => {
       });
     }
 
-    const event = await eventQuery.populate({
-      path: "createdBy",
-      select: "firstName lastName role",
-    });
+    const event = await eventQuery.populate([
+      {
+        path: "createdBy",
+        select: "firstName lastName role",
+      },
+      {
+        path: "assignedPromoters",
+        select: "firstName lastName email",
+      }
+    ]);
 
     if (!event) {
       return res.status(404).json({ error: "No such event" });
@@ -429,7 +446,7 @@ const updateEvent = async (req, res) => {
       title, description, category, venue,
       startDate, endDate, startTime, endTime,
       eventType, priceLevels, seatMap, booths,
-      isFeatured, image,
+      isFeatured, image, assignedPromoters,
     } = req.body;
 
     if (typeof venue === "string") venue = JSON.parse(venue);
@@ -460,8 +477,14 @@ const updateEvent = async (req, res) => {
     const finalEndTime = endTime || existingEvent.endTime;
 
     // Construct full Date objects including time for precise comparison
-    const sDateTime = new Date(`${finalStartDate}T${finalStartTime}`);
-    const eDateTime = new Date(`${finalEndDate}T${finalEndTime}`);
+    const parseDateTime = (date, time) => {
+      if (!date || !time) return new Date(NaN);
+      const datePart = (date instanceof Date) ? date.toISOString().split('T')[0] : date;
+      return new Date(`${datePart}T${time}`);
+    };
+
+    const sDateTime = parseDateTime(finalStartDate, finalStartTime);
+    const eDateTime = parseDateTime(finalEndDate, finalEndTime);
 
     // If the dates/times are invalid or the end is not after start
     if (isNaN(sDateTime.getTime()) || isNaN(eDateTime.getTime())) {
@@ -587,13 +610,17 @@ if (req.file) {
       venue: finalVenue,
       isFeatured: String(isFeatured) === "true",
       image: finalImage,
+      assignedPromoters: assignedPromoters !== undefined ? assignedPromoters : existingEvent.assignedPromoters,
     };
 
     const updatedEvent = await Event.findByIdAndUpdate(
       id,
       { $set: updatedData },
       { new: true, runValidators: true }
-    ).populate("createdBy", "firstName lastName role");
+    ).populate([
+      { path: "createdBy", select: "firstName lastName role" },
+      { path: "assignedPromoters", select: "firstName lastName email" }
+    ]);
 
     // Create Notification and Emit
     const notificationController = require('./notificationController');

@@ -125,6 +125,22 @@
         .full-width {
             grid-column: 1 / -1;
         }
+
+        .promoter-select-modal {
+            padding: 10px 12px;
+            border: 1px solid var(--color-black-quaternary);
+            border-radius: 6px;
+            font-size: 14px;
+            color: var(--color-black-primary);
+            background-color: var(--color-white-primary);
+            transition: border-color 0.2s;
+            cursor: pointer;
+            outline: none;
+
+            &:focus {
+                border-color: var(--color-black-primary);
+            }
+        }
     }
 }
 

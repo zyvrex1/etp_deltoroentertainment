@@ -4,6 +4,7 @@ import "./eventmanagement.css";
 import CreateEventModal from "./Modal/CreateEventModal";
 import EditEventModal from "./Modal/EditEventModal";
 import EventRejectionModal from "./Modal/EventRejectionModal";
+import AddPromoterModal from "./Modal/AddPromoterModal";
 
 import { useEventsContext } from "../admincomponents/hooks/useEventsContext"
 import { useAuthContext } from "./hooks/useAuthContext";
@@ -63,6 +64,8 @@ const EventManagement = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [rejectionEvent, setRejectionEvent] = useState(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [assignEvent, setAssignEvent] = useState(null);
 
   const allEvents = events || [];
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,6 +73,8 @@ const EventManagement = () => {
   const itemsPerPage = 7;
   const [activeTab, setActiveTab] = useState("all-events");
   const [expandedRow, setExpandedRow] = useState(null);
+  const [promoters, setPromoters] = useState([]);
+  const [assigningId, setAssigningId] = useState(null);
 
   const toggleRow = (id) => {
     setExpandedRow(expandedRow === id ? null : id);
@@ -108,6 +113,54 @@ const EventManagement = () => {
 
     fetchEvents();
   }, [user, dispatch]);
+  
+  useEffect(() => {
+    if (!user?.token) return;
+    const fetchPromoters = async () => {
+      try {
+        const response = await fetch('/api/admin/users', {
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          }
+        });
+        const json = await response.json();
+        if (response.ok) {
+          setPromoters(json.filter(u => u.role === 'promoter'));
+        }
+      } catch (err) {
+        console.error("Error fetching promoters:", err);
+      }
+    };
+    fetchPromoters();
+  }, [user]);
+
+  const handleAssignPromoter = async (eventId, promoterId) => {
+    setAssigningId(eventId);
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
+        body: JSON.stringify({ assignedPromoter: promoterId === "" ? "none" : promoterId })
+      });
+
+      const json = await response.json();
+
+      if (response.ok) {
+        dispatch({ type: 'UPDATE_EVENT', payload: json.event });
+        await showSuccessAlert("Assigned!", "Promoter has been assigned to this event.");
+      } else {
+        alert(json.error || "Failed to assign promoter.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error assigning promoter.");
+    } finally {
+      setAssigningId(null);
+    }
+  };
 
   const handleEditEvent = (event) => {
     setSelectedEvent(event);
@@ -162,7 +215,12 @@ const EventManagement = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify({ status: "approved" }),
+        body: JSON.stringify({ 
+          status: "approved",
+          assignedPromoters: (event.createdBy?.role === 'promoter' && !event.assignedPromoters?.some(ap => ap._id === event.createdBy._id))
+            ? [...(event.assignedPromoters?.map(ap => ap._id) || []), event.createdBy._id]
+            : undefined
+        }),
       });
 
       const json = await response.json();
@@ -351,6 +409,7 @@ const EventManagement = () => {
                 <th>Venue</th>
                 <th>Date & Time</th>
                 <th>Status</th>
+                <th>Promoter</th>
                 <th>Sales Progress</th>
                 <th>Actions</th>
               </tr>
@@ -412,6 +471,40 @@ const EventManagement = () => {
                         <span className={`button-label ${statusClass}`}>
                           {event.status}
                         </span>
+                      </td>
+
+                      <td data-label="Promoter">
+                        <div className="promoter-assign-cell">
+                          <div className="assigned-promoters-list">
+                            {event.assignedPromoters?.length > 0 ? (
+                              <div className="promoter-avatars">
+                                {event.assignedPromoters.slice(0, 3).map((p) => (
+                                  <div key={p._id} className="promoter-avatar-tiny" title={`${p.firstName} ${p.lastName}`}>
+                                    {p.firstName?.charAt(0)}{p.lastName?.charAt(0)}
+                                  </div>
+                                ))}
+                                {event.assignedPromoters.length > 3 && (
+                                  <div className="promoter-avatar-tiny extra">
+                                    +{event.assignedPromoters.length - 3}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="smaller-body-text" style={{ color: "#999" }}>Unassigned</span>
+                            )}
+                            <button
+                              className="assign-promoter-plus-btn"
+                              onClick={() => {
+                                setAssignEvent(event);
+                                setIsAssignModalOpen(true);
+                              }}
+                              disabled={event.status !== 'approved'}
+                              title={event.status !== 'approved' ? "Approve the event first to assign a promoter" : "Manage Promoters"}
+                            >
+                              <Icon icon="mdi:plus" />
+                            </button>
+                          </div>
+                        </div>
                       </td>
 
 
@@ -617,6 +710,16 @@ const EventManagement = () => {
           onConfirm={confirmRejection}
         />
       )}
+      <AddPromoterModal
+        isOpen={isAssignModalOpen}
+        onClose={() => { setIsAssignModalOpen(false); setAssignEvent(null); }}
+        event={assignEvent}
+        allPromoters={promoters}
+        user={user}
+        onUpdate={(updatedEvent) => {
+          dispatch({ type: 'UPDATE_EVENT', payload: updatedEvent });
+        }}
+      />
     </div>
   );
 };

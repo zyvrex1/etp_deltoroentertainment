@@ -75,6 +75,9 @@ const PromoterEvents = () => {
   }, [isDropdownOpen, isSortDropdownOpen]);
 
   const filteredEvents = (events || []).filter((evt) => {
+    // Only show events created by this promoter
+    if (evt.createdBy?._id !== user?._id) return false;
+
     const q = searchQuery.toLowerCase();
     const status = evt.status?.toLowerCase();
 

@@ -41,7 +41,9 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
     imagePreviewUrl: null,
     seatMap: null,
     booths: [],
+    assignedPromoter: null,
   });
+  const [promoters, setPromoters] = useState([]);
 
   // Sync data when event prop changes
   useEffect(() => {
@@ -69,9 +71,28 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
         imagePreviewUrl: event.image ? `http://localhost:4000/uploads/${event.image}` : null,
         seatMap: event.seatMap || null,
         booths: event.booths || [],
+        assignedPromoter: event.assignedPromoter?._id || event.assignedPromoter || null,
       });
     }
   }, [event, today]);
+
+  useEffect(() => {
+    if (!user?.token) return;
+    const fetchPromoters = async () => {
+      try {
+        const response = await fetch('/api/admin/users', {
+          headers: { Authorization: `Bearer ${user.token}` }
+        });
+        const json = await response.json();
+        if (response.ok) {
+          setPromoters(json.filter(u => u.role === 'promoter'));
+        }
+      } catch (err) {
+        console.error("Error fetching promoters:", err);
+      }
+    };
+    fetchPromoters();
+  }, [user]);
 
   // 1. Handle Drag Events (Prevent default to allow drop)
   const handleImageDrag = (e) => {
@@ -384,6 +405,27 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                   />
                 </div>
               </div>
+
+              {/* Promoter Assignment */}
+              {(user.role === 'admin' || user.role === 'superadmin') && (
+                <div className="add-event-form-group add-event-full-width">
+                  <h6>Assign Promoter</h6>
+                  <select
+                    value={formData.assignedPromoter || ""}
+                    onChange={(e) => setFormData({ ...formData, assignedPromoter: e.target.value || null })}
+                    className="promoter-select-modal"
+                    disabled={event?.status !== 'approved'}
+                    title={event?.status !== 'approved' ? "Approve the event first to assign a promoter" : ""}
+                  >
+                    <option value="">No Promoter Assigned</option>
+                    {promoters.map(p => (
+                      <option key={p._id} value={p._id}>
+                        {p.firstName} {p.lastName} ({p.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Dates */}
               <div className="add-event-form-row">

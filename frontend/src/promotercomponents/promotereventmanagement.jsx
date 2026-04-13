@@ -188,6 +188,9 @@ const PromoterEventManagement = () => {
                       >
                         <div className="pem-card-image-wrap">
                           <img src={imageUrl} alt={event.title} />
+                          <span className={`pem-status-badge status-${event.status?.toLowerCase()}`}>
+                            {event.status}
+                          </span>
                         </div>
                         <div className="pem-card-details">
                           <div className="pem-card-info">
