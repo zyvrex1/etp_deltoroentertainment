@@ -13,7 +13,7 @@ import UploadMapModal from "./Modal/UploadMapModal";
 import ManagePricingModal from "./Modal/ManagePricingModal";
 import SetupBoothLayoutModal from "./Modal/SetupBoothLayoutModal";
 import SetupSeatLayoutModal from "./Modal/SetupSeatLayoutModal";
-import EditEventModal from "./modal/EditEventModal";
+import EditEventModal from "./Modal/EditEventModal";
 import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
 
 const BoothandTicket = () => {
