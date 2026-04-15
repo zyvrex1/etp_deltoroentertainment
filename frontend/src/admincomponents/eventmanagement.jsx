@@ -6,13 +6,13 @@ import EditEventModal from "./Modal/EditEventModal";
 import EventRejectionModal from "./Modal/EventRejectionModal";
 import AddPromoterModal from "./Modal/AddPromoterModal";
 
-import { useEventsContext } from "../admincomponents/hooks/useEventsContext"
+import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
 import { useAuthContext } from "./hooks/useAuthContext";
 
 import {
   showDeleteConfirmAlert,
   showSuccessAlert,
-  showConfirmAlert
+  showConfirmAlert,
 } from "./utils/sweetAlert";
 
 const formatEventDate = (startDate, endDate) => {
@@ -91,7 +91,7 @@ const EventManagement = () => {
 
     const fetchEvents = async () => {
       try {
-        const response = await fetch('/api/events', {
+        const response = await fetch("/api/events", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${user.token}`,
@@ -102,7 +102,7 @@ const EventManagement = () => {
         const json = text ? JSON.parse(text) : [];
 
         if (response.ok) {
-          dispatch({ type: 'SET_EVENTS', payload: json });
+          dispatch({ type: "SET_EVENTS", payload: json });
         } else {
           console.error("Failed to fetch events:", json);
         }
@@ -113,19 +113,19 @@ const EventManagement = () => {
 
     fetchEvents();
   }, [user, dispatch]);
-  
+
   useEffect(() => {
     if (!user?.token) return;
     const fetchPromoters = async () => {
       try {
-        const response = await fetch('/api/admin/users', {
+        const response = await fetch("/api/admin/users", {
           headers: {
-            Authorization: `Bearer ${user.token}`
-          }
+            Authorization: `Bearer ${user.token}`,
+          },
         });
         const json = await response.json();
         if (response.ok) {
-          setPromoters(json.filter(u => u.role === 'promoter'));
+          setPromoters(json.filter((u) => u.role === "promoter"));
         }
       } catch (err) {
         console.error("Error fetching promoters:", err);
@@ -138,19 +138,24 @@ const EventManagement = () => {
     setAssigningId(eventId);
     try {
       const response = await fetch(`/api/events/${eventId}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify({ assignedPromoter: promoterId === "" ? "none" : promoterId })
+        body: JSON.stringify({
+          assignedPromoter: promoterId === "" ? "none" : promoterId,
+        }),
       });
 
       const json = await response.json();
 
       if (response.ok) {
-        dispatch({ type: 'UPDATE_EVENT', payload: json.event });
-        await showSuccessAlert("Assigned!", "Promoter has been assigned to this event.");
+        dispatch({ type: "UPDATE_EVENT", payload: json.event });
+        await showSuccessAlert(
+          "Assigned!",
+          "Promoter has been assigned to this event.",
+        );
       } else {
         alert(json.error || "Failed to assign promoter.");
       }
@@ -170,23 +175,23 @@ const EventManagement = () => {
   const handleDeleteEvent = async (event) => {
     const result = await showDeleteConfirmAlert(
       "Delete Event",
-      `Are you sure you want to delete "${event.title}"?`
+      `Are you sure you want to delete "${event.title}"?`,
     );
 
     if (!result.isConfirmed) return;
 
     try {
       const response = await fetch(`/api/events/${event._id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          Authorization: `Bearer ${user.token}`
-        }
+          Authorization: `Bearer ${user.token}`,
+        },
       });
 
       const json = await response.json();
 
       if (response.ok) {
-        dispatch({ type: 'DELETE_EVENT', payload: event._id });
+        dispatch({ type: "DELETE_EVENT", payload: event._id });
         await showSuccessAlert("Deleted!", "Event deleted successfully.");
       } else {
         alert(json.error || "Failed to delete event.");
@@ -203,7 +208,7 @@ const EventManagement = () => {
       `Are you sure you want to approve "${event.title}"?`,
       "Yes, Approve It",
       "Cancel",
-      true
+      true,
     );
 
     if (!result.isConfirmed) return;
@@ -215,11 +220,18 @@ const EventManagement = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: "approved",
-          assignedPromoters: (event.createdBy?.role === 'promoter' && !event.assignedPromoters?.some(ap => ap._id === event.createdBy._id))
-            ? [...(event.assignedPromoters?.map(ap => ap._id) || []), event.createdBy._id]
-            : undefined
+          assignedPromoters:
+            event.createdBy?.role === "promoter" &&
+            !event.assignedPromoters?.some(
+              (ap) => ap._id === event.createdBy._id,
+            )
+              ? [
+                  ...(event.assignedPromoters?.map((ap) => ap._id) || []),
+                  event.createdBy._id,
+                ]
+              : undefined,
         }),
       });
 
@@ -277,7 +289,7 @@ const EventManagement = () => {
       "Are you sure you want to cancel this event? This action will set the status to cancelled.",
       "Yes, Cancel Event",
       "No, Keep It",
-      false
+      false,
     );
 
     if (!result.isConfirmed) return;
@@ -345,7 +357,7 @@ const EventManagement = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(
     startIndex,
-    startIndex + itemsPerPage
+    startIndex + itemsPerPage,
   );
 
   const handlePageChange = (page) => {
@@ -388,7 +400,6 @@ const EventManagement = () => {
     },
   ];
 
-
   const renderTable = () => {
     return (
       <div className="table-wrapper">
@@ -425,10 +436,22 @@ const EventManagement = () => {
                   const statusClass = `status-${event.status}`;
 
                   return (
-                    <tr key={event._id} className={expandedRow === event._id ? "expanded" : ""}>
+                    <tr
+                      key={event._id}
+                      className={expandedRow === event._id ? "expanded" : ""}
+                    >
                       <td data-label="Event" className="id-td">
-                        <div className="mobile-expand-icon" onClick={() => toggleRow(event._id)}>
-                          <Icon icon={expandedRow === event._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                        <div
+                          className="mobile-expand-icon"
+                          onClick={() => toggleRow(event._id)}
+                        >
+                          <Icon
+                            icon={
+                              expandedRow === event._id
+                                ? "mdi:chevron-up"
+                                : "mdi:chevron-down"
+                            }
+                          />
                         </div>
                         <div className="event-cell">
                           <h5 className="event-name">{event.title}</h5>
@@ -462,7 +485,10 @@ const EventManagement = () => {
                           {formatEventDate(event.startDate, event.endDate)}
                         </strong>
                         <br />
-                        <span className="smaller-body-text" style={{ color: "#666" }}>
+                        <span
+                          className="smaller-body-text"
+                          style={{ color: "#666" }}
+                        >
                           {event.startTime} - {event.endTime}
                         </span>
                       </td>
@@ -476,30 +502,66 @@ const EventManagement = () => {
                       <td data-label="Promoter">
                         <div className="promoter-assign-cell">
                           <div className="assigned-promoters-list">
-                            {event.assignedPromoters?.length > 0 ? (
-                              <div className="promoter-avatars">
-                                {event.assignedPromoters.slice(0, 3).map((p) => (
-                                  <div key={p._id} className="promoter-avatar-tiny" title={`${p.firstName} ${p.lastName}`}>
-                                    {p.firstName?.charAt(0)}{p.lastName?.charAt(0)}
+                            <div className="promoter-avatars">
+                              {/* CASE 1: If a promoter created the event, show their avatar first */}
+                              {event.createdBy?.role === "promoter" && (
+                                <div
+                                  className="promoter-avatar-tiny"
+                                  title={`${event.createdBy.firstName} ${event.createdBy.lastName}`}
+                                  style={{ border: "2px solid #4CAF50" }} // Optional: highlight the owner
+                                >
+                                  {event.createdBy.firstName?.charAt(0)}
+                                  {event.createdBy.lastName?.charAt(0)}
+                                </div>
+                              )}
+
+                              {/* CASE 2: Display assigned promoters (filtering out the creator if they are already shown) */}
+                              {event.assignedPromoters
+                                ?.filter((p) => p._id !== event.createdBy?._id) // Avoid duplicates if creator is also in assigned list
+                                .slice(0, 3)
+                                .map((p) => (
+                                  <div
+                                    key={p._id}
+                                    className="promoter-avatar-tiny"
+                                    title={`${p.firstName} ${p.lastName}`}
+                                  >
+                                    {p.firstName?.charAt(0)}
+                                    {p.lastName?.charAt(0)}
                                   </div>
                                 ))}
-                                {event.assignedPromoters.length > 3 && (
-                                  <div className="promoter-avatar-tiny extra">
-                                    +{event.assignedPromoters.length - 3}
-                                  </div>
+
+                              {/* Show count for extra promoters */}
+                              {event.assignedPromoters?.length > 3 && (
+                                <div className="promoter-avatar-tiny extra">
+                                  +{event.assignedPromoters.length - 3}
+                                </div>
+                              )}
+
+                              {/* Fallback if absolutely no one is assigned and creator is admin */}
+                              {!event.assignedPromoters?.length &&
+                                event.createdBy?.role !== "promoter" && (
+                                  <span
+                                    className="smaller-body-text"
+                                    style={{ color: "#999" }}
+                                  >
+                                    Unassigned
+                                  </span>
                                 )}
-                              </div>
-                            ) : (
-                              <span className="smaller-body-text" style={{ color: "#999" }}>Unassigned</span>
-                            )}
+                            </div>
+
                             <button
                               className="assign-promoter-plus-btn"
                               onClick={() => {
                                 setAssignEvent(event);
                                 setIsAssignModalOpen(true);
                               }}
-                              disabled={event.status !== 'approved'}
-                              title={event.status !== 'approved' ? "Approve the event first to assign a promoter" : "Manage Promoters"}
+                              // Limit removed: Now only disables if the event isn't approved
+                              disabled={event.status !== "approved"}
+                              title={
+                                event.status !== "approved"
+                                  ? "Approve the event first"
+                                  : "Manage Promoters"
+                              }
                             >
                               <Icon icon="mdi:plus" />
                             </button>
@@ -507,12 +569,11 @@ const EventManagement = () => {
                         </div>
                       </td>
 
-
-
                       <td data-label="Sales">
                         <div className="sales-cell">
                           <span className="small-body-text sales-label">
-                            {event.ticketsSold} / {event.totalTickets} ({salesPercent}%)
+                            {event.ticketsSold} / {event.totalTickets} (
+                            {salesPercent}%)
                           </span>
 
                           <div className="sales-bar">
@@ -556,34 +617,38 @@ const EventManagement = () => {
                                 <Icon icon="mdi:eye-outline" />
                               </button>
 
-                              {event.status === "pending" && (user.role === "admin" || user.role === "superadmin") && (
-                                <>
-                                  <button
-                                    className="em-action-btn approve-btn"
-                                    onClick={() => handleApproveEvent(event)}
-                                    title="Approve Event"
-                                  >
-                                    <Icon icon="mdi:check-circle-outline" />
-                                  </button>
-                                  <button
-                                    className="em-action-btn reject-btn"
-                                    onClick={() => handleRejectEvent(event)}
-                                    title="Reject Event"
-                                  >
-                                    <Icon icon="mdi:close-circle-outline" />
-                                  </button>
-                                </>
-                              )}
+                              {event.status === "pending" &&
+                                (user.role === "admin" ||
+                                  user.role === "superadmin") && (
+                                  <>
+                                    <button
+                                      className="em-action-btn approve-btn"
+                                      onClick={() => handleApproveEvent(event)}
+                                      title="Approve Event"
+                                    >
+                                      <Icon icon="mdi:check-circle-outline" />
+                                    </button>
+                                    <button
+                                      className="em-action-btn reject-btn"
+                                      onClick={() => handleRejectEvent(event)}
+                                      title="Reject Event"
+                                    >
+                                      <Icon icon="mdi:close-circle-outline" />
+                                    </button>
+                                  </>
+                                )}
 
-                              {event.status === "approved" && (user.role === "admin" || user.role === "superadmin") && (
-                                <button
-                                  className="em-action-btn cancel-btn"
-                                  onClick={() => handleCancelEvent(event._id)}
-                                  title="Cancel Event"
-                                >
-                                  <Icon icon="mdi:cancel" />
-                                </button>
-                              )}
+                              {event.status === "approved" &&
+                                (user.role === "admin" ||
+                                  user.role === "superadmin") && (
+                                  <button
+                                    className="em-action-btn cancel-btn"
+                                    onClick={() => handleCancelEvent(event._id)}
+                                    title="Cancel Event"
+                                  >
+                                    <Icon icon="mdi:cancel" />
+                                  </button>
+                                )}
                             </>
                           )}
                         </div>
@@ -613,7 +678,10 @@ const EventManagement = () => {
           <p>Manage all events, tickets, and booth layouts.</p>
         </div>
         <div className="dashboard-actions">
-          <button className="primary-button" onClick={() => setIsModalOpen(true)}>
+          <button
+            className="primary-button"
+            onClick={() => setIsModalOpen(true)}
+          >
             <Icon icon="mdi:plus" /> Create Event
           </button>
         </div>
@@ -697,27 +765,39 @@ const EventManagement = () => {
           </div>
         )}
       </div>
-      <CreateEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <CreateEventModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
       <EditEventModal
         isOpen={isEditModalOpen}
         event={selectedEvent}
-        onClose={() => { setIsEditModalOpen(false); setSelectedEvent(null); }}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedEvent(null);
+        }}
       />
       {isRejectionModalOpen && (
         <EventRejectionModal
           event={rejectionEvent}
-          onClose={() => { setIsRejectionModalOpen(false); setRejectionEvent(null); }}
+          onClose={() => {
+            setIsRejectionModalOpen(false);
+            setRejectionEvent(null);
+          }}
           onConfirm={confirmRejection}
         />
       )}
       <AddPromoterModal
         isOpen={isAssignModalOpen}
-        onClose={() => { setIsAssignModalOpen(false); setAssignEvent(null); }}
+        onClose={() => {
+          setIsAssignModalOpen(false);
+          setAssignEvent(null);
+        }}
         event={assignEvent}
         allPromoters={promoters}
         user={user}
         onUpdate={(updatedEvent) => {
-          dispatch({ type: 'UPDATE_EVENT', payload: updatedEvent });
+          dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
         }}
       />
     </div>
