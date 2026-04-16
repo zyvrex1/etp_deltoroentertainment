@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import BoothMap from "./components/BoothMap";
 import SeatMap from "./components/SeatMap";
 import LiveScanning from "./components/LiveScanning";
+import LayoutBuilder from "./components/LayoutBuilder";
 import EventSelection from "./components/EventSelection";
 
 import "./boothandticket.css";
@@ -54,7 +55,7 @@ const BoothandTicket = () => {
             <div className="bt-header-left">
               <button
                 className="bt-back-btn"
-                onClick={() => setSelectedEvent(null)}
+                onClick={() => setSelectedEventId(null)}
               >
                 <Icon icon="mdi:arrow-left" width="24" />
               </button>
@@ -72,10 +73,10 @@ const BoothandTicket = () => {
             </button>
 
             <button
-              className={`bt-tab ${activeTab === "seat-map" ? "active" : ""}`}
-              onClick={() => setActiveTab("seat-map")}
+              className={`bt-tab ${activeTab === "manage-layout" ? "active" : ""}`}
+              onClick={() => setActiveTab("manage-layout")}
             >
-              Assign Price
+              Manage Layout
             </button>
 
             <button
@@ -100,14 +101,9 @@ const BoothandTicket = () => {
                 />
               )}
 
-              {activeTab === "seat-map" && (
-                <SeatMap
+              {activeTab === "manage-layout" && (
+                <LayoutBuilder
                   selectedEvent={selectedEvent}
-                  setDetailPopup={setDetailPopup}
-                  setIsUploadModalOpen={setIsUploadModalOpen}
-                  setIsSeatLayoutOpen={setIsSeatLayoutOpen}
-                  setIsPricingModalOpen={setIsPricingModalOpen}
-                  seatLayoutConfig={seatLayoutConfig}
                 />
               )}
 
