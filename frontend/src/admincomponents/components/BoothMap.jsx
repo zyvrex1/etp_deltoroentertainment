@@ -10,6 +10,7 @@ import {
   Image as KonvaImage,
 } from "react-konva";
 import useImage from "use-image";
+import { Icon } from "@iconify/react";
 import { useEventsContext } from "../hooks/useEventsContext";
 import { useAuthContext } from "../hooks/useAuthContext";
 
@@ -543,428 +544,468 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
   }, [localItems]);
 
   return (
-    <div className="bt-section relative-wrapper" onClick={closeContextMenu}>
-      <div
-        className="bt-section-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h3 className="bt-section-title">{selectedEvent.venue?.name}</h3>
-
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <div
-            className="history-buttons"
-            style={{ display: "flex", gap: "5px" }}
-          >
-            <button
-              className="btn-secondary"
-              onClick={undo}
-              disabled={history.length === 0}
-              title="Undo (Ctrl+Z)"
-              style={{
-                padding: "8px 16px",
-                cursor: "pointer",
-                opacity: history.length === 0 ? 0.5 : 1,
-              }}
-            >
-              <i className="fa fa-undo"></i> Undo
-            </button>
-
-            <button
-              className="btn-secondary"
-              onClick={redo}
-              disabled={redoStack.length === 0}
-              title="Redo (Ctrl+Y)"
-              style={{
-                padding: "8px 16px",
-                cursor: "pointer",
-                opacity: redoStack.length === 0 ? 0.5 : 1,
-              }}
-            >
-              <i className="fa fa-redo"></i> Redo
-            </button>
-          </div>
-
-          {/* Save Button */}
-          <button
-            className="btn-confirm"
-            onClick={handleSaveLayout}
-            disabled={loading}
-            style={{ padding: "8px 16px", cursor: "pointer" }}
-          >
-            {loading ? "Saving..." : "Save Layout"}
-          </button>
-        </div>
-      </div>
-
-      <input
-        type="file"
-        ref={fileInputRef}
-        style={{ display: "none" }}
-        accept="image/*"
-        onChange={handleImageUpload}
-      />
-
-      <div className="bt-grid-outer">
-        <div className="canvas-container venue-canvas-bg">
-          <Stage
-            width={STAGE_WIDTH}
-            height={STAGE_HEIGHT}
-            ref={stageRef}
-            onMouseDown={(e) => {
-              const clickedOnEmpty = e.target === e.target.getStage();
-              if (clickedOnEmpty) setSelectedId(null);
-            }}
-            onContextMenu={(e) => {
-              e.evt.preventDefault();
-              const pos = e.target.getStage().getPointerPosition();
-              setContextMenu({ visible: true, x: pos.x, y: pos.y });
-            }}
-          >
-            <Layer>
-              {sortedItems.map((item, i) => (
-                <React.Fragment key={item.id || i}>
-                  {/* 1. UPLOADED IMAGES (Background Layer) */}
-                  {item.subType === "Image" ? (
-                    <BackgroundImage
-                      ref={null} // Ref is handled by Transformer findOne
-                      item={item}
-                      onClick={() => {
-                        setSelectedId(item.id);
-                        openEditModal(item);
-                      }}
-                      onDragEnd={(e) => handleDragEnd(item.id, e)}
-                      onTransformEnd={(e) => handleTransformEnd(item.id, e)}
-                      dragBoundFunc={(pos) => handleDragBound(pos, item)}
-                    />
-                  ) : item.type === "Table" ||
-                    item.type === "Seat" ||
-                    item.type === "Booth" ? (
-                    /* 2. INTERACTIVE UNITS (Top Layer) */
-                    <Group
-                      draggable
-                      id={item.id.toString()}
-                      x={item.x}
-                      y={item.y}
-                      scaleX={item.scaleX || 1}
-                      scaleY={item.scaleY || 1}
-                      rotation={item.rotation || 0}
-                      onDragEnd={(e) => handleDragEnd(item.id, e)}
-                      onTransformEnd={(e) => handleTransformEnd(item.id, e)}
-                      onClick={() => {
-                        setSelectedId(item.id);
-                        openEditModal(item);
-                      }}
-                      dragBoundFunc={(pos) => {
-                        const margin = 35;
-                        return {
-                          x: Math.max(
-                            margin,
-                            Math.min(STAGE_WIDTH - margin, pos.x),
-                          ),
-                          y: Math.max(
-                            margin,
-                            Math.min(STAGE_HEIGHT - margin, pos.y),
-                          ),
-                        };
-                      }}
-                    >
-                      {item.type === "Table" ? (
-                        <>
-                          <Circle
-                            radius={25}
-                            fill="#e0e0e0"
-                            stroke="#555"
-                            strokeWidth={1}
-                          />
-                          {calculateTableSeats(
-                            0,
-                            0,
-                            25,
-                            item.seatCount || 4,
-                          ).map((seat, index) => (
-                            <Rect
-                              key={index}
-                              x={seat.x - 6}
-                              y={seat.y - 6}
-                              width={12}
-                              height={12}
-                              fill="#bdbdbd"
-                              cornerRadius={2}
-                              stroke="#555"
-                              strokeWidth={1}
-                            />
-                          ))}
-                        </>
-                      ) : item.type === "Booth" ? (
-                        <Rect
-                          x={-30}
-                          y={-30}
-                          width={60}
-                          height={60}
-                          fill="#e0e0e0"
-                          stroke="#555"
-                          strokeWidth={2}
-                        />
-                      ) : (
-                        /* Seat Row */
-                        Array.from({ length: item.seatCount || 1 }).map(
-                          (_, idx) => (
-                            <Rect
-                              key={idx}
-                              x={idx * 18 - (item.seatCount * 18) / 2}
-                              y={-6}
-                              width={15}
-                              height={15}
-                              fill="#e0e0e0"
-                              cornerRadius={2}
-                              stroke="#555"
-                              strokeWidth={1}
-                            />
-                          ),
-                        )
-                      )}
-                      <Text
-                        text={item.label || item.code || ""}
-                        x={-30}
-                        y={
-                          item.type === "Booth"
-                            ? -5
-                            : item.type === "Table"
-                              ? -5
-                              : 12
-                        }
-                        width={60}
-                        align="center"
-                        fontSize={10}
-                        fill="black"
-                        fontStyle="bold"
-                      />
-                    </Group>
-                  ) : (
-                    /* 3. STATIC SHAPES (Backgrounds & Elements) */
-                    <BackgroundShape
-                      item={item}
-                      onClick={() => {
-                        setSelectedId(item.id);
-                        openEditModal(item);
-                      }}
-                      onDragEnd={(e) => handleDragEnd(item.id, e)}
-                      onTransformEnd={(e) => handleTransformEnd(item.id, e)}
-                      dragBoundFunc={(pos) => handleDragBound(pos, item)}
-                    />
-                  )}
-                </React.Fragment>
-              ))}
-
-              {selectedId && (
-                <Transformer
-                  ref={(node) => {
-                    trRef.current = node;
-                    if (node && stageRef.current) {
-                      // Look for the node by ID (stringified)
-                      const selectedNode = stageRef.current.findOne(
-                        `#${selectedId}`,
-                      );
-                      if (selectedNode) {
-                        node.nodes([selectedNode]);
-                        node.getLayer().batchDraw();
-                      }
-                    }
+    <div className="bt-section">
+          <div className="bt-section-header">
+            <h3 className="bt-section-title">
+              {selectedEvent?.venue?.name || "Venue Layout"}
+            </h3>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <div
+                className="history-buttons"
+                style={{ display: "flex", gap: "5px" }}
+              >
+                <button
+                  className="btn-secondary"
+                  onClick={undo}
+                  disabled={history.length === 0}
+                  title="Undo (Ctrl+Z)"
+                  style={{
+                    padding: "8px 16px",
+                    cursor: "pointer",
+                    opacity: history.length === 0 ? 0.5 : 1,
                   }}
-                  keepRatio={
-                    localItems.find((it) => it.id === selectedId)?.subType ===
-                    "Image"
-                  }
-                  boundBoxFunc={(oldBox, newBox) => {
-                    if (
-                      Math.abs(newBox.width) < 10 ||
-                      Math.abs(newBox.height) < 10
-                    )
-                      return oldBox;
-                    return newBox;
+                >
+                  <i className="fa fa-undo"></i> Undo
+                </button>
+
+                <button
+                  className="btn-secondary"
+                  onClick={redo}
+                  disabled={redoStack.length === 0}
+                  title="Redo (Ctrl+Y)"
+                  style={{
+                    padding: "8px 16px",
+                    cursor: "pointer",
+                    opacity: redoStack.length === 0 ? 0.5 : 1,
                   }}
-                />
-              )}
-            </Layer>
-          </Stage>
-
-          {contextMenu.visible && (
-            <div
-              className="custom-context-menu"
-              style={{
-                top: contextMenu.y,
-                left: contextMenu.x,
-                position: "absolute",
-                zIndex: 1000,
-              }}
-            >
-              <ul className="context-menu-list">
-                <li
-                  className="context-menu-item"
-                  onClick={() => openAddModal("Seat")}
                 >
-                  Add Seat Row/Column
-                </li>
-                <li
-                  className="context-menu-item"
-                  onClick={() => openAddModal("Table")}
-                >
-                  Add Table with Seats
-                </li>
-                <li
-                  className="context-menu-item"
-                  onClick={() => openAddModal("Booth")}
-                >
-                  Add Booth
-                </li>
-                <hr />
-                <li
-                  className="context-menu-item"
-                  onClick={() => openAddModal("Element")}
-                >
-                  Add Element (Stage, Bar and etc.)
-                </li>
-
-                <li
-                  className="context-menu-item"
-                  onClick={() => openAddModal("Background")}
-                >
-                  Add Shape as Background
-                </li>
-                <li
-                  className="context-menu-item"
-                  onClick={() => fileInputRef.current.click()}
-                >
-                  Upload Image as Background
-                </li>
-              </ul>
-            </div>
-          )}
-
-          {modal.visible && (
-            <div className="venue-modal-overlay">
-              <div className="venue-modal-content">
-                <h4 className="modal-title">
-                  {modal.mode === "EDIT"
-                    ? `Edit ${modal.type}`
-                    : `Add ${modal.type}`}
-                </h4>
-
-                <div className="form-group">
-                  <label>Label:</label>
-                  <input
-                    type="text"
-                    className="modal-input"
-                    value={modal.config.label}
-                    onChange={(e) =>
-                      setModal({
-                        ...modal,
-                        config: { ...modal.config, label: e.target.value },
-                      })
-                    }
-                  />
-                </div>
-
-                {(modal.type === "Table" || modal.type === "Seat") && (
-                  <>
-                    <div className="form-group">
-                      <label>
-                        Number of Seats (
-                        {modal.type === "Table" ? "1-10" : "1-20"}):
-                      </label>
-                      <input
-                        type="number"
-                        className="modal-input"
-                        min="1"
-                        max={modal.type === "Table" ? 10 : 20}
-                        value={modal.config.seatCount}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 1;
-                          const max = modal.type === "Table" ? 10 : 20;
-                          setModal({
-                            ...modal,
-                            config: {
-                              ...modal.config,
-                              seatCount: Math.min(val, max),
-                            },
-                          });
-                        }}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Rotation:</label>
-                      <select
-                        className="modal-input"
-                        value={modal.config.rotation}
-                        onChange={(e) =>
-                          setModal({
-                            ...modal,
-                            config: {
-                              ...modal.config,
-                              rotation: parseInt(e.target.value),
-                            },
-                          })
-                        }
-                      >
-                        <option value="0">0° (Horizontal)</option>
-                        <option value="90">90° (Vertical)</option>
-                        <option value="180">180°</option>
-                        <option value="270">270°</option>
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                {/* ONLY SHOW COLOR PICKER FOR BACKGROUND SHAPES */}
-                {modal.type === "Background" && (
-                  <div className="form-group">
-                    <label>Color:</label>
-                    <input
-                      type="color"
-                      className="modal-color-picker"
-                      value={modal.config.color}
-                      onChange={(e) =>
-                        setModal({
-                          ...modal,
-                          config: { ...modal.config, color: e.target.value },
-                        })
-                      }
-                    />
-                  </div>
-                )}
-
-                <div className="modal-actions">
-                  <button className="btn-cancel" onClick={closeModal}>
-                    Cancel
-                  </button>
-                  {modal.mode === "EDIT" ? (
-                    <>
-                      <button className="btn-delete" onClick={handleDeleteItem}>
-                        Delete
-                      </button>
-                      <button
-                        className="btn-confirm"
-                        onClick={handleUpdateItem}
-                      >
-                        Update
-                      </button>
-                    </>
-                  ) : (
-                    <button className="btn-confirm" onClick={handleAddItem}>
-                      Create
-                    </button>
-                  )}
-                </div>
+                  <i className="fa fa-redo"></i> Redo
+                </button>
               </div>
+
+              {/* Save Button */}
+              <button
+                className="btn-confirm"
+                onClick={handleSaveLayout}
+                disabled={loading}
+                style={{ padding: "8px 16px", cursor: "pointer" }}
+              >
+                {loading ? "Saving..." : "Save Layout"}
+              </button>
             </div>
-          )}
+          </div>
+    
+          <div style={{ display: "flex", gap: "20px" }}>
+            <div className="bt-summary">
+  <h5 className="bt-section-title" style={{ marginBottom: '15px', width: '100%' }}>
+    Select your Action Here:
+  </h5>
+
+  <div className="bt-price-legend" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    
+    {/* Seating Actions */}
+    <button className="action-btn" onClick={() => openAddModal("Seat")}>
+      <Icon icon="mdi:chair-rolling" className="action-icon" />
+      <span>Add Seat Row/Column</span>
+    </button>
+    
+    <button className="action-btn" onClick={() => openAddModal("Table")}>
+      <Icon icon="mdi:table-restaurant" className="action-icon" />
+      <span>Add Table with Seats</span>
+    </button>
+    
+    <button className="action-btn" onClick={() => openAddModal("Booth")}>
+      <Icon icon="mdi:sofa" className="action-icon" />
+      <span>Add Booth</span>
+    </button>
+
+    <hr className="action-divider" />
+
+    {/* Elements & Backgrounds */}
+    <button className="action-btn" onClick={() => openAddModal("Element")}>
+      <Icon icon="mdi:floor-plan" className="action-icon" />
+      <span>Add Element</span>
+    </button>
+    
+    <button className="action-btn" onClick={() => openAddModal("Background")}>
+      <Icon icon="mdi:shape-outline" className="action-icon" />
+      <span>Add Shape as Background</span>
+    </button>
+    
+    <button className="action-btn" onClick={() => fileInputRef.current.click()}>
+      <Icon icon="mdi:image-plus" className="action-icon" />
+      <span>Upload Image Background</span>
+    </button>
+
+  </div>
+</div>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              accept="image/*"
+              onChange={handleImageUpload}
+            />
+    
+            <div className="bt-grid-outer" style={{ flex: 1, overflow: "auto" }}>
+              <div className="canvas-container venue-canvas-bg">
+                        <Stage
+                          width={STAGE_WIDTH}
+                          height={STAGE_HEIGHT}
+                          ref={stageRef}
+                          onMouseDown={(e) => {
+                            const clickedOnEmpty = e.target === e.target.getStage();
+                            if (clickedOnEmpty) setSelectedId(null);
+                          }}
+                          onContextMenu={(e) => {
+                            e.evt.preventDefault();
+                            const pos = e.target.getStage().getPointerPosition();
+                            setContextMenu({ visible: true, x: pos.x, y: pos.y });
+                          }}
+                        >
+                          <Layer>
+                            {sortedItems.map((item, i) => (
+                              <React.Fragment key={item.id || i}>
+                                {/* 1. UPLOADED IMAGES (Background Layer) */}
+                                {item.subType === "Image" ? (
+                                  <BackgroundImage
+                                    ref={null} // Ref is handled by Transformer findOne
+                                    item={item}
+                                    onClick={() => {
+                                      setSelectedId(item.id);
+                                      openEditModal(item);
+                                    }}
+                                    onDragEnd={(e) => handleDragEnd(item.id, e)}
+                                    onTransformEnd={(e) => handleTransformEnd(item.id, e)}
+                                    dragBoundFunc={(pos) => handleDragBound(pos, item)}
+                                  />
+                                ) : item.type === "Table" ||
+                                  item.type === "Seat" ||
+                                  item.type === "Booth" ? (
+                                  /* 2. INTERACTIVE UNITS (Top Layer) */
+                                  <Group
+                                    draggable
+                                    id={item.id.toString()}
+                                    x={item.x}
+                                    y={item.y}
+                                    scaleX={item.scaleX || 1}
+                                    scaleY={item.scaleY || 1}
+                                    rotation={item.rotation || 0}
+                                    onDragEnd={(e) => handleDragEnd(item.id, e)}
+                                    onTransformEnd={(e) => handleTransformEnd(item.id, e)}
+                                    onClick={() => {
+                                      setSelectedId(item.id);
+                                      openEditModal(item);
+                                    }}
+                                    dragBoundFunc={(pos) => {
+                                      const margin = 35;
+                                      return {
+                                        x: Math.max(
+                                          margin,
+                                          Math.min(STAGE_WIDTH - margin, pos.x),
+                                        ),
+                                        y: Math.max(
+                                          margin,
+                                          Math.min(STAGE_HEIGHT - margin, pos.y),
+                                        ),
+                                      };
+                                    }}
+                                  >
+                                    {item.type === "Table" ? (
+                                      <>
+                                        <Circle
+                                          radius={25}
+                                          fill="#e0e0e0"
+                                          stroke="#555"
+                                          strokeWidth={1}
+                                        />
+                                        {calculateTableSeats(
+                                          0,
+                                          0,
+                                          25,
+                                          item.seatCount || 4,
+                                        ).map((seat, index) => (
+                                          <Rect
+                                            key={index}
+                                            x={seat.x - 6}
+                                            y={seat.y - 6}
+                                            width={12}
+                                            height={12}
+                                            fill="#bdbdbd"
+                                            cornerRadius={2}
+                                            stroke="#555"
+                                            strokeWidth={1}
+                                          />
+                                        ))}
+                                      </>
+                                    ) : item.type === "Booth" ? (
+                                      <Rect
+                                        x={-30}
+                                        y={-30}
+                                        width={60}
+                                        height={60}
+                                        fill="#e0e0e0"
+                                        stroke="#555"
+                                        strokeWidth={2}
+                                      />
+                                    ) : (
+                                      /* Seat Row */
+                                      Array.from({ length: item.seatCount || 1 }).map(
+                                        (_, idx) => (
+                                          <Rect
+                                            key={idx}
+                                            x={idx * 18 - (item.seatCount * 18) / 2}
+                                            y={-6}
+                                            width={15}
+                                            height={15}
+                                            fill="#e0e0e0"
+                                            cornerRadius={2}
+                                            stroke="#555"
+                                            strokeWidth={1}
+                                          />
+                                        ),
+                                      )
+                                    )}
+                                    <Text
+                                      text={item.label || item.code || ""}
+                                      x={-30}
+                                      y={
+                                        item.type === "Booth"
+                                          ? -5
+                                          : item.type === "Table"
+                                            ? -5
+                                            : 12
+                                      }
+                                      width={60}
+                                      align="center"
+                                      fontSize={10}
+                                      fill="black"
+                                      fontStyle="bold"
+                                    />
+                                  </Group>
+                                ) : (
+                                  /* 3. STATIC SHAPES (Backgrounds & Elements) */
+                                  <BackgroundShape
+                                    item={item}
+                                    onClick={() => {
+                                      setSelectedId(item.id);
+                                      openEditModal(item);
+                                    }}
+                                    onDragEnd={(e) => handleDragEnd(item.id, e)}
+                                    onTransformEnd={(e) => handleTransformEnd(item.id, e)}
+                                    dragBoundFunc={(pos) => handleDragBound(pos, item)}
+                                  />
+                                )}
+                              </React.Fragment>
+                            ))}
+              
+                            {selectedId && (
+                              <Transformer
+                                ref={(node) => {
+                                  trRef.current = node;
+                                  if (node && stageRef.current) {
+                                    // Look for the node by ID (stringified)
+                                    const selectedNode = stageRef.current.findOne(
+                                      `#${selectedId}`,
+                                    );
+                                    if (selectedNode) {
+                                      node.nodes([selectedNode]);
+                                      node.getLayer().batchDraw();
+                                    }
+                                  }
+                                }}
+                                keepRatio={
+                                  localItems.find((it) => it.id === selectedId)?.subType ===
+                                  "Image"
+                                }
+                                boundBoxFunc={(oldBox, newBox) => {
+                                  if (
+                                    Math.abs(newBox.width) < 10 ||
+                                    Math.abs(newBox.height) < 10
+                                  )
+                                    return oldBox;
+                                  return newBox;
+                                }}
+                              />
+                            )}
+                          </Layer>
+                        </Stage>
+              
+                        {/* {contextMenu.visible && (
+                          <div
+                            className="custom-context-menu"
+                            style={{
+                              top: contextMenu.y,
+                              left: contextMenu.x,
+                              position: "absolute",
+                              zIndex: 1000,
+                            }}
+                          >
+                            <ul className="context-menu-list">
+                              <li
+                                className="context-menu-item"
+                                onClick={() => openAddModal("Seat")}
+                              >
+                                Add Seat Row/Column
+                              </li>
+                              <li
+                                className="context-menu-item"
+                                onClick={() => openAddModal("Table")}
+                              >
+                                Add Table with Seats
+                              </li>
+                              <li
+                                className="context-menu-item"
+                                onClick={() => openAddModal("Booth")}
+                              >
+                                Add Booth
+                              </li>
+                              <hr />
+                              <li
+                                className="context-menu-item"
+                                onClick={() => openAddModal("Element")}
+                              >
+                                Add Element (Stage, Bar and etc.)
+                              </li>
+              
+                              <li
+                                className="context-menu-item"
+                                onClick={() => openAddModal("Background")}
+                              >
+                                Add Shape as Background
+                              </li>
+                              <li
+                                className="context-menu-item"
+                                onClick={() => fileInputRef.current.click()}
+                              >
+                                Upload Image as Background
+                              </li>
+                            </ul>
+                          </div>
+                        )} */}
+              
+                        {modal.visible && (
+                          <div className="venue-modal-overlay">
+                            <div className="venue-modal-content">
+                              <h4 className="modal-title">
+                                {modal.mode === "EDIT"
+                                  ? `Edit ${modal.type}`
+                                  : `Add ${modal.type}`}
+                              </h4>
+              
+                              <div className="form-group">
+                                <label>Label:</label>
+                                <input
+                                  type="text"
+                                  className="modal-input"
+                                  value={modal.config.label}
+                                  onChange={(e) =>
+                                    setModal({
+                                      ...modal,
+                                      config: { ...modal.config, label: e.target.value },
+                                    })
+                                  }
+                                />
+                              </div>
+              
+                              {(modal.type === "Table" || modal.type === "Seat") && (
+                                <>
+                                  <div className="form-group">
+                                    <label>
+                                      Number of Seats (
+                                      {modal.type === "Table" ? "1-10" : "1-20"}):
+                                    </label>
+                                    <input
+                                      type="number"
+                                      className="modal-input"
+                                      min="1"
+                                      max={modal.type === "Table" ? 10 : 20}
+                                      value={modal.config.seatCount}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value) || 1;
+                                        const max = modal.type === "Table" ? 10 : 20;
+                                        setModal({
+                                          ...modal,
+                                          config: {
+                                            ...modal.config,
+                                            seatCount: Math.min(val, max),
+                                          },
+                                        });
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="form-group">
+                                    <label>Rotation:</label>
+                                    <select
+                                      className="modal-input"
+                                      value={modal.config.rotation}
+                                      onChange={(e) =>
+                                        setModal({
+                                          ...modal,
+                                          config: {
+                                            ...modal.config,
+                                            rotation: parseInt(e.target.value),
+                                          },
+                                        })
+                                      }
+                                    >
+                                      <option value="0">0° (Horizontal)</option>
+                                      <option value="90">90° (Vertical)</option>
+                                      <option value="180">180°</option>
+                                      <option value="270">270°</option>
+                                    </select>
+                                  </div>
+                                </>
+                              )}
+              
+                              {/* ONLY SHOW COLOR PICKER FOR BACKGROUND SHAPES */}
+                              {modal.type === "Background" && (
+                                <div className="form-group">
+                                  <label>Color:</label>
+                                  <input
+                                    type="color"
+                                    className="modal-color-picker"
+                                    value={modal.config.color}
+                                    onChange={(e) =>
+                                      setModal({
+                                        ...modal,
+                                        config: { ...modal.config, color: e.target.value },
+                                      })
+                                    }
+                                  />
+                                </div>
+                              )}
+              
+                              <div className="modal-actions">
+                                <button className="btn-cancel" onClick={closeModal}>
+                                  Cancel
+                                </button>
+                                {modal.mode === "EDIT" ? (
+                                  <>
+                                    <button className="btn-delete" onClick={handleDeleteItem}>
+                                      Delete
+                                    </button>
+                                    <button
+                                      className="btn-confirm"
+                                      onClick={handleUpdateItem}
+                                    >
+                                      Update
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button className="btn-confirm" onClick={handleAddItem}>
+                                    Create
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
   );
 };
 
