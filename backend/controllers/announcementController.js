@@ -32,15 +32,29 @@ const createAnnouncement = async (req, res) => {
     const socket = require('../socket');
     const creatorName = `${req.user.firstName} ${req.user.lastName}`;
     
-    const notification = await notificationController.createNotification({
+    // 1. Notification for Admins
+    const adminNotification = await notificationController.createNotification({
       title: `${creatorName} shared an update: ${title}`,
       content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
       type: 'update',
       path: '/admin/content',
       unread: true,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      targetRole: 'admin'
     });
-    socket.emitUpdate('newNotification', notification);
+    socket.emitUpdate('newNotification', adminNotification);
+
+    // 2. Notification for Promoters
+    const promoterNotification = await notificationController.createNotification({
+      title: `${creatorName} shared an update: ${title}`,
+      content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+      type: 'update',
+      path: '/promoter/promoter-announcement',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'promoter'
+    });
+    socket.emitUpdate('newNotification', promoterNotification);
 
     res.status(201).json(announcement);
   } catch (error) {
@@ -67,6 +81,35 @@ const updateAnnouncement = async (req, res) => {
       return res.status(404).json({ error: "Announcement not found" });
     }
 
+    // Create Notification and Emit
+    const notificationController = require('./notificationController');
+    const socket = require('../socket');
+    const creatorName = `${req.user.firstName} ${req.user.lastName}`;
+    
+    // 1. Notification for Admins
+    const adminNotification = await notificationController.createNotification({
+      title: `${creatorName} updated an announcement: ${updatedAnnouncement.title}`,
+      content: updatedAnnouncement.content.substring(0, 50) + (updatedAnnouncement.content.length > 50 ? '...' : ''),
+      type: 'update',
+      path: '/admin/content',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'admin'
+    });
+    socket.emitUpdate('newNotification', adminNotification);
+
+    // 2. Notification for Promoters
+    const promoterNotification = await notificationController.createNotification({
+      title: `${creatorName} shared an update: ${updatedAnnouncement.title}`,
+      content: updatedAnnouncement.content.substring(0, 50) + (updatedAnnouncement.content.length > 50 ? '...' : ''),
+      type: 'update',
+      path: '/promoter/promoter-announcement',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'promoter'
+    });
+    socket.emitUpdate('newNotification', promoterNotification);
+
     res.status(200).json(updatedAnnouncement);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -87,6 +130,35 @@ const deleteAnnouncement = async (req, res) => {
     if (!deletedAnnouncement) {
       return res.status(404).json({ error: "Announcement not found" });
     }
+
+    // Create Notification and Emit
+    const notificationController = require('./notificationController');
+    const socket = require('../socket');
+    const creatorName = `${req.user.firstName} ${req.user.lastName}`;
+    
+    // 1. Notification for Admins
+    const adminNotification = await notificationController.createNotification({
+      title: `${creatorName} deleted an announcement: ${deletedAnnouncement.title}`,
+      content: `The announcement has been removed.`,
+      type: 'update',
+      path: '/admin/content',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'admin'
+    });
+    socket.emitUpdate('newNotification', adminNotification);
+
+    // 2. Notification for Promoters
+    const promoterNotification = await notificationController.createNotification({
+      title: `${creatorName} deleted an announcement: ${deletedAnnouncement.title}`,
+      content: `An announcement was removed.`,
+      type: 'update',
+      path: '/promoter/promoter-announcement',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'promoter'
+    });
+    socket.emitUpdate('newNotification', promoterNotification);
 
     res.status(200).json({ message: "Announcement deleted successfully" });
   } catch (error) {

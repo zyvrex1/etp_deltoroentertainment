@@ -38,7 +38,7 @@ export const NotificationsContextProvider = ({ children }) => {
   const { user } = useAuthContext();
 
   useEffect(() => {
-    if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
+    if (!user || (user.role !== 'admin' && user.role !== 'superadmin' && user.role !== 'promoter')) {
         return;
     }
 
@@ -60,9 +60,28 @@ export const NotificationsContextProvider = ({ children }) => {
       if (notification.type === 'payment' && preferences.paymentReminders === false) return;
       if (notification.type === 'update' && preferences.announcements === false) return;
 
-      // If it's a targeted notification, only notify the target user
-      if (notification.userId && String(notification.userId) !== String(user._id)) {
-        return;
+      // Check visibility
+      const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+      const userRoleLower = user.role.toLowerCase();
+
+      if (notification.userId) {
+        // Specifically for one user
+        if (String(notification.userId) !== String(user._id)) return;
+      } else if (notification.targetRole) {
+        // Broadcast to a specific role
+        if (notification.targetRole === 'all') {
+          // Everyone gets it
+        } else if (notification.targetRole === 'admin' && isAdmin) {
+          // Targeted at admins
+        } else if (notification.targetRole === userRoleLower) {
+          // Targeted at specific role like 'promoter' or 'sponsor'
+        } else {
+          return;
+        }
+      } else {
+        // Legacy system - userId is null and no targetRole
+        // Usually targetted at admins, but 'update' type was seen by promoters too
+        if (!isAdmin && notification.type !== 'update') return;
       }
 
       dispatch({ type: 'CREATE_NOTIFICATION', payload: notification })

@@ -140,9 +140,22 @@
 
         .promoter-card-name {
             margin: 0;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
-            color: #1a1a1a;
+            color: var(--color-black-primary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .owner-badge {
+            font-size: 10px;
+            background-color: var(--color-bg-light);
+            color: var(--color-black-tertiary);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 500;
+            border: 1px solid var(--color-border);
         }
 
         .promoter-card-email {

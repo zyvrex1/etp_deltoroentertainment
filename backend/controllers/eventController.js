@@ -384,7 +384,8 @@ const createEvent = async (req, res) => {
         type: 'event',
         path: '/admin/events',
         unread: true,
-        createdBy: populatedEvent.createdBy ? populatedEvent.createdBy._id : null
+        createdBy: populatedEvent.createdBy ? populatedEvent.createdBy._id : null,
+        targetRole: 'admin'
       });
       emitUpdate('newNotification', notification);
     }
@@ -417,15 +418,33 @@ const deleteEvent = async (req, res) => {
   const notificationController = require('./notificationController');
   const creatorName = `${req.user.firstName} ${req.user.lastName}`;
   
-  const notification = await notificationController.createNotification({
+  // 1. System notification for admins
+  const adminNotification = await notificationController.createNotification({
     title: `${creatorName} deleted event: ${event.title}`,
     content: `The event has been permanently removed.`,
     type: 'event',
     path: '/admin/events',
     unread: true,
-    createdBy: req.user._id
+    createdBy: req.user._id,
+    targetRole: 'admin'
   });
-  emitUpdate('newNotification', notification);
+  emitUpdate('newNotification', adminNotification);
+
+  // 2. Notifications for assigned promoters
+  if (event.assignedPromoters && event.assignedPromoters.length > 0) {
+    for (const promoterId of event.assignedPromoters) {
+      const promoterNotification = await notificationController.createNotification({
+        title: `Event Deleted: ${event.title}`,
+        content: `An event you were assigned to has been deleted by ${creatorName}.`,
+        type: 'event',
+        path: '/promoter/promoter-eventmanagement',
+        unread: true,
+        userId: promoterId,
+        createdBy: req.user._id
+      });
+      emitUpdate('newNotification', promoterNotification);
+    }
+  }
 
   emitUpdate('dashboardUpdate');
   res.status(200).json(event);
@@ -447,12 +466,16 @@ const updateEvent = async (req, res) => {
       startDate, endDate, startTime, endTime,
       eventType, priceLevels, seatMap, booths,
       isFeatured, image, assignedPromoters,
+      ticketCategories, layoutData,
+      status, rejectionReason,
     } = req.body;
 
     if (typeof venue === "string") venue = JSON.parse(venue);
     if (typeof priceLevels === "string") priceLevels = JSON.parse(priceLevels);
     if (typeof booths === "string") booths = JSON.parse(booths);
     if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
+    if (typeof ticketCategories === "string") ticketCategories = JSON.parse(ticketCategories);
+    if (typeof layoutData === "string") layoutData = JSON.parse(layoutData);
 
     const errors = [];
     const finalEventType = eventType || existingEvent.eventType;
@@ -493,8 +516,8 @@ const updateEvent = async (req, res) => {
       errors.push("End date must be strictly after start date.");
     }
 
-    if (finalEventType === "General Admission" && priceLevels?.length > 2) {
-      errors.push("General Admission allows maximum of 2 price levels only");
+    if (finalEventType === "General Admission" && priceLevels?.length > 10) {
+      errors.push("General Admission allows maximum of 10 price levels only");
     }
 
     image = req.file ? req.file.filename : image || existingEvent.image;
@@ -575,7 +598,12 @@ const updateEvent = async (req, res) => {
     }
 
     if (errors.length) {
-      return res.status(400).json({ error: "Validation failed", fields: errors });
+      console.error("Event Update Validation Failed:", errors);
+      return res.status(400).json({ 
+        error: "Validation failed", 
+        message: errors.join(", "),
+        fields: errors 
+      });
     }
 
     let finalImage = existingEvent.image;
@@ -611,6 +639,10 @@ if (req.file) {
       isFeatured: String(isFeatured) === "true",
       image: finalImage,
       assignedPromoters: assignedPromoters !== undefined ? assignedPromoters : existingEvent.assignedPromoters,
+      ticketCategories: ticketCategories !== undefined ? ticketCategories : existingEvent.ticketCategories,
+      layoutData: layoutData !== undefined ? layoutData : existingEvent.layoutData,
+      status: status || existingEvent.status,
+      rejectionReason: rejectionReason !== undefined ? rejectionReason : existingEvent.rejectionReason,
     };
 
     const updatedEvent = await Event.findByIdAndUpdate(
@@ -622,8 +654,8 @@ if (req.file) {
       { path: "assignedPromoters", select: "firstName lastName email" }
     ]);
 
-    // Create Notification and Emit
     const notificationController = require('./notificationController');
+    const socket = require('../socket');
     const creatorName = `${req.user.firstName} ${req.user.lastName}`;
     
     let notifTitle = `${creatorName} updated event: ${updatedEvent.title}`;
@@ -640,15 +672,99 @@ if (req.file) {
         }
     }
 
-    const notification = await notificationController.createNotification({
+    // 1. Admin/System Notification
+    const adminNotification = await notificationController.createNotification({
       title: notifTitle,
       content: notifContent,
       type: 'event',
       path: '/admin/events',
       unread: true,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      targetRole: 'admin'
     });
-    emitUpdate('newNotification', notification);
+    emitUpdate('newNotification', adminNotification);
+
+    // 2. Promoter Notifications
+    const oldPromoters = (existingEvent.assignedPromoters || []).map(id => id.toString());
+    const newPromoters = (updatedEvent.assignedPromoters || []).map(p => (p._id || p).toString());
+
+    const addedPromoters = newPromoters.filter(id => !oldPromoters.includes(id));
+    const removedPromoters = oldPromoters.filter(id => !newPromoters.includes(id));
+    const maintainedPromoters = newPromoters.filter(id => oldPromoters.includes(id));
+
+    // Notify newly assigned promoters
+    for (const promoterId of addedPromoters) {
+        const notif = await notificationController.createNotification({
+            title: `New Event Assigned: ${updatedEvent.title}`,
+            content: `You have been assigned to promote this event by ${creatorName}.`,
+            type: 'event',
+            path: '/promoter/promoter-eventmanagement',
+            unread: true,
+            userId: promoterId,
+            createdBy: req.user._id
+        });
+        emitUpdate('newNotification', notif);
+    }
+
+    // Notify unassigned promoters
+    for (const promoterId of removedPromoters) {
+        const notif = await notificationController.createNotification({
+            title: `Event Unassigned: ${updatedEvent.title}`,
+            content: `You are no longer assigned to promote this event.`,
+            type: 'event',
+            path: '/promoter/promoter-eventmanagement',
+            unread: true,
+            userId: promoterId,
+            createdBy: req.user._id
+        });
+        emitUpdate('newNotification', notif);
+    }
+
+    // Notify maintained promoters about updates
+    for (const promoterId of maintainedPromoters) {
+        const notif = await notificationController.createNotification({
+            title: `Update on Assigned Event: ${updatedEvent.title}`,
+            content: notifContent,
+            type: 'event',
+            path: '/promoter/promoter-eventmanagement',
+            unread: true,
+            userId: promoterId,
+            createdBy: req.user._id
+        });
+        emitUpdate('newNotification', notif);
+    }
+
+    // 3. Notify Event Creator (if they are a promoter and status changed)
+    if (existingEvent.status !== updatedEvent.status && updatedEvent.createdBy) {
+        const ownerId = updatedEvent.createdBy._id || updatedEvent.createdBy;
+        // Only notify if someone else (like an admin) changed the status
+        if (String(ownerId) !== String(req.user._id)) {
+            const isApproved = updatedEvent.status === 'approved';
+            const isRejected = updatedEvent.status === 'rejected';
+            
+            let ownerTitle = `Event Status Update: ${updatedEvent.title}`;
+            let ownerMessage = `Your event status has been updated to ${updatedEvent.status}.`;
+            
+            if (isApproved) {
+                ownerTitle = `Event Approved: ${updatedEvent.title}`;
+                ownerMessage = `Great news! Your event was accepted and is now live.`;
+            } else if (isRejected) {
+                ownerTitle = `Event Declined: ${updatedEvent.title}`;
+                ownerMessage = `Your event was not approved at this time.`;
+            }
+
+            const ownerNotif = await notificationController.createNotification({
+                title: ownerTitle,
+                content: ownerMessage,
+                type: 'event',
+                path: '/promoter/promoter-events',
+                unread: true,
+                userId: ownerId,
+                createdBy: req.user._id
+            });
+            emitUpdate('newNotification', ownerNotif);
+        }
+    }
 
     emitUpdate('dashboardUpdate');
     res.status(200).json({ event: updatedEvent });

@@ -9,6 +9,9 @@ const priceLevelSchema = new Schema({
   facePrice: { type: Number, min: 0, required: true },
   serviceCharge: { type: Number, default: 0 },
 
+  type: { type: String, default: "Seat (Circle)" },
+  boothSize: { type: String, default: "" },
+
   minPerOrder: { type: Number, default: 1 },
   maxPerOrder: { type: Number, default: 30 },
   increment: { type: Number, default: 1 },
@@ -126,7 +129,7 @@ const eventSchema = new Schema(
     title: { type: String, required: true, trim: true },
     eventType: {
       type: String,
-      enum: ["General Admission", "Seating Arrangement"],
+      enum: ["General Admission", "Seating Arrangement", "Booth-Style"],
       required: true,
     },
 
@@ -206,6 +209,10 @@ const eventSchema = new Schema(
 
     isFeatured: { type: Boolean, default: false },
     assignedPromoters: { type: [{ type: Schema.Types.ObjectId, ref: "User" }], default: [] },
+
+    // Editor data for LayoutBuilder
+    ticketCategories: { type: Schema.Types.Mixed, default: [] },
+    layoutData: { type: Schema.Types.Mixed, default: null },
   },
   { timestamps: true }
 );
@@ -215,25 +222,23 @@ eventSchema.pre("save", function (next) {
     .map((p) => (p && p._id ? p._id.toString() : null))
     .filter(Boolean);
 
-  // 1. Validation for Seating Arrangement
+  // 1. Logic for Seating Arrangement - CLEANUP & Validation
   if (this.eventType === "Seating Arrangement" && this.seatMap) {
-    
-    // Validate Seats within Sections
     if (this.seatMap.sections) {
       for (const section of this.seatMap.sections) {
         if (!section.seats) continue;
         for (const seat of section.seats) {
-          if (seat.priceLevelId && seat.priceLevelId !== "none" && !priceIds.includes(seat.priceLevelId.toString())) {
-            return next(
-              new Error(`Seat ${seat.label || `${seat.row}-${seat.number}`} has invalid priceLevelId`)
-            );
+          if (seat.priceLevelId && seat.priceLevelId !== "none") {
+            if (!priceIds.includes(seat.priceLevelId.toString())) {
+              // Instead of failing, we clean up the dangling reference
+              console.warn(`Cleaning up invalid priceLevelId on seat ${seat.label}`);
+              seat.priceLevelId = "none";
+              seat.status = "available"; // Reset status if it was sold with invalid price
+            }
           }
         }
       }
     }
-
-    // NOTE: Elements (Stages/Bars) and Backgrounds are ignored here 
-    // because they don't have priceLevelIds or inventory status.
   }
 
   // 2. Logic for General Admission
@@ -241,25 +246,32 @@ eventSchema.pre("save", function (next) {
     this.seatMap = null; 
   }
 
-  // 3. Validation for Booths
-  if (this.hasBooths) {
-    if (!this.booths || !this.booths.length) {
-      return next(new Error("Booths are required when hasBooths is true"));
-    }
-
+  // 3. Logic for Booths - CLEANUP & Validation
+  if (this.hasBooths && this.booths) {
     for (const booth of this.booths) {
-      if (
-        booth.priceLevelId &&
-        !priceIds.includes(booth.priceLevelId.toString())
-      ) {
-        return next(
-          new Error(`Booth ${booth.code || booth.label} has invalid priceLevelId`)
-        );
+      if (booth.priceLevelId && booth.priceLevelId !== "none") {
+        if (!priceIds.includes(booth.priceLevelId.toString())) {
+          console.warn(`Cleaning up invalid priceLevelId on booth ${booth.code || booth.label}`);
+          booth.priceLevelId = "none";
+          booth.status = "available";
+        }
       }
     }
   }
 
-  // 4. Revenue Calculations
+  // 4. Cleanup layoutData items
+  if (this.layoutData && Array.isArray(this.layoutData.items)) {
+    this.layoutData.items = this.layoutData.items.filter(item => {
+      // If it's a shape (has categoryId), check if category still exists
+      if (item.categoryId) {
+         return priceIds.includes(item.categoryId.toString());
+      }
+      return true; // Keep elements/backgrounds
+    });
+    this.markModified('layoutData');
+  }
+
+  // 5. Revenue Calculations
   let seatRevenue = 0;
   let boothRevenue = 0;
 
@@ -312,8 +324,8 @@ eventSchema.pre("save", function (next) {
       }
     }
   } else if (this.hasBooths && (!this.booths || !this.booths.length)) {
-    // Re-added the strict check if you're out of the draft phase
-    return next(new Error("Booths are required when hasBooths is true"));
+    // Relaxed for LayoutBuilder saves
+    console.warn("Save note: hasBooths is true but no booths are defined yet.");
   }
 
   this.seatRevenue = seatRevenue;

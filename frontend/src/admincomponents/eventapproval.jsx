@@ -1,65 +1,16 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import axios from 'axios';
 import './eventapproval.css';
 import EventReviewModal from './Modal/EventReviewModal';
 import EventRejectionModal from './Modal/EventRejectionModal';
-import { showConfirmAlert } from './utils/sweetAlert';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from './utils/sweetAlert';
+import { useAuthContext } from './hooks/useAuthContext';
 
 const EventApproval = () => {
-
-    const [events, setEvents] = useState([
-        {
-            id: 1,
-            name: 'Creator Economy Expo',
-            category: 'Business',
-            promoter: 'David Kim',
-            date: 'Nov 5, 2024',
-            status: 'Pending Review',
-            description: 'Connecting creators with brands.',
-            location: 'Austin Convention Center'
-        },
-        {
-            id: 2,
-            name: 'Health & Wellness Expo',
-            category: 'Health',
-            promoter: 'James Wilson',
-            date: 'Jan 20, 2025',
-            status: 'Pending Review',
-            description: 'Promoting health and wellness.',
-            location: 'Los Angeles Convention Center'
-        },
-        {
-            id: 3,
-            name: 'Health & Wellness Expo',
-            category: 'Health',
-            promoter: 'James Wilson',
-            date: 'Jan 20, 2025',
-            status: 'Pending Review',
-            description: 'Promoting health and wellness.',
-            location: 'Los Angeles Convention Center'
-        },
-        {
-            id: 4,
-            name: 'Health & Wellness Expo',
-            category: 'Health',
-            promoter: 'James Wilson',
-            date: 'Jan 20, 2025',
-            status: 'Pending Review',
-            description: 'Promoting health and wellness.',
-            location: 'Los Angeles Convention Center'
-        },
-        {
-            id: 5,
-            name: 'Health & Wellness Expo',
-            category: 'Health',
-            promoter: 'James Wilson',
-            date: 'Jan 20, 2025',
-            status: 'Pending Review',
-            description: 'Promoting health and wellness.',
-            location: 'Los Angeles Convention Center'
-        },
-    ]);
-
+    const { user } = useAuthContext();
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [showReviewModal, setShowReviewModal] = useState(false);
@@ -68,7 +19,7 @@ const EventApproval = () => {
 
     // SEARCH + FILTER
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeFilter, setActiveFilter] = useState("all");
+    const [activeFilter, setActiveFilter] = useState("pending");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -78,10 +29,31 @@ const EventApproval = () => {
 
     const filterOptions = [
         { value: "all", label: "All Status" },
-        { value: "Pending Review", label: "Pending Review" },
-        { value: "Approved", label: "Approved" },
-        { value: "Rejected", label: "Rejected" }
+        { value: "pending", label: "Pending Review" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" }
     ];
+
+    const fetchEvents = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get('http://localhost:4000/api/events', {
+                headers: { 'Authorization': `Bearer ${user.token}` }
+            });
+            setEvents(response.data);
+        } catch (error) {
+            console.error('Error fetching events:', error);
+            showErrorAlert('Error', 'Failed to load events.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchEvents();
+        }
+    }, [user]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -122,10 +94,12 @@ const EventApproval = () => {
 
             if (!q) return true;
 
+            const promoterName = event.createdBy ? `${event.createdBy.firstName} ${event.createdBy.lastName}` : "Unknown";
+
             return (
-                event.name.toLowerCase().includes(q) ||
-                event.promoter.toLowerCase().includes(q) ||
-                event.category.toLowerCase().includes(q)
+                (event.title || "").toLowerCase().includes(q) ||
+                promoterName.toLowerCase().includes(q) ||
+                (event.category || "").toLowerCase().includes(q)
             );
         });
     }, [events, searchQuery, activeFilter]);
@@ -146,6 +120,7 @@ const EventApproval = () => {
     };
 
     const getInitials = (name) => {
+        if (!name) return "??";
         return name
             .split(' ')
             .map(word => word[0])
@@ -160,18 +135,16 @@ const EventApproval = () => {
     };
 
     const handleApproveClick = async (event) => {
-        setSelectedEvent(event);
-
         const result = await showConfirmAlert(
             'Approve Event',
-            `Are you sure you want to approve "${event.name}"? This will make the event live and visible to customers. The promoter will be notified of the approval.`,
+            `Are you sure you want to approve "${event.title}"? This will make the event live and visible to customers. The promoter will be notified of the approval.`,
             'Confirm Approval',
             'Cancel',
             true
         );
 
         if (result.isConfirmed) {
-            handleApprove(event);
+            handleUpdateStatus(event.id || event._id, 'approved');
         }
     };
 
@@ -180,34 +153,37 @@ const EventApproval = () => {
         setShowRejectionModal(true);
     };
 
-    const handleApprove = (event) => {
-        if (event) {
-            setEvents(events.map(e =>
-                e.id === event.id
-                    ? { ...e, status: 'Approved' }
-                    : e
-            ));
+    const handleUpdateStatus = async (eventId, status) => {
+        try {
+            const response = await axios.patch(`http://localhost:4000/api/events/${eventId}`, 
+                { status }, 
+                { headers: { 'Authorization': `Bearer ${user.token}` } }
+            );
+            
+            // Update local state
+            setEvents(prev => prev.map(e => (e._id === eventId || e.id === eventId) ? response.data.event : e));
+            
+            setShowReviewModal(false);
+            setShowRejectionModal(false);
+            setSelectedEvent(null);
+
+            await showSuccessAlert('Success!', `Event has been ${status}.`);
+            
+        } catch (error) {
+            console.error('Error updating status:', error);
+            showErrorAlert('Update Failed', error.response?.data?.error || 'Could not update event status.');
         }
-        setShowReviewModal(false);
-        setSelectedEvent(null);
     };
 
     const handleReject = (reason) => {
         if (selectedEvent) {
-            setEvents(events.map(event =>
-                event.id === selectedEvent.id
-                    ? { ...event, status: 'Rejected' }
-                    : event
-            ));
+            handleUpdateStatus(selectedEvent.id || selectedEvent._id, 'rejected');
         }
-        setShowRejectionModal(false);
-        setShowReviewModal(false);
-        setSelectedEvent(null);
     };
 
     const getStatusClass = (status) => {
-        if (status === 'Approved') return 'status-approved';
-        if (status === 'Rejected') return 'status-rejected';
+        if (status === 'approved') return 'status-approved';
+        if (status === 'rejected') return 'status-rejected';
         return 'status-pending';
     };
 
@@ -293,28 +269,28 @@ const EventApproval = () => {
                                 {paginatedEvents.length > 0 ? (
                                     paginatedEvents.map((event) => (
                                         <tr
-                                            key={event.id}
-                                            className={expandedRow === event.id ? 'expanded' : ''}
+                                            key={event._id || event.id}
+                                            className={expandedRow === (event._id || event.id) ? 'expanded' : ''}
                                         >
                                             <td data-label="Event Name" className="event-name-td">
-                                                <div className="mobile-expand-icon" onClick={() => toggleRow(event.id)}>
-                                                    <Icon icon={expandedRow === event.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                                <div className="mobile-expand-icon" onClick={() => toggleRow(event._id || event.id)}>
+                                                    <Icon icon={expandedRow === (event._id || event.id) ? "mdi:chevron-up" : "mdi:chevron-down"} />
                                                 </div>
                                                 <div className="event-name-cell">
                                                     <div className="event-avatar">
-                                                        {getInitials(event.name)}
+                                                        {getInitials(event.title)}
                                                     </div>
                                                     <div className="event-name-info">
-                                                        <h6 className="event-name">{event.name}</h6>
+                                                        <h6 className="event-name">{event.title}</h6>
                                                         <div className="smaller-body-text event-category">{event.category}</div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td data-label="Promoter" className="regular-body-text">
-                                                {event.promoter}
+                                                {event.createdBy ? `${event.createdBy.firstName} ${event.createdBy.lastName}` : "System"}
                                             </td>
                                             <td data-label="Date" className="small-body-text">
-                                                {event.date}
+                                                {event.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A"}
                                             </td>
                                             <td data-label="Status">
                                                 <span className={`button-label ${getStatusClass(event.status)}`}>
@@ -330,7 +306,7 @@ const EventApproval = () => {
                                                         Review
                                                     </button>
 
-                                                    {event.status === "Pending Review" && (
+                                                    {event.status === "pending" && (
                                                         <>
                                                             <button
                                                                 className="button-label approval-reject"

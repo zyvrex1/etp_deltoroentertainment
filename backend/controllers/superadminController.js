@@ -91,7 +91,8 @@ Please log in and change your password immediately.`
         type: 'user',
         path: '/admin/users',
         unread: true,
-        createdBy: req.user._id
+        createdBy: req.user._id,
+        targetRole: 'admin'
       });
       socket.emitUpdate('newNotification', notification);
 

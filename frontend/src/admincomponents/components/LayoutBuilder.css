@@ -19,7 +19,7 @@
 }
 
 .unified-view .builder-sidebar {
-  width: 320px;
+  width: 380px;
   background: white;
   border-right: 1px solid var(--color-black-quaternary);
   display: flex;
@@ -522,7 +522,7 @@
   color: var(--color-black-primary);
 }
 
-.popup-row .value-bold {
+ .value-bold {
   font-weight: 700;
   color: var(--color-red-primary);
 }
@@ -554,12 +554,15 @@
   transition: all 0.2s;
 }
 
+.canvas-title{
+  color: var(--color-black-primary);
+}
 /* Responsive Breakpoints */
 
 /* Tablet & Smaller Laptops (1024px) */
 @media (max-width: 1024px) {
   .unified-view .builder-sidebar {
-    width: 280px;
+    width: 320px;
   }
 }
 
@@ -599,8 +602,6 @@
   }
 
   .canvas-title {
-    font-size: 13px;
-    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--color-black-tertiary);

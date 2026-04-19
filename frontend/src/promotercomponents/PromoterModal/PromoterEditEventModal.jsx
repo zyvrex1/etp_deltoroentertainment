@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
+import axios from "axios";
 import "./PromoterEditEventModal.css";
 
 import {
@@ -8,8 +9,12 @@ import {
     showErrorAlert,
     showConfirmAlert,
 } from "../../admincomponents/utils/sweetAlert";
+import { useAuthContext } from "../../admincomponents/hooks/useAuthContext";
+import { useEventsContext } from "../../admincomponents/hooks/useEventsContext";
 
 const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
+    const { user } = useAuthContext();
+    const { dispatch } = useEventsContext();
     const today = new Date().toISOString().split("T")[0];
 
     const [title, setTitle] = useState("");
@@ -34,34 +39,50 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
 
     const [error, setError] = useState("");
     const [emptyFields, setEmptyFields] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (initialEvent && isOpen) {
             setTitle(initialEvent.title || "");
-            setCategory(initialEvent.category || "conference");
-            setDescription(initialEvent.description || "Default event description");
+            setCategory(initialEvent.category || "other");
+            setDescription(initialEvent.description || "");
 
-            // Parse dates from initialEvent
-            // For demo, we just dump today's date or leave placeholders since initialEvent in promoterevents has date like "Oct 12, 2026"
-            setStartDate(today);
-            setEndDate(today);
-            setStartTime("09:00");
-            setEndTime("17:00");
-            setTicketPrice(initialEvent.ticketPrice || "99");
-            setTotalTickets(initialEvent.totalTickets || "1000");
+            // Format dates for input[type="date"]
+            if (initialEvent.startDate) {
+                setStartDate(new Date(initialEvent.startDate).toISOString().split('T')[0]);
+            }
+            if (initialEvent.endDate) {
+                setEndDate(new Date(initialEvent.endDate).toISOString().split('T')[0]);
+            }
+
+            setStartTime(initialEvent.startTime || "");
+            setEndTime(initialEvent.endTime || "");
+
+            // Extract price and capacity from priceLevels for General Admission
+            if (initialEvent.priceLevels && initialEvent.priceLevels.length > 0) {
+                setTicketPrice(initialEvent.priceLevels[0].facePrice || "");
+                setTotalTickets(initialEvent.priceLevels[0].quantityAvailable || "");
+            }
 
             setVenue({
-                name: initialEvent.location?.split(',')[0] || "Venue Name",
-                address: "123 Main St",
-                city: initialEvent.location?.split(',')[1]?.trim() || "City",
-                zipCode: "10001",
+                name: initialEvent.venue?.name || "",
+                address: initialEvent.venue?.address || "",
+                city: initialEvent.venue?.city || "",
+                zipCode: initialEvent.venue?.zipCode || "",
             });
-            setImagePreviewUrl(null);
+
+            if (initialEvent.image) {
+                const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+                setImagePreviewUrl(`${backendUrl}/uploads/${initialEvent.image}`);
+            } else {
+                setImagePreviewUrl(null);
+            }
+            
             setImageFile(null);
             setError("");
             setEmptyFields([]);
         }
-    }, [initialEvent, isOpen, today]);
+    }, [initialEvent, isOpen]);
 
     const handleImageDrag = (e) => {
         e.preventDefault();
@@ -80,9 +101,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             const file = e.dataTransfer.files[0];
             const url = URL.createObjectURL(file);
-            if (imagePreviewUrl) {
-                URL.revokeObjectURL(imagePreviewUrl);
-            }
             setImageFile(file);
             setImagePreviewUrl(url);
         }
@@ -93,9 +111,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             const url = URL.createObjectURL(file);
-            if (imagePreviewUrl) {
-                URL.revokeObjectURL(imagePreviewUrl);
-            }
             setImageFile(file);
             setImagePreviewUrl(url);
         }
@@ -107,7 +122,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
         const fieldsToCheck = {
             title,
             category,
-            description,
             startDate,
             endDate,
             startTime,
@@ -115,9 +129,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             ticketPrice,
             totalTickets,
             venueName: venue.name,
-            venueAddress: venue.address,
-            venueCity: venue.city,
-            venueZip: venue.zipCode,
         };
 
         const empty = Object.entries(fieldsToCheck)
@@ -130,9 +141,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             return;
         }
 
-        setEmptyFields([]);
-        setError("");
-
         if (endDate < startDate) {
             setError("End date cannot be earlier than start date.");
             return;
@@ -143,16 +151,64 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             `Are you sure you want to update "${title}"?`
         );
 
-        if (!result.isConfirmed) {
-            return;
-        }
+        if (!result.isConfirmed) return;
 
-        // Mock API call success
-        await showSuccessAlert(
-            "Event Updated",
-            "The event has been updated successfully."
-        );
-        onClose();
+        setIsSubmitting(true);
+        setError("");
+
+        try {
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('category', category);
+            formData.append('description', description);
+            formData.append('startDate', startDate);
+            formData.append('endDate', endDate);
+            formData.append('startTime', startTime);
+            formData.append('endTime', endTime);
+            formData.append('venue', JSON.stringify(venue));
+            
+            // Handle basic pricing update for General Admission events
+            if (initialEvent.eventType === "General Admission") {
+                const priceLevels = [
+                    {
+                        ...(initialEvent.priceLevels?.[0] || {}),
+                        priceName: "General Admission",
+                        facePrice: Number(ticketPrice),
+                        quantityAvailable: Number(totalTickets),
+                    }
+                ];
+                formData.append('priceLevels', JSON.stringify(priceLevels));
+            }
+
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+
+            const response = await axios.patch(
+                `http://localhost:4000/api/events/${initialEvent._id}`,
+                formData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${user.token}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            );
+
+            dispatch({ type: "UPDATE_EVENT", payload: response.data.event });
+            
+            onClose();
+            await showSuccessAlert(
+                "Event Updated",
+                "The event has been updated successfully."
+            );
+        } catch (err) {
+            console.error("Update Event Error:", err);
+            setError(err.response?.data?.error || "Failed to update event.");
+            showErrorAlert("Update Failed", err.response?.data?.error || "Could not update event.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -279,12 +335,10 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                             <input
                                 type="text"
                                 placeholder="Street Address"
-                                required
                                 value={venue.address}
                                 onChange={(e) =>
                                     setVenue({ ...venue, address: e.target.value })
                                 }
-                                className={emptyFields.includes("venueAddress") ? "error" : ""}
                             />
                         </div>
 
@@ -297,7 +351,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                     onChange={(e) =>
                                         setVenue({ ...venue, city: e.target.value })
                                     }
-                                    className={emptyFields.includes("venueCity") ? "error" : ""}
                                 />
                             </div>
                             <div className="promoter-edit-event-form-group">
@@ -308,7 +361,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                     onChange={(e) =>
                                         setVenue({ ...venue, zipCode: e.target.value })
                                     }
-                                    className={emptyFields.includes("venueZip") ? "error" : ""}
                                 />
                             </div>
                         </div>
@@ -335,39 +387,31 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                 style={{ display: "none" }}
                             />
 
-                            {imageFile ? (
+                            {imagePreviewUrl ? (
                                 <div className="file-preview">
-                                    {imagePreviewUrl ? (
-                                        <img
-                                            src={imagePreviewUrl}
-                                            alt="Event Preview"
-                                            className="preview-image"
-                                        />
-                                    ) : (
-                                        <Icon
-                                            icon="mdi:file-image"
-                                            width="48"
-                                            height="48"
-                                            className="preview-icon"
-                                        />
+                                    <img
+                                        src={imagePreviewUrl}
+                                        alt="Event Preview"
+                                        className="preview-image"
+                                    />
+                                    {imageFile && (
+                                        <>
+                                            <p className="file-name">{imageFile.name}</p>
+                                            <p className="file-size">
+                                                {((imageFile.size || 0) / 1024 / 1024).toFixed(2)} MB
+                                            </p>
+                                        </>
                                     )}
-                                    <p className="file-name">{imageFile.name}</p>
-                                    <p className="file-size">
-                                        {((imageFile.size || 0) / 1024 / 1024).toFixed(2)} MB
-                                    </p>
                                     <button
                                         type="button"
                                         className="remove-file-btn"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            if (imagePreviewUrl) {
-                                                URL.revokeObjectURL(imagePreviewUrl);
-                                            }
                                             setImageFile(null);
                                             setImagePreviewUrl(null);
                                         }}
                                     >
-                                        Remove
+                                        Remove/Change
                                     </button>
                                 </div>
                             ) : (
@@ -439,6 +483,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                         <button
                             type="button"
                             className="button promoter-edit-event-cancel-btn"
+                            disabled={isSubmitting}
                             onClick={async () => {
                                 const result = await showCancelConfirmAlert();
                                 if (result.isConfirmed) {
@@ -448,8 +493,12 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                         >
                             Cancel
                         </button>
-                        <button type="submit" className="primary-button promoter-edit-event-save-btn">
-                            Save Changes
+                        <button 
+                            type="submit" 
+                            className="primary-button promoter-edit-event-save-btn"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? "Saving..." : "Save Changes"}
                         </button>
                     </div>
                 </form>

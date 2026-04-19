@@ -7,12 +7,34 @@ const getNotifications = async (req, res) => {
         const user = req.user;
         const preferences = user.notifications || {};
 
-        let notifications = await Notification.find({
-            $or: [
-                { userId: null },
-                { userId: user._id }
-            ]
-        }).sort({ createdAt: -1 }).limit(50);
+        const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+
+        let query;
+        if (isAdmin) {
+            query = {
+                $or: [
+                    { userId: null, targetRole: { $in: [null, 'admin', 'all'] } },
+                    { userId: user._id }
+                ]
+            };
+        } else if (user.role === 'promoter') {
+            query = {
+                $or: [
+                    { userId: user._id },
+                    { userId: null, targetRole: { $in: ['promoter', 'all'] } },
+                    { userId: null, type: 'update' } // Fallback for old style broadcast
+                ]
+            };
+        } else {
+            query = {
+                $or: [
+                    { userId: user._id },
+                    { userId: null, targetRole: user.role }
+                ]
+            };
+        }
+
+        let notifications = await Notification.find(query).sort({ createdAt: -1 }).limit(50);
 
         // Filter based on user preferences
         const filteredNotifications = notifications.filter(notif => {
@@ -45,10 +67,19 @@ const markAsRead = async (req, res) => {
 // @route   PATCH /api/notifications/read-all
 const markAllAsRead = async (req, res) => {
     try {
-        await Notification.updateMany(
-            { unread: true, $or: [{ userId: null }, { userId: req.user._id }] }, 
-            { unread: false }
-        );
+        const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
+        const isPromoter = req.user.role === 'promoter';
+        
+        let query;
+        if (isAdmin) {
+            query = { unread: true, $or: [{ userId: null, targetRole: { $in: [null, 'admin', 'all'] } }, { userId: req.user._id }] };
+        } else if (isPromoter) {
+            query = { unread: true, $or: [{ userId: req.user._id }, { userId: null, targetRole: { $in: ['promoter', 'all'] } }, { userId: null, type: 'update' }] };
+        } else {
+            query = { unread: true, $or: [{ userId: req.user._id }, { userId: null, targetRole: req.user.role }] };
+        }
+
+        await Notification.updateMany(query, { unread: false });
         res.status(200).json({ message: 'All notifications marked as read' });
     } catch (error) {
         res.status(400).json({ error: error.message });

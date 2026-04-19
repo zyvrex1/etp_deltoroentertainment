@@ -31,6 +31,11 @@ const notificationSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: false
+    },
+    targetRole: {
+        type: String,
+        enum: ['admin', 'promoter', 'sponsor', 'customer', 'all'],
+        required: false
     }
 }, { timestamps: true });
 

@@ -5,6 +5,7 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import { useEventsContext } from "../hooks/useEventsContext";
 import "./LayoutBuilder.css";
 import ManageCategoryModal from "../Modal/ManageCategoryModal";
+import priceLevelService from "../../services/priceLevelService";
 
 import { showDeleteConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 
@@ -47,42 +48,158 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
   // Sync categories with event if available (or empty)
   useEffect(() => {
-    if (selectedEvent?.ticketCategories) {
-      // Normalize _id to id for internal editor consistency
+    if (selectedEvent?.priceLevels) {
+      // Normalize priceLevels to categories for internal editor consistency
+      const normalizedCategories = selectedEvent.priceLevels.map(pl => ({
+        id: pl._id,
+        name: pl.priceName,
+        price: pl.facePrice,
+        quantity: pl.quantityAvailable,
+        color: pl.color || "#666666",
+        type: pl.type || "Seat (Circle)",
+        boothSize: pl.boothSize || ""
+      }));
+      setCategories(normalizedCategories);
+    }
+    
+    // We can also check for ticketCategories fallback if any (but now prioritize priceLevels)
+    else if (selectedEvent?.ticketCategories) {
       const normalizedCategories = selectedEvent.ticketCategories.map(cat => ({
         ...cat,
         id: cat._id || cat.id || Date.now().toString()
       }));
       setCategories(normalizedCategories);
     }
+
     if (selectedEvent?.layoutData) {
       setPlacedItems(selectedEvent.layoutData.items || []);
     }
   }, [selectedEvent]);
 
-  const handleSaveCategory = (categoryData) => {
-    if (editingCategory) {
-      setCategories(categories.map(c => c.id === editingCategory.id ? { ...categoryData, id: c.id } : c));
+  const handleSaveCategory = async (categoryData) => {
+    if (!selectedEvent?._id) return;
+
+    try {
+      if (editingCategory) {
+        // Update existing price level
+        const updatedPriceLevel = {
+          priceName: categoryData.name,
+          facePrice: categoryData.price,
+          quantityAvailable: categoryData.quantity,
+          color: categoryData.color,
+          type: categoryData.type,
+          boothSize: categoryData.boothSize,
+          isActive: true
+        };
+
+        const result = await priceLevelService.updatePriceLevel(
+          selectedEvent._id,
+          editingCategory.id,
+          updatedPriceLevel,
+          user.token
+        );
+
+        if (result) {
+          const updatedEvent = result.event || result;
+          // Refresh local state based on updated event from backend
+          const normalizedCategories = updatedEvent.priceLevels.map(pl => ({
+            id: pl._id,
+            name: pl.priceName,
+            price: pl.facePrice,
+            quantity: pl.quantityAvailable,
+            color: pl.color || "#666666",
+            type: pl.type || "Seat (Circle)",
+            boothSize: pl.boothSize || ""
+          }));
+          setCategories(normalizedCategories);
+          dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
+          showSuccessAlert("Updated", "Category has been updated successfully.");
+        }
+      } else {
+        // Add new price level
+        const newPriceLevel = {
+          priceName: categoryData.name,
+          facePrice: categoryData.price,
+          quantityAvailable: categoryData.quantity,
+          color: categoryData.color,
+          type: categoryData.type,
+          boothSize: categoryData.boothSize,
+          isActive: true
+        };
+
+        const result = await priceLevelService.addPriceLevels(
+          selectedEvent._id,
+          [newPriceLevel],
+          user.token
+        );
+
+        if (result) {
+          const updatedEvent = result.event || result;
+          // Refresh categories
+          const normalizedCategories = updatedEvent.priceLevels.map(pl => ({
+            id: pl._id,
+            name: pl.priceName,
+            price: pl.facePrice,
+            quantity: pl.quantityAvailable,
+            color: pl.color || "#666666",
+            type: pl.type || "Seat (Circle)",
+            boothSize: pl.boothSize || ""
+          }));
+          setCategories(normalizedCategories);
+
+          // Find the newly created category from the backend (match by name)
+          const matchedBack = updatedEvent.priceLevels.find(pl => pl.priceName === categoryData.name);
+          if (matchedBack) {
+            // Update any items that were placed with the temporary ID to the new backend ID
+            setPlacedItems(prev => prev.map(item => 
+              item.categoryId === categoryData.id ? { ...item, categoryId: matchedBack._id } : item
+            ));
+          }
+
+          dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
+          showSuccessAlert("Added", "New category has been created.");
+        }
+      }
       setEditingCategory(null);
-      showSuccessAlert("Updated", "Category has been updated successfully.");
-    } else {
-      const newId = Date.now().toString();
-      setCategories([...categories, { ...categoryData, id: newId }]);
-      showSuccessAlert("Added", "New category has been created.");
+      setIsAddCategoryModalOpen(false);
+    } catch (error) {
+      console.error("Save category error:", error);
+      showErrorAlert("Error", error.message || "Failed to save category.");
     }
-    setIsAddCategoryModalOpen(false);
   };
 
   const deleteCategory = async (id) => {
+    if (!selectedEvent?._id) return;
+
     const result = await showDeleteConfirmAlert(
       "Delete Category?", 
       "Deleting this category will also remove all placed shapes associated with it from the map. This cannot be undone."
     );
 
     if (result.isConfirmed) {
-      setCategories(categories.filter(c => c.id !== id));
-      setPlacedItems(placedItems.filter(item => item.categoryId !== id));
-      showSuccessAlert("Deleted", "Category has been removed.");
+      try {
+        const response = await priceLevelService.deletePriceLevel(selectedEvent._id, id, user.token);
+        if (response) {
+          const updatedEvent = response.event || response;
+          const normalizedCats = updatedEvent.priceLevels.map(pl => ({
+            id: pl._id,
+            name: pl.priceName,
+            price: pl.facePrice,
+            quantity: pl.quantityAvailable,
+            color: pl.color || "#666666",
+            type: pl.type || "Seat (Circle)",
+            boothSize: pl.boothSize || ""
+          }));
+          
+          setCategories(normalizedCats);
+          setPlacedItems(prev => prev.filter(item => item.categoryId !== id));
+          dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
+          showSuccessAlert("Deleted", "Category and associated shapes have been removed.");
+        }
+      } catch (error) {
+        console.error("Delete category error:", error);
+        showErrorAlert("Error", error.message || "Failed to delete category.");
+      }
     }
   };
 
@@ -96,7 +213,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
     const newItem = {
       id: `item-${Date.now()}`,
       categoryId: category.id,
-      label: `${category.name}-${placedCount + 1}`,
+      label: `${category.name.length > 5 ? category.name.substring(0, 3).toUpperCase() : category.name}-${placedCount + 1}`,
       x: 100,
       y: 100,
       scaleX: 1,
@@ -164,31 +281,47 @@ const LayoutBuilder = ({ selectedEvent }) => {
       facePrice: c.price,
       quantityAvailable: c.quantity,
       color: c.color,
+      type: c.type,
+      boothSize: c.boothSize,
       isActive: true
     }));
 
     // Map placedItems to seatMap seats and booths
-    const seats = placedItems.filter(i => i.type === 'seat').map(item => ({
-      type: "Seat",
-      label: item.label,
-      x: item.x,
-      y: item.y,
-      scaleX: item.scaleX,
-      scaleY: item.scaleY,
-      rotation: item.rotation,
-      priceLevelId: item.categoryId,
-    }));
+    const seats = placedItems
+      .filter(i => !i.isBooth && !i.isElement && !i.isBackground)
+      .map(item => {
+        const cat = categories.find(c => c.id === item.categoryId);
+        return {
+          id: item.id,
+          label: item.label,
+          priceLevelId: cat ? cat.id : "none",
+          status: "available",
+          x: item.x,
+          y: item.y,
+          scaleX: item.scaleX || 1,
+          scaleY: item.scaleY || 1,
+          rotation: item.rotation || 0
+        };
+      });
 
-    const boothsData = placedItems.filter(i => i.type === 'booth').map(item => ({
-      type: "Booth",
-      label: item.label,
-      x: item.x,
-      y: item.y,
-      scaleX: item.scaleX,
-      scaleY: item.scaleY,
-      rotation: item.rotation,
-      priceLevelId: item.categoryId,
-    }));
+    const boothsData = placedItems
+      .filter(i => i.isBooth)
+      .map(item => {
+        const cat = categories.find(c => c.id === item.categoryId);
+        return {
+          id: item.id,
+          label: item.label,
+          priceLevelId: cat ? cat.id : "none",
+          status: "available",
+          x: item.x,
+          y: item.y,
+          scaleX: item.scaleX || 1,
+          scaleY: item.scaleY || 1,
+          rotation: item.rotation || 0,
+          boothType: item.type || "Booth (Square)",
+          boothSize: item.boothSize || "4x4",
+        };
+      });
 
     const payload = {
       priceLevels,
@@ -196,14 +329,17 @@ const LayoutBuilder = ({ selectedEvent }) => {
         sections: [{ name: "Main Section", seats }]
       },
       booths: boothsData,
-      // We also save our raw editor state for re-editing
       ticketCategories: categories,
       layoutData: { items: placedItems }
     };
 
+    if (!user || !user.token) {
+      return showErrorAlert("Unauthorized", "Authentication token is missing. Please log in again.");
+    }
+
     try {
       const response = await fetch(`/api/events/${selectedEvent._id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${user.token}`,
@@ -533,41 +669,50 @@ const LayoutBuilder = ({ selectedEvent }) => {
                       onClick={() => setSelectedId(item.id)}
                       onTap={() => setSelectedId(item.id)}
                     >
-                      {isBooth ? (
-                        <Rect
-                          x={-20}
-                          y={-20}
-                          width={40}
-                          height={40}
-                          fill={category?.color || '#666666'}
-                          stroke={isSelected ? '#ef4444' : '#fff'}
-                          strokeWidth={isSelected ? 3 : 1}
-                          cornerRadius={4}
-                          shadowBlur={isSelected ? 10 : 0}
-                          shadowColor="#000"
-                          shadowOpacity={0.2}
-                        />
-                      ) : (
-                        <Circle 
-                          radius={20}
-                          fill={category?.color || '#666666'}
-                          stroke={isSelected ? '#ef4444' : '#fff'}
-                          strokeWidth={isSelected ? 3 : 1}
-                          shadowBlur={isSelected ? 10 : 0}
-                          shadowColor="#000"
-                          shadowOpacity={0.2}
-                        />
-                      )}
+                        {isBooth ? (
+                          <Rect
+                            x={-20}
+                            y={-20}
+                            width={40}
+                            height={40}
+                            fill={category?.color || '#666666'}
+                            stroke={'#fff'}
+                            strokeWidth={1}
+                            cornerRadius={4}
+                            shadowBlur={isSelected ? 10 : 0}
+                            shadowColor="#000"
+                            shadowOpacity={0.2}
+                          />
+                        ) : (
+                          <Circle 
+                            radius={20}
+                            fill={category?.color || '#666666'}
+                            stroke={'#fff'}
+                            strokeWidth={1}
+                            shadowBlur={isSelected ? 10 : 0}
+                            shadowColor="#000"
+                            shadowOpacity={0.2}
+                          />
+                        )}
                       <Text 
                         text={item.label}
-                        fontSize={10}
+                        fontSize={9}
                         fontStyle="bold"
                         fill="white"
                         align="center"
                         verticalAlign="middle"
-                        x={-20}
-                        y={-5}
+                        x={0}
+                        y={0}
+                        offsetX={20}
+                        offsetY={20}
                         width={40}
+                        height={40}
+                        scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
+                        scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
+                        shadowColor="black"
+                        shadowBlur={2}
+                        shadowOpacity={0.8}
+                        shadowOffset={{ x: 1, y: 1 }}
                       />
                     </Group>
                   );

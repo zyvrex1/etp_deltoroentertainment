@@ -4,6 +4,7 @@ import './EventReviewModal.css';
 
 const EventReviewModal = ({ event, onClose, onApprove, onReject }) => {
     const getInitials = (name) => {
+        if (!name) return "?";
         return name
             .split(' ')
             .map(word => word[0])
@@ -12,7 +13,8 @@ const EventReviewModal = ({ event, onClose, onApprove, onReject }) => {
             .substring(0, 1);
     };
 
-    const isPending = event.status === "Pending Review";
+    const isPending = event.status === "pending";
+    const promoterName = event.createdBy ? `${event.createdBy.firstName} ${event.createdBy.lastName}` : "Unknown";
 
     return (
         <div className="general-modal-overlay" onClick={onClose}>
@@ -30,7 +32,7 @@ const EventReviewModal = ({ event, onClose, onApprove, onReject }) => {
                         <div className="event-review-grid">
                             <div className="event-review-field">
                                 <label className="small-body-text">Title</label>
-                                <h5 className="event-review-value">{event.name}</h5>
+                                <h5 className="event-review-value">{event.title}</h5>
                             </div>
                             <div className=" event-review-field">
                                 <label className="small-body-text">Category</label>
@@ -38,15 +40,17 @@ const EventReviewModal = ({ event, onClose, onApprove, onReject }) => {
                             </div>
                             <div className=" event-review-field">
                                 <label className="small-body-text">Date</label>
-                                <h5 className="event-review-value">{event.date}</h5>
+                                <h5 className="event-review-value">
+                                    {event.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A"}
+                                </h5>
                             </div>
                             <div className="event-review-field">
                                 <label className="small-body-text">Location</label>
-                                <h5 className="event-review-value">{event.location}</h5>
+                                <h5 className="event-review-value">{event.venue?.name || "N/A"}</h5>
                             </div>
                             <div className="event-review-field full-width">
                                 <label className="small-body-text">Description</label>
-                                <h5 className="event-review-value">{event.description}</h5>
+                                <h5 className="event-review-value">{event.description || "No description provided."}</h5>
                             </div>
                         </div>
                     </div>
@@ -57,10 +61,10 @@ const EventReviewModal = ({ event, onClose, onApprove, onReject }) => {
                         <h4>Promoter Info</h4>
                         <div className="promoter-info">
                             <div className="promoter-avatar">
-                                {getInitials(event.promoter)}
+                                {getInitials(promoterName)}
                             </div>
                             <div className="promoter-details">
-                                <h5 className="promoter-name">{event.promoter}</h5>
+                                <h5 className="promoter-name">{promoterName}</h5>
                                 <div className="smaller-body-text promoter-status">Active Promoter</div>
                             </div>
                         </div>
@@ -68,7 +72,7 @@ const EventReviewModal = ({ event, onClose, onApprove, onReject }) => {
 
                     <div className={`general-eventreview-modal-footer ${!isPending ? "status-view" : ""}`}>
 
-                        {event.status === "Pending Review" ? (
+                        {isPending ? (
                             <>
                                 <button className="cancel-btn" onClick={onClose}>
                                     Close
@@ -88,7 +92,7 @@ const EventReviewModal = ({ event, onClose, onApprove, onReject }) => {
                                     Close
                                 </button>
 
-                                <span className={`button-label ${event.status === "Approved" ? "status-approved" : "status-rejected"
+                                <span className={`button-label ${event.status === "approved" ? "status-approved" : "status-rejected"
                                     }`}>
                                     {event.status}
                                 </span>

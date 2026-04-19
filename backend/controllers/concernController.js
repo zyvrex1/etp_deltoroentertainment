@@ -43,7 +43,8 @@ const createConcern = async (req, res) => {
       type: 'concern',
       path: '/admin/support',
       unread: true,
-      createdBy: user._id
+      createdBy: user._id,
+      targetRole: 'admin'
     });
 
     // Emit event to all admins
@@ -241,7 +242,8 @@ const addMessage = async (req, res) => {
       path: `/admin/support`,
       unread: true,
       userId: concern.assignedTo || null, // TARGETED IF ASSIGNED
-      createdBy: user._id
+      createdBy: user._id,
+      targetRole: concern.assignedTo ? null : 'admin'
     });
     socket.emitUpdate('newNotification', notification);
 

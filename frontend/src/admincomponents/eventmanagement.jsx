@@ -238,7 +238,7 @@ const EventManagement = () => {
       const json = await response.json();
 
       if (response.ok) {
-        dispatch({ type: "UPDATE_EVENT", payload: json });
+        dispatch({ type: "UPDATE_EVENT", payload: json.event });
         await showSuccessAlert("Approved!", "Event has been approved.");
       } else {
         alert(json.error || "Failed to approve event.");
@@ -270,7 +270,7 @@ const EventManagement = () => {
       const json = await response.json();
 
       if (response.ok) {
-        dispatch({ type: "UPDATE_EVENT", payload: json });
+        dispatch({ type: "UPDATE_EVENT", payload: json.event });
         setIsRejectionModalOpen(false);
         setRejectionEvent(null);
         await showSuccessAlert("Rejected!", "Event has been rejected.");
@@ -307,7 +307,7 @@ const EventManagement = () => {
       const json = await response.json();
 
       if (response.ok) {
-        dispatch({ type: "UPDATE_EVENT", payload: json });
+        dispatch({ type: "UPDATE_EVENT", payload: json.event });
         await showSuccessAlert("Cancelled!", "Event has been cancelled.");
       } else {
         alert(json.error || "Failed to cancel event.");
@@ -345,11 +345,13 @@ const EventManagement = () => {
 
   const filteredData = getTableData().filter((item) => {
     const searchStr = searchQuery.toLowerCase();
+    const promoterName = item.createdBy ? `${item.createdBy.firstName} ${item.createdBy.lastName}` : "";
+    
     return (
-      `${item.firstName || ""} ${item.lastName || ""}`
-        .toLowerCase()
-        .includes(searchStr) ||
-      (item.email && item.email.toLowerCase().includes(searchStr))
+      (item.title || "").toLowerCase().includes(searchStr) ||
+      (item.category || "").toLowerCase().includes(searchStr) ||
+      promoterName.toLowerCase().includes(searchStr) ||
+      (item.venue?.name || "").toLowerCase().includes(searchStr)
     );
   });
 

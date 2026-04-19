@@ -55,7 +55,8 @@ const signupUser = async (req, res) => {
         type: 'user',
         path: '/admin/users',
         unread: true,
-        createdBy: user._id
+        createdBy: user._id,
+        targetRole: 'admin'
       });
       emitUpdate('newNotification', notification);
     }

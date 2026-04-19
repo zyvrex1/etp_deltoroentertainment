@@ -118,32 +118,50 @@ const AddPromoterModal = ({ isOpen, onClose, event, allPromoters, user, onUpdate
                 <div className="add-promoter-modal-body two-column-body">
                     {/* Left Column: Assigned Promoters List */}
                     <div className="assigned-promoters-section">
-                        {assignedPromoters.length === 0 ? (
-                            <div className="empty-promoters">
-                                <Icon icon="mdi:account-off-outline" width="48" />
-                                <p>No promoters assigned yet.</p>
-                            </div>
-                        ) : (
-                            assignedPromoters.map(promoter => (
-                                <div key={promoter._id} className="promoter-card">
-                                    <div className="promoter-avatar-circle">
-                                        {promoter.firstName?.charAt(0)}{promoter.lastName?.charAt(0)}
+                        {(() => {
+                            // Combine assigned promoters and creator (if creator is a promoter and not already in assigned list)
+                            const displayList = [...assignedPromoters];
+                            const creator = event.createdBy;
+                            
+                            if (creator && creator.role === 'promoter' && !displayList.some(p => p._id === creator._id)) {
+                                displayList.unshift(creator);
+                            }
+
+                            if (displayList.length === 0) {
+                                return (
+                                    <div className="empty-promoters">
+                                        <Icon icon="mdi:account-off-outline" width="48" />
+                                        <p>No promoters assigned yet.</p>
                                     </div>
-                                    <div className="promoter-card-info">
-                                        <h6 className="promoter-card-name">{promoter.firstName} {promoter.lastName}</h6>
-                                        <span className="small-body-text promoter-card-email">{promoter.email}</span>
+                                );
+                            }
+
+                            return displayList.map(promoter => {
+                                const isCreator = promoter._id === event.createdBy?._id;
+                                return (
+                                    <div key={promoter._id} className="promoter-card">
+                                        <div className="promoter-avatar-circle">
+                                            {promoter.firstName?.charAt(0)}{promoter.lastName?.charAt(0)}
+                                        </div>
+                                        <div className="promoter-card-info">
+                                            <h6 className="promoter-card-name">
+                                                {promoter.firstName} {promoter.lastName}
+                                                {isCreator && <span className="owner-badge"> (Creator)</span>}
+                                            </h6>
+                                            <span className="small-body-text promoter-card-email">{promoter.email}</span>
+                                        </div>
+                                        <button 
+                                            className="remove-promoter-btn" 
+                                            onClick={() => handleRemovePromoter(promoter._id, `${promoter.firstName} ${promoter.lastName}`)}
+                                            disabled={isProcessing || isCreator}
+                                            title={isCreator ? "Event creator cannot be removed" : "Remove Promoter"}
+                                        >
+                                            <Icon icon="mdi:trash-can-outline" />
+                                        </button>
                                     </div>
-                                    <button 
-                                        className="remove-promoter-btn" 
-                                        onClick={() => handleRemovePromoter(promoter._id, `${promoter.firstName} ${promoter.lastName}`)}
-                                        disabled={isProcessing || promoter._id === event.createdBy?._id}
-                                        title={promoter._id === event.createdBy?._id ? "Event creator cannot be removed" : "Remove Promoter"}
-                                    >
-                                        <Icon icon="mdi:trash-can-outline" />
-                                    </button>
-                                </div>
-                            ))
-                        )}
+                                );
+                            });
+                        })()}
                     </div>
 
                     {/* Right Column: Add Form */}

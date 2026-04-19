@@ -56,15 +56,29 @@ const createPolicy = async (req, res) => {
     const socket = require('../socket');
     const creatorName = `${req.user.firstName} ${req.user.lastName}`;
     
-    const notification = await notificationController.createNotification({
+    // 1. Notification for Admins
+    const adminNotification = await notificationController.createNotification({
       title: `${creatorName} created a new policy: ${title}`,
       content: `A new platform policy has been added.`,
       type: 'update',
       path: '/admin/content',
       unread: true,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      targetRole: 'admin'
     });
-    socket.emitUpdate('newNotification', notification);
+    socket.emitUpdate('newNotification', adminNotification);
+
+    // 2. Notification for Promoters
+    const promoterNotification = await notificationController.createNotification({
+      title: `Platform Update: New policy added`,
+      content: `A new policy "${title}" has been published.`,
+      type: 'update',
+      path: '/promoter/promoter-announcement',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'promoter'
+    });
+    socket.emitUpdate('newNotification', promoterNotification);
 
     res.status(201).json(policy);
   } catch (error) {
@@ -102,15 +116,29 @@ const updatePolicy = async (req, res) => {
     const socket = require('../socket');
     const creatorName = `${req.user.firstName} ${req.user.lastName}`;
     
-    const notification = await notificationController.createNotification({
+    // 1. Notification for Admins
+    const adminNotification = await notificationController.createNotification({
       title: `${creatorName} updated a policy: ${title}`,
       content: `The policy "${title}" has been modified.`,
       type: 'update',
       path: '/admin/content',
       unread: true,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      targetRole: 'admin'
     });
-    socket.emitUpdate('newNotification', notification);
+    socket.emitUpdate('newNotification', adminNotification);
+
+    // 2. Notification for Promoters
+    const promoterNotification = await notificationController.createNotification({
+      title: `Platform Update: Policy modified`,
+      content: `The policy "${title}" has been updated.`,
+      type: 'update',
+      path: '/promoter/promoter-announcement',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'promoter'
+    });
+    socket.emitUpdate('newNotification', promoterNotification);
 
     res.status(200).json(updatedPolicy);
   } catch (error) {
