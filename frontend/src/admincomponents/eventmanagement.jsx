@@ -4,6 +4,7 @@ import "./eventmanagement.css";
 import CreateEventModal from "./Modal/CreateEventModal";
 import EditEventModal from "./Modal/EditEventModal";
 import EventRejectionModal from "./Modal/EventRejectionModal";
+import EventCancellationModal from "./Modal/EventCancellationModal";
 import AddPromoterModal from "./Modal/AddPromoterModal";
 
 import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
@@ -64,6 +65,8 @@ const EventManagement = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [rejectionEvent, setRejectionEvent] = useState(null);
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
+  const [cancellationEvent, setCancellationEvent] = useState(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [assignEvent, setAssignEvent] = useState(null);
 
@@ -283,31 +286,33 @@ const EventManagement = () => {
     }
   };
 
-  const handleCancelEvent = async (eventId) => {
-    const result = await showConfirmAlert(
-      "Cancel Event",
-      "Are you sure you want to cancel this event? This action will set the status to cancelled.",
-      "Yes, Cancel Event",
-      "No, Keep It",
-      false,
-    );
+  const handleCancelEvent = (event) => {
+    setCancellationEvent(event);
+    setIsCancellationModalOpen(true);
+  };
 
-    if (!result.isConfirmed) return;
+  const confirmCancellation = async (reason) => {
+    if (!cancellationEvent) return;
 
     try {
-      const response = await fetch(`/api/events/${eventId}`, {
+      const response = await fetch(`/api/events/${cancellationEvent._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify({ status: "cancelled" }),
+        body: JSON.stringify({
+          status: "cancelled",
+          cancellationReason: reason,
+        }),
       });
 
       const json = await response.json();
 
       if (response.ok) {
         dispatch({ type: "UPDATE_EVENT", payload: json.event });
+        setIsCancellationModalOpen(false);
+        setCancellationEvent(null);
         await showSuccessAlert("Cancelled!", "Event has been cancelled.");
       } else {
         alert(json.error || "Failed to cancel event.");
@@ -590,15 +595,44 @@ const EventManagement = () => {
                       <td data-label="Actions">
                         <div className="em-actions">
                           {event.createdBy._id === user._id ? (
-                            // Current user owns this event → Edit/Delete
+                            // Current user owns this event → View/Edit, Approve/Reject (if pending), Cancel, Delete
                             <>
                               <button
                                 className="em-action-btn"
                                 onClick={() => handleEditEvent(event)}
-                                title="Edit Event"
+                                title="View/Edit Event"
                               >
-                                <Icon icon="mdi:pencil" />
+                                <Icon icon="mdi:eye-outline" />
                               </button>
+
+                              {event.status === "pending" && (
+                                <>
+                                  <button
+                                    className="em-action-btn approve-btn"
+                                    onClick={() => handleApproveEvent(event)}
+                                    title="Approve Event"
+                                  >
+                                    <Icon icon="mdi:check-circle-outline" />
+                                  </button>
+                                  <button
+                                    className="em-action-btn reject-btn"
+                                    onClick={() => handleRejectEvent(event)}
+                                    title="Reject Event"
+                                  >
+                                    <Icon icon="mdi:close-circle-outline" />
+                                  </button>
+                                </>
+                              )}
+
+                              {event.status === "approved" && (
+                                <button
+                                  className="em-action-btn cancel-btn"
+                                  onClick={() => handleCancelEvent(event)}
+                                  title="Cancel Event"
+                                >
+                                  <Icon icon="mdi:cancel" />
+                                </button>
+                              )}
 
                               <button
                                 className="em-action-btn"
@@ -645,7 +679,7 @@ const EventManagement = () => {
                                   user.role === "superadmin") && (
                                   <button
                                     className="em-action-btn cancel-btn"
-                                    onClick={() => handleCancelEvent(event._id)}
+                                    onClick={() => handleCancelEvent(event)}
                                     title="Cancel Event"
                                   >
                                     <Icon icon="mdi:cancel" />
@@ -802,6 +836,17 @@ const EventManagement = () => {
           dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
         }}
       />
+
+      {isCancellationModalOpen && (
+        <EventCancellationModal
+          event={cancellationEvent}
+          onClose={() => {
+            setIsCancellationModalOpen(false);
+            setCancellationEvent(null);
+          }}
+          onConfirm={confirmCancellation}
+        />
+      )}
     </div>
   );
 };

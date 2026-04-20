@@ -407,13 +407,14 @@ const LayoutBuilder = ({ selectedEvent }) => {
             <div className="sidebar-header">
               <h4 className="bt-section-title-layout">Ticket Categories</h4>
               <button 
-                className="bt-btn primary mini"
+                className="add-category-btn-icon" 
                 onClick={() => {
                   setEditingCategory(null);
                   setIsAddCategoryModalOpen(true);
                 }}
+                title="Add New Category"
               >
-                <Icon icon="mdi:plus" /> Add Category
+                <Icon icon="mdi:plus" />
               </button>
             </div>
             
@@ -493,7 +494,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
                         <>
                           <div className="inspector-header-main">
                             <span className="shape-id">{item.label}</span>
-                            <span className="value-badge">{cat?.type.toLowerCase().split(' ')[0]}</span>
+                            <span className={`value-badge type-${item.type}`}>{cat?.type.toLowerCase().split(' ')[0]}</span>
                           </div>
                           
                           <div className="summary-list">

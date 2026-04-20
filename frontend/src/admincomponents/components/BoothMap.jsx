@@ -246,7 +246,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
           {/* Inspector Card Area */}
           {selectedId && (
             <div className="sidebar-card inspector-card" style={{ borderBottom: '1px solid #eee', background: 'transparent' }}>
-              <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="sidebar-header">
                 <h4 className="bt-section-title-layout">Shape Inspector</h4>
                 <button className="close-btn" onClick={() => setSelectedId(null)}>
                   <Icon icon="mdi:close" />
@@ -261,7 +261,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                     <>
                       <div className="inspector-header-main">
                         <span className="shape-id">{item.label || item.code}</span>
-                        <span className="value-badge">{item.type?.toUpperCase()}</span>
+                        <span className={`value-badge type-${item.type}`}>{item.type?.toUpperCase()}</span>
                       </div>
                       <div className="summary-list">
                         <div className="summary-item">

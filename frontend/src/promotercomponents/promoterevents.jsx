@@ -304,7 +304,7 @@ const PromoterEvents = () => {
                           {evt.status}
                         </span>
 
-                        {["pending", "approved"].includes(statusRaw) && (
+                        {["pending", "approved", "rejected"].includes(statusRaw) && (
                           <button
                             className="pe-edit-top"
                             onClick={(e) => {
@@ -363,9 +363,9 @@ const PromoterEvents = () => {
                         <NavLink 
                           to="/promoter/promoter-eventmanagement" 
                           state={{ event: evt }}
-                          className={`${(statusRaw === "rejected" || statusRaw === "completed" || statusRaw === "cancelled") ? "disabled-nav-link" : ""}`}
+                          className={`${(statusRaw === "completed" || statusRaw === "cancelled") ? "disabled-nav-link" : ""}`}
                           onClick={(e) => {
-                            if (statusRaw === "rejected" || statusRaw === "completed" || statusRaw === "cancelled") {
+                            if (statusRaw === "completed" || statusRaw === "cancelled") {
                               e.preventDefault();
                             }
                           }}
@@ -373,7 +373,7 @@ const PromoterEvents = () => {
                           <button 
                             type="button" 
                             className="primary-button pe-card-btn"
-                            disabled={statusRaw === "rejected" || statusRaw === "completed" || statusRaw === "cancelled"}
+                            disabled={statusRaw === "completed" || statusRaw === "cancelled"}
                           >
                             Manage
                           </button>

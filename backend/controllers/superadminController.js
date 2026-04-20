@@ -127,14 +127,14 @@ const getAllUsers = async (req, res) => {
 
     // Fetch all role documents
     const [customers, promoters, sponsors] = await Promise.all([
-      Customer.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt'),
-      Promoter.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt'),
-      Sponsor.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt')
+      Customer.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt avatar'),
+      Promoter.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt avatar'),
+      Sponsor.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt avatar')
     ]);
 
     // Fetch admins (excluding superadmins if requester is admin)
     const adminFilter = isRequesterAdmin ? { role: 'admin' } : { role: { $in: ['admin', 'superadmin'] } };
-    const admins = await User.find(adminFilter).select('firstName lastName email role lastLogin createdAt updatedAt');
+    const admins = await User.find(adminFilter).select('firstName lastName email role lastLogin createdAt updatedAt avatar');
 
     // Helper to map and filter role-based users
     const mapRoleUser = (docs, roleType) => {
@@ -147,6 +147,7 @@ const getAllUsers = async (req, res) => {
           lastName: doc.userId.lastName,
           email: doc.userId.email,
           role: doc.userId.role,
+          avatar: doc.userId.avatar,
           lastLogin: doc.userId.lastLogin,
           createdAt: doc.userId.createdAt,
           updatedAt: doc.userId.updatedAt,
@@ -170,6 +171,7 @@ const getAllUsers = async (req, res) => {
         lastName: a.lastName,
         email: a.email,
         role: a.role,
+        avatar: a.avatar,
         lastLogin: a.lastLogin,
         createdAt: a.createdAt,
         updatedAt: a.updatedAt,

@@ -12,8 +12,11 @@ export const getProfile = (token) => API.get("/profile", {
   headers: { Authorization: `Bearer ${token}` }
 });
 
-export const updateProfile = (data, token) => API.put("/update-profile", data, {
-  headers: { Authorization: `Bearer ${token}` }
+export const updateProfile = (formData, token) => axios.put(`${BASE_URL}/api/user/profile`, formData, {
+  headers: { 
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'multipart/form-data'
+  }
 });
 
 export const updatePassword = (data, token) => API.put("/update-password", data, {

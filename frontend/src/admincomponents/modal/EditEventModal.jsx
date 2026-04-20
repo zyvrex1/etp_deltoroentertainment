@@ -8,8 +8,6 @@ import {
   showErrorAlert,
   showCreateConfirmAlert,
 } from "../utils/sweetAlert";
-import AddPriceLevelModal from "../Modal/AddPriceLevelModal";
-import EditPriceLevelModal from "../Modal/EditPriceLevelModal";
 
 const EditEventModal = ({ isOpen, onClose, event }) => {
   const { user } = useAuthContext();
@@ -18,12 +16,8 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
 
   const [error, setError] = useState("");
   const [emptyFields, setEmptyFields] = useState([]);
-  const [activeTab, setActiveTab] = useState("information");
-  const [imageDragActive, setImageDragActive] = useState(false);
 
-  const [showPriceModal, setShowPriceModal] = useState(false);
-  const [showEditPriceModal, setShowEditPriceModal] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [imageDragActive, setImageDragActive] = useState(false);
 
   // Single formData state
   const [formData, setFormData] = useState({
@@ -34,8 +28,6 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
     endDate: today,
     startTime: "",
     endTime: "",
-    eventType: "General Admission",
-    priceLevels: [], // Hold price levels here
     venue: { name: "", address: "", city: "", zipCode: "" },
     imageFile: null,
     imagePreviewUrl: null,
@@ -59,8 +51,6 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
         endDate: formatDate(event.endDate),
         startTime: event.startTime || "",
         endTime: event.endTime || "",
-        eventType: event.eventType || "General Admission",
-        priceLevels: event.priceLevels || [],
         venue: {
           name: event.venue?.name || "",
           address: event.venue?.address || "",
@@ -135,46 +125,6 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
 
   
 
-  // Price Level Handlers
-  const handleDeletePriceLevel = (index) => {
-    const updatedLevels = formData.priceLevels.filter((_, i) => i !== index);
-    setFormData({ ...formData, priceLevels: updatedLevels });
-  };
-
-  const handleEditPriceLevel = (index) => {
-    setEditingIndex(index);
-    setShowEditPriceModal(true); // Open the specific Edit modal
-  };
-
-  // Logic to handle the updated data from EditPriceLevelModal
-  const handleUpdatePriceLevel = (updatedLevelData) => {
-    const updatedLevels = [...formData.priceLevels];
-    updatedLevels[editingIndex] = updatedLevelData;
-    
-    setFormData({ ...formData, priceLevels: updatedLevels });
-    setShowEditPriceModal(false);
-    setEditingIndex(null);
-  };
-
-  const handleSavePriceLevel = (levelData) => {
-    let updatedLevels = [...formData.priceLevels];
-
-    if (editingIndex !== null) {
-      // Update existing
-      updatedLevels[editingIndex] = { ...levelData };
-    } else {
-      // Add new
-      const newLevel = {
-        ...levelData,
-        tempId: `temp-${crypto.randomUUID()}`,
-      };
-      updatedLevels.push(newLevel);
-    }
-
-    setFormData({ ...formData, priceLevels: updatedLevels });
-    setShowPriceModal(false);
-    setEditingIndex(null);
-  };
 
   // Image Handlers
   const handleImageChange = (e) => {
@@ -199,7 +149,7 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
     const formDataToSend = new FormData();
     
     Object.keys(formData).forEach(key => {
-      if (['venue', 'priceLevels', 'booths', 'seatMap'].includes(key)) {
+      if (['venue', 'booths', 'seatMap'].includes(key)) {
         formDataToSend.append(key, JSON.stringify(formData[key]));
       } else if (key === 'imageFile') {
   if (formData.imageFile) {
@@ -231,93 +181,45 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
 
   if (!isOpen) return null;
 
+  const isReadOnly =
+    event?.status === "cancelled" ||
+    event?.status === "completed" ||
+    (event?.status === "rejected" && (user?.role === "admin" || user?.role === "superadmin"));
+
   return (
     <div className="general-modal-overlay">
       <div className="general-event-modal-container">
         <div className="general-modal-header">
-          <h3>Edit Event</h3>
+          <h3>{isReadOnly ? "View Event" : "Edit Event"}</h3>
           <button className="close-btn" onClick={onClose}>
             <Icon icon="mdi:close" width="24" height="24" />
           </button>
         </div>
 
-        <div className="em-content">
-          <div className="tabs-container">
-            <button className={`tab ${activeTab === "information" ? "active" : ""}`} onClick={() => setActiveTab("information")}>Information</button>
-            <button className={`tab ${activeTab === "tickets" ? "active" : ""}`} onClick={() => setActiveTab("tickets")}>Tickets</button>
-          </div>
-
-            {activeTab === "information" && (
-            <form
-              className="add-event-modal-body add-event-form"
-               onSubmit={handleSaveChanges}
-            >
-              <div className="add-event-form-group">
-                <h6>Event Type</h6>
-                <div style={{ display: "flex", gap: "20px", marginTop: "5px" }}>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  cursor: "pointer",
-                  color: "black",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="eventType"
-                  value="General Admission"
-                  checked={formData.eventType === "General Admission"}
-                  onChange={() =>
-                    setFormData({ ...formData, eventType: "General Admission" })
-                  }
-                />
-                General Admission
-              </label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  cursor: "pointer",
-                  color: "black",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="eventType"
-                  value="Seating Arrangement"
-                  checked={formData.eventType === "Seating Arrangement"}
-                  onChange={() =>
-                    setFormData({
-                      ...formData,
-                      eventType: "Seating Arrangement",
-                    })
-                  }
-                />
-                Assigned Seating
-              </label>
-            </div>
-              </div>
-
-              <div className="section-box">
-                <div
-              className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
-              onDragEnter={handleImageDrag}
-              onDragLeave={handleImageDrag}
-              onDragOver={handleImageDrag}
-              onDrop={handleImageDrop}
-              onClick={() =>
-                document.getElementById("event-image-input")?.click()
+        <form
+          className="add-event-modal-body add-event-form"
+          onSubmit={handleSaveChanges}
+        >
+          <div className="section-box">
+            <div
+              className={`upload-area ${imageDragActive ? "drag-active" : ""} ${isReadOnly ? "readonly" : ""}`}
+              onDragEnter={!isReadOnly ? handleImageDrag : undefined}
+              onDragLeave={!isReadOnly ? handleImageDrag : undefined}
+              onDragOver={!isReadOnly ? handleImageDrag : undefined}
+              onDrop={!isReadOnly ? handleImageDrop : undefined}
+              onClick={
+                !isReadOnly
+                  ? () => document.getElementById("event-image-input")?.click()
+                  : undefined
               }
             >
               <input
                 id="event-image-input"
                 type="file"
                 accept="image/png, image/jpeg, image/webp"
-                onChange={handleImageChange}
+                onChange={!isReadOnly ? handleImageChange : undefined}
                 style={{ display: "none" }}
+                disabled={isReadOnly}
               />
               {formData.imageFile || formData.imagePreviewUrl ? (
                 <div className="file-preview">
@@ -354,84 +256,69 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                     </p>
                   )}
 
-                  <button
-                    type="button"
-                    className="remove-file-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleImageRemove();
-                    }}
-                  >
-                    Remove
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      className="remove-file-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleImageRemove();
+                      }}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="upload-placeholder">
                   <div className="icon-circle">
                     <Icon icon="mdi:image-area" width="32" height="32" />
                   </div>
-                  <p className="upload-title">Click or drag an image here</p>
-                  <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>
+                  <p className="upload-title">
+                    {isReadOnly ? "No image provided" : "Click or drag an image here"}
+                  </p>
+                  {!isReadOnly && <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>}
                 </div>
               )}
             </div>
           </div>
 
-              {/* Title & Category */}
-              <div className="add-event-form-row">
-                <div className="add-event-form-group">
-                  <h6>Event Title</h6>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    placeholder="Event title..."
-                    className={emptyFields.includes("title") ? "error" : ""}
-                  />
-                </div>
+          {/* Title & Category */}
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
+              <h6>Event Title</h6>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                placeholder="Event title..."
+                className={emptyFields.includes("title") ? "error" : ""}
+                disabled={isReadOnly}
+              />
+            </div>
 
-                <div className="add-event-form-group">
-                  <h6>Category</h6>
-                  <input
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) =>
-                      setFormData({ ...formData, category: e.target.value })
-                    }
-                    className={emptyFields.includes("category") ? "error" : ""}
-                    placeholder="Enter category (e.g., Concert, Comedy)"
-                  />
-                </div>
-              </div>
+            <div className="add-event-form-group">
+              <h6>Category</h6>
+              <input
+                type="text"
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                className={emptyFields.includes("category") ? "error" : ""}
+                placeholder="Enter category (e.g., Concert, Comedy)"
+                disabled={isReadOnly}
+              />
+            </div>
+          </div>
 
-              {/* Promoter Assignment */}
-              {(user.role === 'admin' || user.role === 'superadmin') && (
-                <div className="add-event-form-group add-event-full-width">
-                  <h6>Assign Promoter</h6>
-                  <select
-                    value={formData.assignedPromoter || ""}
-                    onChange={(e) => setFormData({ ...formData, assignedPromoter: e.target.value || null })}
-                    className="promoter-select-modal"
-                    disabled={event?.status !== 'approved'}
-                    title={event?.status !== 'approved' ? "Approve the event first to assign a promoter" : ""}
-                  >
-                    <option value="">No Promoter Assigned</option>
-                    {promoters.map(p => (
-                      <option key={p._id} value={p._id}>
-                        {p.firstName} {p.lastName} ({p.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Dates */}
-              <div className="add-event-form-row">
-                <div className="add-event-form-group">
-                  <h6>Start Date</h6>
-                  <input
+          {/* Dates */}
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
+              <h6>Start Date</h6>
+              <input
                 type="date"
                 min={today}
                 value={formData.startDate}
@@ -445,11 +332,12 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                   }));
                 }}
                 className={emptyFields.includes("startDate") ? "error" : ""}
+                disabled={isReadOnly}
               />
-                </div>
-                <div className="add-event-form-group">
-                  <h6>End Date</h6>
-                  <input
+            </div>
+            <div className="add-event-form-group">
+              <h6>End Date</h6>
+              <input
                 type="date"
                 min={formData.startDate}
                 value={formData.endDate}
@@ -457,111 +345,129 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                   setFormData({ ...formData, endDate: e.target.value })
                 }
                 className={emptyFields.includes("endDate") ? "error" : ""}
+                disabled={isReadOnly}
               />
-                </div>
-              </div>
+            </div>
+          </div>
 
-              {/* Times */}
-              <div className="add-event-form-row">
-                <div className="add-event-form-group">
-                  <h6>Start Time</h6>
-                  <input
+          {/* Times */}
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
+              <h6>Start Time</h6>
+              <input
                 type="time"
                 value={formData.startTime}
                 onChange={(e) =>
                   setFormData({ ...formData, startTime: e.target.value })
                 }
                 className={emptyFields.includes("startTime") ? "error" : ""}
+                disabled={isReadOnly}
               />
-                </div>
-                <div className="add-event-form-group">
-                  <h6>End Time</h6>
-                  <input
+            </div>
+            <div className="add-event-form-group">
+              <h6>End Time</h6>
+              <input
                 type="time"
                 value={formData.endTime}
                 onChange={(e) =>
                   setFormData({ ...formData, endTime: e.target.value })
                 }
                 className={emptyFields.includes("endTime") ? "error" : ""}
+                disabled={isReadOnly}
               />
-                </div>
-              </div>
+            </div>
+          </div>
 
-              {/* Description */}
-              <div className="add-event-form-group add-event-full-width">
-                <h6>About the Event</h6>
-               <textarea
+          {/* Description */}
+          <div className="add-event-form-group add-event-full-width">
+            <h6>About the Event</h6>
+            <textarea
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
               rows="3"
               className={emptyFields.includes("description") ? "error" : ""}
+              disabled={isReadOnly}
             ></textarea>
-              </div>
+          </div>
 
-              {/* Venue */}
-              <div className="add-event-form-group add-event-full-width">
-                <h6>Venue Details</h6>
-               <input
+          {/* Venue */}
+          <div className="add-event-form-group add-event-full-width">
+            <h6>Venue Details</h6>
+            <input
+              type="text"
+              placeholder="Venue Name"
+              value={formData.venue.name}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  venue: { ...formData.venue, name: e.target.value },
+                })
+              }
+              className={emptyFields.includes("venue.name") ? "error" : ""}
+              disabled={isReadOnly}
+            />
+            <input
+              type="text"
+              placeholder="Street Address"
+              value={formData.venue.address}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  venue: { ...formData.venue, address: e.target.value },
+                })
+              }
+              className={emptyFields.includes("venue.address") ? "error" : ""}
+              disabled={isReadOnly}
+            />
+            <div className="add-event-form-row">
+              <input
                 type="text"
-                placeholder="Venue Name"
-                value={formData.venue.name}
+                placeholder="City"
+                value={formData.venue.city}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    venue: { ...formData.venue, name: e.target.value },
+                    venue: { ...formData.venue, city: e.target.value },
                   })
                 }
-                className={emptyFields.includes("venue.name") ? "error" : ""}
+                className={emptyFields.includes("venue.city") ? "error" : ""}
+                disabled={isReadOnly}
               />
-               <input
+              <input
                 type="text"
-                placeholder="Street Address"
-                value={formData.venue.address}
+                placeholder="Zip Code"
+                value={formData.venue.zipCode}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    venue: { ...formData.venue, address: e.target.value },
+                    venue: { ...formData.venue, zipCode: e.target.value },
                   })
                 }
-                className={emptyFields.includes("venue.address") ? "error" : ""}
+                className={emptyFields.includes("venue.zipCode") ? "error" : ""}
+                disabled={isReadOnly}
               />
-                <div className="add-event-form-row">
-                 <input
-                  type="text"
-                  placeholder="City"
-                  value={formData.venue.city}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      venue: { ...formData.venue, city: e.target.value },
-                    })
-                  }
-                  className={emptyFields.includes("venue.city") ? "error" : ""}
-                />
-                  <input
-                  type="text"
-                  placeholder="Zip Code"
-                  value={formData.venue.zipCode}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      venue: { ...formData.venue, zipCode: e.target.value },
-                    })
-                  }
-                  className={
-                    emptyFields.includes("venue.zipCode") ? "error" : ""
-                  }
-                />
-                </div>
-              </div>
+            </div>
+          </div>
 
-              {/* Display errors */}
-              {error && (
-                <div style={{ color: "red", marginTop: "10px" }}>{error}</div>
-              )}
-              <div className="general-event-modal-footer">
+          {/* Display errors */}
+          {error && (
+            <div style={{ color: "red", marginTop: "10px" }}>{error}</div>
+          )}
+
+          <div className="general-event-modal-footer">
+            {isReadOnly ? (
+              <button
+                type="button"
+                className="primary-button save-btn"
+                onClick={onClose}
+                style={{ width: "100%" }}
+              >
+                Close
+              </button>
+            ) : (
+              <>
                 <button
                   type="button"
                   className="button cancel-btn"
@@ -572,116 +478,11 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                 <button type="submit" className="primary-button save-btn">
                   Save Changes
                 </button>
-              </div>
-            </form>
-          )}
-
-          {activeTab === "tickets" && (
-            <div className="add-event-modal-body">
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "15px",
-                }}
-              >
-                <h6>Price Levels</h6>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => { setEditingIndex(null); setShowPriceModal(true); }}
-                >
-                  <Icon icon="mdi:plus" /> Add Level
-                </button>
-              </div>
-             {formData.priceLevels.length === 0 ? (
-                <p className="no-data-text">
-                  No Price Levels added. Click "Add Level" to start.
-                </p>
-              ) : (
-                <div className="price-levels-list">
-                  {formData.priceLevels.map((level, index) => (
-                    <div
-                      key={level.tempId || index}
-                      className="ticket-level-card"
-                    >
-                      <div className="level-info">
-                        <span
-                          className="color-indicator"
-                          style={{ backgroundColor: level.color }}
-                        ></span>
-                        <div>
-                          <strong>{level.priceName}</strong>
-                          <p>
-                            ₱{level.facePrice} (+₱{level.serviceCharge}) • Qty:{" "}
-                            {level.quantityAvailable}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="level-actions">
-                        <button
-                          type="button"
-                          className="edit-icon-btn"
-                          onClick={() => handleEditPriceLevel(index)}
-                        >
-                          <Icon icon="mdi:pencil" />
-                        </button>
-                        <button
-                          type="button"
-                          className="delete-icon-btn"
-                          onClick={() => handleDeletePriceLevel(index)}
-                        >
-                          <Icon icon="mdi:trash-can" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* {formData.priceLevels.length === 0 ? (
-                <p>No Price Level Added Yet.</p>
-              ) : (
-                formData.priceLevels.map((level, index) => (
-                  <div key={index} className="ticket-level-card" style={{ display: "flex", justifyContent: "space-between", padding: "10px", border: "1px solid #eee", marginBottom: "10px" }}>
-                    <div>
-                      <strong>{level.priceName}</strong>
-                      <p>${level.facePrice} + ${level.serviceCharge} Fee</p>
-                    </div>
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <button type="button" onClick={() => handleEditPriceLevel(index)}>Edit</button>
-                      <button type="button" style={{ color: "red" }} onClick={() => handleDeletePriceLevel(index)}>Delete</button>
-                    </div>
-                  </div>
-                ))
-              )} */}
-            </div>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        </form>
       </div>
-
-      {/* RENDER THE SUB-MODAL HERE */}
-      {showPriceModal && (
-    <AddPriceLevelModal
-      isOpen={showPriceModal}
-      onClose={() => setShowPriceModal(false)}
-      onSave={handleSavePriceLevel}
-    />
-  )}
-
-  {/* RENDER THE EDIT MODAL */}
-  {showEditPriceModal && (
-    <EditPriceLevelModal
-      isOpen={showEditPriceModal}
-      onClose={() => {
-        setShowEditPriceModal(false);
-        setEditingIndex(null);
-      }}
-      onSave={handleUpdatePriceLevel}
-      initialData={formData.priceLevels[editingIndex]}
-    />
-  )}
     </div>
   );
 };

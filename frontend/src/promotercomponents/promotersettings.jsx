@@ -20,6 +20,7 @@ const PromoterSettings = () => {
     industry: "",
     avatar: ""
   });
+  const [avatarFile, setAvatarFile] = useState(null);
 
   const [passwords, setPasswords] = useState({
     current: "",
@@ -147,10 +148,22 @@ const PromoterSettings = () => {
 
     if (result.isConfirmed) {
       try {
-        const response = await authService.updateProfile(profile, user.token);
+        const formData = new FormData();
+        formData.append("firstName", profile.firstName);
+        formData.append("lastName", profile.lastName);
+        formData.append("email", profile.email);
+        formData.append("phone", profile.phone);
+        if (profile.companyName) formData.append("companyName", profile.companyName);
+        if (profile.industry) formData.append("industry", profile.industry);
+        
+        if (avatarFile) {
+          formData.append("avatar", avatarFile);
+        }
+
+        const response = await authService.updateProfile(formData, user.token);
         
         // Update user context and local storage
-        const updatedUser = { ...user, ...response.data.user };
+        const updatedUser = { ...user, ...response.data };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         dispatch({ type: "LOGIN", payload: updatedUser });
 
@@ -158,6 +171,7 @@ const PromoterSettings = () => {
           "Profile Saved",
           "Your profile has been saved successfully."
         );
+        setAvatarFile(null); // Clear selected file after success
       } catch (error) {
         showErrorAlert("Update Failed", error.response?.data?.error || "An error occurred while updating profile.");
       }
@@ -208,6 +222,7 @@ const PromoterSettings = () => {
         return showErrorAlert("File Too Large", "Please upload an image smaller than 2MB.");
       }
       
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfile({ ...profile, avatar: reader.result });

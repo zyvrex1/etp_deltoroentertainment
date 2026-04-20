@@ -10,8 +10,6 @@ import {
   showCreateConfirmAlert,
 } from "../utils/sweetAlert";
 import { useAuthContext } from "../hooks/useAuthContext";
-import AddPriceLevelModal from "./AddPriceLevelModal";
-import EditPriceLevelModal from "./EditPriceLevelModal";
 
 const CreateEventModal = ({ isOpen, onClose }) => {
   const { dispatch } = useEventsContext();
@@ -26,7 +24,6 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   const [endDate, setEndDate] = useState(today);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [eventType, setEventType] = useState("");
   const [venue, setVenue] = useState({
     name: "",
     address: "",
@@ -35,26 +32,11 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   });
   const [seatMap, setSeatMap] = useState({ sections: [] });
   const [booths, setBooths] = useState([]);
-  const [priceLevels, setPriceLevels] = useState([]);
 
   const [imageFile, setImageFile] = useState(null);
   const [imageDragActive, setImageDragActive] = useState(false);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
 
-  const [activeTab, setActiveTab] = useState("information");
-  const [showPriceModal, setShowPriceModal] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingLevel, setEditingLevel] = useState(null);
-  const [editingIndex, setEditingIndex] = useState(null);
-
-  const [formData, setFormData] = useState({
-    priceName: "",
-    color: "#000000",
-    facePrice: 0,
-    serviceCharge: 0,
-    quantityAvailable: 0,
-    quantitySold: 0,
-  });
 
   const [error, setError] = useState("");
   const [emptyFields, setEmptyFields] = useState([]);
@@ -87,33 +69,6 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   };
 
 
-const handleSave = (levelData) => {
-  const newLevel = {
-    ...levelData,
-    tempId: `temp-${crypto.randomUUID()}`,
-  };
-  setPriceLevels([...priceLevels, newLevel]);
-  setShowPriceModal(false);
-};
-
-const handleEditPriceLevel = (index) => {
-   setEditingIndex(index);
-  setEditingLevel(priceLevels[index]); // Assuming 'priceLevels' is your array
-  setIsEditModalOpen(true);
-};
-
-// Use this for Editing (which you already have)
-const handleUpdatePriceLevel = (updatedData) => {
-  const updatedList = [...priceLevels];
-  updatedList[editingIndex] = updatedData;
-  setPriceLevels(updatedList);
-  setIsEditModalOpen(false);
-  setEditingIndex(null); // Clear the index
-};
-
-const handleDelete = (index) => {
-    setPriceLevels(priceLevels.filter((_, i) => i !== index));
-  };
 
   
 
@@ -131,7 +86,6 @@ const handleDelete = (index) => {
       endDate,
       startTime,
       endTime,
-      eventType,
       venueName: venue.name,
       venueAddress: venue.address,
       venueCity: venue.city,
@@ -163,35 +117,6 @@ const handleDelete = (index) => {
       return;
     }
 
-    const priceLevelIds = priceLevels.map((p) => String(p.tempId || p._id));
-
-    if (eventType === "General Admission" && priceLevels.length > 2) {
-      setError("General Admission allows a maximum of 2 price levels only.");
-      return;
-    }
-
-    if (
-      eventType === "Seating Arrangement" &&
-      seatMap &&
-      seatMap.sections?.length > 0
-    ) {
-      for (const section of seatMap.sections) {
-        const seats = section.seats || [];
-        for (const seat of seats) {
-          if (seat && !seat.id && !seat._id) {
-            setError("Each seat in the map must have an identifier.");
-            return;
-          }
-          if (
-            seat.priceLevelId &&
-            !priceLevelIds.includes(String(seat.priceLevelId))
-          ) {
-            setError("Invalid seat price level assignment.");
-            return;
-          }
-        }
-      }
-    }
 
     if (booths && booths.length > 0) {
       for (const booth of booths) {
@@ -222,15 +147,12 @@ const handleDelete = (index) => {
       formData.append("endDate", endDate);
       formData.append("startTime", startTime);
       formData.append("endTime", endTime);
-      formData.append("eventType", eventType);
       formData.append("venue", JSON.stringify(venue));
-
-      // Sends seatMap if Seating Arrangement, otherwise null
+      // Sends seatMap if present
       formData.append(
         "seatMap",
-        JSON.stringify(eventType === "Seating Arrangement" ? seatMap : null),
+        JSON.stringify(seatMap || null),
       );
-      formData.append("priceLevels", JSON.stringify(priceLevels));
       formData.append("booths", JSON.stringify(booths || []));
 
       if (imageFile) formData.append("image", imageFile);
@@ -267,10 +189,6 @@ const handleDelete = (index) => {
 
   if (!isOpen) return null;
 
-  const eventDetailsTabs = [
-    { id: "information", label: "Information" },
-    { id: "tickets", label: "Tickets" },
-  ];
 
   return (
     <div className="general-modal-overlay">
@@ -298,52 +216,11 @@ const handleDelete = (index) => {
           </button>
         </div>
 
-        <div className="em-content">
-          <div className="tabs-container">
-            {eventDetailsTabs.map((tab) => (
-              <button
-                key={tab.id}
-                className={`tab ${activeTab === tab.id ? "active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {activeTab === "information" && (
-            <form
-              className="add-event-modal-body add-event-form"
-              onSubmit={handleSubmit}
-            >
-              <div className="add-event-form-group">
-                <h6>Event Type</h6>
-                <div style={{ display: "flex", gap: "20px" }}>
-                  {["General Admission", "Seating Arrangement"].map((type) => (
-                    <label
-                      key={type}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "5px",
-                        cursor: "pointer",
-                        color: "black",
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="eventType"
-                        value={type}
-                        checked={eventType === type}
-                        onChange={() => setEventType(type)}
-                      />
-                      {type === "Seating Arrangement"
-                        ? "Assigned Seating"
-                        : type}
-                    </label>
-                  ))}
-                </div>
-              </div>
+          <form
+            className="add-event-modal-body add-event-form"
+            onSubmit={handleSubmit}
+          >
+              {/* Image Upload Area */}
 
               <div className="section-box">
                 <div
@@ -564,95 +441,12 @@ const handleDelete = (index) => {
                   Create Event
                 </button>
               </div>
-            </form>
-          )}
+          </form>
 
-          {activeTab === "tickets" && (
-            <div className="add-event-modal-body">
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "15px",
-                }}
-              >
-                <h6>Price Levels</h6>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => {
-                    setEditingIndex(null); // Ensure we aren't in "edit mode"
-                    setShowPriceModal(true);
-                  }}
-                >
-                  <Icon icon="mdi:plus" /> Add Price Level
-                </button>
-              </div>
 
-              {priceLevels.length === 0 ? (
-                <p className="no-data-text">
-                  No Price Levels added. Click "Add Level" to start.
-                </p>
-              ) : (
-                <div className="price-levels-list">
-                  {priceLevels.map((level, index) => (
-                    <div
-                      key={level.tempId || index}
-                      className="ticket-level-card"
-                    >
-                      <div className="level-info">
-                        <span
-                          className="color-indicator"
-                          style={{ backgroundColor: level.color }}
-                        ></span>
-                        <div>
-                          <strong>{level.priceName}</strong>
-                          <p>
-                            ${level.facePrice} (+${level.serviceCharge}) • Qty:{" "}
-                            {level.quantityAvailable}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="level-actions">
-                        <button
-                          type="button"
-                          className="edit-icon-btn"
-                          onClick={() => handleEditPriceLevel(index)}
-                        >
-                          <Icon icon="mdi:pencil" />
-                        </button>
-                        <button
-                          type="button"
-                          className="delete-icon-btn"
-                          onClick={() => handleDelete(index)}
-                        >
-                          <Icon icon="mdi:trash-can" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
-         <AddPriceLevelModal
-  isOpen={showPriceModal}
-  onClose={() => setShowPriceModal(false)}
-  onSave={handleSave}
-/>
-
-{/* KEEP THIS: This is your actual edit handler */}
-<EditPriceLevelModal
-  isOpen={isEditModalOpen}
-  initialData={editingLevel}
-  onClose={() => setIsEditModalOpen(false)}
-  onSave={handleUpdatePriceLevel}
-/>
         </div>
       </div>
-    </div>
   );
 };
 

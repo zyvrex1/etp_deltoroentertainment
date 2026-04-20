@@ -130,7 +130,7 @@ const eventSchema = new Schema(
     eventType: {
       type: String,
       enum: ["General Admission", "Seating Arrangement", "Booth-Style"],
-      required: true,
+      default: "General Admission",
     },
 
     description: String,
@@ -213,6 +213,9 @@ const eventSchema = new Schema(
     // Editor data for LayoutBuilder
     ticketCategories: { type: Schema.Types.Mixed, default: [] },
     layoutData: { type: Schema.Types.Mixed, default: null },
+
+    rejectionReason: { type: String, default: "" },
+    cancellationReason: { type: String, default: "" },
   },
   { timestamps: true }
 );

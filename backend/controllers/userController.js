@@ -1,9 +1,10 @@
 const User = require('../models/userModel');
+const Promoter = require('../models/promoterModel');
+const Sponsor = require('../models/sponsorModel');
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 const path = require('path');
 
-// ------------------ Multer Setup ------------------
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
@@ -39,16 +40,15 @@ const getUserById = async (req, res) => {
   }
 };
 
-
 const updateProfile = async (req, res) => {
   try {
-    const { firstName, lastName, email, phone } = req.body;
+    const { firstName, lastName, email, phone, companyName, industry } = req.body;
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     // Check email uniqueness
     if (email && email !== user.email) {
-      const exists = await User.findOne({ email });
+      const exists = await User.findOne({ email, _id: { $ne: req.user._id } });
       if (exists) throw new Error('Email already in use');
       user.email = email;
     }
@@ -63,6 +63,29 @@ const updateProfile = async (req, res) => {
     }
 
     await user.save();
+
+    // Update promoter-specific fields
+    if (user.role === 'promoter') {
+      const promoter = await Promoter.findOne({ userId: user._id });
+      if (promoter) {
+        if (companyName) promoter.companyName = companyName;
+        if (industry) promoter.industry = industry;
+        if (phone) promoter.phone = phone;
+        await promoter.save();
+      }
+    }
+
+    // Update sponsor-specific fields
+    if (user.role === 'sponsor') {
+      const sponsor = await Sponsor.findOne({ userId: user._id });
+      if (sponsor) {
+        if (companyName) sponsor.companyName = companyName;
+        if (industry) sponsor.industry = industry;
+        if (phone) sponsor.phone = phone;
+        await sponsor.save();
+      }
+    }
+
     res.status(200).json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -115,10 +138,31 @@ const updateNotifications = async (req, res) => {
   }
 };
 
+const getPromoters = async (req, res) => {
+  try {
+    const { search } = req.query;
+    const query = { role: 'promoter' };
+    
+    if (search) {
+      query.$or = [
+        { email: { $regex: search, $options: 'i' } },
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    const promoters = await User.find(query).select('firstName lastName email avatar').limit(10);
+    res.json(promoters);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   getUserById,
   updateProfile,
   updateSecurity,
   updateNotifications,
+  getPromoters,
   upload,
 };

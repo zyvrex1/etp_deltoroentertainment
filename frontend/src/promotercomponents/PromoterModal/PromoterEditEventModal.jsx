@@ -213,14 +213,20 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
 
     if (!isOpen) return null;
 
+    const isReadOnly = initialEvent?.status === "completed";
+
     return (
         <div className="promoter-edit-event-modal-overlay">
             <div className="promoter-edit-event-modal-container">
                 <div className="promoter-edit-event-modal-header">
-                    <h3>Edit Event</h3>
+                    <h3>{isReadOnly ? "View Event" : "Edit Event"}</h3>
                     <button
                         className="promoter-edit-event-close-btn"
                         onClick={async () => {
+                            if (isReadOnly) {
+                                onClose();
+                                return;
+                            }
                             const result = await showCancelConfirmAlert();
                             if (result.isConfirmed) {
                                 onClose();
@@ -235,6 +241,26 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                     className="promoter-edit-event-modal-body promoter-edit-event-form"
                     onSubmit={handleSubmit}
                 >
+                    {initialEvent?.status === "rejected" && initialEvent?.rejectionReason && (
+                        <div className="rejection-reason-banner" style={{
+                            backgroundColor: "#fff5f5",
+                            border: "1px solid #feb2b2",
+                            borderRadius: "8px",
+                            padding: "12px 16px",
+                            marginBottom: "20px",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: "12px"
+                        }}>
+                            <Icon icon="mdi:alert-circle-outline" width="24" style={{ color: "#f56565", flexShrink: 0 }} />
+                            <div>
+                                <h6 style={{ margin: 0, color: "#c53030", fontWeight: 600 }}>Rejection Reason</h6>
+                                <p style={{ margin: "4px 0 0 0", color: "#742a2a", fontSize: "0.875rem" }}>
+                                    {initialEvent.rejectionReason}
+                                </p>
+                            </div>
+                        </div>
+                    )}
                     <div className="promoter-edit-event-form-row">
                         <div className="promoter-edit-event-form-group">
                             <h6>Event Title</h6>
@@ -245,6 +271,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="e.g. Tech Summit 2024"
                                 className={emptyFields.includes("title") ? "error" : ""}
+                                disabled={isReadOnly}
                             />
                         </div>
                         <div className="promoter-edit-event-form-group">
@@ -253,6 +280,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
                                 className={emptyFields.includes("category") ? "error" : ""}
+                                disabled={isReadOnly}
                             >
                                 <option value="concert">Concert</option>
                                 <option value="comedy">Comedy</option>
@@ -278,6 +306,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                     }
                                 }}
                                 className={emptyFields.includes("startDate") ? "error" : ""}
+                                disabled={isReadOnly}
                             />
                         </div>
                         <div className="promoter-edit-event-form-group">
@@ -289,6 +318,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
                                 className={emptyFields.includes("endDate") ? "error" : ""}
+                                disabled={isReadOnly}
                             />
                         </div>
                     </div>
@@ -302,6 +332,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                 value={startTime}
                                 onChange={(e) => setStartTime(e.target.value)}
                                 className={emptyFields.includes("startTime") ? "error" : ""}
+                                disabled={isReadOnly}
                             />
                         </div>
                         <div className="promoter-edit-event-form-group">
@@ -312,6 +343,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                 value={endTime}
                                 onChange={(e) => setEndTime(e.target.value)}
                                 className={emptyFields.includes("endTime") ? "error" : ""}
+                                disabled={isReadOnly}
                             />
                         </div>
                     </div>
@@ -328,6 +360,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                     setVenue({ ...venue, name: e.target.value })
                                 }
                                 className={emptyFields.includes("venueName") ? "error" : ""}
+                                disabled={isReadOnly}
                             />
                         </div>
 
@@ -339,6 +372,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                 onChange={(e) =>
                                     setVenue({ ...venue, address: e.target.value })
                                 }
+                                disabled={isReadOnly}
                             />
                         </div>
 
@@ -351,6 +385,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                     onChange={(e) =>
                                         setVenue({ ...venue, city: e.target.value })
                                     }
+                                    disabled={isReadOnly}
                                 />
                             </div>
                             <div className="promoter-edit-event-form-group">
@@ -361,6 +396,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                     onChange={(e) =>
                                         setVenue({ ...venue, zipCode: e.target.value })
                                     }
+                                    disabled={isReadOnly}
                                 />
                             </div>
                         </div>
@@ -370,21 +406,24 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                         <h5 className="modal-section-title">Event Image</h5>
                         <div
                             className={`promoter-edit-event-upload-area ${imageDragActive ? "drag-active" : ""
-                                }`}
-                            onDragEnter={handleImageDrag}
-                            onDragLeave={handleImageDrag}
-                            onDragOver={handleImageDrag}
-                            onDrop={handleImageDrop}
-                            onClick={() =>
-                                document.getElementById("promoter-edit-event-image-input")?.click()
+                                } ${isReadOnly ? "readonly" : ""}`}
+                            onDragEnter={!isReadOnly ? handleImageDrag : undefined}
+                            onDragLeave={!isReadOnly ? handleImageDrag : undefined}
+                            onDragOver={!isReadOnly ? handleImageDrag : undefined}
+                            onDrop={!isReadOnly ? handleImageDrop : undefined}
+                            onClick={
+                                !isReadOnly
+                                    ? () => document.getElementById("promoter-edit-event-image-input")?.click()
+                                    : undefined
                             }
                         >
                             <input
                                 id="promoter-edit-event-image-input"
                                 type="file"
                                 accept="image/png, image/jpeg, image/webp"
-                                onChange={handleImageChange}
+                                onChange={!isReadOnly ? handleImageChange : undefined}
                                 style={{ display: "none" }}
+                                disabled={isReadOnly}
                             />
 
                             {imagePreviewUrl ? (
@@ -402,25 +441,29 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                             </p>
                                         </>
                                     )}
-                                    <button
-                                        type="button"
-                                        className="remove-file-btn"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setImageFile(null);
-                                            setImagePreviewUrl(null);
-                                        }}
-                                    >
-                                        Remove/Change
-                                    </button>
+                                    {!isReadOnly && (
+                                        <button
+                                            type="button"
+                                            className="remove-file-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setImageFile(null);
+                                                setImagePreviewUrl(null);
+                                            }}
+                                        >
+                                            Remove/Change
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="upload-placeholder">
                                     <div className="icon-circle">
                                         <Icon icon="mdi:image-area" width="32" height="32" />
                                     </div>
-                                    <p className="upload-title">Click or drag an image here to update</p>
-                                    <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>
+                                    <p className="upload-title">
+                                        {isReadOnly ? "No image provided" : "Click or drag an image here to update"}
+                                    </p>
+                                    {!isReadOnly && <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>}
                                 </div>
                             )}
                         </div>
@@ -439,6 +482,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                         setTicketPrice(val === "" ? "" : Number(val));
                                     }}
                                     className={emptyFields.includes("ticketPrice") ? "error" : ""}
+                                    disabled={isReadOnly}
                                 />
                             </div>
 
@@ -453,6 +497,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                         setTotalTickets(val === "" ? "" : Number(val));
                                     }}
                                     className={emptyFields.includes("totalTickets") ? "error" : ""}
+                                    disabled={isReadOnly}
                                 />
                             </div>
                         </div>
@@ -467,6 +512,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                             placeholder="Event description..."
                             rows="4"
                             className={emptyFields.includes("description") ? "error" : ""}
+                            disabled={isReadOnly}
                         ></textarea>
                     </div>
 
@@ -480,26 +526,39 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                     )}
 
                     <div className="promoter-edit-event-modal-footer">
-                        <button
-                            type="button"
-                            className="button promoter-edit-event-cancel-btn"
-                            disabled={isSubmitting}
-                            onClick={async () => {
-                                const result = await showCancelConfirmAlert();
-                                if (result.isConfirmed) {
-                                    onClose();
-                                }
-                            }}
-                        >
-                            Cancel
-                        </button>
-                        <button 
-                            type="submit" 
-                            className="primary-button promoter-edit-event-save-btn"
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? "Saving..." : "Save Changes"}
-                        </button>
+                        {isReadOnly ? (
+                            <button
+                                type="button"
+                                className="primary-button promoter-edit-event-save-btn"
+                                onClick={onClose}
+                                style={{ width: "100%" }}
+                            >
+                                Close
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    type="button"
+                                    className="button promoter-edit-event-cancel-btn"
+                                    disabled={isSubmitting}
+                                    onClick={async () => {
+                                        const result = await showCancelConfirmAlert();
+                                        if (result.isConfirmed) {
+                                            onClose();
+                                        }
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="primary-button promoter-edit-event-save-btn"
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? "Saving..." : "Save Changes"}
+                                </button>
+                            </>
+                        )}
                     </div>
                 </form>
             </div>

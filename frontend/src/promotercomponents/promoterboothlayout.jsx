@@ -1,262 +1,434 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import {
+  Stage,
+  Layer,
+  Rect,
+  Circle,
+  Text,
+  Group,
+  Line,
+  Image as KonvaImage,
+} from 'react-konva';
+import useImage from 'use-image';
 import { Icon } from '@iconify/react';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
 import './promoterboothlayout.css';
-import PromoterUploadMapModal from './PromoterModal/PromoterUploadMapModal';
 
-const PromoterBoothLayout = () => {
-    const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
-    const [selectedEvent, setSelectedEvent] = useState("techstart");
-    const [detailPopup, setDetailPopup] = useState(null);
-    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    const eventDropdownRef = useRef(null);
+const BackgroundImage = ({ item, onClick }) => {
+  const [img] = useImage(item.imageUrl);
+  const isBg = item.isBackground || item.type === "background";
+  const w = item.width || (isBg ? 400 : 45);
+  const h = item.height || (isBg ? 300 : 45);
 
-    // Booth Map: 5x5 grid (5 columns, 5 rows). Each cell: null (empty) or { code, type, status, dimensions, bookedBy? }
-    const boothGrid = [
-        [{ code: "V1", type: "vip", status: "booked", dimensions: "20x20", bookedBy: "Acme Corp" }, { code: "V2", type: "vip", status: "available", dimensions: "20x20" }, null, null, null],
-        [null, { code: "C1", type: "corner", status: "available", dimensions: "10x10" }, { code: "I1", type: "inline", status: "available", dimensions: "10x10" }, null, null],
-        [null, null, null, { code: "I2", type: "inline", status: "booked", dimensions: "10x10", bookedBy: "TechStart Inc" }, null],
-        [null, null, null, null, null],
-        [null, null, null, null, null],
-    ];
+  if (!img) return null;
+
+  return (
+    <KonvaImage
+      id={item.id?.toString()}
+      image={img}
+      x={item.x}
+      y={item.y}
+      width={w}
+      height={h}
+      scaleX={item.scaleX || 1}
+      scaleY={item.scaleY || 1}
+      rotation={item.rotation || 0}
+      onClick={onClick}
+      opacity={0.6}
+    />
+  );
+};
+
+const BackgroundShape = ({ item, onClick }) => {
+  const isBg = item.isBackground || item.type === "background";
+  const isElement = item.isElement || item.type === "element";
+  const w = item.width || 100;
+  const h = item.height || 100;
+
+  return (
+    <Group
+      id={item.id?.toString()}
+      x={item.x}
+      y={item.y}
+      scaleX={item.scaleX || 1}
+      scaleY={item.scaleY || 1}
+      rotation={item.rotation || 0}
+      onClick={onClick}
+    >
+      <Rect
+        width={w}
+        height={h}
+        fill={item.color || (isBg ? "#f5f5f5" : "#90caf9")}
+        opacity={isBg ? 0.3 : 0.8}
+        stroke={isElement ? "#333" : "transparent"}
+        strokeWidth={1}
+      />
+      {isElement && (
+        <Text
+          text={item.label || item.code || ""}
+          width={w}
+          height={h}
+          align="center"
+          verticalAlign="middle"
+          fontSize={14}
+          fill="black"
+          fontStyle="bold"
+          listening={false}
+        />
+      )}
+    </Group>
+  );
+};
+
+const calculateTableSeats = (centerX, centerY, radius, seatCount) => {
+  const seats = [];
+  const distance = radius + 12;
+  for (let i = 0; i < seatCount; i++) {
+    const angle = (i * 2 * Math.PI) / seatCount;
+    seats.push({
+      x: centerX + distance * Math.cos(angle),
+      y: centerY + distance * Math.sin(angle),
+    });
+  }
+  return seats;
+};
+
+const PromoterBoothLayout = ({ selectedEvent }) => {
+    const { user } = useAuthContext();
+    const [localItems, setLocalItems] = useState([]);
+    const [priceLevels, setPriceLevels] = useState([]);
+    const [selectedId, setSelectedId] = useState(null);
+    const [zoom, setZoom] = useState(1);
+    const stageRef = useRef(null);
+
+    const CANVAS_WIDTH = 1400;
+    const CANVAS_HEIGHT = 800;
+    const GRID_SIZE = 20;
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (eventDropdownRef.current && !eventDropdownRef.current.contains(event.target)) {
-                setIsEventDropdownOpen(false);
+        const fetchLayout = async () => {
+            if (!selectedEvent?._id) return;
+            try {
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || ""}/api/events/${selectedEvent._id}`);
+                const data = await response.json();
+
+                let savedItems = [];
+                if (data.layoutData && data.layoutData.items) {
+                    savedItems = data.layoutData.items;
+                } else {
+                    savedItems = [
+                        ...(data.seatMap?.sections[0]?.seats || []),
+                        ...(data.seatMap?.elements || []), 
+                        ...(data.seatMap?.backgrounds || []), 
+                        ...(data.booths || []),
+                    ];
+                }
+
+                const normalizedItems = savedItems.map((item) => ({
+                    ...item,
+                    id: item._id || item.id,
+                    status: item.status || "available",
+                    type: item.type?.toLowerCase() || (item.isBooth ? "booth" : item.isElement ? "element" : "background"),
+                    categoryId: item.categoryId || item.priceLevelId,
+                }));
+
+                setLocalItems(normalizedItems);
+
+                if (data.priceLevels) {
+                    const normalizedCategories = data.priceLevels.map(pl => ({
+                        _id: pl._id,
+                        priceName: pl.priceName,
+                        facePrice: pl.facePrice,
+                        quantityAvailable: pl.quantityAvailable,
+                        color: pl.color || "#666666",
+                        type: pl.type || "Seat (Circle)",
+                        boothSize: pl.boothSize || "",
+                        quantitySold: pl.quantitySold || 0
+                    }));
+                    setPriceLevels(normalizedCategories);
+                }
+            } catch (error) {
+                console.error("Error loading layout:", error);
             }
         };
+        fetchLayout();
+    }, [selectedEvent?._id]);
 
-        if (isEventDropdownOpen) {
-            document.addEventListener("mousedown", handleClickOutside);
+    const sortedItems = useMemo(() => {
+        return [...localItems].sort((a, b) => {
+            const getWeight = (item) => {
+                if (item.isBackground || item.type === "background") return 1;
+                if (item.isElement || item.type === "element") return 2;
+                return 3;
+            };
+            return getWeight(a) - getWeight(b);
+        });
+    }, [localItems]);
+
+    const totalPlacedCount = localItems.filter(i => ["seat", "booth", "table"].includes(i.type)).length;
+    const currentRevenue = localItems.reduce((sum, item) => {
+        if (item.status === 'sold' || item.status === 'partially-sold') {
+            const cat = priceLevels.find(p => p._id === item.categoryId);
+            return sum + (cat ? cat.facePrice : 0);
         }
+        return sum;
+    }, 0);
+    const potentialRevenue = priceLevels.reduce((sum, p) => sum + ((p.facePrice || 0) * (p.quantityAvailable || 0)), 0);
 
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [isEventDropdownOpen]);
-
-
-    const getSelectedEventLabel = () => {
-        const option = eventOptions.find(opt => opt.value === selectedEvent);
-        return option ? option.label : "Select Event";
-    };
-
-    const handleEventChange = (val) => {
-        setSelectedEvent(val);
-        setIsEventDropdownOpen(false);
+    const renderGrid = () => {
+        const lines = [];
+        for (let i = 0; i <= CANVAS_WIDTH / GRID_SIZE; i++) {
+            lines.push(
+                <Line
+                    key={`v-${i}`}
+                    points={[i * GRID_SIZE, 0, i * GRID_SIZE, CANVAS_HEIGHT]}
+                    stroke="#eee"
+                    strokeWidth={1}
+                />
+            );
+        }
+        for (let i = 0; i <= CANVAS_HEIGHT / GRID_SIZE; i++) {
+            lines.push(
+                <Line
+                    key={`h-${i}`}
+                    points={[0, i * GRID_SIZE, CANVAS_WIDTH, i * GRID_SIZE]}
+                    stroke="#eee"
+                    strokeWidth={1}
+                />
+            );
+        }
+        return lines;
     };
 
     return (
-        <div className="booth-layout-container">
-            <div className="booth-layout-header">
-                <div className="bl-header-left">
-                    <h1 className="bl-title">Booth Layout</h1>
-                    <p className="small-body-text bl-header-subtitle">Configure floor map and booth pricing</p>
-                </div>
-                <div className="bl-header-controls">
-
-                    <button className="outlined-button bl-action upload-btn" onClick={() => setIsUploadModalOpen(true)}>
-                        <Icon icon="mdi:upload" /> Upload Map
-                    </button>
-                    <button className="primary-button bl-action save-btn">
-                        <Icon icon="mdi:content-save" /> Save Changes
-                    </button>
-                </div>
-            </div>
-
-            <div className="bl-main-content">
-                <div className="bl-event-banner">
-                    <div className="bl-banner-info">
-                        <h3>TechStart Summit 2024</h3>
-                        <p className='small-body-text'>Oct 12, 2024 &bull; Moscone</p>
-                    </div>
-                    <div className="bl-banner-stats">
-                        <div className="bl-stat-item">
-                            <h4>5</h4>
-                            <span className="bl-stat-label smaller-body-text">Sold</span>
+        <div className="layout-builder-container unified-view promoter-view">
+            <div className="builder-main">
+                <div className="builder-sidebar">
+                    {/* Ticket Categories */}
+                    <div className="sidebar-card categories-card" style={{ borderBottom: '1px solid #eee', background: 'transparent' }}>
+                        <div className="sidebar-header">
+                            <h4 className="bt-section-title-layout">Ticket Categories</h4>
                         </div>
-                        <div className="bl-stat-item">
-                            <h4>1</h4>
-                            <span className="bl-stat-label smaller-body-text">Reserved</span>
-                        </div>
-                        <div className="bl-stat-item">
-                            <h4>4</h4>
-                            <span className="bl-stat-label smaller-body-text">Available</span>
-                        </div>
-                        <div className="bl-stat-item bl-stat-revenue">
-                            <h4>$9,500</h4>
-                            <span className="bl-stat-label smaller-body-text">Revenue</span>
+                        <div className="sidebar-categories-list" style={{ marginTop: '15px' }}>
+                            {priceLevels.length === 0 ? (
+                                <div className="sidebar-empty-state">No categories defined</div>
+                            ) : (
+                                priceLevels.map(cat => {
+                                    const itemsInCat = localItems.filter(i => i.categoryId === cat._id);
+                                    const placed = itemsInCat.length;
+                                    const sold = cat.quantitySold || 0;
+                                    
+                                    return (
+                                        <div key={cat._id} className="sidebar-cat-item" style={{ padding: '10px' }}>
+                                            <div className="cat-palette-visual" style={{ backgroundColor: cat.color, width: '32px', height: '32px', fontSize: '16px' }}>
+                                                {cat.type?.includes("Seat") ? <Icon icon="mdi:circle" /> : <Icon icon="mdi:square" />}
+                                            </div>
+                                            <div className="cat-details">
+                                                <div className="cat-top">
+                                                    <span className="cat-name">{cat.priceName}</span>
+                                                    <span className="price">${cat.facePrice?.toFixed(2)}</span>
+                                                </div>
+                                                <div className="cat-meta" style={{ fontSize: '10px' }}>
+                                                    <span>{placed} Placed</span>
+                                                    <span>{cat.quantityAvailable - sold} Avail</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
-                </div>
 
-                <div className="bl-content-columns">
-                    <div className="bl-left-col">
-                        <div className="bl-map-container">
-                            <div className="bl-section-header">
-                                <h3 className="bl-section-title">Exhibition Hall Layout</h3>
-                                <div className="bl-toolbar">
-                                    <button className="outlined-button bl-btn bl-btn-icon" aria-label="Zoom in"><Icon icon="mdi:magnify-plus-outline" /></button>
-                                    <button className="outlined-button bl-btn bl-btn-icon" aria-label="Zoom out"><Icon icon="mdi:magnify-minus-outline" /></button>
-                                </div>
+                    {/* Shape Inspector */}
+                    {selectedId && (
+                        <div className="sidebar-card inspector-card" style={{ borderBottom: '1px solid #eee', background: 'transparent' }}>
+                            <div className="sidebar-header">
+                                <h4 className="bt-section-title-layout">Shape Inspector</h4>
+                                <button className="close-btn" onClick={() => setSelectedId(null)}>
+                                    <Icon icon="mdi:close" />
+                                </button>
                             </div>
-                            <div className="bl-map-wrapper">
-
-                                <div className="bl-booth-grid">
-                                    {boothGrid.map((row, ri) =>
-                                        row.map((cell, ci) => (
-                                            <div
-                                                key={`${ri}-${ci}`}
-                                                className={`bl-booth-cell ${cell ? `filled status-${cell.status} bl-type-${cell.type}` : "empty"}`}
-                                                aria-label={cell ? `Booth ${cell.code}, ${cell.type}, ${cell.status}` : `Empty slot row ${ri + 1} col ${ci + 1}`}
-                                                onClick={() => setDetailPopup(cell ? { tooltipKind: "booth", ...cell, ri, ci } : { tooltipKind: "booth-empty", ri, ci })}
-                                                role="button"
-                                                tabIndex={0}
-                                            >
-                                                {cell && (
-                                                    <span className="bl-booth-code">{cell.code}</span>
+                            <div className="inspector-body">
+                                {(() => {
+                                    const item = localItems.find(i => i.id === selectedId);
+                                    if (!item) return null;
+                                    const category = priceLevels.find(pl => pl._id === item.categoryId);
+                                    return (
+                                        <>
+                                            <div className="inspector-header-main">
+                                                <span className="shape-id">{item.label || item.code}</span>
+                                                <span className={`value-badge type-${item.type}`}>{item.type?.toUpperCase()}</span>
+                                            </div>
+                                            <div className="summary-list">
+                                                <div className="summary-item">
+                                                    <span className="label">Status</span>
+                                                    <span className={`value status-${item.status}`}>{item.status?.toUpperCase()}</span>
+                                                </div>
+                                                {category && (
+                                                    <>
+                                                        <div className="summary-item">
+                                                            <span className="label">Category</span>
+                                                            <span className="value">{category.priceName}</span>
+                                                        </div>
+                                                        <div className="summary-item">
+                                                            <span className="label">Price</span>
+                                                            <span className="value-bold">${category.facePrice?.toFixed(2)}</span>
+                                                        </div>
+                                                    </>
                                                 )}
                                             </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="bl-map-legend-bottom">
-                                <div className="smaller-body-text bl-legend-item-bottom"><span className="bl-dot bl-dot-green"></span> Available</div>
-                                <div className="smaller-body-text bl-legend-item-bottom"><span className="bl-dot bl-dot-red"></span> Unavailable</div>
-                                <div className="smaller-body-text bl-legend-item-bottom"><span className="bl-dot bl-dot-yellow"></span> Corner Location</div>
-                                <div className="smaller-body-text bl-legend-item-bottom"><span className="bl-dot bl-dot-purple"></span> VIP</div>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <div className="bl-right-col">
-                        <div className="bl-side-box bl-legend-box">
-                            <h4>Legend</h4>
-                            <div className="bl-legend-list">
-                                <div className="bl-legend-row">
-                                    <div className="bl-legend-label">
-                                        <div className="bl-legend-color bl-color-available"></div>
-                                        <span>Available</span>
-                                    </div>
-                                    <h5 className="bl-legend-value">4</h5>
-                                </div>
-                                <div className="bl-legend-row">
-                                    <div className="bl-legend-label">
-                                        <div className="bl-legend-color bl-color-reserved"></div>
-                                        <span>Unavailable</span>
-                                    </div>
-                                    <h5 className="bl-legend-value">1</h5>
-                                </div>
-                                <div className="bl-legend-row">
-                                    <div className="bl-legend-label">
-                                        <div className="bl-legend-color bl-color-VIP"></div>
-                                        <span>VIP</span>
-                                    </div>
-                                    <h5 className="bl-legend-value">5</h5>
-                                </div>
-                                <div className="bl-legend-row">
-                                    <div className="bl-legend-label">
-                                        <div className="bl-legend-color bl-color-corner"></div>
-                                        <span>Corner Booth</span>
-                                    </div>
-                                    <h5 className="bl-legend-value">5</h5>
-                                </div>
-                                <div className="bl-legend-row">
-                                    <div className="bl-legend-label">
-                                        <div className="bl-legend-color bl-color-inline"></div>
-                                        <span>Inline Booth</span>
-                                    </div>
-                                    <h5 className="bl-legend-value">5</h5>
-                                </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
+                    )}
 
-                        <div className="bl-side-box bl-sponsors-box">
-                            <h4>Sponsors with Booths</h4>
-                            <div className="bl-sponsors-list">
-                                <div className="bl-sponsor-card">
-                                    <div className="bl-sponsor-info">
-                                        <h5>TechCorp Inc.</h5>
-                                        <span className="smaller-body-text bl-sponsor-booth">Booth B-101</span>
-                                    </div>
-                                    <span className="bl-pill-vip button-label">VIP</span>
-                                </div>
-
-                                <div className="bl-sponsor-card">
-                                    <div className="bl-sponsor-info">
-                                        <h5>Innovate Labs</h5>
-                                        <span className="smaller-body-text bl-sponsor-booth">Booth B-203</span>
-                                    </div>
-                                    <span className="bl-pill-corner button-label">Corner Location</span>
-                                </div>
-
-                                <div className="bl-sponsor-card">
-                                    <div className="bl-sponsor-info">
-                                        <h5>Cloud Systems</h5>
-                                        <span className="smaller-body-text bl-sponsor-booth">Booth B-303</span>
-                                    </div>
-                                    <span className="bl-pill bl-pill-inline button-label">Inline Location</span>
-                                </div>
+                    {/* Venue Summary */}
+                    <div className="sidebar-card summary-card" style={{ background: 'transparent' }}>
+                        <div className="sidebar-header">
+                            <h4 className="bt-section-title-layout">Venue Summary</h4>
+                        </div>
+                        <div className="summary-list">
+                            <div className="summary-item">
+                                <span className="label">Placed Items</span>
+                                <span className="value">{totalPlacedCount}</span>
+                            </div>
+                            <div className="summary-item">
+                                <span className="label">Current Rev</span>
+                                <span className="value">${currentRevenue.toLocaleString()}</span>
+                            </div>
+                            <div className="summary-item total">
+                                <span className="label">Potential</span>
+                                <span className="value-muted">${potentialRevenue.toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div >
 
-            {detailPopup &&
-                createPortal(
-                    <div
-                        className="bl-detail-popup-overlay"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="bl-detail-popup-title"
-                        onClick={() => setDetailPopup(null)}
-                    >
-                        <div className="bl-detail-popup-box" onClick={(e) => e.stopPropagation()}>
-                            <button
-                                type="button"
-                                className="bl-detail-popup-close"
-                                onClick={() => setDetailPopup(null)}
-                                aria-label="Close"
-                            >
-                                <Icon icon="mdi:close" />
+                <div className="canvas-area">
+                    <div className="canvas-toolbar">
+                        <h4 className="canvas-title">{selectedEvent?.venue?.name || "Venue Map"}</h4>
+                        <div className="zoom-controls">
+                            <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))}>
+                                <Icon icon="mdi:minus" />
                             </button>
-                            <div className="bl-detail-popup-content">
-                                {detailPopup.tooltipKind === "booth" && (
-                                    <>
-                                        <strong id="bl-detail-popup-title">Booth {detailPopup.code}</strong>
-                                        <span>Type: {detailPopup.type}</span>
-                                        <span>Dimensions: {detailPopup.dimensions}</span>
-                                        <span>Status: {detailPopup.status}</span>
-                                        {detailPopup.bookedBy && <span>Booked by: {detailPopup.bookedBy}</span>}
-                                        <span>Position: Row {detailPopup.ri + 1}, Col {detailPopup.ci + 1}</span>
-                                    </>
-                                )}
-                                {detailPopup.tooltipKind === "booth-empty" && (
-                                    <>
-                                        <strong id="bl-detail-popup-title">Empty slot</strong>
-                                        <span>Position: Row {detailPopup.ri + 1}, Col {detailPopup.ci + 1}</span>
-                                        <span>Available for assignment</span>
-                                    </>
-                                )}
-                            </div>
+                            <span className="zoom-value">{Math.round(zoom * 100)}%</span>
+                            <button className="bt-btn" onClick={() => setZoom(z => Math.min(z + 0.1, 2))}>
+                                <Icon icon="mdi:plus" />
+                            </button>
                         </div>
-                    </div>,
-                    document.body
-                )}
+                    </div>
 
-            <PromoterUploadMapModal
-                isOpen={isUploadModalOpen}
-                onClose={() => setIsUploadModalOpen(false)}
-                onSave={(file) => {
-                    console.log('Map uploaded:', file.name);
-                }}
-            />
-        </div >
+                    <div className="konva-container">
+                        <Stage
+                            width={1000}
+                            height={600}
+                            ref={stageRef}
+                            scaleX={zoom}
+                            scaleY={zoom}
+                            draggable
+                            onMouseDown={(e) => {
+                                const clickedOnEmpty = e.target === e.target.getStage();
+                                if (clickedOnEmpty) setSelectedId(null);
+                            }}
+                        >
+                            <Layer>
+                                {renderGrid()}
+                                {sortedItems.map((item, i) => (
+                                    <React.Fragment key={item.id || i}>
+                                        {item.subType === "Image" || item.imageUrl ? (
+                                            <BackgroundImage
+                                                item={item}
+                                                onClick={() => setSelectedId(item.id)}
+                                            />
+                                        ) : (item.type === "seat" || item.type === "booth" || item.type === "table") ? (
+                                            <Group
+                                                id={item.id?.toString()}
+                                                x={item.x}
+                                                y={item.y}
+                                                scaleX={item.scaleX || 1}
+                                                scaleY={item.scaleY || 1}
+                                                rotation={item.rotation || 0}
+                                                onClick={() => setSelectedId(item.id)}
+                                            >
+                                                {item.type === "table" ? (
+                                                    <>
+                                                        <Circle
+                                                            radius={25}
+                                                            fill={priceLevels.find(c => c._id === item.categoryId)?.color || "#e0e0e0"}
+                                                            stroke="white"
+                                                            strokeWidth={1}
+                                                        />
+                                                        {calculateTableSeats(0, 0, 25, item.seatCount || 4).map((seat, index) => (
+                                                            <Rect
+                                                                key={index}
+                                                                x={seat.x - 6}
+                                                                y={seat.y - 6}
+                                                                width={12}
+                                                                height={12}
+                                                                fill="#bdbdbd"
+                                                                cornerRadius={2}
+                                                                stroke="white"
+                                                                strokeWidth={1}
+                                                            />
+                                                        ))}
+                                                    </>
+                                                ) : item.type === "booth" ? (
+                                                    <Rect
+                                                        x={-20}
+                                                        y={-20}
+                                                        width={40}
+                                                        height={40}
+                                                        fill={priceLevels.find(c => c._id === item.categoryId)?.color || "#e0e0e0"}
+                                                        stroke="white"
+                                                        strokeWidth={1}
+                                                        cornerRadius={4}
+                                                    />
+                                                ) : (
+                                                    <Circle
+                                                        radius={20}
+                                                        fill={priceLevels.find(c => c._id === item.categoryId)?.color || "#666666"}
+                                                        stroke="white"
+                                                        strokeWidth={1}
+                                                    />
+                                                )}
+                                                <Text
+                                                    text={item.label || item.code || ""}
+                                                    fontSize={9}
+                                                    fontStyle="bold"
+                                                    fill="white"
+                                                    align="center"
+                                                    verticalAlign="middle"
+                                                    x={0}
+                                                    y={0}
+                                                    offsetX={20}
+                                                    offsetY={20}
+                                                    width={40}
+                                                    height={40}
+                                                    scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
+                                                    scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
+                                                    shadowColor="black"
+                                                    shadowBlur={2}
+                                                    shadowOpacity={0.8}
+                                                    shadowOffset={{ x: 1, y: 1 }}
+                                                />
+                                            </Group>
+                                        ) : (
+                                            <BackgroundShape
+                                                item={item}
+                                                onClick={() => setSelectedId(item.id)}
+                                            />
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </Layer>
+                        </Stage>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 

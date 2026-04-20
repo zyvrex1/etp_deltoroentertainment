@@ -82,6 +82,40 @@ const UserManagement = () => {
     return firstInitial + lastInitial;
   };
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+  const Avatar = ({ person }) => {
+    const [imgError, setImgError] = useState(false);
+    const avatarPath = person.avatar;
+
+    const getFullUrl = (path) => {
+      if (!path) return null;
+      if (path.startsWith('http') || path.startsWith('data:')) return path;
+      const cleanPath = path.startsWith('/') ? path : `/${path}`;
+      return `${backendUrl}${cleanPath}`;
+    };
+
+    const avatarUrl = !imgError ? getFullUrl(avatarPath) : null;
+
+    if (avatarUrl) {
+      return (
+        <span className="avatar has-image">
+          <img
+            src={avatarUrl}
+            alt=""
+            onError={() => setImgError(true)}
+          />
+        </span>
+      );
+    }
+
+    return (
+      <span className="avatar">
+        {getInitial(person.firstName, person.lastName)}
+      </span>
+    );
+  };
+
   const getUserStatus = (lastLogin) => {
     if (!lastLogin) return "inactive"; // never logged in
     const lastLoginDate = new Date(lastLogin);
@@ -192,9 +226,7 @@ const UserManagement = () => {
                         <Icon icon={expandedRow === user._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                       </div>
                       <div className="user-cell">
-                        <span className="avatar">
-                          {getInitial(user.firstName, user.lastName)}
-                        </span>
+                        <Avatar person={user} />
                         <div>
                           <h5 className="user-name">
                             {user.firstName} {user.lastName}
@@ -283,10 +315,7 @@ const UserManagement = () => {
                         <Icon icon={expandedRow === customer._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                       </div>
                       <div className="user-cell">
-                        <span className="avatar">
-                          {" "}
-                          {getInitial(customer.firstName, customer.lastName)}
-                        </span>
+                        <Avatar person={customer} />
                         <div>
                           <h5 className="user-name">
                             {customer.firstName} {customer.lastName}
@@ -373,9 +402,7 @@ const UserManagement = () => {
                         <Icon icon={expandedRow === promoter._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                       </div>
                       <div className="user-cell">
-                        <span className="avatar">
-                          {getInitial(promoter.firstName, promoter.lastName)}
-                        </span>
+                        <Avatar person={promoter} />
                         <div>
                           <h5 className="small-body-text">
                             {promoter.firstName} {promoter.lastName}
@@ -457,9 +484,7 @@ const UserManagement = () => {
                         <Icon icon={expandedRow === sponsor._id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                       </div>
                       <div className="user-cell">
-                        <span className="avatar">
-                          {getInitial(sponsor.firstName, sponsor.lastName)}
-                        </span>
+                        <Avatar person={sponsor} />
                         <div>
                           <h5 className="small-body-text">
                             {sponsor.firstName} {sponsor.lastName}

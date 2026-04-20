@@ -116,11 +116,11 @@ const getEvents = async (req, res) => {
     const events = await eventsQuery.populate([
       {
         path: "createdBy",
-        select: "firstName lastName role",
+        select: "firstName lastName role email avatar",
       },
       {
         path: "assignedPromoters",
-        select: "firstName lastName email",
+        select: "firstName lastName email avatar",
       }
     ]);
 
@@ -165,11 +165,11 @@ const getEvent = async (req, res) => {
     const event = await eventQuery.populate([
       {
         path: "createdBy",
-        select: "firstName lastName role",
+        select: "firstName lastName role email avatar",
       },
       {
         path: "assignedPromoters",
-        select: "firstName lastName email",
+        select: "firstName lastName email avatar",
       }
     ]);
 
@@ -245,7 +245,6 @@ const createEvent = async (req, res) => {
       "endDate",
       "startTime",
       "endTime",
-      "eventType",
     ];
 
     let errors = [];
@@ -371,7 +370,7 @@ const createEvent = async (req, res) => {
 
     const populatedEvent = await newEvent.populate(
       "createdBy",
-      "firstName lastName role",
+      "firstName lastName role email avatar",
     );
 
     // Create Notification for admin if event is pending
@@ -461,7 +460,7 @@ const updateEvent = async (req, res) => {
     const existingEvent = await Event.findById(id);
     if (!existingEvent) return res.status(404).json({ error: "No such event" });
 
-    let {
+    const {
       title, description, category, venue,
       startDate, endDate, startTime, endTime,
       eventType, priceLevels, seatMap, booths,
@@ -469,6 +468,15 @@ const updateEvent = async (req, res) => {
       ticketCategories, layoutData,
       status, rejectionReason,
     } = req.body;
+
+    const roleLower = (req.user.role || "").toLowerCase();
+    const isOwner = String(existingEvent.createdBy) === String(req.user._id);
+    const isAdmin = roleLower === 'admin' || roleLower === 'superadmin';
+
+    // 🛑 Restriction: Only owner or admin can manage the promoter team
+    if (assignedPromoters !== undefined && !isOwner && !isAdmin) {
+      return res.status(403).json({ error: "Permission denied. Only the event creator can manage the promoter team." });
+    }
 
     if (typeof venue === "string") venue = JSON.parse(venue);
     if (typeof priceLevels === "string") priceLevels = JSON.parse(priceLevels);
@@ -620,6 +628,30 @@ if (req.file) {
 }
 
     /* =========================
+        ROLE & STATUS LOGIC
+    ========================= */
+
+    // 1. Restriction: Completed events are final
+    if (existingEvent.status === "completed") {
+      return res.status(403).json({ error: "Completed events cannot be updated." });
+    }
+
+    // 2. Restriction: Rejected events are read-only for admins (they must be re-edited by the promoter)
+    if (existingEvent.status === "rejected" && (roleLower === "admin" || roleLower === "superadmin")) {
+      return res.status(403).json({ error: "Rejected events cannot be updated by administrators. The promoter must resubmit it." });
+    }
+
+    // 3. Status Transition Logic
+    let finalStatus = status || existingEvent.status;
+    
+    if (roleLower === "promoter") {
+      // If promoter updates an approved or rejected event, it goes back to pending for review
+      if (existingEvent.status === "approved" || existingEvent.status === "rejected") {
+        finalStatus = "pending";
+      }
+    }
+
+    /* =========================
         EXECUTE UPDATE
     ========================= */
     const updatedData = {
@@ -641,8 +673,9 @@ if (req.file) {
       assignedPromoters: assignedPromoters !== undefined ? assignedPromoters : existingEvent.assignedPromoters,
       ticketCategories: ticketCategories !== undefined ? ticketCategories : existingEvent.ticketCategories,
       layoutData: layoutData !== undefined ? layoutData : existingEvent.layoutData,
-      status: status || existingEvent.status,
+      status: finalStatus,
       rejectionReason: rejectionReason !== undefined ? rejectionReason : existingEvent.rejectionReason,
+      cancellationReason: req.body.cancellationReason !== undefined ? req.body.cancellationReason : existingEvent.cancellationReason,
     };
 
     const updatedEvent = await Event.findByIdAndUpdate(
@@ -650,8 +683,8 @@ if (req.file) {
       { $set: updatedData },
       { new: true, runValidators: true }
     ).populate([
-      { path: "createdBy", select: "firstName lastName role" },
-      { path: "assignedPromoters", select: "firstName lastName email" }
+      { path: "createdBy", select: "firstName lastName role email avatar" },
+      { path: "assignedPromoters", select: "firstName lastName email avatar" }
     ]);
 
     const notificationController = require('./notificationController');

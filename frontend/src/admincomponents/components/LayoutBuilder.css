@@ -43,7 +43,8 @@
 }
 
 .sidebar-header {
-  display: column;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
   text-align: left;
@@ -305,9 +306,8 @@
 }
 
 .canvas-toolbar {
-  height: 70px;
   background: white;
-  padding: 0 24px;
+  padding: 24px;
   border-bottom: 1px solid var(--color-black-quaternary);
   display: flex;
   justify-content: space-between;
@@ -411,14 +411,23 @@
   transform: translateY(-1px);
 }
 
-.inspector-card .close-btn {
+.inspector-card .close-btn, .add-category-btn-icon {
   background: transparent;
   border: none;
-  color: var(--color-black-tertiary);
+  color: var(--color-black-secondary);
   cursor: pointer;
-  padding: 4px;
+  padding: 8px;
+  border-radius: 8px;
   display: flex;
-  border-radius: 4px;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 20px;
+}
+
+.close-btn:hover, .add-category-btn-icon:hover {
+  background-color: var(--color-bg-light);
+  color: var(--color-red-primary);
 }
 
 .inspector-card .close-btn:hover {
@@ -534,6 +543,25 @@
   font-size: 11px;
   text-transform: uppercase;
   font-weight: 700;
+}
+
+.value-badge {
+  padding: 2px 8px;
+  background: var(--color-bg-light);
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.value-badge.type-seat {
+  background-color: var(--color-green-quaternary);
+  color: var(--color-green-primary);
+}
+
+.value-badge.type-booth {
+  background-color: var(--color-purple-quaternary);
+  color: var(--color-purple-primary);
 }
 
 .remove-shape-btn {

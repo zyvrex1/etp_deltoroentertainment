@@ -3,7 +3,7 @@ import { Icon } from "@iconify/react";
 import "./promotereventmanagement.css";
 import { useLocation } from "react-router-dom";
 
-import PromoterTicketSetup from "./promoterticketsetup.jsx";
+import PromoterAccessManagement from "./promoteraccessmanagement.jsx";
 import PromoterBoothLayout from "./promoterboothlayout.jsx";
 import PromoterScan from "./promoterscan.jsx";
 
@@ -18,7 +18,7 @@ const PromoterEventManagement = () => {
   const { event: passedEvent, defaultTab } = location.state || {};
   const [selectedEvent, setSelectedEvent] = useState(passedEvent || null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(defaultTab || "ticket-setup");
+  const [activeTab, setActiveTab] = useState(defaultTab || "booth-layout");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortFilter, setSortFilter] = useState("Recently Added");
   const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
@@ -262,28 +262,28 @@ const PromoterEventManagement = () => {
 
           <div className="pem-tabs">
             <button
-              className={`pem-tab ${activeTab === "ticket-setup" ? "active" : ""}`}
-              onClick={() => setActiveTab("ticket-setup")}
-            >
-              Ticket Setup
-            </button>
-            <button
               className={`pem-tab ${activeTab === "booth-layout" ? "active" : ""}`}
               onClick={() => setActiveTab("booth-layout")}
             >
-              Booth Layout
+              Seat/Booth map
+            </button>
+            <button
+              className={`pem-tab ${activeTab === "ticket-setup" ? "active" : ""}`}
+              onClick={() => setActiveTab("ticket-setup")}
+            >
+              Manage Access
             </button>
             <button
               className={`pem-tab ${activeTab === "scan" ? "active" : ""}`}
               onClick={() => setActiveTab("scan")}
             >
-              Check in/ Scan
+              live scanning
             </button>
           </div>
 
           <div className="pem-main-content">
-            {activeTab === "ticket-setup" && <PromoterTicketSetup />}
-            {activeTab === "booth-layout" && <PromoterBoothLayout />}
+            {activeTab === "ticket-setup" && <PromoterAccessManagement selectedEvent={selectedEvent} />}
+            {activeTab === "booth-layout" && <PromoterBoothLayout selectedEvent={selectedEvent} />}
             {activeTab === "scan" && <PromoterScan />}
           </div>
         </div>

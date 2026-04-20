@@ -66,6 +66,8 @@ const ViewUserModal = ({ isOpen, onClose, user, userType: propUserType }) => {
     const lastInitial = parts[1]?.charAt(0).toUpperCase() || "";
     return firstInitial + lastInitial;
     };
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
     const renderHeader = () => {
         let avatarClass = '';
         let icon = null;
@@ -95,10 +97,23 @@ const ViewUserModal = ({ isOpen, onClose, user, userType: propUserType }) => {
                 break;
         }
 
+        const avatarPath = modalUser.avatar;
+        const getFullUrl = (path) => {
+            if (!path) return null;
+            if (path.startsWith('http') || path.startsWith('data:')) return path;
+            const cleanPath = path.startsWith('/') ? path : `/${path}`;
+            return `${backendUrl}${cleanPath}`;
+        };
+        const avatarUrl = getFullUrl(avatarPath);
+
         return (
             <div className="user-profile-header">
-                <div className={`profile-avatar ${avatarClass}`}>
-                    {icon ? <Icon icon={icon} /> : getInitial(modalUser.name)}
+                <div className={`profile-avatar ${avatarClass} ${avatarUrl ? 'has-image' : ''}`}>
+                    {avatarUrl ? (
+                        <img src={avatarUrl} alt="" className="profile-img-full" />
+                    ) : (
+                        icon ? <Icon icon={icon} /> : getInitial(modalUser.name)
+                    )}
                 </div>
                 <div className="profile-info">
                     <h4>{modalUser.name}</h4>

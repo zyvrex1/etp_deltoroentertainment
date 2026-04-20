@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const requireAuth = require('../middleware/requireAuth');
 
-const { getUserById, updateProfile, updateSecurity, updateNotifications, upload } = require('../controllers/userController');
+const { getUserById, updateProfile, updateSecurity, updateNotifications, upload, getPromoters } = require('../controllers/userController');
+
+// ✅ Search promoters for collaboration
+router.get("/promoters", requireAuth, getPromoters);
 
 // ✅ Single route to update profile + avatar
 router.get("/:id", requireAuth, getUserById);
