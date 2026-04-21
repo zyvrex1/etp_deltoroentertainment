@@ -1,0 +1,58 @@
+const mongoose = require('mongoose');
+
+const reservationSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    event: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Event',
+        required: true
+    },
+    boothId: {
+        type: String, // The _id of the booth within the event's booths array
+        required: true
+    },
+    boothCode: {
+        type: String, // e.g., "B01"
+        required: true
+    },
+    amount: {
+        total: Number,
+        subtotal: Number,
+        fee: Number,
+        tax: Number
+    },
+    billingAddress: {
+        companyName: String,
+        address: String,
+        city: String,
+        zipCode: String,
+        email: String
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'confirmed', 'cancelled'],
+        default: 'confirmed' // Defaulting to confirmed for the sample payment flow
+    },
+    paymentMethod: {
+        type: String,
+        enum: ['invoice', 'card'],
+        default: 'invoice'
+    },
+    qrData: {
+        type: String // We will store the reservation ID here
+    }
+}, { timestamps: true });
+
+// Auto-generate qrData before saving
+reservationSchema.pre('save', function (next) {
+    if (!this.qrData) {
+        this.qrData = this._id.toString();
+    }
+    next();
+});
+
+module.exports = mongoose.model('Reservation', reservationSchema);

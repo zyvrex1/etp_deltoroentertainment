@@ -29,11 +29,11 @@ export default function SponsorHome() {
                     announcementService.getAnnouncements(),
                     policyService.getPolicies()
                 ]);
-                
+
                 // Only show approved events and take top 6 for trending
                 const approvedEvents = eventsData.filter(e => e.status === 'approved').slice(0, 6);
                 setLiveEvents(approvedEvents);
-                
+
                 // Map announcements with badge classes
                 const mappedAnnouncements = announcementsData.map(ann => {
                     let badgeClass = "general";
@@ -42,7 +42,7 @@ export default function SponsorHome() {
                     if (category === "news") badgeClass = "news";
                     if (category === "update") badgeClass = "update";
                     if (category === "alert") badgeClass = "alert";
-                    
+
                     return {
                         ...ann,
                         badgeClass,
@@ -128,9 +128,9 @@ export default function SponsorHome() {
                 <div className={`sponsor-announcements-container ${liveAnnouncements.length > 0 ? 'scrolling' : ''}`}>
                     {liveAnnouncements.length > 0 ? (
                         liveAnnouncements.map((item, idx) => (
-                            <div 
-                                key={item._id || idx} 
-                                className="hp-card" 
+                            <div
+                                key={item._id || idx}
+                                className="hp-card"
                                 onClick={() => openModal(item, 'announcement')}
                             >
                                 <div className="hp-card-top">
@@ -178,10 +178,10 @@ export default function SponsorHome() {
                     {liveEvents.length > 0 ? (
                         liveEvents.map((evt, idx) => (
                             <div className="sponsor-event-card" key={evt._id || idx}>
-                                <div 
-                                    className="sponsor-event-image" 
-                                    style={{ 
-                                        backgroundImage: `url(${evt.image ? `${BACKEND_URL}/uploads/${evt.image}` : '/assets/eventbg.jpg'})` 
+                                <div
+                                    className="sponsor-event-image"
+                                    style={{
+                                        backgroundImage: `url(${evt.image ? `${BACKEND_URL}/uploads/${evt.image}` : '/assets/eventbg.jpg'})`
                                     }}
                                 >
                                     <span className="button-label event-date-badge">
@@ -189,17 +189,16 @@ export default function SponsorHome() {
                                     </span>
                                 </div>
                                 <div className="sponsor-event-details">
-                                    <span className={`button-label event-tag ${
-                                        evt.category === "Concert" ? "tag-red" : 
+                                    <span className={`button-label event-tag ${evt.category === "Concert" ? "tag-red" :
                                         evt.category === "Sports" ? "tag-green" : "tag-blue"
-                                    }`}>
+                                        }`}>
                                         {evt.category || "Event"}
                                     </span>
                                     <h4>{evt.title}</h4>
-                                    <p className="event-location">📍 
+                                    <p className="event-location">📍
                                         {`${evt.venue?.name || ""}, ${evt.venue?.address || ""}, ${evt.venue?.city || ""}, ${evt.venue?.zipCode || ""}`.trim().replace(/^, |, $/, "") || "TBA"}
                                     </p>
-                                    
+
                                     <div className="event-info-row">
                                         <div className="event-time">
                                             <Icon icon="mdi:clock-outline" />
@@ -207,7 +206,7 @@ export default function SponsorHome() {
                                         </div>
                                         <div className="event-booths">
                                             <Icon icon="mdi:store-outline" />
-                                            <span className="small-body-text">{evt.booths?.length || 0} Booths Available</span>
+                                            <span className="small-body-text">{evt.booths?.filter(b => b.status === "available").length || 0} Booths Available</span>
                                         </div>
                                     </div>
 
@@ -239,9 +238,9 @@ export default function SponsorHome() {
                 <div className="sponsor-policies-grid">
                     {livePolicies.length > 0 ? (
                         livePolicies.map((item, idx) => (
-                            <div 
-                                key={item._id || idx} 
-                                className="hp-card" 
+                            <div
+                                key={item._id || idx}
+                                className="hp-card"
                                 onClick={() => openModal(item, 'policy')}
                             >
                                 <div className="hp-card-top align-start">

@@ -4,18 +4,41 @@ import "./payments.css";
 import Swal from "sweetalert2";
 import { showSuccessAlert, showErrorAlert, showApproveConfirmAlert } from "./utils/sweetAlert";
 import PaymentRejectionModal from "./Modal/PaymentRejectionModal";
+import axios from "axios";
+import { useAuthContext } from "./hooks/useAuthContext";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const Payments = () => {
+  const { user } = useAuthContext();
   const [activeTab, setActiveTab] = useState("payout-requests");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
 
   const [isLoading, setIsLoading] = useState(true);
+  const [reservations, setReservations] = useState([]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchData = async () => {
+      if (!user?.token) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/reservations/admin`, {
+          headers: { Authorization: `Bearer ${user.token}` }
+        });
+        setReservations(response.data);
+      } catch (err) {
+        console.error("Fetch admin reservations error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user?.token]);
 
   const [payoutRequests, setPayoutRequests] = useState([
     { id: 1, promoter: "Sarah Chen", amount: "$15,240.00", method: "Wire Transfer", status: "pending", requested: "Oct 1, 2024" },
@@ -56,7 +79,20 @@ const Payments = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isFilterDropdownOpen]);
 
-  let filteredData = activeTab === "payout-requests" ? payoutRequests : paymentMethods;
+  const getReservationData = () => {
+    return reservations.map((res, index) => ({
+      id: index + 1,
+      resId: res._id,
+      promoter: res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
+      event: res.event?.title,
+      amount: `$${res.amount?.total ? res.amount.total.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}`,
+      method: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
+      status: res.status,
+      date: new Date(res.createdAt).toLocaleDateString()
+    }));
+  };
+
+  let filteredData = activeTab === "payout-requests" ? payoutRequests : getReservationData();
 
   if (searchQuery) {
     const query = searchQuery.toLowerCase();
@@ -179,10 +215,10 @@ const Payments = () => {
             Payout Requests
           </button>
           <button
-            className={`pay-tab ${activeTab === "payment-methods" ? "active" : ""}`}
-            onClick={() => handleTabChange("payment-methods")}
+            className={`pay-tab ${activeTab === "booth-reservations" ? "active" : ""}`}
+            onClick={() => handleTabChange("booth-reservations")}
           >
-            Payment Methods
+            Booth Reservations
           </button>
         </div>
 
@@ -242,7 +278,7 @@ const Payments = () => {
                 <tr>
                   <th>ID</th>
                   <th>Promoter</th>
-                  {activeTab === "payment-methods" && <th>Event</th>}
+                  {activeTab === "booth-reservations" && <th>Event</th>}
                   <th>Amount</th>
                   <th>Method</th>
                   <th>Status</th>
@@ -255,7 +291,7 @@ const Payments = () => {
                   <tr key={i}>
                     <td><div className="skeleton skeleton-text" style={{ width: '40px' }} /></td>
                     <td><div className="skeleton skeleton-text" style={{ width: '120px' }} /></td>
-                    {activeTab === "payment-methods" && <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>}
+                    {activeTab === "booth-reservations" && <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>}
                     <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
                     <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
                     <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>

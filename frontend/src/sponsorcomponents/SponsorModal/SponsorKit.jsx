@@ -5,14 +5,14 @@ import { useNavigate } from 'react-router-dom';
 import './SponsorKit.css';
 
 const SponsorKit = ({ isOpen, onClose, event }) => {
-        const navigate = useNavigate();
+    const navigate = useNavigate();
     if (!isOpen) return null;
 
-       const handleReserveBooth = () => {
-        navigate('/sponsor/sponsor-venue-layout');
+    const handleReserveBooth = () => {
+        navigate(`/sponsor/sponsor-venue-layout/${event?._id || event?.id}`);
     };
 
-     const handleContact = () => {
+    const handleContact = () => {
         navigate('/sponsor/support');
     };
     return (
@@ -208,7 +208,7 @@ const SponsorKit = ({ isOpen, onClose, event }) => {
                         </div>
                         <div className="sk-cta-actions">
                             <button className="primary-button sk-mb-3 sk-w-100 sk-flex-center sk-gap-2" onClick={handleReserveBooth}>Reserve a Booth <Icon icon="mdi:arrow-right" /></button>
-                            <button className="outlined-button sk-w-100 sk-btn-outline-white"onClick={handleContact}>Contact Sales Team</button>
+                            <button className="outlined-button sk-w-100 sk-btn-outline-white" onClick={handleContact}>Contact Sales Team</button>
                         </div>
                     </div>
                 </div>

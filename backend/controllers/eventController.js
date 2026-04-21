@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 const Event = require("../models/eventModel");
+const Reservation = require("../models/reservationModel");
 const { toObjectId } = require("../utils/helpers");
 
 const fs = require('fs');
@@ -367,9 +368,9 @@ const createEvent = async (req, res) => {
       eventType,
       image,
       priceLevels,
-      seatMap: eventType === "Seating Arrangement" ? seatMap : null,
-      booths: hasBooths ? booths : [],
-      hasBooths,
+      seatMap: eventType === "General Admission" ? null : seatMap,
+      booths: Array.isArray(booths) ? booths : [],
+      hasBooths: Array.isArray(booths) && booths.length > 0,
       isFeatured: Boolean(isFeatured),
       createdBy: userId,
       status,
@@ -595,7 +596,7 @@ const updateEvent = async (req, res) => {
     }
 
     // Process Booths similarly
-    if (Array.isArray(finalBooths) && finalEventType === "Booth-Style") {
+    if (Array.isArray(finalBooths) && finalBooths.length > 0) {
       finalBooths.forEach((b, i) => {
         if (!b.priceLevelId) {
           b.priceLevelId = "none";
@@ -679,9 +680,9 @@ const updateEvent = async (req, res) => {
       endTime: finalEndTime,
       eventType: finalEventType,
       priceLevels: finalPriceLevels,
-      seatMap: finalEventType === "Seating Arrangement" ? finalSeatMap : null,
-      booths: finalEventType === "Booth-Style" ? finalBooths : [],
-      hasBooths: finalEventType === "Booth-Style" && finalBooths.length > 0,
+      seatMap: finalEventType === "General Admission" ? null : finalSeatMap,
+      booths: finalBooths,
+      hasBooths: Array.isArray(finalBooths) && finalBooths.length > 0,
       venue: finalVenue,
       isFeatured: String(isFeatured) === "true",
       image: finalImage,
@@ -994,6 +995,99 @@ const assignPriceLevels = async (req, res) => {
   }
 };
 
+const reserveBooth = async (req, res) => {
+  const { id } = req.params; // Event ID
+  const { boothId, billingAddress, amount, paymentMethod } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ error: "No such event" });
+  }
+
+  try {
+    const event = await Event.findById(id);
+    if (!event) return res.status(404).json({ error: "No such event" });
+
+    // Find the booth index - try _id match first, then layout id / label / code
+    let boothIndex = event.booths.findIndex(b => b._id.toString() === boothId);
+
+    if (boothIndex === -1) {
+      // Fallback: search by label or code (common when IDs shift during layout saves)
+      boothIndex = event.booths.findIndex(b => b.code === boothId || b.label === boothId);
+    }
+
+    if (boothIndex === -1 && event.layoutData?.items) {
+      // Third attempt: find the item in layoutData to get its label/code, then match that back to booths
+      const layoutItem = event.layoutData.items.find(item => (item._id?.toString() === boothId || item.id?.toString() === boothId));
+      if (layoutItem) {
+        const identifier = layoutItem.code || layoutItem.label;
+        boothIndex = event.booths.findIndex(b => b.code === identifier || b.label === identifier);
+      }
+    }
+
+    if (boothIndex === -1) {
+      return res.status(404).json({ error: "Booth not found in this event" });
+    }
+
+    const booth = event.booths[boothIndex];
+
+    // Check if available
+    if (booth.status !== "available") {
+      return res.status(400).json({ error: "Booth is no longer available" });
+    }
+
+    // 1. Create the Reservation record
+    const reservation = await Reservation.create({
+      user: req.user._id,
+      event: id,
+      boothId: booth._id,
+      boothCode: booth.label || booth.code,
+      amount,
+      billingAddress,
+      paymentMethod: paymentMethod || "invoice",
+      status: "confirmed", // Auto-confirmed for invoice/sample flow
+    });
+
+    // 2. Update the booth status in the Event
+    // We mark it as 'sold' to show it as Green/Occupied on the map
+    const buyerName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
+    event.booths[boothIndex].status = "sold";
+    event.booths[boothIndex].reservedBy = buyerName;
+
+    // Also update layoutData if it exists
+    if (event.layoutData && event.layoutData.items) {
+      const layoutItemIndex = event.layoutData.items.findIndex(item => item._id?.toString() === boothId || item.id?.toString() === boothId);
+      if (layoutItemIndex !== -1) {
+        event.layoutData.items[layoutItemIndex].status = "sold";
+        event.layoutData.items[layoutItemIndex].reservedBy = buyerName;
+        event.markModified('layoutData');
+      }
+    }
+
+    await event.save();
+
+    // 3. Update Price Level stats
+    if (booth.priceLevelId && booth.priceLevelId !== "none") {
+      const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === booth.priceLevelId.toString());
+      if (plIndex !== -1) {
+        event.priceLevels[plIndex].quantitySold += 1;
+        await event.save();
+      }
+    }
+
+    emitUpdate('dashboardUpdate');
+
+    res.status(201).json({
+      message: "Booth reserved successfully",
+      reservation,
+      event
+    });
+
+  } catch (error) {
+    console.error("Reserve Booth Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getEvents,
   getEvent,
@@ -1002,5 +1096,6 @@ module.exports = {
   updateEvent,
   saveVenueLayout,
   assignPriceLevels,
+  reserveBooth,
   upload,
 };

@@ -1,5 +1,5 @@
-import React from 'react';
 import { Icon } from '@iconify/react';
+import { QRCodeCanvas } from 'qrcode.react';
 import './SponsorEnlargeQR.css';
 
 const SponsorEnlargeQR = ({ isOpen, onClose, booth }) => {
@@ -15,19 +15,26 @@ const SponsorEnlargeQR = ({ isOpen, onClose, booth }) => {
                     </button>
                 </div>
                 <div className="sponsor-enlarge-qr-body">
-                    <h2 className="enlarge-qr-title">{booth.title}</h2>
-                    <p className="small-body-text text-secondary enlarge-qr-subtitle">VIP - Booth {booth.id}02</p>
+                    <h2 className="enlarge-qr-title">{booth.event?.title}</h2>
+                    <p className="small-body-text text-secondary enlarge-qr-subtitle">
+                        Reservation #{booth._id?.substring(0, 8).toUpperCase()} • Booth {booth.boothCode}
+                    </p>
 
-                    <div className="enlarge-qr-code-container">
-                        <Icon icon="mdi:qrcode" className="enlarge-qr-icon" />
+                    <div className="enlarge-qr-code-container" style={{ padding: '20px', background: 'white', borderRadius: '12px' }}>
+                        <QRCodeCanvas
+                            value={booth._id || "No ID"}
+                            size={200}
+                            level={"H"}
+                            includeMargin={false}
+                        />
                     </div>
 
                     <p className="smaller-body-text text-secondary enlarge-qr-instruction">
-                        Show this code at the entrance to be scanned.
+                        Show this code at the entrance to be scanned for attendance.
                     </p>
 
                     <button className="outlined-button enlarge-qr-download-btn">
-                        <Icon icon="mdi:download-outline" width="20" /> Save to photos
+                        <Icon icon="mdi:download-outline" width="20" /> Download QR
                     </button>
                 </div>
             </div>

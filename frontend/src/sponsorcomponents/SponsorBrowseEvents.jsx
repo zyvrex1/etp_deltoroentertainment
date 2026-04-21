@@ -49,10 +49,10 @@ const SponsorBrowseEvents = () => {
     };
 
     const filteredEvents = allEvents.filter((event) => {
-        const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              (event.venue?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              (event.venue?.city || "").toLowerCase().includes(searchQuery.toLowerCase());
-        
+        const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (event.venue?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (event.venue?.city || "").toLowerCase().includes(searchQuery.toLowerCase());
+
         // Date range filtering
         const eventDate = new Date(event.startDate);
         const matchesDate = eventDate >= dateRange.start && eventDate <= dateRange.end;
@@ -91,15 +91,15 @@ const SponsorBrowseEvents = () => {
                     <div className="sbe-toolbar-left">
                         <div className="sbe-search">
                             <Icon icon="mdi:magnify" />
-                            <input 
-                                type="text" 
-                                placeholder="Search events, artist or venue" 
+                            <input
+                                type="text"
+                                placeholder="Search events, artist or venue"
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="small-body-text sbe-search-input" 
+                                className="small-body-text sbe-search-input"
                             />
                         </div>
                     </div>
@@ -126,9 +126,9 @@ const SponsorBrowseEvents = () => {
                         paginatedEvents.map((event) => (
                             <div key={event._id} className="sbe-event-card" onClick={() => handleEventClick(event._id)}>
                                 <div className="sbe-card-image-wrap">
-                                    <img 
-                                        src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : '/assets/eventbg.jpg'} 
-                                        alt={event.title} 
+                                    <img
+                                        src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : '/assets/eventbg.jpg'}
+                                        alt={event.title}
                                     />
                                     <div className="sbe-category-badge button-label">
                                         {event.category || "Event"}
@@ -136,7 +136,7 @@ const SponsorBrowseEvents = () => {
                                 </div>
                                 <div className="sbe-card-details">
                                     <h5 className="sbe-event-title">{event.title}</h5>
-                                    
+
                                     <div className="sbe-card-info small-body-text">
                                         <Icon icon="mdi:calendar-blank-outline" />
                                         <span>{new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -146,16 +146,16 @@ const SponsorBrowseEvents = () => {
                                         <span>{event.venue?.name || "TBA"}</span>
                                     </div>
 
-                                        <div className="sbe-stats-row">
-                                            <div className="sbe-stat-item">
-                                                <span className="smaller-body-text stat-label">Time</span>
-                                                <span className="large-body-text stat-value">{event.startTime || "TBA"} - {event.endTime || "TBA"}</span>
-                                            </div>
-                                            <div className="sbe-stat-item">
-                                                <span className="smaller-body-text stat-label">Booths Available</span>
-                                                <span className="large-body-text stat-value">{event.booths?.length || 0}</span>
-                                            </div>
+                                    <div className="sbe-stats-row">
+                                        <div className="sbe-stat-item">
+                                            <span className="smaller-body-text stat-label">Time</span>
+                                            <span className="large-body-text stat-value">{event.startTime || "TBA"} - {event.endTime || "TBA"}</span>
                                         </div>
+                                        <div className="sbe-stat-item">
+                                            <span className="smaller-body-text stat-label">Booths Available</span>
+                                            <span className="large-body-text stat-value">{event.booths?.filter(b => b.status === "available").length || 0}</span>
+                                        </div>
+                                    </div>
 
                                     <button className="primary-button sbe-view-btn">
                                         View Details <Icon icon="mdi:arrow-right" />

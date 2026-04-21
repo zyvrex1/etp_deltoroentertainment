@@ -1,61 +1,215 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Stage, Layer, Rect, Circle, Text, Group, Line, Image as KonvaImage } from 'react-konva';
+import useImage from 'use-image';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import eventsService from '../services/eventsService';
 import './SponsorVenueLayout.css';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+const BackgroundImage = ({ item, onClick }) => {
+    const [img] = useImage(item.imageUrl?.startsWith('http') ? item.imageUrl : `${BACKEND_URL}/uploads/${item.imageUrl}`);
+    const isBg = item.isBackground || item.type === "background" || item.subType === "Image";
+    const w = item.width || (isBg ? 400 : 45);
+    const h = item.height || (isBg ? 300 : 45);
+
+    if (!img) return null;
+
+    return (
+        <KonvaImage
+            id={item.id?.toString()}
+            image={img}
+            x={item.x}
+            y={item.y}
+            width={w}
+            height={h}
+            scaleX={item.scaleX || 1}
+            scaleY={item.scaleY || 1}
+            rotation={item.rotation || 0}
+            onClick={onClick}
+            opacity={isBg ? 0.6 : 1}
+        />
+    );
+};
+
+const BackgroundShape = ({ item, onClick }) => {
+    const isBg = item.isBackground || item.type === "background";
+    const isElement = item.isElement || item.type === "element";
+    const w = item.width || 100;
+    const h = item.height || 100;
+
+    return (
+        <Group
+            id={item.id?.toString()}
+            x={item.x}
+            y={item.y}
+            scaleX={item.scaleX || 1}
+            scaleY={item.scaleY || 1}
+            rotation={item.rotation || 0}
+            onClick={onClick}
+        >
+            <Rect
+                width={w}
+                height={h}
+                fill={item.color || (isBg ? "#f5f5f5" : "#90caf9")}
+                opacity={isBg ? 0.3 : 0.8}
+                stroke={isElement ? "#333" : "transparent"}
+                strokeWidth={1}
+            />
+            {isElement && (
+                <Text
+                    text={item.label || item.code || ""}
+                    align="center"
+                    verticalAlign="middle"
+                    fontSize={14}
+                    fill="black"
+                    fontStyle="bold"
+                    listening={false}
+                    scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
+                    scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
+                    width={w * (item.scaleX || 1) / Math.min(item.scaleX || 1, item.scaleY || 1)}
+                    height={h * (item.scaleY || 1) / Math.min(item.scaleX || 1, item.scaleY || 1)}
+                    x={0}
+                    y={0}
+                />
+            )}
+        </Group>
+    );
+};
 
 const SponsorVenueLayout = () => {
     const navigate = useNavigate();
-    const [selectedBooth, setSelectedBooth] = useState('102');
-    const [detailPopup, setDetailPopup] = useState(null);
+    const { id } = useParams();
+    const { user } = useAuthContext();
+
+    const [event, setEvent] = useState(null);
+    const [localItems, setLocalItems] = useState([]);
+    const [priceLevels, setPriceLevels] = useState([]);
+    const [selectedId, setSelectedId] = useState(null);
+    const [zoom, setZoom] = useState(0.8);
+    const [isLoading, setIsLoading] = useState(true);
+    const stageRef = useRef(null);
+    const containerRef = useRef(null);
+    const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+
+    useEffect(() => {
+        const updateDimensions = () => {
+            if (containerRef.current) {
+                setDimensions({
+                    width: containerRef.current.offsetWidth,
+                    height: containerRef.current.offsetHeight || 600
+                });
+            }
+        };
+
+        window.addEventListener('resize', updateDimensions);
+        updateDimensions();
+        // Trigger again after a small delay to ensure container has rendered
+        setTimeout(updateDimensions, 100);
+        return () => window.removeEventListener('resize', updateDimensions);
+    }, []);
+
+    const CANVAS_WIDTH = 1400;
+    const CANVAS_HEIGHT = 800;
+
+    useEffect(() => {
+        const fetchEventData = async () => {
+            if (!id || !user?.token) {
+                setIsLoading(false);
+                return;
+            }
+            setIsLoading(true);
+            try {
+                const data = await eventsService.getEvent(id, user.token);
+                if (!data) {
+                    setIsLoading(false);
+                    return;
+                }
+                setEvent(data);
+
+                let savedItems = [];
+                if (data.layoutData && data.layoutData.items) {
+                    savedItems = data.layoutData.items;
+                } else if (data.seatMap) {
+                    savedItems = [
+                        ...(data.seatMap.sections?.flatMap(s => s.seats) || []),
+                        ...(data.seatMap.elements || []),
+                        ...(data.seatMap.backgrounds || []),
+                        ...(data.booths || []),
+                    ];
+                } else {
+                    savedItems = data.booths || [];
+                }
+
+                const normalizedItems = (savedItems || [])
+                    .filter(Boolean)
+                    .map((item) => ({
+                        ...item,
+                        id: item._id || item.id,
+                        status: item.status || "available",
+                        type: item.type?.toLowerCase() || (item.isBooth ? "booth" : item.isElement ? "element" : "background"),
+                        categoryId: item.categoryId || item.priceLevelId,
+                    }));
+
+                setLocalItems(normalizedItems);
+                setPriceLevels(data.priceLevels || []);
+            } catch (error) {
+                console.error("Error fetching event layout:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchEventData();
+    }, [id, user?.token]);
+
+    const sortedItems = useMemo(() => {
+        return [...localItems].sort((a, b) => {
+            const getWeight = (item) => {
+                if (item.isBackground || item.type === "background") return 1;
+                if (item.isElement || item.type === "element") return 2;
+                return 3;
+            };
+            return getWeight(a) - getWeight(b);
+        });
+    }, [localItems]);
 
     const handleConfirm = () => {
-        navigate('/sponsor/sponsor-confirm-selection'); // Or wherever it routes
+        if (!selectedId) return;
+        // Navigate to confirmation with state
+        const selectedItem = localItems.find(i => i.id === selectedId);
+        const category = priceLevels.find(pl => pl._id === selectedItem?.categoryId);
+        navigate('/sponsor/sponsor-confirm-selection', {
+            state: {
+                event,
+                booth: selectedItem,
+                category
+            }
+        });
     };
 
-    const handleBoothClick = (booth) => {
-        setSelectedBooth(booth.id);
-        setDetailPopup(booth);
-    };
+    const selectedItemData = useMemo(() => {
+        const item = localItems.find(i => i.id === selectedId);
+        if (!item) return null;
+        const cat = priceLevels.find(pl => pl._id === item.categoryId);
+        return { ...item, category: cat };
+    }, [selectedId, localItems, priceLevels]);
 
-    const booths = [
-        // Top Row (Premium Island), gridRow: 1
-        { id: '101', class: 'red', style: { gridColumn: '1 / span 5', gridRow: '1' }, name: 'Booth #101', status: 'Unavailable', type: 'Premium Island', price: '$5,000', dimensions: '20x20', position: 'Row 1, Col 1' },
-        { id: '102', class: 'blue', style: { gridColumn: '6 / span 5', gridRow: '1' }, name: 'Booth #102', status: 'Available', type: 'Premium Island', price: '$5,000', dimensions: '20x20', position: 'Row 1, Col 2' },
-        { id: '103', class: 'purple', style: { gridColumn: '11 / span 5', gridRow: '1' }, name: 'Booth #103', status: 'VIP', type: 'Premium Island', price: '$8,000', dimensions: '20x20', position: 'Row 1, Col 3' },
-        { id: '104', class: 'purple', style: { gridColumn: '16 / span 5', gridRow: '1' }, name: 'Booth #104', status: 'VIP', type: 'Premium Island', price: '$8,000', dimensions: '20x20', position: 'Row 1, Col 4' },
+    if (isLoading) return <div className="sed-loading-container"><Icon icon="line-md:loading-twotone-loop" width="48" /></div>;
 
-        // Middle Row 1 (Standard/Corner), gridRow: 3
-        { id: '201', class: 'yellow', style: { gridColumn: '1 / span 2', gridRow: '3' }, name: 'Booth #201', status: 'Corner Location', type: 'Corner Booth', price: '$3,000', dimensions: '10x10', position: 'Row 2, Col 1' },
-        { id: '202', class: 'green', style: { gridColumn: '3 / span 2', gridRow: '3' }, name: 'Booth #202', status: 'Available', type: 'Standard Booth', price: '$2,500', dimensions: '10x10', position: 'Row 2, Col 2' },
-        // Aisle: Col 5, 6
-        { id: '301', class: 'yellow', style: { gridColumn: '7 / span 2', gridRow: '3' }, name: 'Booth #301', status: 'Corner Location', type: 'Corner Booth', price: '$3,000', dimensions: '10x10', position: 'Row 2, Col 3' },
-        { id: '302', class: 'green', style: { gridColumn: '9 / span 2', gridRow: '3' }, name: 'Booth #302', status: 'Available', type: 'Standard Booth', price: '$2,500', dimensions: '10x10', position: 'Row 2, Col 4' },
-        { id: '303', class: 'green', style: { gridColumn: '11 / span 2', gridRow: '3' }, name: 'Booth #303', status: 'Available', type: 'Standard Booth', price: '$2,500', dimensions: '10x10', position: 'Row 2, Col 5' },
-        { id: '304', class: 'red', style: { gridColumn: '13 / span 2', gridRow: '3' }, name: 'Booth #304', status: 'Unavailable', type: 'Standard Booth', price: '$2,500', dimensions: '10x10', position: 'Row 2, Col 6' },
-        // Aisle: Col 15, 16
-        { id: '401', class: 'green', style: { gridColumn: '17 / span 2', gridRow: '3' }, name: 'Booth #401', status: 'Available', type: 'Standard Booth', price: '$2,500', dimensions: '10x10', position: 'Row 2, Col 7' },
-        { id: '402', class: 'yellow', style: { gridColumn: '19 / span 2', gridRow: '3' }, name: 'Booth #402', status: 'Corner Location', type: 'Corner Booth', price: '$3,000', dimensions: '10x10', position: 'Row 2, Col 8' },
-
-        // Middle Row 2 (Standard/Corner), gridRow: 4
-        { id: '203', class: 'red', style: { gridColumn: '1 / span 2', gridRow: '4' }, name: 'Booth #203', status: 'Unavailable', type: 'Standard Booth', price: '$2,500', dimensions: '10x10', position: 'Row 3, Col 1' },
-        { id: '204', class: 'green', style: { gridColumn: '3 / span 2', gridRow: '4' }, name: 'Booth #204', status: 'Available', type: 'Standard Booth', price: '$2,500', dimensions: '10x10', position: 'Row 3, Col 2' },
-
-        { id: '305', class: 'yellow', style: { gridColumn: '7 / span 2', gridRow: '4' }, name: 'Booth #305', status: 'Corner Location', type: 'Corner Booth', price: '$3,000', dimensions: '10x10', position: 'Row 3, Col 3' },
-        { id: '306', class: 'green', style: { gridColumn: '9 / span 2', gridRow: '4' }, name: 'Booth #306', status: 'Available', type: 'Standard Booth', price: '$2,500', dimensions: '10x10', position: 'Row 3, Col 4' },
-        { id: '307', class: 'green', style: { gridColumn: '11 / span 2', gridRow: '4' }, name: 'Booth #307', status: 'Available', type: 'Standard Booth', price: '$2,500', dimensions: '10x10', position: 'Row 3, Col 5' },
-        { id: '308', class: 'yellow', style: { gridColumn: '13 / span 2', gridRow: '4' }, name: 'Booth #308', status: 'Corner Location', type: 'Corner Booth', price: '$3,000', dimensions: '10x10', position: 'Row 3, Col 6' },
-
-        { id: '403', class: 'red', style: { gridColumn: '17 / span 2', gridRow: '4' }, name: 'Booth #403', status: 'Unavailable', type: 'Standard Booth', price: '$2,500', dimensions: '10x10', position: 'Row 3, Col 7' },
-        { id: '404', class: 'yellow', style: { gridColumn: '19 / span 2', gridRow: '4' }, name: 'Booth #404', status: 'Corner Location', type: 'Corner Booth', price: '$3,000', dimensions: '10x10', position: 'Row 3, Col 8' },
-
-        // Bottom Row (VIP), gridRow: 6
-        { id: '501', class: 'purple', style: { gridColumn: '5 / span 4', gridRow: '6' }, name: 'Booth #501', status: 'VIP', type: 'VIP Booth', price: '$8,000', dimensions: '30x20', position: 'Row 4, Col 1' },
-        { id: '502', class: 'purple', style: { gridColumn: '9 / span 4', gridRow: '6' }, name: 'Booth #502', status: 'VIP', type: 'VIP Booth', price: '$8,000', dimensions: '30x20', position: 'Row 4, Col 2' },
-        { id: '503', class: 'purple', style: { gridColumn: '13 / span 4', gridRow: '6' }, name: 'Booth #503', status: 'VIP', type: 'VIP Booth', price: '$8,000', dimensions: '30x20', position: 'Row 4, Col 3' },
-    ];
-
-    const currentSelectedBoothData = booths.find(b => b.id === selectedBooth) || booths[1];
+    if (!event) {
+        return (
+            <div className="sed-error-container">
+                <Icon icon="mdi:alert-circle-outline" width="48" />
+                <h3>Event layout not found</h3>
+                <p className="small-body-text text-secondary mb-4">We couldn't retrieve the layout for this event. Please try again or select another event.</p>
+                <button className="primary-button" onClick={() => navigate('/sponsor/sponsor-events')}>Browse Events</button>
+            </div>
+        );
+    }
 
     return (
         <div className="svl-page-wrapper">
@@ -68,11 +222,13 @@ const SponsorVenueLayout = () => {
                         <div>
                             <h2 className="text-primary">Select Your Booth</h2>
                             <div className="svl-subtitle mt-1">
-                                <span className="small-body-text text-secondary">TechInnovate Summit 2024</span>
+                                <span className="small-body-text text-secondary">{event?.title}</span>
                                 <span className="svl-dot mx-2 text-secondary">•</span>
                                 <div className="calendar-row">
                                     <Icon icon="mdi:calendar-blank-outline" className="text-secondary" />
-                                    <span className="small-body-text text-secondary">Jun 16, 2026</span>
+                                    <span className="small-body-text text-secondary">
+                                        {new Date(event?.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -96,39 +252,97 @@ const SponsorVenueLayout = () => {
                     <div className="svl-info-box mb-4">
                         <Icon icon="mdi:information-outline" className="text-blue" />
                         <span className="small-body-text text-primary">
-                            Click on any except for <span className="text-red font-bold">red</span> booth to select it. Use the zoom controls to explore the floor plan in detail.
+                            Click on any <span className="font-bold">available</span> booth to select it. Drag to pan and use controls to zoom.
                         </span>
                     </div>
 
-                    <div className="svl-map-container">
-                        <div className="svl-zoom-controls">
-                            <button><Icon icon="mdi:magnify-plus-outline" /></button>
-                            <button><Icon icon="mdi:magnify-minus-outline" /></button>
-                            <button><Icon icon="mdi:fullscreen" /></button>
+                    <div className="svl-map-container" ref={containerRef} style={{ padding: 0, overflow: 'hidden' }}>
+                        <div className="svl-zoom-controls" style={{ zIndex: 10 }}>
+                            <button onClick={() => setZoom(z => Math.min(z + 0.1, 2))} title="Zoom In"><Icon icon="mdi:magnify-plus-outline" /></button>
+                            <button onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} title="Zoom Out"><Icon icon="mdi:magnify-minus-outline" /></button>
+                            <button onClick={() => setZoom(0.8)} title="Reset View"><Icon icon="mdi:refresh" /></button>
                         </div>
 
-                        <div className="svl-map-wrapper">
-                            <div className="svl-map-grid">
-                                {booths.map((booth) => (
-                                    <div
-                                        key={booth.id}
-                                        className={`svl-booth ${booth.class} ${selectedBooth === booth.id ? 'selected' : ''}`}
-                                        style={booth.style}
-                                        onClick={() => handleBoothClick(booth)}
-                                    >
-                                        {booth.id}
-                                    </div>
-                                ))}
-                            </div>
+                        <div className="svl-map-wrapper" style={{ height: '100%', overflow: 'hidden' }}>
+                            <Stage
+                                width={dimensions.width}
+                                height={dimensions.height}
+                                ref={stageRef}
+                                scaleX={zoom}
+                                scaleY={zoom}
+                                draggable
+                            >
+                                <Layer>
+                                    {sortedItems.map((item, i) => (
+                                        <React.Fragment key={item.id || i}>
+                                            {item.imageUrl ? (
+                                                <BackgroundImage item={item} onClick={() => {
+                                                    if (item.type === "booth" || item.isBooth) setSelectedId(item.id);
+                                                }} />
+                                            ) : (item.type === "seat" || item.type === "booth") ? (
+                                                <Group
+                                                    x={item.x}
+                                                    y={item.y}
+                                                    scaleX={item.scaleX || 1}
+                                                    scaleY={item.scaleY || 1}
+                                                    rotation={item.rotation || 0}
+                                                    onClick={() => {
+                                                        // Only allow booths to be selected
+                                                        if (item.status === 'available' && (item.type === 'booth' || item.isBooth)) {
+                                                            setSelectedId(item.id);
+                                                        }
+                                                    }}
+                                                >
+                                                    {item.type === "booth" ? (
+                                                        <Rect
+                                                            x={-20}
+                                                            y={-20}
+                                                            width={40}
+                                                            height={40}
+                                                            fill={selectedId === item.id ? "#3b82f6" : (item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (item.status !== 'available' ? '#ef4444' : (priceLevels.find(c => c._id === item.categoryId)?.color || "#e0e0e0")))}
+                                                            stroke="white"
+                                                            strokeWidth={selectedId === item.id ? 2 : 1}
+                                                            cornerRadius={4}
+                                                        />
+                                                    ) : (
+                                                        <Circle
+                                                            radius={20}
+                                                            fill={priceLevels.find(c => c._id === item.categoryId)?.color || "#666666"}
+                                                            stroke="white"
+                                                            strokeWidth={1}
+                                                            opacity={0.3} // Visual cue that seats are not for sponsors
+                                                        />
+                                                    )}
+                                                    <Text
+                                                        text={item.label || item.code || ""}
+                                                        fontSize={9}
+                                                        fontStyle="bold"
+                                                        fill="white"
+                                                        align="center"
+                                                        verticalAlign="middle"
+                                                        x={0}
+                                                        y={0}
+                                                        offsetX={20}
+                                                        offsetY={20}
+                                                        width={40}
+                                                        height={40}
+                                                        scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
+                                                        scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
+                                                    />
+                                                </Group>
+                                            ) : (
+                                                <BackgroundShape item={item} />
+                                            )}
+                                        </React.Fragment>
+                                    ))}
+                                </Layer>
+                            </Stage>
                         </div>
-
 
                         <div className="svl-legend">
-                            <div className="svl-legend-item"><span className="svl-dot-icon green"></span>Available</div>
-                            <div className="svl-legend-item"><span className="svl-dot-icon red"></span>Unavailable</div>
-                            <div className="svl-legend-item"><span className="svl-dot-icon blue"></span>Selected</div>
-                            <div className="svl-legend-item"><span className="svl-dot-icon yellow"></span>Corner Location</div>
-                            <div className="svl-legend-item"><span className="svl-dot-icon purple"></span>VIP</div>
+                            <div className="svl-legend-item"><span className="svl-dot-icon gray" style={{ backgroundColor: '#e0e0e0' }}></span>Available</div>
+                            <div className="svl-legend-item"><span className="svl-dot-icon green" style={{ backgroundColor: '#22c55e' }}></span>Sold</div>
+                            <div className="svl-legend-item"><span className="svl-dot-icon blue" style={{ backgroundColor: '#3b82f6' }}></span>Selected</div>
                         </div>
                     </div>
                 </div>
@@ -137,71 +351,46 @@ const SponsorVenueLayout = () => {
                     <div className="svl-summary-card">
                         <h4 className="text-primary mb-4 block">Selection Summary</h4>
 
-                        <div className="svl-summary-header">
-                            <span className="blue-pill button-label">Selected</span>
-                            <h4 className="text-red">{currentSelectedBoothData?.price || '$5,000'}</h4>
-                        </div>
+                        {selectedItemData ? (
+                            <>
+                                <div className="svl-summary-header">
+                                    <span className="blue-pill button-label">Selected</span>
+                                    <h4 className="text-red">${(selectedItemData.category?.facePrice || 0).toLocaleString()}</h4>
+                                </div>
 
-                        <div className="svl-booth-title">
-                            <h3 className="text-primary">{currentSelectedBoothData?.name || 'Booth #102'}</h3>
-                            <p className="smaller-body-text text-secondary mt-1">{currentSelectedBoothData?.type || 'Premium Island'}</p>
-                        </div>
+                                <div className="svl-booth-title">
+                                    <h3 className="text-primary">{selectedItemData.label || 'Booth'}</h3>
+                                    <p className="smaller-body-text text-secondary mt-1">{selectedItemData.category?.priceName || 'Booth Category'}</p>
+                                </div>
 
-                        <hr className="svl-divider" />
+                                <hr className="svl-divider" />
 
-                        <div className="svl-dim-row">
-                            <span className="smaller-body-text text-secondary">Dimensions</span>
-                            <span className="smaller-body-text text-secondary">{currentSelectedBoothData?.dimensions || '20x20'}</span>
-                        </div>
+                                <div className="svl-dim-row">
+                                    <span className="smaller-body-text text-secondary">Dimensions</span>
+                                    <span className="smaller-body-text text-secondary font-bold">{selectedItemData.category?.boothSize || selectedItemData.boothSize || 'Standard'}</span>
+                                </div>
 
-                        <div className="svl-features">
-                            <span className="smaller-body-text font-bold text-secondary">KEY FEATURES</span>
-                            <ul className="svl-feature-list">
-                                <li><span className="svl-dot-icon small-green small"></span><span className="smaller-body-text text-secondary">High Visibility</span></li>
-                                <li><span className="svl-dot-icon small-green small"></span><span className="smaller-body-text text-secondary">Near Entrance</span></li>
-                                <li><span className="svl-dot-icon small-green small"></span><span className="smaller-body-text text-secondary">Power Included</span></li>
-                            </ul>
-                        </div>
+                                <div className="svl-features">
+                                    <span className="smaller-body-text font-bold text-secondary">KEY FEATURES</span>
+                                    <ul className="svl-feature-list">
+                                        <li><span className="svl-dot-icon small-green small"></span><span className="smaller-body-text text-secondary">Premium Location</span></li>
+                                        <li><span className="svl-dot-icon small-green small"></span><span className="smaller-body-text text-secondary">Electricity Access</span></li>
+                                    </ul>
+                                </div>
 
-                        <button className="primary-button svl-confirm-btn" onClick={handleConfirm}>
-                            Confirm Selection
-                        </button>
-                        <p className="smaller-body-text text-secondary text-center">You can review details in the next step</p>
+                                <button className="primary-button svl-confirm-btn" onClick={handleConfirm}>
+                                    Confirm Selection
+                                </button>
+                            </>
+                        ) : (
+                            <div className="text-center py-5">
+                                <Icon icon="mdi:cursor-default-click-outline" width="48" className="text-secondary opacity-20 mb-3" />
+                                <p className="small-body-text text-secondary">Select a booth on the map to see details and pricing</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
-
-            {detailPopup &&
-                createPortal(
-                    <div
-                        className="svl-detail-popup-overlay"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="svl-detail-popup-title"
-                        onClick={() => setDetailPopup(null)}
-                    >
-                        <div className="svl-detail-popup-box" onClick={(e) => e.stopPropagation()}>
-                            <button
-                                type="button"
-                                className="svl-detail-popup-close"
-                                onClick={() => setDetailPopup(null)}
-                                aria-label="Close"
-                            >
-                                <Icon icon="mdi:close" />
-                            </button>
-                            <div className="svl-detail-popup-content">
-                                <strong id="svl-detail-popup-title" className="h5 text-primary svl-popup-title">{detailPopup.name}</strong>
-                                <span className="svl-popup-status"><span className={`svl-dot-icon ${detailPopup.class}`}></span> {detailPopup.status}</span>
-                                <span><strong className="text-black">Type:</strong> {detailPopup.type}</span>
-                                <span><strong className="text-black">Dimensions:</strong> {detailPopup.dimensions}</span>
-                                <span><strong className="text-black">Price:</strong> {detailPopup.price}</span>
-                                <span><strong className="text-black">Position:</strong> {detailPopup.position}</span>
-                            </div>
-                        </div>
-                    </div>,
-                    document.body
-                )}
-
         </div>
     );
 };

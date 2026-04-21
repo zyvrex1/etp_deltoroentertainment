@@ -133,7 +133,7 @@ function App() {
           <Route index element={<SponsorHome />} />
           <Route path="sponsor-events" element={<SponsorEvents />} />
           <Route path="sponsor-event/:id" element={<SponsorEventDetails />} />
-          <Route path="sponsor-venue-layout" element={<SponsorVenueLayout />} />
+          <Route path="sponsor-venue-layout/:id?" element={<SponsorVenueLayout />} />
           <Route path="sponsor-confirm-selection" element={<SponsorConfirmSelection />} />
           <Route path="sponsor-reservation" element={<SponsorReservationSummary />} />
           <Route path="sponsor-venue-billing" element={<SponsorVenueBilling />} />

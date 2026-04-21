@@ -120,8 +120,8 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
         } else {
           savedItems = [
             ...(data.seatMap?.sections[0]?.seats || []),
-            ...(data.seatMap?.elements || []), 
-            ...(data.seatMap?.backgrounds || []), 
+            ...(data.seatMap?.elements || []),
+            ...(data.seatMap?.backgrounds || []),
             ...(data.booths || []),
           ];
         }
@@ -169,7 +169,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
 
   const totalPlacedCount = localItems.filter(i => ["seat", "booth", "table"].includes(i.type)).length;
   const potentialRevenue = priceLevels.reduce((sum, p) => sum + ((p.facePrice || 0) * (p.quantityAvailable || 0)), 0);
-  
+
   const currentRevenue = localItems.reduce((sum, item) => {
     if (item.status === 'sold' || item.status === 'partially-sold') {
       const cat = priceLevels.find(p => p._id === item.categoryId);
@@ -220,7 +220,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                   const itemsInCat = localItems.filter(i => i.categoryId === cat._id);
                   const placed = itemsInCat.length;
                   const sold = cat.quantitySold || 0;
-                  
+
                   return (
                     <div key={cat._id} className="sidebar-cat-item" style={{ padding: '10px' }}>
                       <div className="cat-palette-visual" style={{ backgroundColor: cat.color, width: '32px', height: '32px', fontSize: '16px' }}>
@@ -268,6 +268,12 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                           <span className="label">Status</span>
                           <span className={`value status-${item.status}`}>{item.status?.toUpperCase()}</span>
                         </div>
+                        {item.reservedBy && (
+                          <div className="summary-item">
+                            <span className="label">Buyer</span>
+                            <span className="value-bold" style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
+                          </div>
+                        )}
                         {category && (
                           <>
                             <div className="summary-item">
@@ -312,17 +318,17 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
 
         <div className="canvas-area">
           <div className="canvas-toolbar">
-              <h4 className="canvas-title">{selectedEvent?.venue?.name || "Venue Map"}</h4>
-              <div className="zoom-controls">
-                <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))}>
-                  <Icon icon="mdi:minus" />
-                </button>
-                <span className="zoom-value">{Math.round(zoom * 100)}%</span>
-                <button className="bt-btn" onClick={() => setZoom(z => Math.min(z + 0.1, 2))}>
-                  <Icon icon="mdi:plus" />
-                </button>
-              </div>
+            <h4 className="canvas-title">{selectedEvent?.venue?.name || "Venue Map"}</h4>
+            <div className="zoom-controls">
+              <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))}>
+                <Icon icon="mdi:minus" />
+              </button>
+              <span className="zoom-value">{Math.round(zoom * 100)}%</span>
+              <button className="bt-btn" onClick={() => setZoom(z => Math.min(z + 0.1, 2))}>
+                <Icon icon="mdi:plus" />
+              </button>
             </div>
+          </div>
 
           <div className="konva-container">
             <Stage
@@ -401,7 +407,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                             y={-20}
                             width={40}
                             height={40}
-                            fill={priceLevels.find(c => c._id === item.categoryId)?.color || "#e0e0e0"}
+                            fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (priceLevels.find(c => c._id === item.categoryId)?.color || "#e0e0e0")}
                             stroke="white"
                             strokeWidth={1}
                             cornerRadius={4}
@@ -410,7 +416,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                           /* Standard Seat - Exact Match to LayoutBuilder */
                           <Circle
                             radius={20}
-                            fill={priceLevels.find(c => c._id === item.categoryId)?.color || "#666666"}
+                            fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (priceLevels.find(c => c._id === item.categoryId)?.color || "#666666")}
                             stroke="white"
                             strokeWidth={1}
                           />

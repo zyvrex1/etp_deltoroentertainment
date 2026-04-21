@@ -38,7 +38,7 @@ const seatSchema = new Schema({
   seatCount: { type: Number, default: 1 },
   occupiedSeats: { type: Number, default: 0 },
   unassignedIndices: { type: [Number], default: [] },
-  color: String, 
+  color: String,
   row: String,
   number: Number,
   label: String,
@@ -47,6 +47,7 @@ const seatSchema = new Schema({
     enum: ["available", "reserved", "sold", "blocked", "partially-sold"],
     default: "available",
   },
+  reservedBy: { type: String, default: "" },
   // Changed to Mixed to allow "none" or Null without casting errors
   priceLevelId: { type: Schema.Types.Mixed, default: null },
   x: { type: Number, required: true },
@@ -64,8 +65,8 @@ const sectionSchema = new Schema({
 });
 
 const elementSchema = new Schema({
-  type: { type: String, default: "Element" }, 
-  label: { type: String, required: true },    
+  type: { type: String, default: "Element" },
+  label: { type: String, required: true },
   shape: { type: String, enum: ["Rect", "Circle"], default: "Rect" },
   color: { type: String, default: "#CCCCCC" },
   x: { type: Number, required: true },
@@ -75,7 +76,7 @@ const elementSchema = new Schema({
   rotation: { type: Number, default: 0 },
   scaleX: { type: Number, default: 1 },
   scaleY: { type: Number, default: 1 },
-  isLocked: { type: Boolean, default: false } 
+  isLocked: { type: Boolean, default: false }
 });
 
 
@@ -83,8 +84,8 @@ const elementSchema = new Schema({
 const layoutItemSchema = new Schema({
   type: { type: String, default: "Background" },
   subType: { type: String, enum: ["Image", "Shape"], default: "Image" },
-  imageUrl: String, 
-  color: String,    
+  imageUrl: String,
+  color: String,
   x: { type: Number, default: 0 },
   y: { type: Number, default: 0 },
   width: Number,
@@ -112,6 +113,7 @@ const boothSchema = new mongoose.Schema({
     enum: ["available", "reserved", "sold", "blocked"],
     default: "available"
   },
+  reservedBy: { type: String, default: "" },
   x: Number,
   y: Number,
   width: { type: Number, default: 60 },
@@ -149,31 +151,31 @@ const eventSchema = new Schema(
 
     startDate: { type: Date, required: true },
     endDate: {
-  type: Date,
-  required: true,
-  validate: {
-    validator: function (value) {
-      // 1. If we are creating a NEW document
-      if (this.startDate) {
-        return value >= this.startDate;
-      }
-      
-      // 2. If we are UPDATING an existing document
-      // Get the update object from the query context
-      const update = this.getUpdate ? this.getUpdate() : null;
-      
-      // If we are updating startDate in this request, use that.
-      // Otherwise, we skip this check and rely on the Controller logic 
-      // because the validator can't easily see the old value in the DB.
-      if (update && update.$set && update.$set.startDate) {
-        return value >= new Date(update.$set.startDate);
-      }
+      type: Date,
+      required: true,
+      validate: {
+        validator: function (value) {
+          // 1. If we are creating a NEW document
+          if (this.startDate) {
+            return value >= this.startDate;
+          }
 
-      return true; 
+          // 2. If we are UPDATING an existing document
+          // Get the update object from the query context
+          const update = this.getUpdate ? this.getUpdate() : null;
+
+          // If we are updating startDate in this request, use that.
+          // Otherwise, we skip this check and rely on the Controller logic 
+          // because the validator can't easily see the old value in the DB.
+          if (update && update.$set && update.$set.startDate) {
+            return value >= new Date(update.$set.startDate);
+          }
+
+          return true;
+        },
+        message: "End date must be after start date",
+      },
     },
-    message: "End date must be after start date",
-  },
-},
 
     startTime: {
       type: String,
@@ -246,7 +248,7 @@ eventSchema.pre("save", function (next) {
 
   // 2. Logic for General Admission
   if (this.eventType === "General Admission") {
-    this.seatMap = null; 
+    this.seatMap = null;
   }
 
   // 3. Logic for Booths - CLEANUP & Validation
@@ -267,7 +269,7 @@ eventSchema.pre("save", function (next) {
     this.layoutData.items = this.layoutData.items.filter(item => {
       // If it's a shape (has categoryId), check if category still exists
       if (item.categoryId) {
-         return priceIds.includes(item.categoryId.toString());
+        return priceIds.includes(item.categoryId.toString());
       }
       return true; // Keep elements/backgrounds
     });
@@ -290,17 +292,17 @@ eventSchema.pre("save", function (next) {
     for (const section of this.seatMap.sections) {
       if (!section.seats) continue;
       for (const seat of section.seats) {
-        if ((seat.status === "sold" || seat.status === "partially-sold") && 
-            seat.priceLevelId && 
-            seat.priceLevelId !== "none") {
-          
+        if ((seat.status === "sold" || seat.status === "partially-sold") &&
+          seat.priceLevelId &&
+          seat.priceLevelId !== "none") {
+
           const p = priceMap[seat.priceLevelId.toString()];
           if (p) {
             // Use occupiedSeats for tables/rows, or 1 for individual seats
-            const soldCount = (seat.type === "Table" || seat.seatCount > 1) 
-              ? (seat.occupiedSeats || 0) 
+            const soldCount = (seat.type === "Table" || seat.seatCount > 1)
+              ? (seat.occupiedSeats || 0)
               : 1;
-            
+
             seatRevenue += ((p.facePrice || 0) + (p.serviceCharge || 0)) * soldCount;
           }
         }
@@ -312,9 +314,9 @@ eventSchema.pre("save", function (next) {
   if (this.hasBooths && this.booths) {
     for (const booth of this.booths) {
       // 1. Validation Check
-      if (booth.priceLevelId && 
-          booth.priceLevelId !== "none" && 
-          !priceIds.includes(booth.priceLevelId.toString())) {
+      if (booth.priceLevelId &&
+        booth.priceLevelId !== "none" &&
+        !priceIds.includes(booth.priceLevelId.toString())) {
         return next(new Error(`Booth ${booth.code || booth.label} has invalid priceLevelId`));
       }
 

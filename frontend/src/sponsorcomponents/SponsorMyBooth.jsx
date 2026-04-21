@@ -1,48 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import SponsorEnlargeQR from './SponsorModal/SponsorEnlargeQR';
+import { QRCodeCanvas } from 'qrcode.react';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import axios from 'axios';
 import './SponsorMyBooth.css';
 
-export default function SponsorMyBooth() {
-    const mockData = [
-        {
-            id: 1,
-            image: '/assets/eventbg.jpg',
-            title: 'TechInnovate Summit 2026',
-            date: 'Jun 16, 2026',
-            location: 'Starlight Arena, Los Angeles, CA',
-            type: 'Premium Island',
-        },
-        {
-            id: 2,
-            image: '/assets/eventbg.jpg',
-            title: 'Global Healthcare Expo 2024',
-            date: 'Aug 10, 2024',
-            location: 'McCormick Place, Chicago, IL',
-            type: 'Standard Inline',
-        },
-        {
-            id: 3,
-            image: '/assets/eventbg.jpg',
-            title: 'Global Healthcare Expo 2023',
-            date: 'Sep 15, 2023',
-            location: 'Javits Center, New York, NY',
-            type: 'Corner Booth',
-        }
-    ];
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
-    const myBooths = Array.from({ length: 12 }, (_, i) => ({
-        ...mockData[i % 3],
-        id: i + 1,
-    }));
+export default function SponsorMyBooth() {
+    const { user } = useAuthContext();
+    const [reservations, setReservations] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchReservations = async () => {
+            if (!user?.token) return;
+            setIsLoading(true);
+            try {
+                const response = await axios.get(`${BACKEND_URL}/api/reservations/my-booths`, {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                setReservations(response.data);
+            } catch (err) {
+                console.error("Fetch reservations error:", err);
+                setError(err.response?.data?.error || "Failed to load reservations.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchReservations();
+    }, [user?.token]);
 
     // Pagination Logic
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
-    const totalPages = Math.ceil(myBooths.length / itemsPerPage);
+    const totalPages = Math.ceil(reservations.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedBooths = myBooths.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedBooths = reservations.slice(startIndex, startIndex + itemsPerPage);
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -63,6 +61,16 @@ export default function SponsorMyBooth() {
         setSelectedBooth(null);
     };
 
+    if (isLoading) {
+        return (
+            <div className="sponsor-my-booth-container">
+                <div className="sed-loading-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+                    <Icon icon="line-md:loading-twotone-loop" width="48" />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="sponsor-my-booth-container">
             <div className="my-booth-header">
@@ -76,26 +84,34 @@ export default function SponsorMyBooth() {
             </div>
 
             <div className="my-booth-list">
-                {paginatedBooths.map(booth => (
-                    <div key={booth.id} className="my-booth-card">
+                {paginatedBooths.map(res => (
+                    <div key={res._id} className="my-booth-card">
                         <div className="my-booth-image-container">
-                            <img src={booth.image} alt={booth.title} className="my-booth-image" />
+                            <img
+                                src={res.event?.image ?
+                                    (res.event.image.startsWith('http') ? res.event.image : `${BACKEND_URL}/uploads/${res.event.image}`)
+                                    : "/assets/eventbg.jpg"}
+                                alt={res.event?.title}
+                                className="my-booth-image"
+                            />
                         </div>
                         <div className="my-booth-content">
                             <div className="my-booth-details-top">
                                 <div className="my-booth-title-row">
-                                    <h3>{booth.title}</h3>
+                                    <h3>{res.event?.title}</h3>
                                 </div>
                                 <div className="my-booth-info-row">
                                     <Icon icon="mdi:calendar-blank" width="20" />
-                                    <span className="regular-body-text">{booth.date}</span>
+                                    <span className="regular-body-text">
+                                        {res.event?.startDate ? new Date(res.event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBA'}
+                                    </span>
                                 </div>
                                 <div className="my-booth-info-row">
                                     <Icon icon="mdi:map-marker-outline" width="20" />
-                                    <span className="regular-body-text">{booth.location}</span>
+                                    <span className="regular-body-text">{res.event?.venue?.name || res.event?.location || 'TBA'}</span>
                                 </div>
                                 <div className="button-label my-booth-type-pill">
-                                    {booth.type}
+                                    Booth #{res.boothCode}
                                 </div>
                             </div>
 
@@ -106,15 +122,21 @@ export default function SponsorMyBooth() {
                                     <NavLink to="/sponsor/sponsor-booth-details" className="my-booth-dark-btn">
                                         <Icon icon="mdi:eye-outline" width="18" /> View Full Details
                                     </NavLink>
-                                    <NavLink to={`/sponsor/sponsor-event/${booth.id}`} className="outlined-button my-booth-outlined-btn">
+                                    <NavLink to={`/sponsor/sponsor-event-details/${res.event?._id}`} className="outlined-button my-booth-outlined-btn">
                                         <Icon icon="mdi:open-in-new" width="18" /> Event Page
                                     </NavLink>
                                 </div>
                             </div>
                         </div>
-                        <button className="my-booth-qr-section" onClick={() => handleOpenQR(booth)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <button className="my-booth-qr-section" onClick={() => handleOpenQR(res)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <div className="my-booth-qr-code">
-                                <Icon icon="mdi:qrcode" width="100" color="var(--color-black-secondary)" />
+                                <QRCodeCanvas
+                                    value={res._id}
+                                    size={100}
+                                    bgColor={"transparent"}
+                                    fgColor={"#333"}
+                                    level={"M"}
+                                />
                             </div>
                             <span className="small-body-text text-secondary">Tap to enlarge</span>
                         </button>

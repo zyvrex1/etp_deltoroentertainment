@@ -35,7 +35,7 @@ const SponsorEventDetails = () => {
     }, [id, user?.token]);
 
     const handleViewMap = () => {
-        navigate('/sponsor/sponsor-venue-layout');
+        navigate(`/sponsor/sponsor-venue-layout/${id}`);
     };
 
     const handleBack = () => {
@@ -74,12 +74,12 @@ const SponsorEventDetails = () => {
                 </div>
             </div>
 
-            <div 
+            <div
                 className="sed-hero-banner"
-                style={{ 
-                    backgroundImage: event.image 
-                        ? `url(${BACKEND_URL}/uploads/${event.image})` 
-                        : "url('/assets/eventbg.jpg')" 
+                style={{
+                    backgroundImage: event.image
+                        ? `url(${BACKEND_URL}/uploads/${event.image})`
+                        : "url('/assets/eventbg.jpg')"
                 }}
             >
                 <div className="sed-hero-overlay"></div>
@@ -181,23 +181,34 @@ const SponsorEventDetails = () => {
                                 <h3>Booth Pricing</h3>
 
                                 <div className="sed-pricing-grid">
-                                    <div className="sed-pricing-card">
-                                        <h6 className="text-primary text-center">Standard Booth</h6>
-                                        <p className="small-body-text text-primary text-center font-bold">10×10</p>
-                                        <h3 className="text-red text-center mt-2">$2,500</h3>
-                                    </div>
+                                    {(event.priceLevels || [])
+                                        .filter(pl => pl.type?.toLowerCase().includes("booth"))
+                                        .map((pl, idx) => {
+                                            const placedAvailable = (event.booths || []).filter(b =>
+                                                (b.priceLevelId?.toString() === pl._id?.toString() || b.priceLevelId?.toString() === pl.id?.toString()) &&
+                                                b.status === "available"
+                                            ).length;
+                                            const totalPlaced = (event.booths || []).filter(b =>
+                                                (b.priceLevelId?.toString() === pl._id?.toString() || b.priceLevelId?.toString() === pl.id?.toString())
+                                            ).length;
 
-                                    <div className="sed-pricing-card">
-                                        <h6 className="text-primary text-center">Corner Booth</h6>
-                                        <p className="small-body-text text-primary text-center font-bold">10×10</p>
-                                        <h3 className="text-red text-center mt-2">$3,000</h3>
-                                    </div>
-
-                                    <div className="sed-pricing-card">
-                                        <h6 className="text-primary text-center">Premium Island</h6>
-                                        <p className="small-body-text text-primary text-center font-bold">20×20</p>
-                                        <h3 className="text-red text-center mt-2">$8,000</h3>
-                                    </div>
+                                            return (
+                                                <div className="sed-pricing-card" key={idx}>
+                                                    <h6 className="text-primary text-center">{pl.priceName}</h6>
+                                                    <p className="small-body-text text-primary text-center font-bold">{pl.boothSize || "Standard"}</p>
+                                                    <h3 className="text-red text-center mt-2">${(pl.facePrice || 0).toLocaleString()}</h3>
+                                                    <div className="text-center mt-2">
+                                                        <span className={`smaller-body-text ${placedAvailable > 0 ? 'text-green' : 'text-red'}`}>
+                                                            {placedAvailable} / {totalPlaced} Placed Available
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    }
+                                    {(!event.priceLevels || event.priceLevels.filter(pl => pl.type?.toLowerCase().includes("booth")).length === 0) && (
+                                        <p className="text-secondary">No booth pricing available yet.</p>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -211,22 +222,42 @@ const SponsorEventDetails = () => {
                             Booths are selling fast! View the live map to see available locations and secure your preferred spot.
                         </p>
 
-                        <div className="sed-availability-row">
-                            <span className="small-body-text text-secondary font-medium">Standard Booths</span>
-                            <span className="small-body-text text-green font-bold">8 Available</span>
-                        </div>
+                        {(event.priceLevels || [])
+                            .filter(pl => pl.type?.toLowerCase().includes("booth"))
+                            .slice(0, 3)
+                            .map((pl, idx) => {
+                                const placedAvailable = (event.booths || []).filter(b =>
+                                    (b.priceLevelId?.toString() === pl._id?.toString() || b.priceLevelId?.toString() === pl.id?.toString()) &&
+                                    b.status === "available"
+                                ).length;
 
-                        <div className="sed-availability-row">
-                            <span className="small-body-text text-secondary font-medium">Premium Islands</span>
-                            <span className="small-body-text text-red font-bold">2 Left</span>
-                        </div>
+                                return (
+                                    <div className="sed-availability-row" key={idx}>
+                                        <span className="small-body-text text-secondary font-medium">{pl.priceName}</span>
+                                        <span className={`small-body-text font-bold ${placedAvailable > 0 ? 'text-green' : 'text-red'}`}>
+                                            {placedAvailable} Placed Avail
+                                        </span>
+                                    </div>
+                                );
+                            })
+                        }
 
-                        <div className="sed-progress-bar-container">
-                            <div className="sed-progress-bar" style={{ width: '75%' }}></div>
-                        </div>
-                        <div className="sed-progress-text">
-                            <span className="smaller-body-text text-secondary">75% Sold Out</span>
-                        </div>
+                        {(() => {
+                            const totalPlaced = (event.booths || []).length;
+                            const soldOrReserved = (event.booths || []).filter(b => b.status !== "available").length;
+                            const percent = totalPlaced > 0 ? Math.round((soldOrReserved / totalPlaced) * 100) : 0;
+
+                            return (
+                                <>
+                                    <div className="sed-progress-bar-container">
+                                        <div className="sed-progress-bar" style={{ width: `${percent}%` }}></div>
+                                    </div>
+                                    <div className="sed-progress-text">
+                                        <span className="smaller-body-text text-secondary">{percent}% Reserved</span>
+                                    </div>
+                                </>
+                            );
+                        })()}
 
                         <button className="primary-button sed-full-btn" onClick={handleViewMap}>View Booth Map</button>
 
@@ -234,13 +265,13 @@ const SponsorEventDetails = () => {
 
                         <div className="sed-help-link mt-4">
                             <span className="smaller-body-text text-secondary">Need help with this event? </span>
-                            <button 
-                                className="link-btn text-red smaller-body-text" 
-                                onClick={() => navigate('/sponsor/support', { 
-                                    state: { 
-                                        tab: 'Submit a Concern', 
-                                        prefill: { event: event.title } 
-                                    } 
+                            <button
+                                className="link-btn text-red smaller-body-text"
+                                onClick={() => navigate('/sponsor/support', {
+                                    state: {
+                                        tab: 'Submit a Concern',
+                                        prefill: { event: event.title }
+                                    }
                                 })}
                             >
                                 Contact Support
@@ -250,9 +281,9 @@ const SponsorEventDetails = () => {
                 </div>
             </div>
 
-            <SponsorKit 
-                isOpen={isSponsorKitModalOpen} 
-                onClose={() => setIsSponsorKitModalOpen(false)} 
+            <SponsorKit
+                isOpen={isSponsorKitModalOpen}
+                onClose={() => setIsSponsorKitModalOpen(false)}
                 event={event}
             />
         </div>

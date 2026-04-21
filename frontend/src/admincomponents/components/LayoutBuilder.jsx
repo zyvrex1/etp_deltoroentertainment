@@ -15,7 +15,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const [categories, setCategories] = useState([]);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  
+
   // Builder state
   const [placedItems, setPlacedItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -32,7 +32,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
   // Handle container resizing
   useEffect(() => {
     if (!containerRef.current) return;
-    
+
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
         setDimensions({
@@ -61,7 +61,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
       }));
       setCategories(normalizedCategories);
     }
-    
+
     // We can also check for ticketCategories fallback if any (but now prioritize priceLevels)
     else if (selectedEvent?.ticketCategories) {
       const normalizedCategories = selectedEvent.ticketCategories.map(cat => ({
@@ -151,7 +151,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
           const matchedBack = updatedEvent.priceLevels.find(pl => pl.priceName === categoryData.name);
           if (matchedBack) {
             // Update any items that were placed with the temporary ID to the new backend ID
-            setPlacedItems(prev => prev.map(item => 
+            setPlacedItems(prev => prev.map(item =>
               item.categoryId === categoryData.id ? { ...item, categoryId: matchedBack._id } : item
             ));
           }
@@ -172,9 +172,16 @@ const LayoutBuilder = ({ selectedEvent }) => {
     if (!selectedEvent?._id) return;
 
     const result = await showDeleteConfirmAlert(
-      "Delete Category?", 
+      "Delete Category?",
       "Deleting this category will also remove all placed shapes associated with it from the map. This cannot be undone."
     );
+
+    // Check if any placed items in this category are sold
+    const hasSoldItems = placedItems.some(i => i.categoryId === id && (i.status === 'sold' || i.status === 'reserved'));
+    if (hasSoldItems) {
+      showErrorAlert("Cannot Delete", "This category contains sold booths and cannot be deleted.");
+      return;
+    }
 
     if (result.isConfirmed) {
       try {
@@ -190,7 +197,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
             type: pl.type || "Seat (Circle)",
             boothSize: pl.boothSize || ""
           }));
-          
+
           setCategories(normalizedCats);
           setPlacedItems(prev => prev.filter(item => item.categoryId !== id));
           dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
@@ -220,6 +227,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
       scaleY: 1,
       rotation: 0,
       type: category.type.includes("Seat") ? "seat" : "booth",
+      isBooth: !category.type.includes("Seat"),
+      isSeat: category.type.includes("Seat"),
     };
 
     setPlacedItems([...placedItems, newItem]);
@@ -244,8 +253,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const handleTransformEnd = (e) => {
     const node = e.target;
     const id = node.id();
-    
-    setPlacedItems(placedItems.map(item => 
+
+    setPlacedItems(placedItems.map(item =>
       item.id === id ? {
         ...item,
         x: node.x(),
@@ -266,14 +275,14 @@ const LayoutBuilder = ({ selectedEvent }) => {
       newY = Math.round(y / GRID_SIZE) * GRID_SIZE;
     }
 
-    setPlacedItems(placedItems.map(item => 
+    setPlacedItems(placedItems.map(item =>
       item.id === id ? { ...item, x: newX, y: newY } : item
     ));
   };
 
   const handleSaveLayout = async () => {
     if (!user) return showErrorAlert("Unauthorized", "You must be logged in.");
-    
+
     // Map categories to priceLevels
     const priceLevels = categories.map(c => ({
       _id: (c.id && c.id.length === 24) ? c.id : undefined, // Keep existing ID if it looks like a MongoId
@@ -288,7 +297,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
     // Map placedItems to seatMap seats and booths
     const seats = placedItems
-      .filter(i => !i.isBooth && !i.isElement && !i.isBackground)
+      .filter(i => i.type === 'seat' || (!i.isBooth && !i.isElement && !i.isBackground && i.type !== 'booth'))
       .map(item => {
         const cat = categories.find(c => c.id === item.categoryId);
         return {
@@ -305,7 +314,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
       });
 
     const boothsData = placedItems
-      .filter(i => i.isBooth)
+      .filter(i => i.type === 'booth' || i.isBooth)
       .map(item => {
         const cat = categories.find(c => c.id === item.categoryId);
         return {
@@ -362,6 +371,11 @@ const LayoutBuilder = ({ selectedEvent }) => {
   };
 
   const removePlacedItem = (id) => {
+    const item = placedItems.find(i => i.id === id);
+    if (item && (item.status === 'sold' || item.status === 'reserved')) {
+      showErrorAlert("Protected Booth", "This booth has already been sold/reserved and cannot be removed from the map.");
+      return;
+    }
     setPlacedItems(placedItems.filter(item => item.id !== id));
     setSelectedId(null);
   };
@@ -406,8 +420,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
           <div className="sidebar-card categories-card">
             <div className="sidebar-header">
               <h4 className="bt-section-title-layout">Ticket Categories</h4>
-              <button 
-                className="add-category-btn-icon" 
+              <button
+                className="add-category-btn-icon"
                 onClick={() => {
                   setEditingCategory(null);
                   setIsAddCategoryModalOpen(true);
@@ -417,7 +431,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
                 <Icon icon="mdi:plus" />
               </button>
             </div>
-            
+
             <div className="sidebar-categories-list">
               {categories.length === 0 ? (
                 <div className="sidebar-empty-state">
@@ -428,18 +442,18 @@ const LayoutBuilder = ({ selectedEvent }) => {
                   const placed = placedItems.filter(i => i.categoryId === cat.id).length;
                   const remaining = cat.quantity - placed;
                   const isFull = remaining <= 0;
-                  
+
                   return (
                     <div key={cat.id} className={`sidebar-cat-item ${isFull ? 'is-full' : ''}`}>
-                      <div 
-                        className="cat-palette-visual" 
+                      <div
+                        className="cat-palette-visual"
                         style={{ backgroundColor: cat.color }}
                         onClick={() => !isFull && handlePlaceItem(cat)}
                         title={isFull ? "All units placed" : "Click to place on map"}
                       >
                         {cat.type.includes("Seat") ? <Icon icon="mdi:circle" /> : <Icon icon="mdi:square" />}
                       </div>
-                      
+
                       <div className="cat-details">
                         <div className="cat-top">
                           <span className="cat-name">{cat.name}</span>
@@ -461,12 +475,12 @@ const LayoutBuilder = ({ selectedEvent }) => {
                           {cat.boothSize && <span className="size-badge">{cat.boothSize}</span>}
                         </div>
                         <div className="progress-bar">
-                          <div 
-                            className="progress-fill" 
-                            style={{ 
+                          <div
+                            className="progress-fill"
+                            style={{
                               width: `${(placed / cat.quantity) * 100}%`,
-                              backgroundColor: cat.color 
-                            }} 
+                              backgroundColor: cat.color
+                            }}
                           />
                         </div>
                       </div>
@@ -477,83 +491,97 @@ const LayoutBuilder = ({ selectedEvent }) => {
             </div>
           </div>
 
-              {selectedId && (
-                <div className="sidebar-card inspector-card">
-                  <div className="sidebar-header">
-                    <h4 className="bt-section-title-layout">Shape Inspector</h4>
-                    <button className="close-btn" onClick={() => setSelectedId(null)}>
-                      <Icon icon="mdi:close" />
-                    </button>
-                  </div>
-                  <div className="inspector-body">
-                    {(() => {
-                      const item = placedItems.find(i => i.id === selectedId);
-                      const cat = categories.find(c => c.id === item?.categoryId);
-                      if (!item) return null;
-                      return (
-                        <>
-                          <div className="inspector-header-main">
-                            <span className="shape-id">{item.label}</span>
-                            <span className={`value-badge type-${item.type}`}>{cat?.type.toLowerCase().split(' ')[0]}</span>
-                          </div>
-                          
-                          <div className="summary-list">
-                            <div className="summary-item">
-                              <span className="label">Category</span>
-                              <span className="value">{cat?.name}</span>
-                            </div>
-                            <div className="summary-item">
-                              <span className="label">Price</span>
-                              <span className="value-bold">${cat?.price.toFixed(2)}</span>
-                            </div>
-                            {cat?.boothSize && (
-                              <div className="summary-item">
-                                <span className="label">Size</span>
-                                <span className="value">{cat.boothSize}</span>
-                              </div>
-                            )}
-                          </div>
-                          <button className="remove-shape-btn-side" onClick={() => removePlacedItem(selectedId)}>
-                            <Icon icon="mdi:trash-can-outline" /> Remove from Map
-                          </button>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-              )}
+          {selectedId && (
+            <div className="sidebar-card inspector-card">
+              <div className="sidebar-header">
+                <h4 className="bt-section-title-layout">Shape Inspector</h4>
+                <button className="close-btn" onClick={() => setSelectedId(null)}>
+                  <Icon icon="mdi:close" />
+                </button>
+              </div>
+              <div className="inspector-body">
+                {(() => {
+                  const item = placedItems.find(i => i.id === selectedId);
+                  const cat = categories.find(c => c.id === item?.categoryId);
+                  if (!item) return null;
+                  return (
+                    <>
+                      <div className="inspector-header-main">
+                        <span className="shape-id">{item.label}</span>
+                        <span className={`value-badge type-${item.type}`}>{cat?.type.toLowerCase().split(' ')[0]}</span>
+                      </div>
 
-              <div className="sidebar-card summary-card">
-                <h4 className="bt-section-title-layout">Layout Summary</h4>
-                <div className="summary-list">
-                  <div className="summary-item">
-                    <span className="label">Placed Units</span>
-                    <span className="value">{totalPlaced} / {categories.reduce((a, b) => a + b.quantity, 0)}</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Current Revenue</span>
-                    <span className="value">${currentRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="summary-item total">
-                    <span className="label">Potential Total</span>
-                    <span className="value-muted">${potentialRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
+                      <div className="summary-list">
+                        <div className="summary-item">
+                          <span className="label">Status</span>
+                          <span className={`value status-${item.status || 'available'}`}>{item.status?.toUpperCase() || 'AVAILABLE'}</span>
+                        </div>
+                        {item.reservedBy && (
+                          <div className="summary-item">
+                            <span className="label">Buyer</span>
+                            <span className="value-semi"style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
+                          </div>
+                        )}
+                        <div className="summary-item">
+                          <span className="label">Category</span>
+                          <span className="value">{cat?.name}</span>
+                        </div>
+                        <div className="summary-item">
+                          <span className="label">Price</span>
+                          <span className="value-bold">${cat?.price.toFixed(2)}</span>
+                        </div>
+                        {cat?.boothSize && (
+                          <div className="summary-item">
+                            <span className="label">Size</span>
+                            <span className="value">{cat.boothSize}</span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        className={`remove-shape-btn-side ${(item.status === 'sold' || item.status === 'reserved') ? 'disabled' : ''}`}
+                        onClick={() => removePlacedItem(selectedId)}
+                        disabled={item.status === 'sold' || item.status === 'reserved'}
+                      >
+                        <Icon icon="mdi:trash-can-outline" /> {(item.status === 'sold' || item.status === 'reserved') ? 'Sold (Locked)' : 'Remove from Map'}
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             </div>
+          )}
+
+          <div className="sidebar-card summary-card">
+            <h4 className="bt-section-title-layout">Layout Summary</h4>
+            <div className="summary-list">
+              <div className="summary-item">
+                <span className="label">Placed Units</span>
+                <span className="value">{totalPlaced} / {categories.reduce((a, b) => a + b.quantity, 0)}</span>
+              </div>
+              <div className="summary-item">
+                <span className="label">Current Revenue</span>
+                <span className="value">${currentRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="summary-item total">
+                <span className="label">Potential Total</span>
+                <span className="value-muted">${potentialRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="canvas-area">
           <div className="canvas-toolbar">
             <h4 className="canvas-title">Event Map Editor</h4>
             <div className="toolbar-actions">
-              <button 
+              <button
                 className={`bt-btn ${snapToGrid ? 'active' : ''}`}
                 onClick={() => setSnapToGrid(!snapToGrid)}
                 title="Toggle Snap to Grid"
               >
                 <Icon icon="mdi:grid" /> <span>Snap</span>
               </button>
-              
+
               <div className="zoom-controls">
                 <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} title="Zoom Out">
                   <Icon icon="mdi:minus" />
@@ -566,7 +594,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
               <button className="bt-btn clear" onClick={async () => {
                 const result = await showDeleteConfirmAlert(
-                  "Clear Map?", 
+                  "Clear Map?",
                   "This will remove ALL shapes from the canvas. You will have to re-place items from the sidebar. This cannot be undone."
                 );
                 if (result.isConfirmed) {
@@ -576,7 +604,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
               }} title="Clear All Items">
                 <Icon icon="mdi:layers-off" /> <span>Clear</span>
               </button>
-              
+
               <button className="bt-btn primary save-layout-btn" onClick={handleSaveLayout} title="Save Venue Layout">
                 <Icon icon="mdi:check-circle-outline" /> <span>Save Layout</span>
               </button>
@@ -584,9 +612,9 @@ const LayoutBuilder = ({ selectedEvent }) => {
           </div>
 
           <div className="konva-container" ref={containerRef}>
-            <Stage 
-              width={dimensions.width} 
-              height={dimensions.height} 
+            <Stage
+              width={dimensions.width}
+              height={dimensions.height}
               ref={stageRef}
               scaleX={zoom}
               scaleY={zoom}
@@ -608,11 +636,11 @@ const LayoutBuilder = ({ selectedEvent }) => {
                   const lines = [];
                   const extent = 5000;
                   const MAJOR_GRID = 100;
-                  
+
                   for (let i = -extent; i <= extent; i += GRID_SIZE) {
                     const isMajor = i % MAJOR_GRID === 0;
                     const isAxis = i === 0;
-                    
+
                     // Adjust visibility based on snapToGrid state
                     const baseOpacity = snapToGrid ? 1 : 0.3;
                     const strokeColor = isAxis ? "#94a3b8" : (isMajor ? "#cbd5e1" : "#e5e7eb");
@@ -620,24 +648,24 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
                     // Vertical lines
                     lines.push(
-                      <Line 
-                        key={`v-${i}`} 
-                        points={[i, -extent, i, extent]} 
-                        stroke={strokeColor} 
-                        strokeWidth={strokeWidth} 
+                      <Line
+                        key={`v-${i}`}
+                        points={[i, -extent, i, extent]}
+                        stroke={strokeColor}
+                        strokeWidth={strokeWidth}
                         opacity={baseOpacity}
-                        listening={false} 
+                        listening={false}
                       />
                     );
                     // Horizontal lines
                     lines.push(
-                      <Line 
-                        key={`h-${i}`} 
-                        points={[-extent, i, extent, i]} 
-                        stroke={strokeColor} 
-                        strokeWidth={strokeWidth} 
+                      <Line
+                        key={`h-${i}`}
+                        points={[-extent, i, extent, i]}
+                        stroke={strokeColor}
+                        strokeWidth={strokeWidth}
                         opacity={baseOpacity}
-                        listening={false} 
+                        listening={false}
                       />
                     );
                   }
@@ -647,9 +675,9 @@ const LayoutBuilder = ({ selectedEvent }) => {
                   const category = categories.find(c => c.id === item.categoryId);
                   const isSelected = selectedId === item.id;
                   const isBooth = item.type === 'booth';
-                  
+
                   return (
-                    <Group 
+                    <Group
                       key={item.id}
                       id={item.id}
                       x={item.x}
@@ -670,32 +698,32 @@ const LayoutBuilder = ({ selectedEvent }) => {
                       onClick={() => setSelectedId(item.id)}
                       onTap={() => setSelectedId(item.id)}
                     >
-                        {isBooth ? (
-                          <Rect
-                            x={-20}
-                            y={-20}
-                            width={40}
-                            height={40}
-                            fill={category?.color || '#666666'}
-                            stroke={'#fff'}
-                            strokeWidth={1}
-                            cornerRadius={4}
-                            shadowBlur={isSelected ? 10 : 0}
-                            shadowColor="#000"
-                            shadowOpacity={0.2}
-                          />
-                        ) : (
-                          <Circle 
-                            radius={20}
-                            fill={category?.color || '#666666'}
-                            stroke={'#fff'}
-                            strokeWidth={1}
-                            shadowBlur={isSelected ? 10 : 0}
-                            shadowColor="#000"
-                            shadowOpacity={0.2}
-                          />
-                        )}
-                      <Text 
+                      {isBooth ? (
+                        <Rect
+                          x={-20}
+                          y={-20}
+                          width={40}
+                          height={40}
+                          fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
+                          stroke={'#fff'}
+                          strokeWidth={1}
+                          cornerRadius={4}
+                          shadowBlur={isSelected ? 10 : 0}
+                          shadowColor="#000"
+                          shadowOpacity={0.2}
+                        />
+                      ) : (
+                        <Circle
+                          radius={20}
+                          fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
+                          stroke={'#fff'}
+                          strokeWidth={1}
+                          shadowBlur={isSelected ? 10 : 0}
+                          shadowColor="#000"
+                          shadowOpacity={0.2}
+                        />
+                      )}
+                      <Text
                         text={item.label}
                         fontSize={9}
                         fontStyle="bold"

@@ -1,10 +1,30 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './SponsorConfirmSelection.css';
 
 const SponsorConfirmSelection = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { event, booth, category } = location.state || {};
+
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+    if (!event || !booth) {
+        return (
+            <div className="sed-error-container">
+                <Icon icon="mdi:alert-circle-outline" width="48" />
+                <h3>No selection found</h3>
+                <p className="small-body-text text-secondary mb-4">Please return to the map and select a booth first.</p>
+                <button className="primary-button" onClick={() => navigate(-1)}>Go Back</button>
+            </div>
+        );
+    }
+
+    const facePrice = category?.facePrice || 0;
+    const processingFee = facePrice * 0.03; // 3% fee
+    const estimatedTax = facePrice * 0.08; // 8% tax
+    const total = facePrice + processingFee + estimatedTax;
 
     return (
         <div className="scs-page-wrapper">
@@ -19,7 +39,7 @@ const SponsorConfirmSelection = () => {
 
                             <div className="scs-subtitle mt-1">
                                 <span className="small-body-text text-secondary">
-                                    TechInnovate Summit 2026
+                                    {event.title}
                                 </span>
 
                                 <span className="scs-dot mx-2 text-secondary">•</span>
@@ -27,7 +47,7 @@ const SponsorConfirmSelection = () => {
                                 <div className="calendar-row">
                                     <Icon icon="mdi:calendar-blank-outline" className="text-secondary" />
                                     <span className="small-body-text text-secondary">
-                                        Jun 16, 2026
+                                        {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                     </span>
                                 </div>
                             </div>
@@ -61,25 +81,25 @@ const SponsorConfirmSelection = () => {
                     <div className="scs-card mb-4">
                         <div className="scs-card-header dark-header">
                             <h5 className="font-bold text-white block">Selected Booth</h5>
-                            <span className="button-label dark-pill">#102</span>
+                            <span className="button-label dark-pill">{booth.label || booth.code}</span>
                         </div>
                         <div className="scs-card-body">
                             <div className="scs-grid-2">
                                 <div className="scs-detail-item">
-                                    <span className="small-body-text block mb-1">Booth Type</span>
-                                    <h5 className="block m-0">Premium Island</h5>
+                                    <span className="small-body-text block mb-1">Booth Category</span>
+                                    <h5 className="block m-0">{category?.priceName || 'Sponsorship Booth'}</h5>
                                 </div>
                                 <div className="scs-detail-item">
                                     <span className="small-body-text block mb-1">Dimensions</span>
-                                    <h5 className="block m-0">20×20</h5>
+                                    <h5 className="block m-0">{category?.boothSize || booth.boothSize || 'Standard'}</h5>
                                 </div>
                                 <div className="scs-detail-item mt-4">
                                     <span className="small-body-text block mb-1">Location</span>
-                                    <h5 className="block m-0">Near Main Entrance</h5>
+                                    <h5 className="block m-0">{event.venue?.name || 'Venue Area'}</h5>
                                 </div>
                                 <div className="scs-detail-item mt-4">
                                     <span className="small-body-text text-secondary block mb-1">Base Price</span>
-                                    <h5 className="block m-0">$5,000</h5>
+                                    <h5 className="block m-0">${facePrice.toLocaleString()}</h5>
                                 </div>
                             </div>
 
@@ -99,16 +119,24 @@ const SponsorConfirmSelection = () => {
                         </div>
                         <hr className="scs-divider mx-0 my-0" />
                         <div className="scs-event-details">
-                            <img src="/assets/eventbg.jpg" alt="Event Thumbnail" className="scs-event-thumb" />
+                            <img
+                                src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                alt="Event Thumbnail"
+                                className="scs-event-thumb"
+                            />
                             <div className="scs-event-info">
-                                <h5 className="p font-bold text-primary block mb-2">TechInnovate Summit 2026</h5>
+                                <h5 className="p font-bold text-primary block mb-2">{event.title}</h5>
                                 <div className="scs-event-meta mb-1">
                                     <Icon icon="mdi:calendar-blank-outline" className="mr-2" />
-                                    <span className="smaller-body-text">Jun 16, 2026</span>
+                                    <span className="smaller-body-text">
+                                        {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
                                 </div>
                                 <div className="scs-event-meta">
                                     <Icon icon="mdi:map-marker-outline" className="mr-2" />
-                                    <span className="smaller-body-text">Starlight Arena, Los Angeles, CA</span>
+                                    <span className="smaller-body-text">
+                                        {event.venue?.name}, {event.venue?.city}, {event.venue?.state}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -122,22 +150,22 @@ const SponsorConfirmSelection = () => {
 
                             <div className="scs-price-row mb-3">
                                 <span className="regular-body-text">Booth Price</span>
-                                <h5>$5,000</h5>
+                                <h5>${facePrice.toLocaleString()}</h5>
                             </div>
                             <div className="scs-price-row mb-3">
-                                <span className="regular-body-text">Processing Fee</span>
-                                <h5>$150</h5>
+                                <span className="regular-body-text">Processing Fee (3%)</span>
+                                <h5>${processingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h5>
                             </div>
                             <div className="scs-price-row mb-4">
-                                <span className="regular-body-text ">Estimated Tax</span>
-                                <h5>$425</h5>
+                                <span className="regular-body-text ">Estimated Tax (8%)</span>
+                                <h5>${estimatedTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h5>
                             </div>
 
                             <hr className="scs-divider mb-4" />
 
                             <div className="scs-price-row mb-4">
                                 <h6 className="text-red">Total</h6>
-                                <h5>$5,575</h5>
+                                <h5>${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h5>
                             </div>
 
                             <div className="scs-terms-wrapper mb-4">
@@ -147,7 +175,10 @@ const SponsorConfirmSelection = () => {
                                 </label>
                             </div>
 
-                            <button className="primary-button scs-reserve-btn" onClick={() => navigate('/sponsor/sponsor-reservation')}>
+                            <button
+                                className="primary-button scs-reserve-btn"
+                                onClick={() => navigate('/sponsor/sponsor-reservation', { state: { event, booth, category, total } })}
+                            >
                                 Reserve Booth <Icon icon="mdi:arrow-right" className="ml-2" />
                             </button>
                         </div>

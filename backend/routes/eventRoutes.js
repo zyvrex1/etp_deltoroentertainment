@@ -10,14 +10,15 @@ const {
   updateEvent,
   saveVenueLayout,
   assignPriceLevels, // 1. Import the new controller
+  reserveBooth,
   upload,
 } = require('../controllers/eventController')
 
-const { 
-  addPriceLevels, 
-  getPriceLevels, 
-  updatePriceLevel, 
-  deletePriceLevel 
+const {
+  addPriceLevels,
+  getPriceLevels,
+  updatePriceLevel,
+  deletePriceLevel
 } = require("../controllers/priceLevelController");
 const requireAuth = require('../middleware/requireAuth')
 const optionalAuth = require('../middleware/optionalAuth')
@@ -30,11 +31,12 @@ router.use(requireAuth) // Everything below this requires a login
 
 router.post('/', upload.single('image'), createEvent)
 router.delete('/:id', deleteEvent)
-router.patch('/:id', upload.single('image'), updateEvent) 
+router.patch('/:id', upload.single('image'), updateEvent)
 
 // Venue Configuration Routes
 router.put('/:id/layout', saveVenueLayout)
 router.put('/:id/assign-prices', assignPriceLevels)
+router.post('/:id/reserve-booth', reserveBooth)
 
 // Price Level Management
 router.post("/:eventId/price-levels", addPriceLevels);

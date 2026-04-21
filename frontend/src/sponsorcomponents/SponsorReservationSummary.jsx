@@ -1,10 +1,27 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './SponsorReservationSummary.css';
 
 const SponsorReservationSummary = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { event, booth, category, total } = location.state || {};
+
+    if (!event || !booth) {
+        return (
+            <div className="sed-error-container">
+                <Icon icon="mdi:alert-circle-outline" width="48" />
+                <h3>No reservation data found</h3>
+                <p className="small-body-text text-secondary mb-4">Please return to the map to select a booth.</p>
+                <button className="primary-button" onClick={() => navigate('/sponsor/sponsor-events')}>Browse Events</button>
+            </div>
+        );
+    }
+
+    const facePrice = category?.facePrice || 0;
+    const processingFee = facePrice * 0.03;
+    const estimatedTax = facePrice * 0.08;
 
     return (
         <div className="srs-page-wrapper">
@@ -15,10 +32,10 @@ const SponsorReservationSummary = () => {
                             <Icon icon="mdi:arrow-left" />
                         </button>
                         <div>
-                            <h2 className="text-primary">Confirm Your Selection</h2>
+                            <h2 className="text-primary">Reservation Summary</h2>
                             <div className="srs-subtitle mt-1">
                                 <span className="small-body-text text-secondary">
-                                    Review your booth details and accept terms to proceed to reservation.
+                                    Review your booth details and proceed to secure your reservation.
                                 </span>
                             </div>
                         </div>
@@ -27,7 +44,7 @@ const SponsorReservationSummary = () => {
                     <div className="srs-header-right">
                         <div className="srs-step-info">
                             <span className="small-body-text font-bold text-primary mr-4">
-                                Confirmation Summary
+                                Summary
                             </span>
 
                             <div className="srs-step-progress">
@@ -58,7 +75,7 @@ const SponsorReservationSummary = () => {
                             </div>
                         </div>
                         <div className="srs-timer-banner-right">
-                            <h5>11:10</h5>
+                            <h5>15:00</h5>
                         </div>
                     </div>
 
@@ -69,7 +86,7 @@ const SponsorReservationSummary = () => {
                             </div>
                         </div>
                         <h3 className="text-center mt-3 mb-1">Reservation Summary</h3>
-                        <p className="text-secondary text-center small-body-text mb-4">Your booth #102 is reserved pending payment.</p>
+                        <p className="text-secondary text-center small-body-text mb-4">Your booth #{booth.label || booth.code} is selected ready for reservation.</p>
 
                         <div className="srs-order-details-box">
                             <div className="srs-order-section pb-2">
@@ -77,11 +94,11 @@ const SponsorReservationSummary = () => {
                                 <div className="srs-order-row">
                                     <div className="srs-order-col">
                                         <span className="smaller-body-text text-secondary">Event</span>
-                                        <h6 className="mt-1">TechInnovate Summit 2026</h6>
+                                        <h6 className="mt-1">{event.title}</h6>
                                     </div>
                                     <div className="srs-order-col text-right">
                                         <span className="smaller-body-text text-secondary">Date</span>
-                                        <h6 className="mt-1">Oct 15-17, 2026</h6>
+                                        <h6 className="mt-1">{new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</h6>
                                     </div>
                                 </div>
                             </div>
@@ -89,32 +106,35 @@ const SponsorReservationSummary = () => {
                             <div className="srs-order-section srs-bg-light">
                                 <div className="srs-order-row mb-2">
                                     <div>
-                                        <h6>Premium Island Booth #102</h6>
-                                        <span className="smaller-body-text">20x20 • Near Main Entrance</span>
+                                        <h6>{category?.priceName || 'Booth'} #{booth.label || booth.code}</h6>
+                                        <span className="smaller-body-text">{category?.boothSize || 'Standard'} • {event.venue?.name}</span>
                                     </div>
-                                    <h5>$5,000.00</h5>
+                                    <h5>${facePrice.toLocaleString()}</h5>
                                 </div>
                                 <hr className="srs-divider mx-0 my-0" />
 
                                 <div className="srs-order-row mb-2">
                                     <span className="small-body-text text-secondary">Processing Fee</span>
-                                    <h5 >$150.00</h5>
+                                    <h5 >${processingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h5>
                                 </div>
                                 <div className="srs-order-row">
                                     <span className="small-body-text text-secondary">Tax</span>
-                                    <h5>$425.00</h5>
+                                    <h5>${estimatedTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h5>
                                 </div>
                             </div>
                         </div>
 
                         <div className="srs-total-row my-4">
                             <h6>Total Due Now</h6>
-                            <h5>$5,575.00</h5>
+                            <h5>${total?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</h5>
                         </div>
 
                         <div className="srs-buttons-row">
-                            <button className="primary-button srs-reserve-btn" onClick={() => navigate('/sponsor/sponsor-venue-billing')}>
-                                Reserve Booth <Icon icon="mdi:arrow-right" className="ml-2" />
+                            <button
+                                className="primary-button srs-reserve-btn"
+                                onClick={() => navigate('/sponsor/sponsor-venue-billing', { state: { event, booth, category, total } })}
+                            >
+                                Proceed to Billing <Icon icon="mdi:arrow-right" className="ml-2" />
                             </button>
                             <button className="button srs-cancel-btn" onClick={() => navigate(-1)}>
                                 Cancel

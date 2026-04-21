@@ -21,6 +21,7 @@ const policiesRoutes = require("./routes/policiesRoutes");
 const merchandiseRoutes = require('./routes/merchandiseRoutes');
 const concernRoutes = require('./routes/concernRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const reservationRoutes = require('./routes/reservationRoutes');
 
 // express app
 const app = express()
@@ -63,6 +64,7 @@ app.use('/api/policies', policiesRoutes)
 app.use('/api/merchandise', merchandiseRoutes)
 app.use('/api/concerns', concernRoutes)
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/reservations', reservationRoutes)
 
 // Global error handler
 app.use((err, req, res, next) => {
