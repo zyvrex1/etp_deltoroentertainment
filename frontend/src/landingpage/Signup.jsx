@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { useSignup } from "../admincomponents/hooks/useSignup";
 import policyService from "../services/policyService";
-import PromoterViewFullAnnouncement from "../promotercomponents/PromoterModal/PromoterViewFullAnnouncement";
+import AuthPolicyModal from "./AuthPolicyModal";
 
 import { showSuccessAlert, showErrorAlert } from "../admincomponents/utils/sweetAlert";
 
@@ -26,7 +26,7 @@ const Signup = ({ role, onBack, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [policyModal, setPolicyModal] = useState({ isOpen: false, item: null, type: "policy" });
+  const [policyModal, setPolicyModal] = useState({ isOpen: false, item: null, type: "tos" });
 
   const [form, setForm] = useState({
     firstName: "",
@@ -59,7 +59,7 @@ const Signup = ({ role, onBack, onClose }) => {
               year: "numeric",
             }),
           },
-          type: "policy",
+          type: policyKey,
         });
       }
     } catch (error) {
@@ -325,7 +325,7 @@ const Signup = ({ role, onBack, onClose }) => {
       </form>
 
       {/* Policy Modal */}
-      <PromoterViewFullAnnouncement
+      <AuthPolicyModal
         isOpen={policyModal.isOpen}
         onClose={() => setPolicyModal({ ...policyModal, isOpen: false })}
         item={policyModal.item}
