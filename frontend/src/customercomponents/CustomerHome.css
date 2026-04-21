@@ -26,6 +26,7 @@
 .ch-gradient-text {
     background: linear-gradient(90deg, var(--color-red-primary), var(--color-purple-primary));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -396,6 +397,7 @@
     letter-spacing: -0.5px;
     display: -webkit-box;
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
     font-size: 18px;
@@ -525,43 +527,85 @@
 }
 
 .ch-announcement-v3 {
+    width: 420px;
+    height: 220px;
     background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
+    border-radius: 24px;
     padding: 24px;
-    width: 380px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    transition: all 0.3s ease;
+    justify-content: space-between;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: normal;
+    border-left: 2px solid rgba(0, 242, 255, 0.1);
     cursor: pointer;
 }
 
 .ch-announcement-v3:hover {
     background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--color-blue-primary);
+    box-shadow: 0 0 30px var(--color-blue-primary);
     transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .ch-v3-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
 }
 
 .ch-v3-icon-box {
     width: 48px;
     height: 48px;
-    border-radius: 12px;
     background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24px;
     color: var(--color-white-primary);
+    transition: all 0.3s ease;
+}
+
+.ch-announcement-v3.update .ch-v3-icon-box {
+    background: rgba(255, 156, 7, 0.05);
+    border-color: rgba(255, 156, 7, 0.2);
+    color: var(--color-yellow-secondary);
+    box-shadow: 0 0 15px rgba(255, 156, 7, 0.4);
+}
+
+.ch-announcement-v3.alert .ch-v3-icon-box {
+    background: rgba(198, 40, 40, 0.05);
+    border-color: rgba(198, 40, 40, 0.2);
+    color: var(--color-red-secondary);
+    box-shadow: 0 0 15px rgba(198, 40, 40, 0.4);
+}
+
+.ch-announcement-v3.maintenance .ch-v3-icon-box {
+    background: rgba(76, 166, 38, 0.05);
+    border-color: rgba(76, 166, 38, 0.2);
+    color: var(--color-green-secondary);
+    box-shadow: 0 0 15px rgba(76, 166, 38, 0.4);
+}
+
+.ch-announcement-v3.news .ch-v3-icon-box {
+    background: rgba(140, 82, 255, 0.05);
+    border-color: rgba(140, 82, 255, 0.2);
+    color: var(--color-purple-secondary);
+    box-shadow: 0 0 15px rgba(140, 82, 255, 0.4);
+}
+
+.ch-announcement-v3.general .ch-v3-icon-box {
+    background: rgba(0, 89, 255, 0.05);
+    border-color: rgba(0, 89, 255, 0.2);
+    color: var(--color-blue-secondary);
+    box-shadow: 0 0 15px rgba(0, 89, 255, 0.4);
 }
 
 .ch-v3-category {
@@ -613,7 +657,8 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 12px;
+    width: 100%;
+    margin: 16px 0 8px;
 }
 
 .ch-v3-title-row h4 {
@@ -632,17 +677,12 @@
     white-space: nowrap;
 }
 
-.ch-text-ellipsis-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.ch-v3-content p {
+    font-size: 13px;
     color: var(--color-white-secondary);
-    font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
     margin: 0;
-    text-align: left;
+    text-align: center;
 }
 
 /* Policies */
@@ -650,6 +690,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 24px;
+    max-width: 1200px;
     margin: 40px auto 0;
 }
 
@@ -714,13 +755,16 @@
 /* Media Queries */
 @media (max-width: 1024px) {
 
-    .ch-grid,
-    .ch-policy-list {
+    .ch-grid {
         grid-template-columns: repeat(2, 1fr) !important;
     }
 
     .ch-stats-cards {
         gap: 15px;
+    }
+
+    .ch-policy-list {
+        gap: 16px;
     }
 
     .ch-announcement-v3 {
@@ -751,24 +795,44 @@
         gap: 15px;
     }
 
-    .ch-grid,
     .ch-policy-list {
         grid-template-columns: 1fr !important;
+        gap: 12px;
+
     }
 
     .ch-policy-item {
-        flex-direction: column;
-        text-align: center;
+        padding: 16px;
         gap: 16px;
     }
 
-    .ch-policy-text h4,
+    .ch-policy-icon-box {
+        min-width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+
+
     .ch-text-ellipsis-2.ch-text-left {
         text-align: center !important;
     }
+
+    .ch-policy-text h4 {
+        font-size: 16px;
+        text-align: left;
+    }
+
+    .ch-policy-text p {
+        font-size: 13px;
+    }
+
 }
 
 @media (max-width: 480px) {
+    .ch-container {
+        padding: 24px 20px !important;
+    }
+
     .ch-title {
         font-size: 32px;
     }
@@ -794,4 +858,26 @@
     .ch-text-right {
         text-align: left;
     }
+
+    .ch-policy-item {
+        padding: 14px;
+        gap: 14px;
+        border-radius: 14px;
+    }
+
+    .ch-policy-icon-box {
+        min-width: 42px;
+        height: 42px;
+        font-size: 18px;
+        border-radius: 12px;
+    }
+
+    .ch-policy-text h4 {
+        font-size: 14px;
+    }
+
+    .ch-policy-text p {
+        font-size: 12px;
+    }
+
 }

@@ -79,12 +79,12 @@ const Home = () => {
         const data = await announcementService.getAnnouncements();
         if (data && data.length > 0) {
           const mappedAnnouncements = data.map(ann => {
-            let badgeClass = "blue-badge";
-            if (ann.contentcategory === "Maintenance") badgeClass = "green-badge";
-            if (ann.contentcategory === "News" || ann.contentcategory === "News") badgeClass = "purple-badge";
-            if (ann.contentcategory === "Update" || ann.contentcategory === "Update") badgeClass = "yellow-badge";
-            if (ann.contentcategory === "Alert" || ann.contentcategory === "Alert") badgeClass = "red-badge";
-            if (ann.contentcategory === "General" || ann.contentcategory === "General") badgeClass = "blue-badge";
+            let badgeClass = "general";
+            const category = ann.contentcategory?.toLowerCase();
+            if (category === "maintenance") badgeClass = "maintenance";
+            if (category === "news") badgeClass = "news";
+            if (category === "update") badgeClass = "update";
+            if (category === "alert") badgeClass = "alert";
 
             return {
               id: ann._id,
@@ -303,12 +303,12 @@ const Home = () => {
                   role="button"
                   aria-label={`Read announcement: ${item.title}`}
                 >
-                  <div className="nft-announcement-v3">
+                  <div className={`nft-announcement-v3 ${item.badgeClass}`}>
                     <div className="nft-v3-header">
                       <div className="nft-v3-icon-box">
                         <Icon icon={item.icon || "mdi:bullhorn-outline"} />
                       </div>
-                      <span className={`nft-v3-category ${item.type?.toLowerCase()}`}>{item.type}</span>
+                      <span className={`nft-v3-category ${item.badgeClass}`}>{item.type}</span>
                     </div>
                     <div className="nft-v3-content">
                       <div className="nft-v3-title-row">
@@ -673,6 +673,17 @@ const Home = () => {
               The easiest way to discover and book tickets for your favorite events.
               Secure, fast, and reliable.
             </p>
+            <div className="nft-footer-social-links">
+              <a href="https://www.tiktok.com/@eticketspro" target="_blank" rel="noopener noreferrer" className="nft-footer-social-link" aria-label="TikTok">
+                <Icon icon="simple-icons:tiktok" />
+              </a>
+              <a href="https://www.instagram.com/eticketspr0/" target="_blank" rel="noopener noreferrer" className="nft-footer-social-link" aria-label="Instagram">
+                <Icon icon="simple-icons:instagram" />
+              </a>
+              <a href="https://www.facebook.com/eticketspr0" target="_blank" rel="noopener noreferrer" className="nft-footer-social-link" aria-label="Facebook">
+                <Icon icon="simple-icons:facebook" />
+              </a>
+            </div>
           </div>
           <nav className="nft-footer-col" aria-label="Platform navigation">
             <h4>Platform</h4>

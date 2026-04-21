@@ -1184,6 +1184,27 @@ html {
     text-align: left;
 }
 
+.nft-footer-social-links {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.nft-footer-social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-white-secondary);
+    transition: all 0.3s ease;
+    font-size: 22px;
+}
+
+.nft-footer-social-link:hover {
+    color: var(--color-red-primary);
+    transform: translateY(-3px);
+    filter: drop-shadow(0 0 8px rgba(198, 40, 40, 0.5));
+}
+
 .nft-footer-bottom {
     padding: 24px 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -1392,25 +1413,89 @@ html {
 .nft-v3-icon-box {
     width: 48px;
     height: 48px;
-    background: rgba(0, 89, 255, 0.05);
-    /* blue primary variant */
-    border: 1px solid rgba(0, 89, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24px;
-    color: var(--color-blue-primary);
-    box-shadow: 0 0 15px var(--color-blue-primary);
+    color: var(--color-white-primary);
+    transition: all 0.3s ease;
+}
+
+.nft-announcement-v3.update .nft-v3-icon-box {
+    background: rgba(255, 156, 7, 0.05);
+    border-color: rgba(255, 156, 7, 0.2);
+    color: var(--color-yellow-secondary);
+    box-shadow: 0 0 15px rgba(255, 156, 7, 0.4);
+}
+
+.nft-announcement-v3.alert .nft-v3-icon-box {
+    background: rgba(198, 40, 40, 0.05);
+    border-color: rgba(198, 40, 40, 0.2);
+    color: var(--color-red-secondary);
+    box-shadow: 0 0 15px rgba(198, 40, 40, 0.4);
+}
+
+.nft-announcement-v3.maintenance .nft-v3-icon-box {
+    background: rgba(76, 166, 38, 0.05);
+    border-color: rgba(76, 166, 38, 0.2);
+    color: var(--color-green-secondary);
+    box-shadow: 0 0 15px rgba(76, 166, 38, 0.4);
+}
+
+.nft-announcement-v3.news .nft-v3-icon-box {
+    background: rgba(140, 82, 255, 0.05);
+    border-color: rgba(140, 82, 255, 0.2);
+    color: var(--color-purple-secondary);
+    box-shadow: 0 0 15px rgba(140, 82, 255, 0.4);
+}
+
+.nft-announcement-v3.general .nft-v3-icon-box {
+    background: rgba(0, 89, 255, 0.05);
+    border-color: rgba(0, 89, 255, 0.2);
+    color: var(--color-blue-secondary);
+    box-shadow: 0 0 15px rgba(0, 89, 255, 0.4);
 }
 
 .nft-v3-category {
     font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 30px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--color-blue-primary);
-    opacity: 0.8;
+    letter-spacing: 0.5px;
+}
+
+.nft-v3-category.update {
+    background: rgba(255, 156, 7, 0.1);
+    color: var(--color-yellow-secondary);
+    border: 1px solid rgba(255, 156, 7, 0.3);
+}
+
+.nft-v3-category.alert {
+    background: rgba(198, 40, 40, 0.1);
+    color: var(--color-red-secondary);
+    border: 1px solid rgba(198, 40, 40, 0.3);
+}
+
+.nft-v3-category.maintenance {
+    background: rgba(76, 166, 38, 0.1);
+    color: var(--color-green-secondary);
+    border: 1px solid rgba(76, 166, 38, 0.3);
+}
+
+.nft-v3-category.news {
+    background: rgba(140, 82, 255, 0.1);
+    color: var(--color-purple-secondary);
+    border: 1px solid rgba(140, 82, 255, 0.3);
+}
+
+.nft-v3-category.general {
+    background: rgba(0, 89, 255, 0.1);
+    color: var(--color-blue-secondary);
+    border: 1px solid rgba(0, 89, 255, 0.3);
 }
 
 .nft-v3-title-row {
@@ -1648,7 +1733,7 @@ a:focus-visible {
    ============================================ */
 @media (max-width: 768px) {
     .container {
-        padding: 24px 20px !important; 
+        padding: 24px 20px !important;
     }
 
     /* Hero */
