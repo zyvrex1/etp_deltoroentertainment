@@ -6,7 +6,7 @@
 
 .am-container {
     padding: 32px;
-    background: #f8fafc;
+    background: var(--color-white-primary);
     min-height: 100vh;
 }
 
@@ -242,8 +242,7 @@
     background: #fee2e2;
     color: var(--color-red-primary);
     border: none;
-    width: 32px;
-    height: 32px;
+
     border-radius: 8px;
     display: flex;
     align-items: center;

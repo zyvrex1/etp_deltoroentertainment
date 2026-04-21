@@ -245,7 +245,43 @@ const EventApproval = () => {
                     </div>
                 </div>
                 <div className="table-wrapper">
-                    {paginatedEvents.length === 0 ? (
+                    {loading ? (
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Event Name</th>
+                                    <th>Promoter</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[...Array(itemsPerPage)].map((_, i) => (
+                                    <tr key={i}>
+                                        <td>
+                                            <div className="event-name-cell" style={{ gap: '12px' }}>
+                                                <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px' }} />
+                                                <div style={{ flex: 1 }}>
+                                                    <div className="skeleton skeleton-text title" style={{ width: '120px', marginBottom: '4px' }} />
+                                                    <div className="skeleton skeleton-text short" style={{ width: '80px' }} />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
+                                        <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <div className="skeleton skeleton-rect" style={{ width: '60px', height: '32px' }} />
+                                                <div className="skeleton skeleton-rect" style={{ width: '60px', height: '32px' }} />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : paginatedEvents.length === 0 ? (
                         // Empty state outside table for mobile-friendly display
                         <div className="empty-state">
                             <Icon icon="mdi:magnify-close" width="48" />
@@ -266,74 +302,66 @@ const EventApproval = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginatedEvents.length > 0 ? (
-                                    paginatedEvents.map((event) => (
-                                        <tr
-                                            key={event._id || event.id}
-                                            className={expandedRow === (event._id || event.id) ? 'expanded' : ''}
-                                        >
-                                            <td data-label="Event Name" className="event-name-td">
-                                                <div className="mobile-expand-icon" onClick={() => toggleRow(event._id || event.id)}>
-                                                    <Icon icon={expandedRow === (event._id || event.id) ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                {paginatedEvents.map((event) => (
+                                    <tr
+                                        key={event._id || event.id}
+                                        className={expandedRow === (event._id || event.id) ? 'expanded' : ''}
+                                    >
+                                        <td data-label="Event Name" className="event-name-td">
+                                            <div className="mobile-expand-icon" onClick={() => toggleRow(event._id || event.id)}>
+                                                <Icon icon={expandedRow === (event._id || event.id) ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                                            </div>
+                                            <div className="event-name-cell">
+                                                <div className="event-avatar">
+                                                    {getInitials(event.title)}
                                                 </div>
-                                                <div className="event-name-cell">
-                                                    <div className="event-avatar">
-                                                        {getInitials(event.title)}
-                                                    </div>
-                                                    <div className="event-name-info">
-                                                        <h6 className="event-name">{event.title}</h6>
-                                                        <div className="smaller-body-text event-category">{event.category}</div>
-                                                    </div>
+                                                <div className="event-name-info">
+                                                    <h6 className="event-name">{event.title}</h6>
+                                                    <div className="smaller-body-text event-category">{event.category}</div>
                                                 </div>
-                                            </td>
-                                            <td data-label="Promoter" className="regular-body-text">
-                                                {event.createdBy ? `${event.createdBy.firstName} ${event.createdBy.lastName}` : "System"}
-                                            </td>
-                                            <td data-label="Date" className="small-body-text">
-                                                {event.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A"}
-                                            </td>
-                                            <td data-label="Status">
-                                                <span className={`button-label ${getStatusClass(event.status)}`}>
-                                                    {event.status}
-                                                </span>
-                                            </td>
-                                            <td data-label="Actions">
-                                                <div className="action-buttons">
-                                                    <button
-                                                        className="button-label approval-review"
-                                                        onClick={() => handleReview(event)}
-                                                    >
-                                                        Review
-                                                    </button>
+                                            </div>
+                                        </td>
+                                        <td data-label="Promoter" className="regular-body-text">
+                                            {event.createdBy ? `${event.createdBy.firstName} ${event.createdBy.lastName}` : "System"}
+                                        </td>
+                                        <td data-label="Date" className="small-body-text">
+                                            {event.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A"}
+                                        </td>
+                                        <td data-label="Status">
+                                            <span className={`button-label ${getStatusClass(event.status)}`}>
+                                                {event.status}
+                                            </span>
+                                        </td>
+                                        <td data-label="Actions">
+                                            <div className="action-buttons">
+                                                <button
+                                                    className="button-label approval-review"
+                                                    onClick={() => handleReview(event)}
+                                                >
+                                                    Review
+                                                </button>
 
-                                                    {event.status === "pending" && (
-                                                        <>
-                                                            <button
-                                                                className="button-label approval-reject"
-                                                                onClick={() => handleRejectClick(event)}
-                                                            >
-                                                                Reject
-                                                            </button>
+                                                {event.status === "pending" && (
+                                                    <>
+                                                        <button
+                                                            className="button-label approval-reject"
+                                                            onClick={() => handleRejectClick(event)}
+                                                        >
+                                                            Reject
+                                                        </button>
 
-                                                            <button
-                                                                className="button-label approval-approve"
-                                                                onClick={() => handleApproveClick(event)}
-                                                            >
-                                                                Approve Event
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>
-                                            <p className="regular-body-text">No events found.</p>
+                                                        <button
+                                                            className="button-label approval-approve"
+                                                            onClick={() => handleApproveClick(event)}
+                                                        >
+                                                            Approve Event
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
-                                )}
+                                ))}
                             </tbody>
                         </table>
                     )}

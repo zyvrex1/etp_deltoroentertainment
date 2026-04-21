@@ -460,7 +460,7 @@ const updateEvent = async (req, res) => {
     const existingEvent = await Event.findById(id);
     if (!existingEvent) return res.status(404).json({ error: "No such event" });
 
-    const {
+    let {
       title, description, category, venue,
       startDate, endDate, startTime, endTime,
       eventType, priceLevels, seatMap, booths,
@@ -630,6 +630,7 @@ if (req.file) {
     /* =========================
         ROLE & STATUS LOGIC
     ========================= */
+    let finalStatus = status || existingEvent.status;
 
     // 1. Restriction: Completed events are final
     if (existingEvent.status === "completed") {
@@ -641,12 +642,19 @@ if (req.file) {
       return res.status(403).json({ error: "Rejected events cannot be updated by administrators. The promoter must resubmit it." });
     }
 
-    // 3. Status Transition Logic
-    let finalStatus = status || existingEvent.status;
-    
     if (roleLower === "promoter") {
-      // If promoter updates an approved or rejected event, it goes back to pending for review
-      if (existingEvent.status === "approved" || existingEvent.status === "rejected") {
+      // Check if any sensitive fields are being updated (anything other than assignedPromoters)
+      const sensitiveFields = [
+        'title', 'description', 'category', 'venue', 
+        'startDate', 'endDate', 'startTime', 'endTime', 
+        'eventType', 'priceLevels', 'seatMap', 'booths', 
+        'image', 'ticketCategories', 'layoutData'
+      ];
+      
+      const isUpdatingSensitiveData = sensitiveFields.some(field => req.body[field] !== undefined);
+
+      // If promoter updates sensitive details of an approved or rejected event, it goes back to pending
+      if (isUpdatingSensitiveData && (existingEvent.status === "approved" || existingEvent.status === "rejected")) {
         finalStatus = "pending";
       }
     }

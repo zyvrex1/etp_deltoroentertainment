@@ -60,10 +60,16 @@ const ContentManager = () => {
     }
   };
 
+  const [isLoading, setIsLoading] = useState(true);
+
   // --- Run once on mount ---
   useEffect(() => {
-    fetchAnnouncements();
-    fetchPolicies();
+    const fetchData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchAnnouncements(), fetchPolicies()]);
+      setIsLoading(false);
+    };
+    fetchData();
   }, []);
 
   // Announcement Handler
@@ -277,39 +283,51 @@ const ContentManager = () => {
             </button>
           </div>
           <div className="announcement-list">
-            {announcements.map((a, index) => (
-              <div key={`${a.id}-${index}`} className="announcement-item">
-                <div className="announcement-header">
-                  <h5>{a.title}</h5>
-                  <div className="announcement-header-right">
-                    <span className="small-body-text announcement-date">
-                      {formatDate(a.date)}
-                    </span>
-                    <div className="announcement-actions">
-                      <button
-                        className="announcement-action-btn"
-                        onClick={() => handleDownloadAnnouncement(a)}
-                      >
-                        <Icon icon="mdi:download" width="18" />
-                      </button>
-                      <button
-                        className="announcement-action-btn"
-                        onClick={() => setEditingAnnouncement(a)}
-                      >
-                        <Icon icon="mdi:edit" width="18" />
-                      </button>
-                      <button
-                        className="announcement-action-btn delete"
-                        onClick={() => handleDeleteAnnouncement(a)}
-                      >
-                        <Icon icon="mdi:delete" width="18" />
-                      </button>
+            {isLoading ? (
+              [...Array(3)].map((_, i) => (
+                <div key={i} className="announcement-item skeleton-card" style={{ marginBottom: '16px' }}>
+                  <div className="announcement-header">
+                    <div className="skeleton skeleton-text title" style={{ width: '60%' }} />
+                    <div className="skeleton skeleton-text short" style={{ width: '80px' }} />
+                  </div>
+                  <div className="skeleton skeleton-text" style={{ width: '90%' }} />
+                </div>
+              ))
+            ) : (
+              announcements.map((a, index) => (
+                <div key={`${a.id}-${index}`} className="announcement-item">
+                  <div className="announcement-header">
+                    <h5>{a.title}</h5>
+                    <div className="announcement-header-right">
+                      <span className="small-body-text announcement-date">
+                        {formatDate(a.date)}
+                      </span>
+                      <div className="announcement-actions">
+                        <button
+                          className="announcement-action-btn"
+                          onClick={() => handleDownloadAnnouncement(a)}
+                        >
+                          <Icon icon="mdi:download" width="18" />
+                        </button>
+                        <button
+                          className="announcement-action-btn"
+                          onClick={() => setEditingAnnouncement(a)}
+                        >
+                          <Icon icon="mdi:edit" width="18" />
+                        </button>
+                        <button
+                          className="announcement-action-btn delete"
+                          onClick={() => handleDeleteAnnouncement(a)}
+                        >
+                          <Icon icon="mdi:delete" width="18" />
+                        </button>
+                      </div>
                     </div>
                   </div>
+                  <p className="small-body-text announcement-desc" title={a.content}>{a.content}</p>
                 </div>
-                <p className="small-body-text announcement-desc" title={a.content}>{a.content}</p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -325,42 +343,54 @@ const ContentManager = () => {
             </button>
           </div>
           <div className="legal-list">
-            {policies.map((p, index) => (
-              <div
-                key={`${p.policyKey}-${index}`}
-                className="legal-item-container"
-              >
-                <div className="legal-header">
-                  <h5>{p.title}</h5>
-                  <div className="legal-header-right">
-                    <span className="small-body-text announcement-date">
-                      {formatDate(p.date)}
-                    </span>
-                    <div className="legal-actions">
-                      <button
-                        className="legal-action-btn"
-                        onClick={() => handleDownloadPolicy(p)}
-                      >
-                        <Icon icon="mdi:download" width="18" />
-                      </button>
-                      <button
-                        className="legal-action-btn"
-                        onClick={() => setEditingPolicy(p)}
-                      >
-                        <Icon icon="mdi:edit" width="18" />
-                      </button>
-                      <button
-                        className="legal-action-btn delete"
-                        onClick={() => handleDeletePolicy(p)}
-                      >
-                        <Icon icon="mdi:delete" width="18" />
-                      </button>
+            {isLoading ? (
+              [...Array(3)].map((_, i) => (
+                <div key={i} className="legal-item-container skeleton-card" style={{ marginBottom: '16px' }}>
+                  <div className="legal-header">
+                    <div className="skeleton skeleton-text title" style={{ width: '60%' }} />
+                    <div className="skeleton skeleton-text short" style={{ width: '80px' }} />
+                  </div>
+                  <div className="skeleton skeleton-text" style={{ width: '90%' }} />
+                </div>
+              ))
+            ) : (
+              policies.map((p, index) => (
+                <div
+                  key={`${p.policyKey}-${index}`}
+                  className="legal-item-container"
+                >
+                  <div className="legal-header">
+                    <h5>{p.title}</h5>
+                    <div className="legal-header-right">
+                      <span className="small-body-text announcement-date">
+                        {formatDate(p.date)}
+                      </span>
+                      <div className="legal-actions">
+                        <button
+                          className="legal-action-btn"
+                          onClick={() => handleDownloadPolicy(p)}
+                        >
+                          <Icon icon="mdi:download" width="18" />
+                        </button>
+                        <button
+                          className="legal-action-btn"
+                          onClick={() => setEditingPolicy(p)}
+                        >
+                          <Icon icon="mdi:edit" width="18" />
+                        </button>
+                        <button
+                          className="legal-action-btn delete"
+                          onClick={() => handleDeletePolicy(p)}
+                        >
+                          <Icon icon="mdi:delete" width="18" />
+                        </button>
+                      </div>
                     </div>
                   </div>
+                  <p className="small-body-text legal-desc" title={p.content}>{p.content}</p>
                 </div>
-                <p className="small-body-text legal-desc" title={p.content}>{p.content}</p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

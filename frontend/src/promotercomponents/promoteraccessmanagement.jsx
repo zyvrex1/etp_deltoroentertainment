@@ -138,7 +138,7 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
         <div className="am-container">
             <header className="am-header">
                 <div className="ts-header-left">
-                    <h1 className="ts-title">Promoter Access Management</h1>
+                    <h3 className="ts-title">Promoter Access Management</h3>
                     <p className="ts-header-subtitle">Authorize and monitor the core team managing this event</p>
                 </div>
                 {canManageAccess && (
@@ -162,27 +162,51 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
                         />
                     </div>
                     <div className="am-stats-pills">
-                        <div className="stat-pill">
-                            <div className="avatar-group">
-                                {eventOwner && <Avatar person={eventOwner} size="sm" />}
-                                {assignedPromoters.slice(0, 3).map(p => (
-                                    <Avatar key={p._id || p} person={p} size="sm" isSecondary />
-                                ))}
-                                {assignedPromoters.length > 3 && (
-                                    <div className="avatar-more">+{assignedPromoters.length - 3}</div>
-                                )}
+                        {loading ? (
+                            <div className="stat-pill skeleton-card" style={{ padding: '4px 12px', border: 'none', background: 'var(--color-bg-secondary, #f8fafc)' }}>
+                                <div className="avatar-group">
+                                    <div className="skeleton skeleton-circle" style={{ width: '24px', height: '24px' }} />
+                                    <div className="skeleton skeleton-circle" style={{ width: '24px', height: '24px', marginLeft: '-8px' }} />
+                                    <div className="skeleton skeleton-circle" style={{ width: '24px', height: '24px', marginLeft: '-8px' }} />
+                                </div>
+                                <div className="skeleton skeleton-text" style={{ width: '100px', height: '12px', marginBottom: 0 }} />
                             </div>
-                            <span>Total Team: <strong>{assignedPromoters.length + (eventOwner ? 1 : 0)}</strong></span>
-                        </div>
+                        ) : (
+                            <div className="stat-pill">
+                                <div className="avatar-group">
+                                    {eventOwner && <Avatar person={eventOwner} size="sm" />}
+                                    {assignedPromoters.slice(0, 3).map(p => (
+                                        <Avatar key={p._id || p} person={p} size="sm" isSecondary />
+                                    ))}
+                                    {assignedPromoters.length > 3 && (
+                                        <div className="avatar-more">+{assignedPromoters.length - 3}</div>
+                                    )}
+                                </div>
+                                <span>Total Team: <strong>{assignedPromoters.length + (eventOwner ? 1 : 0)}</strong></span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="am-grid">
                     {loading ? (
-                        <div className="am-loading">
-                            <Icon icon="line-md:loading-twotone-loop" width="64" style={{ color: 'var(--color-red-primary)' }} />
-                            <p>Loading access permissions...</p>
-                        </div>
+                        [...Array(3)].map((_, i) => (
+                            <div key={i} className="am-promoter-card skeleton-card">
+                                <div className="am-card-top-bar">
+                                    <div className="skeleton skeleton-badge" style={{ width: '80px' }} />
+                                </div>
+                                <div className="am-card-body">
+                                    <div className="skeleton skeleton-circle" style={{ width: '64px', height: '64px' }} />
+                                    <div className="am-card-identity" style={{ width: '100%' }}>
+                                        <div className="skeleton skeleton-text title" />
+                                        <div className="skeleton skeleton-text short" />
+                                    </div>
+                                </div>
+                                <div className="am-card-actions-row">
+                                    <div className="skeleton skeleton-text" style={{ width: '100%', height: '12px' }} />
+                                </div>
+                            </div>
+                        ))
                     ) : (
                         <>
                             {/* OWNER CARD */}

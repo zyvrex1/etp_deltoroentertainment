@@ -296,6 +296,84 @@ export default function PromoterDashboard() {
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="promoter-dashboard">
+        <div className="pd-topbar">
+          <div className="pd-title">
+            <div className="skeleton skeleton-text title" style={{ width: '250px' }} />
+            <div className="skeleton skeleton-text" style={{ width: '300px' }} />
+          </div>
+          <div className="pd-actions">
+            <div className="skeleton skeleton-rect" style={{ width: '150px', height: '40px' }} />
+          </div>
+        </div>
+
+        <div className="stats-grid-wrapper">
+          <div className="stats-grid">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="dashboard-stat-card skeleton-card">
+                <div className="upper-stats">
+                  <div className="skeleton skeleton-circle" style={{ width: '24px', height: '24px' }} />
+                  <div className="skeleton skeleton-text" style={{ width: '40px', marginBottom: 0 }} />
+                </div>
+                <div className="bottom-stats" style={{ marginTop: '12px' }}>
+                  <div className="skeleton skeleton-text short" />
+                  <div className="skeleton skeleton-text title" style={{ width: '100px' }} />
+                  <div className="skeleton skeleton-text short" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="pd-main-content-grid">
+          <div className="pd-left-panel">
+            <div className="pd-charts-row">
+              <div className="pd-card graph-card skeleton-card" style={{ height: '300px' }}>
+                <div className="skeleton skeleton-text title" style={{ width: '150px' }} />
+                <div className="skeleton skeleton-rect" style={{ height: '220px', marginTop: '20px' }} />
+              </div>
+              <div className="pd-card graph-card skeleton-card" style={{ height: '300px' }}>
+                <div className="skeleton skeleton-text title" style={{ width: '150px' }} />
+                <div className="skeleton skeleton-rect" style={{ height: '220px', marginTop: '20px' }} />
+              </div>
+            </div>
+            <div className="pd-card skeleton-card">
+              <div className="skeleton skeleton-text title" style={{ width: '150px' }} />
+              {[...Array(3)].map((_, i) => (
+                <div key={i} style={{ marginTop: '20px' }}>
+                  <div className="skeleton skeleton-text title" />
+                  <div className="skeleton skeleton-text" />
+                  <div className="skeleton skeleton-rect" style={{ height: '8px', borderRadius: '4px' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="pd-right-panel">
+            <div className="pd-card skeleton-card" style={{ height: '200px' }}>
+              <div className="skeleton skeleton-text title" />
+              <div className="skeleton skeleton-rect" style={{ height: '40px', marginTop: '10px' }} />
+              <div className="skeleton skeleton-rect" style={{ height: '40px', marginTop: '10px' }} />
+            </div>
+            <div className="pd-card skeleton-card" style={{ height: '400px' }}>
+              <div className="skeleton skeleton-text title" />
+              {[...Array(5)].map((_, i) => (
+                <div key={i} style={{ display: 'flex', gap: '12px', marginTop: '15px' }}>
+                  <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px' }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="skeleton skeleton-text" />
+                    <div className="skeleton skeleton-text short" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="promoter-dashboard">
       <div className="pd-topbar">

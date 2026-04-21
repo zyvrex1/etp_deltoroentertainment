@@ -160,9 +160,18 @@ const PromoterEventManagement = () => {
             </div>
 
             {loading ? (
-              <div className="pem-loading-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', gap: '16px' }}>
-                <Icon icon="line-md:loading-twotone-loop" width="48" style={{ color: "var(--color-red-primary)" }} />
-                <p className="large-body-text">Loading your events...</p>
+              <div className="pem-events-grid">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="pem-event-card skeleton-card">
+                    <div className="skeleton skeleton-rect" style={{ height: '200px', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }} />
+                    <div className="pem-card-details">
+                      <div className="skeleton skeleton-text title" style={{ width: '90%' }} />
+                      <div className="skeleton skeleton-text" style={{ width: '40%', marginBottom: '16px' }} />
+                      <div className="skeleton skeleton-text short" />
+                      <div className="skeleton skeleton-text short" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="pem-events-grid">

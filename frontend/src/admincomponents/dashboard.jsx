@@ -250,6 +250,76 @@ export default function Dashboard() {
         update: { icon: "mdi:file-document-outline", color: "dark-light" }
     };
 
+    if (stats.loading) {
+        return (
+            <div className="admin-dashboard-page">
+                <div className="dashboard-header">
+                    <div className="skeleton-title-wrap">
+                        <div className="skeleton skeleton-text title" style={{ width: '200px' }} />
+                        <div className="skeleton skeleton-text" style={{ width: '300px' }} />
+                    </div>
+                    <div className="header-actions">
+                        <div className="skeleton skeleton-rect" style={{ width: '120px', height: '40px' }} />
+                        <div className="skeleton skeleton-rect" style={{ width: '120px', height: '40px' }} />
+                    </div>
+                </div>
+
+                <div className="stats-grid-wrapper">
+                    <div className="stats-grid">
+                        {[...Array(8)].map((_, i) => (
+                            <div key={i} className="dashboard-stat-card skeleton-card">
+                                <div className="upper-stats">
+                                    <div className="skeleton skeleton-circle" style={{ width: '24px', height: '24px' }} />
+                                    <div className="skeleton skeleton-text short" style={{ marginBottom: 0 }} />
+                                </div>
+                                <div className="bottom-stats" style={{ marginTop: '12px' }}>
+                                    <div className="skeleton skeleton-text short" />
+                                    <div className="skeleton skeleton-text title" style={{ width: '100px' }} />
+                                    <div className="skeleton skeleton-text short" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="main-content-grid">
+                    <div className="left-panel">
+                        <div className="charts-row">
+                            <div className="chart-card skeleton-card" style={{ height: '300px' }}>
+                                <div className="skeleton skeleton-text title" style={{ width: '150px' }} />
+                                <div className="skeleton skeleton-rect" style={{ height: '200px', marginTop: '20px' }} />
+                            </div>
+                            <div className="chart-card skeleton-card" style={{ height: '300px' }}>
+                                <div className="skeleton skeleton-text title" style={{ width: '150px' }} />
+                                <div className="skeleton skeleton-rect" style={{ height: '200px', marginTop: '20px' }} />
+                            </div>
+                        </div>
+                        <div className="chart-card wide skeleton-card" style={{ height: '350px' }}>
+                            <div className="skeleton skeleton-text title" style={{ width: '200px' }} />
+                            <div className="skeleton skeleton-rect" style={{ height: '250px', marginTop: '20px' }} />
+                        </div>
+                    </div>
+                    <div className="right-panel">
+                        <div className="quick-actions-card skeleton-card">
+                            <div className="skeleton skeleton-text title" />
+                            <div className="skeleton skeleton-rect" style={{ height: '40px', marginTop: '10px' }} />
+                            <div className="skeleton skeleton-rect" style={{ height: '40px', marginTop: '10px' }} />
+                        </div>
+                        <div className="system-alerts-card skeleton-card" style={{ height: '300px' }}>
+                            <div className="skeleton skeleton-text title" />
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} style={{ marginTop: '15px' }}>
+                                    <div className="skeleton skeleton-text" />
+                                    <div className="skeleton skeleton-rect" style={{ height: '40px' }} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="admin-dashboard-page">
             <div className="dashboard-header">

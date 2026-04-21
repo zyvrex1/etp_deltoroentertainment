@@ -10,6 +10,13 @@ const Payments = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [payoutRequests, setPayoutRequests] = useState([
     { id: 1, promoter: "Sarah Chen", amount: "$15,240.00", method: "Wire Transfer", status: "pending", requested: "Oct 1, 2024" },
     { id: 2, promoter: "David Kim", amount: "$45,000.00", method: "PayPal", status: "paid", requested: "Aug 1, 2024" },
@@ -229,7 +236,43 @@ const Payments = () => {
         </div>
 
         <div className="table-wrapper">
-          {paginatedData.length === 0 ? (
+          {isLoading ? (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Promoter</th>
+                  {activeTab === "payment-methods" && <th>Event</th>}
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Status</th>
+                  <th>{activeTab === "payout-requests" ? "Requested" : "Date"}</th>
+                  {activeTab === "payout-requests" && <th>Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(itemsPerPage)].map((_, i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton skeleton-text" style={{ width: '40px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '120px' }} /></td>
+                    {activeTab === "payment-methods" && <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>}
+                    <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
+                    {activeTab === "payout-requests" && (
+                      <td>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <div className="skeleton skeleton-rect" style={{ width: '60px', height: '32px' }} />
+                          <div className="skeleton skeleton-rect" style={{ width: '60px', height: '32px' }} />
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : paginatedData.length === 0 ? (
             // Empty state outside table for mobile-friendly display
             <div className="empty-state">
               <Icon icon="mdi:magnify-close" width="48" />

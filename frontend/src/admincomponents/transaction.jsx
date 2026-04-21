@@ -19,6 +19,14 @@ const TransactionMonitoring = () => {
     { value: "payout", label: "Payout filter" },
   ];
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -321,80 +329,108 @@ const TransactionMonitoring = () => {
         </div>
 
         <div className="table-wrapper">
-
-           {paginatedTransactions.length === 0 ? (
-                                  // Empty state outside table for mobile-friendly display
-                                  <div className="empty-state">
-                                      <Icon icon="mdi:magnify-close" width="48" />
-                                      <h4>No transactions found</h4>
-                                      <p className="small-body-text">
-                                          No transactions match "<strong>{searchQuery}</strong>".
-                                      </p>
-                                  </div>
-                              ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>User</th>
-                <th>Event</th>
-                <th>Type</th>
-                <th>Category</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedTransactions.map((tx) => (
-                <tr key={tx.id} className={expandedRow === tx.id ? "expanded" : ""}>
-                  <td className="small-body-text id-td" data-label="ID">
-                    <div className="mobile-expand-icon" onClick={() => toggleRow(tx.id)}>
-                      <Icon icon={expandedRow === tx.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
-                    </div>
-                    <span>#{tx.id.toString().padStart(2, "0")}</span>
-                  </td>
-                  <td className="regular-body-text name-td" data-label="User">
-                    {tx.user}
-                  </td>
-                  <td className="small-body-text" data-label="Event">
-                    {tx.event}
-                  </td>
-                  <td className="small-body-text" data-label="Type">
-                    {tx.type}
-                  </td>
-                  <td data-label="Category">
-                    <span className={getCategoryClass(tx.category)}>
-                      {tx.category}
-                    </span>
-                  </td>
-                  <td className="regular-body-text amount" data-label="Amount">
-                    {tx.amount}
-                  </td>
-                  <td data-label="Status">
-                    <span className={getStatusClass(tx.status)}>
-                      {tx.status}
-                    </span>
-                  </td>
-                  <td className="small-body-text" data-label="Date">
-                    {tx.date}
-                  </td>
-                  <td data-label="Actions">
-                    <button
-                      className="tx-view-btn"
-                      aria-label="View details"
-                      onClick={() => handleViewTransaction(tx)}
-                    >
-                      <Icon icon="mdi:eye" />
-                    </button>
-                  </td>
+          {isLoading ? (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>User</th>
+                  <th>Event</th>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-
-            )}
+              </thead>
+              <tbody>
+                {[...Array(itemsPerPage)].map((_, i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton skeleton-text" style={{ width: '40px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '70px' }} /></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '80px', height: '24px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
+                    <td><div className="skeleton skeleton-circle" style={{ width: '32px', height: '32px' }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : paginatedTransactions.length === 0 ? (
+            <div className="empty-state">
+              <Icon icon="mdi:magnify-close" width="48" />
+              <h4>No transactions found</h4>
+              <p className="small-body-text">
+                No transactions match "<strong>{searchQuery}</strong>".
+              </p>
+            </div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>User</th>
+                  <th>Event</th>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedTransactions.map((tx) => (
+                  <tr key={tx.id} className={expandedRow === tx.id ? "expanded" : ""}>
+                    <td className="small-body-text id-td" data-label="ID">
+                      <div className="mobile-expand-icon" onClick={() => toggleRow(tx.id)}>
+                        <Icon icon={expandedRow === tx.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                      </div>
+                      <span>#{tx.id.toString().padStart(2, "0")}</span>
+                    </td>
+                    <td className="regular-body-text name-td" data-label="User">
+                      {tx.user}
+                    </td>
+                    <td className="small-body-text" data-label="Event">
+                      {tx.event}
+                    </td>
+                    <td className="small-body-text" data-label="Type">
+                      {tx.type}
+                    </td>
+                    <td data-label="Category">
+                      <span className={getCategoryClass(tx.category)}>
+                        {tx.category}
+                      </span>
+                    </td>
+                    <td className="regular-body-text amount" data-label="Amount">
+                      {tx.amount}
+                    </td>
+                    <td data-label="Status">
+                      <span className={getStatusClass(tx.status)}>
+                        {tx.status}
+                      </span>
+                    </td>
+                    <td className="small-body-text" data-label="Date">
+                      {tx.date}
+                    </td>
+                    <td data-label="Actions">
+                      <button
+                        className="tx-view-btn"
+                        aria-label="View details"
+                        onClick={() => handleViewTransaction(tx)}
+                      >
+                        <Icon icon="mdi:eye" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {totalPages > 1 && (

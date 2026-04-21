@@ -20,6 +20,7 @@ const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
   const [expandedRow, setExpandedRow] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const toggleRow = (id) => {
     setExpandedRow(expandedRow === id ? null : id);
@@ -27,6 +28,7 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     if (!user?.token) return;
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/admin/users", {
@@ -43,6 +45,8 @@ const UserManagement = () => {
       }
     } catch (err) {
       console.error("Error fetching users:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -197,7 +201,37 @@ const UserManagement = () => {
     if (activeTab === "all-users" || activeTab === "admins") {
       return (
         <div className="table-wrapper">
-          {paginatedData.length === 0 ? (
+          {isLoading ? (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Joined</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(itemsPerPage)].map((_, i) => (
+                  <tr key={i}>
+                    <td>
+                      <div className="user-cell" style={{ gap: '12px' }}>
+                        <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px' }} />
+                        <div className="skeleton skeleton-text title" style={{ width: '120px', marginBottom: 0 }} />
+                      </div>
+                    </td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
+                    <td><div className="skeleton skeleton-circle" style={{ width: '32px', height: '32px' }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : paginatedData.length === 0 ? (
             // Empty state outside table for mobile-friendly display
             <div className="empty-state">
               <Icon icon="mdi:magnify-close" width="48" />
@@ -249,7 +283,7 @@ const UserManagement = () => {
                     </td>
                     <td data-label="Status">
                       <span
-                        className={`button-label em-status-${getUserStatus(user.lastLogin)}`}
+                         className={`button-label em-status-${getUserStatus(user.lastLogin)}`}
 
                       >
                         {getUserStatus(user.lastLogin).charAt(0).toUpperCase() +
@@ -265,19 +299,12 @@ const UserManagement = () => {
                         >
                           <Icon icon="mdi:eye" />
                         </button>
-                        {/* <button
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditUser(user)}
-                      >
-                        <Icon icon="mdi:pencil" />
-                      </button> */}
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-
           )}
         </div>
       );
@@ -286,7 +313,37 @@ const UserManagement = () => {
     if (activeTab === "customers") {
       return (
         <div className="table-wrapper">
-          {paginatedData.length === 0 ? (
+          {isLoading ? (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Total Spent</th>
+                  <th>Joined</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(itemsPerPage)].map((_, i) => (
+                  <tr key={i}>
+                    <td>
+                      <div className="user-cell" style={{ gap: '12px' }}>
+                        <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px' }} />
+                        <div className="skeleton skeleton-text title" style={{ width: '120px', marginBottom: 0 }} />
+                      </div>
+                    </td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
+                    <td><div className="skeleton skeleton-circle" style={{ width: '32px', height: '32px' }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : paginatedData.length === 0 ? (
             // Empty state outside table for mobile-friendly display
             <div className="empty-state">
               <Icon icon="mdi:magnify-close" width="48" />
@@ -353,12 +410,6 @@ const UserManagement = () => {
                         >
                           <Icon icon="mdi:eye" />
                         </button>
-                        {/* <button
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditUser(customer, "customer")}
-                      >
-                        <Icon icon="mdi:pencil" />
-                      </button> */}
                       </div>
                     </td>
                   </tr>
@@ -373,7 +424,37 @@ const UserManagement = () => {
     if (activeTab === "promoters") {
       return (
         <div className="table-wrapper">
-          {paginatedData.length === 0 ? (
+          {isLoading ? (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Company</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(itemsPerPage)].map((_, i) => (
+                  <tr key={i}>
+                    <td>
+                      <div className="user-cell" style={{ gap: '12px' }}>
+                        <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px' }} />
+                        <div className="skeleton skeleton-text title" style={{ width: '120px', marginBottom: 0 }} />
+                      </div>
+                    </td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
+                    <td><div className="skeleton skeleton-circle" style={{ width: '32px', height: '32px' }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : paginatedData.length === 0 ? (
             // Empty state outside table for mobile-friendly display
             <div className="empty-state">
               <Icon icon="mdi:magnify-close" width="48" />
@@ -435,12 +516,6 @@ const UserManagement = () => {
                         >
                           <Icon icon="mdi:eye" />
                         </button>
-                        {/* <button
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditUser(promoter, "promoter")}
-                      >
-                        <Icon icon="mdi:pencil" />
-                      </button> */}
                       </div>
                     </td>
                   </tr>
@@ -455,7 +530,37 @@ const UserManagement = () => {
     if (activeTab === "sponsors") {
       return (
         <div className="table-wrapper">
-          {paginatedData.length === 0 ? (
+          {isLoading ? (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Company</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(itemsPerPage)].map((_, i) => (
+                  <tr key={i}>
+                    <td>
+                      <div className="user-cell" style={{ gap: '12px' }}>
+                        <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px' }} />
+                        <div className="skeleton skeleton-text title" style={{ width: '120px', marginBottom: 0 }} />
+                      </div>
+                    </td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                    <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
+                    <td><div className="skeleton skeleton-circle" style={{ width: '32px', height: '32px' }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : paginatedData.length === 0 ? (
             // Empty state outside table for mobile-friendly display
             <div className="empty-state">
               <Icon icon="mdi:magnify-close" width="48" />
@@ -517,12 +622,6 @@ const UserManagement = () => {
                         >
                           <Icon icon="mdi:eye" />
                         </button>
-                        {/* <button
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditUser(sponsor, "sponsor")}
-                      >
-                        <Icon icon="mdi:pencil" />
-                      </button> */}
                       </div>
                     </td>
                   </tr>

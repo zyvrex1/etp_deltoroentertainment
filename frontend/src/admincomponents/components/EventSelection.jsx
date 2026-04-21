@@ -8,10 +8,10 @@ const EventSelection = ({ setSelectedEvent }) => {
   const { events, dispatch } = useEventsContext();
   const { user } = useAuthContext();
 
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortFilter, setSortFilter] = useState("Recently Added");
   const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
-
   const eventDropdownRef = useRef(null);
 
   // Fetch events from API
@@ -19,6 +19,7 @@ const EventSelection = ({ setSelectedEvent }) => {
     if (!user?.token) return;
 
     const fetchEvents = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch("/api/events?status=approved", {
           headers: {
@@ -33,6 +34,8 @@ const EventSelection = ({ setSelectedEvent }) => {
         }
       } catch (error) {
         console.error("Error fetching events:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -147,7 +150,20 @@ const EventSelection = ({ setSelectedEvent }) => {
         </div>
 
         <div className="bt-events-grid">
-          {filteredEvents.length > 0 &&
+          {isLoading ? (
+            [...Array(4)].map((_, i) => (
+              <div key={i} className="bt-event-card skeleton-card">
+                <div className="bt-card-image-wrap skeleton" style={{ height: '180px' }} />
+                <div className="bt-card-details">
+                  <div className="skeleton skeleton-text title" style={{ width: '80%' }} />
+                  <div className="skeleton skeleton-text short" style={{ width: '40%', marginBottom: '15px' }} />
+                  <div className="skeleton skeleton-text" style={{ width: '90%' }} />
+                  <div className="skeleton skeleton-text" style={{ width: '70%' }} />
+                  <div className="skeleton skeleton-text" style={{ width: '60%' }} />
+                </div>
+              </div>
+            ))
+          ) : filteredEvents.length > 0 ? (
             filteredEvents.map((event) => (
               <div
                 key={event._id}
@@ -195,9 +211,8 @@ const EventSelection = ({ setSelectedEvent }) => {
                   </div>
                 </div>
               </div>
-            ))}
-
-          {filteredEvents.length === 0 && (
+            ))
+          ) : (
             <div className="bt-empty-state">
               <Icon icon="mdi:magnify-close" width="48" />
               <h4>No events found</h4>

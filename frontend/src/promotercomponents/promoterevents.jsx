@@ -231,9 +231,23 @@ const PromoterEvents = () => {
         </div>
 
         {loading ? (
-          <div className="pe-loading-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', gap: '16px' }}>
-            <Icon icon="line-md:loading-twotone-loop" width="48" style={{ color: "var(--color-red-primary)" }} />
-            <p className="large-body-text">Loading your events...</p>
+          <div className="pe-grid">
+            {[...Array(itemsPerPage)].map((_, i) => (
+              <div key={i} className="pe-card skeleton-card">
+                <div className="skeleton skeleton-rect" style={{ height: '180px', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }} />
+                <div className="pe-card-body">
+                  <div className="skeleton skeleton-text title" />
+                  <div className="pe-card-meta">
+                    <div className="skeleton skeleton-text short" />
+                    <div className="skeleton skeleton-text short" />
+                  </div>
+                  <div className="pe-card-actions">
+                    <div className="skeleton skeleton-rect" style={{ height: '36px', width: '80px', borderRadius: '8px' }} />
+                    <div className="skeleton skeleton-rect" style={{ height: '36px', width: '80px', borderRadius: '8px' }} />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredEvents.length === 0 && activeFilter === "all" && !searchQuery ? (
           <div className="pe-empty-wrapper">

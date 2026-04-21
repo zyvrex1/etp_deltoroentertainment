@@ -78,6 +78,7 @@ const EventManagement = () => {
   const [expandedRow, setExpandedRow] = useState(null);
   const [promoters, setPromoters] = useState([]);
   const [assigningId, setAssigningId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const toggleRow = (id) => {
     setExpandedRow(expandedRow === id ? null : id);
@@ -93,6 +94,7 @@ const EventManagement = () => {
     if (!user?.token) return;
 
     const fetchEvents = async () => {
+      setIsLoading(currentPage === 1 && searchQuery === "" ? true : false); // Only main load shows full skeletons
       try {
         const response = await fetch("/api/events", {
           headers: {
@@ -111,6 +113,8 @@ const EventManagement = () => {
         }
       } catch (err) {
         console.error("Error fetching events:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -410,7 +414,56 @@ const EventManagement = () => {
   const renderTable = () => {
     return (
       <div className="table-wrapper">
-        {paginatedData.length === 0 ? (
+        {isLoading ? (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Venue</th>
+                <th>Date & Time</th>
+                <th>Status</th>
+                <th>Promoter</th>
+                <th>Sales Progress</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...Array(itemsPerPage)].map((_, i) => (
+                <tr key={`skeleton-${i}`}>
+                  <td>
+                    <div className="skeleton skeleton-text title" />
+                    <div className="skeleton skeleton-text short" />
+                  </td>
+                  <td>
+                    <div className="skeleton skeleton-text" />
+                    <div className="skeleton skeleton-text short" />
+                  </td>
+                  <td>
+                    <div className="skeleton skeleton-text" />
+                    <div className="skeleton skeleton-text short" />
+                  </td>
+                  <td>
+                    <div className="skeleton skeleton-badge" />
+                  </td>
+                  <td>
+                    <div className="skeleton-avatar-group">
+                      <div className="skeleton skeleton-avatar" />
+                      <div className="skeleton skeleton-avatar" />
+                      <div className="skeleton skeleton-avatar" />
+                    </div>
+                  </td>
+                  <td>
+                    <div className="skeleton skeleton-text short" />
+                    <div className="skeleton skeleton-sales-bar" />
+                  </td>
+                  <td>
+                    <div className="skeleton skeleton-avatar" style={{ width: '80%' }} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : paginatedData.length === 0 ? (
           // Empty state outside table for mobile-friendly display
           <div className="empty-state">
             <Icon icon="mdi:magnify-close" width="48" />
@@ -434,178 +487,227 @@ const EventManagement = () => {
             </thead>
 
             <tbody>
-              {paginatedData.length > 0 ? (
-                paginatedData.map((event) => {
-                  const salesPercent = event.totalTickets
-                    ? Math.round((event.ticketsSold / event.totalTickets) * 100)
-                    : 0;
+              {paginatedData.map((event) => {
+                const salesPercent = event.totalTickets
+                  ? Math.round((event.ticketsSold / event.totalTickets) * 100)
+                  : 0;
 
-                  const statusClass = `status-${event.status}`;
+                const statusClass = `status-${event.status}`;
 
-                  return (
-                    <tr
-                      key={event._id}
-                      className={expandedRow === event._id ? "expanded" : ""}
-                    >
-                      <td data-label="Event" className="id-td">
-                        <div
-                          className="mobile-expand-icon"
-                          onClick={() => toggleRow(event._id)}
-                        >
-                          <Icon
-                            icon={
-                              expandedRow === event._id
-                                ? "mdi:chevron-up"
-                                : "mdi:chevron-down"
+                return (
+                  <tr
+                    key={event._id}
+                    className={expandedRow === event._id ? "expanded" : ""}
+                  >
+                    <td data-label="Event" className="id-td">
+                      <div
+                        className="mobile-expand-icon"
+                        onClick={() => toggleRow(event._id)}
+                      >
+                        <Icon
+                          icon={
+                            expandedRow === event._id
+                              ? "mdi:chevron-up"
+                              : "mdi:chevron-down"
+                          }
+                        />
+                      </div>
+                      <div className="event-cell">
+                        <h5 className="event-name">{event.title}</h5>
+                        <p className="smaller-body-text event-category">
+                          {event.category || "No Category"}
+                        </p>
+                        <p className="smaller-body-text event-category">
+                          {event.createdBy
+                            ? `${event.createdBy.firstName} ${event.createdBy.lastName} (${event.createdBy.role})`
+                            : "Unknown Creator"}
+                        </p>
+                      </div>
+                    </td>
+
+                    <td data-label="Venue" className="name-td">
+                      <div className="venue-cell">
+                        <p className="regular-body-text green-label">
+                          {event.venue?.name || "No Venue"}
+                        </p>
+                        <p className="smaller-body-text">
+                          {event.venue?.city || ""}
+                        </p>
+                        <p className="smaller-body-text">
+                          {event.venue?.zipCode || ""}
+                        </p>
+                      </div>
+                    </td>
+
+                    <td data-label="Date" className="small-body-text">
+                      <strong>
+                        {formatEventDate(event.startDate, event.endDate)}
+                      </strong>
+                      <br />
+                      <span
+                        className="smaller-body-text"
+                        style={{ color: "#666" }}
+                      >
+                        {event.startTime} - {event.endTime}
+                      </span>
+                    </td>
+
+                    <td data-label="Status">
+                      <span className={`button-label ${statusClass}`}>
+                        {event.status}
+                      </span>
+                    </td>
+
+                    <td data-label="Promoter">
+                      <div className="promoter-assign-cell">
+                        <div className="assigned-promoters-list">
+                          <div className="promoter-avatars">
+                            {/* CASE 1: If a promoter created the event, show their avatar first */}
+                            {event.createdBy?.role === "promoter" && (
+                              <div
+                                className="promoter-avatar-tiny"
+                                title={`${event.createdBy.firstName} ${event.createdBy.lastName}`}
+                                style={{ border: "2px solid #4CAF50" }} // Optional: highlight the owner
+                              >
+                                {event.createdBy.firstName?.charAt(0)}
+                                {event.createdBy.lastName?.charAt(0)}
+                              </div>
+                            )}
+
+                            {/* CASE 2: Display assigned promoters (filtering out the creator if they are already shown) */}
+                            {event.assignedPromoters
+                              ?.filter((p) => p._id !== event.createdBy?._id) // Avoid duplicates if creator is also in assigned list
+                              .slice(0, 3)
+                              .map((p) => (
+                                <div
+                                  key={p._id}
+                                  className="promoter-avatar-tiny"
+                                  title={`${p.firstName} ${p.lastName}`}
+                                >
+                                  {p.firstName?.charAt(0)}
+                                  {p.lastName?.charAt(0)}
+                                </div>
+                              ))}
+
+                            {/* Show count for extra promoters */}
+                            {event.assignedPromoters?.length > 3 && (
+                              <div className="promoter-avatar-tiny extra">
+                                +{event.assignedPromoters.length - 3}
+                              </div>
+                            )}
+
+                            {/* Fallback if absolutely no one is assigned and creator is admin */}
+                            {!event.assignedPromoters?.length &&
+                              event.createdBy?.role !== "promoter" && (
+                                <span
+                                  className="smaller-body-text"
+                                  style={{ color: "#999" }}
+                                >
+                                  Unassigned
+                                </span>
+                              )}
+                          </div>
+
+                          <button
+                            className="assign-promoter-plus-btn"
+                            onClick={() => {
+                              setAssignEvent(event);
+                              setIsAssignModalOpen(true);
+                            }}
+                            // Limit removed: Now only disables if the event isn't approved
+                            disabled={event.status !== "approved"}
+                            title={
+                              event.status !== "approved"
+                                ? "Approve the event first"
+                                : "Manage Promoters"
                             }
+                          >
+                            <Icon icon="mdi:plus" />
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td data-label="Sales">
+                      <div className="sales-cell">
+                        <span className="small-body-text sales-label">
+                          {event.ticketsSold} / {event.totalTickets} (
+                          {salesPercent}%)
+                        </span>
+
+                        <div className="sales-bar">
+                          <div
+                            className="sales-bar-inner"
+                            style={{ width: `${salesPercent}%` }}
                           />
                         </div>
-                        <div className="event-cell">
-                          <h5 className="event-name">{event.title}</h5>
-                          <p className="smaller-body-text event-category">
-                            {event.category || "No Category"}
-                          </p>
-                          <p className="smaller-body-text event-category">
-                            {event.createdBy
-                              ? `${event.createdBy.firstName} ${event.createdBy.lastName} (${event.createdBy.role})`
-                              : "Unknown Creator"}
-                          </p>
-                        </div>
-                      </td>
+                      </div>
+                    </td>
 
-                      <td data-label="Venue" className="name-td">
-                        <div className="venue-cell">
-                          <p className="regular-body-text green-label">
-                            {event.venue?.name || "No Venue"}
-                          </p>
-                          <p className="smaller-body-text">
-                            {event.venue?.city || ""}
-                          </p>
-                          <p className="smaller-body-text">
-                            {event.venue?.zipCode || ""}
-                          </p>
-                        </div>
-                      </td>
+                    <td data-label="Actions">
+                      <div className="em-actions">
+                        {event.createdBy._id === user._id ? (
+                          // Current user owns this event → View/Edit, Approve/Reject (if pending), Cancel, Delete
+                          <>
+                            <button
+                              className="em-action-btn"
+                              onClick={() => handleEditEvent(event)}
+                              title="View/Edit Event"
+                            >
+                              <Icon icon="mdi:eye-outline" />
+                            </button>
 
-                      <td data-label="Date" className="small-body-text">
-                        <strong>
-                          {formatEventDate(event.startDate, event.endDate)}
-                        </strong>
-                        <br />
-                        <span
-                          className="smaller-body-text"
-                          style={{ color: "#666" }}
-                        >
-                          {event.startTime} - {event.endTime}
-                        </span>
-                      </td>
-
-                      <td data-label="Status">
-                        <span className={`button-label ${statusClass}`}>
-                          {event.status}
-                        </span>
-                      </td>
-
-                      <td data-label="Promoter">
-                        <div className="promoter-assign-cell">
-                          <div className="assigned-promoters-list">
-                            <div className="promoter-avatars">
-                              {/* CASE 1: If a promoter created the event, show their avatar first */}
-                              {event.createdBy?.role === "promoter" && (
-                                <div
-                                  className="promoter-avatar-tiny"
-                                  title={`${event.createdBy.firstName} ${event.createdBy.lastName}`}
-                                  style={{ border: "2px solid #4CAF50" }} // Optional: highlight the owner
+                            {event.status === "pending" && (
+                              <>
+                                <button
+                                  className="em-action-btn approve-btn"
+                                  onClick={() => handleApproveEvent(event)}
+                                  title="Approve Event"
                                 >
-                                  {event.createdBy.firstName?.charAt(0)}
-                                  {event.createdBy.lastName?.charAt(0)}
-                                </div>
-                              )}
+                                  <Icon icon="mdi:check-circle-outline" />
+                                </button>
+                                <button
+                                  className="em-action-btn reject-btn"
+                                  onClick={() => handleRejectEvent(event)}
+                                  title="Reject Event"
+                                >
+                                  <Icon icon="mdi:close-circle-outline" />
+                                </button>
+                              </>
+                            )}
 
-                              {/* CASE 2: Display assigned promoters (filtering out the creator if they are already shown) */}
-                              {event.assignedPromoters
-                                ?.filter((p) => p._id !== event.createdBy?._id) // Avoid duplicates if creator is also in assigned list
-                                .slice(0, 3)
-                                .map((p) => (
-                                  <div
-                                    key={p._id}
-                                    className="promoter-avatar-tiny"
-                                    title={`${p.firstName} ${p.lastName}`}
-                                  >
-                                    {p.firstName?.charAt(0)}
-                                    {p.lastName?.charAt(0)}
-                                  </div>
-                                ))}
-
-                              {/* Show count for extra promoters */}
-                              {event.assignedPromoters?.length > 3 && (
-                                <div className="promoter-avatar-tiny extra">
-                                  +{event.assignedPromoters.length - 3}
-                                </div>
-                              )}
-
-                              {/* Fallback if absolutely no one is assigned and creator is admin */}
-                              {!event.assignedPromoters?.length &&
-                                event.createdBy?.role !== "promoter" && (
-                                  <span
-                                    className="smaller-body-text"
-                                    style={{ color: "#999" }}
-                                  >
-                                    Unassigned
-                                  </span>
-                                )}
-                            </div>
+                            {event.status === "approved" && (
+                              <button
+                                className="em-action-btn cancel-btn"
+                                onClick={() => handleCancelEvent(event)}
+                                title="Cancel Event"
+                              >
+                                <Icon icon="mdi:cancel" />
+                              </button>
+                            )}
 
                             <button
-                              className="assign-promoter-plus-btn"
-                              onClick={() => {
-                                setAssignEvent(event);
-                                setIsAssignModalOpen(true);
-                              }}
-                              // Limit removed: Now only disables if the event isn't approved
-                              disabled={event.status !== "approved"}
-                              title={
-                                event.status !== "approved"
-                                  ? "Approve the event first"
-                                  : "Manage Promoters"
-                              }
+                              className="em-action-btn"
+                              onClick={() => handleDeleteEvent(event)}
+                              title="Delete Event"
                             >
-                              <Icon icon="mdi:plus" />
+                              <Icon icon="mdi:delete" />
                             </button>
-                          </div>
-                        </div>
-                      </td>
+                          </>
+                        ) : (
+                          // Event is NOT owned by user → View + Approve (if pending & admin)
+                          <>
+                            <button
+                              className="em-action-btn"
+                              onClick={() => handleEditEvent(event)}
+                              title="View Event"
+                            >
+                              <Icon icon="mdi:eye-outline" />
+                            </button>
 
-                      <td data-label="Sales">
-                        <div className="sales-cell">
-                          <span className="small-body-text sales-label">
-                            {event.ticketsSold} / {event.totalTickets} (
-                            {salesPercent}%)
-                          </span>
-
-                          <div className="sales-bar">
-                            <div
-                              className="sales-bar-inner"
-                              style={{ width: `${salesPercent}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-
-                      <td data-label="Actions">
-                        <div className="em-actions">
-                          {event.createdBy._id === user._id ? (
-                            // Current user owns this event → View/Edit, Approve/Reject (if pending), Cancel, Delete
-                            <>
-                              <button
-                                className="em-action-btn"
-                                onClick={() => handleEditEvent(event)}
-                                title="View/Edit Event"
-                              >
-                                <Icon icon="mdi:eye-outline" />
-                              </button>
-
-                              {event.status === "pending" && (
+                            {event.status === "pending" &&
+                              (user.role === "admin" ||
+                                user.role === "superadmin") && (
                                 <>
                                   <button
                                     className="em-action-btn approve-btn"
@@ -624,7 +726,9 @@ const EventManagement = () => {
                                 </>
                               )}
 
-                              {event.status === "approved" && (
+                            {event.status === "approved" &&
+                              (user.role === "admin" ||
+                                user.role === "superadmin") && (
                                 <button
                                   className="em-action-btn cancel-btn"
                                   onClick={() => handleCancelEvent(event)}
@@ -633,72 +737,13 @@ const EventManagement = () => {
                                   <Icon icon="mdi:cancel" />
                                 </button>
                               )}
-
-                              <button
-                                className="em-action-btn"
-                                onClick={() => handleDeleteEvent(event)}
-                                title="Delete Event"
-                              >
-                                <Icon icon="mdi:delete" />
-                              </button>
-                            </>
-                          ) : (
-                            // Event is NOT owned by user → View + Approve (if pending & admin)
-                            <>
-                              <button
-                                className="em-action-btn"
-                                onClick={() => handleEditEvent(event)}
-                                title="View Event"
-                              >
-                                <Icon icon="mdi:eye-outline" />
-                              </button>
-
-                              {event.status === "pending" &&
-                                (user.role === "admin" ||
-                                  user.role === "superadmin") && (
-                                  <>
-                                    <button
-                                      className="em-action-btn approve-btn"
-                                      onClick={() => handleApproveEvent(event)}
-                                      title="Approve Event"
-                                    >
-                                      <Icon icon="mdi:check-circle-outline" />
-                                    </button>
-                                    <button
-                                      className="em-action-btn reject-btn"
-                                      onClick={() => handleRejectEvent(event)}
-                                      title="Reject Event"
-                                    >
-                                      <Icon icon="mdi:close-circle-outline" />
-                                    </button>
-                                  </>
-                                )}
-
-                              {event.status === "approved" &&
-                                (user.role === "admin" ||
-                                  user.role === "superadmin") && (
-                                  <button
-                                    className="em-action-btn cancel-btn"
-                                    onClick={() => handleCancelEvent(event)}
-                                    title="Cancel Event"
-                                  >
-                                    <Icon icon="mdi:cancel" />
-                                  </button>
-                                )}
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  {/* <td colSpan="7" style={{ textAlign: "center", padding: "2rem" }}>
-                No events found.
-              </td> */}
-                </tr>
-              )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

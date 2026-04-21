@@ -201,6 +201,78 @@ const SupportDisputes = () => {
         );
     }
 
+    if (loading) {
+        return (
+            <div className="support-page">
+                <div className="support-header">
+                    <div>
+                        <h1>Support & Disputes</h1>
+                        <p className="large-body-text">Manage user support tickets and resolve disputes.</p>
+                    </div>
+                </div>
+
+                <div className="support-stats-grid">
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className="support-stat-card skeleton-card">
+                            <div className="stat-info">
+                                <div className="skeleton skeleton-text short" />
+                                <div className="skeleton skeleton-text title" style={{ width: '40px' }} />
+                            </div>
+                            <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px' }} />
+                        </div>
+                    ))}
+                </div>
+                <div className="support-content">
+                    <div className="support-toolbar">
+                        <div className="support-toolbar-left">
+                            <div className="support-search">
+                                <Icon icon="mdi:magnify" />
+                                <div className="skeleton skeleton-rect" style={{ width: '200px', height: '36px' }} />
+                            </div>
+                        </div>
+                        <div className="support-toolbar-right">
+                            <div className="skeleton skeleton-rect" style={{ width: '150px', height: '36px', borderRadius: '8px' }} />
+                        </div>
+                    </div>
+
+                    <div className="table-wrapper">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Assigned To</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[...Array(itemsPerPage)].map((_, i) => (
+                                    <tr key={i}>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '60px' }} /></td>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
+                                        <td><div className="skeleton skeleton-badge" style={{ width: '80px', height: '24px' }} /></td>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <div className="skeleton skeleton-rect" style={{ width: '60px', height: '32px' }} />
+                                                <div className="skeleton skeleton-rect" style={{ width: '60px', height: '32px' }} />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="support-page">
             <div className="support-header">
@@ -355,7 +427,7 @@ const SupportDisputes = () => {
                                         </td>
                                         <td className="status-cell" data-label="Status">{getStatusBadge(ticket.status)}</td>
                                         <td className="regular-body-text" data-label="Assigned To">
-                                            {ticket.assignedName === 'Unassigned' ? (
+                                            {(ticket.assignedName === 'Unassigned' || !ticket.assignedName) ? (
                                                 <span style={{ color: "var(--color-black-tertiary)" }}>Unassigned</span>
                                             ) : (
                                                 ticket.assignedName

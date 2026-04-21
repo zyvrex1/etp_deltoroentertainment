@@ -14,6 +14,13 @@ const AuditLogs = () => {
     }));
 
     // Mock data for audit logs matching the screenshot
+    const [isLoading, setIsLoading] = useState(true);
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => setIsLoading(false), 800);
+        return () => clearTimeout(timer);
+    }, []);
+
     const [logs] = useState([
         {
             id: 1,
@@ -242,7 +249,30 @@ const AuditLogs = () => {
 
                 {/* Logs Table */}
                 <div className="table-responsive">
-                    {paginatedLogs.length === 0 ? (
+                    {isLoading ? (
+                        <table className="audit-table">
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Admin</th>
+                                    <th>Target</th>
+                                    <th>Details</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[...Array(itemsPerPage)].map((_, i) => (
+                                    <tr key={i}>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '120px' }} /></td>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '200px' }} /></td>
+                                        <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : paginatedLogs.length === 0 ? (
                         // Empty state outside table for mobile-friendly display
                         <div className="empty-state">
                             <Icon icon="mdi:magnify-close" width="48" />
@@ -253,8 +283,6 @@ const AuditLogs = () => {
                         </div>
                     ) : (
                         <table className="audit-table">
-
-
                             <thead>
                                 <tr>
                                     <th>Action</th>
