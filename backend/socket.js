@@ -5,7 +5,7 @@ let io;
 const init = (server) => {
   io = socketIo(server, {
     cors: {
-      origin: "http://localhost:5173", // Match your frontend URL
+      origin: ["http://localhost:5173", "http://192.168.18.6:5173"], // Match your frontend URL
       methods: ["GET", "POST", "PATCH", "DELETE"],
       credentials: true
     }

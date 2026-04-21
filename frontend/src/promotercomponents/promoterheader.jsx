@@ -9,6 +9,8 @@ import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
 import { useNotificationsContext } from "../admincomponents/hooks/useNotificationsContext";
 import ViewNotif from "../admincomponents/Modal/ViewNotif";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 const PromoterHeader = ({ mobileExpanded, setMobileExpanded }) => {
   const { logout } = useLogout();
   const { user: authUser } = useAuthContext();
@@ -34,7 +36,7 @@ const PromoterHeader = ({ mobileExpanded, setMobileExpanded }) => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await axios.get('http://localhost:4000/api/notifications', {
+        const response = await axios.get(`${BACKEND_URL}/api/notifications`, {
           headers: {
             'Authorization': `Bearer ${authUser.token}`
           }
@@ -54,7 +56,7 @@ const PromoterHeader = ({ mobileExpanded, setMobileExpanded }) => {
 
   const handleMarkRead = async (id) => {
     try {
-      const response = await axios.patch(`http://localhost:4000/api/notifications/${id}/read`, {}, {
+      const response = await axios.patch(`${BACKEND_URL}/api/notifications/${id}/read`, {}, {
         headers: {
           'Authorization': `Bearer ${authUser.token}`
         }
@@ -67,7 +69,7 @@ const PromoterHeader = ({ mobileExpanded, setMobileExpanded }) => {
 
   const handleMarkAllRead = async () => {
     try {
-      await axios.patch('http://localhost:4000/api/notifications/read-all', {}, {
+      await axios.patch(`${BACKEND_URL}/api/notifications/read-all`, {}, {
         headers: {
           'Authorization': `Bearer ${authUser.token}`
         }

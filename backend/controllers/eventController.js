@@ -62,11 +62,11 @@ const getEvents = async (req, res) => {
         const filter = status ? { status } : {};
         eventsQuery = Event.find(filter).sort({ createdAt: -1 });
       } else if (role === "promoter") {
-        eventsQuery = Event.find({ 
+        eventsQuery = Event.find({
           $or: [
-            { createdBy: user._id }, 
+            { createdBy: user._id },
             { assignedPromoters: user._id, status: "approved" }
-          ] 
+          ]
         }).sort({
           createdAt: -1,
         });
@@ -78,8 +78,15 @@ const getEvents = async (req, res) => {
         return res.status(403).json({ error: "Unauthorized role" });
       }
     } else {
-      // Public access
-      eventsQuery = Event.find({ status: "approved" }).sort({ createdAt: -1 });
+      // Public access: Allow both approved (live) and completed (past) events
+      const { status } = req.query;
+      const allowedPublicStatus = ["approved", "completed"];
+
+      if (status && allowedPublicStatus.includes(status)) {
+        eventsQuery = Event.find({ status }).sort({ createdAt: -1 });
+      } else {
+        eventsQuery = Event.find({ status: { $in: allowedPublicStatus } }).sort({ createdAt: -1 });
+      }
     }
 
     // Mark past due approved events as completed
@@ -116,7 +123,7 @@ const getEvents = async (req, res) => {
     const events = await eventsQuery.populate([
       {
         path: "createdBy",
-        select: "firstName lastName role email avatar",
+        select: "firstName lastName role email avatar companyName",
       },
       {
         path: "assignedPromoters",
@@ -156,9 +163,9 @@ const getEvent = async (req, res) => {
       });
     } else {
       // Guest, Customer, or Sponsor can see approved/completed events
-      eventQuery = Event.findOne({ 
-        _id: id, 
-        status: { $in: ["approved", "completed"] } 
+      eventQuery = Event.findOne({
+        _id: id,
+        status: { $in: ["approved", "completed"] }
       });
     }
 
@@ -416,7 +423,7 @@ const deleteEvent = async (req, res) => {
   // Create Notification and Emit
   const notificationController = require('./notificationController');
   const creatorName = `${req.user.firstName} ${req.user.lastName}`;
-  
+
   // 1. System notification for admins
   const adminNotification = await notificationController.createNotification({
     title: `${creatorName} deleted event: ${event.title}`,
@@ -607,25 +614,25 @@ const updateEvent = async (req, res) => {
 
     if (errors.length) {
       console.error("Event Update Validation Failed:", errors);
-      return res.status(400).json({ 
-        error: "Validation failed", 
+      return res.status(400).json({
+        error: "Validation failed",
         message: errors.join(", "),
-        fields: errors 
+        fields: errors
       });
     }
 
     let finalImage = existingEvent.image;
 
-if (req.file) {
-  // A new file was uploaded - Replace the old one
-  finalImage = req.file.filename;
-  // OPTIONAL: Call a function here to delete the OLD file from 'uploads/'
-  removeEventImage(existingEvent.image); 
-} else if (req.body.image === "" || req.body.image === null) {
-  // The user explicitly removed the image
-  finalImage = null; 
-  removeEventImage(existingEvent.image);
-}
+    if (req.file) {
+      // A new file was uploaded - Replace the old one
+      finalImage = req.file.filename;
+      // OPTIONAL: Call a function here to delete the OLD file from 'uploads/'
+      removeEventImage(existingEvent.image);
+    } else if (req.body.image === "" || req.body.image === null) {
+      // The user explicitly removed the image
+      finalImage = null;
+      removeEventImage(existingEvent.image);
+    }
 
     /* =========================
         ROLE & STATUS LOGIC
@@ -645,12 +652,12 @@ if (req.file) {
     if (roleLower === "promoter") {
       // Check if any sensitive fields are being updated (anything other than assignedPromoters)
       const sensitiveFields = [
-        'title', 'description', 'category', 'venue', 
-        'startDate', 'endDate', 'startTime', 'endTime', 
-        'eventType', 'priceLevels', 'seatMap', 'booths', 
+        'title', 'description', 'category', 'venue',
+        'startDate', 'endDate', 'startTime', 'endTime',
+        'eventType', 'priceLevels', 'seatMap', 'booths',
         'image', 'ticketCategories', 'layoutData'
       ];
-      
+
       const isUpdatingSensitiveData = sensitiveFields.some(field => req.body[field] !== undefined);
 
       // If promoter updates sensitive details of an approved or rejected event, it goes back to pending
@@ -698,19 +705,19 @@ if (req.file) {
     const notificationController = require('./notificationController');
     const socket = require('../socket');
     const creatorName = `${req.user.firstName} ${req.user.lastName}`;
-    
+
     let notifTitle = `${creatorName} updated event: ${updatedEvent.title}`;
     let notifContent = `Event details have been modified.`;
 
     // Special messaging for status changes
     if (existingEvent.status !== updatedEvent.status) {
-        if (updatedEvent.status === 'approved') {
-            notifTitle = `${creatorName} approved event: ${updatedEvent.title}`;
-            notifContent = `The event is now live.`;
-        } else if (updatedEvent.status === 'rejected') {
-            notifTitle = `${creatorName} rejected event: ${updatedEvent.title}`;
-            notifContent = `Approval was declined for this event.`;
-        }
+      if (updatedEvent.status === 'approved') {
+        notifTitle = `${creatorName} approved event: ${updatedEvent.title}`;
+        notifContent = `The event is now live.`;
+      } else if (updatedEvent.status === 'rejected') {
+        notifTitle = `${creatorName} rejected event: ${updatedEvent.title}`;
+        notifContent = `Approval was declined for this event.`;
+      }
     }
 
     // 1. Admin/System Notification
@@ -735,76 +742,76 @@ if (req.file) {
 
     // Notify newly assigned promoters
     for (const promoterId of addedPromoters) {
-        const notif = await notificationController.createNotification({
-            title: `New Event Assigned: ${updatedEvent.title}`,
-            content: `You have been assigned to promote this event by ${creatorName}.`,
-            type: 'event',
-            path: '/promoter/promoter-eventmanagement',
-            unread: true,
-            userId: promoterId,
-            createdBy: req.user._id
-        });
-        emitUpdate('newNotification', notif);
+      const notif = await notificationController.createNotification({
+        title: `New Event Assigned: ${updatedEvent.title}`,
+        content: `You have been assigned to promote this event by ${creatorName}.`,
+        type: 'event',
+        path: '/promoter/promoter-eventmanagement',
+        unread: true,
+        userId: promoterId,
+        createdBy: req.user._id
+      });
+      emitUpdate('newNotification', notif);
     }
 
     // Notify unassigned promoters
     for (const promoterId of removedPromoters) {
-        const notif = await notificationController.createNotification({
-            title: `Event Unassigned: ${updatedEvent.title}`,
-            content: `You are no longer assigned to promote this event.`,
-            type: 'event',
-            path: '/promoter/promoter-eventmanagement',
-            unread: true,
-            userId: promoterId,
-            createdBy: req.user._id
-        });
-        emitUpdate('newNotification', notif);
+      const notif = await notificationController.createNotification({
+        title: `Event Unassigned: ${updatedEvent.title}`,
+        content: `You are no longer assigned to promote this event.`,
+        type: 'event',
+        path: '/promoter/promoter-eventmanagement',
+        unread: true,
+        userId: promoterId,
+        createdBy: req.user._id
+      });
+      emitUpdate('newNotification', notif);
     }
 
     // Notify maintained promoters about updates
     for (const promoterId of maintainedPromoters) {
-        const notif = await notificationController.createNotification({
-            title: `Update on Assigned Event: ${updatedEvent.title}`,
-            content: notifContent,
-            type: 'event',
-            path: '/promoter/promoter-eventmanagement',
-            unread: true,
-            userId: promoterId,
-            createdBy: req.user._id
-        });
-        emitUpdate('newNotification', notif);
+      const notif = await notificationController.createNotification({
+        title: `Update on Assigned Event: ${updatedEvent.title}`,
+        content: notifContent,
+        type: 'event',
+        path: '/promoter/promoter-eventmanagement',
+        unread: true,
+        userId: promoterId,
+        createdBy: req.user._id
+      });
+      emitUpdate('newNotification', notif);
     }
 
     // 3. Notify Event Creator (if they are a promoter and status changed)
     if (existingEvent.status !== updatedEvent.status && updatedEvent.createdBy) {
-        const ownerId = updatedEvent.createdBy._id || updatedEvent.createdBy;
-        // Only notify if someone else (like an admin) changed the status
-        if (String(ownerId) !== String(req.user._id)) {
-            const isApproved = updatedEvent.status === 'approved';
-            const isRejected = updatedEvent.status === 'rejected';
-            
-            let ownerTitle = `Event Status Update: ${updatedEvent.title}`;
-            let ownerMessage = `Your event status has been updated to ${updatedEvent.status}.`;
-            
-            if (isApproved) {
-                ownerTitle = `Event Approved: ${updatedEvent.title}`;
-                ownerMessage = `Great news! Your event was accepted and is now live.`;
-            } else if (isRejected) {
-                ownerTitle = `Event Declined: ${updatedEvent.title}`;
-                ownerMessage = `Your event was not approved at this time.`;
-            }
+      const ownerId = updatedEvent.createdBy._id || updatedEvent.createdBy;
+      // Only notify if someone else (like an admin) changed the status
+      if (String(ownerId) !== String(req.user._id)) {
+        const isApproved = updatedEvent.status === 'approved';
+        const isRejected = updatedEvent.status === 'rejected';
 
-            const ownerNotif = await notificationController.createNotification({
-                title: ownerTitle,
-                content: ownerMessage,
-                type: 'event',
-                path: '/promoter/promoter-events',
-                unread: true,
-                userId: ownerId,
-                createdBy: req.user._id
-            });
-            emitUpdate('newNotification', ownerNotif);
+        let ownerTitle = `Event Status Update: ${updatedEvent.title}`;
+        let ownerMessage = `Your event status has been updated to ${updatedEvent.status}.`;
+
+        if (isApproved) {
+          ownerTitle = `Event Approved: ${updatedEvent.title}`;
+          ownerMessage = `Great news! Your event was accepted and is now live.`;
+        } else if (isRejected) {
+          ownerTitle = `Event Declined: ${updatedEvent.title}`;
+          ownerMessage = `Your event was not approved at this time.`;
         }
+
+        const ownerNotif = await notificationController.createNotification({
+          title: ownerTitle,
+          content: ownerMessage,
+          type: 'event',
+          path: '/promoter/promoter-events',
+          unread: true,
+          userId: ownerId,
+          createdBy: req.user._id
+        });
+        emitUpdate('newNotification', ownerNotif);
+      }
     }
 
     emitUpdate('dashboardUpdate');
@@ -837,7 +844,7 @@ const removeEventImage = (filename) => {
 
 const saveVenueLayout = async (req, res) => {
   const { id } = req.params;
-  let { items = [] } = req.body; 
+  let { items = [] } = req.body;
 
   try {
     if (typeof items === "string") items = JSON.parse(items);
@@ -849,15 +856,15 @@ const saveVenueLayout = async (req, res) => {
       width: 1400,
       height: 500,
       sections: [{ name: "Main Section", seats: [] }],
-      elements: [],   
-      backgrounds: [], 
+      elements: [],
+      backgrounds: [],
     };
     const newBooths = [];
 
     items.forEach((item) => {
       const idProp = item._id || item.id;
       const isValidMongoId = mongoose.Types.ObjectId.isValid(idProp);
-      
+
       const common = {
         ...(isValidMongoId && { _id: idProp }),
         x: item.x,
@@ -870,9 +877,9 @@ const saveVenueLayout = async (req, res) => {
         status: item.status || "available",
         // Option B: Preserve occupancy if it exists, otherwise 0
         occupiedSeats: item.occupiedSeats || 0,
-        unassignedIndices: item.unassignedIndices || [], 
-        priceLevelId: (item.priceLevelId && item.priceLevelId !== "none" && item.priceLevelId !== "") 
-                  ? item.priceLevelId : null
+        unassignedIndices: item.unassignedIndices || [],
+        priceLevelId: (item.priceLevelId && item.priceLevelId !== "none" && item.priceLevelId !== "")
+          ? item.priceLevelId : null
       };
 
       if (item.type === "Seat" || item.type === "Table") {
@@ -884,7 +891,7 @@ const saveVenueLayout = async (req, res) => {
           seatCount: item.seatCount || 1,
           color: item.color || "#e0e0e0",
         });
-      } 
+      }
       else if (item.type === "Booth") {
         newBooths.push({
           ...common,
@@ -892,7 +899,7 @@ const saveVenueLayout = async (req, res) => {
           code: item.code || item.label,
           label: item.label || item.code,
         });
-      } 
+      }
       else if (item.type === "Element") {
         newSeatMap.elements.push({
           ...common,
@@ -920,10 +927,10 @@ const saveVenueLayout = async (req, res) => {
     event.markModified('booths');
 
     await event.save();
-    
+
     if (typeof emitUpdate === 'function') emitUpdate('dashboardUpdate');
-    
-    return res.status(200).json(event); 
+
+    return res.status(200).json(event);
   } catch (error) {
     console.error("Save Error:", error);
     return res.status(500).json({ error: error.message });
@@ -946,13 +953,13 @@ const assignPriceLevels = async (req, res) => {
           status: seat.status || "available",
           occupiedSeats: seat.occupiedSeats || 0,
           // ADD THIS: Ensure gaps are persisted during price assignment
-          unassignedIndices: seat.unassignedIndices || [], 
-          priceLevelId: (seat.priceLevelId && seat.priceLevelId !== "none" && seat.priceLevelId !== "") 
+          unassignedIndices: seat.unassignedIndices || [],
+          priceLevelId: (seat.priceLevelId && seat.priceLevelId !== "none" && seat.priceLevelId !== "")
             ? seat.priceLevelId // Note: Mongoose handles string to ObjectId casting if schema is set
             : null
         }))
       }));
-      
+
       if (seatMap.elements) event.seatMap.elements = seatMap.elements;
       if (seatMap.backgrounds) event.seatMap.backgrounds = seatMap.backgrounds;
     }
@@ -962,8 +969,8 @@ const assignPriceLevels = async (req, res) => {
       event.booths = booths.map((booth) => ({
         ...booth,
         status: booth.status || "available",
-        priceLevelId: (booth.priceLevelId && booth.priceLevelId !== "none" && booth.priceLevelId !== "") 
-          ? booth.priceLevelId 
+        priceLevelId: (booth.priceLevelId && booth.priceLevelId !== "none" && booth.priceLevelId !== "")
+          ? booth.priceLevelId
           : null
       }));
     }
@@ -979,7 +986,7 @@ const assignPriceLevels = async (req, res) => {
     const creatorName = req.user ? `${req.user.firstName} ${req.user.lastName}` : "Admin";
     // ... notification code ...
 
-    return res.status(200).json(event); 
+    return res.status(200).json(event);
 
   } catch (error) {
     console.error("Assign Price Error:", error);
