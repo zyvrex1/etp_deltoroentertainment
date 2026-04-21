@@ -63,9 +63,17 @@ const PromoterPayouts = () => {
     };
   }, [isSortDropdownOpen, isStatusDropdownOpen]);
 
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleWithdraw = () => {
     navigate("/promoter/promoter-payout-billing");
   };
+
   const initialPayoutHistory = [
     {
       date: "Jan 01, 2026",
@@ -150,6 +158,7 @@ const PromoterPayouts = () => {
   };
 
   const exportReport = async () => {
+    if (loading) return;
     const loadingToast = showExportToast();
     const REPORT_TITLE = "Payouts Report";
     try {
@@ -319,17 +328,29 @@ const PromoterPayouts = () => {
       </div>
 
       <div className="pay-top-cards">
-        <div className="pay-top-card">
-          <span className="pay-top-label">Total Revenue</span>
-          <h2 className="pay-top-amount">$103,550</h2>
-          <span className="pay-top-subtext pay-green-text">
-            <Icon icon="mdi:trending-up" /> +12.5% from last month
-          </span>
-        </div>
-        <div className="pay-top-card">
-          <span className="pay-top-label">Current Balance</span>
-          <h2 className="pay-top-amount">$13,550</h2>
-        </div>
+        {loading ? (
+             [...Array(2)].map((_, i) => (
+                <div key={i} className="pay-top-card skeleton-card">
+                    <div className="skeleton skeleton-text short" />
+                    <div className="skeleton skeleton-text title" style={{ height: '32px' }} />
+                    <div className="skeleton skeleton-text short" style={{ width: '60%' }} />
+                </div>
+             ))
+        ) : (
+            <>
+                <div className="pay-top-card">
+                   <span className="pay-top-label">Total Revenue</span>
+                   <h2 className="pay-top-amount">$103,550</h2>
+                   <span className="pay-top-subtext pay-green-text">
+                     <Icon icon="mdi:trending-up" /> +12.5% from last month
+                   </span>
+                 </div>
+                 <div className="pay-top-card">
+                   <span className="pay-top-label">Current Balance</span>
+                   <h2 className="pay-top-amount">$13,550</h2>
+                 </div>
+            </>
+        )}
       </div>
 
       <div className="pay-main-content">

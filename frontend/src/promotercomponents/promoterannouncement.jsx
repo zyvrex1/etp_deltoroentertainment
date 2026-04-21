@@ -182,9 +182,25 @@ const PromoterAnnouncement = () => {
           </div>
 
           {loading ? (
-             <div className="pa-loading-state" style={{ padding: "80px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
-                <Icon icon="line-md:loading-twotone-loop" width="48" style={{ color: "var(--color-red-primary)" }} />
-                <p className="large-body-text">Loading {activeTab}...</p>
+             <div className="pa-grid">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="pa-card skeleton-card">
+                    <div className="pa-card-top">
+                      <div className="skeleton skeleton-circle" />
+                      <div className="pa-card-meta" style={{ width: '100%' }}>
+                        <div className="skeleton skeleton-text title" />
+                        <div className="skeleton skeleton-text short" />
+                      </div>
+                    </div>
+                    <div className="pa-card-body">
+                      <div className="skeleton skeleton-badge" style={{ marginBottom: '12px' }} />
+                      <div className="skeleton skeleton-text" style={{ width: '100%' }} />
+                      <div className="skeleton skeleton-text" style={{ width: '100%' }} />
+                      <div className="skeleton skeleton-text short" />
+                      <div className="skeleton skeleton-rect" style={{ height: '36px', marginTop: '12px' }} />
+                    </div>
+                  </div>
+                ))}
              </div>
           ) : (
             <>

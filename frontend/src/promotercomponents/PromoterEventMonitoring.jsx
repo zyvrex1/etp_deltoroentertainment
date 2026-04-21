@@ -140,9 +140,28 @@ const PromoterEventMonitoring = () => {
                             </div>
 
                             {loading ? (
-                                <div className="pmon-loading-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', gap: '16px' }}>
-                                    <Icon icon="line-md:loading-twotone-loop" width="48" style={{ color: "var(--color-red-primary)" }} />
-                                    <p className="large-body-text">Loading your events...</p>
+                                <div className="pmon-events-grid">
+                                    {[...Array(itemsPerPage)].map((_, i) => (
+                                        <div key={i} className="pmon-event-card skeleton-card">
+                                            <div className="pmon-card-image-wrap">
+                                                <div className="skeleton" style={{ width: '100%', height: '100%' }} />
+                                            </div>
+                                            <div className="pmon-card-details">
+                                                <div className="pmon-card-info" style={{ width: '100%' }}>
+                                                    <div className="skeleton skeleton-text title" />
+                                                </div>
+                                                <div className="pmon-card-info">
+                                                    <div className="skeleton skeleton-badge" />
+                                                </div>
+                                                <div className="pmon-card-info">
+                                                    <div className="skeleton skeleton-text short" />
+                                                </div>
+                                                <div className="pmon-card-info">
+                                                    <div className="skeleton skeleton-text short" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             ) : (
                                 <div className="pmon-events-grid">

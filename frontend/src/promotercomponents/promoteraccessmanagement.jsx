@@ -95,6 +95,20 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
         return fullName.includes(searchQuery.toLowerCase()) || p.email?.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
+    const collaboratorsExcludingOwner = assignedPromoters.filter(p => {
+        const pId = p._id || p;
+        const oId = eventOwner?._id || eventOwner;
+        if (!oId) return true;
+        return String(pId) !== String(oId);
+    });
+
+    const filteredCollaborators = filteredPromoters.filter(p => {
+        const pId = p._id || p;
+        const oId = eventOwner?._id || eventOwner;
+        if (!oId) return true;
+        return String(pId) !== String(oId);
+    });
+
     const Avatar = ({ person, isSecondary, size = "md" }) => {
         const [imgError, setImgError] = useState(false);
         const avatarPath = person?.avatar;
@@ -175,14 +189,14 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
                             <div className="stat-pill">
                                 <div className="avatar-group">
                                     {eventOwner && <Avatar person={eventOwner} size="sm" />}
-                                    {assignedPromoters.slice(0, 3).map(p => (
+                                    {collaboratorsExcludingOwner.slice(0, 3).map(p => (
                                         <Avatar key={p._id || p} person={p} size="sm" isSecondary />
                                     ))}
-                                    {assignedPromoters.length > 3 && (
-                                        <div className="avatar-more">+{assignedPromoters.length - 3}</div>
+                                    {collaboratorsExcludingOwner.length > 3 && (
+                                        <div className="avatar-more">+{collaboratorsExcludingOwner.length - 3}</div>
                                     )}
                                 </div>
-                                <span>Total Team: <strong>{assignedPromoters.length + (eventOwner ? 1 : 0)}</strong></span>
+                                <span>Total Team: <strong>{collaboratorsExcludingOwner.length + (eventOwner ? 1 : 0)}</strong></span>
                             </div>
                         )}
                     </div>
@@ -240,7 +254,7 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
                             )}
 
                             {/* COLLABORATOR CARDS */}
-                            {filteredPromoters.filter(p => (p._id || p) !== (eventOwner?._id || eventOwner)).map(p => (
+                            {filteredCollaborators.map(p => (
                                 <article key={p._id} className="am-promoter-card">
                                     <div className="am-card-top-bar">
                                         <span className="pe-status-pill collaborator">Collaborator</span>
@@ -269,7 +283,7 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
                                 </article>
                             ))}
 
-                            {filteredPromoters.length === 0 && !loading && (
+                            {filteredCollaborators.length === 0 && !loading && (
                                 <div className="am-empty-state">
                                     <Icon icon="solar:user-block-bold-duotone" width="80" style={{ color: '#e2e8f0' }} />
                                     <h3>No Collaborators Found</h3>

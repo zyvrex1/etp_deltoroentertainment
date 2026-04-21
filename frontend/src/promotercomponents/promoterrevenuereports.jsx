@@ -83,7 +83,15 @@ const PromoterRevenueReports = () => {
         { month: 'Oct', gross: 103550, fees: 6005 },
     ];
 
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setLoading(false), 1000);
+        return () => clearTimeout(timer);
+    }, []);
+
     const exportReport = async () => {
+        if (loading) return;
         const loadingToast = showExportToast();
         const REPORT_TITLE = 'Revenue Reports';
         try {
@@ -173,14 +181,15 @@ const PromoterRevenueReports = () => {
                         <button
                             className="rep-filter-dropdown-btn"
                             onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
+                            disabled={loading}
                         >
-                            <span className="truncate-text">{getSelectedEventLabel()}</span>
+                            <span className="truncate-text">{loading ? "Loading..." : getSelectedEventLabel()}</span>
                             <Icon
                                 icon="mdi:chevron-down"
                                 className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
                             />
                         </button>
-                        {isEventDropdownOpen && (
+                        {isEventDropdownOpen && !loading && (
                             <div className="rep-filter-dropdown-menu">
                                 {eventOptions.map((option) => (
                                     <button
@@ -194,7 +203,7 @@ const PromoterRevenueReports = () => {
                             </div>
                         )}
                     </div>
-                    <button className="outlined-button rep-export-btn" onClick={exportReport}>
+                    <button className="outlined-button rep-export-btn" onClick={exportReport} disabled={loading}>
                         <Icon icon="mdi:tray-arrow-down" />
                         Export Report
                     </button>
@@ -202,38 +211,85 @@ const PromoterRevenueReports = () => {
             </div>
 
             <div className="rep-main-content">
-                <div className="rep-event-banner">
-                    <h3 className="rep-banner-title">TechStart Summit 2024</h3>
-                    <p className="small-body-text rep-banner-subtitle">Oct 12, 2024</p>
-                </div>
+                {loading ? (
+                    <>
+                        <div className="rep-event-banner skeleton-card" style={{ marginBottom: '24px' }}>
+                            <div className="skeleton skeleton-text title" style={{ width: '300px' }} />
+                            <div className="skeleton skeleton-text short" />
+                        </div>
 
-                <div className="rep-summary-cards">
-                    <div className="rep-summary-card">
-                        <div className="card-bg-icon" style={{ color: 'var(--color-green-tertiary)' }}><Icon icon="mdi:currency-usd" /></div>
-                        <div className="card-content">
-                            <p className="small-body-text rep-card-label">Gross Revenue</p>
-                            <h3 className="rep-card-value">$103,550</h3>
-                            <span className="button-label rep-card-trend green">
-                                <Icon icon="mdi:trending-up" /> +12.5% from last month
-                            </span>
+                        <div className="rep-summary-cards">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="rep-summary-card skeleton-card">
+                                    <div className="card-content" style={{ width: '100%' }}>
+                                        <div className="skeleton skeleton-text short" />
+                                        <div className="skeleton skeleton-text title" />
+                                        <div className="skeleton skeleton-badge" />
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    </div>
-                    <div className="rep-summary-card">
-                        <div className="card-bg-icon" style={{ color: 'var(--color-red-tertiary)' }}><Icon icon="mdi:credit-card-outline" /></div>
-                        <div className="card-content">
-                            <p className="small-body-text rep-card-label">Platform Fees</p>
-                            <h3 className="rep-card-value">$6,005.9</h3>
-                            <span className="button-label rep-card-trend gray">5.8% of gross revenue</span>
+
+                        <div className="rep-analytics-overview bottom-stats-row">
+                             {[...Array(3)].map((_, i) => (
+                                <div key={i} className="rep-analytics-card skeleton-card" style={{ border: 'none' }}>
+                                    <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px', marginRight: '12px' }} />
+                                    <div className="rep-analytics-info" style={{ width: '100%' }}>
+                                        <div className="skeleton skeleton-text short" />
+                                        <div className="skeleton skeleton-text short" style={{ width: '40%' }} />
+                                    </div>
+                                    <div className="skeleton skeleton-text title" style={{ width: '80px', margin: 0 }} />
+                                </div>
+                            ))}
                         </div>
-                    </div>
-                    <div className="rep-summary-card">
-                        <div className="card-content">
-                            <p className="small-body-text rep-card-label">Net Earnings</p>
-                            <h3 className="rep-card-value" style={{ color: 'transparent', userSelect: 'none' }}>$0</h3>
-                            <span className="button-label rep-card-trend green temp-avail">Available for payout</span>
+
+                        <div className="rep-content-columns">
+                            <div className="rep-left-col">
+                                {[...Array(2)].map((_, i) => (
+                                    <div key={i} className="rep-card skeleton-card">
+                                        <div className="rep-card-header">
+                                            <div className="header-text" style={{ width: '60%' }}>
+                                                <div className="skeleton skeleton-text title" />
+                                                <div className="skeleton skeleton-text short" />
+                                            </div>
+                                            <div className="header-value" style={{ width: '30%' }}>
+                                                <div className="skeleton skeleton-text title" />
+                                                <div className="skeleton skeleton-text short" />
+                                            </div>
+                                        </div>
+                                        <div className="skeleton skeleton-rect" style={{ height: '200px' }} />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="rep-right-col">
+                                <div className="rep-card skeleton-card">
+                                    <div className="rep-card-header">
+                                        <div className="header-text" style={{ width: '100%' }}>
+                                            <div className="skeleton skeleton-text title" />
+                                            <div className="skeleton skeleton-text short" />
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
+                                        <div className="skeleton skeleton-circle" style={{ width: '180px', height: '180px' }} />
+                                    </div>
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} className="skeleton skeleton-text" style={{ width: '100%', marginBottom: '12px' }} />
+                                    ))}
+                                </div>
+                                <div className="rep-card skeleton-card">
+                                    <div className="skeleton skeleton-text title" style={{ marginBottom: '20px' }} />
+                                    {[...Array(4)].map((_, i) => (
+                                        <div key={i} style={{ marginBottom: '16px' }}>
+                                            <div className="skeleton skeleton-text" style={{ width: '100%' }} />
+                                            <div className="skeleton skeleton-rect" style={{ height: '8px' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </>
+                ) : (
+                    <>
 
                   <div className="rep-analytics-overview bottom-stats-row">
                     <div className="rep-analytics-card ticket-card">
@@ -375,9 +431,8 @@ const PromoterRevenueReports = () => {
                         </div>
                     </div>
                 </div>
-
-              
-
+                    </>
+                )}
             </div>
         </div>
     );
