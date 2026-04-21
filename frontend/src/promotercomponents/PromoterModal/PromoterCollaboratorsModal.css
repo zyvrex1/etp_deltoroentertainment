@@ -226,6 +226,7 @@
     font-weight: 700;
     color: var(--color-black-primary);
     font-size: 15px;
+    text-align: left;
 }
 
 .result-email {
@@ -296,4 +297,28 @@
 @keyframes slideUp {
     from { opacity: 0; transform: translateY(40px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+
+    .p-modal-header{
+        text-align: left;
+        padding: 24px 16px 24px 16px !important;
+    }
+    .p-modal-close{
+        justify-content: flex-end !important;
+        padding: 0;
+    }
+    .add-promoter-btn{
+        span{
+            display: none;
+        }
+    }
+    .search-results{
+        max-height: 300px;
+    }
+
+    .p-modal-body{
+        padding: 16px !important;
+    }
 }
