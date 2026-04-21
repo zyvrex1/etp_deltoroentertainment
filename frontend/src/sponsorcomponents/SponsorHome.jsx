@@ -15,59 +15,62 @@ export default function SponsorHome() {
     const { user } = useAuthContext();
     const [modalData, setModalData] = useState(null);
     const [modalType, setModalType] = useState('announcement');
-    const [liveEvents, setLiveEvents] = useState([]);
-    const [liveAnnouncements, setLiveAnnouncements] = useState([]);
-    const [livePolicies, setLivePolicies] = useState([]);
+    const [events, setEvents] = useState([]);
+    const [announcements, setAnnouncements] = useState([]);
+    const [policies, setPolicies] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchData = async () => {
+    const fetchData = async () => {
+        try {
             setIsLoading(true);
-            try {
-                const [eventsData, announcementsData, policiesData] = await Promise.all([
-                    eventsService.getEvents(user?.token),
-                    announcementService.getAnnouncements(),
-                    policyService.getPolicies()
-                ]);
+            const [evtData, annData, polData] = await Promise.all([
+                eventsService.getEvents(user?.token),
+                announcementService.getAnnouncements(),
+                policyService.getPolicies()
+            ]);
 
-                // Only show approved events and take top 6 for trending
-                const approvedEvents = eventsData.filter(e => e.status === 'approved').slice(0, 6);
-                setLiveEvents(approvedEvents);
+            // Filter approved events and take latest 6
+            const sortedEvents = (evtData || [])
+                .filter(e => e.status === 'approved')
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 6);
+            setEvents(sortedEvents);
 
-                // Map announcements with badge classes
-                const mappedAnnouncements = announcementsData.map(ann => {
-                    let badgeClass = "general";
-                    const category = ann.contentcategory?.toLowerCase() || ann.type?.toLowerCase();
-                    if (category === "maintenance") badgeClass = "maintenance";
-                    if (category === "news") badgeClass = "news";
-                    if (category === "update") badgeClass = "update";
-                    if (category === "alert") badgeClass = "alert";
+            // Map announcements with badge classes
+            const mappedAnnouncements = annData.map(ann => {
+                let badgeClass = "general";
+                const category = ann.contentcategory?.toLowerCase();
+                if (category === "maintenance") badgeClass = "maintenance";
+                if (category === "news") badgeClass = "news";
+                if (category === "update") badgeClass = "update";
+                if (category === "alert") badgeClass = "alert";
 
-                    return {
-                        ...ann,
-                        badgeClass,
-                        type: ann.contentcategory || ann.type || "General",
-                        date: new Date(ann.date || ann.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-                        icon: "mdi:bullhorn-outline"
-                    };
-                });
-                setLiveAnnouncements(mappedAnnouncements);
+                return {
+                    ...ann,
+                    badgeClass,
+                    type: ann.contentcategory || "General",
+                    date: new Date(ann.date || ann.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                    icon: "mdi:bullhorn-outline"
+                };
+            });
+            setAnnouncements(mappedAnnouncements);
 
-                // Map policies
-                const mappedPolicies = policiesData.map(policy => ({
-                    ...policy,
-                    date: new Date(policy.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-                    icon: "mdi:file-document-outline"
-                }));
-                setLivePolicies(mappedPolicies);
+            // Map policies
+            const mappedPolicies = polData.map(policy => ({
+                ...policy,
+                date: new Date(policy.updatedAt || policy.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                icon: "mdi:file-document-outline"
+            }));
+            setPolicies(mappedPolicies);
 
-            } catch (error) {
-                console.error("Error fetching sponsor home data:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+        } catch (error) {
+            console.error("Error fetching sponsor home data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchData();
     }, [user?.token]);
 
@@ -79,22 +82,35 @@ export default function SponsorHome() {
         setModalData(null);
     };
 
+    const formatEventDate = (dateStr) => {
+        if (!dateStr) return "TBA";
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+    };
+
     const features = [
-        { icon: "mdi:magnify", title: "Easy Discovery", desc: "Find the perfect event with our smart search and personalized recommendations.", colorClass: "feature-red", bgClass: "bg-red-light" },
-        { icon: "mdi:shield-check-outline", title: "Secure Booking", desc: "Your payments are protected and tickets are 100% guaranteed authentic.", colorClass: "feature-green", bgClass: "bg-green-light" },
-        { icon: "mdi:lightning-bolt-outline", title: "Instant Access", desc: "Get your digital tickets instantly. Scan from your phone and enjoy the show.", colorClass: "feature-purple", bgClass: "bg-purple-light" }
+        { icon: "mdi:handshake-outline", title: "Prime Sponsorship", desc: "Gain massive exposure by sponsoring high-traffic events across the platform." },
+        { icon: "mdi:store-plus-outline", title: "Booth Management", desc: "Easily reserve and manage your physical and digital presence at major venues." },
+        { icon: "mdi:chart-timeline-variant", title: "Deep Analytics", desc: "Track your impact with detailed reports on visitor engagement and brand reach." }
     ];
 
     return (
-        <div className="sponsor-home-page">
+        <div className="sh-theme">
             {/* Hero Section */}
-            <section className="sponsor-hero" style={{ backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.8)), url('/assets/eventbg.jpg')` }}>
-                <div className="sponsor-hero-content">
-                    <h1>Find your next <span className="highlight-red">experience</span></h1>
-                    <p className="large-body-text">Discover concerts, sports, theater, and more. Book tickets with confidence and ease.</p>
-                    <div className="sponsor-hero-buttons">
+            <section className="sh-hero-section">
+                <div className="sh-hero-bg" style={{ backgroundImage: `url('/assets/eventbg.jpg')` }}>
+                    <div className="sh-hero-overlay"></div>
+                </div>
+                <div className="sh-hero-content sh-container">
+                    <h1 className="sh-title">
+                        Grow your <span className="sh-gradient-text">brand identity</span>
+                    </h1>
+                    <p className="sh-subtitle">
+                        Partner with the most exciting events. Manage your booths, track sponsorships, and expand your reach.
+                    </p>
+                    <div className="sh-hero-buttons">
                         <button
-                            className="primary-button hero-btn"
+                            className="sh-btn sh-btn-primary"
                             onClick={() => {
                                 document.getElementById("events")?.scrollIntoView({
                                     behavior: "smooth",
@@ -103,167 +119,178 @@ export default function SponsorHome() {
                             }}
                         >
                             Browse Events
-                        </button>             <NavLink to="/sponsor/sponsor-events"><button className="outlined-button white-outline hero-btn">View Categories</button></NavLink>
+                        </button>
+                        <NavLink to="/sponsor/sponsor-events" className="sh-btn sh-btn-secondary">
+                            View Categories
+                        </NavLink>
                     </div>
-                </div>
-            </section>
 
-            {/* Features Section */}
-            <section className="sponsor-features">
-                <div className="sponsor-features-grid">
-                    {features.map((feat, idx) => (
-                        <div className="sponsor-feature-card" key={idx}>
-                            <div className={`sponsor-feature-icon-wrapper ${feat.bgClass}`}>
-                                <Icon icon={feat.icon} className={`sponsor-feature-icon ${feat.colorClass}`} width="32" />
+                    {/* Features Grid */}
+                    <div className="sh-stats-cards">
+                        {features.map((feat, idx) => (
+                            <div className="sh-stat-card sh-glass" key={idx}>
+                                <div className="sh-stat-icon">
+                                    <Icon icon={feat.icon} />
+                                </div>
+                                <h4>{feat.title}</h4>
+                                <p>{feat.desc}</p>
                             </div>
-                            <h4>{feat.title}</h4>
-                            <p className="small-body-text sponsor-feature-desc">{feat.desc}</p>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </section>
 
             {/* Announcements Section */}
-            <section className="sponsor-announcements">
-                <div className={`sponsor-announcements-container ${liveAnnouncements.length > 0 ? 'scrolling' : ''}`}>
-                    {liveAnnouncements.length > 0 ? (
-                        liveAnnouncements.map((item, idx) => (
-                            <div
-                                key={item._id || idx}
-                                className="hp-card"
-                                onClick={() => openModal(item, 'announcement')}
-                            >
-                                <div className="hp-card-top">
-                                    <div className="hp-card-icon-container">
-                                        <Icon icon={item.icon} className="hp-card-icon" />
-                                    </div>
-                                    <div className="hp-card-meta">
-                                        <h3 className="hp-card-title">{item.title}</h3>
-                                        <span className="hp-date">
-                                            <Icon icon="mdi:calendar-outline" /> {item.date}
-                                        </span>
+            <section className="sh-section">
+                <div className="sh-container">
+                    <div className="sh-section-header">
+                        <div className="sh-section-header-left">
+                            <h3>Platform Announcements</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="sh-announcements-marquee-container">
+                    <div className={`sh-announcements-marquee-track ${announcements.length > 0 ? 'animating' : ''}`}>
+                        {announcements.length > 0 ? (
+                            [...announcements, ...announcements].map((item, idx) => (
+                                <div
+                                    key={`${item._id || idx}-${idx}`}
+                                    className="sh-announcement-marquee-item"
+                                    onClick={() => openModal(item, 'announcement')}
+                                >
+                                    <div className={`sh-announcement-v3 ${item.badgeClass}`}>
+                                        <div className="sh-v3-header">
+                                            <div className="sh-v3-icon-box">
+                                                <Icon icon={item.icon || "mdi:bullhorn-outline"} />
+                                            </div>
+                                            <span className={`sh-v3-category ${item.badgeClass}`}>{item.type}</span>
+                                        </div>
+                                        <div className="sh-v3-content">
+                                            <div className="sh-v3-title-row">
+                                                <h4>{item.title}</h4>
+                                                <span className="sh-v3-date-top">{item.date}</span>
+                                            </div>
+                                            <p>{item.content}</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="hp-card-body">
-                                    <span className={`hp-badge button-label ${item.badgeClass}`}>
-                                        {item.type}
-                                    </span>
-                                    <p className="hp-card-text">
-                                        {item.content}
-                                    </p>
-                                </div>
+                            ))
+                        ) : (
+                            <div className="sh-empty sh-container">
+                                <Icon icon="mdi:bullhorn-outline" />
+                                <h3>No announcements yet.</h3>
                             </div>
-                        ))
-                    ) : (
-                        !isLoading && (
-                            <div className="hp-empty-state">
-                                <Icon icon="mdi:bullhorn-outline" className="hp-empty-icon" />
-                                <h3>There are no announcements yet</h3>
-                            </div>
-                        )
-                    )}
+                        )}
+                    </div>
                 </div>
             </section>
 
             {/* Upcoming Events */}
-            <section id="events" className="sponsor-upcoming">
-                <div className="sponsor-section-header">
-                    <div>
-                        <h2>Upcoming Events</h2>
-                        <p className="regular-body-text">Discover trending events happening soon.</p>
+            <section id="events" className="sh-section sh-container">
+                <div className="sh-section-header">
+                    <div className="sh-section-header-left">
+                        <h3>Upcoming Events</h3>
+                        <p className="sh-subheading">Discover trending events looking for sponsors.</p>
                     </div>
-                    <NavLink to="/sponsor/sponsor-events" className="view-all-link regular-body-text">View All Events &gt;</NavLink>
+                    <NavLink to="/sponsor/sponsor-events" className="sh-link">View All</NavLink>
                 </div>
-                <div className="sponsor-events-grid">
-                    {liveEvents.length > 0 ? (
-                        liveEvents.map((evt, idx) => (
-                            <div className="sponsor-event-card" key={evt._id || idx}>
-                                <div
-                                    className="sponsor-event-image"
-                                    style={{
-                                        backgroundImage: `url(${evt.image ? `${BACKEND_URL}/uploads/${evt.image}` : '/assets/eventbg.jpg'})`
-                                    }}
-                                >
-                                    <span className="button-label event-date-badge">
-                                        {new Date(evt.startDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}
-                                    </span>
+
+                <div className="sh-grid">
+                    {isLoading ? (
+                        <div className="sh-empty sh-container">
+                            <Icon icon="mdi:loading" className="sh-spin" />
+                            <p>Loading the latest events...</p>
+                        </div>
+                    ) : events.length > 0 ? (
+                        events.map((evt, idx) => (
+                            <div className={`sh-event-card-v2 sh-glass`} key={evt._id || idx}>
+                                <div className="sh-v2-image-area">
+                                    <img
+                                        src={evt.image ? (evt.image.startsWith('http') ? evt.image : `${BACKEND_URL}/uploads/${evt.image}`) : '/assets/eventbg.jpg'}
+                                        alt={evt.title}
+                                        className="sh-v2-img"
+                                    />
+                                    <div className="sh-v2-date-badge">
+                                        <Icon icon="mdi:calendar-month" />
+                                        <span>{formatEventDate(evt.startDate)}</span>
+                                    </div>
                                 </div>
-                                <div className="sponsor-event-details">
-                                    <span className={`button-label event-tag ${evt.category === "Concert" ? "tag-red" :
+                                <div className="sh-v2-content">
+                                    <span className={`sh-v2-tag ${evt.category === "Concert" ? "tag-red" :
                                         evt.category === "Sports" ? "tag-green" : "tag-blue"
                                         }`}>
                                         {evt.category || "Event"}
                                     </span>
-                                    <h4>{evt.title}</h4>
-                                    <p className="event-location">📍
-                                        {`${evt.venue?.name || ""}, ${evt.venue?.address || ""}, ${evt.venue?.city || ""}, ${evt.venue?.zipCode || ""}`.trim().replace(/^, |, $/, "") || "TBA"}
+                                    <h5 className="sh-v2-title">{evt.title}</h5>
+                                    <p className="sh-event-location">
+                                        <Icon icon="mdi:map-marker-outline" /> {`${evt.venue?.name || ""}, ${evt.venue?.city || ""}`.trim().replace(/^, |, $/, "") || "TBA"}
                                     </p>
 
-                                    <div className="event-info-row">
-                                        <div className="event-time">
-                                            <Icon icon="mdi:clock-outline" />
-                                            <span className="small-body-text">{evt.startTime || "TBA"} - {evt.endTime || "TBA"}</span>
+                                    <div className="sh-v2-details-row">
+                                        <div className="sh-v2-detail-item">
+                                            <span className="sh-v2-label">Starts</span>
+                                            <span className="sh-v2-value time-val">
+                                                <Icon icon="mdi:clock-outline" />
+                                                {evt.startTime || "TBA"}
+                                            </span>
                                         </div>
-                                        <div className="event-booths">
-                                            <Icon icon="mdi:store-outline" />
-                                            <span className="small-body-text">{evt.booths?.filter(b => b.status === "available").length || 0} Booths Available</span>
+                                        <div className="sh-v2-detail-item sh-text-right">
+                                            <span className="sh-v2-label">Booths</span>
+                                            <span className="sh-v2-value">
+                                                {evt.booths?.filter(b => b.status === "available").length || 0} Avail.
+                                            </span>
                                         </div>
                                     </div>
 
-                                    <NavLink to={`/sponsor/sponsor-events`} className="primary-button full-width-btn">
-                                        View Details
-                                    </NavLink>
+                                    <div className="sh-v2-footer">
+                                        <NavLink to="/sponsor/sponsor-events" className="sh-v2-btn">
+                                            View Details
+                                        </NavLink>
+                                    </div>
                                 </div>
                             </div>
                         ))
                     ) : (
-                        !isLoading && (
-                            <div className="hp-empty-state full-width">
-                                <Icon icon="mdi:calendar-blank-outline" className="hp-empty-icon" />
-                                <h3>No upcoming events at the moment.</h3>
-                            </div>
-                        )
+                        <div className="sh-empty sh-container">
+                            <Icon icon="mdi:calendar-blank-outline" />
+                            <p>No upcoming events found. Check back soon!</p>
+                        </div>
                     )}
                 </div>
             </section>
 
             {/* Platform Policies */}
-            <section className="sponsor-policies-section">
-                <div className="sponsor-section-header">
-                    <div>
-                        <h2>Platform Policies</h2>
-                        <p className="regular-body-text">Transparency is our priority. Review our policies below to understand how we operate.</p>
+            <section className="sh-section sh-container">
+                <div className="sh-section-header">
+                    <div className="sh-section-header-left">
+                        <h3>Platform Policies</h3>
+                        <p className="sh-subheading">Review our terms to ensure a smooth partnership.</p>
                     </div>
                 </div>
-                <div className="sponsor-policies-grid">
-                    {livePolicies.length > 0 ? (
-                        livePolicies.map((item, idx) => (
+
+                <div className="sh-policy-list">
+                    {policies.length > 0 ? (
+                        policies.map((item, idx) => (
                             <div
                                 key={item._id || idx}
-                                className="hp-card"
+                                className="sh-policy-item sh-glass"
                                 onClick={() => openModal(item, 'policy')}
                             >
-                                <div className="hp-card-top align-start">
-                                    <div className="hp-card-icon-container document-icon">
-                                        <Icon icon={item.icon} className="hp-card-icon" />
-                                    </div>
-                                    <div className="hp-card-meta">
-                                        <h3 className="hp-card-title">{item.title}</h3>
-                                        <span className="hp-date">
-                                            Updated Last: {item.date}
-                                        </span>
-                                    </div>
+                                <div className="sh-policy-icon-box">
+                                    <Icon icon={item.icon || "mdi:file-document-outline"} />
                                 </div>
-                                <div className="hp-card-body">
-                                    <p className="hp-card-text">{item.content}</p>
+                                <div className="sh-policy-text">
+                                    <h4>{item.title}</h4>
+                                    <p className="sh-text-ellipsis-2 sh-text-left">Updated Last: {item.date}</p>
                                 </div>
                             </div>
                         ))
                     ) : (
                         !isLoading && (
-                            <div className="hp-empty-state full-width">
-                                <Icon icon="mdi:file-document-outline" className="hp-empty-icon" />
-                                <h3>There are no policies yet</h3>
+                            <div className="sh-empty sh-container">
+                                <Icon icon="mdi:shield-outline" />
+                                <h3>No policies available.</h3>
                             </div>
                         )
                     )}
