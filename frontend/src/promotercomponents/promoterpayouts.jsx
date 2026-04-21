@@ -407,7 +407,30 @@ const PromoterPayouts = () => {
               </div>
             </div>
             <div className="pay-table-wrapper">
-              {paginatedData.length === 0 ? (
+              {loading ? (
+                <table className="pay-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Amount</th>
+                      <th>Method</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...Array(itemsPerPage)].map((_, i) => (
+                      <tr key={i}>
+                        <td><div className="skeleton skeleton-text" /></td>
+                        <td><div className="skeleton skeleton-text short" /></td>
+                        <td><div className="skeleton skeleton-text" /></td>
+                        <td><div className="skeleton skeleton-badge" /></td>
+                        <td><div className="skeleton skeleton-text short" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : paginatedData.length === 0 ? (
                 <div className="empty-state">
                   <Icon icon="mdi:magnify-close" width="48" />
                   <h4>No payouts found</h4>
@@ -482,7 +505,7 @@ const PromoterPayouts = () => {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {!loading && totalPages > 1 && (
               <div className="pagination">
                 <button
                   className="pagination-btn"
@@ -510,52 +533,77 @@ const PromoterPayouts = () => {
 
         <div className="pay-right-col">
           <div className="pay-card pay-next-box">
-            <p className="small-body-text pay-next-label">Next Payout</p>
-            <h2 className="pay-next-amount">$15,240.00</h2>
+            {loading ? (
+                <>
+                    <div className="skeleton skeleton-text short" />
+                    <div className="skeleton skeleton-text title" style={{ height: '32px' }} />
+                    <div className="skeleton skeleton-text short" style={{ margin: '12px 0' }} />
+                    <div className="skeleton skeleton-rect" style={{ height: '44px', marginTop: '12px' }} />
+                </>
+            ) : (
+                <>
+                    <p className="small-body-text pay-next-label">Next Payout</p>
+                    <h2 className="pay-next-amount">$15,240.00</h2>
 
-            <div className="pay-est-arrival">
-              <Icon icon="mdi:bank-transfer" />
-              <span className="small-body-text pp-date">
-                Est. arrival: Oct 15, 2024
-              </span>
-            </div>
+                    <div className="pay-est-arrival">
+                    <Icon icon="mdi:bank-transfer" />
+                    <span className="small-body-text pp-date">
+                        Est. arrival: Oct 15, 2024
+                    </span>
+                    </div>
 
-            <button
-              className="primary-button pay-withdraw-btn"
-              onClick={handleWithdraw}
-            >
-              Withdraw Now
-            </button>
+                    <button
+                    className="primary-button pay-withdraw-btn"
+                    onClick={handleWithdraw}
+                    >
+                    Withdraw Now
+                    </button>
+                </>
+            )}
           </div>
 
           <div className="pay-card pay-methods-box">
             <h4>Payout Methods</h4>
 
-            <div className="pay-method-item">
-              <div className="pay-method-icon">
-                <Icon icon="mdi:domain" />
-              </div>
-              <div className="pay-method-info">
-                <h5 className="pay-method-name">Chase Bank</h5>
-                <span className="smaller-body-text pay-method-num">
-                  •••• 4242
-                </span>
-              </div>
-              <span className="button-label pay-default-pill">Default</span>
-            </div>
+            {loading ? (
+                [...Array(2)].map((_, i) => (
+                    <div key={i} className="pay-method-item" style={{ border: 'none' }}>
+                        <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px', marginRight: '12px' }} />
+                        <div className="pay-method-info" style={{ width: '100%' }}>
+                            <div className="skeleton skeleton-text title" style={{ width: '60%' }} />
+                            <div className="skeleton skeleton-text short" />
+                        </div>
+                    </div>
+                ))
+            ) : (
+                <>
+                    <div className="pay-method-item">
+                    <div className="pay-method-icon">
+                        <Icon icon="mdi:domain" />
+                    </div>
+                    <div className="pay-method-info">
+                        <h5 className="pay-method-name">Chase Bank</h5>
+                        <span className="smaller-body-text pay-method-num">
+                        •••• 4242
+                        </span>
+                    </div>
+                    <span className="button-label pay-default-pill">Default</span>
+                    </div>
 
-            <div className="pay-method-item">
-              <div className="pay-method-icon">
-                <Icon icon="mdi:domain" />
-              </div>
-              <div className="pay-method-info">
-                <h5 className="pay-method-name">Mastercard</h5>
-                <span className="smaller-body-text pay-method-num">
-                  •••• 8888
-                </span>
-              </div>
-              <span className="button-label pay-set-default">Set as Default</span>
-            </div>
+                    <div className="pay-method-item">
+                    <div className="pay-method-icon">
+                        <Icon icon="mdi:domain" />
+                    </div>
+                    <div className="pay-method-info">
+                        <h5 className="pay-method-name">Mastercard</h5>
+                        <span className="smaller-body-text pay-method-num">
+                        •••• 8888
+                        </span>
+                    </div>
+                    <span className="button-label pay-set-default">Set as Default</span>
+                    </div>
+                </>
+            )}
           </div>
         </div>
       </div>
