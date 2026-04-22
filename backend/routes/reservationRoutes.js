@@ -11,5 +11,6 @@ router.get('/my-booths', requireRole('sponsor'), reservationController.getMyRese
 
 // Admin routes
 router.get('/admin', requireRole('admin'), reservationController.getAllReservations);
+router.delete('/:id', reservationController.deleteReservation);
 
 module.exports = router;

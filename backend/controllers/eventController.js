@@ -49,6 +49,86 @@ const upload = multer({
   fileFilter,
 });
 
+/**
+ * Auto-Heal Events
+ * Dynamically reconciles booth and layout items against active reservations on read.
+ * This ensures the frontend receives accurate state even if the database was manually altered.
+ */
+const autoHealEvents = async (eventsArr) => {
+  if (!eventsArr || eventsArr.length === 0) return eventsArr;
+
+  const isArray = Array.isArray(eventsArr);
+  const events = isArray ? eventsArr : [eventsArr];
+  const eventIds = events.map(e => e._id);
+
+  try {
+    // 1. Fetch all reservations for these events
+    const reservations = await Reservation.find({ event: { $in: eventIds } });
+
+    for (let event of events) {
+      let changed = false;
+      const eventReservations = reservations.filter(r => r.event.toString() === event._id.toString());
+      const reservedBoothIds = eventReservations.map(r => r.boothId.toString());
+      const reservedBoothCodes = eventReservations.map(r => r.boothCode);
+
+      // 2. Cross-reference booths array
+      if (event.booths && event.booths.length > 0) {
+        event.booths.forEach((booth, index) => {
+          const idStr = (booth._id || "").toString();
+          const isReserved = reservedBoothIds.includes(idStr) ||
+            reservedBoothCodes.includes(booth.code) ||
+            reservedBoothCodes.includes(booth.label);
+
+          if (booth.status === "sold" && !isReserved) {
+            event.booths[index].status = "available";
+            event.booths[index].reservedBy = "";
+            changed = true;
+          } else if (booth.status === "available" && isReserved) {
+            event.booths[index].status = "sold";
+            changed = true;
+          }
+        });
+      }
+
+      // 3. Cross-reference layoutData items
+      if (event.layoutData && event.layoutData.items) {
+        event.layoutData.items.forEach((item, index) => {
+          const type = (item.type || "").toLowerCase();
+          if (type === 'booth' || type === 'seat') {
+            const idStr = (item._id || item.id || "").toString();
+            const isReserved = reservedBoothIds.includes(idStr) ||
+              reservedBoothCodes.includes(item.code) ||
+              reservedBoothCodes.includes(item.label);
+
+            if (item.status === 'sold' && !isReserved) {
+              event.layoutData.items[index].status = 'available';
+              event.layoutData.items[index].reservedBy = '';
+              changed = true;
+            } else if ((item.status === 'available' || !item.status) && isReserved) {
+              event.layoutData.items[index].status = 'sold';
+              changed = true;
+            }
+          }
+        });
+      }
+
+      // 4. Update the document implicitly if changed
+      // Note: We don't blindly save here to avoid N+1 DB locks on reads, 
+      // but modifying the object in memory ensures the client gets the right data!
+      // We will save it asynchronously in the background so it self heals over time.
+      if (changed && typeof event.save === 'function') {
+        event.markModified('booths');
+        event.markModified('layoutData');
+        event.save().catch(err => console.error("Auto-heal save failed:", err.message));
+      }
+    }
+  } catch (error) {
+    console.error("Auto-heal error:", error);
+  }
+
+  return isArray ? events : events[0];
+};
+
 const getEvents = async (req, res) => {
   try {
     const user = req.user;
@@ -121,7 +201,7 @@ const getEvents = async (req, res) => {
 
     // Re-run the filter if it was a public/approved query to ensure completed items don't show up
     // Or just re-fetch the query to be safe
-    const events = await eventsQuery.populate([
+    let events = await eventsQuery.populate([
       {
         path: "createdBy",
         select: "firstName lastName role email avatar companyName",
@@ -131,6 +211,8 @@ const getEvents = async (req, res) => {
         select: "firstName lastName email avatar",
       }
     ]);
+
+    events = await autoHealEvents(events);
 
     return res.status(200).json(events);
   } catch (error) {
@@ -213,8 +295,11 @@ const getEvent = async (req, res) => {
       console.error("Warning: Failed to auto-update event status:", saveError.message);
       // We don't crash the request because the event still exists and is fetched.
     }
+    
+    // Auto-heal on the fly
+    const healedEvent = await autoHealEvents(event);
 
-    return res.status(200).json(event);
+    return res.status(200).json(healedEvent);
   } catch (error) {
     console.error("Error fetching event details:", error);
     return res.status(400).json({ error: error.message });
@@ -1088,6 +1173,97 @@ const reserveBooth = async (req, res) => {
   }
 };
 
+const syncBoothStatus = async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ error: "No such event" });
+  }
+
+  try {
+    const event = await Event.findById(id);
+    if (!event) return res.status(404).json({ error: "No such event" });
+
+    // 1. Get all active reservations for this event
+    const reservations = await Reservation.find({ event: id });
+    const reservedBoothIds = reservations.map(r => r.boothId.toString());
+    const reservedBoothCodes = reservations.map(r => r.boothCode);
+
+    let changed = false;
+
+    // 2. Sync the booths array
+    if (event.booths && event.booths.length > 0) {
+      event.booths.forEach((booth, index) => {
+        const idStr = (booth._id || "").toString();
+        const isReserved = reservedBoothIds.includes(idStr) ||
+          reservedBoothCodes.includes(booth.code) ||
+          reservedBoothCodes.includes(booth.label);
+
+        if (booth.status === "sold" && !isReserved) {
+          event.booths[index].status = "available";
+          event.booths[index].reservedBy = "";
+          changed = true;
+        } else if (booth.status === "available" && isReserved) {
+          event.booths[index].status = "sold";
+          changed = true;
+        }
+      });
+    }
+
+    // 3. Sync layoutData items independently
+    if (event.layoutData && event.layoutData.items) {
+      event.layoutData.items.forEach((item, index) => {
+        const type = (item.type || "").toLowerCase();
+        if (type === 'booth' || type === 'seat') {
+          const idStr = (item._id || item.id || "").toString();
+          const isReserved = reservedBoothIds.includes(idStr) ||
+            reservedBoothCodes.includes(item.code) ||
+            reservedBoothCodes.includes(item.label);
+
+          if (item.status === 'sold' && !isReserved) {
+            event.layoutData.items[index].status = 'available';
+            event.layoutData.items[index].reservedBy = '';
+            changed = true;
+            event.markModified('layoutData');
+          } else if ((item.status === 'available' || !item.status) && isReserved) {
+            event.layoutData.items[index].status = 'sold';
+            changed = true;
+            event.markModified('layoutData');
+          }
+        }
+      });
+    }
+
+    // 4. Recalculate quantitySold for price levels
+    event.priceLevels.forEach((pl, index) => {
+      const soldCount = event.booths.filter(b => b.priceLevelId?.toString() === pl._id.toString() && b.status === "sold").length;
+      if (pl.quantitySold !== soldCount) {
+        event.priceLevels[index].quantitySold = soldCount;
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      event.markModified('booths');
+      event.markModified('priceLevels');
+      await event.save();
+    }
+
+    const { emitUpdate } = require("../socket");
+    emitUpdate('dashboardUpdate');
+
+    res.status(200).json({
+      message: "Sync completed",
+      changed,
+      event: event // Return the full updated event
+    });
+
+  } catch (error) {
+    console.error("Sync Booth Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getEvents,
   getEvent,
@@ -1097,5 +1273,6 @@ module.exports = {
   saveVenueLayout,
   assignPriceLevels,
   reserveBooth,
+  syncBoothStatus,
   upload,
 };

@@ -101,6 +101,39 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
   const [priceLevels, setPriceLevels] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(1);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncBooths = async () => {
+    if (!selectedEvent?._id || !user?.token) return;
+
+    setIsSyncing(true);
+    try {
+      const response = await fetch(`/api/events/${selectedEvent._id}/sync-booths`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${user.token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        // Update context with the synchronized event data
+        if (data.event) {
+          dispatch({ type: "UPDATE_EVENT", payload: data.event });
+        }
+
+        const { showSuccessAlert } = await import("../utils/sweetAlert");
+        showSuccessAlert("Sync Complete", data.message || "Booth statuses have been reconciled with reservations.");
+      } else {
+        const { showErrorAlert } = await import("../utils/sweetAlert");
+        showErrorAlert("Sync Failed", data.error || "Failed to reconcile booths.");
+      }
+    } catch (err) {
+      console.error("Sync error:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
   const stageRef = useRef(null);
 
   const CANVAS_WIDTH = 1400;
@@ -320,6 +353,16 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
           <div className="canvas-toolbar">
             <h4 className="canvas-title">{selectedEvent?.venue?.name || "Venue Map"}</h4>
             <div className="zoom-controls">
+              <button
+                className={`bt-btn sync-btn ${isSyncing ? 'spinning' : ''}`}
+                onClick={handleSyncBooths}
+                disabled={isSyncing}
+                title="Sync Booth Status with Database"
+                style={{ marginRight: '10px' }}
+              >
+                <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
+                <span style={{ marginLeft: '5px', fontSize: '12px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+              </button>
               <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))}>
                 <Icon icon="mdi:minus" />
               </button>

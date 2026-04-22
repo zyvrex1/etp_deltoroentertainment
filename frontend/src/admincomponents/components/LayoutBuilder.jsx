@@ -23,6 +23,35 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const stageRef = useRef(null);
   const trRef = useRef(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncBooths = async () => {
+    if (!selectedEvent?._id || !user?.token) return;
+
+    setIsSyncing(true);
+    try {
+      const response = await fetch(`/api/events/${selectedEvent._id}/sync-booths`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${user.token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        if (data.event) {
+          dispatch({ type: "UPDATE_EVENT", payload: data.event });
+        }
+        showSuccessAlert("Sync Complete", data.message || "Booth statuses synced.");
+      } else {
+        showErrorAlert("Sync Failed", data.error || "Failed to reconcile.");
+      }
+    } catch (err) {
+      console.error("Sync error:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const [dimensions, setDimensions] = useState({ width: 1000, height: 600 });
   const containerRef = useRef(null);
@@ -519,7 +548,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
                         {item.reservedBy && (
                           <div className="summary-item">
                             <span className="label">Buyer</span>
-                            <span className="value-semi"style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
+                            <span className="value-semi" style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
                           </div>
                         )}
                         <div className="summary-item">
@@ -572,7 +601,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
         <div className="canvas-area">
           <div className="canvas-toolbar">
-            <h4 className="canvas-title">Event Map Editor</h4>
+            <h4 className="canvas-title">{selectedEvent?.venue?.name || "Venue Map"}</h4>
             <div className="toolbar-actions">
               <button
                 className={`bt-btn ${snapToGrid ? 'active' : ''}`}
@@ -583,6 +612,16 @@ const LayoutBuilder = ({ selectedEvent }) => {
               </button>
 
               <div className="zoom-controls">
+                <button
+                  className={`bt-btn sync-btn-small ${isSyncing ? 'spinning' : ''}`}
+                  onClick={handleSyncBooths}
+                  disabled={isSyncing}
+                  title="Sync Booth Status with Database"
+                  style={{ marginRight: '10px', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', height: 'auto' }}
+                >
+                  <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
+                  <span style={{ fontSize: '11px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+                </button>
                 <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} title="Zoom Out">
                   <Icon icon="mdi:minus" />
                 </button>

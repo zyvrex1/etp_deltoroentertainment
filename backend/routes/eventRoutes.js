@@ -9,8 +9,9 @@ const {
   deleteEvent,
   updateEvent,
   saveVenueLayout,
-  assignPriceLevels, // 1. Import the new controller
+  assignPriceLevels,
   reserveBooth,
+  syncBoothStatus,
   upload,
 } = require('../controllers/eventController')
 
@@ -37,6 +38,7 @@ router.patch('/:id', upload.single('image'), updateEvent)
 router.put('/:id/layout', saveVenueLayout)
 router.put('/:id/assign-prices', assignPriceLevels)
 router.post('/:id/reserve-booth', reserveBooth)
+router.post('/:id/sync-booths', syncBoothStatus)
 
 // Price Level Management
 router.post("/:eventId/price-levels", addPriceLevels);
