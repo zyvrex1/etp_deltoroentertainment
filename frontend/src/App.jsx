@@ -138,7 +138,7 @@ function App() {
           <Route path="sponsor-reservation" element={<SponsorReservationSummary />} />
           <Route path="sponsor-venue-billing" element={<SponsorVenueBilling />} />
           <Route path="sponsor-my-booths" element={<SponsorMyBooth />} />
-          <Route path="sponsor-booth-details" element={<SponsorBoothFullDetails />} />
+          <Route path="sponsor-booth-details/:id" element={<SponsorBoothFullDetails />} />
           <Route path="sponsor-history" element={<SponsorEventHistory />} />
           <Route path="sponsor-invoices" element={<SponsorInvoice />} />
           <Route path="settings" element={<SponsorSettings />} />

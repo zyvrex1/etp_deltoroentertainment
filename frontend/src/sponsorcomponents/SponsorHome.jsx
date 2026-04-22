@@ -98,7 +98,7 @@ export default function SponsorHome() {
         <div className="sh-theme">
             {/* Hero Section */}
             <section className="sh-hero-section">
-                <div className="sh-hero-bg" style={{ backgroundImage: `url('/assets/eventbg.jpg')` }}>
+                <div className="sh-hero-bg" style={{ backgroundImage: `url('/assets/herobg.jpg')` }}>
                     <div className="sh-hero-overlay"></div>
                 </div>
                 <div className="sh-hero-content sh-container">

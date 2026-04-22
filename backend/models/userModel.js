@@ -25,6 +25,10 @@ const userSchema = new Schema({
   phone: {
     type: String,
   },
+  companyName: {
+    type: String,
+    trim: true
+  },
   password: {
     type: String,
     required: true

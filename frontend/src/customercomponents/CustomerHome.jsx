@@ -108,7 +108,7 @@ export default function CustomerHome() {
         <div className="ch-theme">
             {/* Hero Section */}
             <section className="ch-hero-section">
-                <div className="ch-hero-bg" style={{ backgroundImage: `url('/assets/eventbg.jpg')` }}>
+                <div className="ch-hero-bg" style={{ backgroundImage: `url('/assets/herobg.jpg')` }}>
                     <div className="ch-hero-overlay"></div>
                 </div>
                 <div className="ch-hero-content ch-container">

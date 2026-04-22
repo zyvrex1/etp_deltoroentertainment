@@ -118,14 +118,26 @@ html {
     opacity: 0.8;
 }
 
+.nft-hero-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: linear-gradient(to bottom, var(--color-bg-dark), transparent);
+    z-index: 1;
+}
+
 .nft-hero-bg::after {
     content: '';
     position: absolute;
     bottom: -2px;
     left: 0;
     right: 0;
-    height: 150px;
-    background: linear-gradient(to bottom, transparent, var(--color-bg-dark));
+    height: 200px;
+    background: linear-gradient(to top, var(--color-bg-dark), transparent);
+    z-index: 1;
 }
 
 .nft-hero-overlay {
@@ -1738,7 +1750,7 @@ a:focus-visible {
 
     /* Hero */
     .nft-hero-section {
-        padding-top: 100px;
+        padding-top: 10px;
         padding-bottom: 10px;
     }
 
@@ -2017,7 +2029,7 @@ a:focus-visible {
 
     /* Hero */
     .nft-hero-section {
-        padding-top: 80px;
+        padding-top: 10px;
         padding-bottom: 0;
     }
 

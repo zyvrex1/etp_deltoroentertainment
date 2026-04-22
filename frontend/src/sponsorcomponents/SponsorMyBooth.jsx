@@ -119,7 +119,7 @@ export default function SponsorMyBooth() {
 
                             <div className="my-booth-actions">
                                 <div className="my-booth-actions-left">
-                                    <NavLink to="/sponsor/sponsor-booth-details" className="my-booth-dark-btn">
+                                    <NavLink to={`/sponsor/sponsor-booth-details/${res._id}`} className="my-booth-dark-btn">
                                         <Icon icon="mdi:eye-outline" width="18" /> View Full Details
                                     </NavLink>
                                     <NavLink to={`/sponsor/sponsor-event-details/${res.event?._id}`} className="outlined-button my-booth-outlined-btn">

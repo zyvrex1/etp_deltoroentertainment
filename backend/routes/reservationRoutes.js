@@ -6,11 +6,13 @@ const requireRole = require('../middleware/requireRole');
 
 router.use(requireAuth);
 
-// Sponsor routes
-router.get('/my-booths', requireRole('sponsor'), reservationController.getMyReservations);
-
 // Admin routes
 router.get('/admin', requireRole('admin'), reservationController.getAllReservations);
-router.delete('/:id', reservationController.deleteReservation);
+
+// Sponsor routes
+router.get('/my-booths', requireRole('sponsor'), reservationController.getMyReservations);
+router.get('/:id', reservationController.getReservationById);
+
+router.delete('/:id', requireRole('admin'), reservationController.deleteReservation);
 
 module.exports = router;

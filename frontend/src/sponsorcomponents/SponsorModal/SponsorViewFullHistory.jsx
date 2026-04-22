@@ -5,28 +5,26 @@ import './SponsorViewFullHistory.css';
 const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) => {
     if (!isOpen) return null;
 
-    // Use default mock data if none provided
-    const defaultData = {
-        eventStatus: 'Upcoming',
-        booth: 'Booth #205',
-        title: 'TechInnovate Summit 2026',
-        date: 'Jun 16, 2026',
-        location: 'Starlight Arena, Los Angeles, CA',
-        confirmation: 'CONF-2023-089',
-        boothType: 'Standard • 10x10',
-        bookingDate: 'May 15, 2026',
-        paymentMethod: 'Visa ending in 4242',
-        paymentDate: 'May 15, 2026',
-        paymentStatus: 'Paid',
+    // Map backend reservation data (passed as historyItem.fullReservation or historyItem)
+    const res = historyItem?.fullReservation || historyItem;
+    
+    const item = {
+        eventStatus: historyItem?.eventStatus || 'Upcoming',
+        booth: historyItem?.booth || `Booth #${res?.boothCode}`,
+        title: historyItem?.title || res?.event?.title,
+        date: historyItem?.date || (res?.event?.startDate ? new Date(res.event.startDate).toLocaleDateString() : 'TBA'),
+        location: res?.event?.venue?.name || 'Venue TBA',
+        confirmation: res?._id || 'N/A',
+        boothType: res?.event?.priceLevels?.find(pl => pl._id === res?.event?.booths?.find(b => b.code === res?.boothCode)?.priceLevelId)?.priceName || 'Standard',
+        bookingDate: historyItem?.paymentDate || (res?.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A'),
+        paymentMethod: res?.paymentMethod === 'card' ? 'Credit Card' : 'Invoice',
+        paymentDate: historyItem?.paymentDate || 'N/A',
+        paymentStatus: historyItem?.paymentStatus || 'Paid',
         exhibitors: [
-            { initial: 'J', name: 'John Smith', role: 'Lead Representative' },
-            { initial: 'S', name: 'Sarah Johnson', role: 'Sales Manager' },
-            { initial: 'M', name: 'Mike Chen', role: 'Technical Specialist' }
+            { initial: res?.user?.firstName?.[0] || 'S', name: (res?.user?.firstName || 'Sponsor') + ' ' + (res?.user?.lastName || ''), role: 'Sponsor Lead' },
         ],
-        features: [
-            'High Visibility Location', 'Near Main Entrance',
-            'Dedicated 20A Power Circuit', 'Premium Carpet Included',
-            'WiFi Access', '6 Exhibitor Passes'
+        features: res?.event?.priceLevels?.find(pl => pl._id === res?.event?.booths?.find(b => b.code === res?.boothCode)?.priceLevelId)?.description?.split(',') || [
+            'Standard Booth Inclusions', 'WiFi Access', 'Power Circuit'
         ],
         performance: {
             leads: '0',
@@ -34,14 +32,12 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) =>
             interactions: '0'
         },
         paymentInfo: {
-            boothPrice: '$5,000.00',
-            processingFee: '$150.00',
-            tax: '$425.00',
-            totalPaid: '$5,575'
+            boothPrice: `$${(res?.amount?.subtotal || 0).toLocaleString()}`,
+            processingFee: `$${(res?.amount?.fee || 0).toLocaleString()}`,
+            tax: `$${(res?.amount?.tax || 0).toLocaleString()}`,
+            totalPaid: `$${(res?.amount?.total || 0).toLocaleString()}`
         }
     };
-
-    const item = { ...defaultData, ...historyItem };
 
     return (
         <div className="svfh-modal-overlay">
@@ -79,16 +75,22 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) =>
                             <h4 className="text-black m-0">Booking Information</h4>
                             <div className="svfh-info-item">
                                 <span className="small-body-text text-secondary">Confirmation Number</span>
-                                <h6 className="text-black m-0">{item.confirmation}</h6>
+                                <h5>ETPBooth-{parseInt(item.confirmation.slice(-6), 16).toString().padStart(7, '0').slice(-7)}</h5>
                             </div>
                             <div className="svfh-info-item">
                                 <span className="small-body-text text-secondary">Booth Type</span>
-                                <h6 className="text-black m-0">{item.boothType}</h6>
+                                <h5>{res.boothCode}</h5>
                             </div>
                             <div className="svfh-info-item">
                                 <span className="small-body-text text-secondary">Booking Date</span>
                                 <h6 className="text-black m-0">{item.bookingDate}</h6>
                             </div>
+                            {res.poNumber && (
+                                <div className="svfh-info-item">
+                                    <span className="small-body-text text-secondary">PO Number</span>
+                                    <h6 className="text-black m-0">{res.poNumber}</h6>
+                                </div>
+                            )}
                         </div>
 
                         <div className="svfh-info-section">

@@ -1,4 +1,6 @@
 const Reservation = require('../models/reservationModel');
+const User = require('../models/userModel');
+const Event = require('../models/eventModel');
 
 // Fetch personal reservations for the sponsor
 const getMyReservations = async (req, res) => {
@@ -9,6 +11,7 @@ const getMyReservations = async (req, res) => {
 
         res.status(200).json(reservations);
     } catch (error) {
+        console.error("GET MY RESERVATIONS ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -16,14 +19,19 @@ const getMyReservations = async (req, res) => {
 // Fetch all reservations for admin view
 const getAllReservations = async (req, res) => {
     try {
+        console.log("Admin Reservations: Fetching...");
+        
         const reservations = await Reservation.find({})
-            .populate('user', 'firstName lastName email companyName')
-            .populate('event', 'title startDate')
-            .sort({ createdAt: -1 });
+            .populate({ path: 'user', select: 'firstName lastName email companyName' })
+            .populate({ path: 'event', select: 'title startDate' })
+            .sort({ createdAt: -1 })
+            .lean(); // Use lean() for faster, read-only results
 
+        console.log(`Admin Reservations: Successfully fetched ${reservations.length} records.`);
         res.status(200).json(reservations);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("CRITICAL ADMIN RESERVATIONS ERROR:", error);
+        res.status(500).json({ error: error.message || "Internal Server Error" });
     }
 };
 
@@ -37,7 +45,6 @@ const deleteReservation = async (req, res) => {
         }
 
         // 1. Find the Event and the Booth
-        const Event = require('../models/eventModel');
         const event = await Event.findById(reservation.event);
 
         if (event) {
@@ -94,8 +101,34 @@ const deleteReservation = async (req, res) => {
     }
 };
 
+// Fetch a single reservation by ID
+const getReservationById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const reservation = await Reservation.findById(id)
+            .populate('event', 'title startDate endDate image venue booths priceLevels layoutData hasBooths description')
+            .populate('user', 'firstName lastName email companyName');
+
+        if (!reservation) {
+            return res.status(404).json({ error: "Reservation not found" });
+        }
+
+        // Security check: ensure the reservation belongs to the user (unless admin)
+        if (req.user.role !== 'admin' && reservation.user._id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ error: "You are not authorized to view this reservation" });
+        }
+
+        res.status(200).json(reservation);
+    } catch (error) {
+        console.error("GET RESERVATION BY ID ERROR:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getMyReservations,
     getAllReservations,
-    deleteReservation
+    deleteReservation,
+    getReservationById
 };

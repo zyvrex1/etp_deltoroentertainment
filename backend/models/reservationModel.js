@@ -42,6 +42,9 @@ const reservationSchema = new mongoose.Schema({
         enum: ['invoice', 'card'],
         default: 'invoice'
     },
+    poNumber: {
+        type: String
+    },
     qrData: {
         type: String // We will store the reservation ID here
     }

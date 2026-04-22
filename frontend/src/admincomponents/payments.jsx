@@ -16,6 +16,7 @@ const Payments = () => {
   const itemsPerPage = 7;
 
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [reservations, setReservations] = useState([]);
 
   useEffect(() => {
@@ -26,12 +27,15 @@ const Payments = () => {
       }
       setIsLoading(true);
       try {
+        setError(null);
         const response = await axios.get(`${BACKEND_URL}/api/reservations/admin`, {
           headers: { Authorization: `Bearer ${user.token}` }
         });
         setReservations(response.data);
       } catch (err) {
         console.error("Fetch admin reservations error:", err);
+        const errorMsg = err.response?.data?.error || "Failed to load reservations. Please try again later.";
+        setError(errorMsg);
       } finally {
         setIsLoading(false);
       }
@@ -80,16 +84,22 @@ const Payments = () => {
   }, [isFilterDropdownOpen]);
 
   const getReservationData = () => {
-    return reservations.map((res, index) => ({
-      id: index + 1,
-      resId: res._id,
-      promoter: res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
-      event: res.event?.title,
-      amount: `$${res.amount?.total ? res.amount.total.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}`,
-      method: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
-      status: res.status,
-      date: new Date(res.createdAt).toLocaleDateString()
-    }));
+    return reservations.map((res, index) => {
+      const promoterName = res.user 
+        ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`) 
+        : 'Unknown Promoter';
+        
+      return {
+        id: index + 1,
+        resId: res._id,
+        promoter: promoterName,
+        event: res.event?.title || 'Unknown Event',
+        amount: `$${res.amount?.total ? res.amount.total.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}`,
+        method: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
+        status: res.status,
+        date: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A'
+      };
+    });
   };
 
   let filteredData = activeTab === "payout-requests" ? payoutRequests : getReservationData();
@@ -198,7 +208,7 @@ const Payments = () => {
         </div>
         <div className="pay-card pay-card-total">
           <p className="regular-body-text pay-card-title">Total Paid (YTD)</p>
-          <h4 className="pay-card-amount">$450,000.00</h4>
+          <h4 className="pay-card-amount">${(reservations.reduce((total, res) => total + res.amount?.total, 0) || 0).toLocaleString()}</h4>
           <span className="small-body-text pay-card-meta pay-card-meta-success">
             <Icon icon="mdi:check-circle" />
             All processed successfully
@@ -308,6 +318,12 @@ const Payments = () => {
                 ))}
               </tbody>
             </table>
+          ) : error ? (
+            <div className="empty-state">
+              <Icon icon="mdi:alert-circle-outline" width="48" style={{ color: 'var(--accent-red)' }} />
+              <h4>Error</h4>
+              <p className="small-body-text">{error}</p>
+            </div>
           ) : paginatedData.length === 0 ? (
             // Empty state outside table for mobile-friendly display
             <div className="empty-state">

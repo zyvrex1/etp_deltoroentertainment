@@ -23,10 +23,16 @@ const SponsorVenueBilling = () => {
         streetAddress: '',
         city: '',
         postalCode: '',
-        apEmail: ''
+        apEmail: '',
+        poNumber: ''
     });
-
     useEffect(() => {
+        const generatePONumber = () => {
+            const year = new Date().getFullYear();
+            const random = Math.floor(1000 + Math.random() * 9000);
+            return `PO-${year}-${random}`;
+        };
+
         const fetchProfile = async () => {
             if (!user?.token) return;
             try {
@@ -38,10 +44,12 @@ const SponsorVenueBilling = () => {
                     streetAddress: p.billingAddress || '',
                     city: p.city || '',
                     postalCode: p.postalCode || '',
-                    apEmail: p.email || ''
+                    apEmail: p.email || '',
+                    poNumber: prev.poNumber || generatePONumber()
                 }));
             } catch (error) {
                 console.error("Error fetching profile for billing autofill:", error);
+                setBillingInfo(prev => ({ ...prev, poNumber: prev.poNumber || generatePONumber() }));
             }
         };
         fetchProfile();
@@ -96,7 +104,8 @@ const SponsorVenueBilling = () => {
                         fee: (total * 0.03),
                         tax: (total * 0.08)
                     },
-                    paymentMethod: paymentMethod === 'invoice' ? 'invoice' : 'card'
+                    paymentMethod: paymentMethod === 'invoice' ? 'invoice' : 'card',
+                    poNumber: billingInfo.poNumber
                 }, {
                     headers: {
                         Authorization: `Bearer ${user.token}`
@@ -343,7 +352,13 @@ const SponsorVenueBilling = () => {
 
                                         <div className="svb-form-group mb-3">
                                             <label>Purchase Order Number (Optional)</label>
-                                            <input type="text" placeholder="PO-2026-001" className="svb-input" />
+                                            <input
+                                                type="text"
+                                                placeholder="PO-2026-001"
+                                                className="svb-input"
+                                                value={billingInfo.poNumber}
+                                                onChange={(e) => handleInputChange('poNumber', e.target.value)}
+                                            />
                                         </div>
 
                                         <div className="svb-form-group">

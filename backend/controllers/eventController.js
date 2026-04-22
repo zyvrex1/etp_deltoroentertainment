@@ -1082,7 +1082,7 @@ const assignPriceLevels = async (req, res) => {
 
 const reserveBooth = async (req, res) => {
   const { id } = req.params; // Event ID
-  const { boothId, billingAddress, amount, paymentMethod } = req.body;
+  const { boothId, billingAddress, amount, paymentMethod, poNumber } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).json({ error: "No such event" });
@@ -1129,6 +1129,7 @@ const reserveBooth = async (req, res) => {
       amount,
       billingAddress,
       paymentMethod: paymentMethod || "invoice",
+      poNumber: poNumber || "",
       status: "confirmed", // Auto-confirmed for invoice/sample flow
     });
 

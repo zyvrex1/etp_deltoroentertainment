@@ -66,14 +66,26 @@
     opacity: 0.8;
 }
 
+.sh-hero-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: linear-gradient(to bottom, var(--color-bg-dark), transparent);
+    z-index: 1;
+}
+
 .sh-hero-bg::after {
     content: '';
     position: absolute;
     bottom: -2px;
     left: 0;
     right: 0;
-    height: 150px;
-    background: linear-gradient(to bottom, transparent, var(--color-bg-dark));
+    height: 200px;
+    background: linear-gradient(to top, var(--color-bg-dark), transparent);
+    z-index: 1;
 }
 
 .sh-hero-overlay {
@@ -682,7 +694,7 @@
     color: var(--color-white-secondary);
     line-height: 1.6;
     margin: 0;
-    text-align: center;
+    text-align: left;
 }
 
 /* Policies */
@@ -774,7 +786,11 @@
 
 @media (max-width: 768px) {
     .sh-hero-section {
-        padding-top: 120px;
+        padding-top: 10px;
+    }
+
+    .sh-hero-buttons{
+        margin-bottom: 10px !important;
     }
 
     .sh-title {

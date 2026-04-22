@@ -785,7 +785,7 @@
 
 @media (max-width: 480px) {
 
-    .auth-role-grid,
+
     .auth-form-row {
         grid-template-columns: 1fr;
         gap: 12px;

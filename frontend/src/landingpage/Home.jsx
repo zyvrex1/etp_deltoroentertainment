@@ -150,18 +150,22 @@ const Home = () => {
           };
 
           // 1. Live/Upcoming Events (Status: approved)
-          const activeEvents = data.filter(evt => evt.status === 'approved').map(evt => ({
-            id: evt._id,
-            title: evt.title,
-            image: getImg(evt),
-            date: evt.startDate ? new Date(evt.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : 'TBA',
-            fullDate: evt.startDate ? new Date(evt.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : 'TBA',
-            location: evt.venue?.city ? `${evt.venue.city}${evt.venue.state ? ', ' + evt.venue.state : ''}` : 'TBA',
-            tag: evt.category || 'General',
-            venue: evt.venue?.name || 'To Be Announced',
-            time: evt.startDate ? new Date(evt.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'TBA',
-            daysLeft: evt.startDate ? Math.ceil((new Date(evt.startDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0
-          }));
+          const activeEvents = data
+            .filter(evt => evt.status === 'approved')
+            .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+            .slice(0, 4)
+            .map(evt => ({
+              id: evt._id,
+              title: evt.title,
+              image: getImg(evt),
+              date: evt.startDate ? new Date(evt.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : 'TBA',
+              fullDate: evt.startDate ? new Date(evt.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : 'TBA',
+              location: evt.venue?.city ? `${evt.venue.city}${evt.venue.state ? ', ' + evt.venue.state : ''}` : 'TBA',
+              tag: evt.category || 'General',
+              venue: evt.venue?.name || 'To Be Announced',
+              time: evt.startDate ? new Date(evt.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'TBA',
+              daysLeft: evt.startDate ? Math.ceil((new Date(evt.startDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0
+            }));
           setLiveEvents(activeEvents);
 
           // 2. Featured Events (Status: completed, sorted by tickets sold)
@@ -179,7 +183,7 @@ const Home = () => {
               };
             })
             .sort((a, b) => b.sold - a.sold)
-            .slice(0, 8); // Top 8 featured
+            .slice(0, 5); // Top 5 featured
 
           setFeaturedEvents(completedEvents);
           // Set initial carousel index to middle if we have items
@@ -228,7 +232,7 @@ const Home = () => {
 
       {/* Featured Event Hero */}
       <section className="nft-hero-section" aria-label="Hero banner">
-        <div className="nft-hero-bg" style={{ backgroundImage: `url('${featuredEvent?.image || '/assets/eventbg.jpg'}')` }}>
+        <div className="nft-hero-bg" style={{ backgroundImage: `url('/assets/herobg.jpg')` }}>
           <div className="nft-hero-overlay"></div>
         </div>
         <main id="main-content" className="nft-hero-content container">

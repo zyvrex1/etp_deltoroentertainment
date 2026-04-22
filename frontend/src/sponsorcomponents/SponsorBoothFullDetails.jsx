@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
+import axios from 'axios';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
 import { showDeleteConfirmAlert, showSuccessAlert, showConfirmAlert } from '../admincomponents/utils/sweetAlert';
 import SponsorAddExhibitor from './SponsorModal/SponsorAddExhibitor';
 import SponsorDocuments from './SponsorModal/SponsorDocuments';
@@ -8,13 +10,39 @@ import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, drawLongText, finalizeReport } from '../admincomponents/utils/pdfExport';
 import './SponsorBoothFullDetails.css';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 export default function SponsorBoothFullDetails() {
+    const { id: reservationId } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuthContext();
+    const [reservation, setReservation] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [isAddExhibitorModalOpen, setIsAddExhibitorModalOpen] = useState(false);
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
 
+    useEffect(() => {
+        const fetchReservation = async () => {
+            if (!user?.token || !reservationId) return;
+            setIsLoading(true);
+            try {
+                const response = await axios.get(`${BACKEND_URL}/api/reservations/${reservationId}`, {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                setReservation(response.data);
+            } catch (error) {
+                console.error("Fetch reservation error:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchReservation();
+    }, [reservationId, user?.token]);
+
     const exportDocumentToPDF = async (doc) => {
+        if (!doc) return;
         const loadingToast = showExportToast();
         const DOCUMENT_TITLE = doc.title;
         try {
@@ -35,7 +63,6 @@ export default function SponsorBoothFullDetails() {
             y += 10;
 
             doc.sections.forEach(sec => {
-                // Check if we need a new page for the section title
                 if (y > pdfHeight - FOOTER_HEIGHT - 20) {
                     pdf.addPage();
                     addReportHeader(pdf, DOCUMENT_TITLE, logoData);
@@ -53,7 +80,7 @@ export default function SponsorBoothFullDetails() {
                     : 'Please refer to the application portal for the full detailed content of this section.';
 
                 y = drawLongText(pdf, y, sectionContent, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, logoData, DOCUMENT_TITLE);
-                y += 8; // Extra padding between sections
+                y += 8;
             });
 
             finalizeReport(pdf);
@@ -66,8 +93,8 @@ export default function SponsorBoothFullDetails() {
         }
     };
 
-
     const exportInvoiceToPDF = async () => {
+        if (!reservation) return;
         const loadingToast = showExportToast();
         const INVOICE_TITLE = 'Invoice';
         try {
@@ -87,26 +114,26 @@ export default function SponsorBoothFullDetails() {
             pdf.setFontSize(10);
             pdf.setTextColor(50, 50, 50);
             pdf.setFont('helvetica', 'normal');
-            pdf.text('Event: TechInnovate Summit 2026', MARGIN, y);
+            pdf.text(`Event: ${reservation.event?.title || 'Unknown Event'}`, MARGIN, y);
             y += 6;
-            pdf.text('Booth: Premium Island (20x20)', MARGIN, y);
+            pdf.text(`Booth: ${reservation.boothCode}`, MARGIN, y);
             y += 6;
-            pdf.text('Confirmation Number: CONF-2024-001', MARGIN, y);
+            pdf.text(`Confirmation Number: ETPBooth-${parseInt(reservation._id.slice(-6), 16).toString().padStart(7, '0').slice(-7)}`, MARGIN, y);
             y += 6;
-            pdf.text('Booking Date: Aug 10, 2026', MARGIN, y);
+            pdf.text(`Booking Date: ${new Date(reservation.createdAt).toLocaleDateString()}`, MARGIN, y);
             y += 10;
 
             const headers = ['Description', 'Amount'];
             const rows = [
-                ['Booth Price', '$5,000.00'],
-                ['Processing Fee', '$150.00'],
-                ['Tax', '$425.00'],
-                ['Total Paid', '$5,575.00']
+                ['Booth Price', `$${(reservation.amount?.subtotal || 0).toLocaleString()}`],
+                ['Processing Fee', `$${(reservation.amount?.fee || 0).toLocaleString()}`],
+                ['Tax', `$${(reservation.amount?.tax || 0).toLocaleString()}`],
+                ['Total Paid', `$${(reservation.amount?.total || 0).toLocaleString()}`]
             ];
             y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5, logoData, INVOICE_TITLE);
 
             finalizeReport(pdf);
-            pdf.save(`Invoice_CONF-2024-001.pdf`);
+            pdf.save(`Invoice_${reservation._id}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('Failed to generate PDF. Please try again.');
@@ -116,13 +143,29 @@ export default function SponsorBoothFullDetails() {
     };
 
     const handleEventDetails = () => {
-        navigate(`/sponsor/sponsor-event/${eventId}`);
+        if (reservation?.event?._id) {
+            navigate(`/sponsor/sponsor-event/${reservation.event._id}`);
+        }
     };
 
+    if (isLoading) {
+        return (
+            <div className="booth-details-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <Icon icon="line-md:loading-twotone-loop" width="48" />
+            </div>
+        );
+    }
+
+    if (!reservation) {
+        return (
+            <div className="booth-details-container">
+                <p>Reservation not found.</p>
+            </div>
+        );
+    }
+
     const exhibitors = [
-        { id: 1, name: 'John Smith', role: 'Lead Representative', email: 'john.smith@techcorp.com', phone: '+1 (555) 123-4567', initial: 'J' },
-        { id: 2, name: 'Sarah Johnson', role: 'Sales Manager', email: 'sarah.j@techcorp.com', phone: '+1 (555) 123-4568', initial: 'S' },
-        { id: 3, name: 'Mike Chen', role: 'Technical Specialist', email: 'mike.chen@techcorp.com', phone: '+1 (555) 123-4569', initial: 'M' },
+        { id: 1, name: (reservation.user?.firstName || 'Sponsor') + ' ' + (reservation.user?.lastName || ''), role: 'Sponsor Lead', email: reservation.user?.email || 'N/A', phone: 'N/A', initial: reservation.user?.firstName?.[0] || 'S' },
     ];
 
     const documents = [
@@ -141,15 +184,15 @@ export default function SponsorBoothFullDetails() {
                             </p>
 
                             <ul className="sd-list small-body-text text-secondary">
-                                <li>Sponsor: The participating company or individual</li>
-                                <li>Organizer: Event Platform Events LLC.</li>
+                                <li>Sponsor: {reservation.user?.companyName || (reservation.user?.firstName + ' ' + reservation.user?.lastName)}</li>
+                                <li>Organizer: Deltoro Entertainment Events LLC.</li>
                             </ul>
                         </div>
                     ),
                     pdfContent: [
                         'This Sponsorship Agreement ("Agreement") is entered into between:',
-                        '• Sponsor: The participating company or individual',
-                        '• Organizer: Event Platform Events LLC.'
+                        `• Sponsor: ${reservation.user?.companyName || (reservation.user?.firstName + ' ' + reservation.user?.lastName)}`,
+                        '• Organizer: Deltoro Entertainment Events LLC.'
                     ]
                 },
                 {
@@ -439,6 +482,8 @@ export default function SponsorBoothFullDetails() {
         },
     ];
 
+    const priceLevel = reservation.event?.priceLevels?.find(pl => pl._id === reservation.event?.booths?.find(b => b.code === reservation.boothCode)?.priceLevelId);
+
     return (
         <div className="booth-details-container">
             <div className="booth-details-header">
@@ -447,71 +492,70 @@ export default function SponsorBoothFullDetails() {
                         <Icon icon="mdi:arrow-left" width="24" />
                     </button>
                     <div>
-                        <h2>Booth #102</h2>
-                        <p className="regular-body-text text-secondary">TechInnovate Summit 2026</p>
+                        <h2>Booth #{reservation.boothCode}</h2>
+                        <p className="regular-body-text text-secondary">{reservation.event?.title || 'Unknown Event'}</p>
                     </div>
                 </div>
-                <div className="button-label booth-details-status">
-                    Confirmed
+                <div className={`button-label booth-details-status ${reservation.status}`}>
+                    {reservation.status === 'confirmed' ? 'Confirmed' : reservation.status}
                 </div>
             </div>
 
             <div className="booth-details-layout">
-                {/* LEFT COLUMN */}
                 <div className="booth-details-main">
-
-                    {/* Cover Image */}
                     <div className="booth-details-cover">
-                        <img src="/assets/eventbg.jpg" alt="Event Cover" />
+                        <img 
+                            src={reservation.event?.image ? 
+                                (reservation.event.image.startsWith('http') ? reservation.event.image : `${BACKEND_URL}/uploads/${reservation.event.image}`) 
+                                : "/assets/eventbg.jpg"} 
+                            alt="Event Cover" 
+                        />
                         <div className="booth-details-cover-overlay">
-                            <h3>TechInnovate Summit 2026</h3>
+                            <h3>{reservation.event?.title || 'Unknown Event'}</h3>
                             <div className="booth-details-cover-info">
-                                <span><Icon icon="mdi:calendar-blank" width="16" /> Jun 16, 2026</span>
-                                <span><Icon icon="mdi:map-marker-outline" width="16" /> Starlight Arena, Los Angeles, CA</span>
+                                <span><Icon icon="mdi:calendar-blank" width="16" /> {reservation.event?.startDate ? new Date(reservation.event.startDate).toLocaleDateString() : 'TBA'}</span>
+                                <span><Icon icon="mdi:map-marker-outline" width="16" /> {reservation.event?.venue?.name || 'Venue TBA'}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Booth Details Section */}
                     <div className="booth-section">
                         <h4>Booth Details</h4>
                         <div className="booth-info-grid">
                             <div className="booth-info-item">
                                 <span className="small-body-text text-secondary">Booth Type</span>
-                                <h5>Premium Island</h5>
+                                <h5>{reservation.boothCode}</h5>
                             </div>
                             <div className="booth-info-item">
                                 <span className="small-body-text text-secondary">Dimensions</span>
-                                <h5>20x20</h5>
+                                <h5>{priceLevel?.boothSize || '10x10'}</h5>
                             </div>
                             <div className="booth-info-item">
                                 <span className="small-body-text text-secondary">Confirmation Number</span>
-                                <h5 >CONF-2024-001</h5>
+                                <h5>ETPBooth-{parseInt(reservation._id.slice(-6), 16).toString().padStart(7, '0').slice(-7)}</h5>
                             </div>
                             <div className="booth-info-item">
                                 <span className="small-body-text text-secondary">Booking Date</span>
-                                <h5>Aug 10, 2026</h5>
+                                <h5>{new Date(reservation.createdAt).toLocaleDateString()}</h5>
                             </div>
                         </div>
                     </div>
 
-                    {/* Included Features */}
                     <div className="booth-section">
                         <h4>Included Features</h4>
                         <div className="booth-features-grid">
-                            {['High Visibility Location', 'Near Main Entrance', 'Dedicated 20A Power Circuit', 'Premium Carpet Included', 'WiFi Access', '8 Exhibitor Passes'].map((feature, idx) => (
+                            {(priceLevel?.description?.split(',') || ['Standard Booth Inclusions', 'WiFi Access', 'Power Circuit']).map((feature, idx) => (
                                 <div key={idx} className="booth-feature-item">
                                     <Icon icon="mdi:check-circle" className="text-green" width="20" />
-                                    <span className="regular-body-text">{feature}</span>
+                                    <span className="regular-body-text">{feature.trim()}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* Exhibitor Passes */}
                     <div className="booth-section">
                         <div className="booth-section-header">
-                            <h4>Exhibitor Passes (3/6)</h4>
+                            <h4>Exhibitor Passes (1/6)</h4>
                             <button className="primary-button add-exhibitor-btn" onClick={() => setIsAddExhibitorModalOpen(true)}>
                                 <Icon icon="mdi:plus" width="18" /> Add Exhibitor
                             </button>
@@ -519,15 +563,12 @@ export default function SponsorBoothFullDetails() {
                         <div className="exhibitors-list">
                             {exhibitors.map(ex => (
                                 <div key={ex.id} className="exhibitor-card">
-                                    <div className="exhibitor-avatar">
-                                        {ex.initial}
-                                    </div>
+                                    <div className="exhibitor-avatar">{ex.initial}</div>
                                     <div className="exhibitor-info">
                                         <p className="exhibitor-name regular-body-text font-medium">{ex.name}</p>
                                         <p className="exhibitor-role small-body-text text-secondary">{ex.role}</p>
                                         <div className="exhibitor-contact">
                                             <span className="small-body-text text-secondary"><Icon icon="mdi:email-outline" /> {ex.email}</span>
-                                            <span className="small-body-text text-secondary"><Icon icon="mdi:phone-outline" /> {ex.phone}</span>
                                         </div>
                                     </div>
                                     <div className="exhibitor-actions">
@@ -541,12 +582,8 @@ export default function SponsorBoothFullDetails() {
                                 </div>
                             ))}
                         </div>
-                        <div className="exhibitor-note">
-                            <p className="small-body-text"><strong>Note:</strong> Each exhibitor will receive a digital pass via email 2 weeks before the event. Passes include access to all event areas and networking sessions.</p>
-                        </div>
                     </div>
 
-                    {/* Documents & Resources */}
                     <div className="booth-section">
                         <h4>Documents & Resources</h4>
                         <div className="documents-list">
@@ -560,13 +597,7 @@ export default function SponsorBoothFullDetails() {
                                         <p className="small-body-text text-secondary">PDF • {doc.size}</p>
                                     </div>
                                     <div className="document-actions">
-                                        <button
-                                            className="doc-action-btn"
-                                            onClick={() => {
-                                                setSelectedDocument(doc);
-                                                setIsDocumentModalOpen(true);
-                                            }}
-                                        ><Icon icon="mdi:eye-outline" width="18" /> View</button>
+                                        <button className="doc-action-btn" onClick={() => { setSelectedDocument(doc); setIsDocumentModalOpen(true); }}><Icon icon="mdi:eye-outline" width="18" /> View</button>
                                         <button className="doc-action-btn" onClick={() => exportDocumentToPDF(doc)}><Icon icon="mdi:download-outline" width="18" /> Download</button>
                                     </div>
                                 </div>
@@ -575,26 +606,25 @@ export default function SponsorBoothFullDetails() {
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN - Sidebar */}
                 <div className="booth-details-sidebar">
                     <div className="booth-payment-summary">
                         <h4>Payment Summary</h4>
                         <div className="payment-row">
                             <span className="regular-body-text text-secondary">Booth Price</span>
-                            <h5>$5,000.00</h5>
+                            <h5>${(reservation.amount?.subtotal || 0).toLocaleString()}</h5>
                         </div>
                         <div className="payment-row">
                             <span className="regular-body-text text-secondary">Processing Fee</span>
-                            <h5>$150.00</h5>
+                            <h5>${(reservation.amount?.fee || 0).toLocaleString()}</h5>
                         </div>
                         <div className="payment-row">
                             <span className="regular-body-text text-secondary">Tax</span>
-                            <h5 className="regular-body-text font-medium">$425.00</h5>
+                            <h5>${(reservation.amount?.tax || 0).toLocaleString()}</h5>
                         </div>
                         <hr className="payment-divider" />
                         <div className="payment-total-row">
                             <h4>Total Paid</h4>
-                            <h4 className="text-red">$5,575</h4>
+                            <h4 className="text-red">${(reservation.amount?.total || 0).toLocaleString()}</h4>
                         </div>
 
                         <div className="payment-actions">
@@ -604,26 +634,15 @@ export default function SponsorBoothFullDetails() {
                                 navigate('/sponsor/support', { 
                                     state: { 
                                         tab: 'Submit a Concern', 
-                                        prefill: { 
-                                            subject: 'Refund Booth', 
-                                            category: 'Billing & Payment', 
-                                            priority: 'High',
-                                            event: 'TechInnovate Summit 2026'
-                                        } 
+                                        prefill: { subject: 'Refund Booth', category: 'Billing & Payment', priority: 'High', event: reservation.event?.title } 
                                     } 
                                 });
                             }}>Request Refund</button>
                         </div>
-                        <p className="small-body-text cancellation-policy text-secondary">
-                            <strong>Cancellation Policy:</strong> Cancellations made 60+ days before the event receive a 50% refund. Cancellations within 60 days are non-refundable.
-                        </p>
                     </div>
                 </div>
             </div>
-            <SponsorAddExhibitor
-                isOpen={isAddExhibitorModalOpen}
-                onClose={() => setIsAddExhibitorModalOpen(false)}
-            />
+            <SponsorAddExhibitor isOpen={isAddExhibitorModalOpen} onClose={() => setIsAddExhibitorModalOpen(false)} />
             <SponsorDocuments
                 isOpen={isDocumentModalOpen}
                 onClose={() => setIsDocumentModalOpen(false)}

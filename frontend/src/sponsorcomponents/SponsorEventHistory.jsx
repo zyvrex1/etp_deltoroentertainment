@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { NavLink } from 'react-router-dom';
+import axios from 'axios';
+import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
 import SponsorViewFullHistory from './SponsorModal/SponsorViewFullHistory';
 import DateRangePicker from '../admincomponents/DateRangePicker';
 import jsPDF from 'jspdf';
@@ -183,18 +185,45 @@ export default function SponsorEventHistory() {
 
     const eventStatuses = ["Upcoming", "Live", "Completed"];
 
-    // Mock Data
-    const allHistory = Array.from({ length: 12 }, (_, i) => ({
-        id: i + 1,
-        title: `TechInnovate Summit ${2024 + (i % 2)}`,
-        booth: `Booth #10${i}`,
-        date: 'Oct 15, 2024',
-        eventStatus: eventStatuses[i % 3], // rotates statuses
-        invoiceRef: `INV-2024-00${i + 1}`,
-        amount: '$5,575.00',
-        paymentStatus: 'Paid',
-        paymentDate: 'Aug 10, 2024'
-    }));
+    const { user } = useAuthContext();
+    const [allHistory, setAllHistory] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (!user?.token) return;
+            setIsLoading(true);
+            try {
+                const response = await axios.get(`${BACKEND_URL}/api/reservations/my-booths`, {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                
+                // Map backend reservation data to the expected history format
+                const mappedHistory = response.data.map(res => ({
+                    id: res._id,
+                    title: res.event?.title || 'Unknown Event',
+                    booth: `Booth #${res.boothCode}`,
+                    date: res.event?.startDate ? new Date(res.event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBA',
+                    eventStatus: 'Upcoming', // Default status, logic could be more complex based on date
+                    invoiceRef: `${res.poNumber}`,
+                    amount: `$${(res.amount?.total || 0).toLocaleString()}`,
+                    paymentStatus: res.status === 'confirmed' ? 'Paid' : (res.status === 'pending' ? 'Pending' : 'Cancelled'),
+                    paymentDate: res.createdAt ? new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A',
+                    // Full details for modal
+                    fullReservation: res
+                }));
+
+                setAllHistory(mappedHistory);
+            } catch (error) {
+                console.error("Fetch history error:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchHistory();
+    }, [user?.token]);
 
     const filteredHistory =
         selectedStatus === "All Events"
@@ -228,6 +257,14 @@ export default function SponsorEventHistory() {
             setCurrentPage(page);
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="sponsor-history-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                <Icon icon="line-md:loading-twotone-loop" width="48" />
+            </div>
+        );
+    }
 
     return (
         <div className="sponsor-history-wrapper">
@@ -316,7 +353,7 @@ export default function SponsorEventHistory() {
                                     <td className="regular-body-text text-secondary">{item.invoiceRef}</td>
                                     <td className="regular-body-text text-secondary">{item.amount}</td>
                                     <td>
-                                        <span className="button-label paid">{item.paymentStatus}</span>
+                                        <span className={`button-label ${item.paymentStatus.toLowerCase()}`}>{item.paymentStatus}</span>
                                     </td>
                                     <td className="regular-body-text text-secondary">{item.paymentDate}</td>
                                     <td>
