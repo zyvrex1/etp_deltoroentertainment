@@ -1,268 +1,343 @@
+/* frontend/src/customercomponents/CustomerBrowseEvent.css */
 .cbe-page-wrapper {
-    background-color: var(--color-bg-light);
-    color: var(--color-black-primary);
-    width: 100%;
+    padding: 15px 30px;
+    background: var(--color-bg-light);
     min-height: 100vh;
+    margin: 0 auto;
+    box-sizing: border-box;
+    max-width: 1440px;
 }
 
-.cbe-container {
+.cbe-header-section {
     max-width: 1440px;
     margin: 0 auto;
-    padding: 60px 20px;
+    margin-bottom: 24px;
+    text-align: left;
 
-    .cbe-header {
-        margin-bottom: 30px;
+    .cbe-header-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
 
-        h2 {
-            color: var(--color-black-primary);
-            margin-bottom: 5px;
-            text-align: left;
+        .cbe-title-icon {
+            font-size: 36px;
+            color: var(--color-red-primary);
         }
 
-        p {
-            color: var(--color-black-secondary);
-            text-align: left;
+        h1 {
+            margin: 0;
+            color: var(--color-bg-dark);
+            display: flex;
         }
     }
 
-    .cbe-controls {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: var(--color-white-primary);
-        padding: 15px 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        margin-bottom: 40px;
+    .cbe-title-desc {
+        color: var(--color-black-secondary);
+        margin: 0;
+    }
+}
+
+.cbe-content-card {
+    max-width: 1440px;
+    margin: 0 auto;
+    background: var(--color-white-primary);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+/* Toolbar */
+.cbe-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .cbe-toolbar-left {
+        flex: 1;
 
         .cbe-search {
             display: flex;
             align-items: center;
-            gap: 15px;
-            flex: 1;
-            max-width: 400px;
+            gap: 12px;
+            background: var(--color-bg-light);
+            border: 1px solid var(--color-black-quaternary);
+            border-radius: 8px;
+            padding: 10px 16px;
+            max-width: 100%;
 
-            .search-icon {
-                color: var(--color-black-secondary);
+            svg {
+                width: 20px;
+                height: 20px;
+                color: var(--color-black-tertiary);
             }
 
             input {
+                flex: 1;
                 border: none;
-                background: transparent;
-                outline: none;
-                width: 100%;
+                background: none;
                 color: var(--color-black-primary);
+                font-size: 14px;
                 font-family: 'Inter', sans-serif;
+
+                &::placeholder {
+                    color: var(--color-black-tertiary);
+                }
+
+                &:focus {
+                    outline: none;
+                }
             }
         }
+    }
+
+    .cbe-toolbar-right {
+        flex-shrink: 0;
 
         .cbe-filters {
-            display: flex;
-            gap: 15px;
+            position: relative;
 
-            .cbe-date-picker-btn {
-                padding: 10px 16px;
-                border-radius: 8px;
-                border: 1px solid var(--color-black-quaternary);
-                background-color: var(--color-bg-light);
-                color: var(--color-black-secondary);
-                outline: none;
-                cursor: pointer;
-                min-width: 140px;
+            .cbe-filter-dropdown-btn {
                 display: flex;
-                align-items: center;
                 justify-content: space-between;
+                align-items: center;
+                background-color: var(--color-white-primary);
+                border: 1px solid var(--color-black-tertiary);
+                border-radius: 8px;
+                padding: 10px 16px;
+                color: var(--color-black-secondary);
+                cursor: pointer;
+                min-width: 180px;
                 gap: 8px;
             }
         }
     }
-
-    .cbe-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 30px;
-        margin-bottom: 40px;
-
-        .cbe-card {
-            background-color: var(--color-white-primary);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--color-black-quaternary);
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-            &:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            }
-
-            .cbe-card-image-wrapper {
-                height: 200px;
-                position: relative;
-
-                img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                }
-
-                .cbe-category-pill {
-                    position: absolute;
-                    top: 15px;
-                    left: 15px;
-                    padding: 4px 12px;
-                    border-radius: 6px;
-                    font-size: 12px;
-                    font-weight: 500;
-                    color: var(--color-white-primary);
-                }
-
-                .tag-concert {
-                    background-color: var(--color-red-primary);
-                }
-
-                .tag-theater {
-                    background-color: var(--color-blue-primary);
-                }
-
-                .tag-sports {
-                    background-color: var(--color-green-primary);
-                }
-            }
-
-            .cbe-card-content {
-                padding: 20px;
-
-                .cbe-card-title {
-                    color: var(--color-black-primary);
-                    margin-bottom: 15px;
-                    text-align: left;
-                }
-
-                .cbe-card-info {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    color: var(--color-black-secondary);
-                    margin-bottom: 10px;
-                }
-
-                .cbe-card-divider {
-                    border: none;
-                    border-top: 1px solid var(--color-black-quaternary);
-                    margin: 15px 0;
-                }
-
-                .cbe-card-footer {
-                    display: flex;
-                    justify-content: flex-end;
-                    align-items: center;
-
-                    .cbe-price-section {
-                        text-align: right;
-
-                        span {
-                            color: var(--color-black-secondary);
-                        }
-
-                        .cbe-price-text {
-                            color: var(--color-black-primary);
-                            margin-top: 5px;
-                        }
-                    }
-
-                    .cbe-view-btn {
-                        border-color: var(--color-black-primary);
-                        color: var(--color-black-primary);
-                        padding: 8px 16px;
-
-                        &:hover {
-                            background-color: var(--color-black-quaternary);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 40px;
-        gap: 15px;
-
-        .pagination-btn {
-            background-color: var(--color-white-primary);
-            border: 1px solid var(--color-black-quaternary);
-            padding: 8px 16px;
-            border-radius: 6px;
-            color: var(--color-black-primary);
-            cursor: pointer;
-            transition: background-color 0.2s;
-
-            &:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-            }
-
-            &:not(:disabled):hover {
-                background-color: var(--color-bg-light);
-            }
-        }
-
-        .pagination-info {
-            font-size: 14px;
-            color: var(--color-black-secondary);
-        }
-    }
 }
 
-
-/* Tablet (1024px) */
-@media (max-width: 1024px) {
-    .cbe-container .cbe-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+/* Grid */
+.cbe-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
 }
 
-/* Tablet (768px) */
-@media (max-width: 768px) {
-    .cbe-container {
-        padding: 40px 20px;
+.cbe-event-card {
+    background: var(--color-white-primary);
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     }
 
-    .cbe-container .cbe-controls {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 20px;
+    .cbe-card-image-wrap {
+        position: relative;
+        height: 160px;
+        width: 100%;
 
-        .cbe-search {
+        img {
             width: 100%;
-            max-width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        .cbe-filters {
+        .cbe-category-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background-color: var(--color-red-primary);
+            color: var(--color-white-primary);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    }
+
+    .cbe-card-details {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex: 1;
+
+        .cbe-event-title {
+            color: var(--color-black-primary);
+            margin: 0;
+            text-align: left;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+        }
+
+        .cbe-card-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            color: var(--color-black-secondary);
+
+            svg {
+                color: var(--color-black-tertiary);
+                font-size: 16px;
+                margin-top: 2px;
+            }
+
+            span {
+                flex: 1;
+                text-align: left;
+                font-size: 14px;
+            }
+        }
+
+        .cbe-stats-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 12px;
+            margin-bottom: 20px;
+
+            .cbe-stat-item {
+                display: flex;
+                flex-direction: column;
+                text-align: left;
+
+                .stat-label {
+                    color: var(--color-black-tertiary);
+                    margin-bottom: 4px;
+                    font-size: 12px;
+                }
+
+                .stat-value {
+                    color: var(--color-red-primary);
+                    font-weight: 700;
+                    font-size: 16px;
+                }
+            }
+        }
+
+        .cbe-view-btn {
             width: 100%;
             display: flex;
-            gap: 10px;
-            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: auto;
+            background: var(--color-white-primary);
+            color: var(--color-black-primary);
+            border: 1px solid var(--color-black-quaternary);
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
 
-            .cbe-date-picker-btn {
-                width: 100%;
-                justify-content: center;
+            &:hover {
+                background: var(--color-bg-light);
+                border-color: var(--color-black-tertiary);
             }
         }
     }
+}
 
-    .cbe-container .cbe-grid {
-        grid-template-columns: repeat(2, 1fr);
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 32px;
+    padding-top: 24px;
+
+    .pagination-btn {
+        padding: 8px 16px;
+        border: 1px solid var(--color-black-quaternary);
+        background: var(--color-white-primary);
+        color: var(--color-black-primary);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: 'Inter', sans-serif;
+        transition: background 0.2s;
+
+        &:hover:not(:disabled) {
+            background: var(--color-bg-light);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    .pagination-info {
+        font-size: 14px;
+        color: var(--color-black-secondary);
+        font-family: 'Inter', sans-serif;
     }
 }
 
-/* Mobile (480px) */
+.cbe-empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+    color: var(--color-black-secondary);
+
+    h4 {
+        margin: 16px 0 8px;
+        color: var(--color-black-primary);
+    }
+}
+
+/* RESPONSIVE LAYOUT */
+@media (max-width: 1024px) {
+    .cbe-page-wrapper {
+        padding: 30px;
+
+        .cbe-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .cbe-page-wrapper {
+        padding: 20px 24px;
+
+        .cbe-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .cbe-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .cbe-toolbar-right {
+            width: 100%;
+
+            .cbe-filters,
+            .cbe-filter-dropdown-btn {
+                width: 100%;
+            }
+        }
+    }
+}
+
 @media (max-width: 480px) {
-    .cbe-container .cbe-grid {
-        grid-template-columns: 1fr;
+    .cbe-page-wrapper {
+        padding: 20px 16px;
+
+        .cbe-grid {
+            grid-template-columns: 1fr;
+        }
     }
 }

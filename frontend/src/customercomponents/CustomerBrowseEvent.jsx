@@ -7,26 +7,23 @@ import './CustomerBrowseEvent.css';
 const CustomerBrowseEvent = () => {
     const navigate = useNavigate();
 
-    // Mock data for events (6 per page)
+    // Mock data for events
     const allEvents = [
-        { id: 1, title: 'Neon Dreams Tour', date: 'Jun 15 • 20:00', location: 'Starlight Arena, Los Angeles, CA', price: '$45 - $150', category: 'Concert', image: '/assets/eventbg.jpg' },
-        { id: 2, title: 'Comedy All-Stars', date: 'Jun 20 • 19:30', location: 'Gotham Comedy Club, New York, NY', price: '$30 - $80', category: 'Concert', image: '/assets/eventbg.jpg' },
-        { id: 3, title: 'Hamlet', date: 'Jul 1 • 19:00', location: 'Royal Globe Theatre, London, UK', price: '$50 - $200', category: 'Theater', image: '/assets/eventbg.jpg' },
-        { id: 4, title: 'Summer Jazz Festival', date: 'Jul 15 • 14:00', location: 'Millennium Park, Chicago, IL', price: '$60 - $120', category: 'Concert', image: '/assets/eventbg.jpg' },
-        { id: 5, title: 'Championship Finals', date: 'Aug 10 • 18:00', location: 'Ocean Stadium, Miami, FL', price: '$100 - $500', category: 'Sports', image: '/assets/eventbg.jpg' },
-        { id: 6, title: 'Indie Rock Showcase', date: 'Jun 25 • 21:00', location: 'The Red Room, Austin, TX', price: '$25 - $50', category: 'Concert', image: '/assets/eventbg.jpg' },
-        { id: 7, title: 'Symphony Under the Stars', date: 'Jul 22 • 20:00', location: 'Central Park, NY', price: '$20 - $100', category: 'Concert', image: '/assets/eventbg.jpg' },
-        { id: 8, title: 'Tech Startup Conference', date: 'Sep 05 • 09:00', location: 'Silicon Valley Center', price: '$150 - $300', category: 'Concert', image: '/assets/eventbg.jpg' },
-        { id: 9, title: 'Broadway Nights', date: 'Aug 10 • 19:00', location: 'City Arts Center, NY', price: '$75 - $250', category: 'Theater', image: '/assets/eventbg.jpg' },
-        { id: 10, title: 'Summer Vibe Fest', date: 'Aug 20 • 12:00', location: 'Open Grounds, Miami, FL', price: '$120 - $400', category: 'Concert', image: '/assets/eventbg.jpg' },
+        { id: 1, title: 'Neon Dreams Tour', date: 'Jun 15 • 20:00', location: 'Starlight Arena, Los Angeles, CA', price: '$45 - $150', category: 'Concert', image: '/assets/eventbg.jpg', time: '20:00 - 23:00', availability: 450 },
+        { id: 2, title: 'Comedy All-Stars', date: 'Jun 20 • 19:30', location: 'Gotham Comedy Club, New York, NY', price: '$30 - $80', category: 'Concert', image: '/assets/eventbg.jpg', time: '19:30 - 21:30', availability: 120 },
+        { id: 3, title: 'Hamlet', date: 'Jul 1 • 19:00', location: 'Royal Globe Theatre, London, UK', price: '$50 - $200', category: 'Theater', image: '/assets/eventbg.jpg', time: '19:00 - 22:30', availability: 85 },
+        { id: 4, title: 'Summer Jazz Festival', date: 'Jul 15 • 14:00', location: 'Millennium Park, Chicago, IL', price: '$60 - $120', category: 'Concert', image: '/assets/eventbg.jpg', time: '14:00 - 22:00', availability: 1500 },
+        { id: 5, title: 'Championship Finals', date: 'Aug 10 • 18:00', location: 'Ocean Stadium, Miami, FL', price: '$100 - $500', category: 'Sports', image: '/assets/eventbg.jpg', time: '18:00 - 21:00', availability: 300 },
+        { id: 6, title: 'Indie Rock Showcase', date: 'Jun 25 • 21:00', location: 'The Red Room, Austin, TX', price: '$25 - $50', category: 'Concert', image: '/assets/eventbg.jpg', time: '21:00 - 00:00', availability: 200 },
+        { id: 7, title: 'Symphony Under the Stars', date: 'Jul 22 • 20:00', location: 'Central Park, NY', price: '$20 - $100', category: 'Concert', image: '/assets/eventbg.jpg', time: '20:00 - 22:00', availability: 2500 },
+        { id: 8, title: 'Tech Startup Conference', date: 'Sep 05 • 09:00', location: 'Silicon Valley Center', price: '$150 - $300', category: 'Concert', image: '/assets/eventbg.jpg', time: '09:00 - 17:00', availability: 500 },
+        { id: 9, title: 'Broadway Nights', date: 'Aug 10 • 19:00', location: 'City Arts Center, NY', price: '$75 - $250', category: 'Theater', image: '/assets/eventbg.jpg', time: '19:00 - 21:30', availability: 400 },
+        { id: 10, title: 'Summer Vibe Fest', date: 'Aug 20 • 12:00', location: 'Open Grounds, Miami, FL', price: '$120 - $400', category: 'Concert', image: '/assets/eventbg.jpg', time: '12:00 - 23:00', availability: 3000 },
     ];
 
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 6;
-
-    const totalPages = Math.ceil(allEvents.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedEvents = allEvents.slice(startIndex, startIndex + itemsPerPage);
+    const [searchQuery, setSearchQuery] = useState("");
+    const itemsPerPage = 8;
 
     const [dateRange, setDateRange] = useState(() => ({
         preset: 'all',
@@ -40,6 +37,18 @@ const CustomerBrowseEvent = () => {
         setCurrentPage(1);
     };
 
+    const filteredEvents = allEvents.filter((event) => {
+        const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            event.location.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        // Date range filtering (simplified for mock data)
+        return matchesSearch;
+    });
+
+    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedEvents = filteredEvents.slice(startIndex, startIndex + itemsPerPage);
+
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
             setCurrentPage(page);
@@ -47,66 +56,97 @@ const CustomerBrowseEvent = () => {
     };
 
     const handleEventClick = (eventId) => {
-        // Implement navigation if details page created
         navigate(`/customer/event-details/${eventId}`);
     };
 
     return (
         <div className="cbe-page-wrapper">
-            <div className="cbe-container">
-                <div className="cbe-header">
-                    <h2>Browse Events</h2>
-                    <p className="regular-body-text">Discover the best events happening around you.</p>
+            <div className="cbe-header-section">
+                <div className="cbe-header-title">
+                    <Icon icon="mdi:calendar-search-outline" className="cbe-title-icon" />
+                    <h1>Browse Events</h1>
                 </div>
+                <p className="regular-body-text cbe-title-desc">
+                    Discover upcoming events, find your favorites, and get your tickets today.
+                </p>
+            </div>
 
-                <div className="cbe-controls">
-                    <div className="cbe-search">
-                        <Icon icon="mdi:magnify" width="20" className="search-icon" />
-                        <input type="text" placeholder="Search events, artist or venue" className="small-body-text" />
+            <div className="cbe-content-card">
+                <div className="cbe-toolbar">
+                    <div className="cbe-toolbar-left">
+                        <div className="cbe-search">
+                            <Icon icon="mdi:magnify" />
+                            <input
+                                type="text"
+                                placeholder="Search events, artist or venue"
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="small-body-text"
+                            />
+                        </div>
                     </div>
 
-                    <div className="cbe-filters">
-                        <DateRangePicker
-                            value={dateRange}
-                            onChange={handleDateRangeChange}
-                            buttonClassName="cbe-date-picker-btn small-body-text"
-                            placeholder="Date Range"
-                        />
+                    <div className="cbe-toolbar-right">
+                        <div className="cbe-filters">
+                            <DateRangePicker
+                                value={dateRange}
+                                onChange={handleDateRangeChange}
+                                buttonClassName="cbe-filter-dropdown-btn small-body-text"
+                                placeholder="Date Range"
+                            />
+                        </div>
                     </div>
                 </div>
 
                 <div className="cbe-grid">
-                    {paginatedEvents.map((event) => (
-                        <div key={event.id} className="cbe-card" onClick={() => handleEventClick(event.id)}>
-                            <div className="cbe-card-image-wrapper">
-                                <span className={`cbe-category-pill button-label tag-${event.category.toLowerCase()}`}>
-                                    {event.category}
-                                </span>
-                                <img src={event.image} alt={event.title} />
-                            </div>
-                            <div className="cbe-card-content">
-                                <h4 className="cbe-card-title">{event.title}</h4>
-
-                                <div className="cbe-card-info">
-                                    <Icon icon="mdi:calendar-blank-outline" />
-                                    <span className="small-body-text">{event.date}</span>
-                                </div>
-                                <div className="cbe-card-info">
-                                    <Icon icon="mdi:map-marker-outline" />
-                                    <span className="small-body-text">{event.location}</span>
-                                </div>
-
-                                <hr className="cbe-card-divider" />
-
-                                <div className="cbe-card-footer">
-                                    <div className="cbe-price-section">
-                                        <span className="smaller-body-text">From</span>
-                                        <h6 className="cbe-price-text">{event.price}</h6>
+                    {paginatedEvents.length > 0 ? (
+                        paginatedEvents.map((event) => (
+                            <div key={event.id} className="cbe-event-card" onClick={() => handleEventClick(event.id)}>
+                                <div className="cbe-card-image-wrap">
+                                    <img src={event.image} alt={event.title} />
+                                    <div className="cbe-category-badge button-label">
+                                        {event.category}
                                     </div>
                                 </div>
+                                <div className="cbe-card-details">
+                                    <h5 className="cbe-event-title">{event.title}</h5>
+
+                                    <div className="cbe-card-info small-body-text">
+                                        <Icon icon="mdi:calendar-blank-outline" />
+                                        <span>{event.date}</span>
+                                    </div>
+                                    <div className="cbe-card-info small-body-text">
+                                        <Icon icon="mdi:map-marker-outline" />
+                                        <span>{event.location}</span>
+                                    </div>
+
+                                    <div className="cbe-stats-row">
+                                        <div className="cbe-stat-item">
+                                            <span className="smaller-body-text stat-label">Time</span>
+                                            <span className="large-body-text stat-value">{event.time}</span>
+                                        </div>
+                                        <div className="cbe-stat-item">
+                                            <span className="smaller-body-text stat-label">Starting Price</span>
+                                            <span className="large-body-text stat-value">{event.price.split('-')[0].trim()}</span>
+                                        </div>
+                                    </div>
+
+                                    <button className="primary-button cbe-view-btn">
+                                        Get Tickets <Icon icon="mdi:arrow-right" />
+                                    </button>
+                                </div>
                             </div>
+                        ))
+                    ) : (
+                        <div className="cbe-empty-state">
+                            <Icon icon="mdi:magnify-close" width="48" />
+                            <h4>No events found</h4>
+                            <p className="small-body-text">Try adjusting your search or filters.</p>
                         </div>
-                    ))}
+                    )}
                 </div>
 
                 {totalPages > 1 && (
@@ -118,11 +158,9 @@ const CustomerBrowseEvent = () => {
                         >
                             Previous
                         </button>
-
                         <span className="pagination-info">
                             Page {currentPage} of {totalPages}
                         </span>
-
                         <button
                             className="pagination-btn"
                             onClick={() => handlePageChange(currentPage + 1)}
