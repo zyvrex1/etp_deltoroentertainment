@@ -12,6 +12,7 @@ import { useAuthContext } from './hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import adminService from '../services/adminService';
 import concernService from '../services/concernService';
+import reservationService from '../services/reservationService';
 
 import { useNotificationsContext } from './hooks/useNotificationsContext';
 import { io } from 'socket.io-client';
@@ -40,12 +41,22 @@ export default function Dashboard() {
             { name: 'Completed', value: 0, color: '#b3b3b3' },
             { name: 'Pending', value: 0, color: '#ffcc00' },
         ],
+        totalBoothsReserved: 0,
+        totalRevenue: 0,
         pendingTickets: 0,
         newUsersThisMonth: 0,
         userTrend: 0,
         currentYear: new Date().getFullYear(),
         currentMonthName: '',
         userGrowthData: [],
+        revenueData: [],
+        upcomingEventsData: [],
+        topSponsorsData: [],
+        topPromotersData: [],
+        boothTrend: 0,
+        revenueTrend: 0,
+        ticketTrend: 0,
+        pendingPayoutsCount: 0,
         loading: true
     });
 
@@ -54,10 +65,11 @@ export default function Dashboard() {
 
         try {
             // Fetch events, users, and concerns in parallel
-            const [events, users, concerns] = await Promise.all([
+            const [events, users, concerns, reservations] = await Promise.all([
                 eventsService.getEvents(user.token),
                 adminService.getUsers(user.token),
-                concernService.getAdminConcerns(user.token)
+                concernService.getAdminConcerns(user.token),
+                reservationService.getAdminReservations(user.token)
             ]);
 
             const pendingCount = events.filter(e => e.status === 'pending').length;
@@ -78,6 +90,7 @@ export default function Dashboard() {
             const lastMonth = lastMonthDate.getMonth();
             const lastMonthYear = lastMonthDate.getFullYear();
 
+            // Calculate Users Trends (Already exists, but refining)
             const usersThisMonth = users.filter(u => {
                 const d = new Date(u.createdAt);
                 return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
@@ -88,12 +101,45 @@ export default function Dashboard() {
                 return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
             }).length;
 
-            let userTrend = 0;
-            if (usersLastMonth > 0) {
-                userTrend = ((usersThisMonth - usersLastMonth) / usersLastMonth) * 100;
-            } else if (usersThisMonth > 0) {
-                userTrend = 100;
-            }
+            const calculateTrend = (current, previous) => {
+                if (previous === 0) return current > 0 ? 100 : 0;
+                return ((current - previous) / previous) * 100;
+            };
+
+            const userTrend = calculateTrend(usersThisMonth, usersLastMonth);
+
+            // Calculate Booths Trends
+            const boothsThisMonth = reservations.filter(res => {
+                const d = new Date(res.createdAt);
+                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            }).length;
+
+            const boothsLastMonth = reservations.filter(res => {
+                const d = new Date(res.createdAt);
+                return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+            }).length;
+
+            const boothTrend = calculateTrend(boothsThisMonth, boothsLastMonth);
+
+            // Calculate Revenue Trends
+            const revenueThisMonth = reservations
+                .filter(res => {
+                    const d = new Date(res.createdAt);
+                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                })
+                .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
+
+            const revenueLastMonth = reservations
+                .filter(res => {
+                    const d = new Date(res.createdAt);
+                    return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+                })
+                .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
+
+            const revenueTrend = calculateTrend(revenueThisMonth, revenueLastMonth);
+
+            // Calculate Ticket Trends (Placeholder for now)
+            const ticketTrend = 0;
 
             const usersThisYear = users.filter(u => {
                 const d = new Date(u.createdAt);
@@ -116,6 +162,97 @@ export default function Dashboard() {
                     total: monthUsers.length
                 };
             });
+
+            const dynamicRevenueData = months.map((month, i) => {
+                const monthRevenue = reservations
+                    .filter(res => {
+                        const d = new Date(res.createdAt);
+                        return d.getMonth() === i && d.getFullYear() === currentYear;
+                    })
+                    .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
+                
+                return { month, total: monthRevenue };
+            });
+
+            // Calculate 4 most upcoming events stats
+            const upcomingEvents = events
+                .filter(e => {
+                    if (e.status !== 'approved' || !e.startDate) return false;
+                    return new Date(e.startDate) >= now;
+                })
+                .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+                .slice(0, 4);
+
+            const dynamicUpcomingEventsData = upcomingEvents.map(e => {
+                const boothsSold = (e.booths || []).filter(b => b.status === 'sold').length;
+                const boothsTotal = (e.booths || []).length;
+                
+                // Simplified ticket capacity logic
+                let ticketsTotal = 0;
+                if (e.eventType === 'General Admission') {
+                    ticketsTotal = (e.priceLevels || []).reduce((sum, pl) => sum + (pl.quantityAvailable || 0), 0);
+                } else if (e.seatMap && e.seatMap.sections) {
+                    ticketsTotal = e.seatMap.sections.reduce((sum, section) => sum + (section.seats?.length || 0), 0);
+                }
+
+                return {
+                    name: e.title.length > 12 ? e.title.substring(0, 10) + '...' : e.title,
+                    fullName: e.title,
+                    ticketsSold: e.ticketsSold || 0,
+                    ticketsRemaining: Math.max(0, ticketsTotal - (e.ticketsSold || 0)),
+                    boothsSold: boothsSold,
+                    boothsRemaining: Math.max(0, boothsTotal - boothsSold)
+                };
+            });
+
+            // Calculate Top Sponsors based on booth reservations
+            const sponsorMap = {};
+            reservations.forEach(res => {
+                if (!res.user) return;
+                const sponsorId = res.user._id;
+                if (!sponsorMap[sponsorId]) {
+                    sponsorMap[sponsorId] = {
+                        name: res.user.companyName || `${res.user.firstName} ${res.user.lastName}`,
+                        email: res.user.email,
+                        boothCount: 0,
+                        latestEvent: res.event?.title || 'Multiple Events'
+                    };
+                }
+                sponsorMap[sponsorId].boothCount += 1;
+            });
+
+            const dynamicTopSponsorsData = Object.values(sponsorMap)
+                .sort((a, b) => b.boothCount - a.boothCount)
+                .slice(0, 5)
+                .map((s, index) => ({
+                    name: s.name,
+                    event: s.event || s.latestEvent,
+                    type: `Top ${index + 1}`
+                }));
+
+            // Calculate Top Promoters based on events created
+            const promoterMap = {};
+            events.forEach(e => {
+                if (!e.createdBy) return;
+                const promoterId = e.createdBy._id;
+                if (!promoterMap[promoterId]) {
+                    promoterMap[promoterId] = {
+                        name: `${e.createdBy.firstName} ${e.createdBy.lastName}`,
+                        email: e.createdBy.email,
+                        eventCount: 0
+                    };
+                }
+                promoterMap[promoterId].eventCount += 1;
+            });
+
+            const dynamicTopPromotersData = Object.values(promoterMap)
+                .sort((a, b) => b.eventCount - a.eventCount)
+                .slice(0, 5)
+                .map((p, index) => ({
+                    name: p.name,
+                    email: p.email,
+                    status: `Top ${index + 1}`
+                }));
 
             const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             const currentMonthName = monthNames[currentMonth];
@@ -140,6 +277,18 @@ export default function Dashboard() {
                     (c.status === 'open' || c.status === 'in-progress') &&
                     String(c.assignedTo) === String(user._id)
                 ).length,
+                totalBoothsReserved: reservations.length,
+                totalRevenue: reservations.reduce((total, res) => total + (res.amount?.total || 0), 0),
+                revenueData: dynamicRevenueData,
+                upcomingEventsData: dynamicUpcomingEventsData,
+                topSponsorsData: dynamicTopSponsorsData,
+                topPromotersData: dynamicTopPromotersData,
+                boothTrend,
+                revenueTrend,
+                ticketTrend,
+                // For now, since we don't have a payout model yet, we keep it as sample or 0
+                // If there's a payout model, we should fetch it.
+                pendingPayoutsCount: 0, 
                 loading: false
             });
         } catch (error) {
@@ -182,50 +331,11 @@ export default function Dashboard() {
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    const ticketSalesData = [
-        { name: 'TechStart', sold: 60, remaining: 40 },
-        { name: 'Creator Expo', sold: 20, remaining: 60 },
-        { name: 'Music Fest', sold: 50, remaining: 15 },
-        { name: 'AI Summit', sold: 30, remaining: 30 },
-    ];
-
-
-    const revenueData = [
-        { month: 'Jan', total: 32000 },
-        { month: 'Feb', total: 32000 },
-        { month: 'Mar', total: 32000 },
-        { month: 'Apr', total: 32000 },
-        { month: 'May', total: 32000 },
-        { month: 'Jun', total: 32000 },
-        { month: 'Jul', total: 45000 },
-        { month: 'Aug', total: 39000 },
-        { month: 'Sep', total: 52000 },
-        { month: 'Oct', total: 61000 },
-        { month: 'Nov', total: 55000 },
-        { month: 'Dec', total: 72000 },
-    ];
 
 
 
-    const topPromotersData = [
-        { name: 'TechStart Inc', email: 'contact@techstart.com', status: 'Top Rated' },
-        { name: 'MusicFest LLC', email: 'info@musicfest.com', status: 'Top Rated' },
-        { name: 'EventPro Solutions', email: 'hello@eventpro.com', status: 'Top Rated' },
-        { name: 'EventPro Solutions', email: 'hello@eventpro.com', status: 'Top Rated' },
-        { name: 'EventPro Solutions', email: 'hello@eventpro.com', status: 'Top Rated' },
-        { name: 'EventPro Solutions', email: 'hello@eventpro.com', status: 'Top Rated' },
 
-    ];
 
-    const topSponsorsData = [
-        { name: 'Global Tech', event: 'AI Summit 2026', type: 'Platinum' },
-        { name: 'Nexus Corp', event: 'Creator Expo', type: 'Gold' },
-        { name: 'Startup Hub', event: 'TechStart', type: 'Silver' },
-        { name: 'Startup Hub', event: 'TechStart', type: 'Silver' },
-
-        { name: 'Startup Hub', event: 'TechStart', type: 'Silver' },
-
-    ];
 
     const timeAgo = (date) => {
         const seconds = Math.floor((new Date() - new Date(date)) / 1000);
@@ -359,27 +469,29 @@ export default function Dashboard() {
                             <h3>{stats.loading ? "..." : stats.pendingApprovals}</h3>
                         </div>
                     </div>
-                    <div className="dashboard-stat-card">
+                   <div className="dashboard-stat-card">
                         <div className="upper-stats">
-                            <span className="icon blue"><Icon icon="mdi:ticket-outline" width="24" /></span>
-                            <span className="trend up"><Icon icon="mdi:trending-up" /> 8.2%</span>
+                            <span className="icon red"><Icon icon="mdi:currency-usd" width="24" /></span>
+                            <span className="trend hidden"></span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Tickets Sold</p>
-                            <h3>12,458</h3>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
+                            <p className="regular-body-text left-aligned">Pending Payouts</p>
+                            <h3>{stats.loading ? "..." : stats.pendingPayoutsCount}</h3>
                         </div>
                     </div>
-                    <div className="dashboard-stat-card">
+                     <div className="dashboard-stat-card">
                         <div className="upper-stats">
-                            <span className="icon green"><Icon icon="mdi:currency-usd" width="24" /></span>
-                            <span className="trend up"><Icon icon="mdi:trending-up" /> 15.3%</span>
+                            <span className="icon yellow"><Icon icon="mdi:alert-outline" width="24" /></span>
+                            <span className="trend hidden"></span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Total Revenue</p>
-                            <h3>$458,920</h3>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
-                        </div>
+                            <p className="regular-body-text left-aligned">Pending Tickets</p>
+                            <h3>{stats.loading ? "..." : stats.pendingTickets}</h3>
+                            <p className="smaller-body-text left-aligned">assigned to you</p>
+                            <span className="view-details" onClick={() => navigate('/admin/support')}>
+                                View details <Icon icon="mdi:arrow-right" />
+                            </span>
+                        </div>       
                     </div>
                     <div className="dashboard-stat-card">
                         <div className="upper-stats">
@@ -400,36 +512,43 @@ export default function Dashboard() {
                     <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon orange"><Icon icon="mdi:map-marker-outline" width="24" /></span>
-                            <span className="trend up"><Icon icon="mdi:trending-up" /> 22.3%</span>
+                            <span className={`trend ${stats.boothTrend >= 0 ? 'up' : 'down'}`}>
+                                <Icon icon={stats.boothTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                {stats.loading ? "0%" : `${Math.abs(stats.boothTrend).toFixed(1)}%`}
+                            </span>
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Booths Reserved</p>
-                            <h3>342</h3>
+                            <h3>{stats.loading ? "..." : stats.totalBoothsReserved}</h3>
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                    <div className="dashboard-stat-card">
+                     <div className="dashboard-stat-card">
                         <div className="upper-stats">
-                            <span className="icon red"><Icon icon="mdi:currency-usd" width="24" /></span>
-                            <span className="trend hidden"></span>
+                            <span className="icon blue"><Icon icon="mdi:ticket-outline" width="24" /></span>
+                            <span className={`trend ${stats.ticketTrend >= 0 ? 'up' : 'down'}`}>
+                                <Icon icon={stats.ticketTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                {stats.loading ? "0%" : `${Math.abs(stats.ticketTrend).toFixed(1)}%`}
+                            </span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Pending Payouts</p>
-                            <h3>5</h3>
+                            <p className="regular-body-text left-aligned">Tickets Sold</p>
+                            <h3>0</h3>
+                            <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                    <div className="dashboard-stat-card">
+                     <div className="dashboard-stat-card">
                         <div className="upper-stats">
-                            <span className="icon yellow"><Icon icon="mdi:alert-outline" width="24" /></span>
-                            <span className="trend hidden"></span>
+                            <span className="icon green"><Icon icon="mdi:currency-usd" width="24" /></span>
+                            <span className={`trend ${stats.revenueTrend >= 0 ? 'up' : 'down'}`}>
+                                <Icon icon={stats.revenueTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                {stats.loading ? "0%" : `${Math.abs(stats.revenueTrend).toFixed(1)}%`}
+                            </span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Pending Tickets</p>
-                            <h3>{stats.loading ? "..." : stats.pendingTickets}</h3>
-                            <p className="smaller-body-text left-aligned">assigned to you</p>
-                            <span className="view-details" onClick={() => navigate('/admin/support')}>
-                                View details <Icon icon="mdi:arrow-right" />
-                            </span>
+                            <p className="regular-body-text left-aligned">Total Revenue</p>
+                            <h3>${stats.loading ? "..." : stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+                            <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
                 </div>
@@ -439,40 +558,48 @@ export default function Dashboard() {
                 <div className="left-panel">
                     <div className="charts-row">
                         <div className="chart-card bar-chart-card">
-                            <h4 className="left-aligned">Ticket Sales by Event</h4>
+                            <h4 className="left-aligned">Sales by Upcoming Events</h4>
                             <div className="chart-placeholder">
-                                <ResponsiveContainer width="100%" height={isMobile ? 160 : 220}>
+                                <ResponsiveContainer width="100%" height={isMobile ? 180 : 220}>
                                     <BarChart
-                                        data={ticketSalesData}
-                                        maxBarSize={isMobile ? 14 : 30}
+                                        data={stats.upcomingEventsData}
+                                        maxBarSize={isMobile ? 14 : 25}
                                         margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                                     >
                                         {!isMobile && (
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
                                         )}
-
                                         <XAxis
                                             dataKey="name"
                                             axisLine={false}
                                             tickLine={false}
                                             tick={{ fontSize: isMobile ? 9 : 11 }}
                                         />
-
                                         <YAxis
                                             axisLine={false}
                                             tickLine={false}
                                             tick={{ fontSize: isMobile ? 9 : 11 }}
                                         />
-
                                         <RechartsTooltip />
-
-                                        <Bar dataKey="sold" stackId="a" fill="#0059ff" radius={[4, 4, 0, 0]} />
-                                        <Bar dataKey="remaining" stackId="a" fill="#e6e6e6" radius={[4, 4, 0, 0]} />
+                                        
+                                        {/* Tickets Bar Stack */}
+                                        <Bar dataKey="ticketsSold" stackId="tickets" name="Tickets Sold" fill="#0059ff" radius={[0, 0, 0, 0]} />
+                                        <Bar dataKey="ticketsRemaining" stackId="tickets" name="Tickets Remaining" fill="#e6e6e6" radius={[4, 4, 0, 0]} />
+                                        
+                                        {/* Booths Bar Stack */}
+                                        <Bar dataKey="boothsSold" stackId="booths" name="Booths Sold" fill="#ff6b00" radius={[0, 0, 0, 0]} />
+                                        <Bar dataKey="boothsRemaining" stackId="booths" name="Booths Remaining" fill="#ffe0cc" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
-                                <div className="chart-legend">
-                                    <span className="legend-item"><span className="dot blue"></span>Tickets Sold</span>
-                                    <span className="legend-item"><span className="dot gray"></span>Total Capacity</span>
+                                <div className="chart-legend sales-legend">
+                                    <div className="legend-group">
+                                        <span className="legend-item"><span className="dot blue"></span>Tickets Sold</span>
+                                        <span className="legend-item"><span className="dot gray"></span>Tickets Cap</span>
+                                    </div>
+                                    <div className="legend-group">
+                                        <span className="legend-item"><span className="dot orange"></span>Booths Sold</span>
+                                        <span className="legend-item"><span className="dot light-orange"></span>Booths Cap</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -517,7 +644,7 @@ export default function Dashboard() {
                         </div>
                         <div className="chart-placeholder area-placeholder">
                             <ResponsiveContainer width="100%" height={isMobile ? 180 : 250}>
-                                <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <AreaChart data={stats.revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
 
                                     {!isMobile && (
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
@@ -643,18 +770,22 @@ export default function Dashboard() {
                                 <h4 className="left-aligned">Top Promoters</h4>
                             </div>
                             <div className="promoters-list">
-                                {topPromotersData.map((promoter, i) => (
-                                    <div className="promoter-item" key={i}>
-                                        <div className="promoter-info left-aligned">
-                                            <div className="icon purple"><Icon icon="mdi:account" /></div>
-                                            <div className="details left-aligned">
-                                                <h5>{promoter.name}</h5>
-                                                <p>{promoter.email}</p>
+                                {stats.topPromotersData.length > 0 ? (
+                                    stats.topPromotersData.map((promoter, i) => (
+                                        <div className="promoter-item" key={i}>
+                                            <div className="promoter-info left-aligned">
+                                                <div className="icon purple"><Icon icon="mdi:account" /></div>
+                                                <div className="details left-aligned">
+                                                    <h5>{promoter.name}</h5>
+                                                    <p>{promoter.email}</p>
+                                                </div>
                                             </div>
+                                            <span className="button-label green-badge">{promoter.status}</span>
                                         </div>
-                                        <span className="button-label green-badge">{promoter.status}</span>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <div className="no-activity">No promoters found</div>
+                                )}
                             </div>
                         </div>
 
@@ -663,18 +794,22 @@ export default function Dashboard() {
                                 <h4 className="left-aligned">Top Sponsors</h4>
                             </div>
                             <div className="promoters-list">
-                                {topSponsorsData.map((sponsor, i) => (
-                                    <div className="promoter-item" key={i}>
-                                        <div className="promoter-info left-aligned">
-                                            <div className="icon blue"><Icon icon="mdi:domain" /></div>
-                                            <div className="details left-aligned">
-                                                <h5>{sponsor.name}</h5>
-                                                <p>{sponsor.event}</p>
+                                {stats.topSponsorsData.length > 0 ? (
+                                    stats.topSponsorsData.map((sponsor, i) => (
+                                        <div className="promoter-item" key={i}>
+                                            <div className="promoter-info left-aligned">
+                                                <div className="icon blue"><Icon icon="mdi:domain" /></div>
+                                                <div className="details left-aligned">
+                                                    <h5>{sponsor.name}</h5>
+                                                    <p>{sponsor.event}</p>
+                                                </div>
                                             </div>
+                                            <span className="button-label blue-badge">{sponsor.type}</span>
                                         </div>
-                                        <span className="button-label blue-badge">{sponsor.type}</span>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <div className="no-activity">No sponsors found</div>
+                                )}
                             </div>
                         </div>
                     </div>

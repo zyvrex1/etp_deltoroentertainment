@@ -324,7 +324,11 @@
                         }
 
                         &.orange {
-                            background: #e67e22;
+                            background: #ff6b00;
+                        }
+
+                        &.light-orange {
+                            background: #ffe0cc;
                         }
 
                         &.purple {
@@ -343,6 +347,20 @@
                 flex-wrap: wrap;
                 justify-content: center;
                 gap: 10px;
+            }
+
+            .chart-legend.sales-legend {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                align-items: center;
+                margin-top: 12px;
+
+                .legend-group {
+                    display: flex;
+                    gap: 12px;
+                    justify-content: center;
+                }
             }
         }
 
