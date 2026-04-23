@@ -5,10 +5,10 @@ import ViewTransactionModal from "./Modal/ViewTransactionModal";
 import jsPDF from "jspdf";
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from './utils/pdfExport';
 
-const TransactionMonitoring = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", externalFilter = "all", data = null }) => {
+  const [internalSearchQuery, setInternalSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [internalFilter, setInternalFilter] = useState("all");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const itemsPerPage = 7;
 
@@ -46,7 +46,8 @@ const TransactionMonitoring = () => {
   }, [isDropdownOpen]);
 
   const getFilterLabel = () => {
-    const option = filterOptions.find((opt) => opt.value === activeFilter);
+    const currentFilter = isTab ? externalFilter : internalFilter;
+    const option = filterOptions.find((opt) => opt.value === currentFilter);
     return option ? option.label : "All Transactions";
   };
 
@@ -117,29 +118,11 @@ const TransactionMonitoring = () => {
       date: "Jul 5, 2025",
       filterType: "ticket",
     },
-    {
-      id: 7,
-      user: "Liam Anderson",
-      event: "Summer Music Festival",
-      type: "Ticket Purchase",
-      category: "Standard",
-      amount: "$120.00",
-      status: "completed",
-      date: "Jul 5, 2025",
-      filterType: "ticket",
-    },
-    {
-      id: 8,
-      user: "Liam Anderson",
-      event: "Summer Music Festival",
-      type: "Ticket Purchase",
-      category: "Standard",
-      amount: "$120.00",
-      status: "completed",
-      date: "Jul 5, 2025",
-      filterType: "ticket",
-    },
+
+
   ]);
+
+  const displayTransactions = data || transactions;
 
   const [expandedRow, setExpandedRow] = useState(null);
   const toggleRow = (id) => {
@@ -155,9 +138,11 @@ const TransactionMonitoring = () => {
   };
 
   const filteredTransactions = useMemo(() => {
-    const q = searchQuery.toLowerCase();
+    const activeSearchQuery = isTab ? externalSearchQuery : internalSearchQuery;
+    const activeFilter = isTab ? externalFilter : internalFilter;
+    const q = activeSearchQuery.toLowerCase();
 
-    return transactions.filter((tx) => {
+    return displayTransactions.filter((tx) => {
       const matchesFilter =
         activeFilter === "all" ? true : tx.filterType === activeFilter;
 
@@ -171,7 +156,7 @@ const TransactionMonitoring = () => {
         tx.type.toLowerCase().includes(q)
       );
     });
-  }, [transactions, searchQuery, activeFilter]);
+  }, [transactions, internalSearchQuery, internalFilter, isTab, externalSearchQuery, externalFilter]);
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -187,7 +172,7 @@ const TransactionMonitoring = () => {
   };
 
   const handleFilterChange = (filter) => {
-    setActiveFilter(filter);
+    setInternalFilter(filter);
     setCurrentPage(1);
     setIsDropdownOpen(false);
   };
@@ -220,12 +205,11 @@ const TransactionMonitoring = () => {
         pdf.text('Real-time view of all financial activities.', margin, y);
         y += 8;
 
-        const tableColumn = ["ID", "User", "Event", "Type", "Category", "Amount", "Status", "Date"];
-        const tableRows = transactions.map((tx) => [
-            `#${tx.id.toString().padStart(2, "0")}`,
+        const tableColumn = ["ID", "User", "Event", "Category", "Amount", "Status", "Date"];
+        const tableRows = displayTransactions.map((tx) => [
+            tx.id,
             tx.user,
             tx.event,
-            tx.type,
             tx.category,
             tx.amount,
             tx.status,
@@ -237,7 +221,7 @@ const TransactionMonitoring = () => {
         y += 10;
         pdf.setFontSize(9);
         pdf.setTextColor(100, 100, 100);
-        pdf.text(`Report generated from Transaction Monitoring. ${transactions.length} entries.`, margin, y, { maxWidth: pdfWidth - 2 * margin });
+        pdf.text(`Report generated from Transaction Monitoring. ${displayTransactions.length} entries.`, margin, y, { maxWidth: pdfWidth - 2 * margin });
 
         finalizeReport(pdf);
         pdf.save(`Transaction_Report_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -257,77 +241,80 @@ const TransactionMonitoring = () => {
   };
 
   const getCategoryClass = (category) => {
-    if (category === "VIP" || category === "VIP Booth")
-      return "button-label tx-category-vip";
-    if (category === "Corner Booth") return "button-label tx-category-corner";
-    if (category === "Inline Booth") return "button-label tx-category-inline";
-    if (category === "Standard") return "button-label tx-category-standard";
-    return "tx-category";
+    if (category === "Booth") return "button-label tx-category-booth";
+    if (category === "Seats") return "button-label tx-category-seats";
+    if (category === "Payout" || category === "-") return "button-label tx-category-payout";
+    return "button-label";
   };
 
   return (
-    <div className="transaction-page">
-      <div className="transaction-header">
-        <div>
-          <h1>Transaction Monitoring</h1>
-          <p className="large-body-text">Real-time view of all financial activities.</p>
-        </div>
-        <div className="tx-header-actions">
-          <button className="outlined-button export-btn" onClick={handleExportReport}>
-            <Icon icon="mdi:tray-arrow-down" />
-            Export Report
-          </button>
-        </div>
-      </div>
-
-      <div className="tx-content">
-        <div className="tx-toolbar">
-          <div className="tx-toolbar-left">
-            <div className="tx-search">
-              <Icon icon="mdi:magnify" />
-              <input
-                type="text"
-                placeholder="Search events..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
+    <div className={`transaction-page ${isTab ? 'is-tab' : ''}`}>
+      {!isTab && (
+        <div className="transaction-header">
+          <div>
+            <h1>Transaction Monitoring</h1>
+            <p className="large-body-text">Real-time view of all financial activities.</p>
           </div>
+          <div className="tx-header-actions">
+            <button className="outlined-button export-btn" onClick={handleExportReport}>
+              <Icon icon="mdi:tray-arrow-down" />
+              Export Report
+            </button>
+          </div>
+        </div>
+      )}
 
-          <div className="tx-toolbar-right">
-            <div className="tx-filter-dropdown" ref={dropdownRef}>
-              <button
-                className="tx-filter-dropdown-btn"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              >
-                <span>{getFilterLabel()}</span>
-                <Icon
-                  icon="mdi:chevron-down"
-                  className={`dropdown-icon ${isDropdownOpen ? "open" : ""}`}
+      {!isTab && (
+        <div className="tx-content">
+          <div className="tx-toolbar">
+            <div className="tx-toolbar-left">
+              <div className="tx-search">
+                <Icon icon="mdi:magnify" />
+                <input
+                  type="text"
+                  placeholder="Search events..."
+                  value={internalSearchQuery}
+                  onChange={(e) => {
+                    setInternalSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
                 />
-              </button>
-              {isDropdownOpen && (
-                <div className="tx-filter-dropdown-menu">
-                  {filterOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      className={`tx-filter-dropdown-item ${
-                        activeFilter === option.value ? "active" : ""
-                      }`}
-                      onClick={() => handleFilterChange(option.value)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              </div>
+            </div>
+
+            <div className="tx-toolbar-right">
+              <div className="tx-filter-dropdown" ref={dropdownRef}>
+                <button
+                  className="tx-filter-dropdown-btn"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                >
+                  <span>{getFilterLabel()}</span>
+                  <Icon
+                    icon="mdi:chevron-down"
+                    className={`dropdown-icon ${isDropdownOpen ? "open" : ""}`}
+                  />
+                </button>
+                {isDropdownOpen && (
+                  <div className="tx-filter-dropdown-menu">
+                    {filterOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        className={`tx-filter-dropdown-item ${internalFilter === option.value ? "active" : ""
+                          }`}
+                        onClick={() => handleFilterChange(option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
+      )}
 
+      <div className="tx-content" style={isTab ? { padding: 0 } : {}}>
         <div className="table-wrapper">
           {isLoading ? (
             <table className="data-table">
@@ -336,7 +323,6 @@ const TransactionMonitoring = () => {
                   <th>ID</th>
                   <th>User</th>
                   <th>Event</th>
-                  <th>Type</th>
                   <th>Category</th>
                   <th>Amount</th>
                   <th>Status</th>
@@ -365,7 +351,7 @@ const TransactionMonitoring = () => {
               <Icon icon="mdi:magnify-close" width="48" />
               <h4>No transactions found</h4>
               <p className="small-body-text">
-                No transactions match "<strong>{searchQuery}</strong>".
+                No transactions match "<strong>{isTab ? externalSearchQuery : internalSearchQuery}</strong>".
               </p>
             </div>
           ) : (
@@ -375,7 +361,6 @@ const TransactionMonitoring = () => {
                   <th>ID</th>
                   <th>User</th>
                   <th>Event</th>
-                  <th>Type</th>
                   <th>Category</th>
                   <th>Amount</th>
                   <th>Status</th>
@@ -390,16 +375,13 @@ const TransactionMonitoring = () => {
                       <div className="mobile-expand-icon" onClick={() => toggleRow(tx.id)}>
                         <Icon icon={expandedRow === tx.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                       </div>
-                      <span>#{tx.id.toString().padStart(2, "0")}</span>
+                      <span>{tx.id}</span>
                     </td>
                     <td className="regular-body-text name-td" data-label="User">
                       {tx.user}
                     </td>
                     <td className="small-body-text" data-label="Event">
                       {tx.event}
-                    </td>
-                    <td className="small-body-text" data-label="Type">
-                      {tx.type}
                     </td>
                     <td data-label="Category">
                       <span className={getCategoryClass(tx.category)}>

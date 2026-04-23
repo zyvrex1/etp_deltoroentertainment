@@ -75,7 +75,7 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) =>
                             <h4 className="text-black m-0">Booking Information</h4>
                             <div className="svfh-info-item">
                                 <span className="small-body-text text-secondary">Confirmation Number</span>
-                                <h5>ETPBooth-{parseInt(item.confirmation.slice(-6), 16).toString().padStart(7, '0').slice(-7)}</h5>
+                                 <h5>Booth-{item.confirmation.toString().slice(-6).toUpperCase()}</h5>
                             </div>
                             <div className="svfh-info-item">
                                 <span className="small-body-text text-secondary">Booth Type</span>

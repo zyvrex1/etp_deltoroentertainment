@@ -69,17 +69,15 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
 
                             <div className="info-item">
                                 <span className="small-body-text info-label">Transaction ID</span>
-                                <h5 className="info-value">#{transaction.id.toString().padStart(2, '0')}{/* Mocking t1 format from design if needed, but keeping ID */}</h5>
+                                <h5 className="info-value">{transaction.id}</h5>
                             </div>
-
                             <div className="info-item">
-                                <span className="small-body-text info-label">Type</span>
-                                <h5 className="info-value">{transaction.type}</h5>
+                                <span className="small-body-text info-label">Customer Name</span>
+                                <h5 className="info-value">{transaction.user || 'N/A'}</h5>
                             </div>
-
                             <div className="info-item">
                                 <span className="small-body-text info-label">Payment Method</span>
-                                <h5 className="info-value">Credit Card</h5>
+                                <h5 className="info-value">{transaction.paymentMethod || 'N/A'}</h5>
                             </div>
                         </div>
 
@@ -94,11 +92,7 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
 
                             <div className="info-item">
                                 <span className="small-body-text info-label">Category / Tier</span>
-                                <h5 className="info-value-wrapper">
-                                    <span className={getCategoryClass(transaction.category)}>
-                                        {transaction.category || 'N/A'}
-                                    </span>
-                                </h5>
+                                <h5 className="info-value">{transaction.category || 'N/A'}</h5>
                             </div>
 
                             <div className="info-item">
@@ -110,7 +104,7 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
                 </div>
 
                 <div className="tx-modal-footer">
-                    {(transaction.type === 'Ticket Purchase' || transaction.type === 'Booth Rental') && transaction.status !== 'refunded' && (
+                    {(transaction.category === 'Booth' || transaction.category === 'Seats') && transaction.status !== 'refunded' && (
                         <button className="process-refund-btn" onClick={handleProcessRefund}>Process Refund</button>
                     )}
                     <button className="primary-button close-button-main" onClick={onClose}>Close</button>

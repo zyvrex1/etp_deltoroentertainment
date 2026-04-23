@@ -36,8 +36,9 @@ export default function SponsorEventHistory() {
             pdf.text('Event History', MARGIN, y);
             y += 20;
 
-            const headers = ['Event', 'Booth', 'Date', 'Invoice', 'Amount', 'Event Status', 'Payment Status'];
+            const headers = ['ID', 'Event', 'Booth', 'Date', 'Invoice', 'Amount', 'Event Status', 'Payment Status'];
             const rows = filteredHistory.map(item => [
+                item.displayId,
                 item.title,
                 item.booth,
                 item.date,
@@ -202,6 +203,7 @@ export default function SponsorEventHistory() {
                 // Map backend reservation data to the expected history format
                 const mappedHistory = response.data.map(res => ({
                     id: res._id,
+                    displayId: `Booth-${res._id.toString().slice(-6).toUpperCase()}`,
                     title: res.event?.title || 'Unknown Event',
                     booth: `Booth #${res.boothCode}`,
                     date: res.event?.startDate ? new Date(res.event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBA',
@@ -329,6 +331,7 @@ export default function SponsorEventHistory() {
                     <table className="sh-table">
                         <thead>
                             <tr>
+                                <th className="small-body-text text-secondary">ID</th>
                                 <th className="small-body-text text-secondary">EVENT DETAILS</th>
                                 <th className="small-body-text text-secondary">INVOICE #</th>
                                 <th className="small-body-text text-secondary">AMOUNT</th>
@@ -340,6 +343,7 @@ export default function SponsorEventHistory() {
                         <tbody>
                             {paginatedHistory.map((item) => (
                                 <tr key={item.id}>
+                                    <td className="regular-body-text text-secondary">{item.displayId}</td>
                                     <td>
                                         <div className="sh-event-details">
                                             <h6 className="sh-event-title">{item.title}</h6>

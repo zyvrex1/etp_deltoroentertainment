@@ -3,6 +3,8 @@ import { Icon } from '@iconify/react';
 import './ViewNotif.css';
 
 const ViewNotif = ({ isOpen, onClose, notifications, onNotifClick }) => {
+    const [activeFilter, setActiveFilter] = React.useState('All');
+
     if (!isOpen) return null;
 
     const iconMap = {
@@ -10,13 +12,24 @@ const ViewNotif = ({ isOpen, onClose, notifications, onNotifClick }) => {
         payment: "mdi:wallet-outline",
         event: "mdi:calendar-outline",
         user: "mdi:account-plus-outline",
-        update: "mdi:file-document-outline"
+        update: "mdi:file-document-outline",
+        reservation: "mdi:ticket-confirmation-outline"
     };
 
     const handleItemClick = (notif) => {
         onNotifClick(notif);
         onClose();
     };
+
+    const filteredNotifications = notifications.filter(notif => {
+        if (activeFilter === 'All') return true;
+        if (activeFilter === 'Unread') return notif.unread;
+        if (activeFilter === 'Support') return notif.type === 'concern';
+        if (activeFilter === 'Events') return notif.type === 'event';
+        if (activeFilter === 'Finance') return notif.type === 'payment';
+        if (activeFilter === 'Reservations') return notif.type === 'reservation';
+        return true;
+    });
 
     return (
         <div className="view-notif-overlay" onClick={onClose}>
@@ -30,11 +43,15 @@ const ViewNotif = ({ isOpen, onClose, notifications, onNotifClick }) => {
                     </div>
                     <div className="header-actions">
                         <div className="notif-filters">
-                            <button className="filter-btn active">All</button>
-                            <button className="filter-btn">Unread</button>
-                            <button className="filter-btn">Support</button>
-                            <button className="filter-btn">Events</button>
-                            <button className="filter-btn">Finance</button>
+                            {['All', 'Unread', 'Support', 'Events', 'Finance', 'Reservations'].map(filter => (
+                                <button 
+                                    key={filter}
+                                    className={`filter-btn ${activeFilter === filter ? 'active' : ''} ${filter.toLowerCase()}`}
+                                    onClick={() => setActiveFilter(filter)}
+                                >
+                                    {filter}
+                                </button>
+                            ))}
                         </div>
                         <button className="mark-all-read-btn">
                             <Icon icon="mdi:check-all" /> Mark all as read
@@ -44,8 +61,8 @@ const ViewNotif = ({ isOpen, onClose, notifications, onNotifClick }) => {
 
                 <div className="view-notif-body">
                     <div className="notif-full-list">
-                        {notifications.length > 0 ? (
-                            notifications.map((notif) => (
+                        {filteredNotifications.length > 0 ? (
+                            filteredNotifications.map((notif) => (
                                 <div 
                                     className={`notif-full-item ${notif.unread ? 'unread' : ''}`} 
                                     key={notif._id}

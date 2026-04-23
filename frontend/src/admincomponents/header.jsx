@@ -30,7 +30,8 @@ const Header = ({ mobileExpanded, setMobileExpanded }) => {
     payment: "mdi:wallet-outline",
     event: "mdi:calendar-outline",
     user: "mdi:account-plus-outline",
-    update: "mdi:file-document-outline"
+    update: "mdi:file-document-outline",
+    reservation: "mdi:ticket-confirmation-outline"
   };
 
   useEffect(() => {

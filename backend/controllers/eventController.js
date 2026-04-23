@@ -1160,6 +1160,21 @@ const reserveBooth = async (req, res) => {
       }
     }
 
+    // 4. Create Notification for Admins
+    const notificationController = require('./notificationController');
+    const sponsorName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
+    
+    const notification = await notificationController.createNotification({
+      title: `New Booth Reservation`,
+      content: `${sponsorName} reserved booth ${booth.label || booth.code} for event "${event.title}"`,
+      type: 'reservation',
+      path: '/admin/payments',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'admin'
+    });
+    emitUpdate('newNotification', notification);
+
     emitUpdate('dashboardUpdate');
 
     res.status(201).json({

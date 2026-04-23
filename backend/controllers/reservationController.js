@@ -94,6 +94,22 @@ const deleteReservation = async (req, res) => {
         const { emitUpdate } = require("../socket");
         emitUpdate('dashboardUpdate');
 
+        // Create Notification for Admins
+        const notificationController = require('./notificationController');
+        const adminName = `${req.user.firstName} ${req.user.lastName}`;
+        const reservationInfo = reservation.boothCode ? `booth ${reservation.boothCode}` : `a booth`;
+        
+        const notification = await notificationController.createNotification({
+            title: `Reservation Cancelled`,
+            content: `${adminName} cancelled reservation for ${reservationInfo} in event "${event?.title || 'Unknown Event'}"`,
+            type: 'reservation',
+            path: '/admin/payments',
+            unread: true,
+            createdBy: req.user._id,
+            targetRole: 'admin'
+        });
+        emitUpdate('newNotification', notification);
+
         res.status(200).json({ message: "Reservation deleted and booth status reset" });
     } catch (error) {
         console.error("Delete Reservation Error:", error);

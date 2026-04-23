@@ -3,6 +3,12 @@
     background: var(--color-bg-light);
     min-height: 100vh;
 
+    &.is-tab {
+        padding: 0;
+        background: transparent;
+        min-height: auto;
+    }
+
     .transaction-header {
         display: flex;
         justify-content: space-between;
@@ -205,20 +211,19 @@
                             display: none;
                         }
 
-                        .tx-category-vip {
+                        .tx-category-booth {
                             background: var(--color-purple-tertiary);
                             color: var(--color-purple-primary);
                         }
-
-                        .tx-category-corner {
-                            background: var(--color-blue-tertiary);
-                            color: var(--color-blue-primary);
-                        }
-
-                        .tx-category-inline,
-                        .tx-category-standard {
+                        
+                        .tx-category-seats {
                             background: var(--color-green-tertiary);
                             color: var(--color-green-primary);
+                        }
+
+                        .tx-category-payout {
+                            background: var(--color-red-tertiary);
+                            color: var(--color-red-primary);
                         }
 
                         .tx-status-completed {

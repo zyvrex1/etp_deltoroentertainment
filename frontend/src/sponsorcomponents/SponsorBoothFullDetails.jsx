@@ -118,7 +118,7 @@ export default function SponsorBoothFullDetails() {
             y += 6;
             pdf.text(`Booth: ${reservation.boothCode}`, MARGIN, y);
             y += 6;
-            pdf.text(`Confirmation Number: ETPBooth-${parseInt(reservation._id.slice(-6), 16).toString().padStart(7, '0').slice(-7)}`, MARGIN, y);
+            pdf.text(`Confirmation Number: Booth-${reservation._id.toString().slice(-6).toUpperCase()}`, MARGIN, y);
             y += 6;
             pdf.text(`Booking Date: ${new Date(reservation.createdAt).toLocaleDateString()}`, MARGIN, y);
             y += 10;
@@ -532,7 +532,7 @@ export default function SponsorBoothFullDetails() {
                             </div>
                             <div className="booth-info-item">
                                 <span className="small-body-text text-secondary">Confirmation Number</span>
-                                <h5>ETPBooth-{parseInt(reservation._id.slice(-6), 16).toString().padStart(7, '0').slice(-7)}</h5>
+                                <h5>Booth-{reservation._id.toString().slice(-6).toUpperCase()}</h5>
                             </div>
                             <div className="booth-info-item">
                                 <span className="small-body-text text-secondary">Booking Date</span>

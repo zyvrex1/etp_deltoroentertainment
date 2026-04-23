@@ -137,11 +137,6 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
               <span>Event Management</span>
             </NavLink>
 
-            <NavLink to="/admin/transactions" className="sidebar-item" onClick={handleLinkClick}>
-              <MdPayment className="icon" />
-              <span>Transactions</span>
-            </NavLink>
-
             <NavLink to="/admin/payments" className="sidebar-item" onClick={handleLinkClick}>
               <MdPayment className="icon" />
               <span>Payments & Payouts</span>

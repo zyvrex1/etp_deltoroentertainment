@@ -90,6 +90,11 @@
                             background: var(--color-red-primary);
                             color: white;
                             border-color: var(--color-red-primary);
+
+                            &.finance, &.reservations {
+                                background: var(--color-purple-primary);
+                                border-color: var(--color-purple-primary);
+                            }
                         }
                     }
                 }
@@ -162,8 +167,9 @@
 
                             &.concern { background: var(--color-yellow-quaternary); color: var(--color-yellow-primary); }
                             &.event { background: var(--color-red-quaternary); color: var(--color-red-primary); }
-                            &.payment { background: var(--color-blue-quaternary); color: var(--color-blue-primary); }
-                            &.user { background: var(--color-purple-quaternary); color: var(--color-purple-primary); }
+                            &.payment { background: var(--color-purple-quaternary); color: var(--color-purple-primary); }
+                            &.reservation { background: var(--color-purple-quaternary); color: var(--color-purple-primary); }
+                            &.user { background: var(--color-blue-quaternary); color: var(--color-blue-primary); }
                             &.update { background: var(--color-bg-dark); color: white; }
                         }
                     }

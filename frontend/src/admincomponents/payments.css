@@ -308,6 +308,21 @@
                             display: none;
                         }
 
+                        .pay-category-booth {
+                            background: var(--color-purple-tertiary);
+                            color: var(--color-purple-primary);
+                        }
+
+                        .pay-category-seats {
+                            background: var(--color-green-tertiary);
+                            color: var(--color-green-primary);
+                        }
+
+                        .pay-category-payout {
+                            background: var(--color-red-tertiary);
+                            color: var(--color-red-primary);
+                        }
+
                         .pay-status-paid {
                             background: var(--color-green-tertiary);
                             color: var(--color-green-primary);

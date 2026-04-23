@@ -4,6 +4,7 @@ import "./payments.css";
 import Swal from "sweetalert2";
 import { showSuccessAlert, showErrorAlert, showApproveConfirmAlert } from "./utils/sweetAlert";
 import PaymentRejectionModal from "./Modal/PaymentRejectionModal";
+import TransactionMonitoring from "./transaction";
 import axios from "axios";
 import { useAuthContext } from "./hooks/useAuthContext";
 
@@ -89,13 +90,15 @@ const Payments = () => {
         ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`) 
         : 'Unknown Promoter';
         
+      const isBooth = !!res.boothCode;
       return {
-        id: index + 1,
+        id: isBooth ? `Booth-${res._id.toString().slice(-6).toUpperCase()}` : `Seats-${res._id.toString().slice(-6).toUpperCase()}`,
         resId: res._id,
         promoter: promoterName,
         event: res.event?.title || 'Unknown Event',
+        category: isBooth ? 'Booth' : 'Seats',
         amount: `$${res.amount?.total ? res.amount.total.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}`,
-        method: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
+        paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
         status: res.status,
         date: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A'
       };
@@ -116,6 +119,8 @@ const Payments = () => {
 
   if (activeTab === "payout-requests" && statusFilter !== "All Status") {
     filteredData = filteredData.filter(item => item.status.toLowerCase() === statusFilter.toLowerCase());
+  } else if (activeTab === "booth-reservations" && statusFilter !== "All") {
+    filteredData = filteredData.filter(item => item.category === statusFilter);
   }
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
@@ -135,8 +140,93 @@ const Payments = () => {
     setActiveTab(tab);
     setCurrentPage(1);
     setSearchQuery("");
-    setStatusFilter("All Status");
+    setStatusFilter(tab === "payout-requests" ? "All Status" : "All");
     setExpandedRow(null);
+  };
+
+  const getFilterOptions = () => {
+    if (activeTab === "payout-requests") {
+      return ["All Status", "Pending", "Processing", "Paid", "Rejected"];
+    } else if (activeTab === "booth-reservations") {
+      return ["All", "Booth", "Seats"];
+    } else if (activeTab === "transactions") {
+      return ["All", "Booth", "Seats", "Payout"];
+    }
+    return ["All"];
+  };
+
+  const getTransactionFilterValue = (label) => {
+    const mapping = {
+      "All": "all",
+      "Booth": "booth",
+      "Seats": "ticket",
+      "Payout": "payout"
+    };
+    return mapping[label] || "all";
+  };
+
+  const getTransactionList = () => {
+    const reservationTx = (reservations || []).map((res) => {
+      const name = res.user 
+        ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`) 
+        : 'Unknown User';
+        
+      const isBooth = !!res.boothCode;
+      return {
+        id: isBooth ? `Booth-${res._id.toString().slice(-6).toUpperCase()}` : `Seats-${res._id.toString().slice(-6).toUpperCase()}`,
+        user: name,
+        event: res.event?.title || 'Unknown Event',
+        category: isBooth ? 'Booth' : 'Seats',
+        amount: `$${res.amount?.total ? res.amount.total.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}`,
+        status: res.status === 'confirmed' ? 'completed' : res.status,
+        date: res.createdAt ? new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A',
+        filterType: res.boothCode ? 'booth' : 'ticket',
+        rawDate: res.createdAt ? new Date(res.createdAt) : new Date(0),
+        paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card'
+      };
+    });
+
+    const payoutTx = (payoutRequests || []).map((p) => ({
+      id: `Pay-${p.id.toString().padStart(3, '0')}`,
+      user: p.promoter,
+      event: "Platform Payout",
+      category: "Payout",
+      amount: p.amount,
+      status: p.status,
+      date: p.requested,
+      filterType: "payout",
+      rawDate: new Date(p.requested),
+      paymentMethod: p.method
+    }));
+
+    const mockSeatTx = [
+      {
+        id: "Seats-772154",
+        user: "Emily Blunt",
+        event: "TechStart Summit 2026",
+        category: "Seats",
+        amount: "$299.00",
+        status: "completed",
+        date: "Sep 15, 2025",
+        filterType: "ticket",
+        rawDate: new Date("2025-09-15"),
+        paymentMethod: "Card"
+      },
+      {
+        id: "Seats-772155",
+        user: "Liam Anderson",
+        event: "Summer Music Festival",
+        category: "Seats",
+        amount: "$120.00",
+        status: "completed",
+        date: "Jul 5, 2025",
+        filterType: "ticket",
+        rawDate: new Date("2025-07-05"),
+        paymentMethod: "Card"
+      }
+    ];
+
+    return [...reservationTx, ...payoutTx, ...mockSeatTx].sort((a, b) => b.rawDate - a.rawDate);
   };
 
   const handleApprove = async (id, promoter, amount) => {
@@ -181,10 +271,17 @@ const Payments = () => {
   };
 
   const getStatusClass = (status) => {
-    if (status === "paid") return "button-label pay-status-paid";
+    if (status === "paid" || status === "confirmed") return "button-label pay-status-paid";
     if (status === "pending") return "button-label pay-status-pending";
     if (status === "processing") return "button-label pay-status-processing";
     if (status === "rejected") return "button-label pay-status-rejected";
+    return "button-label";
+  };
+
+  const getCategoryClass = (category) => {
+    if (category === "Booth") return "button-label pay-category-booth";
+    if (category === "Seats") return "button-label pay-category-seats";
+    if (category === "Payout" || category === "-") return "button-label pay-category-payout";
     return "button-label";
   };
 
@@ -228,7 +325,13 @@ const Payments = () => {
             className={`pay-tab ${activeTab === "booth-reservations" ? "active" : ""}`}
             onClick={() => handleTabChange("booth-reservations")}
           >
-            Booth Reservations
+            Reservations
+          </button>
+          <button
+            className={`pay-tab ${activeTab === "transactions" ? "active" : ""}`}
+            onClick={() => handleTabChange("transactions")}
+          >
+            Transactions
           </button>
         </div>
 
@@ -238,7 +341,11 @@ const Payments = () => {
               <Icon icon="mdi:magnify" />
               <input
                 type="text"
-                placeholder={activeTab === "payout-requests" ? "Search payouts..." : "Search payments..."}
+                placeholder={
+                  activeTab === "payout-requests" ? "Search payouts..." : 
+                  activeTab === "transactions" ? "Search transactions..." : 
+                  "Search payments..."
+                }
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -249,68 +356,68 @@ const Payments = () => {
             </div>
           </div>
 
-          {activeTab === "payout-requests" && (
-            <div className="pay-toolbar-right">
-              <div className="pay-filter-dropdown" ref={filterDropdownRef}>
-                <button
-                  className="pay-filter-dropdown-btn small-body-text"
-                  onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                >
-                  <span className="truncate-text">{statusFilter}</span>
-                  <Icon icon="mdi:chevron-down" className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""}`} />
-                </button>
-                {isFilterDropdownOpen && (
-                  <div className="pay-filter-dropdown-menu">
-                    {["All Status", "Pending", "Processing", "Paid", "Rejected"].map((option) => (
-                      <button
-                        key={option}
-                        className={`pay-filter-dropdown-item small-body-text ${statusFilter === option ? "active" : ""}`}
-                        onClick={() => {
-                          setStatusFilter(option);
-                          setCurrentPage(1);
-                          setIsFilterDropdownOpen(false);
-                        }}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+          <div className="pay-toolbar-right">
+            <div className="pay-filter-dropdown" ref={filterDropdownRef}>
+              <button
+                className="pay-filter-dropdown-btn small-body-text"
+                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+              >
+                <span className="truncate-text">{statusFilter}</span>
+                <Icon icon="mdi:chevron-down" className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""}`} />
+              </button>
+              {isFilterDropdownOpen && (
+                <div className="pay-filter-dropdown-menu">
+                  {getFilterOptions().map((option) => (
+                    <button
+                      key={option}
+                      className={`pay-filter-dropdown-item small-body-text ${statusFilter === option ? "active" : ""}`}
+                      onClick={() => {
+                        setStatusFilter(option);
+                        setCurrentPage(1);
+                        setIsFilterDropdownOpen(false);
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
-        <div className="table-wrapper">
-          {isLoading ? (
+        {isLoading ? (
+          <div className="table-wrapper">
             <table className="data-table">
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Promoter</th>
+                  <th>{activeTab === "transactions" ? "Name" : (activeTab === "payout-requests" ? "Promoter" : "User")}</th>
                   {activeTab === "booth-reservations" && <th>Event</th>}
+                  {(activeTab === "booth-reservations" || activeTab === "transactions") && <th>Category</th>}
                   <th>Amount</th>
-                  <th>Method</th>
+                  {activeTab !== "transactions" && <th>Method</th>}
                   <th>Status</th>
                   <th>{activeTab === "payout-requests" ? "Requested" : "Date"}</th>
-                  {activeTab === "payout-requests" && <th>Actions</th>}
+                  {(activeTab === "payout-requests" || activeTab === "transactions") && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {[...Array(itemsPerPage)].map((_, i) => (
                   <tr key={i}>
-                    <td><div className="skeleton skeleton-text" style={{ width: '40px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '60px' }} /></td>
                     <td><div className="skeleton skeleton-text" style={{ width: '120px' }} /></td>
                     {activeTab === "booth-reservations" && <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>}
+                    {(activeTab === "booth-reservations" || activeTab === "transactions") && <td><div className="skeleton skeleton-badge" style={{ width: '70px' }} /></td>}
                     <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
-                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
-                    <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
+                    {activeTab !== "transactions" && <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>}
+                    <td><div className="skeleton skeleton-badge" style={{ width: '70px' }} /></td>
                     <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
-                    {activeTab === "payout-requests" && (
+                    {(activeTab === "payout-requests" || activeTab === "transactions") && (
                       <td>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <div className="skeleton skeleton-rect" style={{ width: '60px', height: '32px' }} />
-                          <div className="skeleton skeleton-rect" style={{ width: '60px', height: '32px' }} />
+                          <div className="skeleton skeleton-rect" style={{ width: activeTab === "transactions" ? '32px' : '60px', height: '32px' }} />
+                          {activeTab === "payout-requests" && <div className="skeleton skeleton-rect" style={{ width: '60px', height: '32px' }} />}
                         </div>
                       </td>
                     )}
@@ -318,13 +425,23 @@ const Payments = () => {
                 ))}
               </tbody>
             </table>
-          ) : error ? (
-            <div className="empty-state">
-              <Icon icon="mdi:alert-circle-outline" width="48" style={{ color: 'var(--accent-red)' }} />
-              <h4>Error</h4>
-              <p className="small-body-text">{error}</p>
-            </div>
-          ) : paginatedData.length === 0 ? (
+          </div>
+        ) : activeTab === "transactions" ? (
+          <TransactionMonitoring 
+            isTab={true} 
+            externalSearchQuery={searchQuery}
+            externalFilter={getTransactionFilterValue(statusFilter)}
+            data={getTransactionList()}
+          />
+        ) : (
+          <div className="table-wrapper">
+            {error ? (
+              <div className="empty-state">
+                <Icon icon="mdi:alert-circle-outline" width="48" style={{ color: 'var(--accent-red)' }} />
+                <h4>Error</h4>
+                <p className="small-body-text">{error}</p>
+              </div>
+            ) : paginatedData.length === 0 ? (
             // Empty state outside table for mobile-friendly display
             <div className="empty-state">
               <Icon icon="mdi:magnify-close" width="48" />
@@ -355,11 +472,11 @@ const Payments = () => {
                           <div className="mobile-expand-icon" onClick={() => toggleRow(row.id)}>
                             <Icon icon={expandedRow === row.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                           </div>
-                          <span>#{row.id.toString().padStart(2, "0")}</span>
+                          <span>Pay-{row.id.toString().padStart(3, "0")}</span>
                         </td>
                         <td data-label="Promoter" className="regular-body-text name-td">{row.promoter}</td>
                         <td data-label="Amount" className="regular-body-text pay-amount">{row.amount}</td>
-                        <td data-label="Method" className="small-body-text">{row.method}</td>
+                        <td data-label="Method" className="small-body-text">{row.paymentMethod}</td>
                         <td data-label="Status">
                           <span className={getStatusClass(row.status)}>{row.status}</span>
                         </td>
@@ -393,8 +510,9 @@ const Payments = () => {
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>Promoter</th>
+                      <th>User</th>
                       <th>Event</th>
+                      <th>Category</th>
                       <th>Amount</th>
                       <th>Method</th>
                       <th>Status</th>
@@ -408,12 +526,15 @@ const Payments = () => {
                           <div className="mobile-expand-icon" onClick={() => toggleRow(row.id)}>
                             <Icon icon={expandedRow === row.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
                           </div>
-                          <span>#{row.id.toString().padStart(2, "0")}</span>
+                          <span>{row.id}</span>
                         </td>
                         <td data-label="Promoter" className="regular-body-text name-td">{row.promoter}</td>
                         <td data-label="Event" className="small-body-text">{row.event}</td>
+                        <td data-label="Category">
+                          <span className={getCategoryClass(row.category)}>{row.category}</span>
+                        </td>
                         <td data-label="Amount" className="pay-amount regular-body-text">{row.amount}</td>
-                        <td data-label="Method" className="small-body-text">{row.method}</td>
+                        <td data-label="Method" className="small-body-text">{row.paymentMethod}</td>
                         <td data-label="Status">
                           <span className={getStatusClass(row.status)}>{row.status}</span>
                         </td>
@@ -426,8 +547,9 @@ const Payments = () => {
             </table>
           )}
         </div>
+        )}
 
-        {totalPages > 1 && (
+        {activeTab !== "transactions" && totalPages > 1 && (
           <div className="pagination">
             <button
               className="pagination-btn"

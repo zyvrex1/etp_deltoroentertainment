@@ -92,7 +92,6 @@ function App() {
           <Route path="event-approval" element={<AdminEventApproval />} />
           <Route path="users" element={<AdminUserManagement />} />
           <Route path="events" element={<AdminEventManagement />} />
-          <Route path="transactions" element={<AdminTransaction />} />
           <Route path="payments" element={<AdminPayments />} />
           <Route path="booths-tickets" element={<AdminBoothandTicket />} />
           <Route path="analytics" element={<AdminReportsandAnalytics />} />
