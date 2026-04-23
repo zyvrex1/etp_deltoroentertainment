@@ -230,23 +230,34 @@ export default function Dashboard() {
                     type: `Top ${index + 1}`
                 }));
 
-            // Calculate Top Promoters based on events created
+            // Calculate Top Promoters based on total sales (tickets + booths)
             const promoterMap = {};
             events.forEach(e => {
-                if (!e.createdBy) return;
+                // Only include events created by accounts with the 'promoter' role
+                if (!e.createdBy || e.createdBy.role !== 'promoter') return;
+                
                 const promoterId = e.createdBy._id;
+                
+                // Aggregate tickets sold across all price levels
+                const ticketsSold = (e.priceLevels || []).reduce((sum, pl) => sum + (pl.quantitySold || 0), 0);
+                
+                // Aggregate booths sold (both 'sold' and 'reserved' count as sales for ranking)
+                const boothsSold = (e.booths || []).filter(b => b.status === 'sold' || b.status === 'reserved').length;
+                
+                const totalSales = ticketsSold + boothsSold;
+
                 if (!promoterMap[promoterId]) {
                     promoterMap[promoterId] = {
                         name: `${e.createdBy.firstName} ${e.createdBy.lastName}`,
                         email: e.createdBy.email,
-                        eventCount: 0
+                        totalSales: 0
                     };
                 }
-                promoterMap[promoterId].eventCount += 1;
+                promoterMap[promoterId].totalSales += totalSales;
             });
 
             const dynamicTopPromotersData = Object.values(promoterMap)
-                .sort((a, b) => b.eventCount - a.eventCount)
+                .sort((a, b) => b.totalSales - a.totalSales)
                 .slice(0, 5)
                 .map((p, index) => ({
                     name: p.name,
