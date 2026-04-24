@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./EditEventModal.css";
-import { useAuthContext } from "../hooks/useAuthContext";
-import { useEventsContext } from "../hooks/useEventsContext";
+import { useAuthContext } from "../../hooks/useAuthContext";
+import { useEventsContext } from "../../hooks/useEventsContext";
 import {
   showSuccessAlert,
   showErrorAlert,
   showCreateConfirmAlert,
-} from "../utils/sweetAlert";
+} from "../../utils/sweetAlert";
 
 const EditEventModal = ({ isOpen, onClose, event }) => {
   const { user } = useAuthContext();

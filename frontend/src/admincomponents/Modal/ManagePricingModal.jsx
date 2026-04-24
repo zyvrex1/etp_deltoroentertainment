@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './ManagePricingModal.css';
-import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from '../utils/sweetAlert';
+import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from '../../utils/sweetAlert';
 
 const ManagePricingModal = ({ isOpen, onClose, type, onSave, quantities }) => {
     // Default data structure based on type

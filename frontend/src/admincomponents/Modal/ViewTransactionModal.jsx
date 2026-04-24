@@ -1,7 +1,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import './ViewTransactionModal.css';
-import { showRefundConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
+import { showRefundConfirmAlert, showSuccessAlert } from '../../utils/sweetAlert';
 
 const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
     if (!isOpen || !transaction) return null;

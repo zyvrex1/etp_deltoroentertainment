@@ -7,8 +7,8 @@ import PromoterAccessManagement from "./promoteraccessmanagement.jsx";
 import PromoterBoothLayout from "./promoterboothlayout.jsx";
 import PromoterScan from "./promoterscan.jsx";
 
-import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
-import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import { useEventsContext } from "../hooks/useEventsContext";
+import { useAuthContext } from "../hooks/useAuthContext";
 import eventsService from "../services/eventsService";
 
 const PromoterEventManagement = () => {

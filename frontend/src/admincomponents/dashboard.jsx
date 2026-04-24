@@ -8,13 +8,13 @@ import ViewNotif from './Modal/ViewNotif';
 import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, AreaChart, Area, LineChart, Line, PieChart, Pie } from 'recharts';
-import { useAuthContext } from './hooks/useAuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import adminService from '../services/adminService';
 import concernService from '../services/concernService';
 import reservationService from '../services/reservationService';
 
-import { useNotificationsContext } from './hooks/useNotificationsContext';
+import { useNotificationsContext } from '../hooks/useNotificationsContext';
 import { io } from 'socket.io-client';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -516,7 +516,7 @@ export default function Dashboard() {
                             <p className="regular-body-text left-aligned">Total Users this {stats.currentMonthName}</p>
                             <h3>{stats.loading ? "..." : stats.newUsersThisMonth}</h3>
                             <p className="smaller-body-text left-aligned">
-                                {stats.loading ? "Calculating..." : `The total created accounts is ${stats.totalUsers} (this ${stats.currentMonthName})`}
+                                {stats.loading ? "Calculating..." : `The total created accounts is ${stats.totalUsers} `}
                             </p>
                         </div>
                     </div>

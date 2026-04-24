@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './audit.css';
-import DateRangePicker from './DateRangePicker';
+import DateRangePicker from '../utils/DateRangePicker';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from './utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
 
 const AuditLogs = () => {
     const [dateRange, setDateRange] = useState(() => ({

@@ -50,6 +50,11 @@ const concernSchema = new Schema({
     enum: ['open', 'in-progress', 'resolved', 'closed'],
     default: 'open'
   },
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'medium'
+  },
   description: {
     type: String,
     required: true

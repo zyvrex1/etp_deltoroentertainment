@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./PromoterCreateEventModal.css";
-import { useAuthContext } from "../../admincomponents/hooks/useAuthContext";
-import { useEventsContext } from "../../admincomponents/hooks/useEventsContext";
+import { useAuthContext } from "../../hooks/useAuthContext";
+import { useEventsContext } from "../../hooks/useEventsContext";
 import eventsService from "../../services/eventsService";
 
 import {
@@ -10,7 +10,7 @@ import {
   showCancelConfirmAlert,
   showErrorAlert,
   showCreateConfirmAlert,
-} from "../../admincomponents/utils/sweetAlert";
+} from "../../utils/sweetAlert";
 
 const PromoterCreateEventModal = ({ isOpen, onClose }) => {
   const { user } = useAuthContext();

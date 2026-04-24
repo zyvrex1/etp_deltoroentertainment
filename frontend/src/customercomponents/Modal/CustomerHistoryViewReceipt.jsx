@@ -1,7 +1,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../../admincomponents/utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../../utils/pdfExport';
 import './CustomerHistoryViewReceipt.css';
 
 const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {

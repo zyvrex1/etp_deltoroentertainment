@@ -17,7 +17,7 @@ import {
   MdClose,
 } from "react-icons/md";
 import "./sidebar.css";
-import { useAuthContext } from "./hooks/useAuthContext";
+import { useAuthContext } from "../hooks/useAuthContext";
 import concernService from "../services/concernService";
 import eventsService from "../services/eventsService";
 import { io } from "socket.io-client";

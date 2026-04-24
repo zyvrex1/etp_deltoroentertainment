@@ -4,8 +4,8 @@ import "./promoterpayouts.css";
 import { useNavigate } from "react-router-dom";
 import {
   showSuccessAlert,
-} from "../admincomponents/utils/sweetAlert";
-import DateRangePicker from "../admincomponents/DateRangePicker/DateRangePicker.jsx";
+} from "../utils/sweetAlert";
+import DateRangePicker from "../utils/DateRangePicker/DateRangePicker.jsx";
 import jsPDF from "jspdf";
 import {
   loadLogo,
@@ -15,7 +15,7 @@ import {
   removeExportToast,
   drawTable,
   finalizeReport,
-} from "../admincomponents/utils/pdfExport";
+} from "../utils/pdfExport";
 import PromoterViewPayout from "./PromoterModal/PromoterViewPayout.jsx";
 
 const PromoterPayouts = () => {

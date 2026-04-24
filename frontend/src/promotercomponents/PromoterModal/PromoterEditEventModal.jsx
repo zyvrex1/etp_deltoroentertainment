@@ -8,9 +8,9 @@ import {
     showCancelConfirmAlert,
     showErrorAlert,
     showConfirmAlert,
-} from "../../admincomponents/utils/sweetAlert";
-import { useAuthContext } from "../../admincomponents/hooks/useAuthContext";
-import { useEventsContext } from "../../admincomponents/hooks/useEventsContext";
+} from "../../utils/sweetAlert";
+import { useAuthContext } from "../../hooks/useAuthContext";
+import { useEventsContext } from "../../hooks/useEventsContext";
 
 const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
     const { user } = useAuthContext();

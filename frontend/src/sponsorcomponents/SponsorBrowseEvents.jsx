@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
-import DateRangePicker from '../admincomponents/DateRangePicker';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import DateRangePicker from '../utils/DateRangePicker';
+import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import './SponsorBrowseEvents.css';
 

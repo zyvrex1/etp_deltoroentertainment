@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import { useSignup } from "../admincomponents/hooks/useSignup";
+import { useSignup } from "../hooks/useSignup";
 import policyService from "../services/policyService";
 import AuthPolicyModal from "./AuthPolicyModal";
 
-import { showSuccessAlert, showErrorAlert } from "../admincomponents/utils/sweetAlert";
+import { showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 
 const ROLES = {
   customer: {

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import { useLogin } from "../admincomponents/hooks/useLogin";
-import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
-import { showSuccessAlert, showErrorAlert } from "../admincomponents/utils/sweetAlert";
+import { useLogin } from "../hooks/useLogin";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 import { forgotPassword } from "../services/authService";
 
 const ROLES = {

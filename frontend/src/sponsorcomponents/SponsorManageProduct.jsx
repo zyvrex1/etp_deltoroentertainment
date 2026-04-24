@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
-import { showDeleteConfirmAlert, showSuccessAlert, showErrorAlert } from "../admincomponents/utils/sweetAlert";
+import { showDeleteConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 import "./SponsorManageProduct.css";
 import SponsorAddProduct from "./SponsorModal/SponsorAddProduct";
 import SponsorEditProduct from "./SponsorModal/SponsorEditProduct";
 import merchandiseService from "../services/merchandiseService";
-import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import { useAuthContext } from "../hooks/useAuthContext";
 
 const initialProducts = [
   { id: 1, image: "/assets/eventbg.jpg", category: "Food", name: "Gourmet Burger", price: "$12.99", description: "Premium beef patty with artisan cheese and house sauce.", stock: 40, stockStatus: "Medium Stock", active: true },

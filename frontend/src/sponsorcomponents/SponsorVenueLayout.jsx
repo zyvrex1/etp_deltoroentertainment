@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Stage, Layer, Rect, Circle, Text, Group, Line, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import './SponsorVenueLayout.css';
 

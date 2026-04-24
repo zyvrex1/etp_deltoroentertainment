@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
-import { showDeleteConfirmAlert, showSuccessAlert, showCheckoutConfirmAlert, showQuestionAlert } from '../admincomponents/utils/sweetAlert';
+import { showDeleteConfirmAlert, showSuccessAlert, showCheckoutConfirmAlert, showQuestionAlert } from '../utils/sweetAlert';
 import './CustomerCart.css';
 
 export default function CustomerCart() {

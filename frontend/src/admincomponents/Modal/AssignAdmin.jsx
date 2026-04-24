@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./AssignAdmin.css";
-import { useAuthContext } from "../hooks/useAuthContext";
+import { useAuthContext } from "../../hooks/useAuthContext";
 
 const AssignAdmin = ({ isOpen, onClose, onAssign, ticket }) => {
   const { user: currentUser } = useAuthContext();

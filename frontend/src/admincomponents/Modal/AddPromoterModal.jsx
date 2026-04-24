@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './AddPromoterModal.css';
-import { showSuccessAlert, showConfirmAlert } from '../utils/sweetAlert';
+import { showSuccessAlert, showConfirmAlert } from '../../utils/sweetAlert';
 
 const AddPromoterModal = ({ isOpen, onClose, event, allPromoters, user, onUpdate }) => {
     const [selectedNewPromoter, setSelectedNewPromoter] = useState('');

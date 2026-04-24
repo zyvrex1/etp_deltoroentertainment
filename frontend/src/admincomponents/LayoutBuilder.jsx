@@ -4,8 +4,8 @@ import { Stage, Layer, Circle, Text, Group, Rect, Line, Transformer } from "reac
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useEventsContext } from "../hooks/useEventsContext";
 import "./LayoutBuilder.css";
-import ManageCategoryModal from "../Modal/ManageCategoryModal";
-import priceLevelService from "../../services/priceLevelService";
+import ManageCategoryModal from "./Modal/ManageCategoryModal";
+import priceLevelService from "../services/priceLevelService";
 
 import { showDeleteConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 
@@ -546,10 +546,24 @@ const LayoutBuilder = ({ selectedEvent }) => {
                           <span className={`value status-${item.status || 'available'}`}>{item.status?.toUpperCase() || 'AVAILABLE'}</span>
                         </div>
                         {item.reservedBy && (
-                          <div className="summary-item">
-                            <span className="label">Buyer</span>
-                            <span className="value-semi" style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
-                          </div>
+                          <>
+                            <div className="summary-item">
+                              <span className="label">Buyer</span>
+                              <span className="value-semi" style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
+                            </div>
+                            {item.reservedByEmail && (
+                              <div className="summary-item">
+                                <span className="label">Email</span>
+                                <span className="value" style={{ fontSize: '11px' }}>{item.reservedByEmail}</span>
+                              </div>
+                            )}
+                            {item.reservedByPO && (
+                              <div className="summary-item">
+                                <span className="label">PO Number</span>
+                                <span className="value">{item.reservedByPO}</span>
+                              </div>
+                            )}
+                          </>
                         )}
                         <div className="summary-item">
                           <span className="label">Category</span>

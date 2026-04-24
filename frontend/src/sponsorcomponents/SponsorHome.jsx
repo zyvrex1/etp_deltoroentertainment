@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { NavLink } from 'react-router-dom';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import announcementService from '../services/announcementService';
 import policyService from '../services/policyService';

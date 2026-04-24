@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
-import DateRangePicker from '../admincomponents/DateRangePicker';
+import DateRangePicker from '../utils/DateRangePicker';
 import './CustomerBrowseEvent.css';
 
 const CustomerBrowseEvent = () => {

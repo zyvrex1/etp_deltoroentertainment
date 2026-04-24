@@ -17,6 +17,7 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
 
   const [productData, setProductData] = useState(initialData);
   const [imageDragActive, setImageDragActive] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -79,15 +80,28 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
     setProductData({ ...productData, image: null, fileName: "", fileSize: 0 });
   };
 
-  const handleAdd = () => {
-    const cleanData = {
-      ...productData,
-      price: Number(productData.price) || 0,
-      stock: Number(productData.stock) || 0
+  const handleAdd = async () => {
+    if (!productData.name || !productData.price || !productData.stock) {
+      // Import missing alert if needed, but SponsorManageProduct usually handles errors.
+      // However, we want immediate feedback before calling onAdd.
+      alert("Please fill in all required fields (Name, Price, and Stock).");
+      return; 
     }
-    onAdd(cleanData);
-    setProductData(initialData);
-    onClose();
+
+    setIsSubmitting(true);
+    try {
+      const cleanData = {
+        ...productData,
+        price: Number(productData.price) || 0,
+        stock: Number(productData.stock) || 0
+      }
+      await onAdd(cleanData);
+      // Parent handles closing if success
+    } catch (error) {
+      // Error handled by parent
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -218,8 +232,14 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
           <button className="sap-cancel-btn" onClick={onClose}>
             Cancel
           </button>
-          <button className="sap-submit-btn" onClick={handleAdd}>
-            Add Product
+          <button className="sap-submit-btn" onClick={handleAdd} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Icon icon="mdi:loading" className="sap-spin" /> Adding...
+              </>
+            ) : (
+              "Add Product"
+            )}
           </button>
         </div>
       </div>

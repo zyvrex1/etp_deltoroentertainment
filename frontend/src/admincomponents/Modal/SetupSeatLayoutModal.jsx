@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./SetupSeatLayoutModal.css";
-import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from "../utils/sweetAlert";
-import { useDragScroll } from "../utils/useDragScroll";
+import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from "../../utils/sweetAlert";
+import { useDragScroll } from "../../utils/useDragScroll";
 
 const BOOTH_TYPES = [
   { value: "vip", label: "VIP" },

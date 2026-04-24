@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './ManagePolicyModal.css';
-import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from '../utils/sweetAlert';
+import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from '../../utils/sweetAlert';
 
 const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
     const getCurrentDate = () => {

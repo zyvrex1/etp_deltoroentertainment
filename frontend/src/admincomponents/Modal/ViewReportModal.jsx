@@ -2,7 +2,7 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import './ViewReportModal.css';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../../utils/pdfExport';
 
 const ViewReportModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./promotersettings.css";
 import PromoterPayoutMethodModal from "./PromoterModal/PromoterPayoutMethodModal.jsx";
-import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../admincomponents/utils/sweetAlert";
-import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
+import { useAuthContext } from "../hooks/useAuthContext";
 import * as authService from "../services/authService";
 
 const PromoterSettings = () => {

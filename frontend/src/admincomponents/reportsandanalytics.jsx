@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./reportsandanalytics.css";
 import { Icon } from "@iconify/react";
 import jsPDF from "jspdf";
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "./utils/pdfExport";
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "../utils/pdfExport";
 import {
     XAxis,
     YAxis,
@@ -15,7 +15,7 @@ import {
     AreaChart,
     Area
 } from "recharts";
-import DateRangePicker from "./DateRangePicker";
+import DateRangePicker from "../utils/DateRangePicker";
 
 export default function ReportsAnalytics() {
     const [dateRange, setDateRange] = useState(() => {

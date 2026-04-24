@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
-import { showConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
+import { showConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
 import './PromoterPayoutBilling.css';
 
 const PromoterPayoutBilling = () => {

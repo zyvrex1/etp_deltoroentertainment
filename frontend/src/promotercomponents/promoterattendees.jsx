@@ -9,7 +9,7 @@ import {
   removeExportToast,
   drawTable,
   finalizeReport,
-} from "../admincomponents/utils/pdfExport";
+} from "../utils/pdfExport";
 import "./promoterattendees.css";
 
 const PromoterAttendees = () => {

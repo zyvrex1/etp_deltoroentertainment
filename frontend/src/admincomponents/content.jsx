@@ -10,11 +10,11 @@ import CreateAnnouncementModal from "./Modal/CreateAnnouncementModal";
 import EditAnnouncementModal from "./Modal/EditAnnouncementModal";
 import CreatePolicyModal from "./Modal/CreatePolicyModal";
 import EditPolicyModal from "./Modal/EditPolicyModal";
-import { showDeleteConfirmAlert, showSuccessAlert } from "./utils/sweetAlert";
+import { showDeleteConfirmAlert, showSuccessAlert } from "../utils/sweetAlert";
 import announcementService from "../services/announcementService";
 import policyService from "../services/policyService";
-import { useAuthContext } from "./hooks/useAuthContext";
-import { loadLogo, addReportHeader, showExportToast, removeExportToast, drawLongText, finalizeReport } from "./utils/pdfExport";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { loadLogo, addReportHeader, showExportToast, removeExportToast, drawLongText, finalizeReport } from "../utils/pdfExport";
 import jsPDF from 'jspdf';
 
 const ContentManager = () => {

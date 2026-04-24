@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
-import { showConfirmAlert } from '../utils/sweetAlert';
+import { showConfirmAlert } from '../../utils/sweetAlert';
 import './EventRejectionModal.css';
 
 const EventRejectionModal = ({ event, onClose, onConfirm }) => {

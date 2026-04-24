@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import merchandiseService from "../services/merchandiseService";
-import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import { useAuthContext } from "../hooks/useAuthContext";
 import "./SponsorStore.css";
 
 const sampleStoreEvents = [

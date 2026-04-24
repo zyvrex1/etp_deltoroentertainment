@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { showSendMessageConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
+import { showSendMessageConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
 import './CustomerSupport.css';
 
 export default function CustomerSupport() {

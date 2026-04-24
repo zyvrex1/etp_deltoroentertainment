@@ -11,7 +11,7 @@ import {
 } from 'react-konva';
 import useImage from 'use-image';
 import { Icon } from '@iconify/react';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import './promoterboothlayout.css';
 
 const BackgroundImage = ({ item, onClick }) => {

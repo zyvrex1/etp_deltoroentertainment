@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { showErrorAlert, showQuestionAlert, showSuccessAlert } from '../../admincomponents/utils/sweetAlert';
+import { showErrorAlert, showQuestionAlert, showSuccessAlert } from '../../utils/sweetAlert';
 import './CustomerRequestRefund.css';
 
 const CustomerRequestRefund = ({ show, onClose, ticketData }) => {

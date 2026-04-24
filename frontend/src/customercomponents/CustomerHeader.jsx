@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { showConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { showConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
+import { useAuthContext } from '../hooks/useAuthContext';
 import './CustomerHeader.css';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
-import { useLogout } from '../admincomponents/hooks/useLogout';
+import { useLogout } from '../hooks/useLogout';
 
 export default function CustomerHeader() {
     const { user: authUser } = useAuthContext();
@@ -73,7 +74,13 @@ export default function CustomerHeader() {
                         <button className="customer-profile-btn" onClick={toggleDropdown}>
                             <div className="customer-avatar">
                                 {authUser.avatar ? (
-                                    <img src={authUser.avatar} alt="Profile" className="customer-avatar-img" />
+                                    <img 
+                                        src={authUser.avatar.startsWith('http') || authUser.avatar.startsWith('data:') 
+                                            ? authUser.avatar 
+                                            : `${BACKEND_URL}${authUser.avatar}`} 
+                                        alt="Profile" 
+                                        className="customer-avatar-img" 
+                                    />
                                 ) : (
                                     getInitials(authUser.firstName, authUser.lastName)
                                 )}

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import jsPDF from "jspdf";
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "../admincomponents/utils/pdfExport";
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "../utils/pdfExport";
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, Legend } from 'recharts';
 import merchandiseService from "../services/merchandiseService";
-import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import { useAuthContext } from "../hooks/useAuthContext";
 import "./SponsorProductAnalytics.css";
 
 const revenueData = [

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
-import { showConfirmAlert, showSuccessAlert } from '../../admincomponents/utils/sweetAlert';
+import { showConfirmAlert, showSuccessAlert } from '../../utils/sweetAlert';
 import './PromoterPayoutMethodModal.css';
 
 const PromoterPayoutMethodModal = ({ isOpen, onClose }) => {

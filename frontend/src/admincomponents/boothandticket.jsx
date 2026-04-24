@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@iconify/react";
 
-import BoothMap from "./components/BoothMap";
-import SeatMap from "./components/SeatMap";
-import LiveScanning from "./components/LiveScanning";
-import LayoutBuilder from "./components/LayoutBuilder";
-import EventSelection from "./components/EventSelection";
+import BoothMap from "./BoothMap";
+import SeatMap from "./SeatMap";
+import LiveScanning from "./LiveScanning";
+import LayoutBuilder from "./LayoutBuilder";
+import EventSelection from "./EventSelection";
 
 import "./boothandticket.css";
 
@@ -15,7 +15,7 @@ import ManagePricingModal from "./Modal/ManagePricingModal";
 import SetupBoothLayoutModal from "./Modal/SetupBoothLayoutModal";
 import SetupSeatLayoutModal from "./Modal/SetupSeatLayoutModal";
 import EditEventModal from "./Modal/EditEventModal";
-import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
+import { useEventsContext } from "../hooks/useEventsContext";
 
 const BoothandTicket = () => {
   const { events } = useEventsContext();

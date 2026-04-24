@@ -5,8 +5,8 @@ import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.j
 import PromoterEditEventModal from "./PromoterModal/PromoterEditEventModal.jsx";
 import PromoterViewEvent from "./PromoterModal/PromoterViewEvent.jsx";
 import { NavLink } from "react-router-dom";
-import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
-import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import { useEventsContext } from "../hooks/useEventsContext";
+import { useAuthContext } from "../hooks/useAuthContext";
 import eventsService from "../services/eventsService";
 
 const PromoterEvents = () => {

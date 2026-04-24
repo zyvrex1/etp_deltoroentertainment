@@ -12,7 +12,17 @@ const createUser = async (req, res) => {
     const { firstName, lastName, email, role, phone, companyName, industry } = req.body;
 
     if (!firstName || !lastName || !email || !role) {
-      return res.status(400).json({ error: 'All fields are required' });
+      return res.status(400).json({ error: 'First name, last name, email, and role are required' });
+    }
+
+    const lowerRole = role.toLowerCase();
+    
+    // Role-specific validation
+    if (['promoter', 'sponsor', 'customer'].includes(lowerRole) && !phone) {
+      return res.status(400).json({ error: 'Phone number is required for this role' });
+    }
+    if (['promoter', 'sponsor'].includes(lowerRole) && (!companyName || !industry)) {
+      return res.status(400).json({ error: 'Company name and industry are required for this role' });
     }
 
     // Enforce role boundaries
@@ -40,8 +50,6 @@ const createUser = async (req, res) => {
     });
 
     // ✅ 2. Create Role-Specific Profile
-    const lowerRole = role.toLowerCase();
-
     if (lowerRole === 'promoter') {
       await Promoter.create({
         userId: newUser._id,
@@ -125,60 +133,56 @@ const getAllUsers = async (req, res) => {
   try {
     const isRequesterAdmin = req.user.role === 'admin';
 
-    // Fetch all role documents
+    // 1. Fetch all users based on role boundaries
+    const adminFilter = isRequesterAdmin 
+      ? { role: { $ne: 'superadmin' } } 
+      : {}; // Superadmin can see everyone
+    
+    const users = await User.find(adminFilter)
+      .select('firstName lastName email role lastLogin createdAt updatedAt avatar')
+      .lean();
+
+    // 2. Fetch all profile data
     const [customers, promoters, sponsors] = await Promise.all([
-      Customer.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt avatar'),
-      Promoter.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt avatar'),
-      Sponsor.find().populate('userId', 'firstName lastName email role lastLogin createdAt updatedAt avatar')
+      Customer.find().lean(),
+      Promoter.find().lean(),
+      Sponsor.find().lean()
     ]);
 
-    // Fetch admins (excluding superadmins if requester is admin)
-    const adminFilter = isRequesterAdmin ? { role: 'admin' } : { role: { $in: ['admin', 'superadmin'] } };
-    const admins = await User.find(adminFilter).select('firstName lastName email role lastLogin createdAt updatedAt avatar');
+    // 3. Create maps for quick lookup to avoid O(n^2) merging
+    const profileMap = {};
+    
+    customers.forEach(c => {
+      profileMap[c.userId.toString()] = { 
+        type: 'customer', 
+        details: { phone: c.phone, ticketsPurchased: c.ticketsPurchased, totalSpent: c.totalSpent } 
+      };
+    });
+    
+    promoters.forEach(p => {
+      profileMap[p.userId.toString()] = { 
+        type: 'promoter', 
+        details: { phone: p.phone, companyName: p.companyName, industry: p.industry, numberOfEvents: p.numberOfEvents } 
+      };
+    });
+    
+    sponsors.forEach(s => {
+      profileMap[s.userId.toString()] = { 
+        type: 'sponsor', 
+        details: { phone: s.phone, companyName: s.companyName, industry: s.industry } 
+      };
+    });
 
-    // Helper to map and filter role-based users
-    const mapRoleUser = (docs, roleType) => {
-      return docs
-        .filter(doc => doc.userId) // Ensure userId exists and was populated
-        .filter(doc => !isRequesterAdmin || doc.userId.role !== 'superadmin') // Respect admin boundary
-        .map(doc => ({
-          _id: doc.userId._id,
-          firstName: doc.userId.firstName,
-          lastName: doc.userId.lastName,
-          email: doc.userId.email,
-          role: doc.userId.role,
-          avatar: doc.userId.avatar,
-          lastLogin: doc.userId.lastLogin,
-          createdAt: doc.userId.createdAt,
-          updatedAt: doc.userId.updatedAt,
-          roleDetails: roleType === 'customer' 
-            ? { phone: doc.phone, ticketsPurchased: doc.ticketsPurchased, totalSpent: doc.totalSpent }
-            : roleType === 'promoter'
-            ? { phone: doc.phone, companyName: doc.companyName, industry: doc.industry, numberOfEvents: doc.numberOfEvents }
-            : { phone: doc.phone, companyName: doc.companyName, industry: doc.industry },
-          roleType
-        }));
-    };
-
-    // Merge into one array
-    const allUsers = [
-      ...mapRoleUser(customers, 'customer'),
-      ...mapRoleUser(promoters, 'promoter'),
-      ...mapRoleUser(sponsors, 'sponsor'),
-      ...admins.map(a => ({
-        _id: a._id,
-        firstName: a.firstName,
-        lastName: a.lastName,
-        email: a.email,
-        role: a.role,
-        avatar: a.avatar,
-        lastLogin: a.lastLogin,
-        createdAt: a.createdAt,
-        updatedAt: a.updatedAt,
-        roleDetails: {},
-        roleType: 'admin'
-      }))
-    ];
+    // 4. Merge data into a unique user list
+    const allUsers = users.map(u => {
+      const profile = profileMap[u._id.toString()];
+      return {
+        ...u,
+        roleDetails: profile ? profile.details : {},
+        // If they have a profile, use that type, otherwise use their base role
+        roleType: profile ? profile.type : (['admin', 'superadmin'].includes(u.role) ? 'admin' : 'unknown')
+      };
+    });
 
     res.status(200).json(allUsers);
   } catch (err) {

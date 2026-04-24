@@ -7,14 +7,14 @@ import EventRejectionModal from "./Modal/EventRejectionModal";
 import EventCancellationModal from "./Modal/EventCancellationModal";
 import AddPromoterModal from "./Modal/AddPromoterModal";
 
-import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
-import { useAuthContext } from "./hooks/useAuthContext";
+import { useEventsContext } from "../hooks/useEventsContext";
+import { useAuthContext } from "../hooks/useAuthContext";
 
 import {
   showDeleteConfirmAlert,
   showSuccessAlert,
   showConfirmAlert,
-} from "./utils/sweetAlert";
+} from "../utils/sweetAlert";
 
 const formatEventDate = (startDate, endDate) => {
   const start = new Date(startDate);

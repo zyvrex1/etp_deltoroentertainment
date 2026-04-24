@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./PromoterAddTicketTypeModal.css";
-import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from "../../admincomponents/utils/sweetAlert";
+import { showSuccessAlert, showCancelConfirmAlert, showCreateConfirmAlert } from "../../utils/sweetAlert";
 
 const PromoterAddTicketTypeModal = ({ isOpen, onClose, onAdd }) => {
     const [ticketName, setTicketName] = useState("");

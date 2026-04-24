@@ -5,7 +5,7 @@ import { Icon } from "@iconify/react";
 import announcementService from '../services/announcementService';
 import policyService from '../services/policyService';
 import eventsService from '../services/eventsService';
-import { showSuccessAlert } from '../admincomponents/utils/sweetAlert';
+import { showSuccessAlert } from '../utils/sweetAlert';
 import PromoterViewFullAnnouncement from '../promotercomponents/PromoterModal/PromoterViewFullAnnouncement';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "";

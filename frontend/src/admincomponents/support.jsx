@@ -3,10 +3,10 @@ import { Icon } from '@iconify/react';
 import './support.css';
 import ViewTicket from './ViewTicket';
 import AssignAdmin from './Modal/AssignAdmin';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import concernService from '../services/concernService';
 import { io } from 'socket.io-client';
-import { showSuccessAlert, showErrorAlert } from '../admincomponents/utils/sweetAlert';
+import { showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -189,6 +189,17 @@ const SupportDisputes = () => {
             showErrorAlert("Error", error.message);
         }
     };
+    
+    const handleUpdatePriority = async (id, newPriority) => {
+        if (!user?.token) return;
+        try {
+            await concernService.updatePriority(id, newPriority, user.token);
+            showSuccessAlert("Success", `Priority updated to ${newPriority}.`);
+            fetchTickets();
+        } catch (error) {
+            showErrorAlert("Error", error.message);
+        }
+    };
 
     if (selectedTicketId) {
         const ticket = tickets.find(t => t._id === selectedTicketId);
@@ -196,6 +207,7 @@ const SupportDisputes = () => {
             <ViewTicket
                 ticket={ticket}
                 onUpdateStatus={handleUpdateStatus}
+                onUpdatePriority={handleUpdatePriority}
                 onBack={handleBackToSupport}
             />
         );

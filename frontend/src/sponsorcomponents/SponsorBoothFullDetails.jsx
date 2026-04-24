@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
-import { showDeleteConfirmAlert, showSuccessAlert, showConfirmAlert } from '../admincomponents/utils/sweetAlert';
+import { useAuthContext } from '../hooks/useAuthContext';
+import { showDeleteConfirmAlert, showSuccessAlert, showConfirmAlert } from '../utils/sweetAlert';
 import SponsorAddExhibitor from './SponsorModal/SponsorAddExhibitor';
 import SponsorDocuments from './SponsorModal/SponsorDocuments';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, drawLongText, finalizeReport } from '../admincomponents/utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, drawLongText, finalizeReport } from '../utils/pdfExport';
 import './SponsorBoothFullDetails.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";

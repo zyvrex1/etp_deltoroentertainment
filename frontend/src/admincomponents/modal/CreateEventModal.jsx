@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import { useEventsContext } from "../hooks/useEventsContext";
+import { useEventsContext } from "../../hooks/useEventsContext";
 import "./CreateEventModal.css";
 import "./UploadMapModal.css";
 import {
@@ -8,8 +8,8 @@ import {
   showCancelConfirmAlert,
   showErrorAlert,
   showCreateConfirmAlert,
-} from "../utils/sweetAlert";
-import { useAuthContext } from "../hooks/useAuthContext";
+} from "../../utils/sweetAlert";
+import { useAuthContext } from "../../hooks/useAuthContext";
 
 const CreateEventModal = ({ isOpen, onClose }) => {
   const { dispatch } = useEventsContext();

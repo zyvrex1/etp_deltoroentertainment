@@ -302,10 +302,24 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                           <span className={`value status-${item.status}`}>{item.status?.toUpperCase()}</span>
                         </div>
                         {item.reservedBy && (
-                          <div className="summary-item">
-                            <span className="label">Buyer</span>
-                            <span className="value-bold" style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
-                          </div>
+                          <>
+                            <div className="summary-item">
+                              <span className="label">Buyer</span>
+                              <span className="value-bold" style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
+                            </div>
+                            {item.reservedByEmail && (
+                              <div className="summary-item">
+                                <span className="label">Email</span>
+                                <span className="value" style={{ fontSize: '11px' }}>{item.reservedByEmail}</span>
+                              </div>
+                            )}
+                            {item.reservedByPO && (
+                              <div className="summary-item">
+                                <span className="label">PO Number</span>
+                                <span className="value">{item.reservedByPO}</span>
+                              </div>
+                            )}
+                          </>
                         )}
                         {category && (
                           <>

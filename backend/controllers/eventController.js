@@ -1138,6 +1138,8 @@ const reserveBooth = async (req, res) => {
     const buyerName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
     event.booths[boothIndex].status = "sold";
     event.booths[boothIndex].reservedBy = buyerName;
+    event.booths[boothIndex].reservedByEmail = req.user.email || "";
+    event.booths[boothIndex].reservedByPO = poNumber || "";
 
     // Also update layoutData if it exists
     if (event.layoutData && event.layoutData.items) {
@@ -1145,6 +1147,8 @@ const reserveBooth = async (req, res) => {
       if (layoutItemIndex !== -1) {
         event.layoutData.items[layoutItemIndex].status = "sold";
         event.layoutData.items[layoutItemIndex].reservedBy = buyerName;
+        event.layoutData.items[layoutItemIndex].reservedByEmail = req.user.email || "";
+        event.layoutData.items[layoutItemIndex].reservedByPO = poNumber || "";
         event.markModified('layoutData');
       }
     }
@@ -1200,8 +1204,8 @@ const syncBoothStatus = async (req, res) => {
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ error: "No such event" });
 
-    // 1. Get all active reservations for this event
-    const reservations = await Reservation.find({ event: id });
+    // 1. Get all active reservations for this event and populate user details
+    const reservations = await Reservation.find({ event: id }).populate('user', 'firstName lastName companyName');
     const reservedBoothIds = reservations.map(r => r.boothId.toString());
     const reservedBoothCodes = reservations.map(r => r.boothCode);
 
@@ -1211,16 +1215,30 @@ const syncBoothStatus = async (req, res) => {
     if (event.booths && event.booths.length > 0) {
       event.booths.forEach((booth, index) => {
         const idStr = (booth._id || "").toString();
-        const isReserved = reservedBoothIds.includes(idStr) ||
-          reservedBoothCodes.includes(booth.code) ||
-          reservedBoothCodes.includes(booth.label);
+        const res = reservations.find(r => 
+          r.boothId.toString() === idStr || 
+          r.boothCode === booth.code || 
+          r.boothCode === booth.label
+        );
 
-        if (booth.status === "sold" && !isReserved) {
+        const isReserved = !!res;
+        const buyerName = res && res.user ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`) : "";
+        const buyerEmail = res && res.user ? res.user.email : (res?.billingAddress?.email || "");
+        const buyerPO = res ? (res.poNumber || "") : "";
+
+        if (isReserved) {
+          if (booth.status !== "sold" || booth.reservedBy !== buyerName || booth.reservedByEmail !== buyerEmail) {
+            event.booths[index].status = "sold";
+            event.booths[index].reservedBy = buyerName;
+            event.booths[index].reservedByEmail = buyerEmail;
+            event.booths[index].reservedByPO = buyerPO;
+            changed = true;
+          }
+        } else if (booth.status === "sold") {
           event.booths[index].status = "available";
           event.booths[index].reservedBy = "";
-          changed = true;
-        } else if (booth.status === "available" && isReserved) {
-          event.booths[index].status = "sold";
+          event.booths[index].reservedByEmail = "";
+          event.booths[index].reservedByPO = "";
           changed = true;
         }
       });
@@ -1232,17 +1250,31 @@ const syncBoothStatus = async (req, res) => {
         const type = (item.type || "").toLowerCase();
         if (type === 'booth' || type === 'seat') {
           const idStr = (item._id || item.id || "").toString();
-          const isReserved = reservedBoothIds.includes(idStr) ||
-            reservedBoothCodes.includes(item.code) ||
-            reservedBoothCodes.includes(item.label);
+          const res = reservations.find(r => 
+            r.boothId.toString() === idStr || 
+            r.boothCode === item.code || 
+            r.boothCode === item.label
+          );
 
-          if (item.status === 'sold' && !isReserved) {
+          const isReserved = !!res;
+          const buyerName = res && res.user ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`) : "";
+          const buyerEmail = res && res.user ? res.user.email : (res?.billingAddress?.email || "");
+          const buyerPO = res ? (res.poNumber || "") : "";
+
+          if (isReserved) {
+            if (item.status !== 'sold' || item.reservedBy !== buyerName || item.reservedByEmail !== buyerEmail) {
+              event.layoutData.items[index].status = 'sold';
+              event.layoutData.items[index].reservedBy = buyerName;
+              event.layoutData.items[index].reservedByEmail = buyerEmail;
+              event.layoutData.items[index].reservedByPO = buyerPO;
+              changed = true;
+              event.markModified('layoutData');
+            }
+          } else if (item.status === 'sold') {
             event.layoutData.items[index].status = 'available';
             event.layoutData.items[index].reservedBy = '';
-            changed = true;
-            event.markModified('layoutData');
-          } else if ((item.status === 'available' || !item.status) && isReserved) {
-            event.layoutData.items[index].status = 'sold';
+            event.layoutData.items[index].reservedByEmail = '';
+            event.layoutData.items[index].reservedByPO = '';
             changed = true;
             event.markModified('layoutData');
           }

@@ -2,11 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { NavLink } from 'react-router-dom';
 import axios from 'axios';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import SponsorViewFullHistory from './SponsorModal/SponsorViewFullHistory';
-import DateRangePicker from '../admincomponents/DateRangePicker';
+import DateRangePicker from '../utils/DateRangePicker';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../admincomponents/utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
 import './SponsorEventHistory.css';
 
 export default function SponsorEventHistory() {

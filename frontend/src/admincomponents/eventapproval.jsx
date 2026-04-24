@@ -4,8 +4,8 @@ import axios from 'axios';
 import './eventapproval.css';
 import EventReviewModal from './Modal/EventReviewModal';
 import EventRejectionModal from './Modal/EventRejectionModal';
-import { showConfirmAlert, showSuccessAlert, showErrorAlert } from './utils/sweetAlert';
-import { useAuthContext } from './hooks/useAuthContext';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
+import { useAuthContext } from '../hooks/useAuthContext';
 
 const EventApproval = () => {
     const { user } = useAuthContext();

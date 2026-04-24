@@ -16,6 +16,7 @@ const SponsorEditProduct = ({ isOpen, onClose, product, onSave }) => {
   });
 
   const [imageDragActive, setImageDragActive] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -87,15 +88,27 @@ const SponsorEditProduct = ({ isOpen, onClose, product, onSave }) => {
     setProductData({ ...productData, image: null, fileName: "", fileSize: 0 });
   };
 
-  const handleSave = () => {
-    const updatedProduct = {
-      ...product,
-      ...productData,
-      price: Number(productData.price) || 0,
-      stock: Number(productData.stock) || 0
-    };
-    onSave(updatedProduct);
-    onClose();
+  const handleSave = async () => {
+    if (!productData.name || !productData.price || !productData.stock) {
+      alert("Please fill in all required fields (Name, Price, and Stock).");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const updatedProduct = {
+        ...product,
+        ...productData,
+        price: Number(productData.price) || 0,
+        stock: Number(productData.stock) || 0
+      };
+      await onSave(updatedProduct);
+      // Parent handles closing
+    } catch (error) {
+      // Error handled by parent
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -226,8 +239,14 @@ const SponsorEditProduct = ({ isOpen, onClose, product, onSave }) => {
           <button className="sep-cancel-btn" onClick={onClose}>
             Cancel
           </button>
-          <button className="sep-submit-btn" onClick={handleSave}>
-            Save Changes
+          <button className="sep-submit-btn" onClick={handleSave} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Icon icon="mdi:loading" className="sap-spin" /> Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
           </button>
         </div>
       </div>

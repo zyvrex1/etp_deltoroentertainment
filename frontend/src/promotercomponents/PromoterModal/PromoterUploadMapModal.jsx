@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import './PromoterUploadMapModal.css';
-import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from '../../admincomponents/utils/sweetAlert';
+import { showConfirmAlert, showSuccessAlert, showCancelConfirmAlert } from '../../utils/sweetAlert';
 
 const PromoterUploadMapModal = ({ isOpen, onClose, onSave }) => {
     const [dragActive, setDragActive] = useState(false);

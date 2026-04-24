@@ -48,6 +48,8 @@ const seatSchema = new Schema({
     default: "available",
   },
   reservedBy: { type: String, default: "" },
+  reservedByEmail: { type: String, default: "" },
+  reservedByPO: { type: String, default: "" },
   // Changed to Mixed to allow "none" or Null without casting errors
   priceLevelId: { type: Schema.Types.Mixed, default: null },
   x: { type: Number, required: true },
@@ -114,6 +116,8 @@ const boothSchema = new mongoose.Schema({
     default: "available"
   },
   reservedBy: { type: String, default: "" },
+  reservedByEmail: { type: String, default: "" },
+  reservedByPO: { type: String, default: "" },
   x: Number,
   y: Number,
   width: { type: Number, default: 60 },

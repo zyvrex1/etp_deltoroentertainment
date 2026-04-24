@@ -98,7 +98,7 @@ const updateMerchandise = async (req, res) => {
 
     // 🔥 Check Ownership: Allow own creation or Admin/Superadmin
     const userRole = req.user.role.toLowerCase();
-    if (existingMerch.createdBy.toString() !== req.user._id && 
+    if (existingMerch.createdBy.toString() !== req.user._id.toString() && 
         userRole !== "admin" && userRole !== "superadmin") {
       return res.status(403).json({ error: "Access denied. You don't have permission to update this merchandise." });
     }
@@ -132,7 +132,7 @@ const deleteMerchandise = async (req, res) => {
 
     // 🔥 Check Ownership: Allow own creation or Admin/Superadmin
     const userRole = req.user.role.toLowerCase();
-    if (existingMerch.createdBy.toString() !== req.user._id && 
+    if (existingMerch.createdBy.toString() !== req.user._id.toString() && 
         userRole !== "admin" && userRole !== "superadmin") {
       return res.status(403).json({ error: "Access denied. You don't have permission to delete this merchandise." });
     }

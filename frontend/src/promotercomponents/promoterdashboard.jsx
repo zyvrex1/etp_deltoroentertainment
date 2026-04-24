@@ -4,8 +4,8 @@ import { Icon } from "@iconify/react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import "./promoterdashboard.css";
 import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.jsx";
-import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
-import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { useEventsContext } from "../hooks/useEventsContext";
 import eventsService from "../services/eventsService";
 
 export default function PromoterDashboard() {

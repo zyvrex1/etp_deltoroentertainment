@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import "./usermanagement.css";
 import CreateUserModal from "./Modal/CreateUserModal";
 import ViewUserModal from "./Modal/ViewUserModal";
 import EditUserModal from "./Modal/EditUserModal";
-import { useAuthContext } from "./hooks/useAuthContext";
+import { useAuthContext } from "../hooks/useAuthContext";
+import adminService from "../services/adminService";
 
 const UserManagement = () => {
   const { user } = useAuthContext();
@@ -21,6 +22,7 @@ const UserManagement = () => {
   const itemsPerPage = 7;
   const [expandedRow, setExpandedRow] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const topRef = useRef(null);
 
   const toggleRow = (id) => {
     setExpandedRow(expandedRow === id ? null : id);
@@ -31,18 +33,8 @@ const UserManagement = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/admin/users", {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-
-      const json = await response.json();
-
-      if (response.ok) {
-        setAllUsers(json);
-      }
+      const json = await adminService.getUsers(user.token);
+      setAllUsers(json);
     } catch (err) {
       console.error("Error fetching users:", err);
     } finally {
@@ -132,19 +124,22 @@ const UserManagement = () => {
 
   const getTableData = () => {
     // Filter out the logged-in user first
-    const usersExcludingCurrent = allUsers.filter(u => u._id !== user._id);
+    let usersExcludingCurrent = allUsers.filter(u => u._id !== user._id);
+
+    // Sort by createdAt descending (recently created first)
+    usersExcludingCurrent.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     switch (activeTab) {
       case "all-users":
         return usersExcludingCurrent;
       case "admins":
-        return usersExcludingCurrent.filter((u) => u.role === "admin");
+        return usersExcludingCurrent.filter((u) => u.roleType === "admin");
       case "customers":
-        return usersExcludingCurrent.filter((u) => u.role === "customer");
+        return usersExcludingCurrent.filter((u) => u.roleType === "customer");
       case "promoters":
-        return usersExcludingCurrent.filter((u) => u.role === "promoter");
+        return usersExcludingCurrent.filter((u) => u.roleType === "promoter");
       case "sponsors":
-        return usersExcludingCurrent.filter((u) => u.role === "sponsor");
+        return usersExcludingCurrent.filter((u) => u.roleType === "sponsor");
       default:
         return [];
     }
@@ -170,6 +165,10 @@ const UserManagement = () => {
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
+      setExpandedRow(null);
+      if (topRef.current) {
+        topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }
   };
 
@@ -485,7 +484,7 @@ const UserManagement = () => {
                       <div className="user-cell">
                         <Avatar person={promoter} />
                         <div>
-                          <h5 className="small-body-text">
+                          <h5 className="user-name">
                             {promoter.firstName} {promoter.lastName}
                           </h5>
                         </div>
@@ -591,7 +590,7 @@ const UserManagement = () => {
                       <div className="user-cell">
                         <Avatar person={sponsor} />
                         <div>
-                          <h5 className="small-body-text">
+                          <h5 className="user-name">
                             {sponsor.firstName} {sponsor.lastName}
                           </h5>
                         </div>
@@ -636,7 +635,7 @@ const UserManagement = () => {
 
   return (
     <div className="user-management">
-      <div className="usermanagement-header">
+      <div className="usermanagement-header" ref={topRef}>
         <div>
           <h1>User Management</h1>
           <p>Manage all platform users in one place.</p>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './EditUserModal.css';
-import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert } from '../utils/sweetAlert';
+import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert } from '../../utils/sweetAlert';
 
 const EditUserModal = ({ isOpen, onClose, user, type }) => {
     if (!isOpen || !user) return null;

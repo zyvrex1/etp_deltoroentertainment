@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import { useLogout } from "./hooks/useLogout";
-import { useAuthContext } from "./hooks/useAuthContext";
-import { useNotificationsContext } from "./hooks/useNotificationsContext";
+import { useLogout } from "../hooks/useLogout";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { useNotificationsContext } from "../hooks/useNotificationsContext";
 import axios from "axios";
 import "./header.css";
-import { showLogoutConfirmAlert } from "./utils/sweetAlert";
+import { showLogoutConfirmAlert } from "../utils/sweetAlert";
 import ViewNotif from "./Modal/ViewNotif";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -224,7 +224,13 @@ const Header = ({ mobileExpanded, setMobileExpanded }) => {
             </div>
             <div className="profile-avatar">
               {authUser.avatar ? (
-                <img src={authUser.avatar} alt="Profile" className="header-avatar-img" />
+                <img 
+                  src={authUser.avatar.startsWith('http') || authUser.avatar.startsWith('data:') 
+                    ? authUser.avatar 
+                    : `${BACKEND_URL}${authUser.avatar}`} 
+                  alt="Profile" 
+                  className="header-avatar-img" 
+                />
               ) : (
                 <>
                   <span className="avatar-initials">

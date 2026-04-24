@@ -6,8 +6,8 @@ import PromoterSales from "./promotersales.jsx";
 import PromoterAttendees from "./promoterattendees.jsx";
 import PromoterSponsors from "./promotersponsors.jsx";
 
-import { useEventsContext } from "../admincomponents/hooks/useEventsContext";
-import { useAuthContext } from "../admincomponents/hooks/useAuthContext";
+import { useEventsContext } from "../hooks/useEventsContext";
+import { useAuthContext } from "../hooks/useAuthContext";
 import eventsService from "../services/eventsService";
 
 const PromoterEventMonitoring = () => {

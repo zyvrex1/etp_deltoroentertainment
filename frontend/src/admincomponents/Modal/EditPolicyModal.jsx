@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert, showErrorAlert } from "../utils/sweetAlert";
+import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert, showErrorAlert } from "../../utils/sweetAlert";
 import './ManagePolicyModal.css';
 
 const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {

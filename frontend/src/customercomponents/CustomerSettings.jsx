@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
-import { showSuccessAlert, showConfirmAlert, showErrorAlert } from '../admincomponents/utils/sweetAlert';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { showSuccessAlert, showConfirmAlert, showErrorAlert } from '../utils/sweetAlert';
+import { useAuthContext } from '../hooks/useAuthContext';
 import * as authService from '../services/authService';
 import './CustomerSettings.css';
 import CustomerAddPaymentMethod from './Modal/CustomerAddPaymentMethod';
@@ -18,6 +18,7 @@ export default function CustomerSettings() {
         phone: user?.phone || "",
         avatar: user?.avatar || ""
     });
+    const [avatarFile, setAvatarFile] = useState(null);
 
     const tabs = [
         { id: 'personalInfo', label: 'Personal Info', icon: 'mdi:account-outline' },
@@ -32,6 +33,7 @@ export default function CustomerSettings() {
                 return showErrorAlert("File Too Large", "Please upload an image smaller than 2MB.");
             }
             
+            setAvatarFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setProfile({ ...profile, avatar: reader.result });
@@ -44,14 +46,24 @@ export default function CustomerSettings() {
         const result = await showConfirmAlert("Save Changes?", "Are you sure you want to update your profile?", "Yes, Save");
         if (result.isConfirmed) {
             try {
-                const response = await authService.updateProfile(profile, user.token);
+                const formData = new FormData();
+                formData.append("firstName", profile.firstName);
+                formData.append("lastName", profile.lastName);
+                formData.append("email", profile.email);
+                formData.append("phone", profile.phone);
+                if (avatarFile) {
+                    formData.append("avatar", avatarFile);
+                }
+
+                const response = await authService.updateProfile(formData, user.token);
                 
                 // Update context and storage
-                const updatedUser = { ...user, ...response.data.user };
+                const updatedUser = { ...user, ...response.data };
                 localStorage.setItem("user", JSON.stringify(updatedUser));
                 dispatch({ type: "LOGIN", payload: updatedUser });
 
                 await showSuccessAlert("Saved", "Your profile has been saved successfully.");
+                setAvatarFile(null);
             } catch (error) {
                 showErrorAlert("Update Failed", error.response?.data?.error || "Failed to update profile.");
             }

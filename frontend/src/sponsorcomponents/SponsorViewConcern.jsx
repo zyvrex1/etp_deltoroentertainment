@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { io } from 'socket.io-client';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import concernService from '../services/concernService';
-import { showErrorAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
+import { showErrorAlert, showSuccessAlert } from '../utils/sweetAlert';
 import './SponsorViewConcern.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -68,6 +68,7 @@ export default function SponsorViewConcern({ concern: initialConcern, onBack }) 
                 setConcern(prev => ({
                     ...prev,
                     status: data.status,
+                    priority: data.priority || prev.priority,
                     messages: [...prev.messages, maskedMessage]
                 }));
             }
@@ -175,6 +176,12 @@ export default function SponsorViewConcern({ concern: initialConcern, onBack }) 
                             <label className="svc-detail-label smaller-body-text text-secondary">CURRENT STATUS</label>
                             <span className={`button-label svc-status-pill ${originalRequest.status.toLowerCase().replace(' ', '-')}`}>
                                 {originalRequest.status}
+                            </span>
+                        </div>
+                        <div className="svc-detail-group">
+                            <label className="svc-detail-label smaller-body-text text-secondary">PRIORITY</label>
+                            <span className={`button-label svc-priority-pill ${concern.priority?.toLowerCase() || 'medium'}`}>
+                                {concern.priority || 'Medium'}
                             </span>
                         </div>
 

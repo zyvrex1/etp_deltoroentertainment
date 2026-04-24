@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { showCancelConfirmAlert } from "../utils/sweetAlert";
+import { showCancelConfirmAlert } from "../../utils/sweetAlert";
 
 const EditPriceLevelModal = ({ isOpen, onClose, onSave, initialData }) => {
   // Local state for the form

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../admincomponents/utils/sweetAlert';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
+import { useAuthContext } from '../hooks/useAuthContext';
 import * as authService from '../services/authService';
 import axios from 'axios';
 import './SponsorVenueBilling.css';

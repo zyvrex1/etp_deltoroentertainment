@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
-import DateRangePicker from '../admincomponents/DateRangePicker';
+import DateRangePicker from '../utils/DateRangePicker';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../admincomponents/utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../utils/pdfExport';
 import './CustomerPurchaseHistory.css';
 import CustomerHistoryViewReceipt from './Modal/CustomerHistoryViewReceipt';
 

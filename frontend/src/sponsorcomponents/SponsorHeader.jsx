@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { showConfirmAlert, showSuccessAlert } from '../admincomponents/utils/sweetAlert';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { showConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
+import { useAuthContext } from '../hooks/useAuthContext';
 import './SponsorHeader.css';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function SponsorHeader() {
     const { user: authUser } = useAuthContext();
@@ -65,7 +66,13 @@ export default function SponsorHeader() {
                         <button className="sponsor-profile-btn" onClick={toggleDropdown}>
                             <div className="sponsor-avatar">
                                 {authUser.avatar ? (
-                                    <img src={authUser.avatar} alt="Profile" className="sponsor-avatar-img" />
+                                    <img 
+                                        src={authUser.avatar.startsWith('http') || authUser.avatar.startsWith('data:') 
+                                            ? authUser.avatar 
+                                            : `${BACKEND_URL}${authUser.avatar}`} 
+                                        alt="Profile" 
+                                        className="sponsor-avatar-img" 
+                                    />
                                 ) : (
                                     getInitials(authUser.firstName, authUser.lastName)
                                 )}

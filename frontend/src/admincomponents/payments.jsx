@@ -2,13 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./payments.css";
 import Swal from "sweetalert2";
-import { showSuccessAlert, showErrorAlert, showApproveConfirmAlert } from "./utils/sweetAlert";
+import { showSuccessAlert, showErrorAlert, showApproveConfirmAlert } from "../utils/sweetAlert";
 import PaymentRejectionModal from "./Modal/PaymentRejectionModal";
 import TransactionMonitoring from "./transaction";
 import axios from "axios";
-import { useAuthContext } from "./hooks/useAuthContext";
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+import { useAuthContext } from "../hooks/useAuthContext";
+import reservationService from "../services/reservationService";
 
 const Payments = () => {
   const { user } = useAuthContext();
@@ -29,10 +28,8 @@ const Payments = () => {
       setIsLoading(true);
       try {
         setError(null);
-        const response = await axios.get(`${BACKEND_URL}/api/reservations/admin`, {
-          headers: { Authorization: `Bearer ${user.token}` }
-        });
-        setReservations(response.data);
+        const data = await reservationService.getAdminReservations(user.token);
+        setReservations(data);
       } catch (err) {
         console.error("Fetch admin reservations error:", err);
         const errorMsg = err.response?.data?.error || "Failed to load reservations. Please try again later.";

@@ -17,6 +17,7 @@ router.get('/sponsor', requireRole('sponsor'), concernController.getSponsorConce
 router.get('/admin', requireRole('admin'), concernController.getAdminConcerns);
 router.get('/admin/unread-count', requireRole('admin'), concernController.getAdminUnreadCount);
 router.patch('/:id/status', requireRole('admin'), concernController.updateStatus);
+router.patch('/:id/priority', requireRole('admin'), concernController.updatePriority);
 router.patch('/:id/assign', requireRole('admin'), concernController.assignConcern);
 
 // Internal Notes (Admin only)

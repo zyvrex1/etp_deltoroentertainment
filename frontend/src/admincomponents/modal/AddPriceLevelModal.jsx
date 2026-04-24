@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import { showCancelConfirmAlert } from "../utils/sweetAlert";
+import { showCancelConfirmAlert } from "../../utils/sweetAlert";
 
 const AddPriceLevelModal = ({ isOpen, onClose, onSave }) => {
   // Define the blank state

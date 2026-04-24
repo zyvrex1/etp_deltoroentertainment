@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawLongText, finalizeReport } from '../../admincomponents/utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawLongText, finalizeReport } from '../../utils/pdfExport';
 import './PromoterViewFullAnnouncement.css';
 
 const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {

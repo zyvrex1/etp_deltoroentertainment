@@ -4,7 +4,7 @@ const socket = require('../socket');
 // @desc    Submit a new concern (Sponsor)
 // @route   POST /api/concerns
 const createConcern = async (req, res) => {
-  const { subject, category, description, event } = req.body;
+  const { subject, category, priority, description, event } = req.body;
   const user = req.user;
 
   try {
@@ -21,6 +21,7 @@ const createConcern = async (req, res) => {
       sponsorName,
       subject,
       category,
+      priority: priority ? priority.toLowerCase() : 'medium',
       description,
       event,
       attachments,
@@ -288,13 +289,60 @@ const updateStatus = async (req, res) => {
     await concern.save();
 
     // Emit socket event
-    socket.emitUpdate('statusUpdate', { concernId: id, status, message: systemMessage });
+    socket.emitUpdate('statusUpdate', { 
+      concernId: id, 
+      status: concern.status, 
+      priority: concern.priority,
+      message: systemMessage 
+    });
 
     res.status(200).json(concern);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
+// @desc    Update concern priority (Admin)
+// @route   PATCH /api/concerns/:id/priority
+const updatePriority = async (req, res) => {
+  const { id } = req.params;
+  const { priority } = req.body;
+  const user = req.user;
+
+  try {
+    const concern = await Concern.findById(id);
+    if (!concern) {
+      return res.status(404).json({ error: 'Concern not found' });
+    }
+
+    const oldPriority = concern.priority || 'medium';
+    concern.priority = priority.toLowerCase();
+
+    // Add a system message for priority change
+    const systemMessage = {
+      sender: user._id,
+      senderName: 'System',
+      text: `Priority changed from ${oldPriority} to ${priority}`,
+      isSystem: true
+    };
+    concern.messages.push(systemMessage);
+
+    await concern.save();
+
+    // Emit socket event
+    socket.emitUpdate('statusUpdate', { 
+      concernId: id, 
+      status: concern.status, 
+      priority: concern.priority,
+      message: systemMessage 
+    });
+
+    res.status(200).json(concern);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 
 // @desc    Assign concern to admin
 // @route   PATCH /api/concerns/:id/assign
@@ -418,6 +466,7 @@ module.exports = {
   getConcernById,
   addMessage,
   updateStatus,
+  updatePriority,
   assignConcern,
   addInternalNote,
   updateInternalNote,

@@ -3,14 +3,15 @@ import { Icon } from "@iconify/react";
 import "./CreateUserModal.css";
 import {
   showSuccessAlert,
+  showErrorAlert,
   showCancelConfirmAlert,
   showCreateConfirmAlert,
-} from "../utils/sweetAlert";
-import { useAuthContext } from "../hooks/useAuthContext";
+} from "../../utils/sweetAlert";
+import { useAuthContext } from "../../hooks/useAuthContext";
 
 const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
   const { user } = useAuthContext();
-  const [userType, setUserType] = useState("superadmin", "admin");
+  const [userType, setUserType] = useState("Customer");
   const [formData, setFormData] = useState({});
 
   const handleChange = (e) => {
@@ -105,6 +106,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.firstName || ""}
                   onChange={handleChange}
                   placeholder="e.g. John"
+                  required
                 />
               </div>
               <div className="add-user-form-group">
@@ -115,6 +117,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.lastName || ""}
                   onChange={handleChange}
                   placeholder="e.g. Doe"
+                  required
                 />
               </div>
               <div className="add-user-form-group">
@@ -125,6 +128,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.email || ""}
                   onChange={handleChange}
                   placeholder="john@example.com"
+                  required
                 />
               </div>
               <div className="add-user-form-group">
@@ -135,6 +139,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.phone || ""}
                   onChange={handleChange}
                   placeholder="+1 (555) 000-0000"
+                  required
                 />
               </div>
             </div>
@@ -147,6 +152,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.companyName || ""}
                   onChange={handleChange}
                   placeholder="e.g. Acme Corp"
+                  required
                 />
               </div>
               <div className="add-user-form-group">
@@ -157,6 +163,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.industry || ""}
                   onChange={handleChange}
                   placeholder="e.g. Tech"
+                  required
                 />
               </div>
             </div>
@@ -174,6 +181,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.firstName || ""}
                   onChange={handleChange}
                   placeholder="e.g. John"
+                  required
                 />
               </div>
               <div className="add-user-form-group">
@@ -184,6 +192,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.lastName || ""}
                   onChange={handleChange}
                   placeholder="e.g. Doe"
+                  required
                 />
               </div>
               <div className="add-user-form-group">
@@ -194,6 +203,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.email || ""}
                   onChange={handleChange}
                   placeholder="john@example.com"
+                  required
                 />
               </div>
               <div className="add-user-form-group add-user-full-width">
@@ -204,6 +214,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.phone || ""}
                   onChange={handleChange}
                   placeholder="+1 (555) 000-0000"
+                  required
                 />
               </div>
             </div>
@@ -216,6 +227,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.companyName || ""}
                   onChange={handleChange}
                   placeholder="e.g. Acme Corp"
+                  required
                 />
               </div>
               <div className="add-user-form-group">
@@ -226,6 +238,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.industry || ""}
                   onChange={handleChange}
                   placeholder="e.g. Tech"
+                  required
                 />
               </div>
             </div>
@@ -244,17 +257,19 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   name="firstName"
                   value={formData.firstName || ""}
                   onChange={handleChange}
-                  placeholder="e.g. John Doe"
+                  placeholder="e.g. John"
+                  required
                 />
               </div>
               <div className="add-user-form-group">
-                <h6>LastName</h6>
+                <h6>Last Name</h6>
                 <input
                   type="text"
                   name="lastName"
                   value={formData.lastName || ""}
                   onChange={handleChange}
                   placeholder="e.g. Doe"
+                  required
                 />
               </div>
               <div className="add-user-form-group">
@@ -265,6 +280,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.email || ""}
                   onChange={handleChange}
                   placeholder="john@example.com"
+                  required
                 />
               </div>
               <div className="add-user-form-group">
@@ -275,6 +291,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.phone || ""}
                   onChange={handleChange}
                   placeholder="+1 (555) 000-0000"
+                  required
                 />
               </div>
             </div>

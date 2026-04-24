@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
-import { showRejectConfirmAlert } from '../utils/sweetAlert';
+import { showRejectConfirmAlert } from '../../utils/sweetAlert';
 import './PaymentRejectionModal.css';
 
 const PaymentRejectionModal = ({ payout, onClose, onConfirm }) => {

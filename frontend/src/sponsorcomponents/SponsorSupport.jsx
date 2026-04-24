@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 import SponsorDocuments from './SponsorModal/SponsorDocuments';
 import SponsorViewConcern from './SponsorViewConcern';
 import { io } from 'socket.io-client';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import concernService from '../services/concernService';
 import jsPDF from 'jspdf';
 import './SponsorSupport.css';
@@ -15,8 +15,8 @@ import {
     showExportToast, 
     removeExportToast, 
     drawLongText 
-} from '../admincomponents/utils/pdfExport';
-import { showSuccessAlert, showErrorAlert } from '../admincomponents/utils/sweetAlert';
+} from '../utils/pdfExport';
+import { showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 

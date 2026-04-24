@@ -89,6 +89,20 @@ const concernService = {
     if (!response.ok) throw new Error(json.error);
     return json;
   },
+  
+  updatePriority: async (id, priority, token) => {
+    const response = await fetch(`${API_URL}/${id}/priority`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ priority })
+    });
+    const json = await response.json();
+    if (!response.ok) throw new Error(json.error);
+    return json;
+  },
 
   assignConcern: async (id, adminId, adminName, token) => {
     const response = await fetch(`${API_URL}/${id}/assign`, {

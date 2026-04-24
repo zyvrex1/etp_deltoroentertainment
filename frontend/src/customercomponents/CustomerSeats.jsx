@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
-import { showAddToCartConfirmAlert, showSuccessAlert, showQuestionAlert } from '../admincomponents/utils/sweetAlert';
+import { showAddToCartConfirmAlert, showSuccessAlert, showQuestionAlert } from '../utils/sweetAlert';
 import './CustomerSeats.css';
 
 const CustomerSeats = () => {

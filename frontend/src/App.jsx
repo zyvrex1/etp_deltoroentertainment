@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuthContext } from "./admincomponents/hooks/useAuthContext.jsx";
+import { useAuthContext } from "./hooks/useAuthContext.jsx";
 import { useState } from "react";
 import "./App.css";
 

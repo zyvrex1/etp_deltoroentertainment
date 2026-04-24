@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import { io } from 'socket.io-client';
 import concernService from '../services/concernService';
-import { showSuccessAlert, showErrorAlert } from '../admincomponents/utils/sweetAlert';
+import { showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 import './ViewTicket.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
-const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
+const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onUpdatePriority, onBack }) => {
     const { user } = useAuthContext();
     const messagesEndRef = useRef(null);
     const [ticket, setTicket] = useState(initialTicket);
@@ -51,6 +51,7 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
                 setTicket(prev => ({
                     ...prev,
                     status: data.status,
+                    priority: data.priority || prev.priority,
                     messages: [...prev.messages, data.message]
                 }));
             }
@@ -72,6 +73,10 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
 
     const handleStatusChange = (e) => {
         onUpdateStatus(ticket._id, e.target.value);
+    };
+
+    const handlePriorityChange = (e) => {
+        onUpdatePriority(ticket._id, e.target.value);
     };
 
     const handleReply = async () => {
@@ -203,23 +208,29 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onBack }) => {
                         <h6 className="vt-card-heading">TICKET DETAILS</h6>
                         <div className="vt-detail-row">
                             <span className="small-body-text vt-label">Status</span>
-                            <div className="vt-status-dropdown-wrapper">
-                                <select 
-                                    value={ticket.status} 
-                                    onChange={handleStatusChange} 
-                                    className="vt-select-status"
-                                    disabled={!ticket.assignedTo}
-                                    title={!ticket.assignedTo ? "Please assign an admin before updating status" : ""}
-                                >
-                                    <option value="open">Open</option>
-                                    <option value="in-progress">In Progress</option>
-                                    <option value="resolved">Resolved</option>
-                                </select>
-                            </div>
+                            <select 
+                                value={ticket.status} 
+                                onChange={handleStatusChange} 
+                                className={`button-label vt-select-status vt-badge-${ticket.status.toLowerCase().replace(' ', '-')}`}
+                                disabled={!ticket.assignedTo}
+                                title={!ticket.assignedTo ? "Please assign an admin before updating status" : ""}
+                            >
+                                <option value="open">Open</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
                         </div>
                         <div className="vt-detail-row">
                             <span className="small-body-text vt-label">Priority</span>
-                            <span className={`button-label vt-badge-${ticket.priority?.toLowerCase() || 'medium'}`}>{ticket.priority || 'medium'}</span>
+                            <select 
+                                value={ticket.priority?.toLowerCase() || 'medium'} 
+                                onChange={handlePriorityChange} 
+                                className={`button-label vt-select-priority vt-badge-${ticket.priority?.toLowerCase() || 'medium'}`}
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
                         </div>
                         <div className="vt-detail-row">
                             <span className="small-body-text vt-label">Category</span>

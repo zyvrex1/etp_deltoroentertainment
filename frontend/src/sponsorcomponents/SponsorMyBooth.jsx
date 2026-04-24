@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import SponsorEnlargeQR from './SponsorModal/SponsorEnlargeQR';
 import { QRCodeCanvas } from 'qrcode.react';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import axios from 'axios';
 import './SponsorMyBooth.css';
 

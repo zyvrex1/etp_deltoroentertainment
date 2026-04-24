@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './promoterticketsetup.css';
 import PromoterCollaboratorsModal from './PromoterModal/PromoterCollaboratorsModal';
-import { useAuthContext } from '../admincomponents/hooks/useAuthContext';
-import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../admincomponents/utils/sweetAlert';
+import { useAuthContext } from '../hooks/useAuthContext';
+import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../utils/sweetAlert';
 
 const PromoterTicketSetup = ({ selectedEvent }) => {
     const { user } = useAuthContext();

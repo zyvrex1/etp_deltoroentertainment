@@ -456,11 +456,21 @@
 
         &.pending { background: var(--color-yellow-quaternary); color: var(--color-yellow-primary); border-color: var(--color-yellow-tertiary); }
         &.under-review { background: var(--color-blue-quaternary); color: var(--color-blue-primary); border-color: var(--color-blue-tertiary); }
+        &.open { background: var(--color-blue-quaternary); color: var(--color-blue-primary); border-color: var(--color-blue-tertiary); }
         &.in-progress { background: var(--color-red-quaternary); color: var(--color-red-primary); border-color: var(--color-red-tertiary); }
         &.resolved { background: var(--color-green-quaternary); color: var(--color-green-primary); border-color: var(--color-green-tertiary); }
-        &.open { background: var(--color-blue-quaternary); color: var(--color-blue-primary); border-color: var(--color-blue-tertiary); }
         &.closed { background: var(--color-black-quaternary); color: var(--color-black-secondary); border-color: var(--color-black-tertiary); }
-        
+    }
+
+    .svc-priority-pill {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid transparent;
+
+        &.low { background: var(--color-green-quaternary); color: var(--color-green-primary); border-color: var(--color-green-tertiary); }
+        &.medium { background: var(--color-yellow-quaternary); color: var(--color-yellow-primary); border-color: #faecd8; }
+        &.high { background: var(--color-red-quaternary); color: var(--color-red-primary); border-color: var(--color-red-tertiary); }
+    }
         &.svc-inline-status {
             padding: 2px 8px;
             border-radius: 4px;
@@ -501,7 +511,7 @@
     }
 
     @media (max-width: 1024px) {
-        padding: 24px 30px;
+        /* padding: 24px 30px; */
         .svc-main-content {
             flex-direction: column;
         }
@@ -512,7 +522,8 @@
     }
 
     @media (max-width: 768px) {
-        padding: 20px;
+
+        /* padding: 20px; */
         .svc-header .svc-header-info .svc-title-row .svc-page-title {
             font-size: 24px;
         }
@@ -538,7 +549,7 @@
     }
 
     @media (max-width: 480px) {
-        padding: 15px;
+        /* padding: 15px; */
         .svc-header {
             flex-direction: column;
             gap: 12px;
@@ -550,4 +561,4 @@
             .svc-send-btn { width: 100%; }
         }
     }
-}
+

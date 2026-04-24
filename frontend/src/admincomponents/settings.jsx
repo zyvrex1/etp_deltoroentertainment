@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./settings.css";
-import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "./utils/sweetAlert";
-import { useAuthContext } from "./hooks/useAuthContext";
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
+import { useAuthContext } from "../hooks/useAuthContext";
 import * as authService from "../services/authService";
 
 const Settings = () => {
@@ -22,6 +22,7 @@ const Settings = () => {
             supportMessages: true
         }
     });
+    const [avatarFile, setAvatarFile] = useState(null);
 
     const [passwords, setPasswords] = useState({
         current: "",
@@ -88,6 +89,7 @@ const Settings = () => {
                 return showErrorAlert("File Too Large", "Please upload an image smaller than 2MB.");
             }
 
+            setAvatarFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setProfile({ ...profile, avatar: reader.result });
@@ -108,10 +110,19 @@ const Settings = () => {
 
         if (result.isConfirmed) {
             try {
-                const response = await authService.updateProfile(profile, user.token);
+                const formData = new FormData();
+                formData.append("firstName", profile.firstName);
+                formData.append("lastName", profile.lastName);
+                formData.append("email", profile.email);
+                formData.append("phone", profile.phone);
+                if (avatarFile) {
+                    formData.append("avatar", avatarFile);
+                }
+                
+                const response = await authService.updateProfile(formData, user.token);
 
                 // Update user context and local storage
-                const updatedUser = { ...user, ...response.data.user };
+                const updatedUser = { ...user, ...response.data };
                 localStorage.setItem("user", JSON.stringify(updatedUser));
                 dispatch({ type: "LOGIN", payload: updatedUser });
 
@@ -119,6 +130,7 @@ const Settings = () => {
                     "Profile Updated",
                     "Your personal information has been saved successfully."
                 );
+                setAvatarFile(null);
             } catch (error) {
                 showErrorAlert("Update Failed", error.response?.data?.error || "An error occurred while updating profile.");
             }
