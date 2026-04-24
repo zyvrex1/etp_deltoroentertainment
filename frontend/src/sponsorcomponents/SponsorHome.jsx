@@ -29,11 +29,12 @@ export default function SponsorHome() {
                 policyService.getPolicies()
             ]);
 
-            // Filter approved events and take latest 6
+            // Filter approved events and take 4 most upcoming
+            const now = new Date().setHours(0, 0, 0, 0);
             const sortedEvents = (evtData || [])
-                .filter(e => e.status === 'approved')
-                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                .slice(0, 6);
+                .filter(e => e.status === 'approved' && new Date(e.startDate) >= now)
+                .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+                .slice(0, 4);
             setEvents(sortedEvents);
 
             // Map announcements with badge classes
