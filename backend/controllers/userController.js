@@ -4,6 +4,7 @@ const Sponsor = require('../models/sponsorModel');
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 const path = require('path');
+const { optimizeImage } = require("../utils/imageOptimizer");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
@@ -59,6 +60,8 @@ const updateProfile = async (req, res) => {
 
     // Handle avatar upload
     if (req.file) {
+      const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+      await optimizeImage(filePath, 70, 400); // Smaller size for avatars
       user.avatar = `/uploads/${req.file.filename}`;
     }
 

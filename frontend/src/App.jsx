@@ -1,173 +1,161 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthContext } from "./hooks/useAuthContext.jsx";
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import "./App.css";
 
-
-import Home from "./landingpage/Home.jsx";
-import Login from "./landingpage/Login.jsx";
-
 // Layouts
-import LandingLayout from "./layouts/landinglayout.jsx";
-import AdminLayout from "./layouts/adminlayout.jsx";
-import PromoterLayout from "./layouts/promoterlayout.jsx";
-import SponsorLayout from "./layouts/sponsorlayout.jsx";
-import CustomerLayout from "./layouts/customerlayout.jsx";
+const LandingLayout = lazy(() => import("./layouts/landinglayout.jsx"));
+const AdminLayout = lazy(() => import("./layouts/adminlayout.jsx"));
+const PromoterLayout = lazy(() => import("./layouts/promoterlayout.jsx"));
+const SponsorLayout = lazy(() => import("./layouts/sponsorlayout.jsx"));
+const CustomerLayout = lazy(() => import("./layouts/customerlayout.jsx"));
 
+// Landing Pages
+const Home = lazy(() => import("./landingpage/Home.jsx"));
+const Login = lazy(() => import("./landingpage/Login.jsx"));
 
 // Admin Pages
-import AdminDashboard from "./admincomponents/dashboard.jsx";
-import AdminUserManagement from "./admincomponents/usermanagement.jsx";
-import AdminEventManagement from "./admincomponents/eventmanagement.jsx";
-import AdminTransaction from "./admincomponents/transaction.jsx";
-import AdminPayments from "./admincomponents/payments.jsx";
-import AdminBoothandTicket from "./admincomponents/boothandticket.jsx";
-import AdminReportsandAnalytics from "./admincomponents/reportsandanalytics.jsx";
-import AdminContent from "./admincomponents/content.jsx";
-import AdminSettings from "./admincomponents/settings.jsx";
-import AdminSupport from "./admincomponents/support.jsx";
-import AdminAuditLogs from "./admincomponents/audit.jsx";
-import AdminEventApproval from "./admincomponents/eventapproval.jsx";
+const AdminDashboard = lazy(() => import("./admincomponents/dashboard.jsx"));
+const AdminUserManagement = lazy(() => import("./admincomponents/usermanagement.jsx"));
+const AdminEventManagement = lazy(() => import("./admincomponents/eventmanagement.jsx"));
+const AdminTransaction = lazy(() => import("./admincomponents/transaction.jsx"));
+const AdminPayments = lazy(() => import("./admincomponents/payments.jsx"));
+const AdminBoothandTicket = lazy(() => import("./admincomponents/boothandticket.jsx"));
+const AdminReportsandAnalytics = lazy(() => import("./admincomponents/reportsandanalytics.jsx"));
+const AdminContent = lazy(() => import("./admincomponents/content.jsx"));
+const AdminSettings = lazy(() => import("./admincomponents/settings.jsx"));
+const AdminSupport = lazy(() => import("./admincomponents/support.jsx"));
+const AdminAuditLogs = lazy(() => import("./admincomponents/audit.jsx"));
+const AdminEventApproval = lazy(() => import("./admincomponents/eventapproval.jsx"));
 
 // Promoter Pages
-import PromoterDashboard from "./promotercomponents/promoterdashboard.jsx";
-import PromoterSettings from "./promotercomponents/promotersettings.jsx";
-import PromoterEvents from "./promotercomponents/promoterevents.jsx";
-import PromoterEventManagement from "./promotercomponents/promotereventmanagement.jsx";
-import PromoterAnnouncement from "./promotercomponents/promoterannouncement.jsx";
-import PromoterEventMonitoring from "./promotercomponents/PromoterEventMonitoring.jsx";
-import PromoterRevenue from "./promotercomponents/promoterrevenuereports.jsx";
-import PromoterPayouts from "./promotercomponents/promoterpayouts.jsx";
-import PromoterPayoutBilling from "./promotercomponents/PromoterPayoutBilling.jsx";
+const PromoterDashboard = lazy(() => import("./promotercomponents/promoterdashboard.jsx"));
+const PromoterSettings = lazy(() => import("./promotercomponents/promotersettings.jsx"));
+const PromoterEvents = lazy(() => import("./promotercomponents/promoterevents.jsx"));
+const PromoterEventManagement = lazy(() => import("./promotercomponents/promotereventmanagement.jsx"));
+const PromoterAnnouncement = lazy(() => import("./promotercomponents/promoterannouncement.jsx"));
+const PromoterEventMonitoring = lazy(() => import("./promotercomponents/PromoterEventMonitoring.jsx"));
+const PromoterRevenue = lazy(() => import("./promotercomponents/promoterrevenuereports.jsx"));
+const PromoterPayouts = lazy(() => import("./promotercomponents/promoterpayouts.jsx"));
+const PromoterPayoutBilling = lazy(() => import("./promotercomponents/PromoterPayoutBilling.jsx"));
 
 // Sponsor Pages
-import SponsorHome from "./sponsorcomponents/SponsorHome.jsx";
-import SponsorEvents from "./sponsorcomponents/SponsorBrowseEvents.jsx";
-import SponsorEventDetails from './sponsorcomponents/SponsorEventDetails.jsx';
-import SponsorVenueLayout from './sponsorcomponents/SponsorVenueLayout.jsx';
-import SponsorConfirmSelection from './sponsorcomponents/SponsorConfirmSelection.jsx';
-import SponsorReservationSummary from './sponsorcomponents/SponsorReservationSummary.jsx';
-import SponsorVenueBilling from './sponsorcomponents/SponsorVenueBilling.jsx';
-import SponsorMyBooth from './sponsorcomponents/SponsorMyBooth.jsx';
-import SponsorBoothFullDetails from './sponsorcomponents/SponsorBoothFullDetails.jsx';
-import SponsorEventHistory from './sponsorcomponents/SponsorEventHistory.jsx';
-import SponsorInvoice from './sponsorcomponents/SponsorInvoice.jsx';
-import SponsorSettings from './sponsorcomponents/SponsorSettings.jsx';
-import SponsorSupport from './sponsorcomponents/SponsorSupport.jsx';
-import SponsorStore from './sponsorcomponents/SponsorStore.jsx';
-import SponsorStoreDashboard from './sponsorcomponents/SponsorStoreDashboard.jsx';
+const SponsorHome = lazy(() => import("./sponsorcomponents/SponsorHome.jsx"));
+const SponsorEvents = lazy(() => import("./sponsorcomponents/SponsorBrowseEvents.jsx"));
+const SponsorEventDetails = lazy(() => import("./sponsorcomponents/SponsorEventDetails.jsx"));
+const SponsorVenueLayout = lazy(() => import("./sponsorcomponents/SponsorVenueLayout.jsx"));
+const SponsorConfirmSelection = lazy(() => import("./sponsorcomponents/SponsorConfirmSelection.jsx"));
+const SponsorReservationSummary = lazy(() => import("./sponsorcomponents/SponsorReservationSummary.jsx"));
+const SponsorVenueBilling = lazy(() => import("./sponsorcomponents/SponsorVenueBilling.jsx"));
+const SponsorMyBooth = lazy(() => import("./sponsorcomponents/SponsorMyBooth.jsx"));
+const SponsorBoothFullDetails = lazy(() => import("./sponsorcomponents/SponsorBoothFullDetails.jsx"));
+const SponsorEventHistory = lazy(() => import("./sponsorcomponents/SponsorEventHistory.jsx"));
+const SponsorInvoice = lazy(() => import("./sponsorcomponents/SponsorInvoice.jsx"));
+const SponsorSettings = lazy(() => import("./sponsorcomponents/SponsorSettings.jsx"));
+const SponsorSupport = lazy(() => import("./sponsorcomponents/SponsorSupport.jsx"));
+const SponsorStore = lazy(() => import("./sponsorcomponents/SponsorStore.jsx"));
+const SponsorStoreDashboard = lazy(() => import("./sponsorcomponents/SponsorStoreDashboard.jsx"));
 
 // Customer Pages
-import CustomerHome from "./customercomponents/CustomerHome.jsx";
-import CustomerBrowseEvent from "./customercomponents/CustomerBrowseEvent.jsx";
-import CustomerEventDetails from "./customercomponents/CustomerEventDetails.jsx";
-import CustomerTicketOrder from "./customercomponents/CustomerTicketOrder.jsx";
-import CustomerCart from "./customercomponents/CustomerCart.jsx";
-import CustomerSupport from "./customercomponents/CustomerSupport.jsx";
-import CustomerSettings from "./customercomponents/CustomerSettings.jsx";
-import CustomerHistory from "./customercomponents/CustomerPurchaseHistory.jsx";
-import CustomerSeats from "./customercomponents/CustomerSeats.jsx";
-import CustomerCheckout from "./customercomponents/CustomerCheckout.jsx";
-import CustomerPaySuccess from "./customercomponents/CustomerPaySuccess.jsx";
+const CustomerHome = lazy(() => import("./customercomponents/CustomerHome.jsx"));
+const CustomerBrowseEvent = lazy(() => import("./customercomponents/CustomerBrowseEvent.jsx"));
+const CustomerEventDetails = lazy(() => import("./customercomponents/CustomerEventDetails.jsx"));
+const CustomerTicketOrder = lazy(() => import("./customercomponents/CustomerTicketOrder.jsx"));
+const CustomerCart = lazy(() => import("./customercomponents/CustomerCart.jsx"));
+const CustomerSupport = lazy(() => import("./customercomponents/CustomerSupport.jsx"));
+const CustomerSettings = lazy(() => import("./customercomponents/CustomerSettings.jsx"));
+const CustomerHistory = lazy(() => import("./customercomponents/CustomerPurchaseHistory.jsx"));
+const CustomerSeats = lazy(() => import("./customercomponents/CustomerSeats.jsx"));
+const CustomerCheckout = lazy(() => import("./customercomponents/CustomerCheckout.jsx"));
+const CustomerPaySuccess = lazy(() => import("./customercomponents/CustomerPaySuccess.jsx"));
+
+// Loading Component
+const PageLoader = () => (
+  <div style={{ 
+    height: '100vh', 
+    width: '100%', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    background: '#0f172a',
+    color: 'white',
+    flexDirection: 'column',
+    gap: '20px'
+  }}>
+    <div className="skeleton" style={{ width: '50px', height: '50px', borderRadius: '50%' }}></div>
+    <p style={{ fontStyle: 'italic', opacity: 0.7 }}>Loading experience...</p>
+  </div>
+);
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<LandingLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-        </Route>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route element={<LandingLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+          </Route>
 
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="event-approval" element={<AdminEventApproval />} />
+            <Route path="users" element={<AdminUserManagement />} />
+            <Route path="events" element={<AdminEventManagement />} />
+            <Route path="payments" element={<AdminPayments />} />
+            <Route path="booths-tickets" element={<AdminBoothandTicket />} />
+            <Route path="analytics" element={<AdminReportsandAnalytics />} />
+            <Route path="content" element={<AdminContent />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="support" element={<AdminSupport />} />
+            <Route path="audit-logs" element={<AdminAuditLogs />} />
+          </Route>
 
-        <Route
-          path="/admin"
-          element={
-            //   <ProtectedRoute allowedRole="admin">
-            <AdminLayout />
-            //   </ProtectedRoute>
-          }
-        >
-          <Route index element={<AdminDashboard />} />
-          <Route path="event-approval" element={<AdminEventApproval />} />
-          <Route path="users" element={<AdminUserManagement />} />
-          <Route path="events" element={<AdminEventManagement />} />
-          <Route path="payments" element={<AdminPayments />} />
-          <Route path="booths-tickets" element={<AdminBoothandTicket />} />
-          <Route path="analytics" element={<AdminReportsandAnalytics />} />
-          <Route path="content" element={<AdminContent />} />
-          <Route path="settings" element={<AdminSettings />} />
-          <Route path="support" element={<AdminSupport />} />
-          <Route path="audit-logs" element={<AdminAuditLogs />} />
-        </Route>
+          <Route path="/promoter" element={<PromoterLayout />}>
+            <Route index element={<PromoterDashboard />} />
+            <Route path="settings" element={<PromoterSettings />} />
+            <Route path="promoter-events" element={<PromoterEvents />} />
+            <Route path="promoter-eventmanagement" element={<PromoterEventManagement />} />
+            <Route path="promoter-announcement" element={<PromoterAnnouncement />} />
+            <Route path="promoter-eventmonitoring" element={<PromoterEventMonitoring />} />
+            <Route path="promoter-revenue" element={<PromoterRevenue />} />
+            <Route path="promoter-payouts" element={<PromoterPayouts />} />
+            <Route path="promoter-payout-billing" element={<PromoterPayoutBilling />} />
+          </Route>
 
-        {/* PROMOTER ROUTES (PROTECTED) */}
-        <Route
-          path="/promoter"
-          element={
-            //   <ProtectedRoute allowedRole="promoter">
-            <PromoterLayout />
-            //   </ProtectedRoute>
-          }
-        >
-          <Route index element={<PromoterDashboard />} />
-          <Route path="settings" element={<PromoterSettings />} />
-          <Route path="promoter-events" element={<PromoterEvents />} />
-          <Route path="promoter-eventmanagement" element={<PromoterEventManagement />} />
-          <Route path="promoter-announcement" element={<PromoterAnnouncement />} />
-          <Route path="promoter-eventmonitoring" element={<PromoterEventMonitoring />} />
-          <Route path="promoter-revenue" element={<PromoterRevenue />} />
-          <Route path="promoter-payouts" element={<PromoterPayouts />} />
-          <Route path="promoter-payout-billing" element={<PromoterPayoutBilling />} />
-        </Route>
+          <Route path="/sponsor" element={<SponsorLayout />}>
+            <Route index element={<SponsorHome />} />
+            <Route path="sponsor-events" element={<SponsorEvents />} />
+            <Route path="sponsor-event/:id" element={<SponsorEventDetails />} />
+            <Route path="sponsor-venue-layout/:id?" element={<SponsorVenueLayout />} />
+            <Route path="sponsor-confirm-selection" element={<SponsorConfirmSelection />} />
+            <Route path="sponsor-reservation" element={<SponsorReservationSummary />} />
+            <Route path="sponsor-venue-billing" element={<SponsorVenueBilling />} />
+            <Route path="sponsor-my-booths" element={<SponsorMyBooth />} />
+            <Route path="sponsor-booth-details/:id" element={<SponsorBoothFullDetails />} />
+            <Route path="sponsor-history" element={<SponsorEventHistory />} />
+            <Route path="sponsor-invoices" element={<SponsorInvoice />} />
+            <Route path="settings" element={<SponsorSettings />} />
+            <Route path="support" element={<SponsorSupport />} />
+            <Route path="store" element={<SponsorStore />} />
+            <Route path="store/dashboard" element={<SponsorStoreDashboard />} />
+          </Route>
 
-        <Route
-          path="/sponsor"
-          element={
-            // <ProtectedRoute allowedRole="sponsor">
-            <SponsorLayout />
-            // </ProtectedRoute>
-          }
-        >
-          <Route index element={<SponsorHome />} />
-          <Route path="sponsor-events" element={<SponsorEvents />} />
-          <Route path="sponsor-event/:id" element={<SponsorEventDetails />} />
-          <Route path="sponsor-venue-layout/:id?" element={<SponsorVenueLayout />} />
-          <Route path="sponsor-confirm-selection" element={<SponsorConfirmSelection />} />
-          <Route path="sponsor-reservation" element={<SponsorReservationSummary />} />
-          <Route path="sponsor-venue-billing" element={<SponsorVenueBilling />} />
-          <Route path="sponsor-my-booths" element={<SponsorMyBooth />} />
-          <Route path="sponsor-booth-details/:id" element={<SponsorBoothFullDetails />} />
-          <Route path="sponsor-history" element={<SponsorEventHistory />} />
-          <Route path="sponsor-invoices" element={<SponsorInvoice />} />
-          <Route path="settings" element={<SponsorSettings />} />
-          <Route path="support" element={<SponsorSupport />} />
-          <Route path="store" element={<SponsorStore />} />
-          <Route path="store/dashboard" element={<SponsorStoreDashboard />} />
-
-        </Route>
-
-        <Route
-          path="/customer"
-          element={
-            // <ProtectedRoute allowedRole="customer">
-            <CustomerLayout />
-            // </ProtectedRoute>
-          }
-        >
-          <Route index element={<CustomerHome />} />
-          <Route path="browse-events" element={<CustomerBrowseEvent />} />
-          <Route path="event-details/:id" element={<CustomerEventDetails />} />
-          <Route path="seats" element={<CustomerSeats />} />
-          <Route path="cart" element={<CustomerCart />} />
-          <Route path="checkout" element={<CustomerCheckout />} />
-          <Route path="success" element={<CustomerPaySuccess />} />
-          <Route path="my-ticketsorder" element={<CustomerTicketOrder />} />
-          <Route path="support" element={<CustomerSupport />} />
-          <Route path="settings" element={<CustomerSettings />} />
-          <Route path="history" element={<CustomerHistory />} />
-        </Route>
-      </Routes>
+          <Route path="/customer" element={<CustomerLayout />}>
+            <Route index element={<CustomerHome />} />
+            <Route path="browse-events" element={<CustomerBrowseEvent />} />
+            <Route path="event-details/:id" element={<CustomerEventDetails />} />
+            <Route path="seats" element={<CustomerSeats />} />
+            <Route path="cart" element={<CustomerCart />} />
+            <Route path="checkout" element={<CustomerCheckout />} />
+            <Route path="success" element={<CustomerPaySuccess />} />
+            <Route path="my-ticketsorder" element={<CustomerTicketOrder />} />
+            <Route path="support" element={<CustomerSupport />} />
+            <Route path="settings" element={<CustomerSettings />} />
+            <Route path="history" element={<CustomerHistory />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

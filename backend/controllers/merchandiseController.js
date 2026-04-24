@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const Merchandise = require("../models/merchandiseModel");
 const Sponsor = require("../models/sponsorModel");
+const { saveAndOptimizeBase64 } = require("../utils/imageOptimizer");
+const path = require('path');
 
 // CREATE
 const createMerchandise = async (req, res) => {
@@ -18,13 +20,19 @@ const createMerchandise = async (req, res) => {
       return res.status(403).json({ error: "Sponsor profile not found. Only users with a sponsor profile can create merchandise." });
     }
 
+    let finalImage = image;
+    if (image && image.startsWith('data:image')) {
+      const filename = `merch-${Date.now()}.jpg`;
+      finalImage = await saveAndOptimizeBase64(image, filename);
+    }
+
     const merchandise = await Merchandise.create({
       name,
       description,
       price,
       category,
       stock,
-      image,
+      image: finalImage,
       eventId,
       status,
       sponsorId: sponsor._id, // 🔥 Linking to Sponsor profile
@@ -103,9 +111,15 @@ const updateMerchandise = async (req, res) => {
       return res.status(403).json({ error: "Access denied. You don't have permission to update this merchandise." });
     }
 
+    let finalData = { ...req.body };
+    if (req.body.image && req.body.image.startsWith('data:image')) {
+      const filename = `merch-${Date.now()}.jpg`;
+      finalData.image = await saveAndOptimizeBase64(req.body.image, filename);
+    }
+
     const merchandise = await Merchandise.findByIdAndUpdate(
       id,
-      { ...req.body },
+      finalData,
       { new: true, runValidators: true }
     ).populate("eventId", "title")
      .populate("sponsorId", "companyName industry");

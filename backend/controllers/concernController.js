@@ -1,5 +1,8 @@
 const Concern = require('../models/concernModel');
 const socket = require('../socket');
+const { optimizeImage } = require("../utils/imageOptimizer");
+const path = require('path');
+const fs = require('fs');
 
 // @desc    Submit a new concern (Sponsor)
 // @route   POST /api/concerns
@@ -8,10 +11,17 @@ const createConcern = async (req, res) => {
   const user = req.user;
 
   try {
-    const attachments = req.files ? req.files.map(file => ({
-      name: file.originalname,
-      path: file.path.replace(/\\/g, '/'),
-      size: (file.size / 1024).toFixed(1) + ' KB'
+    const attachments = req.files ? await Promise.all(req.files.map(async file => {
+      const isImage = ['.jpg', '.jpeg', '.png', '.webp'].includes(path.extname(file.originalname).toLowerCase());
+      if (isImage) {
+        await optimizeImage(file.path, 70, 1200);
+      }
+      
+      return {
+        name: file.originalname,
+        path: file.path.replace(/\\/g, '/'),
+        size: (fs.statSync(file.path).size / 1024).toFixed(1) + ' KB'
+      };
     })) : [];
 
     const sponsorName = `${user.firstName} ${user.lastName}`;
@@ -206,10 +216,17 @@ const addMessage = async (req, res) => {
       return res.status(404).json({ error: 'Concern not found' });
     }
 
-    const attachments = req.files ? req.files.map(file => ({
-      name: file.originalname,
-      path: file.path.replace(/\\/g, '/'),
-      size: (file.size / 1024).toFixed(1) + ' KB'
+    const attachments = req.files ? await Promise.all(req.files.map(async file => {
+      const isImage = ['.jpg', '.jpeg', '.png', '.webp'].includes(path.extname(file.originalname).toLowerCase());
+      if (isImage) {
+        await optimizeImage(file.path, 70, 1200);
+      }
+      
+      return {
+        name: file.originalname,
+        path: file.path.replace(/\\/g, '/'),
+        size: (fs.statSync(file.path).size / 1024).toFixed(1) + ' KB'
+      };
     })) : [];
 
     const senderName = `${user.firstName} ${user.lastName}`;

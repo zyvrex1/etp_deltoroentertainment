@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const multer = require("multer");
 const { emitUpdate } = require("../socket");
+const { optimizeImage } = require("../utils/imageOptimizer");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -330,6 +331,12 @@ const createEvent = async (req, res) => {
     if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
 
     const image = req.file ? req.file.filename : null;
+
+    // Optimize image if uploaded
+    if (req.file) {
+      const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+      await optimizeImage(filePath);
+    }
     const requiredFields = [
       "title",
       "description",
@@ -712,6 +719,11 @@ const updateEvent = async (req, res) => {
     if (req.file) {
       // A new file was uploaded - Replace the old one
       finalImage = req.file.filename;
+
+      // Optimize image
+      const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+      await optimizeImage(filePath);
+
       // OPTIONAL: Call a function here to delete the OLD file from 'uploads/'
       removeEventImage(existingEvent.image);
     } else if (req.body.image === "" || req.body.image === null) {
