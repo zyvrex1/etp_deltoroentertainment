@@ -26,7 +26,7 @@ const createUser = async (req, res) => {
     }
 
     // Enforce role boundaries
-    if (req.user.role === 'admin' && role.toLowerCase() === 'superadmin') {
+    if (req.user.role === 'admin' && lowerRole === 'superadmin') {
       return res.status(403).json({ error: 'Admins cannot create Superadmin accounts' });
     }
 
@@ -40,55 +40,34 @@ const createUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(tempPassword, salt);
 
-    // ✅ 1. Create Base User (ONLY core fields)
+    // ✅ 1. Create Base User (Includes phone/companyName because they are in your Schema)
     const newUser = await User.create({
       firstName,
       lastName,
       email,
       password: hash,
-      role
+      role,
+      phone,
+      companyName,
     });
 
-    // ✅ 2. Create Role-Specific Profile
+    // ✅ 2. Create Role-Specific Profile (For extra fields like 'industry')
     if (lowerRole === 'promoter') {
-      await Promoter.create({
-        userId: newUser._id,
-        phone,
-        companyName,
-        industry
-      });
+      await Promoter.create({ userId: newUser._id, phone, companyName, industry });
+    } else if (lowerRole === 'sponsor') {
+      await Sponsor.create({ userId: newUser._id, phone, companyName, industry });
+    } else if (lowerRole === 'customer') {
+      await Customer.create({ userId: newUser._id, phone });
     }
 
-    if (lowerRole === 'sponsor') {
-      await Sponsor.create({
-        userId: newUser._id,
-        phone,
-        companyName,
-        industry
-      });
-    }
-
-    if (lowerRole === 'customer') {
-      await Customer.create({
-        userId: newUser._id,
-        phone
-      });
-    }
-
-    // ✅ 3. Send email (Try-catch so registration doesn't fail if email fails)
+    // ✅ 3. Send email and create notifications
     try {
       await sendEmail({
         to: email,
         subject: 'Your new account',
-        text: `Hello ${firstName},
-
-Your account has been created.
-Temporary password: ${tempPassword}
-
-Please log in and change your password immediately.`
+        text: `Hello ${firstName}, Your account has been created. Temporary password: ${tempPassword}`
       });
 
-      // Create Notification and Emit
       const notificationController = require('./notificationController');
       const socket = require('../socket');
       const creatorName = `${req.user.firstName} ${req.user.lastName}`;
@@ -102,12 +81,13 @@ Please log in and change your password immediately.`
         createdBy: req.user._id,
         targetRole: 'admin'
       });
-      socket.emitUpdate('newNotification', notification);
 
+      socket.emitUpdate('newNotification', notification);
       emitUpdate('dashboardUpdate');
+      
       return res.status(201).json({
         message: `${role} created successfully and email sent.`,
-        user: newUser
+        user: newUser // newUser now contains phone/companyName automatically
       });
 
     } catch (emailError) {
@@ -115,7 +95,7 @@ Please log in and change your password immediately.`
       return res.status(201).json({
         message: `${role} created successfully, but Welcome Email failed.`,
         user: newUser,
-        temporaryPassword: tempPassword, // Fallback so admin can give it manually
+        temporaryPassword: tempPassword,
         warning: 'Could not send the welcome email due to server configuration.'
       });
     }
@@ -126,61 +106,67 @@ Please log in and change your password immediately.`
   }
 };
 
-module.exports = { createUser };
-
-// Get all users
 const getAllUsers = async (req, res) => {
   try {
     const isRequesterAdmin = req.user.role === 'admin';
 
-    // 1. Fetch all users based on role boundaries
+    // 1. Include phone and companyName in the selection
     const adminFilter = isRequesterAdmin 
       ? { role: { $ne: 'superadmin' } } 
-      : {}; // Superadmin can see everyone
+      : {}; 
     
     const users = await User.find(adminFilter)
-      .select('firstName lastName email role lastLogin createdAt updatedAt avatar')
+      .select('firstName lastName email role phone companyName lastLogin createdAt updatedAt avatar')
       .lean();
 
-    // 2. Fetch all profile data
+    // 2. Fetch all profile data (for extra fields like industry, tickets, etc.)
     const [customers, promoters, sponsors] = await Promise.all([
       Customer.find().lean(),
       Promoter.find().lean(),
       Sponsor.find().lean()
     ]);
 
-    // 3. Create maps for quick lookup to avoid O(n^2) merging
+    // 3. Create maps for quick lookup
     const profileMap = {};
     
     customers.forEach(c => {
       profileMap[c.userId.toString()] = { 
         type: 'customer', 
-        details: { phone: c.phone, ticketsPurchased: c.ticketsPurchased, totalSpent: c.totalSpent } 
+        details: { 
+          ticketsPurchased: c.ticketsPurchased, 
+          totalSpent: c.totalSpent 
+        } 
       };
     });
     
     promoters.forEach(p => {
       profileMap[p.userId.toString()] = { 
         type: 'promoter', 
-        details: { phone: p.phone, companyName: p.companyName, industry: p.industry, numberOfEvents: p.numberOfEvents } 
+        details: { 
+          industry: p.industry, 
+          numberOfEvents: p.numberOfEvents 
+        } 
       };
     });
     
     sponsors.forEach(s => {
       profileMap[s.userId.toString()] = { 
         type: 'sponsor', 
-        details: { phone: s.phone, companyName: s.companyName, industry: s.industry } 
+        details: { 
+          industry: s.industry 
+        } 
       };
     });
 
-    // 4. Merge data into a unique user list
+    // 4. Merge data
     const allUsers = users.map(u => {
       const profile = profileMap[u._id.toString()];
+      
       return {
         ...u,
+        // Basic phone/company info is now in the base object 'u'
         roleDetails: profile ? profile.details : {},
-        // If they have a profile, use that type, otherwise use their base role
-        roleType: profile ? profile.type : (['admin', 'superadmin'].includes(u.role) ? 'admin' : 'unknown')
+        roleType: profile ? profile.type : (['admin', 'superadmin'].includes(u.role) ? 'staff' : u.role)
       };
     });
 
@@ -194,28 +180,48 @@ const getAllUsers = async (req, res) => {
 // Get single user
 const getUser = async (req, res) => {
   try {
-    const { id } = req.params
+    const { id } = req.params;
 
+    // 1. Validate MongoDB ID format
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({ error: 'Invalid user ID' })
+      return res.status(400).json({ error: 'Invalid user ID' });
     }
 
-    const user = await User.findById(id).select('-password')
+    // 2. Fetch User and include phone/companyName (exclude password)
+    const user = await User.findById(id).select('-password');
     if (!user) {
-      return res.status(404).json({ error: 'User not found' })
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    // Admin cannot see superadmins
+    // 3. RBAC Check: Admins cannot see superadmins
     if (req.user.role === 'admin' && user.role === 'superadmin') {
-      return res.status(403).json({ error: 'Access denied' })
+      return res.status(403).json({ error: 'Access denied' });
     }
 
-    res.status(200).json(user)
+    // 4. Fetch Role-Specific Details (Profile logic)
+    let roleDetails = {};
+    const lowerRole = user.role.toLowerCase();
+
+    if (lowerRole === 'promoter') {
+      roleDetails = await Promoter.findOne({ userId: user._id }).lean();
+    } else if (lowerRole === 'sponsor') {
+      roleDetails = await Sponsor.findOne({ userId: user._id }).lean();
+    } else if (lowerRole === 'customer') {
+      roleDetails = await Customer.findOne({ userId: user._id }).lean();
+    }
+
+    // 5. Merge and Send
+    // We combine the base user with the specific profile details (like industry)
+    res.status(200).json({
+      ...user.toObject(),
+      roleDetails: roleDetails || {}
+    });
+
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: 'Server error' })
+    console.error(`Error fetching user ${req.params.id}:`, err);
+    res.status(500).json({ error: 'Server error' });
   }
-}
+};
 
 // Update user
 const updateUser = async (req, res) => {

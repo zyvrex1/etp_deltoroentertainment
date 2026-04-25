@@ -168,6 +168,7 @@
         h6 {
             color: var(--color-black-secondary);
             text-align: left;
+            margin: 0;
         }
 
         input,
@@ -188,26 +189,66 @@
             }
         }
 
-        .add-user-full-width {
-            grid-column: 1 / -1;
+        .phone-input-container {
+            display: flex;
+            width: 100%;
+            align-items: stretch;
+            border: 1px solid var(--color-black-tertiary);
+            border-radius: 6px;
+            background-color: var(--color-white-primary);
+            transition: border-color 0.2s;
 
-            input {
+            &:focus-within {
+                border-color: var(--color-black-primary);
+            }
+
+            .react-international-phone-country-selector-button {
+    background-color: transparent;
+    border: none;   
+    border-right: 1px solid var(--color-black-tertiary);
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+    transform: translateY(5px);
+    
+    display: flex;
+    align-items: center;
+    justify-content: center; 
+    padding: 0 12px; 
+    gap: 4px; 
+    
+    height: auto;
+    cursor: pointer;
+
+    &:focus {
+        outline: none;
+    }
+
+   
+    .react-international-phone-country-selector-button__button-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0; 
+    }
+}
+
+            .add-user-form-input {
+                flex: 1;
+                width: 100% !important;
+                border: none !important;
+                background-color: transparent !important;
                 padding: 10px 12px;
-                border: 1px solid var(--color-black-quaternary);
-                border-radius: 6px;
                 font-size: 14px;
-                color: var(--color-black-primary);
-                background-color: var(--color-white-primary);
-                transition: border-color 0.2s;
-                font-family: inherit;
 
                 &:focus {
                     outline: none;
-                    border-color: var(--color-black-primary);
                 }
             }
         }
+    }
 
+    .add-user-full-width {
+        grid-column: 1 / -1;
     }
 
     .add-user-info-banner {
@@ -234,7 +275,6 @@
             font-size: 13px;
             line-height: 1.4;
         }
-
     }
 }
 
