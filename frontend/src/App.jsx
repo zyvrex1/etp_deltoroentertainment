@@ -72,18 +72,67 @@ const CustomerPaySuccess = lazy(() => import("./customercomponents/CustomerPaySu
 // Loading Component
 const PageLoader = () => (
   <div style={{ 
+    position: 'fixed',
+    top: 0,
+    left: 0,
     height: '100vh', 
-    width: '100%', 
+    width: '100vw', 
     display: 'flex', 
     alignItems: 'center', 
     justifyContent: 'center',
-    background: '#0f172a',
+    background: 'rgba(5, 36, 107, 0.11)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
     color: 'white',
     flexDirection: 'column',
-    gap: '20px'
+    gap: '24px',
+    zIndex: 9999
   }}>
-    <div className="skeleton" style={{ width: '50px', height: '50px', borderRadius: '50%' }}></div>
-    <p style={{ fontStyle: 'italic', opacity: 0.7 }}>Loading experience...</p>
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      animation: 'pulse 2s infinite ease-in-out'
+    }}>
+      <img 
+        src="/logo/Logo1.png" 
+        alt="Logo" 
+        className="loader-logo"
+        style={{ 
+          height: 'auto',
+          marginBottom: '16px'
+        }} 
+      />
+      <div className="loader-dots" style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both' }}></div>
+        <div style={{ width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both 0.2s' }}></div>
+        <div style={{ width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both 0.4s' }}></div>
+      </div>
+    </div>
+    <style>{`
+      .loader-logo {
+        width: 500px;
+      }
+      @media (max-width: 1024px) {
+        .loader-logo { width: 400px; }
+      }
+      @media (max-width: 768px) {
+        .loader-logo { width: 300px; }
+      }
+      @media (max-width: 480px) {
+        .loader-logo { width: 200px; }
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.05); opacity: 1; }
+        100% { transform: scale(1); opacity: 0.8; }
+      }
+      @keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1.0); }
+      }
+    `}</style>
   </div>
 );
 
