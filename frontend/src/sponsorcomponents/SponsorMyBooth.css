@@ -1,254 +1,351 @@
-.sponsor-my-booth-container {
-    padding: 40px;
-    max-width: 1440px;
-    margin: 0 auto;
+.sponsor-my-booth-wrapper {
+    background-color: var(--color-bg-light);
+    color: var(--color-black-primary);
     width: 100%;
+    min-height: 80vh;
 
-    .my-booth-header {
+    .sponsor-my-booth-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 60px 20px;
         display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 30px;
+        flex-direction: column;
 
-        h2 {
-            color: var(--color-black-primary);
-            text-align: left;
-        }
-
-        p {
-            color: var(--color-black-tertiary);
-            text-align: left;
-
-        }
-
-        .sponsor-events-btn {
-            text-decoration: none;
-        }
-    }
-}
-
-
-
-.my-booth-list {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-
-    .my-booth-card {
-        display: flex;
-        background-color: var(--color-white-primary);
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid var(--color-black-quaternary);
-
-        .my-booth-content {
-            padding: 24px;
-            flex-grow: 1;
+        .my-booth-header {
             display: flex;
-            flex-direction: column;
             justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            text-align: left;
 
-            .my-booth-details-top {
+            h2 {
+                color: var(--color-black-primary);
+                margin-bottom: 8px;
+                text-align: left;
+            }
+
+            p {
+                color: var(--color-black-secondary);
+                text-align: left;
+            }
+
+            .sponsor-events-btn {
+                text-decoration: none;
+            }
+        }
+
+        .my-booth-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            background: var(--color-white-primary);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+            .search-box {
+                flex: 1;
                 display: flex;
-                flex-direction: column;
-                align-items: flex-start;
+                align-items: center;
+                gap: 12px;
+                background: var(--color-bg-light);
+                border: 1px solid var(--color-black-quaternary);
+                border-radius: 8px;
+                padding: 10px 16px;
 
-                .my-booth-title-row {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: left;
-                    margin-bottom: 16px;
-
-                    h3 {
-                        text-align: left;
-                        color: var(--color-black-primary);
-                    }
+                svg {
+                    color: var(--color-black-tertiary);
                 }
 
-                .my-booth-info-row {
+                input {
+                    border: none;
+                    background: none;
+                    width: 100%;
+                    outline: none;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 14px;
+                    color: var(--color-black-primary);
+                    text-align: left;
+                }
+            }
+
+            .toolbar-filters {
+                display: flex;
+                gap: 12px;
+
+                .filter-dropdown-wrapper {
                     display: flex;
                     align-items: center;
                     gap: 8px;
-                    color: var(--color-black-secondary);
-                    margin-bottom: 12px;
-                    justify-content: left;
-                }
+                    background: var(--color-white-primary);
+                    border: 1px solid var(--color-black-quaternary);
+                    border-radius: 8px;
+                    padding: 10px 16px;
+                    min-width: 150px;
 
-                .my-booth-type-pill {
-                    display: inline-block;
-                    background-color: var(--color-blue-quaternary);
-                    color: var(--color-blue-primary);
-                    margin-top: 8px;
-                    align-self: flex-start;
+                    .filter-icon {
+                        font-size: 20px;
+                        color: var(--color-black-tertiary);
+                    }
+
+                    .status-dropdown {
+                        border: none;
+                        background: none;
+                        outline: none;
+                        font-family: 'Inter', sans-serif;
+                        font-size: 14px;
+                        cursor: pointer;
+                        color: var(--color-black-secondary);
+                        width: 100%;
+                        text-align: left;
+                    }
                 }
             }
         }
-    }
-}
 
+        .my-booth-list-new {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
 
-.my-booth-image-container {
-    position: relative;
-    width: 300px;
-    flex-shrink: 0;
+            .booth-card-new {
+                background: var(--color-white-primary);
+                border-radius: 12px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+                border: 1px solid var(--color-black-quaternary);
+                transition: transform 0.2s;
 
-    .my-booth-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-}
+                &:hover {
+                    transform: translateY(-2px);
+                }
 
-.my-booth-divider {
-    border: none;
-    border-top: 1px solid var(--color-black-quaternary);
-    margin: 20px 0;
-}
+                .booth-card-top {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    padding-bottom: 15px;
+                    border-bottom: 1px solid var(--color-black-quaternary);
 
-.my-booth-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+                    .booth-event-title {
+                        margin: 0;
+                        font-weight: 700;
+                        color: var(--color-black-primary);
+                        text-align: left;
+                    }
 
-    .my-booth-actions-left {
-        display: flex;
-        gap: 12px;
+                    .booth-status-badge {
+                        padding: 6px 14px;
+                        border-radius: 8px;
+                        font-size: 13px;
+                        font-weight: 600;
 
-        .my-booth-dark-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background-color: var(--color-bg-dark);
-            color: var(--color-white-primary);
-            border-radius: 8px;
-            text-decoration: none;
-            padding: 10px 24px;
+                        &.live {
+                            background-color: #D1FADF;
+                            color: #039855;
+                        }
+
+                        &.upcoming {
+                            background-color: #FEF0C7;
+                            color: #DC6803;
+                        }
+
+                        &.completed {
+                            background-color: #101828;
+                            color: #FFFFFF;
+                        }
+                    }
+                }
+
+                .booth-card-body {
+                    display: flex;
+                    gap: 16px;
+                    align-items: flex-start;
+                    margin-bottom: 20px;
+
+                    .booth-image-container {
+                        width: 80px;
+                        height: 80px;
+                        border-radius: 8px;
+                        overflow: hidden;
+                        flex-shrink: 0;
+
+                        img {
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                        }
+                    }
+
+                    .booth-details {
+                        flex: 1;
+
+                        .booth-info-title {
+                            font-size: 16px;
+                            font-weight: 700;
+                            margin-bottom: 8px;
+                            color: var(--color-black-primary);
+                            text-align: left;
+                        }
+
+                        .booth-info-row {
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            color: var(--color-black-secondary);
+                            font-size: 13px;
+                            margin-bottom: 4px;
+                            text-align: left;
+
+                            svg {
+                                color: var(--color-black-tertiary);
+                            }
+                            
+                            span {
+                                text-align: left;
+                            }
+                        }
+                    }
+
+                    .booth-qr-section {
+                        cursor: pointer;
+                        padding: 8px;
+                        background: var(--color-bg-light);
+                        border-radius: 8px;
+                        border: 1px solid var(--color-black-quaternary);
+                        transition: background 0.2s;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+
+                        .booth-qr-wrapper canvas {
+                            width: 50px !important;
+                            height: 50px !important;
+                        }
+                    }
+                }
+
+                .booth-card-footer {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
+                    padding-top: 15px;
+                    border-top: 1px solid var(--color-black-quaternary);
+
+                    .view-details-btn {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        background-color: #101828;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        font-size: 14px;
+                        cursor: pointer;
+                        text-decoration: none;
+
+                        &:hover {
+                            background-color: #1d2939;
+                        }
+                    }
+
+                    .request-refund-btn {
+                        background-color: #D92D20;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        font-size: 14px;
+                        cursor: pointer;
+                        text-decoration: none;
+
+                        &:hover {
+                            background-color: #b42318;
+                        }
+                    }
+                }
+            }
+        }
+
+        .empty-state {
+            padding: 60px;
+            text-align: left;
+            color: var(--color-black-tertiary);
+            background: var(--color-white-primary);
             border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
-            &:hover {
-                background-color: var(--color-black-primary);
-                color: var(--color-white-primary);
+            svg {
+                margin-bottom: 16px;
+                opacity: 0.5;
             }
-        }
-
-        .my-booth-outlined-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--color-black-secondary);
-            border: 1px solid var(--color-black-quaternary);
-            text-decoration: none;
-
-            &:hover {
-                background-color: var(--color-black-quaternary);
+            
+            p {
+                text-align: left;
             }
         }
     }
-}
 
-/* Pagination */
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
-    margin-top: 30px;
-}
-
-.pagination-btn {
-    padding: 8px 16px;
-    border: 1px solid var(--color-black-quaternary);
-    background-color: var(--color-white-primary);
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: 'Poppins', sans-serif;
-    color: var(--color-black-primary);
-    transition: all 0.3s ease;
-}
-
-.pagination-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-[data-theme="dark"] .pagination-btn {
-    background-color: var(--color-bg-dark);
-    border-color: var(--color-white-quaternary);
-    color: var(--color-white-primary);
-}
-
-.pagination-info {
-    font-family: 'Inter', sans-serif;
-    color: var(--color-black-secondary);
-}
-
-.my-booth-qr-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px 40px;
-    border-left: 1px solid var(--color-black-quaternary);
-    background-color: var(--color-bg-light);
-    flex-shrink: 0;
-
-    .my-booth-qr-code {
-        margin-bottom: 12px;
-        cursor: pointer;
-    }
-}
-
-/* Responsiveness */
-@media (max-width: 768px) {
-    .sponsor-my-booth-container {
-        padding: 20px;
+    /* Responsive adjustments */
+    @media (max-width: 900px) {
+        .sponsor-my-booth-container {
+            .my-booth-list-new {
+                grid-template-columns: 1fr;
+            }
+        }
     }
 
-    .my-booth-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-    }
+    @media (max-width: 768px) {
+        .sponsor-my-booth-container {
+            padding: 30px 15px;
 
-    .my-booth-card {
-        flex-direction: column;
-    }
+            .my-booth-header {
+                flex-direction: column;
+                gap: 16px;
+                
+                .sponsor-events-btn {
+                    width: 100%;
+                    text-align: center;
+                }
+            }
 
-    .sponsor-events-btn {
-        width: 100%;
+            .my-booth-toolbar {
+                flex-direction: column;
+                align-items: stretch;
 
-    }
+                .toolbar-filters {
+                    flex-direction: column;
+                }
+            }
 
-    .my-booth-image-container {
-        width: 100%;
-        height: 200px;
-    }
+            .booth-card-new {
+                .booth-card-body {
+                    align-items: flex-start;
 
-    .my-booth-actions {
-        flex-direction: column;
-        gap: 16px;
-        align-items: stretch;
-    }
+                    .booth-image-container {
+                        width: 100%;
+                        height: 180px;
+                    }
 
-    .my-booth-actions-left {
-        flex-direction: column;
-    }
+                    .booth-qr-section {
+                        align-self: center;
+                    }
+                }
 
-    .my-booth-actions-left a,
-    .my-booth-actions button {
-        justify-content: center;
-        width: 100%;
-    }
-
-    .my-booth-qr-section {
-        border-left: none;
-        border-top: 1px solid var(--color-black-quaternary);
-        padding: 20px;
-    }
-}
-
-@media (max-width: 480px) {
-    .sponsor-my-booth-container {
-        padding: 16px;
+                .booth-card-footer {
+                    flex-direction: column;
+                    
+                    a, button {
+                        width: 100%;
+                        justify-content: center;
+                    }
+                }
+            }
+        }
     }
 }
