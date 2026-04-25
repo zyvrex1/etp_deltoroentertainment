@@ -5,6 +5,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Stage, Layer, Rect, Circle, Text, Group, Line, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import { useAuthContext } from '../hooks/useAuthContext';
+import { useSponsorCartContext } from '../context/SponsorCartContext';
+import { showSuccessAlert } from '../utils/sweetAlert';
 import eventsService from '../services/eventsService';
 import './SponsorVenueLayout.css';
 
@@ -84,6 +86,7 @@ const SponsorVenueLayout = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const { user } = useAuthContext();
+    const { addToCart } = useSponsorCartContext();
 
     const [event, setEvent] = useState(null);
     const [localItems, setLocalItems] = useState([]);
@@ -177,18 +180,19 @@ const SponsorVenueLayout = () => {
         });
     }, [localItems]);
 
-    const handleConfirm = () => {
+    const handleAddToCart = () => {
         if (!selectedId) return;
-        // Navigate to confirmation with state
         const selectedItem = localItems.find(i => i.id === selectedId);
         const category = priceLevels.find(pl => pl._id === selectedItem?.categoryId);
-        navigate('/sponsor/sponsor-confirm-selection', {
-            state: {
-                event,
-                booth: selectedItem,
-                category
-            }
-        });
+        
+        const facePrice = category?.facePrice || 0;
+        const processingFee = facePrice * 0.03;
+        const estimatedTax = facePrice * 0.08;
+        const total = facePrice + processingFee + estimatedTax;
+
+        addToCart({ event, booth: selectedItem, category, total, facePrice, processingFee, estimatedTax });
+        showSuccessAlert('Added to Cart', `${selectedItem.label || selectedItem.code} has been added to your cart.`);
+        setSelectedId(null);
     };
 
     const selectedItemData = useMemo(() => {
@@ -378,8 +382,8 @@ const SponsorVenueLayout = () => {
                                     </ul>
                                 </div>
 
-                                <button className="primary-button svl-confirm-btn" onClick={handleConfirm}>
-                                    Confirm Selection
+                                <button className="primary-button svl-confirm-btn" onClick={handleAddToCart}>
+                                    Add to Cart
                                 </button>
                             </>
                         ) : (

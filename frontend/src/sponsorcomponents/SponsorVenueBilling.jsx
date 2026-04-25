@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 import { useAuthContext } from '../hooks/useAuthContext';
+import { useSponsorCartContext } from '../context/SponsorCartContext';
 import * as authService from '../services/authService';
 import axios from 'axios';
 import './SponsorVenueBilling.css';
@@ -11,10 +12,15 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const SponsorVenueBilling = () => {
     const { user } = useAuthContext();
+    const { removeFromCart } = useSponsorCartContext();
     const navigate = useNavigate();
     const location = useLocation();
-    const { event, booth, category, total } = location.state || {};
-    const [paymentMethod, setPaymentMethod] = useState('invoice'); // Default to invoice for now
+    
+    // Support either legacy single item passing or new selectedItems array from cart
+    const state = location.state || {};
+    const selectedItems = state.selectedItems || (state.event && state.booth ? [state] : []);
+    
+    const [paymentMethod, setPaymentMethod] = useState('invoice');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [billingInfo, setBillingInfo] = useState({
@@ -26,6 +32,7 @@ const SponsorVenueBilling = () => {
         apEmail: '',
         poNumber: ''
     });
+
     useEffect(() => {
         const generatePONumber = () => {
             const year = new Date().getFullYear();
@@ -55,66 +62,86 @@ const SponsorVenueBilling = () => {
         fetchProfile();
     }, [user]);
 
-    if (!event || !booth) {
+    if (!selectedItems || selectedItems.length === 0) {
         return (
             <div className="sed-error-container">
                 <Icon icon="mdi:alert-circle-outline" width="48" />
-                <h3>No billing data found</h3>
-                <p className="small-body-text text-secondary mb-4">Please return to the map and complete your selection.</p>
-                <button className="primary-button" onClick={() => navigate('/sponsor/sponsor-events')}>Browse Events</button>
+                <h3>No items found in checkout</h3>
+                <p className="small-body-text text-secondary mb-4">Please return to your cart and complete your selection.</p>
+                <button className="primary-button" onClick={() => navigate('/sponsor/cart')}>Go to Cart</button>
             </div>
         );
     }
 
-    const facePrice = category?.facePrice || 0;
-    const processingFee = facePrice * 0.03;
-    const estimatedTax = facePrice * 0.08;
+    const totalGrand = selectedItems.reduce((sum, item) => sum + (item.total || 0), 0);
+    const subtotalGrand = selectedItems.reduce((sum, item) => sum + (item.facePrice || 0), 0);
+    const processingFeeGrand = selectedItems.reduce((sum, item) => sum + (item.processingFee || 0), 0);
+    const estimatedTaxGrand = selectedItems.reduce((sum, item) => sum + (item.estimatedTax || 0), 0);
+    
+    // For header display
+    const firstEvent = selectedItems[0].event;
+    const isMultipleEvents = new Set(selectedItems.map(i => i.event._id || i.event.id)).size > 1;
+    const headerTitle = isMultipleEvents ? 'Multiple Events' : firstEvent.title;
 
     const handlePay = async () => {
-        const eventId = event?._id || event?.id;
-        const boothId = booth?._id || booth?.id;
-
-        if (!eventId || !boothId) {
-            console.error("Missing IDs:", { eventId, boothId, event, booth });
-            await showErrorAlert("Error", "Missing event or booth selection data.");
-            return;
-        }
-
         const result = await showConfirmAlert(
             "Confirm Reservation",
-            `Are you sure you want to reserve ${booth.label || booth.code} for $${total?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}?`,
+            `Are you sure you want to reserve ${selectedItems.length} booth(s) for $${totalGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}?`,
             "Yes, Reserve Now"
         );
 
         if (result.isConfirmed) {
             setIsSubmitting(true);
             try {
-                const response = await axios.post(`${BACKEND_URL}/api/events/${eventId}/reserve-booth`, {
-                    boothId: boothId,
-                    billingAddress: {
-                        companyName: billingInfo.companyName,
-                        address: billingInfo.streetAddress,
-                        city: billingInfo.city,
-                        zipCode: billingInfo.postalCode,
-                        email: billingInfo.apEmail || user.email
-                    },
-                    amount: {
-                        total: total,
-                        subtotal: (total / 1.11), // Rough estimation if actuals not passed
-                        fee: (total * 0.03),
-                        tax: (total * 0.08)
-                    },
-                    paymentMethod: paymentMethod === 'invoice' ? 'invoice' : 'card',
-                    poNumber: billingInfo.poNumber
-                }, {
-                    headers: {
-                        Authorization: `Bearer ${user.token}`
-                    }
-                });
+                let successCount = 0;
+                // Loop through selected items and hit reserve-booth endpoint
+                for (const item of selectedItems) {
+                    const eventId = item.event?._id || item.event?.id;
+                    const boothId = item.booth?._id || item.booth?.id;
+                    const totalAmount = item.total || 0;
 
-                if (response.status === 201) {
-                    await showSuccessAlert("Reservation Successful", "Your booth has been reserved. You can find your ticket and QR code in 'My Booths'.");
+                    if (!eventId || !boothId) {
+                        console.error("Missing IDs for item:", item);
+                        continue;
+                    }
+
+                    const response = await axios.post(`${BACKEND_URL}/api/events/${eventId}/reserve-booth`, {
+                        boothId: boothId,
+                        billingAddress: {
+                            companyName: billingInfo.companyName,
+                            address: billingInfo.streetAddress,
+                            city: billingInfo.city,
+                            zipCode: billingInfo.postalCode,
+                            email: billingInfo.apEmail || user.email
+                        },
+                        amount: {
+                            total: totalAmount,
+                            subtotal: item.facePrice || (totalAmount / 1.11), 
+                            fee: item.processingFee || (totalAmount * 0.03),
+                            tax: item.estimatedTax || (totalAmount * 0.08)
+                        },
+                        paymentMethod: paymentMethod === 'invoice' ? 'invoice' : 'card',
+                        poNumber: billingInfo.poNumber
+                    }, {
+                        headers: {
+                            Authorization: `Bearer ${user.token}`
+                        }
+                    });
+
+                    if (response.status === 201) {
+                        successCount++;
+                        // Remove successfully reserved item from cart
+                        if (item.cartId) {
+                            removeFromCart(item.cartId);
+                        }
+                    }
+                }
+
+                if (successCount > 0) {
+                    await showSuccessAlert("Reservation Successful", `Successfully reserved ${successCount} booth(s). You can find your tickets and QR codes in 'My Booths'.`);
                     navigate('/sponsor/sponsor-my-booths');
+                } else {
+                    await showErrorAlert("Reservation Failed", "No booths could be reserved.");
                 }
             } catch (error) {
                 console.error("Reservation Error:", error);
@@ -142,7 +169,7 @@ const SponsorVenueBilling = () => {
                             <h2 className="text-primary m-0">Complete Your Sponsorship</h2>
                             <div className="svb-subtitle mt-1">
                                 <span className="small-body-text">
-                                    Finalize payment for {event.title}
+                                    Finalize payment for {headerTitle}
                                 </span>
                             </div>
                         </div>
@@ -257,7 +284,7 @@ const SponsorVenueBilling = () => {
                                         <div>
                                             <div className="d-flex align-items-center mb-1">
                                                 <Icon icon="mdi:credit-card" className="mr-2" style={{ fontSize: '1.2rem' }} />
-                                                <h5 className="h6 m-0">Visa •••• {booth.last4 || '4242'}</h5>
+                                                <h5 className="h6 m-0">Visa •••• 4242</h5>
                                             </div>
                                             <span className="smaller-body-text text-secondary block">Expires 12/25 &bull; Default</span>
                                         </div>
@@ -385,17 +412,21 @@ const SponsorVenueBilling = () => {
 
                             <div className="mb-4">
                                 <span className="smaller-body-text text-secondary block mb-1">Event</span>
-                                <h5>{event.title}</h5>
+                                <h5>{headerTitle}</h5>
                             </div>
 
                             <div className="mb-4">
-                                <span className="smaller-body-text text-secondary block mb-1">Item</span>
-                                <div className="svb-item-row">
-                                    <div>
-                                        <h5 className="m-0">{category?.priceName || 'Booth'} #{booth.label || booth.code}</h5>
-                                        <span className="smaller-body-text text-secondary">{category?.boothSize || 'Standard'} • {event.venue?.name}</span>
-                                    </div>
-                                    <span className="small-body-text text-secondary">${facePrice.toLocaleString()}</span>
+                                <span className="smaller-body-text text-secondary block mb-1">Items ({selectedItems.length})</span>
+                                <div style={{ maxHeight: '250px', overflowY: 'auto', paddingRight: '8px' }}>
+                                    {selectedItems.map((item, index) => (
+                                        <div className="svb-item-row mb-3" key={item.cartId || index}>
+                                            <div>
+                                                <h5 className="m-0" style={{ fontSize: '1rem' }}>{item.category?.priceName || 'Booth'} #{item.booth?.label || item.booth?.code}</h5>
+                                                <span className="smaller-body-text text-secondary">{item.category?.boothSize || 'Standard'} • {item.event?.venue?.name}</span>
+                                            </div>
+                                            <span className="small-body-text text-secondary">${(item.facePrice || 0).toLocaleString()}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 
@@ -403,24 +434,24 @@ const SponsorVenueBilling = () => {
 
                             <div className="svb-price-row mb-2">
                                 <span className="small-body-text text-secondary">Subtotal</span>
-                                <span className="small-body-text text-secondary">${facePrice.toLocaleString()}</span>
+                                <span className="small-body-text text-secondary">${subtotalGrand.toLocaleString()}</span>
                             </div>
 
                             <div className="svb-price-row mb-2">
                                 <span className="small-body-text text-secondary">Processing Fees</span>
-                                <span className="small-body-text text-secondary">${processingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="small-body-text text-secondary">${processingFeeGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
 
                             <div className="svb-price-row mb-4">
                                 <span className="small-body-text text-secondary">Tax</span>
-                                <span className="small-body-text text-secondary">${estimatedTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="small-body-text text-secondary">${estimatedTaxGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
 
                             <hr className="svb-divider mb-3 mt-0" />
 
                             <div className="svb-price-row">
                                 <h5 className="m-0">Total</h5>
-                                <h4 className="text-red m-0">${total?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</h4>
+                                <h4 className="text-red m-0">${totalGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</h4>
                             </div>
 
                             <button
@@ -431,7 +462,7 @@ const SponsorVenueBilling = () => {
                                 {isSubmitting ? (
                                     <Icon icon="line-md:loading-twotone-loop" width="24" />
                                 ) : (
-                                    `Reserve Now - $${total?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}`
+                                    `Reserve Now - $${totalGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}`
                                 )}
                             </button>
                             <p className="text-center smaller-body-text text-secondary m-0 pb-4">

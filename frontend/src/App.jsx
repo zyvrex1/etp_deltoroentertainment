@@ -55,6 +55,7 @@ const SponsorSettings = lazy(() => import("./sponsorcomponents/SponsorSettings.j
 const SponsorSupport = lazy(() => import("./sponsorcomponents/SponsorSupport.jsx"));
 const SponsorStore = lazy(() => import("./sponsorcomponents/SponsorStore.jsx"));
 const SponsorStoreDashboard = lazy(() => import("./sponsorcomponents/SponsorStoreDashboard.jsx"));
+const SponsorCart = lazy(() => import("./sponsorcomponents/SponsorCart.jsx"));
 
 // Customer Pages
 const CustomerHome = lazy(() => import("./customercomponents/CustomerHome.jsx"));
@@ -188,6 +189,7 @@ function App() {
             <Route path="support" element={<SponsorSupport />} />
             <Route path="store" element={<SponsorStore />} />
             <Route path="store/dashboard" element={<SponsorStoreDashboard />} />
+            <Route path="cart" element={<SponsorCart />} />
           </Route>
 
           <Route path="/customer" element={<CustomerLayout />}>

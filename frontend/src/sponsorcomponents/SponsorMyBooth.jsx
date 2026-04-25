@@ -80,7 +80,7 @@ export default function SponsorMyBooth() {
     }, [reservations, searchQuery, statusFilter, sortFilter]);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 6;
     const totalPages = Math.ceil(filteredAndSortedReservations.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedBooths = filteredAndSortedReservations.slice(startIndex, startIndex + itemsPerPage);

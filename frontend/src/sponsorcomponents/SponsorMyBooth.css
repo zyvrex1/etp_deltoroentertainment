@@ -183,7 +183,7 @@
                         flex: 1;
 
                         .booth-info-title {
-                            font-size: 16px;
+                            font-size: 18px; /* Matches h5 */
                             font-weight: 700;
                             margin-bottom: 8px;
                             color: var(--color-black-primary);
@@ -195,7 +195,7 @@
                             align-items: center;
                             gap: 6px;
                             color: var(--color-black-secondary);
-                            font-size: 13px;
+                            font-size: 12px; /* Matches .smaller-body-text */
                             margin-bottom: 4px;
                             text-align: left;
 
@@ -244,7 +244,7 @@
                         padding: 10px 20px;
                         border-radius: 8px;
                         font-weight: 600;
-                        font-size: 14px;
+                        font-size: 14px; /* Matches .small-body-text */
                         cursor: pointer;
                         text-decoration: none;
 
@@ -260,7 +260,7 @@
                         padding: 10px 20px;
                         border-radius: 8px;
                         font-weight: 600;
-                        font-size: 14px;
+                        font-size: 14px; /* Matches .small-body-text */
                         cursor: pointer;
                         text-decoration: none;
 
@@ -287,6 +287,43 @@
             
             p {
                 text-align: left;
+            }
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-top: 40px;
+            
+            .pagination-btn {
+                background-color: var(--color-white-primary);
+                border: 1px solid var(--color-black-quaternary);
+                padding: 8px 16px;
+                border-radius: 8px;
+                font-family: 'Inter', sans-serif;
+                font-weight: 500;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.2s;
+                color: var(--color-black-primary);
+
+                &:hover:not(:disabled) {
+                    background-color: var(--color-bg-light);
+                    border-color: var(--color-black-tertiary);
+                }
+
+                &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+            }
+
+            .pagination-info {
+                font-size: 14px;
+                color: var(--color-black-secondary);
+                font-weight: 500;
             }
         }
     }
@@ -344,6 +381,12 @@
                         width: 100%;
                         justify-content: center;
                     }
+                }
+            }
+
+            .booth-details{
+                svg{
+                    display: none !important;
                 }
             }
         }
