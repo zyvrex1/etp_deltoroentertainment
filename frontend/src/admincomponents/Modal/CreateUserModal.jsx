@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./CreateUserModal.css";
+import { PhoneInput } from "react-international-phone";
+import "react-international-phone/style.css";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -9,74 +11,91 @@ import {
 } from "../../utils/sweetAlert";
 import { useAuthContext } from "../../hooks/useAuthContext";
 
+
 const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
   const { user } = useAuthContext();
   const [userType, setUserType] = useState("Customer");
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({ phone: "" });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const result = await showCreateConfirmAlert(
-      "Create User?",
-      `Are you sure you want to create a new ${userType} user?`,
-    );
-    if (!result.isConfirmed) return;
-
-    try {
-      const payload = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        companyName: formData.companyName,
-        industry: formData.industry,
-        role: userType.toLowerCase(),
-      };
-
-      // Choose route based on logged-in user
-      const route =
-        user?.role === "superadmin"
-          ? "/api/superadmin/create-user"
-          : "/api/admin/create-user";
-
-      const response = await fetch(route, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user?.token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        data = { error: "Server did not return JSON. Check backend." };
-      }
-
-      if (!response.ok) throw new Error(data.error || "Failed to create user");
-
-      showSuccessAlert("User Created", data.message);
-      onClose();
-
-      // 🔥 THIS IS THE IMPORTANT PART
-      if (onUserCreated) {
-        onUserCreated();
-      }
-
-      setFormData({});
-    } catch (error) {
-      console.error("Error creating user:", error);
-      showErrorAlert("Error", error.message);
-    }
+  const handlePhoneChange = (phone) => {
+    setFormData((prev) => ({ ...prev, phone }));
   };
+
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const currentToken = user?.token;
+
+  if (!currentToken) {
+    showErrorAlert("Error", "Session expired. Please log in again.");
+    return;
+  }
+
+  const result = await showCreateConfirmAlert(
+    "Create User?",
+    `Are you sure you want to create a new ${userType} user?`
+  );
+  
+  if (!result.isConfirmed) return;
+
+  try {
+    const payload = {
+      firstName: formData.firstName || "",
+      lastName: formData.lastName || "",
+      email: formData.email || "",
+      phone: formData.phone || "",
+      companyName: formData.companyName || "",
+      industry: formData.industry || "",
+      role: userType.toLowerCase(),
+    };
+
+    const route =
+      user?.role === "superadmin"
+        ? "/api/superadmin/create-user"
+        : "/api/admin/create-user";
+
+    const response = await fetch(route, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${currentToken}`, // Use the captured token here
+      },
+      body: JSON.stringify(payload),
+    });
+
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { error: "Server did not return JSON. Check backend." };
+    }
+
+    if (!response.ok) {
+      // If the backend actually returned an error, this will catch it
+      throw new Error(data.error || "Failed to create user");
+    }
+
+    // Success logic
+    showSuccessAlert("User Created", data.message || "User created successfully");
+    
+    // Reset and notify parent
+    if (onUserCreated) {
+      onUserCreated();
+    }
+    
+    setFormData({ phone: "" }); // Reset to initial state
+    onClose();
+
+  } catch (error) {
+    console.error("Error creating user:", error);
+    showErrorAlert("Error", error.message);
+  }
+};
 
   const handleCancel = async () => {
     const hasChanges = Object.values(formData).some(
@@ -93,55 +112,64 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
   if (!isOpen) return null;
 
   const renderFormFields = () => {
+    const renderPhoneField = (extraClass = "") => (
+      <div className={`add-user-form-group ${extraClass}`}>
+        <h6>Phone Number</h6>
+        <PhoneInput
+          defaultCountry="ph" 
+          value={formData.phone || ""}
+          onChange={(phone) => setFormData((prev) => ({ ...prev, phone }))}
+          inputClassName="add-user-form-input" 
+          className="phone-input-container"
+        />
+      </div>
+    );
+
+    const commonFields = (
+      <>
+        <div className="add-user-form-group">
+          <h6>First Name</h6>
+          <input
+            type="text"
+            name="firstName"
+            value={formData.firstName || ""}
+            onChange={handleChange}
+            placeholder="e.g. John"
+            required
+          />
+        </div>
+        <div className="add-user-form-group">
+          <h6>Last Name</h6>
+          <input
+            type="text"
+            name="lastName"
+            value={formData.lastName || ""}
+            onChange={handleChange}
+            placeholder="e.g. Doe"
+            required
+          />
+        </div>
+        <div className="add-user-form-group">
+          <h6>Email Address</h6>
+          <input
+            type="email"
+            name="email"
+            value={formData.email || ""}
+            onChange={handleChange}
+            placeholder="john@example.com"
+            required
+          />
+        </div>
+      </>
+    );
+
     switch (userType) {
       case "Promoter":
         return (
           <>
             <div className="add-user-form-row">
-              <div className="add-user-form-group">
-                <h6>First Name</h6>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName || ""}
-                  onChange={handleChange}
-                  placeholder="e.g. John"
-                  required
-                />
-              </div>
-              <div className="add-user-form-group">
-                <h6>Last Name</h6>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName || ""}
-                  onChange={handleChange}
-                  placeholder="e.g. Doe"
-                  required
-                />
-              </div>
-              <div className="add-user-form-group">
-                <h6>Email Address</h6>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email || ""}
-                  onChange={handleChange}
-                  placeholder="john@example.com"
-                  required
-                />
-              </div>
-              <div className="add-user-form-group">
-                <h6>Phone Number</h6>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone || ""}
-                  onChange={handleChange}
-                  placeholder="+1 (555) 000-0000"
-                  required
-                />
-              </div>
+              {commonFields}
+              {renderPhoneField()}
             </div>
             <div className="add-user-form-row">
               <div className="add-user-form-group">
@@ -173,50 +201,8 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
         return (
           <>
             <div className="add-user-form-row">
-              <div className="add-user-form-group">
-                <h6>First Name</h6>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName || ""}
-                  onChange={handleChange}
-                  placeholder="e.g. John"
-                  required
-                />
-              </div>
-              <div className="add-user-form-group">
-                <h6>Last Name</h6>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName || ""}
-                  onChange={handleChange}
-                  placeholder="e.g. Doe"
-                  required
-                />
-              </div>
-              <div className="add-user-form-group">
-                <h6>Email Address</h6>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email || ""}
-                  onChange={handleChange}
-                  placeholder="john@example.com"
-                  required
-                />
-              </div>
-              <div className="add-user-form-group add-user-full-width">
-                <h6>Phone Number</h6>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone || ""}
-                  onChange={handleChange}
-                  placeholder="+1 (555) 000-0000"
-                  required
-                />
-              </div>
+              {commonFields}
+              {renderPhoneField("add-user-full-width")}
             </div>
             <div className="add-user-form-row">
               <div className="add-user-form-group">
@@ -244,58 +230,12 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
             </div>
           </>
         );
-      case "Admin":
-      case "Customer":
       default:
         return (
-          <>
-            <div className="add-user-form-row">
-              <div className="add-user-form-group">
-                <h6>First Name</h6>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName || ""}
-                  onChange={handleChange}
-                  placeholder="e.g. John"
-                  required
-                />
-              </div>
-              <div className="add-user-form-group">
-                <h6>Last Name</h6>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName || ""}
-                  onChange={handleChange}
-                  placeholder="e.g. Doe"
-                  required
-                />
-              </div>
-              <div className="add-user-form-group">
-                <h6>Email Address</h6>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email || ""}
-                  onChange={handleChange}
-                  placeholder="john@example.com"
-                  required
-                />
-              </div>
-              <div className="add-user-form-group">
-                <h6>Phone Number</h6>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone || ""}
-                  onChange={handleChange}
-                  placeholder="+1 (555) 000-0000"
-                  required
-                />
-              </div>
-            </div>
-          </>
+          <div className="add-user-form-row">
+            {commonFields}
+            {renderPhoneField()}
+          </div>
         );
     }
   };
