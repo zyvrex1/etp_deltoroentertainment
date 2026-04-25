@@ -354,7 +354,9 @@ const EventManagement = () => {
 
   const filteredData = getTableData().filter((item) => {
     const searchStr = searchQuery.toLowerCase();
-    const promoterName = item.createdBy ? `${item.createdBy.firstName} ${item.createdBy.lastName}` : "";
+    const promoterName = item.createdBy 
+  ? `${item.createdBy.firstName || ''} ${item.createdBy.lastName || ''}` 
+  : "Unknown Promoter";
     
     return (
       (item.title || "").toLowerCase().includes(searchStr) ||
@@ -646,7 +648,11 @@ const EventManagement = () => {
 
                     <td data-label="Actions">
                       <div className="em-actions">
+<<<<<<< HEAD
                         {event.createdBy?._id === user?._id ? (
+=======
+    {event.createdBy?._id === user?._id ? (
+>>>>>>> d1f0d42d9a4a60bef211876e3bfd6113bfd3b588
                           // Current user owns this event → View/Edit, Approve/Reject (if pending), Cancel, Delete
                           <>
                             <button
