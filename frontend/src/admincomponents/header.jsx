@@ -145,7 +145,7 @@ const Header = ({ mobileExpanded, setMobileExpanded }) => {
   }, []);
 
   // ✅ Early return **after hooks**
-  if (!authUser) return null;
+  if (!authUser || !authUser.token) return null;
 
   return (
     <header className="app-header">

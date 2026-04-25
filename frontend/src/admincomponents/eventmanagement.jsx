@@ -94,17 +94,17 @@ const EventManagement = () => {
     if (!user?.token) return;
 
     const fetchEvents = async () => {
-      setIsLoading(currentPage === 1 && searchQuery === "" ? true : false); // Only main load shows full skeletons
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+      setIsLoading(true); 
       try {
-        const response = await fetch("/api/events", {
+        const response = await fetch(`${backendUrl}/api/events`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${user.token}`,
           },
         });
 
-        const text = await response.text();
-        const json = text ? JSON.parse(text) : [];
+        const json = await response.json();
 
         if (response.ok) {
           dispatch({ type: "SET_EVENTS", payload: json });
@@ -232,7 +232,7 @@ const EventManagement = () => {
           assignedPromoters:
             event.createdBy?.role === "promoter" &&
             !event.assignedPromoters?.some(
-              (ap) => ap._id === event.createdBy._id,
+              (ap) => ap._id === event.createdBy?._id,
             )
               ? [
                   ...(event.assignedPromoters?.map((ap) => ap._id) || []),
@@ -646,7 +646,7 @@ const EventManagement = () => {
 
                     <td data-label="Actions">
                       <div className="em-actions">
-                        {event.createdBy._id === user._id ? (
+                        {event.createdBy?._id === user?._id ? (
                           // Current user owns this event → View/Edit, Approve/Reject (if pending), Cancel, Delete
                           <>
                             <button
@@ -752,8 +752,8 @@ const EventManagement = () => {
   };
 
   return (
-    <div className="user-management">
-      <div className="usermanagement-header">
+    <div className="event-management">
+      <div className="eventmanagement-header">
         <div>
           <h1>Event Management</h1>
           <p>Manage all events, tickets, and booth layouts.</p>

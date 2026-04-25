@@ -1,443 +1,390 @@
-.customer-cart-container {
-    padding: 40px;
+.customer-cart-wrapper {
     max-width: 1000px;
     margin: 0 auto;
-    width: 100%;
-    background-color: var(--color-bg-light);
-    min-height: 80vh;
+    padding: 2rem 1rem;
+    color: var(--color-text-primary, #333);
+}
 
-    .cart-header-nav {
-        margin-bottom: 20px;
-        color: var(--color-black-secondary);
-        font-size: 14px;
-        text-align: left;
+.cart-header-nav {
+    margin-bottom: 1.5rem;
+    font-size: 14px; /* Matches .small-body-text */
+    text-align: left;
+}
 
-        .breadcrumb {
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
+.cart-header-nav .breadcrumb {
+    color: var(--color-secondary, #666);
+    cursor: pointer;
+}
 
-        .breadcrumb:hover {
-            color: var(--color-red-primary);
-        }
+.cart-header-nav .breadcrumb:hover {
+    text-decoration: underline;
+}
 
-        .breadcrumb-current {
-            color: var(--color-black-primary);
-            font-weight: 500;
-        }
+.cart-header-nav .breadcrumb-current {
+    font-weight: 500;
+    color: var(--color-text-primary, #333);
+}
+
+.cart-title-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.cart-title-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    svg{
+        color: var(--color-black-primary);
     }
+}
 
-    .cart-title-section {
-        margin-bottom: 25px;
+.cart-page-title {
+    margin: 0;
+    font-weight: 700;
+    text-align: left;
+}
 
-        .cart-title-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+.cart-tip-card {
+    background-color: var(--color-red-quaternary);
+    border: 1px solid var(--color-red-primary);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    text-align: left;
+}
 
-            .back-btn {
-                background-color: var(--color-white-primary);
-                border: 1px solid var(--color-black-quaternary);
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-            }
+.cart-tip-card p {
+    margin: 0;
+    color: var(--color-red-primary);
+}
 
-            .back-btn:hover {
-                border-color: var(--color-black-tertiary);
-                background-color: var(--color-bg-light);
-            }
+.empty-cart-state {
+    text-align: center;
+    padding: 4rem 0;
+}
 
-            .cart-page-title {
-                color: var(--color-black-primary);
-                margin-bottom: 4px;
-                text-align: left;
-            }
-        }
+.empty-cart-icon {
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
 
-        .timer-section {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+.cart-content-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.cart-event-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.event-card-header {
+    background: #f8f9fa;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.event-card-header h4 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.event-card-header .live-badge {
+    background: #d4edda;
+    color: #155724;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px; /* Matches .smaller-body-text */
+    font-weight: 600;
+}
+
+.ticket-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.ticket-item {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s;
+}
+
+.ticket-item:last-child {
+    border-bottom: none;
+}
+
+.ticket-item.checked {
+    background-color: #fcfcfc;
+}
+
+.custom-checkbox {
+    margin-right: 1.5rem;
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+}
+
+.custom-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 24px;
+    width: 24px;
+    background-color: #fff;
+    border: 2px solid #ced4da;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.custom-checkbox:hover input ~ .checkmark {
+    border-color: #adb5bd;
+}
+
+.custom-checkbox input:checked ~ .checkmark {
+    background-color: var(--color-red-primary, #dc3545);
+    border-color: var(--color-red-primary, #dc3545);
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 8px;
+    top: 4px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.custom-checkbox input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.ticket-main {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 1.5rem;
+}
+
+.ticket-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.ticket-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.ticket-type-info {
+    text-align: left;
+    flex: 1;
+}
+
+.ticket-type-info h5 {
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+}
+
+.ticket-type-info p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-secondary, #666);
+}
+
+.ticket-meta {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    color: var(--color-secondary, #666);
+}
+
+.ticket-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ticket-price-right {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.ticket-price-right h5 {
+    margin: 0;
+    font-weight: 700;
+}
+
+.del-btn {
+    background: none;
+    border: none;
+    color: var(--color-secondary, #666);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.del-btn:hover {
+    background-color: #f8f9fa;
+    color: var(--color-red-primary, #dc3545);
+}
+
+.cart-bottom-actions {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    padding: 1.5rem;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+    z-index: 10;
+}
+
+.bottom-left-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.bottom-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.select-all-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 0.5rem;
+    font-size: 14px; /* Matches .small-body-text */
+    color: var(--color-secondary, #666);
+}
+
+.total-text {
+    font-weight: 500;
+    color: var(--color-secondary, #666);
+}
+
+.total-amount {
+    font-size: 20px; /* Matches h4 */
+    font-weight: 700;
+    color: var(--color-red-primary, #dc3545);
+}
+
+.checkout-btn {
+    padding: 10px 24px;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+@media (max-width: 1024px) {
+    .customer-cart-wrapper {
+        padding: 1.5rem 1rem;
     }
+}
 
-    .empty-cart-state {
-        display: flex;
+@media (max-width: 768px) {
+    .ticket-main {
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 80px 20px;
-        text-align: center;
-        background-color: var(--color-bg-light); /* Or white if needed, but it seems to blend with the background in the image */
+        align-items: flex-start;
+        gap: 1rem;
     }
-
-    .empty-cart-icon {
-        color: var(--color-black-primary);
-        margin-bottom: 15px;
-    }
-
-    .empty-cart-state h3 {
-        color: var(--color-black-primary);
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-
-    .empty-browse-btn {
-        padding: 12px 24px;
-        border-radius: 6px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
-    .cart-tip-card {
-        background-color: var(--color-white-primary);
-        border: 1px solid var(--color-black-quaternary);
-        border-radius: 8px;
-        padding: 15px 20px;
-        margin-bottom: 30px;
-        text-align: left;
-
-        p {
-            color: var(--color-black-secondary);
-        }
-    }
-
-    .cart-content-layout {
-        display: flex;
-        gap: 30px;
-
-        .cart-items-column {
-            flex: 2.2;
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
-
-        .cart-summary-column {
-            flex: 1;
-
-            h4{
-                color: var(--color-black-primary);
-            }
-        }
-
-    }
-
-    .cart-event-card {
-        background-color: var(--color-bg-light);
-        border: 1px solid var(--color-black-quaternary);
-        border-radius: 12px;
-        overflow: hidden;
-
-        .event-card-header {
-            background-color: var(--color-white-primary);
-            border-bottom: 1px solid var(--color-black-quaternary);
-            padding: 20px;
-
-            .event-info-left {
-                display: flex;
-                align-items: center;
-                gap: 20px;
-
-                .event-thumbnail {
-                    width: 70px;
-                    height: 70px;
-                    border-radius: 10px;
-                    object-fit: cover;
-                }
-
-                .event-details {
-                    text-align: left;
-                    color: var(--color-black-primary);
-                }
-            }
-
-            .event-info-right {
-                p {
-                    color: var(--color-black-secondary);
-                }
-
-                h4 {
-                    color: var(--color-black-primary);
-                }
-            }
-        }
-
-        .ticket-list {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-
-            .ticket-item {
-                display: flex;
-                align-items: center;
-                background-color: var(--color-white-primary);
-                border: 1px solid var(--color-black-quaternary);
-                border-radius: 8px;
-                padding: 20px;
-                transition: all 0.3s ease;
-
-                &.checked {
-                    border-color: var(--color-red-primary);
-                    background-color: var(--color-red-quaternary);
-                }
-
-                .custom-checkbox {
-                    position: relative;
-                    padding-left: 35px;
-                    cursor: pointer;
-                    user-select: none;
-
-                    input {
-                        position: absolute;
-                        opacity: 0;
-                        cursor: pointer;
-                        height: 0;
-                        width: 0;
-                    }
-
-                    .checkmark {
-                        position: absolute;
-                        top: -10px;
-                        left: 0;
-                        height: 20px;
-                        width: 20px;
-                        background-color: var(--color-white-primary);
-                        border: 1px solid var(--color-black-tertiary);
-                        border-radius: 4px;
-
-                        &:after {
-                            content: "";
-                            position: absolute;
-                            display: none;
-                            left: 6px;
-                            top: 2px;
-                            width: 5px;
-                            height: 10px;
-                            border: solid white;
-                            border-width: 0 2px 2px 0;
-                            transform: rotate(45deg);
-                        }
-                    }
-
-                    input:checked~.checkmark {
-                        background-color: var(--color-red-primary);
-                        border-color: var(--color-red-primary);
-                    }
-
-                    input:checked~.checkmark:after {
-                        display: block;
-                    }
-                }
-
-                .ticket-main {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    width: 100%;
-                }
-
-                .ticket-info {
-                    flex: 1;
-                    text-align: left;
-
-                    h5 {
-                        color: var(--color-black-primary);
-                    }
-                }
-
-                .ticket-price-right {
-                    display: flex;
-                    align-items: center;
-                    gap: 20px;
-                    width: 120px;
-                    justify-content: flex-end;
-
-                    h5 {
-                        color: var(--color-black-primary);
-                    }
-
-                    .del-btn {
-                        color: var(--color-black-secondary);
-                        transition: color 0.3s ease;
-
-                        &:hover {
-                            color: var(--color-red-primary);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    .summary-card {
-        background-color: var(--color-white-primary);
-        border: 1px solid var(--color-black-quaternary);
-        border-radius: 12px;
-        padding: 25px;
-        position: sticky;
-        top: 20px;
-
-        .summary-title {
-            color: var(--color-black-primary);
-            text-align: left;
-        }
-
-        .summary-divider {
-            border: none;
-            border-top: 1px solid var(--color-black-quaternary);
-            margin: 20px 0;
-        }
-
-        .checkout-btn {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            background-color: var(--color-red-primary);
-            color: var(--color-white-primary);
-            border: none;
-        }
-
-        .continue-btn {
-            background-color: var(--color-white-primary);
-            color: var(--color-black-primary);
-            border: 1px solid var(--color-black-secondary);
-            transition: all 0.3s ease;
-
-            &:hover {
-                border-color: var(--color-black-primary);
-                background-color: var(--color-bg-light);
-            }
-        }
-    }
-
-    .flex-between {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .mt-1 {
-        margin-top: 4px;
-    }
-
-    .mt-s {
-        margin-top: 10px;
-    }
-
-    .mt-m {
-        margin-top: 15px;
-    }
-
-    .mt-l {
-        margin-top: 25px;
-    }
-
-    .mt-xl {
-        margin-top: 30px;
-    }
-
-    .font-bold {
-        font-weight: 600;
-    }
-
-    .red-text {
-        color: var(--color-red-primary) !important;
-    }
-
-    .green-text {
-        color: var(--color-green-primary);
-    }
-
-    .text-muted {
-        color: var(--color-black-secondary);
-    }
-
-    .text-black {
-        color: var(--color-black-primary);
-    }
-
-    .text-center {
-        text-align: center;
-    }
-
-    .text-right {
-        text-align: right;
-    }
-
-    .full-width {
+    .ticket-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
         width: 100%;
     }
 
-    .action-icon-btn {
-        cursor: pointer;
-        background: none;
-        border: none;
-        padding: 0;
+    .ticket-type-info p svg,
+    .ticket-meta-item svg {
+        display: none !important;
     }
 
-    @media (max-width: 1024px) {
-        .cart-content-layout {
-            flex-direction: column;
-        }
-
-          .cart-summary-column {
-        order: -1;
+    .ticket-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
     }
-        .summary-card {
-            position: relative;
-            top: 0;
-        }
+    .ticket-price-right {
+        width: 100%;
+        justify-content: space-between;
     }
+    .cart-bottom-actions {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .bottom-right-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
 
-    @media (max-width: 768px) {
-        .cart-title-section {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 15px;
-        }
-
-        .event-card-header {
-            flex-direction: column;
-            align-items: flex-start !important;
-            gap: 15px;
-
-            .event-info-right {
-                text-align: left;
-            }
-        }
-
-        .ticket-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
-
-            gap: 15px;
-            padding-left: 20px !important;
-
-            .ticket-main {
-                width: 100%;
-            }
-
-            .custom-checkbox {
-                padding-left: 30px;
-            }
-
-            .ticket-price-right {
-                width: 100%;
-                justify-content: space-between;
-            }
-        }
+@media (max-width: 480px) {
+    .cart-title-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
     }
 
-    @media (max-width: 480px) {
-        padding: 20px 5%;
+    .ticket-item {
+        padding: 1rem;
+    }
+
+    .custom-checkbox {
+        margin-right: 1rem;
+    }
+
+    .bottom-left-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .bottom-right-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .checkout-btn {
+        width: 100%;
     }
 }
