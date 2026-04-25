@@ -366,6 +366,14 @@
   background-color: rgba(220, 53, 69, 0.05);
 }
 
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
 .icon-circle {
   width: 54px;
   height: 54px;
@@ -374,7 +382,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  margin: 0 auto 12px auto;
   color: var(--color-black-secondary);
 }
 
@@ -383,12 +391,14 @@
   font-weight: 600;
   color: var(--color-black-primary);
   margin: 0 0 4px 0;
+  text-align: center;
 }
 
 .upload-subtitle {
   font-size: 12px;
   color: var(--color-black-tertiary);
   margin: 0;
+  text-align: center;
 }
 
 /* File Preview Styles */

@@ -2,6 +2,7 @@ const User = require('../models/userModel')
 const Promoter = require('../models/promoterModel')
 const Sponsor = require('../models/sponsorModel')
 const Customer = require('../models/customerModel')
+const Reservation = require('../models/reservationModel')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const { sendEmail } = require('../utils/email')
@@ -120,11 +121,27 @@ const getAllUsers = async (req, res) => {
       .lean();
 
     // 2. Fetch all profile data (for extra fields like industry, tickets, etc.)
-    const [customers, promoters, sponsors] = await Promise.all([
+    const [customers, promoters, sponsors, sponsorStats] = await Promise.all([
       Customer.find().lean(),
       Promoter.find().lean(),
-      Sponsor.find().lean()
+      Sponsor.find().lean(),
+      Reservation.aggregate([
+        { $match: { status: 'confirmed' } },
+        { $group: { 
+            _id: '$user', 
+            totalSpent: { $sum: '$amount.total' },
+            boothsBooked: { $sum: 1 }
+        }}
+      ])
     ]);
+    
+    const sponsorStatsMap = {};
+    sponsorStats.forEach(s => {
+      sponsorStatsMap[s._id.toString()] = {
+        totalSpent: s.totalSpent,
+        boothsBooked: s.boothsBooked
+      };
+    });
 
     // 3. Create maps for quick lookup
     const profileMap = {};
@@ -150,10 +167,13 @@ const getAllUsers = async (req, res) => {
     });
     
     sponsors.forEach(s => {
+      const stats = sponsorStatsMap[s.userId.toString()] || { totalSpent: 0, boothsBooked: 0 };
       profileMap[s.userId.toString()] = { 
         type: 'sponsor', 
         details: { 
-          industry: s.industry 
+          industry: s.industry,
+          totalSpent: stats.totalSpent,
+          boothsBooked: stats.boothsBooked
         } 
       };
     });
@@ -205,7 +225,19 @@ const getUser = async (req, res) => {
     if (lowerRole === 'promoter') {
       roleDetails = await Promoter.findOne({ userId: user._id }).lean();
     } else if (lowerRole === 'sponsor') {
-      roleDetails = await Sponsor.findOne({ userId: user._id }).lean();
+      const [sponsor, reservations] = await Promise.all([
+        Sponsor.findOne({ userId: user._id }).lean(),
+        Reservation.find({ user: user._id, status: 'confirmed' }).lean()
+      ]);
+      
+      const totalSpent = reservations.reduce((sum, r) => sum + (r.amount?.total || 0), 0);
+      const boothsBooked = reservations.length;
+      
+      roleDetails = sponsor ? { 
+        ...sponsor, 
+        totalSpent, 
+        boothsBooked 
+      } : {};
     } else if (lowerRole === 'customer') {
       roleDetails = await Customer.findOne({ userId: user._id }).lean();
     }

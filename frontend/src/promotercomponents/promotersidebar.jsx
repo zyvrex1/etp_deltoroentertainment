@@ -18,14 +18,14 @@ import {
 
 import "./promotersidebar.css";
 
-const Promotersidebar = ({ mobileExpanded, setMobileExpanded }) => {
+const PromoterSidebar = ({ mobileExpanded, setMobileExpanded }) => {
 
   const handleLinkClick = () => {
-  // Only close sidebar on mobile
-  if (window.innerWidth <= 768) {
-    setMobileExpanded(false);
-  }
-};
+    // Only close sidebar on mobile
+    if (window.innerWidth <= 768) {
+      setMobileExpanded(false);
+    }
+  };
 
   return (
     <aside
@@ -58,7 +58,7 @@ const Promotersidebar = ({ mobileExpanded, setMobileExpanded }) => {
               isActive ? "sidebar-item active" : "sidebar-item"
             } onClick={handleLinkClick}
           >
-            <MdDashboard className="icon"  />
+            <MdDashboard className="icon" />
             <span>Dashboard</span>
           </NavLink>
 
@@ -76,12 +76,12 @@ const Promotersidebar = ({ mobileExpanded, setMobileExpanded }) => {
             <MdEventAvailable className="icon" />
             <span>My Events</span>
           </NavLink>
-            <NavLink to="/promoter/promoter-eventmanagement" className="sidebar-item" onClick={handleLinkClick}>
+          <NavLink to="/promoter/promoter-eventmanagement" className="sidebar-item" onClick={handleLinkClick}>
             <MdEvent className="icon" />
             <span>Event Management</span>
           </NavLink>
 
-             <NavLink to="/promoter/promoter-eventmonitoring" className="sidebar-item" onClick={handleLinkClick}>
+          <NavLink to="/promoter/promoter-eventmonitoring" className="sidebar-item" onClick={handleLinkClick}>
             <MdInsights className="icon" />
             <span>Event Monitoring</span>
           </NavLink>
@@ -109,4 +109,4 @@ const Promotersidebar = ({ mobileExpanded, setMobileExpanded }) => {
   );
 };
 
-export default Promotersidebar;
+export default PromoterSidebar;

@@ -545,6 +545,35 @@
         }
     }
 
+    .vt-reply-files-preview {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .vt-reply-file-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        background-color: var(--color-red-primary);
+        border-radius: 8px;
+        color: var(--color-white-primary);
+
+        .vt-remove-file {
+            margin-left: auto;
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+
+            &:hover {
+                opacity: 1;
+            }
+        }
+    }
+
 
 
 

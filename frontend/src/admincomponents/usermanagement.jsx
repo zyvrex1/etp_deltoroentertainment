@@ -206,6 +206,7 @@ const UserManagement = () => {
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Phone</th>
                   <th>Role</th>
                   <th>Joined</th>
                   <th>Status</th>
@@ -222,6 +223,7 @@ const UserManagement = () => {
                       </div>
                     </td>
                     <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
                     <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
                     <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
                     <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
@@ -245,6 +247,7 @@ const UserManagement = () => {
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Phone</th>
                   <th>Role</th>
                   <th>Joined</th>
                   <th>Status</th>
@@ -269,6 +272,9 @@ const UserManagement = () => {
                     </td>
                     <td data-label="Email" className="name-td">
                       <h5 className="smaller-body-text">{user.email}</h5>
+                    </td>
+                    <td data-label="Phone" className="small-body-text">
+                      {user.phone || "N/A"}
                     </td>
                     <td data-label="Role">
                       <span className="button-label role-badge">{user.role}</span>
@@ -318,6 +324,7 @@ const UserManagement = () => {
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Phone</th>
                   <th>Total Spent</th>
                   <th>Joined</th>
                   <th>Status</th>
@@ -334,6 +341,7 @@ const UserManagement = () => {
                       </div>
                     </td>
                     <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
                     <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
                     <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
                     <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
@@ -357,6 +365,7 @@ const UserManagement = () => {
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Phone</th>
                   <th>Total Spent</th>
                   <th>Joined</th>
                   <th>Status</th>
@@ -381,6 +390,9 @@ const UserManagement = () => {
                     </td>
                     <td data-label="Email" className="name-td">
                       <h5 className="smaller-body-text">{customer.email}</h5>
+                    </td>
+                    <td data-label="Phone" className="small-body-text">
+                      {customer.phone || "N/A"}
                     </td>
                     <td data-label="Total Spent" className="regular-body-text">
                       {customer.roleDetails.totalSpent}
@@ -496,8 +508,8 @@ const UserManagement = () => {
                     <td data-label="Organization" className="small-body-text">
                       {promoter.roleDetails.companyName}
                     </td>
-                    <td data-label="Events" className="small-body-text">
-                      {promoter.roleDetails.phone}
+                    <td data-label="Phone" className="small-body-text">
+                      {promoter.phone || "N/A"}
                     </td>
                     <td data-label="Status">
                       <span
@@ -602,8 +614,8 @@ const UserManagement = () => {
                     <td data-label="Organization" className="small-body-text">
                       {sponsor.roleDetails.companyName}
                     </td>
-                    <td data-label="Events" className="small-body-text">
-                      {sponsor.roleDetails.phone}
+                    <td data-label="Phone" className="small-body-text">
+                      {sponsor.phone || "N/A"}
                     </td>
                     <td data-label="Status">
                       <span

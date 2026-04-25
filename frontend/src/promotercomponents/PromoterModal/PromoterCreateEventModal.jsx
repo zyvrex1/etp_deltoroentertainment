@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import "./PromoterCreateEventModal.css";
+import "../../admincomponents/Modal/UploadMapModal.css";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useEventsContext } from "../../hooks/useEventsContext";
 import eventsService from "../../services/eventsService";
@@ -95,8 +96,6 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       endDate,
       startTime,
       endTime,
-      ticketPrice,
-      totalTickets,
       venueName: venue.name,
       venueAddress: venue.address,
       venueCity: venue.city,
@@ -140,20 +139,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       formData.append("endDate", endDate);
       formData.append("startTime", startTime);
       formData.append("endTime", endTime);
-      formData.append("eventType", "General Admission");
-
-      // Wrap ticketPrice and totalTickets into priceLevels for backend compatibility
-      const priceLevels = [
-        {
-          priceName: "General Admission",
-          facePrice: Number(ticketPrice),
-          quantityAvailable: Number(totalTickets),
-          serviceCharge: 0,
-          isActive: true
-        }
-      ];
-      formData.append("priceLevels", JSON.stringify(priceLevels));
-
+      
       if (imageFile) {
         formData.append("image", imageFile);
       }
@@ -168,8 +154,6 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       setEndTime("");
       setStartDate(today);
       setEndDate(today);
-      setTicketPrice("");
-      setTotalTickets("");
       if (imagePreviewUrl) {
         URL.revokeObjectURL(imagePreviewUrl);
       }
@@ -203,8 +187,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
         "venue.name": "venueName",
         "venue.address": "venueAddress",
         "venue.city": "venueCity",
-        "venue.zipCode": "venueZip",
-        "priceLevels required": "ticketPrice"
+        "venue.zipCode": "venueZip"
       };
 
       let mappedFields = [];
@@ -238,17 +221,12 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
                 venue.name ||
                 startTime ||
                 endTime ||
-                ticketPrice ||
-                totalTickets ||
                 imageFile;
+
               if (hasChanges) {
                 const result = await showCancelConfirmAlert();
-                if (result.isConfirmed) {
-                  onClose();
-                }
-              } else {
-                onClose();
-              }
+                if (result.isConfirmed) onClose();
+              } else onClose();
             }}
           >
             <Icon icon="mdi:close" />
@@ -259,144 +237,10 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
           className="add-event-modal-body add-event-form"
           onSubmit={handleSubmit}
         >
-          <div className="add-event-form-row">
-            <div className="add-event-form-group">
-              <h6>Event Title</h6>
-              <input
-                type="text"
-                required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Tech Summit 2024"
-                className={emptyFields.includes("title") ? "error" : ""}
-              />
-            </div>
-            <div className="add-event-form-group">
-              <h6>Category</h6>
-              <input
-                type="text"
-                placeholder="e.g. Concert, Festival, Seminar"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className={emptyFields.includes("category") ? "error" : ""}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="add-event-form-row">
-            <div className="add-event-form-group">
-              <h6>Start Date</h6>
-              <input
-                type="date"
-                required
-                min={today}
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  if (endDate < e.target.value) {
-                    setEndDate(e.target.value);
-                  }
-                }}
-                className={emptyFields.includes("startDate") ? "error" : ""}
-              />
-            </div>
-            <div className="add-event-form-group">
-              <h6>End Date</h6>
-              <input
-                type="date"
-                required
-                min={startDate}
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className={emptyFields.includes("endDate") ? "error" : ""}
-              />
-            </div>
-          </div>
-
-          <div className="add-event-form-row">
-            <div className="add-event-form-group">
-              <h6>Start Time</h6>
-              <input
-                type="time"
-                required
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className={emptyFields.includes("startTime") ? "error" : ""}
-              />
-            </div>
-            <div className="add-event-form-group">
-              <h6>End Time</h6>
-              <input
-                type="time"
-                required
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className={emptyFields.includes("endTime") ? "error" : ""}
-              />
-            </div>
-          </div>
-
+          {/* Image Upload Area */}
           <div className="section-box">
-            <h5 className="modal-section-title">Venue Details</h5>
-            <div className="add-event-form-group">
-              <input
-                type="text"
-                placeholder="Venue Name"
-                required
-                value={venue.name}
-                onChange={(e) =>
-                  setVenue({ ...venue, name: e.target.value })
-                }
-                className={emptyFields.includes("venueName") ? "error" : ""}
-              />
-            </div>
-
-            <div className="add-event-form-group">
-              <input
-                type="text"
-                placeholder="Street Address"
-                required
-                value={venue.address}
-                onChange={(e) =>
-                  setVenue({ ...venue, address: e.target.value })
-                }
-                className={emptyFields.includes("venueAddress") ? "error" : ""}
-              />
-            </div>
-
-            <div className="add-event-form-row">
-              <div className="add-event-form-group">
-                <input
-                  type="text"
-                  placeholder="City"
-                  value={venue.city}
-                  onChange={(e) =>
-                    setVenue({ ...venue, city: e.target.value })
-                  }
-                  className={emptyFields.includes("venueCity") ? "error" : ""}
-                />
-              </div>
-              <div className="add-event-form-group">
-                <input
-                  type="text"
-                  placeholder="Zip Code"
-                  value={venue.zipCode}
-                  onChange={(e) =>
-                    setVenue({ ...venue, zipCode: e.target.value })
-                  }
-                  className={emptyFields.includes("venueZip") ? "error" : ""}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="section-box">
-            <h5 className="modal-section-title">Event Image</h5>
             <div
-              className={`upload-area ${
-                imageDragActive ? "drag-active" : ""
-              }`}
+              className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
               onDragEnter={handleImageDrag}
               onDragLeave={handleImageDrag}
               onDragOver={handleImageDrag}
@@ -412,7 +256,6 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
                 onChange={handleImageChange}
                 style={{ display: "none" }}
               />
-
               {imageFile ? (
                 <div className="file-preview">
                   {imagePreviewUrl ? (
@@ -420,6 +263,12 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
                       src={imagePreviewUrl}
                       alt="Event Preview"
                       className="preview-image"
+                      style={{
+                        width: "100%",
+                        maxHeight: "300px",
+                        objectFit: "contain",
+                        borderRadius: "8px",
+                      }}
                     />
                   ) : (
                     <Icon
@@ -438,9 +287,8 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
                     className="remove-file-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (imagePreviewUrl) {
+                      if (imagePreviewUrl)
                         URL.revokeObjectURL(imagePreviewUrl);
-                      }
                       setImageFile(null);
                       setImagePreviewUrl(null);
                     }}
@@ -453,87 +301,153 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
                   <div className="icon-circle">
                     <Icon icon="mdi:image-area" width="32" height="32" />
                   </div>
-                  <p className="upload-title">Click or drag an image here</p>
-                  <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>
+                  <p className="upload-title">
+                    Click or drag an image here
+                  </p>
+                  <p className="upload-subtitle">
+                    PNG, JPG, WEBP up to 5MB
+                  </p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="add-event-form-group">
+          {/* Title & Category */}
+          <div className="add-event-form-row">
             <div className="add-event-form-group">
-              <h6>Ticket Price ($)</h6>
+              <h6>Event Title</h6>
               <input
-                type="number"
-                min="0"
-                value={ticketPrice === 0 ? "" : ticketPrice}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setTicketPrice(val === "" ? "" : Number(val));
-                }}
-                className={emptyFields.includes("ticketPrice") ? "error" : ""}
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Tech Summit 2024"
+                className={emptyFields.includes("title") ? "error" : ""}
               />
             </div>
 
             <div className="add-event-form-group">
-              <h6>Total Capacity</h6>
+              <h6>Category</h6>
               <input
-                type="number"
-                min="1"
-                value={totalTickets === 0 ? "" : totalTickets}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setTotalTickets(val === "" ? "" : Number(val));
-                }}
-                className={emptyFields.includes("totalTickets") ? "error" : ""}
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g. Concert, Conference, Festival"
+                className={emptyFields.includes("category") ? "error" : ""}
               />
             </div>
           </div>
 
+          {/* Dates */}
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
+              <h6>Start Date</h6>
+              <input
+                type="date"
+                min={today}
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  if (endDate < e.target.value) setEndDate(e.target.value);
+                }}
+                className={emptyFields.includes("startDate") ? "error" : ""}
+              />
+            </div>
+            <div className="add-event-form-group">
+              <h6>End Date</h6>
+              <input
+                type="date"
+                min={startDate}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className={emptyFields.includes("endDate") ? "error" : ""}
+              />
+            </div>
+          </div>
+
+          {/* Times */}
+          <div className="add-event-form-row">
+            <div className="add-event-form-group">
+              <h6>Start Time</h6>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className={emptyFields.includes("startTime") ? "error" : ""}
+              />
+            </div>
+            <div className="add-event-form-group">
+              <h6>End Time</h6>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className={emptyFields.includes("endTime") ? "error" : ""}
+              />
+            </div>
+          </div>
+
+          {/* Description */}
           <div className="add-event-form-group add-event-full-width">
-            <h6>About The Event</h6>
+            <h6>About the Event</h6>
             <textarea
-              required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Event description..."
-              rows="4"
+              rows="3"
               className={emptyFields.includes("description") ? "error" : ""}
             ></textarea>
           </div>
 
-          {error && (
-            <div
-              className="error-message"
-              style={{ color: "red", marginTop: "10px" }}
-            >
-              {error}
+          {/* Venue */}
+          <div className="add-event-form-group add-event-full-width">
+            <h6>Venue Details</h6>
+            <input
+              type="text"
+              placeholder="Venue Name"
+              value={venue.name}
+              onChange={(e) => setVenue({ ...venue, name: e.target.value })}
+              className={emptyFields.includes("venueName") ? "error" : ""}
+            />
+            <input
+              type="text"
+              placeholder="Street Address"
+              value={venue.address}
+              onChange={(e) =>
+                setVenue({ ...venue, address: e.target.value })
+              }
+              className={emptyFields.includes("venueAddress") ? "error" : ""}
+            />
+            <div className="add-event-form-row">
+              <input
+                type="text"
+                placeholder="City"
+                value={venue.city}
+                onChange={(e) =>
+                  setVenue({ ...venue, city: e.target.value })
+                }
+                className={emptyFields.includes("venueCity") ? "error" : ""}
+              />
+              <input
+                type="text"
+                placeholder="Zip Code"
+                value={venue.zipCode}
+                onChange={(e) =>
+                  setVenue({ ...venue, zipCode: e.target.value })
+                }
+                className={emptyFields.includes("venueZip") ? "error" : ""}
+              />
             </div>
-          )}
+          </div>
 
+          {/* Display errors */}
+          {error && (
+            <div style={{ color: "red", marginTop: "10px" }}>{error}</div>
+          )}
           <div className="general-event-modal-footer">
             <button
               type="button"
               className="button cancel-btn"
-              onClick={async () => {
-                const hasChanges =
-                  title ||
-                  description ||
-                  venue.name ||
-                  startTime ||
-                  endTime ||
-                  ticketPrice ||
-                  totalTickets ||
-                  imageFile;
-                if (hasChanges) {
-                  const result = await showCancelConfirmAlert();
-                  if (result.isConfirmed) {
-                    onClose();
-                  }
-                } else {
-                  onClose();
-                }
-              }}
+              onClick={onClose}
             >
               Cancel
             </button>

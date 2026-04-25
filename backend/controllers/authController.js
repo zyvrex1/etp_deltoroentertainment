@@ -111,6 +111,7 @@ const loginUser = async (req, res) => {
       avatar: user.avatar,
       twoFactor: user.twoFactor,
       notifications: user.notifications,
+      cart: user.cart || [],
       token
     });
 
@@ -135,10 +136,10 @@ const getProfile = async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       phone: user.phone,
-      role: user.role,
       avatar: user.avatar,
       notifications: user.notifications,
-      twoFactor: user.twoFactor
+      twoFactor: user.twoFactor,
+      cart: user.cart || []
     }
 
     // Attach promoter-specific data if needed

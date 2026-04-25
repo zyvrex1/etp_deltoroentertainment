@@ -63,10 +63,11 @@ const deleteReservation = async (req, res) => {
                 if (event.layoutData && event.layoutData.items) {
                     const identifier = reservation.boothId.toString();
                     const layoutItemIndex = event.layoutData.items.findIndex(item =>
-                        item._id?.toString() === identifier ||
+                        (item._id?.toString() === identifier ||
                         item.id?.toString() === identifier ||
                         item.code === reservation.boothCode ||
-                        item.label === reservation.boothCode
+                        item.label === reservation.boothCode) &&
+                        (item.type || "").toLowerCase() === 'booth'
                     );
                     if (layoutItemIndex !== -1) {
                         event.layoutData.items[layoutItemIndex].status = "available";

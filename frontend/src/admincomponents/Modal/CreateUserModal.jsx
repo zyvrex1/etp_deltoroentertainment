@@ -202,7 +202,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
           <>
             <div className="add-user-form-row">
               {commonFields}
-              {renderPhoneField("add-user-full-width")}
+              {renderPhoneField()}
             </div>
             <div className="add-user-form-row">
               <div className="add-user-form-group">

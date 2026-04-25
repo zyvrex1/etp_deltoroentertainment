@@ -60,9 +60,14 @@ const userSchema = new Schema({
   },
 
   avatar: {
-  type: String, 
-  default: '',  
-}
+    type: String,
+    default: '',
+  },
+  
+  cart: {
+    type: Array,
+    default: []
+  }
 
 }, { timestamps: true })
 

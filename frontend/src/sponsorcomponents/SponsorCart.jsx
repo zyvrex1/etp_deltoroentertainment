@@ -13,11 +13,6 @@ export default function SponsorCart() {
 
     const [selectedItems, setSelectedItems] = useState([]);
 
-    // Initialize all items as selected by default when cart changes
-    useEffect(() => {
-        setSelectedItems(cartItems.map(item => item.cartId));
-    }, [cartItems]);
-
     const isCartEmpty = cartItems.length === 0;
     const countSelected = selectedItems.length;
 

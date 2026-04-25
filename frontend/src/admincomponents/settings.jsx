@@ -115,6 +115,7 @@ const Settings = () => {
                 formData.append("lastName", profile.lastName);
                 formData.append("email", profile.email);
                 formData.append("phone", profile.phone);
+                formData.append("notifications", JSON.stringify(profile.notifications));
                 if (avatarFile) {
                     formData.append("avatar", avatarFile);
                 }

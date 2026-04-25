@@ -19,11 +19,13 @@ export const updateProfile = (data, token) => API.put('/profile', data, {
 });
 export const updateSecurity = (data, token) => API.put('/security', data, getAuthHeaders(token));
 export const updateNotifications = (data, token) => API.put('/notifications', data, getAuthHeaders(token));
+export const updateCart = (cart, token) => API.put('/cart', { cart }, getAuthHeaders(token));
 
 export default {
   getPromoters,
   getUserById,
   updateProfile,
   updateSecurity,
-  updateNotifications
+  updateNotifications,
+  updateCart
 };

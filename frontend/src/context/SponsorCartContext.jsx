@@ -44,9 +44,9 @@ export const SponsorCartProvider = ({ children }) => {
         // Check if booth is already in cart
         setCartItems((prevItems) => {
             const exists = prevItems.find(i => {
-                const iId = i.booth._id || i.booth.id;
-                const newItemId = item.booth._id || item.booth.id;
-                return iId && newItemId && iId === newItemId;
+                const iId = String(i.booth._id || i.booth.id);
+                const newItemId = String(item.booth._id || item.booth.id);
+                return iId === newItemId;
             });
             if (exists) {
                 return prevItems; // Don't add duplicates

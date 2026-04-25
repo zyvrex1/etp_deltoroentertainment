@@ -95,7 +95,10 @@ const autoHealEvents = async (eventsArr) => {
       if (event.layoutData && event.layoutData.items) {
         event.layoutData.items.forEach((item, index) => {
           const type = (item.type || "").toLowerCase();
-          if (type === 'booth' || type === 'seat') {
+          
+          // FIX: Only reconcile booths. Seats should be handled by ticket logic (not present here).
+          // Reconciling seats with booth codes causes "REG-1" (seat) to be sold if "REG-1" (booth) is sold.
+          if (type === 'booth') {
             const idStr = (item._id || item.id || "").toString();
             const isReserved = reservedBoothIds.includes(idStr) ||
               reservedBoothCodes.includes(item.code) ||
@@ -109,6 +112,13 @@ const autoHealEvents = async (eventsArr) => {
               event.layoutData.items[index].status = 'sold';
               changed = true;
             }
+          } else if (type === 'seat' && item.status === 'sold' && !item.ticketId) {
+            // Clean up bug from before where seats were marked sold by booth sync
+            event.layoutData.items[index].status = 'available';
+            event.layoutData.items[index].reservedBy = '';
+            event.layoutData.items[index].reservedByEmail = '';
+            event.layoutData.items[index].reservedByPO = '';
+            changed = true;
           }
         });
       }
@@ -1104,17 +1114,19 @@ const reserveBooth = async (req, res) => {
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ error: "No such event" });
 
+    const boothIdStr = String(boothId);
+
     // Find the booth index - try _id match first, then layout id / label / code
-    let boothIndex = event.booths.findIndex(b => b._id.toString() === boothId);
+    let boothIndex = event.booths.findIndex(b => String(b._id) === boothIdStr);
 
     if (boothIndex === -1) {
       // Fallback: search by label or code (common when IDs shift during layout saves)
-      boothIndex = event.booths.findIndex(b => b.code === boothId || b.label === boothId);
+      boothIndex = event.booths.findIndex(b => b.code === boothIdStr || b.label === boothIdStr);
     }
 
     if (boothIndex === -1 && event.layoutData?.items) {
       // Third attempt: find the item in layoutData to get its label/code, then match that back to booths
-      const layoutItem = event.layoutData.items.find(item => (item._id?.toString() === boothId || item.id?.toString() === boothId));
+      const layoutItem = event.layoutData.items.find(item => (String(item._id || item.id) === boothIdStr));
       if (layoutItem) {
         const identifier = layoutItem.code || layoutItem.label;
         boothIndex = event.booths.findIndex(b => b.code === identifier || b.label === identifier);
@@ -1132,6 +1144,18 @@ const reserveBooth = async (req, res) => {
       return res.status(400).json({ error: "Booth is no longer available" });
     }
 
+    // Check Price Level capacity early
+    let plIndex = -1;
+    if (booth.priceLevelId && booth.priceLevelId !== "none") {
+      plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === booth.priceLevelId.toString());
+      if (plIndex !== -1) {
+        const pl = event.priceLevels[plIndex];
+        if (pl.quantitySold >= pl.quantityAvailable) {
+          return res.status(400).json({ error: `The price level for this booth (${pl.priceName}) is sold out.` });
+        }
+      }
+    }
+
     // 1. Create the Reservation record
     const reservation = await Reservation.create({
       user: req.user._id,
@@ -1145,17 +1169,24 @@ const reserveBooth = async (req, res) => {
       status: "confirmed", // Auto-confirmed for invoice/sample flow
     });
 
-    // 2. Update the booth status in the Event
-    // We mark it as 'sold' to show it as Green/Occupied on the map
+    // 2. Update the booth status and Price Level stats in the Event
     const buyerName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
     event.booths[boothIndex].status = "sold";
     event.booths[boothIndex].reservedBy = buyerName;
     event.booths[boothIndex].reservedByEmail = req.user.email || "";
     event.booths[boothIndex].reservedByPO = poNumber || "";
 
+    // Update Price Level stats if found
+    if (plIndex !== -1) {
+      event.priceLevels[plIndex].quantitySold += 1;
+    }
+
     // Also update layoutData if it exists
     if (event.layoutData && event.layoutData.items) {
-      const layoutItemIndex = event.layoutData.items.findIndex(item => item._id?.toString() === boothId || item.id?.toString() === boothId);
+      const layoutItemIndex = event.layoutData.items.findIndex(item => 
+        (String(item._id || item.id) === boothIdStr) && 
+        (item.type || "").toLowerCase() === 'booth'
+      );
       if (layoutItemIndex !== -1) {
         event.layoutData.items[layoutItemIndex].status = "sold";
         event.layoutData.items[layoutItemIndex].reservedBy = buyerName;
@@ -1165,16 +1196,10 @@ const reserveBooth = async (req, res) => {
       }
     }
 
+    // Single save for all changes
+    event.markModified('booths');
+    event.markModified('priceLevels');
     await event.save();
-
-    // 3. Update Price Level stats
-    if (booth.priceLevelId && booth.priceLevelId !== "none") {
-      const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === booth.priceLevelId.toString());
-      if (plIndex !== -1) {
-        event.priceLevels[plIndex].quantitySold += 1;
-        await event.save();
-      }
-    }
 
     // 4. Create Notification for Admins
     const notificationController = require('./notificationController');
@@ -1260,7 +1285,9 @@ const syncBoothStatus = async (req, res) => {
     if (event.layoutData && event.layoutData.items) {
       event.layoutData.items.forEach((item, index) => {
         const type = (item.type || "").toLowerCase();
-        if (type === 'booth' || type === 'seat') {
+        
+        // FIX: Ensure we only match booth reservations against booth items.
+        if (type === 'booth') {
           const idStr = (item._id || item.id || "").toString();
           const res = reservations.find(r => 
             r.boothId.toString() === idStr || 
@@ -1290,6 +1317,15 @@ const syncBoothStatus = async (req, res) => {
             changed = true;
             event.markModified('layoutData');
           }
+        } else if (type === 'seat' && item.status === 'sold' && !item.ticketId) {
+          // If it's a seat and marked as sold but doesn't have a ticketId (implying it was marked by booth sync bug)
+          // we reset it to available.
+          event.layoutData.items[index].status = 'available';
+          event.layoutData.items[index].reservedBy = '';
+          event.layoutData.items[index].reservedByEmail = '';
+          event.layoutData.items[index].reservedByPO = '';
+          changed = true;
+          event.markModified('layoutData');
         }
       });
     }

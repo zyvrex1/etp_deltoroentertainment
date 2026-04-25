@@ -162,6 +162,7 @@
             font-size: 13px;
             color: #6b7280;
             margin-top: 2px;
+            text-align: left;
         }
     }
 
@@ -323,4 +324,4 @@
         padding-bottom: 0;
         max-height: 300px;
     }
-}
+}

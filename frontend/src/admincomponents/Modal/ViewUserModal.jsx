@@ -13,6 +13,14 @@ const ViewUserModal = ({ isOpen, onClose, user, userType: propUserType }) => {
                 : 'inactive'
             : 'inactive';
 
+        const formatCurrency = (val) => {
+            const num = parseFloat(val) || 0;
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+            }).format(num);
+        };
+
         const mapped = {
             ...user,
             name,
@@ -21,24 +29,26 @@ const ViewUserModal = ({ isOpen, onClose, user, userType: propUserType }) => {
 
         switch (user.role) {
             case 'customer':
-                mapped.totalSpent = user.roleDetails?.totalSpent || '$0.00';
-                mapped.tickets = user.ticketsPurchased || 0;
+                mapped.totalSpent = formatCurrency(user.roleDetails?.totalSpent);
+                mapped.tickets = user.roleDetails?.ticketsPurchased || 0;
                 break;
             case 'promoter':
                 mapped.company = user.roleDetails?.companyName || 'N/A';
-                mapped.phone = user.roleDetails?.phone || 'N/A';
-                mapped.events = user.eventsManaged || 0;
-                mapped.revenue = user.revenue || '$0.00';
-                mapped.paidOut = user.paidOut || '$0.00';
+                mapped.phone = user.phone || user.roleDetails?.phone || 'N/A';
+                mapped.events = user.roleDetails?.numberOfEvents || 0;
+                mapped.revenue = formatCurrency(user.roleDetails?.revenue);
+                mapped.paidOut = formatCurrency(user.roleDetails?.paidOut);
                 break;
             case 'sponsor':
                 mapped.company = user.roleDetails?.companyName || 'N/A';
-                mapped.phone = user.roleDetails?.phone || 'N/A';
-                mapped.booths = user.boothsBooked || 0;
-                mapped.totalSpent = user.roleDetails?.totalSpent || '$0.00';
+                mapped.phone = user.phone || user.roleDetails?.phone || 'N/A';
+                mapped.booths = user.roleDetails?.boothsBooked || 0;
+                mapped.totalSpent = formatCurrency(user.roleDetails?.totalSpent);
                 break;
             case 'admin':
-                mapped.subText = 'Administrator';
+            case 'superadmin':
+                mapped.subText = user.role === 'superadmin' ? 'Super Administrator' : 'Administrator';
+                mapped.phone = user.phone || 'N/A';
                 break;
             default:
                 break;

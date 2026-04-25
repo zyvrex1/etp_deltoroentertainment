@@ -58,6 +58,21 @@ const updateProfile = async (req, res) => {
     user.lastName = lastName || user.lastName;
     user.phone = phone || user.phone;
 
+    // Update notifications if provided
+    if (req.body.notifications) {
+      try {
+        const notifs = typeof req.body.notifications === 'string'
+          ? JSON.parse(req.body.notifications)
+          : req.body.notifications;
+        user.notifications = {
+          ...user.notifications?.toObject?.() || user.notifications,
+          ...notifs
+        };
+      } catch (err) {
+        console.error("Error updating notifications:", err);
+      }
+    }
+
     // Handle avatar upload
     if (req.file) {
       const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
@@ -161,11 +176,27 @@ const getPromoters = async (req, res) => {
   }
 };
 
+const updateCart = async (req, res) => {
+  try {
+    const { cart } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { cart },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.status(200).json(user.cart);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   getUserById,
   updateProfile,
   updateSecurity,
   updateNotifications,
   getPromoters,
+  updateCart,
   upload,
 };

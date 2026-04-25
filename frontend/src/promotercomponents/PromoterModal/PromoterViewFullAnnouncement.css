@@ -32,7 +32,7 @@
 
 .pvfa-modal-header h3 {
   margin: 0;
-  color: var(--color-black-primary);
+  color: var(--color-black-primary) !important;
   text-align: left;
 }
 
@@ -65,6 +65,30 @@
   align-items: center;
   gap: 16px;
   margin-bottom: 24px;
+.pa-badge.update {
+  background: var(--color-yellow-quaternary);
+  color: var(--color-yellow-primary);
+}
+
+.pa-badge.alert {
+  background: var(--color-red-quaternary);
+  color: var(--color-red-primary);
+}
+
+.pa-badge.maintenance {
+  background: var(--color-green-quaternary);
+  color: var(--color-green-primary);
+}
+
+.pa-badge.news {
+  background: var(--color-purple-quaternary);
+  color: var(--color-purple-primary);
+}
+
+.pa-badge.general {
+  background: var(--color-blue-quaternary);
+  color: var(--color-blue-primary);
+}
 }
 
 .pvfa-date {

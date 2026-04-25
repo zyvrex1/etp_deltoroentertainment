@@ -24,8 +24,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
     const [endDate, setEndDate] = useState(today);
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
-    const [ticketPrice, setTicketPrice] = useState("");
-    const [totalTickets, setTotalTickets] = useState("");
     const [venue, setVenue] = useState({
         name: "",
         address: "",
@@ -57,12 +55,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
 
             setStartTime(initialEvent.startTime || "");
             setEndTime(initialEvent.endTime || "");
-
-            // Extract price and capacity from priceLevels for General Admission
-            if (initialEvent.priceLevels && initialEvent.priceLevels.length > 0) {
-                setTicketPrice(initialEvent.priceLevels[0].facePrice || "");
-                setTotalTickets(initialEvent.priceLevels[0].quantityAvailable || "");
-            }
 
             setVenue({
                 name: initialEvent.venue?.name || "",
@@ -126,8 +118,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             endDate,
             startTime,
             endTime,
-            ticketPrice,
-            totalTickets,
             venueName: venue.name,
         };
 
@@ -167,19 +157,6 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             formData.append('endTime', endTime);
             formData.append('venue', JSON.stringify(venue));
             
-            // Handle basic pricing update for General Admission events
-            if (initialEvent.eventType === "General Admission") {
-                const priceLevels = [
-                    {
-                        ...(initialEvent.priceLevels?.[0] || {}),
-                        priceName: "General Admission",
-                        facePrice: Number(ticketPrice),
-                        quantityAvailable: Number(totalTickets),
-                    }
-                ];
-                formData.append('priceLevels', JSON.stringify(priceLevels));
-            }
-
             if (imageFile) {
                 formData.append('image', imageFile);
             }
@@ -241,26 +218,72 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                     className="promoter-edit-event-modal-body promoter-edit-event-form"
                     onSubmit={handleSubmit}
                 >
-                    {initialEvent?.status === "rejected" && initialEvent?.rejectionReason && (
-                        <div className="rejection-reason-banner" style={{
-                            backgroundColor: "#fff5f5",
-                            border: "1px solid #feb2b2",
-                            borderRadius: "8px",
-                            padding: "12px 16px",
-                            marginBottom: "20px",
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: "12px"
-                        }}>
-                            <Icon icon="mdi:alert-circle-outline" width="24" style={{ color: "#f56565", flexShrink: 0 }} />
-                            <div>
-                                <h6 style={{ margin: 0, color: "#c53030", fontWeight: 600 }}>Rejection Reason</h6>
-                                <p style={{ margin: "4px 0 0 0", color: "#742a2a", fontSize: "0.875rem" }}>
-                                    {initialEvent.rejectionReason}
-                                </p>
-                            </div>
+                          <div className="promoter-edit-event-section-box">
+                        <h5 className="modal-section-title">Event Image</h5>
+                        <div
+                            className={`promoter-edit-event-upload-area ${imageDragActive ? "drag-active" : ""
+                                } ${isReadOnly ? "readonly" : ""}`}
+                            onDragEnter={!isReadOnly ? handleImageDrag : undefined}
+                            onDragLeave={!isReadOnly ? handleImageDrag : undefined}
+                            onDragOver={!isReadOnly ? handleImageDrag : undefined}
+                            onDrop={!isReadOnly ? handleImageDrop : undefined}
+                            onClick={
+                                !isReadOnly
+                                    ? () => document.getElementById("promoter-edit-event-image-input")?.click()
+                                    : undefined
+                            }
+                        >
+                            <input
+                                id="promoter-edit-event-image-input"
+                                type="file"
+                                accept="image/png, image/jpeg, image/webp"
+                                onChange={!isReadOnly ? handleImageChange : undefined}
+                                style={{ display: "none" }}
+                                disabled={isReadOnly}
+                            />
+
+                            {imagePreviewUrl ? (
+                                <div className="file-preview">
+                                    <img
+                                        src={imagePreviewUrl}
+                                        alt="Event Preview"
+                                        className="preview-image"
+                                    />
+                                    {imageFile && (
+                                        <>
+                                            <p className="file-name">{imageFile.name}</p>
+                                            <p className="file-size">
+                                                {((imageFile.size || 0) / 1024 / 1024).toFixed(2)} MB
+                                            </p>
+                                        </>
+                                    )}
+                                    {!isReadOnly && (
+                                        <button
+                                            type="button"
+                                            className="remove-file-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setImageFile(null);
+                                                setImagePreviewUrl(null);
+                                            }}
+                                        >
+                                            Remove/Change
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="upload-placeholder">
+                                    <div className="icon-circle">
+                                        <Icon icon="mdi:image-area" width="32" height="32" />
+                                    </div>
+                                    <p className="upload-title">
+                                        {isReadOnly ? "No image provided" : "Click or drag an image here to update"}
+                                    </p>
+                                    {!isReadOnly && <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>}
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
                     <div className="promoter-edit-event-form-row">
                         <div className="promoter-edit-event-form-group">
                             <h6>Event Title</h6>
@@ -402,106 +425,9 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                         </div>
                     </div>
 
-                    <div className="promoter-edit-event-section-box">
-                        <h5 className="modal-section-title">Event Image</h5>
-                        <div
-                            className={`promoter-edit-event-upload-area ${imageDragActive ? "drag-active" : ""
-                                } ${isReadOnly ? "readonly" : ""}`}
-                            onDragEnter={!isReadOnly ? handleImageDrag : undefined}
-                            onDragLeave={!isReadOnly ? handleImageDrag : undefined}
-                            onDragOver={!isReadOnly ? handleImageDrag : undefined}
-                            onDrop={!isReadOnly ? handleImageDrop : undefined}
-                            onClick={
-                                !isReadOnly
-                                    ? () => document.getElementById("promoter-edit-event-image-input")?.click()
-                                    : undefined
-                            }
-                        >
-                            <input
-                                id="promoter-edit-event-image-input"
-                                type="file"
-                                accept="image/png, image/jpeg, image/webp"
-                                onChange={!isReadOnly ? handleImageChange : undefined}
-                                style={{ display: "none" }}
-                                disabled={isReadOnly}
-                            />
+              
 
-                            {imagePreviewUrl ? (
-                                <div className="file-preview">
-                                    <img
-                                        src={imagePreviewUrl}
-                                        alt="Event Preview"
-                                        className="preview-image"
-                                    />
-                                    {imageFile && (
-                                        <>
-                                            <p className="file-name">{imageFile.name}</p>
-                                            <p className="file-size">
-                                                {((imageFile.size || 0) / 1024 / 1024).toFixed(2)} MB
-                                            </p>
-                                        </>
-                                    )}
-                                    {!isReadOnly && (
-                                        <button
-                                            type="button"
-                                            className="remove-file-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setImageFile(null);
-                                                setImagePreviewUrl(null);
-                                            }}
-                                        >
-                                            Remove/Change
-                                        </button>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="upload-placeholder">
-                                    <div className="icon-circle">
-                                        <Icon icon="mdi:image-area" width="32" height="32" />
-                                    </div>
-                                    <p className="upload-title">
-                                        {isReadOnly ? "No image provided" : "Click or drag an image here to update"}
-                                    </p>
-                                    {!isReadOnly && <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="promoter-edit-event-form-group promoter-edit-event-full-width">
-                        <div className="promoter-edit-event-form-row">
-                            <div className="promoter-edit-event-form-group">
-                                <h6>Ticket Price ($)</h6>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={ticketPrice === 0 ? "" : ticketPrice}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setTicketPrice(val === "" ? "" : Number(val));
-                                    }}
-                                    className={emptyFields.includes("ticketPrice") ? "error" : ""}
-                                    disabled={isReadOnly}
-                                />
-                            </div>
-
-                            <div className="promoter-edit-event-form-group">
-                                <h6>Total Capacity</h6>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={totalTickets === 0 ? "" : totalTickets}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setTotalTickets(val === "" ? "" : Number(val));
-                                    }}
-                                    className={emptyFields.includes("totalTickets") ? "error" : ""}
-                                    disabled={isReadOnly}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    {/* About the Event */}
 
                     <div className="promoter-edit-event-form-group promoter-edit-event-full-width">
                         <h6>About The Event</h6>
@@ -515,6 +441,29 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                             disabled={isReadOnly}
                         ></textarea>
                     </div>
+
+                    {initialEvent?.status === "rejected" && initialEvent?.rejectionReason && (
+                        <div className="rejection-reason-banner" style={{
+                            backgroundColor: "#fff5f5",
+                            border: "1px solid #feb2b2",
+                            borderRadius: "8px",
+                            padding: "12px 16px",
+                            marginTop: "16px",
+                            marginBottom: "16px",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: "12px",
+                            textAlign: "left",
+                        }}>
+                            <Icon icon="mdi:alert-circle-outline" width="24" style={{ color: "#f56565", flexShrink: 0 }} />
+                            <div>
+                                <h6 style={{ margin: 0, color: "#c53030", fontWeight: 600 }}>Rejection Reason</h6>
+                                <p style={{ margin: "4px 0 0 0", color: "#742a2a", fontSize: "0.875rem" }}>
+                                    {initialEvent.rejectionReason}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {error && (
                         <div

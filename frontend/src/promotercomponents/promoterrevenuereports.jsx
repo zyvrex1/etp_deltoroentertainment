@@ -213,32 +213,15 @@ const PromoterRevenueReports = () => {
             <div className="rep-main-content">
                 {loading ? (
                     <>
-                        <div className="rep-event-banner skeleton-card" style={{ marginBottom: '24px' }}>
-                            <div className="skeleton skeleton-text title" style={{ width: '300px' }} />
-                            <div className="skeleton skeleton-text short" />
-                        </div>
-
-                        <div className="rep-summary-cards">
-                            {[...Array(3)].map((_, i) => (
-                                <div key={i} className="rep-summary-card skeleton-card">
-                                    <div className="card-content" style={{ width: '100%' }}>
-                                        <div className="skeleton skeleton-text short" />
-                                        <div className="skeleton skeleton-text title" />
-                                        <div className="skeleton skeleton-badge" />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
                         <div className="rep-analytics-overview bottom-stats-row">
                              {[...Array(3)].map((_, i) => (
-                                <div key={i} className="rep-analytics-card skeleton-card" style={{ border: 'none' }}>
-                                    <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px', marginRight: '12px' }} />
+                                <div key={i} className="rep-analytics-card skeleton-card">
+                                    <div className="skeleton-circle skeleton-shimmer" style={{ width: '48px', height: '48px', minWidth: '48px' }} />
                                     <div className="rep-analytics-info" style={{ width: '100%' }}>
-                                        <div className="skeleton skeleton-text short" />
-                                        <div className="skeleton skeleton-text short" style={{ width: '40%' }} />
+                                        <div className="skeleton-text title skeleton-shimmer" style={{ width: '100px' }} />
+                                        <div className="skeleton-text short skeleton-shimmer" style={{ width: '60px' }} />
                                     </div>
-                                    <div className="skeleton skeleton-text title" style={{ width: '80px', margin: 0 }} />
+                                    <div className="skeleton-text title skeleton-shimmer" style={{ width: '80px', margin: 0 }} />
                                 </div>
                             ))}
                         </div>
@@ -249,15 +232,15 @@ const PromoterRevenueReports = () => {
                                     <div key={i} className="rep-card skeleton-card">
                                         <div className="rep-card-header">
                                             <div className="header-text" style={{ width: '60%' }}>
-                                                <div className="skeleton skeleton-text title" />
-                                                <div className="skeleton skeleton-text short" />
+                                                <div className="skeleton-text title skeleton-shimmer" />
+                                                <div className="skeleton-text short skeleton-shimmer" />
                                             </div>
                                             <div className="header-value" style={{ width: '30%' }}>
-                                                <div className="skeleton skeleton-text title" />
-                                                <div className="skeleton skeleton-text short" />
+                                                <div className="skeleton-text title skeleton-shimmer" />
+                                                <div className="skeleton-text short skeleton-shimmer" />
                                             </div>
                                         </div>
-                                        <div className="skeleton skeleton-rect" style={{ height: '200px' }} />
+                                        <div className="skeleton-rect skeleton-shimmer" style={{ height: '220px' }} />
                                     </div>
                                 ))}
                             </div>
@@ -265,23 +248,33 @@ const PromoterRevenueReports = () => {
                                 <div className="rep-card skeleton-card">
                                     <div className="rep-card-header">
                                         <div className="header-text" style={{ width: '100%' }}>
-                                            <div className="skeleton skeleton-text title" />
-                                            <div className="skeleton skeleton-text short" />
+                                            <div className="skeleton-text title skeleton-shimmer" />
+                                            <div className="skeleton-text short skeleton-shimmer" />
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
-                                        <div className="skeleton skeleton-circle" style={{ width: '180px', height: '180px' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0', position: 'relative' }}>
+                                        <div className="skeleton-circle skeleton-shimmer" style={{ width: '180px', height: '180px' }} />
+                                        <div className="donut-center-text">
+                                            <div className="skeleton-text short skeleton-shimmer" style={{ width: '40px', margin: '0 auto 4px' }} />
+                                            <div className="skeleton-text title skeleton-shimmer" style={{ width: '60px', margin: '0 auto' }} />
+                                        </div>
                                     </div>
                                     {[...Array(3)].map((_, i) => (
-                                        <div key={i} className="skeleton skeleton-text" style={{ width: '100%', marginBottom: '12px' }} />
+                                        <div key={i} className="legend-row" style={{ marginBottom: '12px', width: '100%' }}>
+                                            <div className="skeleton-text skeleton-shimmer" style={{ width: '100%' }} />
+                                        </div>
                                     ))}
                                 </div>
                                 <div className="rep-card skeleton-card">
-                                    <div className="skeleton skeleton-text title" style={{ marginBottom: '20px' }} />
+                                    <div className="skeleton-text title skeleton-shimmer" style={{ marginBottom: '24px' }} />
                                     {[...Array(4)].map((_, i) => (
-                                        <div key={i} style={{ marginBottom: '16px' }}>
-                                            <div className="skeleton skeleton-text" style={{ width: '100%' }} />
-                                            <div className="skeleton skeleton-rect" style={{ height: '8px' }} />
+                                        <div key={i} style={{ marginBottom: '20px' }}>
+                                            <div className="rep-event-header" style={{ marginBottom: '8px' }}>
+                                                <div className="skeleton-text skeleton-shimmer" style={{ width: '120px', margin: 0 }} />
+                                                <div className="skeleton-text skeleton-shimmer" style={{ width: '60px', margin: 0 }} />
+                                            </div>
+                                            <div className="skeleton-rect skeleton-shimmer" style={{ height: '8px' }} />
+                                            <div className="skeleton-text short skeleton-shimmer" style={{ width: '100px', marginTop: '8px', marginBottom: 0 }} />
                                         </div>
                                     ))}
                                 </div>

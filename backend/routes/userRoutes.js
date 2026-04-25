@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const requireAuth = require('../middleware/requireAuth');
 
-const { getUserById, updateProfile, updateSecurity, updateNotifications, upload, getPromoters } = require('../controllers/userController');
+const { getUserById, updateProfile, updateSecurity, updateNotifications, upload, getPromoters, updateCart } = require('../controllers/userController');
 
 // ✅ Search promoters for collaboration
 router.get("/promoters", requireAuth, getPromoters);
@@ -14,5 +14,6 @@ router.put('/profile', requireAuth, upload.single('avatar'), updateProfile);
 // Other routes
 router.put('/security', requireAuth, updateSecurity);
 router.put('/notifications', requireAuth, updateNotifications);
+router.put('/cart', requireAuth, updateCart);
 
 module.exports = router;

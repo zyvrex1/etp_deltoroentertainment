@@ -54,11 +54,14 @@ export default function SponsorSettings() {
         }
     ];
 
-    // Mock notifications for demonstration
+    // Sync with User model notifications
     const [notifications, setNotifications] = useState({
-        eventUpdates: true,
+        email: true,
+        sms: false,
+        userUpdates: true,
         paymentReminders: true,
-        marketing: false
+        announcements: true,
+        supportMessages: true
     });
 
     useEffect(() => {
@@ -77,6 +80,16 @@ export default function SponsorSettings() {
                     website: response.data.website || "https://techcorp.com",
                     companyDescription: response.data.companyDescription || "Leading provider of enterprise software solutions..."
                 });
+                if (response.data.notifications) {
+                    setNotifications({
+                        email: response.data.notifications.email !== false,
+                        sms: response.data.notifications.sms === true,
+                        userUpdates: response.data.notifications.userUpdates !== false,
+                        paymentReminders: response.data.notifications.paymentReminders !== false,
+                        announcements: response.data.notifications.announcements !== false,
+                        supportMessages: response.data.notifications.supportMessages !== false
+                    });
+                }
             } catch (error) {
                 console.error("Error fetching profile:", error);
             } finally {
@@ -134,6 +147,7 @@ export default function SponsorSettings() {
                 if (profile.industry) formData.append("industry", profile.industry);
                 if (profile.website) formData.append("website", profile.website);
                 if (profile.companyDescription) formData.append("companyDescription", profile.companyDescription);
+                formData.append("notifications", JSON.stringify(notifications));
                 
                 if (avatarFile) {
                     formData.append("avatar", avatarFile);
@@ -457,21 +471,21 @@ export default function SponsorSettings() {
                         <div className="ss-notifications-list">
                             <div className="ss-notification-item">
                                 <div className="ss-notification-info">
-                                    <span className="ss-notification-label">Event Updates</span>
-                                    <span className="ss-notification-desc">Receive updates about your reserved booths and upcoming events</span>
+                                    <span className="ss-notification-label">Email Notifications</span>
+                                    <span className="ss-notification-desc">Receive updates via email about your reservations</span>
                                 </div>
                                 <label className="ss-toggle-switch">
                                     <input 
                                         type="checkbox" 
-                                        checked={notifications.eventUpdates} 
-                                        onChange={() => handleNotificationChange('eventUpdates')}
+                                        checked={notifications.email} 
+                                        onChange={() => handleNotificationChange('email')}
                                     />
                                     <span className="ss-slider"></span>
                                 </label>
                             </div>
                             <div className="ss-notification-item">
                                 <div className="ss-notification-info">
-                                    <span className="ss-notification-label">Payment Reminders</span>
+                                    <span className="ss-notification-label">Payment & Invoice Alerts</span>
                                     <span className="ss-notification-desc">Get notified about upcoming payments and invoices</span>
                                 </div>
                                 <label className="ss-toggle-switch">
@@ -485,14 +499,28 @@ export default function SponsorSettings() {
                             </div>
                             <div className="ss-notification-item">
                                 <div className="ss-notification-info">
-                                    <span className="ss-notification-label">Marketing Communications</span>
+                                    <span className="ss-notification-label">Support Messages</span>
+                                    <span className="ss-notification-desc">Receive news about your support ticket replies</span>
+                                </div>
+                                <label className="ss-toggle-switch">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={notifications.supportMessages}
+                                        onChange={() => handleNotificationChange('supportMessages')}
+                                    />
+                                    <span className="ss-slider"></span>
+                                </label>
+                            </div>
+                            <div className="ss-notification-item">
+                                <div className="ss-notification-info">
+                                    <span className="ss-notification-label">Event Announcements</span>
                                     <span className="ss-notification-desc">Receive news about new events and sponsorship opportunities</span>
                                 </div>
                                 <label className="ss-toggle-switch">
                                     <input 
                                         type="checkbox" 
-                                        checked={notifications.marketing}
-                                        onChange={() => handleNotificationChange('marketing')}
+                                        checked={notifications.announcements}
+                                        onChange={() => handleNotificationChange('announcements')}
                                     />
                                     <span className="ss-slider"></span>
                                 </label>

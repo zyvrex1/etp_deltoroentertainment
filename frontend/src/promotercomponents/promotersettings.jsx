@@ -12,13 +12,16 @@ const PromoterSettings = () => {
   const [loading, setLoading] = useState(true);
 
   const [profile, setProfile] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    companyName: "",
     industry: "",
-    avatar: ""
+    avatar: "",
+    notifications: {
+      email: true,
+      sms: false,
+      userUpdates: true,
+      paymentReminders: true,
+      announcements: true,
+      supportMessages: true
+    }
   });
   const [avatarFile, setAvatarFile] = useState(null);
 
@@ -107,14 +110,16 @@ const PromoterSettings = () => {
       if (!user?.token) return;
       try {
         const response = await authService.getProfile(user.token);
-        setProfile({
-          firstName: response.data.firstName || "",
-          lastName: response.data.lastName || "",
-          email: response.data.email || "",
-          phone: response.data.phone || "",
-          companyName: response.data.companyName || "",
           industry: response.data.industry || "",
           avatar: response.data.avatar || "",
+          notifications: {
+            email: response.data.notifications?.email !== false,
+            sms: response.data.notifications?.sms === true,
+            userUpdates: response.data.notifications?.userUpdates !== false,
+            paymentReminders: response.data.notifications?.paymentReminders !== false,
+            announcements: response.data.notifications?.announcements !== false,
+            supportMessages: response.data.notifications?.supportMessages !== false
+          }
         });
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -155,6 +160,7 @@ const PromoterSettings = () => {
         formData.append("phone", profile.phone);
         if (profile.companyName) formData.append("companyName", profile.companyName);
         if (profile.industry) formData.append("industry", profile.industry);
+        formData.append("notifications", JSON.stringify(profile.notifications));
         
         if (avatarFile) {
           formData.append("avatar", avatarFile);
@@ -229,6 +235,16 @@ const PromoterSettings = () => {
       };
       reader.readAsDataURL(file);
     }
+  };
+  
+  const handleNotificationToggle = (field) => {
+    setProfile(prev => ({
+      ...prev,
+      notifications: {
+        ...prev.notifications,
+        [field]: !prev.notifications[field]
+      }
+    }));
   };
 
   return (
@@ -482,6 +498,85 @@ const PromoterSettings = () => {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* NOTIFICATION PREFERENCES CARD */}
+          <div className="ps-card mt-4">
+            <h4 className="ps-card-title">Notification Preferences</h4>
+
+            <div className="ps-notif-item">
+              <div className="ps-notif-info">
+                <span className="ps-notif-label">Email Notifications</span>
+                <p className="smaller-body-text text-muted">Receive updates via email</p>
+              </div>
+              <label className="ps-toggle">
+                <input
+                  type="checkbox"
+                  checked={profile.notifications.email}
+                  onChange={() => handleNotificationToggle('email')}
+                />
+                <span className="ps-slider"></span>
+              </label>
+            </div>
+
+            <div className="ps-notif-divider"></div>
+
+            <div className="ps-notif-item">
+              <div className="ps-notif-info">
+                <span className="ps-notif-label">Event Announcements</span>
+                <p className="smaller-body-text text-muted">Get notified about new events</p>
+              </div>
+              <label className="ps-toggle">
+                <input
+                  type="checkbox"
+                  checked={profile.notifications.announcements}
+                  onChange={() => handleNotificationToggle('announcements')}
+                />
+                <span className="ps-slider"></span>
+              </label>
+            </div>
+
+            <div className="ps-notif-divider"></div>
+
+            <div className="ps-notif-item">
+              <div className="ps-notif-info">
+                <span className="ps-notif-label">Payment & Payout Alerts</span>
+                <p className="smaller-body-text text-muted">Updates on revenue and payouts</p>
+              </div>
+              <label className="ps-toggle">
+                <input
+                  type="checkbox"
+                  checked={profile.notifications.paymentReminders}
+                  onChange={() => handleNotificationToggle('paymentReminders')}
+                />
+                <span className="ps-slider"></span>
+              </label>
+            </div>
+
+            <div className="ps-notif-divider"></div>
+
+            <div className="ps-notif-item">
+              <div className="ps-notif-info">
+                <span className="ps-notif-label">Support Messages</span>
+                <p className="smaller-body-text text-muted">Get notified on support ticket replies</p>
+              </div>
+              <label className="ps-toggle">
+                <input
+                  type="checkbox"
+                  checked={profile.notifications.supportMessages}
+                  onChange={() => handleNotificationToggle('supportMessages')}
+                />
+                <span className="ps-slider"></span>
+              </label>
+            </div>
+
+            <button
+              type="button"
+              className="ps-save-btn ps-dark-btn mt-4"
+              onClick={handleSaveProfile}
+            >
+              Save Preferences
+            </button>
           </div>
         </div>
       </div>

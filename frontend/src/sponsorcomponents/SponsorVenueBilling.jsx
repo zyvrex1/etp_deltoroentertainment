@@ -84,6 +84,8 @@ const SponsorVenueBilling = () => {
     const headerTitle = isMultipleEvents ? 'Multiple Events' : firstEvent.title;
 
     const handlePay = async () => {
+        if (isSubmitting) return;
+
         const result = await showConfirmAlert(
             "Confirm Reservation",
             `Are you sure you want to reserve ${selectedItems.length} booth(s) for $${totalGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}?`,
