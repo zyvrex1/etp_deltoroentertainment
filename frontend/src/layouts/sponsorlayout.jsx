@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import SponsorHeader from "../sponsorcomponents/SponsorHeader.jsx";
 import SponsorFooter from "../sponsorcomponents/SponsorFooter.jsx";
+import { SponsorCartProvider } from "../context/SponsorCartContext.jsx";
 
 export default function SponsorLayout() {
   const currentUser = {
@@ -10,8 +11,9 @@ export default function SponsorLayout() {
   };
 
   return (
-    <div className="sponsor-app-container">
-      {/* Global Header */}
+    <SponsorCartProvider>
+      <div className="sponsor-app-container">
+        {/* Global Header */}
       <SponsorHeader user={currentUser} />
 
       {/* Page Content */}
@@ -23,6 +25,7 @@ export default function SponsorLayout() {
 
       {/* Global Footer */}
       <SponsorFooter />
-    </div>
+      </div>
+    </SponsorCartProvider>
   );
 }

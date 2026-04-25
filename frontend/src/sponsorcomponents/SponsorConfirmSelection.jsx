@@ -1,12 +1,15 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useSponsorCartContext } from '../context/SponsorCartContext';
+import { showSuccessAlert } from '../utils/sweetAlert';
 import './SponsorConfirmSelection.css';
 
 const SponsorConfirmSelection = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { event, booth, category } = location.state || {};
+    const { addToCart } = useSponsorCartContext();
 
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -177,9 +180,13 @@ const SponsorConfirmSelection = () => {
 
                             <button
                                 className="primary-button scs-reserve-btn"
-                                onClick={() => navigate('/sponsor/sponsor-reservation', { state: { event, booth, category, total } })}
+                                onClick={() => {
+                                    addToCart({ event, booth, category, total, facePrice, processingFee, estimatedTax });
+                                    showSuccessAlert('Added to Cart', `${booth.label || booth.code} has been added to your cart.`);
+                                    navigate('/sponsor/cart');
+                                }}
                             >
-                                Reserve Booth <Icon icon="mdi:arrow-right" className="ml-2" />
+                                Add to Cart <Icon icon="mdi:cart-outline" className="ml-2" />
                             </button>
                         </div>
                     </div>

@@ -98,6 +98,18 @@ const CustomerTicketOrder = () => {
         return result;
     }, [activeTickets, searchQuery, statusFilter, sortFilter]);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+    const totalPages = Math.ceil(filteredAndSortedTickets.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedTickets = filteredAndSortedTickets.slice(startIndex, startIndex + itemsPerPage);
+
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
     return (
         <div className="customer-ticket-order-wrapper">
             <div className="customer-ticket-order-container">
@@ -146,8 +158,8 @@ const CustomerTicketOrder = () => {
                 </div>
 
                 <div className="ticket-order-list">
-                    {filteredAndSortedTickets.length > 0 ? (
-                        filteredAndSortedTickets.map(ticket => (
+                    {paginatedTickets.length > 0 ? (
+                        paginatedTickets.map(ticket => (
                             <div className="ticket-card-new" key={ticket.id}>
                                 <div className="ticket-card-top">
                                     <h4 className="ticket-event-title">{ticket.title}</h4>
@@ -162,13 +174,9 @@ const CustomerTicketOrder = () => {
                                     <div className="ticket-details">
                                         <h5 className="ticket-seat-info">{ticket.seat}</h5>
                                         <div className="ticket-info-row">
-                                            <Icon icon="mdi:calendar-blank-outline" />
                                             <span>{ticket.date}</span>
-                                            <Icon icon="mdi:clock-outline" className="ml-3" />
-                                            <span>{ticket.time}</span>
                                         </div>
                                         <div className="ticket-info-row">
-                                            <Icon icon="mdi:map-marker-outline" />
                                             <span>{ticket.location}</span>
                                         </div>
                                     </div>
@@ -177,10 +185,6 @@ const CustomerTicketOrder = () => {
                                     </div>
                                 </div>
                                 <div className="ticket-card-footer">
-                                    <button className="view-details-btn">
-                                        <Icon icon="mdi:eye-outline" />
-                                        View Full Details
-                                    </button>
                                     <button 
                                         className="request-refund-btn"
                                         onClick={() => handleRequestRefund(ticket)}
@@ -197,6 +201,30 @@ const CustomerTicketOrder = () => {
                         </div>
                     )}
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="pagination">
+                        <button
+                            className="pagination-btn"
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </button>
+
+                        <span className="pagination-info">
+                            Page {currentPage} of {totalPages}
+                        </span>
+
+                        <button
+                            className="pagination-btn"
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
 
             <CustomerEnlargeQr

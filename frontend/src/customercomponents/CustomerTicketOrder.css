@@ -176,7 +176,7 @@
                         flex: 1;
 
                         .ticket-seat-info {
-                            font-size: 16px;
+                            font-size: 18px; /* Matches h5 */
                             font-weight: 700;
                             margin-bottom: 8px;
                             color: var(--color-black-primary);
@@ -188,7 +188,7 @@
                             align-items: center;
                             gap: 6px;
                             color: var(--color-black-secondary);
-                            font-size: 13px;
+                            font-size: 12px; /* Matches .smaller-body-text */
                             margin-bottom: 4px;
                             text-align: left;
 
@@ -208,25 +208,31 @@
 
                     .ticket-qr-section {
                         cursor: pointer;
-                        padding: 8px;
-                        background: var(--color-bg-light);
-                        border-radius: 8px;
+                        padding: 10px;
+                        background: #f8f9fa;
+                        border-radius: 10px;
                         border: 1px solid var(--color-black-quaternary);
-                        transition: background 0.2s;
+                        transition: all 0.2s;
                         display: flex;
                         align-items: center;
                         justify-content: center;
+                        flex-shrink: 0;
 
                         svg {
                             width: 50px;
                             height: 50px;
+                            color: var(--color-black-primary);
+                        }
+
+                        &:hover {
+                            background: var(--color-black-quaternary);
                         }
                     }
                 }
 
                 .ticket-card-footer {
                     display: flex;
-                    justify-content: flex-end;
+                    flex-direction: column;
                     gap: 12px;
                     padding-top: 15px;
                     border-top: 1px solid var(--color-black-quaternary);
@@ -234,15 +240,18 @@
                     .view-details-btn {
                         display: flex;
                         align-items: center;
+                        justify-content: center;
                         gap: 8px;
                         background-color: #101828;
                         color: white;
                         border: none;
-                        padding: 10px 20px;
+                        padding: 12px 20px;
                         border-radius: 8px;
                         font-weight: 600;
-                        font-size: 14px;
+                        font-size: 14px; /* Matches .small-body-text */
                         cursor: pointer;
+                        text-decoration: none;
+                        width: 100%;
 
                         &:hover {
                             background-color: #1d2939;
@@ -250,14 +259,18 @@
                     }
 
                     .request-refund-btn {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
                         background-color: #D92D20;
                         color: white;
                         border: none;
-                        padding: 10px 20px;
+                        padding: 12px 20px;
                         border-radius: 8px;
                         font-weight: 600;
-                        font-size: 14px;
+                        font-size: 14px; /* Matches .small-body-text */
                         cursor: pointer;
+                        width: 100%;
 
                         &:hover {
                             background-color: #b42318;
@@ -282,6 +295,43 @@
             
             p {
                 text-align: left;
+            }
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-top: 40px;
+            
+            .pagination-btn {
+                background-color: var(--color-white-primary);
+                border: 1px solid var(--color-black-quaternary);
+                padding: 8px 16px;
+                border-radius: 8px;
+                font-family: 'Inter', sans-serif;
+                font-weight: 500;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.2s;
+                color: var(--color-black-primary);
+
+                &:hover:not(:disabled) {
+                    background-color: var(--color-bg-light);
+                    border-color: var(--color-black-tertiary);
+                }
+
+                &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+            }
+
+            .pagination-info {
+                font-size: 14px;
+                color: var(--color-black-secondary);
+                font-weight: 500;
             }
         }
     }
@@ -310,7 +360,6 @@
 
             .ticket-card-new {
                 .ticket-card-body {
-                    flex-direction: column;
                     align-items: flex-start;
 
                     .ticket-image-container {
@@ -318,9 +367,7 @@
                         height: 180px;
                     }
 
-                    .ticket-qr-section {
-                        align-self: center;
-                    }
+
                 }
 
                 .ticket-card-footer {

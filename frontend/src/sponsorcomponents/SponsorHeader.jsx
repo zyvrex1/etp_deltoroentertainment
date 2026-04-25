@@ -3,11 +3,13 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { showConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
 import { useAuthContext } from '../hooks/useAuthContext';
+import { useSponsorCartContext } from '../context/SponsorCartContext';
 import './SponsorHeader.css';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function SponsorHeader() {
     const { user: authUser } = useAuthContext();
+    const { cartItems } = useSponsorCartContext();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -62,6 +64,12 @@ export default function SponsorHeader() {
                 </nav>
 
                 <div className="sponsor-header-actions">
+                    <NavLink to="/sponsor/cart" className="sponsor-cart-btn" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', padding: '8px', marginRight: '8px', color: 'var(--color-white)' }}>
+                        <Icon icon="mdi:cart-outline" width="24" />
+                        <span className="cart-badge" style={{ position: 'absolute', top: '0px', right: '0px', background: 'var(--color-red-primary)', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                            {cartItems?.length || 0}
+                        </span>
+                    </NavLink>
                     <div className="sponsor-profile-container" ref={dropdownRef}>
                         <button className="sponsor-profile-btn" onClick={toggleDropdown}>
                             <div className="sponsor-avatar">
