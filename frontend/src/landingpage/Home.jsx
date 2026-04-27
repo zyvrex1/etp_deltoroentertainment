@@ -293,11 +293,11 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="announcements-marquee-container" role="region" aria-label="Scrolling announcements" aria-live="polite">
-          <div className={`announcements-marquee-track ${announcements.length > 0 ? 'animating' : ''}`}>
-            {announcements.length > 0 ? (
-              // Render list twice for seamless loop
-              [...announcements, ...announcements].map((item, idx) => (
+        {announcements.length > 0 ? (
+          <div className="announcements-marquee-container" role="region" aria-label="Scrolling announcements" aria-live="polite">
+            <div className="announcements-marquee-track animating">
+              {/* Render list twice for seamless loop */}
+              {[...announcements, ...announcements].map((item, idx) => (
                 <div
                   key={`${item.id}-${idx}`}
                   className="announcement-marquee-item"
@@ -321,18 +321,22 @@ const Home = () => {
                       </div>
                       <p className="nft-text-ellipsis-2">{item.content}</p>
                     </div>
-
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="nft-empty">
-                <Icon icon="mdi:announcement-outline" />
-                <p>No announcements yet.</p>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="container">
+            <div className="nft-empty-state">
+              <div className="empty-icon-glow">
+                <Icon icon="mdi:bullhorn-variant-outline" />
+              </div>
+              <h4>No Announcements</h4>
+              <p>Stay tuned! We'll post updates and news here when they're available.</p>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Upcoming Events */}
@@ -345,9 +349,9 @@ const Home = () => {
           <a href="#events" className="nft-link">View All</a>
         </div>
 
-        <div className="nft-grid">
-          {liveEvents.length > 0 ? (
-            liveEvents.map((evt, idx) => (
+        {liveEvents.length > 0 ? (
+          <div className="nft-grid">
+            {liveEvents.map((evt, idx) => (
               <div className={`nft-event-card-v2 nft-glass reveal stagger-${(idx % 4) + 1}`} key={idx}>
                 <div className="nft-v2-image-area">
                   <img src={evt.image} alt={`Event image for ${evt.title}`} className="nft-v2-img" loading="lazy" />
@@ -381,14 +385,17 @@ const Home = () => {
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="nft-empty">
+            ))}
+          </div>
+        ) : (
+          <div className="nft-empty-state">
+            <div className="empty-icon-glow">
               <Icon icon="mdi:calendar-blank-outline" />
-              <p>No upcoming events at the moment.</p>
             </div>
-          )}
-        </div>
+            <h4>No Upcoming Events</h4>
+            <p>We're currently preparing new exciting events. Check back soon for the latest updates!</p>
+          </div>
+        )}
       </section>
 
 
@@ -573,9 +580,9 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="policy-list">
-          {policies.length > 0 ? (
-            policies.slice(0, 6).map((policy, idx) => (
+        {policies.length > 0 ? (
+          <div className="policy-list">
+            {policies.slice(0, 6).map((policy, idx) => (
               <div
                 key={policy.id}
                 className={`policy-item reveal stagger-${(idx % 4) + 1}`}
@@ -593,14 +600,17 @@ const Home = () => {
                   <p className="nft-text-ellipsis-2">{policy.content}</p>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="nft-empty">
-              <Icon icon="mdi:shield-outline" />
-              <p>No policies available.</p>
+            ))}
+          </div>
+        ) : (
+          <div className="nft-empty-state">
+            <div className="empty-icon-glow">
+              <Icon icon="mdi:shield-check-outline" />
             </div>
-          )}
-        </div>
+            <h4>No Policies Available</h4>
+            <p>Our platform policies are currently being updated to serve you better. Please check again later.</p>
+          </div>
+        )}
       </section>
 
       {/* Ecosystem Section */}

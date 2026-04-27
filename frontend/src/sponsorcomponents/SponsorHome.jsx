@@ -151,10 +151,10 @@ export default function SponsorHome() {
                     </div>
                 </div>
 
-                <div className="sh-announcements-marquee-container">
-                    <div className={`sh-announcements-marquee-track ${announcements.length > 0 ? 'animating' : ''}`}>
-                        {announcements.length > 0 ? (
-                            [...announcements, ...announcements].map((item, idx) => (
+                {announcements.length > 0 ? (
+                    <div className="sh-announcements-marquee-container">
+                        <div className="sh-announcements-marquee-track animating">
+                            {[...announcements, ...announcements].map((item, idx) => (
                                 <div
                                     key={`${item._id || idx}-${idx}`}
                                     className="sh-announcement-marquee-item"
@@ -176,15 +176,20 @@ export default function SponsorHome() {
                                         </div>
                                     </div>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="sh-empty sh-container">
-                                <Icon icon="mdi:bullhorn-outline" />
-                                <h3>No announcements yet.</h3>
-                            </div>
-                        )}
+                            ))}
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="sh-container">
+                        <div className="sh-empty-state sh-glass">
+                            <div className="sh-empty-icon-box">
+                                <Icon icon="mdi:bullhorn-variant-outline" />
+                            </div>
+                            <h3>No Announcements Yet</h3>
+                            <p>We haven't posted any announcements for sponsors yet. Stay tuned for platform updates!</p>
+                        </div>
+                    </div>
+                )}
             </section>
 
             {/* Upcoming Events */}
@@ -197,14 +202,16 @@ export default function SponsorHome() {
                     <NavLink to="/sponsor/sponsor-events" className="sh-link">View All</NavLink>
                 </div>
 
-                <div className="sh-grid">
-                    {isLoading ? (
+                {isLoading ? (
+                    <div className="sh-grid">
                         <div className="sh-empty sh-container">
                             <Icon icon="mdi:loading" className="sh-spin" />
                             <p>Loading the latest events...</p>
                         </div>
-                    ) : events.length > 0 ? (
-                        events.map((evt, idx) => (
+                    </div>
+                ) : events.length > 0 ? (
+                    <div className="sh-grid">
+                        {events.map((evt, idx) => (
                             <div className={`sh-event-card-v2 sh-glass`} key={evt._id || idx}>
                                 <div className="sh-v2-image-area">
                                     <img
@@ -251,14 +258,17 @@ export default function SponsorHome() {
                                     </div>
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <div className="sh-empty sh-container">
+                        ))}
+                    </div>
+                ) : (
+                    <div className="sh-empty-state sh-glass">
+                        <div className="sh-empty-icon-box">
                             <Icon icon="mdi:calendar-blank-outline" />
-                            <p>No upcoming events found. Check back soon!</p>
                         </div>
-                    )}
-                </div>
+                        <h3>No Events Found</h3>
+                        <p>There are no upcoming events looking for sponsors at the moment. Please check back later!</p>
+                    </div>
+                )}
             </section>
 
             {/* Platform Policies */}
@@ -270,9 +280,9 @@ export default function SponsorHome() {
                     </div>
                 </div>
 
-                <div className="sh-policy-list">
-                    {policies.length > 0 ? (
-                        policies.map((item, idx) => (
+                {policies.length > 0 ? (
+                    <div className="sh-policy-list">
+                        {policies.map((item, idx) => (
                             <div
                                 key={item._id || idx}
                                 className="sh-policy-item sh-glass"
@@ -286,16 +296,19 @@ export default function SponsorHome() {
                                     <p className="sh-text-ellipsis-2 sh-text-left">Updated Last: {item.date}</p>
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        !isLoading && (
-                            <div className="sh-empty sh-container">
-                                <Icon icon="mdi:shield-outline" />
-                                <h3>No policies available.</h3>
+                        ))}
+                    </div>
+                ) : (
+                    !isLoading && (
+                        <div className="sh-empty-state sh-glass">
+                            <div className="sh-empty-icon-box">
+                                <Icon icon="mdi:shield-account-outline" />
                             </div>
-                        )
-                    )}
-                </div>
+                            <h3>No Policies Available</h3>
+                            <p>Platform policies for sponsors are currently being updated. We'll post them here soon.</p>
+                        </div>
+                    )
+                )}
             </section>
 
             {/* Reusable Modal for Policies/Announcements */}

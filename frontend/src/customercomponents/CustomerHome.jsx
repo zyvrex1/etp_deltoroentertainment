@@ -161,10 +161,10 @@ export default function CustomerHome() {
                     </div>
                 </div>
 
-                <div className="ch-announcements-marquee-container">
-                    <div className={`ch-announcements-marquee-track ${announcements.length > 0 ? 'animating' : ''}`}>
-                        {announcements.length > 0 ? (
-                            [...announcements, ...announcements].map((item, idx) => (
+                {announcements.length > 0 ? (
+                    <div className="ch-announcements-marquee-container">
+                        <div className="ch-announcements-marquee-track animating">
+                            {[...announcements, ...announcements].map((item, idx) => (
                                 <div
                                     key={`${item._id || idx}-${idx}`}
                                     className="ch-announcement-marquee-item"
@@ -186,15 +186,20 @@ export default function CustomerHome() {
                                         </div>
                                     </div>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="ch-empty ch-container">
-                                <Icon icon="mdi:bullhorn-outline" />
-                                <h3>No announcements yet.</h3>
-                            </div>
-                        )}
+                            ))}
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="ch-container">
+                        <div className="ch-empty-state ch-glass">
+                            <div className="ch-empty-icon-box">
+                                <Icon icon="mdi:bullhorn-variant-outline" />
+                            </div>
+                            <h3>No Announcements Yet</h3>
+                            <p>We'll notify you about important updates and new features here. Check back soon!</p>
+                        </div>
+                    </div>
+                )}
             </section>
 
             {/* Trending Now */}
@@ -207,14 +212,16 @@ export default function CustomerHome() {
                     <NavLink to="/customer/browse-events" className="ch-link">View All</NavLink>
                 </div>
 
-                <div className="ch-grid">
-                    {isLoading ? (
+                {isLoading ? (
+                    <div className="ch-grid">
                         <div className="ch-empty ch-container">
                             <Icon icon="mdi:loading" className="ch-spin" />
                             <p>Finding the hottest events for you...</p>
                         </div>
-                    ) : events.length > 0 ? (
-                        events.map((evt, idx) => (
+                    </div>
+                ) : events.length > 0 ? (
+                    <div className="ch-grid">
+                        {events.map((evt, idx) => (
                             <div className={`ch-event-card-v2 ch-glass`} key={evt._id || idx}>
                                 <div className="ch-v2-image-area">
                                     <img
@@ -265,14 +272,17 @@ export default function CustomerHome() {
                                     </div>
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <div className="ch-empty ch-container">
-                            <Icon icon="mdi:calendar-blank-outline" />
-                            <p>No upcoming events found. Check back soon!</p>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="ch-empty-state ch-glass">
+                        <div className="ch-empty-icon-box">
+                            <Icon icon="mdi:calendar-search" />
                         </div>
-                    )}
-                </div>
+                        <h3>No Events Found</h3>
+                        <p>We're looking for the best experiences for you. No upcoming events found at the moment!</p>
+                    </div>
+                )}
             </section>
 
             {/* Platform Policies */}
@@ -303,9 +313,12 @@ export default function CustomerHome() {
                         ))
                     ) : (
                         !isLoading && (
-                            <div className="ch-empty ch-container">
-                                <Icon icon="mdi:shield-outline" />
-                                <h3>No policies available.</h3>
+                            <div className="ch-empty-state ch-glass">
+                                <div className="ch-empty-icon-box">
+                                    <Icon icon="mdi:shield-lock-outline" />
+                                </div>
+                                <h3>No Policies Available</h3>
+                                <p>We're currently updating our customer protection policies. Stay tuned!</p>
                             </div>
                         )
                     )}
