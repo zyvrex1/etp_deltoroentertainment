@@ -773,14 +773,15 @@ const EventManagement = () => {
 
   return (
     <div className="event-management">
-      <div className="eventmanagement-header">
+
+      <div className="usermanagement-header">
         <div>
-          <h1>Event Management</h1>
+           <h1>Event Management</h1>
           <p>Manage all events, tickets, and booth layouts.</p>
         </div>
         <div className="dashboard-actions">
           <button
-            className="primary-button"
+           className="primary-button"
             onClick={() => setIsModalOpen(true)}
           >
             <Icon icon="mdi:plus" /> Create Event
@@ -789,8 +790,6 @@ const EventManagement = () => {
       </div>
 
       <div className="em-content">
-        {/* Tabs */}
-        {/* Tabs */}
         <div className="tabs-container">
           {eventTabs.map((tab) => (
             <button
