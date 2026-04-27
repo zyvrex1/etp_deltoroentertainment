@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./settings.css";
+import "../admincomponents/modal/CreateUserModal.css";
+import { PhoneInput } from "react-international-phone";
+import "react-international-phone/style.css";
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 import { useAuthContext } from "../hooks/useAuthContext";
 import * as authService from "../services/authService";
@@ -34,22 +37,39 @@ const Settings = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    useEffect(() => {
+  useEffect(() => {
         const fetchProfile = async () => {
+            // Token check
             if (!user?.token) return;
+            
             try {
+                // Passing the token to the service
                 const response = await authService.getProfile(user.token);
+                const data = response.data;
+
+                // Fix for the phone number display issue
+                let formattedPhone = data.phone || "";
+                if (formattedPhone && !formattedPhone.startsWith('+')) {
+                    // If it's a local number like 0908..., replace 0 with +63
+                    if (formattedPhone.startsWith('0')) {
+                        formattedPhone = `+63${formattedPhone.substring(1)}`;
+                    } else {
+                        // If it's 63908..., just add the +
+                        formattedPhone = `+${formattedPhone}`;
+                    }
+                }
+
                 setProfile({
-                    firstName: response.data.firstName || "",
-                    lastName: response.data.lastName || "",
-                    email: response.data.email || "",
-                    phone: response.data.phone || "",
-                    avatar: response.data.avatar || "",
+                    firstName: data.firstName || "",
+                    lastName: data.lastName || "",
+                    email: data.email || "",
+                    phone: formattedPhone,
+                    avatar: data.avatar || "",
                     notifications: {
-                        userUpdates: response.data.notifications?.userUpdates !== false,
-                        paymentReminders: response.data.notifications?.paymentReminders !== false,
-                        announcements: response.data.notifications?.announcements !== false,
-                        supportMessages: response.data.notifications?.supportMessages !== false
+                        userUpdates: data.notifications?.userUpdates !== false,
+                        paymentReminders: data.notifications?.paymentReminders !== false,
+                        announcements: data.notifications?.announcements !== false,
+                        supportMessages: data.notifications?.supportMessages !== false
                     }
                 });
             } catch (error) {
@@ -189,7 +209,6 @@ const Settings = () => {
             </div>
 
             <div className="as-main-grid">
-                {/* PERSONAL INFORMATION CARD */}
                 <div className="as-card">
                     <h4 className="as-card-title">Personal Information</h4>
 
@@ -246,15 +265,21 @@ const Settings = () => {
                         />
                     </div>
 
-                    <div className="as-form-group">
-                        <label className="as-label">Phone Number</label>
-                        <input
-                            type="text"
-                            className="as-input"
-                            value={profile.phone}
-                            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                        />
-                    </div>
+                    <div className="add-user-form-group">
+                            <h6>Phone Number</h6>
+                            <PhoneInput
+  defaultCountry="ph"
+  value={profile.phone || ""}
+  // The first argument is the phone string, not an event object
+  onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
+  inputClassName="add-user-form-input" 
+          className="phone-input-container"
+/>
+                          </div>
+
+                   
+
+                    
 
                     <button type="button" className="as-save-btn primary-button" onClick={handleSaveProfile}>
                         Save Changes

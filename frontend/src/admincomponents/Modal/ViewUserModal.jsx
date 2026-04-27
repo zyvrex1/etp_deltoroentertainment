@@ -141,7 +141,7 @@ const ViewUserModal = ({ isOpen, onClose, user, userType: propUserType }) => {
             </div>
             <div className="info-item">
                 <h6 className="label"><Icon icon="mdi:phone-outline" /> Phone</h6>
-                <span className="regular-body-text value">{modalUser.phone || '+1 (555) 000-0000'}</span>
+                <span className="regular-body-text value">{modalUser.phone || 'Not Provided'}</span>
             </div>
             <div className="info-item">
                 <h6 className="label"><Icon icon="mdi:calendar-outline" /> Joined</h6>
