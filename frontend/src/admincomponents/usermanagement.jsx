@@ -656,7 +656,7 @@ const UserManagement = () => {
             className="primary-button"
             onClick={() => setIsUserModalOpen(true)}
           >
-            Create User
+            <Icon icon="mdi:plus" /> Create User
           </button>
         </div>
       </div>

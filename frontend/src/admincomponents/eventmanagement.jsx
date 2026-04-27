@@ -666,7 +666,6 @@ const EventManagement = () => {
 
                     <td data-label="Actions">
   <div className="em-actions">
-    {/* Dynamic Icon: Edit (for owners) vs Eye (for others) */}
     <button
       className="em-action-btn"
       onClick={() => handleEditEvent(event)}
@@ -717,7 +716,7 @@ const EventManagement = () => {
   return (
     <div className="event-management">
 
-      <div className="usermanagement-header">
+      <div className="eventmanagement-header">
         <div>
            <h1>Event Management</h1>
           <p>Manage all events, tickets, and booth layouts.</p>

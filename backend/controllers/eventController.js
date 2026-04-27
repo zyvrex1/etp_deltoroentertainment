@@ -4,8 +4,8 @@ const Event = require("../models/eventModel");
 const Reservation = require("../models/reservationModel");
 const { toObjectId } = require("../utils/helpers");
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 const multer = require("multer");
 const { emitUpdate } = require("../socket");
 const { optimizeImage } = require("../utils/imageOptimizer");
@@ -16,14 +16,14 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const originalName = path.parse(file.originalname).name;
-    const cleanName = originalName.replace(/\s+/g, '-').toLowerCase();
+    const cleanName = originalName.replace(/\s+/g, "-").toLowerCase();
 
     const now = new Date();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
     const yy = String(now.getFullYear()).slice(-2);
-    const hh = String(now.getHours()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, "0");
+    const min = String(now.getMinutes()).padStart(2, "0");
 
     const timestamp = `${mm}${dd}${yy}${hh}${min}`;
 
@@ -55,7 +55,7 @@ const autoHealEvents = async (eventsArr) => {
 
   const isArray = Array.isArray(eventsArr);
   const events = isArray ? eventsArr : [eventsArr];
-  const eventIds = events.map(e => e._id);
+  const eventIds = events.map((e) => e._id);
 
   try {
     // 1. Fetch all reservations for these events
@@ -63,15 +63,20 @@ const autoHealEvents = async (eventsArr) => {
 
     for (let event of events) {
       let changed = false;
-      const eventReservations = reservations.filter(r => r.event.toString() === event._id.toString());
-      const reservedBoothIds = eventReservations.map(r => r.boothId.toString());
-      const reservedBoothCodes = eventReservations.map(r => r.boothCode);
+      const eventReservations = reservations.filter(
+        (r) => r.event.toString() === event._id.toString(),
+      );
+      const reservedBoothIds = eventReservations.map((r) =>
+        r.boothId.toString(),
+      );
+      const reservedBoothCodes = eventReservations.map((r) => r.boothCode);
 
       // 2. Cross-reference booths array
       if (event.booths && event.booths.length > 0) {
         event.booths.forEach((booth, index) => {
           const idStr = (booth._id || "").toString();
-          const isReserved = reservedBoothIds.includes(idStr) ||
+          const isReserved =
+            reservedBoothIds.includes(idStr) ||
             reservedBoothCodes.includes(booth.code) ||
             reservedBoothCodes.includes(booth.label);
 
@@ -90,42 +95,52 @@ const autoHealEvents = async (eventsArr) => {
       if (event.layoutData && event.layoutData.items) {
         event.layoutData.items.forEach((item, index) => {
           const type = (item.type || "").toLowerCase();
-          
+
           // FIX: Only reconcile booths. Seats should be handled by ticket logic (not present here).
           // Reconciling seats with booth codes causes "REG-1" (seat) to be sold if "REG-1" (booth) is sold.
-          if (type === 'booth') {
+          if (type === "booth") {
             const idStr = (item._id || item.id || "").toString();
-            const isReserved = reservedBoothIds.includes(idStr) ||
+            const isReserved =
+              reservedBoothIds.includes(idStr) ||
               reservedBoothCodes.includes(item.code) ||
               reservedBoothCodes.includes(item.label);
 
-            if (item.status === 'sold' && !isReserved) {
-              event.layoutData.items[index].status = 'available';
-              event.layoutData.items[index].reservedBy = '';
+            if (item.status === "sold" && !isReserved) {
+              event.layoutData.items[index].status = "available";
+              event.layoutData.items[index].reservedBy = "";
               changed = true;
-            } else if ((item.status === 'available' || !item.status) && isReserved) {
-              event.layoutData.items[index].status = 'sold';
+            } else if (
+              (item.status === "available" || !item.status) &&
+              isReserved
+            ) {
+              event.layoutData.items[index].status = "sold";
               changed = true;
             }
-          } else if (type === 'seat' && item.status === 'sold' && !item.ticketId) {
+          } else if (
+            type === "seat" &&
+            item.status === "sold" &&
+            !item.ticketId
+          ) {
             // Clean up bug from before where seats were marked sold by booth sync
-            event.layoutData.items[index].status = 'available';
-            event.layoutData.items[index].reservedBy = '';
-            event.layoutData.items[index].reservedByEmail = '';
-            event.layoutData.items[index].reservedByPO = '';
+            event.layoutData.items[index].status = "available";
+            event.layoutData.items[index].reservedBy = "";
+            event.layoutData.items[index].reservedByEmail = "";
+            event.layoutData.items[index].reservedByPO = "";
             changed = true;
           }
         });
       }
 
       // 4. Update the document implicitly if changed
-      // Note: We don't blindly save here to avoid N+1 DB locks on reads, 
+      // Note: We don't blindly save here to avoid N+1 DB locks on reads,
       // but modifying the object in memory ensures the client gets the right data!
       // We will save it asynchronously in the background so it self heals over time.
-      if (changed && typeof event.save === 'function') {
-        event.markModified('booths');
-        event.markModified('layoutData');
-        event.save().catch(err => console.error("Auto-heal save failed:", err.message));
+      if (changed && typeof event.save === "function") {
+        event.markModified("booths");
+        event.markModified("layoutData");
+        event
+          .save()
+          .catch((err) => console.error("Auto-heal save failed:", err.message));
       }
     }
   } catch (error) {
@@ -152,8 +167,8 @@ const getEvents = async (req, res) => {
         eventsQuery = Event.find({
           $or: [
             { createdBy: user._id },
-            { assignedPromoters: user._id, status: "approved" }
-          ]
+            { assignedPromoters: user._id, status: "approved" },
+          ],
         }).sort({
           createdAt: -1,
         });
@@ -172,7 +187,9 @@ const getEvents = async (req, res) => {
       if (status && allowedPublicStatus.includes(status)) {
         eventsQuery = Event.find({ status }).sort({ createdAt: -1 });
       } else {
-        eventsQuery = Event.find({ status: { $in: allowedPublicStatus } }).sort({ createdAt: -1 });
+        eventsQuery = Event.find({ status: { $in: allowedPublicStatus } }).sort(
+          { createdAt: -1 },
+        );
       }
     }
 
@@ -215,7 +232,7 @@ const getEvents = async (req, res) => {
       {
         path: "assignedPromoters",
         select: "firstName lastName email avatar",
-      }
+      },
     ]);
 
     events = await autoHealEvents(events);
@@ -247,14 +264,14 @@ const getEvent = async (req, res) => {
         _id: id,
         $or: [
           { createdBy: user._id },
-          { status: { $in: ["approved", "completed"] } }
-        ]
+          { status: { $in: ["approved", "completed"] } },
+        ],
       });
     } else {
       // Guest, Customer, or Sponsor can see approved/completed events
       eventQuery = Event.findOne({
         _id: id,
-        status: { $in: ["approved", "completed"] }
+        status: { $in: ["approved", "completed"] },
       });
     }
 
@@ -266,7 +283,7 @@ const getEvent = async (req, res) => {
       {
         path: "assignedPromoters",
         select: "firstName lastName email avatar",
-      }
+      },
     ]);
 
     if (!event) {
@@ -298,10 +315,13 @@ const getEvent = async (req, res) => {
         }
       }
     } catch (saveError) {
-      console.error("Warning: Failed to auto-update event status:", saveError.message);
+      console.error(
+        "Warning: Failed to auto-update event status:",
+        saveError.message,
+      );
       // We don't crash the request because the event still exists and is fetched.
     }
-    
+
     // Auto-heal on the fly
     const healedEvent = await autoHealEvents(event);
 
@@ -316,61 +336,74 @@ const createEvent = async (req, res) => {
   try {
     let {
       title,
+
       description,
+
       category,
+
       venue,
+
       startDate,
+
       endDate,
+
       startTime,
+
       endTime,
-      eventType, // Destructured from body
+
       priceLevels = [],
+
       seatMap = null,
+
       booths = [],
+
       isFeatured = false,
     } = req.body;
 
-    // Parsing JSON strings from FormData if applicable
     if (typeof venue === "string") venue = JSON.parse(venue);
+
     if (typeof priceLevels === "string") priceLevels = JSON.parse(priceLevels);
+
     if (typeof booths === "string") booths = JSON.parse(booths);
+
     if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
 
     const image = req.file ? req.file.filename : null;
 
+    // Optimize image if uploaded
+
     if (req.file) {
       const filePath = path.join(__dirname, "..", "uploads", req.file.filename);
+
       await optimizeImage(filePath);
     }
 
-    /* =========================
-        VALIDATION
-    ========================= */
     const requiredFields = [
       "title",
+
       "description",
+
       "category",
+
       "startDate",
+
       "endDate",
+
       "startTime",
+
       "endTime",
-      "eventType", // Added to required list
     ];
 
     let errors = [];
+
     requiredFields.forEach((field) => {
       if (!req.body[field] || String(req.body[field]).trim() === "") {
         errors.push(field);
       }
     });
 
-    // Validate eventType enum values
-    const validEventTypes = ["General Admission", "Seating Arrangement", "Exhibition"];
-    if (eventType && !validEventTypes.includes(eventType)) {
-      errors.push("Invalid eventType value");
-    }
-
     const venueFields = ["name", "address", "city", "zipCode"];
+
     if (!venue || typeof venue !== "object") {
       venueFields.forEach((f) => errors.push(`venue.${f}`));
     } else {
@@ -379,131 +412,212 @@ const createEvent = async (req, res) => {
       });
     }
 
-    /* =========================
-        LOGIC BY EVENT TYPE
-    ========================= */
-    
-    // 1. General Admission constraints
     if (eventType === "General Admission" && priceLevels.length > 2) {
       errors.push("General Admission allows maximum of 2 price levels only");
     }
 
-    // Process priceLevels
     if (priceLevels && priceLevels.length > 0) {
       priceLevels = priceLevels.map((p) => {
+        // Ensure we create a fresh ObjectId if one is provided,
+
+        // or let Mongoose generate one if not.
+
         const newId = p._id ? toObjectId(p._id) : new mongoose.Types.ObjectId();
+
         return {
           ...p,
+
           _id: newId,
+
           facePrice: Number(p.facePrice || 0),
+
           serviceCharge: Number(p.serviceCharge || 0),
+
           quantityAvailable: Number(p.quantityAvailable || 0),
+
           quantitySold: Number(p.quantitySold || 0),
+
           isActive: p.isActive !== false,
         };
       });
     }
 
-    const priceLevelIdStrings = (priceLevels || []).map((p) => p._id?.toString()).filter(Boolean);
+    // 1. Safely generate string IDs for comparison
+
+    const priceLevelIdStrings = (priceLevels || [])
+      .map((p) => p._id?.toString())
+      .filter(Boolean);
 
     // 2. Seating Arrangement Logic
+
     if (eventType === "Seating Arrangement" && seatMap) {
       seatMap.sections?.forEach((section, sIndex) => {
         section.seats?.forEach((seat, i) => {
           const seatPillarId = seat.priceLevelId?.toString();
+
           if (seatPillarId) {
-            if (seatPillarId !== "none" && priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(seatPillarId)) {
-              errors.push(`seatMap.sections[${sIndex}].seats[${i}].invalidPriceLevelId`);
+            // If it's not "none", validate it against your actual price levels
+
+            if (
+              seatPillarId !== "none" &&
+              priceLevelIdStrings.length > 0 &&
+              !priceLevelIdStrings.includes(seatPillarId)
+            ) {
+              errors.push(
+                `seatMap.sections[${sIndex}].seats[${i}].invalidPriceLevelId`,
+              );
             }
-            seat.priceLevelId = seat.priceLevelId === "none" ? "none" : toObjectId(seat.priceLevelId);
+
+            // THE FIX: If it's "none", keep it as "none". Otherwise, convert to ObjectId.
+
+            seat.priceLevelId =
+              seat.priceLevelId === "none"
+                ? "none"
+                : toObjectId(seat.priceLevelId);
           } else {
+            // If it's completely missing, we can default it to "none" here too
+
             seat.priceLevelId = "none";
           }
         });
       });
     }
 
-    // 3. Booths/Exhibition Logic
+    // 3. Booths Logic (Fixed the variable name from priceLevelIds to priceLevelIdStrings)
+
     const hasBooths = Array.isArray(booths) && booths.length > 0;
+
     if (hasBooths) {
       booths.forEach((b, i) => {
         const boothPidString = b.priceLevelId?.toString();
+
         if (boothPidString) {
-          if (boothPidString !== "none" && priceLevelIdStrings.length > 0 && !priceLevelIdStrings.includes(boothPidString)) {
+          if (
+            boothPidString !== "none" &&
+            priceLevelIdStrings.length > 0 &&
+            !priceLevelIdStrings.includes(boothPidString)
+          ) {
             errors.push(`booths[${i}].invalidPriceLevelId`);
           }
-          b.priceLevelId = b.priceLevelId === "none" ? "none" : toObjectId(b.priceLevelId);
+
+          // THE FIX: Apply the same logic for booths
+
+          b.priceLevelId =
+            b.priceLevelId === "none" ? "none" : toObjectId(b.priceLevelId);
         } else {
+          // Defaulting to "none" instead of the first price level
+
+          // is safer if you want to allow unassigned booths.
+
           b.priceLevelId = "none";
         }
       });
     }
 
     if (errors.length) {
-      return res.status(400).json({ error: "Validation failed", fields: errors });
+      return res
+
+        .status(400)
+
+        .json({ error: "Validation failed", fields: errors });
     }
 
     /* =========================
-        USER & STATUS
-    ========================= */
-    const userId = req.user._id;
-    const roleLower = (req.user.role || "").toLowerCase();
-    const status = (roleLower === "admin" || roleLower === "superadmin") ? "approved" : "pending";
 
-    /* =========================
-        CREATE DOCUMENT
+       USER INFO
+
     ========================= */
+
+    const userId = req.user._id;
+
+    const roleLower = (req.user.role || "").toLowerCase();
+
+    const status =
+      roleLower === "admin" || roleLower === "superadmin"
+        ? "approved"
+        : "pending";
+
     const newEvent = await Event.create({
       title,
+
       description,
+
       category,
+
       venue,
+
       startDate,
+
       endDate,
+
       startTime,
+
       endTime,
-      eventType, // Saved to DB
+
+      eventType,
+
       image,
+
       priceLevels,
-      // Clear seatMap if it's General Admission to keep DB clean
-      seatMap: (eventType === "Seating Arrangement") ? seatMap : null,
+
+      seatMap: eventType === "General Admission" ? null : seatMap,
+
       booths: Array.isArray(booths) ? booths : [],
-      hasBooths: hasBooths,
+
+      hasBooths: Array.isArray(booths) && booths.length > 0,
+
       isFeatured: Boolean(isFeatured),
+
       createdBy: userId,
+
       status,
     });
 
     const populatedEvent = await newEvent.populate(
       "createdBy",
-      "firstName lastName role email avatar"
+
+      "firstName lastName role email avatar",
     );
 
-    // Notification Logic
+    // Create Notification for admin if event is pending
+
     if (status === "pending") {
       const notificationController = require("./notificationController");
-      const creatorName = populatedEvent.createdBy 
-        ? `${populatedEvent.createdBy.firstName} ${populatedEvent.createdBy.lastName}` 
+
+      const creatorName = populatedEvent.createdBy
+        ? `${populatedEvent.createdBy.firstName} ${populatedEvent.createdBy.lastName}`
         : "A promoter";
-      
+
       const notification = await notificationController.createNotification({
         title: `New event "${title}" pending approval`,
+
         content: `submitted by ${creatorName}`,
+
         type: "event",
+
         path: "/admin/events",
+
         unread: true,
-        createdBy: populatedEvent.createdBy?._id,
+
+        createdBy: populatedEvent.createdBy
+          ? populatedEvent.createdBy._id
+          : null,
+
         targetRole: "admin",
       });
+
       emitUpdate("newNotification", notification);
     }
 
     emitUpdate("dashboardUpdate");
+
     return res.status(201).json({ event: populatedEvent });
   } catch (error) {
     console.error("Create Event Error:", error);
+
     return res.status(500).json({
       error: "Server error while creating event",
+
       message: error.message,
     });
   }
@@ -523,38 +637,39 @@ const deleteEvent = async (req, res) => {
   }
 
   // Create Notification and Emit
-  const notificationController = require('./notificationController');
+  const notificationController = require("./notificationController");
   const creatorName = `${req.user.firstName} ${req.user.lastName}`;
 
   // 1. System notification for admins
   const adminNotification = await notificationController.createNotification({
     title: `${creatorName} deleted event: ${event.title}`,
     content: `The event has been permanently removed.`,
-    type: 'event',
-    path: '/admin/events',
+    type: "event",
+    path: "/admin/events",
     unread: true,
     createdBy: req.user._id,
-    targetRole: 'admin'
+    targetRole: "admin",
   });
-  emitUpdate('newNotification', adminNotification);
+  emitUpdate("newNotification", adminNotification);
 
   // 2. Notifications for assigned promoters
   if (event.assignedPromoters && event.assignedPromoters.length > 0) {
     for (const promoterId of event.assignedPromoters) {
-      const promoterNotification = await notificationController.createNotification({
-        title: `Event Deleted: ${event.title}`,
-        content: `An event you were assigned to has been deleted by ${creatorName}.`,
-        type: 'event',
-        path: '/promoter/promoter-eventmanagement',
-        unread: true,
-        userId: promoterId,
-        createdBy: req.user._id
-      });
-      emitUpdate('newNotification', promoterNotification);
+      const promoterNotification =
+        await notificationController.createNotification({
+          title: `Event Deleted: ${event.title}`,
+          content: `An event you were assigned to has been deleted by ${creatorName}.`,
+          type: "event",
+          path: "/promoter/promoter-eventmanagement",
+          unread: true,
+          userId: promoterId,
+          createdBy: req.user._id,
+        });
+      emitUpdate("newNotification", promoterNotification);
     }
   }
 
-  emitUpdate('dashboardUpdate');
+  emitUpdate("dashboardUpdate");
   res.status(200).json(event);
 };
 
@@ -570,21 +685,39 @@ const updateEvent = async (req, res) => {
     if (!existingEvent) return res.status(404).json({ error: "No such event" });
 
     let {
-      title, description, category, venue,
-      startDate, endDate, startTime, endTime,
-      eventType, priceLevels, seatMap, booths,
-      isFeatured, image, assignedPromoters,
-      ticketCategories, layoutData,
-      status, rejectionReason,
+      title,
+      description,
+      category,
+      venue,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      eventType,
+      priceLevels,
+      seatMap,
+      booths,
+      isFeatured,
+      image,
+      assignedPromoters,
+      ticketCategories,
+      layoutData,
+      status,
+      rejectionReason,
     } = req.body;
 
     const roleLower = (req.user.role || "").toLowerCase();
     const isOwner = String(existingEvent.createdBy) === String(req.user._id);
-    const isAdmin = roleLower === 'admin' || roleLower === 'superadmin';
+    const isAdmin = roleLower === "admin" || roleLower === "superadmin";
 
     // 🛑 Restriction: Only owner or admin can manage the promoter team
     if (assignedPromoters !== undefined && !isOwner && !isAdmin) {
-      return res.status(403).json({ error: "Permission denied. Only the event creator can manage the promoter team." });
+      return res
+        .status(403)
+        .json({
+          error:
+            "Permission denied. Only the event creator can manage the promoter team.",
+        });
     }
 
     // Parse JSON strings from FormData
@@ -592,7 +725,8 @@ const updateEvent = async (req, res) => {
     if (typeof priceLevels === "string") priceLevels = JSON.parse(priceLevels);
     if (typeof booths === "string") booths = JSON.parse(booths);
     if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
-    if (typeof ticketCategories === "string") ticketCategories = JSON.parse(ticketCategories);
+    if (typeof ticketCategories === "string")
+      ticketCategories = JSON.parse(ticketCategories);
     if (typeof layoutData === "string") layoutData = JSON.parse(layoutData);
 
     const errors = [];
@@ -602,13 +736,20 @@ const updateEvent = async (req, res) => {
         VALIDATION
     ========================= */
     const fieldsToCheck = ["title", "description", "category"];
-    fieldsToCheck.forEach(field => {
-      if (req.body[field] !== undefined && String(req.body[field]).trim() === "") {
+    fieldsToCheck.forEach((field) => {
+      if (
+        req.body[field] !== undefined &&
+        String(req.body[field]).trim() === ""
+      ) {
         errors.push(`${field} cannot be empty`);
       }
     });
 
-    const validEventTypes = ["General Admission", "Seating Arrangement", "Exhibition"];
+    const validEventTypes = [
+      "General Admission",
+      "Seating Arrangement",
+      "Exhibition",
+    ];
     if (eventType && !validEventTypes.includes(eventType)) {
       errors.push("Invalid eventType value");
     }
@@ -621,7 +762,8 @@ const updateEvent = async (req, res) => {
 
     const parseDateTime = (date, time) => {
       if (!date || !time) return new Date(NaN);
-      const datePart = (date instanceof Date) ? date.toISOString().split('T')[0] : date;
+      const datePart =
+        date instanceof Date ? date.toISOString().split("T")[0] : date;
       return new Date(`${datePart}T${time}`);
     };
 
@@ -644,21 +786,28 @@ const updateEvent = async (req, res) => {
     ========================= */
     image = req.file ? req.file.filename : image || existingEvent.image;
     const finalVenue = venue || existingEvent.venue;
-    let finalPriceLevels = Array.isArray(priceLevels) ? priceLevels : existingEvent.priceLevels || [];
+    let finalPriceLevels = Array.isArray(priceLevels)
+      ? priceLevels
+      : existingEvent.priceLevels || [];
     let finalSeatMap = seatMap !== undefined ? seatMap : existingEvent.seatMap;
-    let finalBooths = booths !== undefined ? booths : (existingEvent.booths || []);
+    let finalBooths =
+      booths !== undefined ? booths : existingEvent.booths || [];
 
     // Process Price Levels
     if (finalPriceLevels.length > 0) {
       finalPriceLevels = finalPriceLevels.map((p) => {
         const isValidId = p._id && mongoose.Types.ObjectId.isValid(p._id);
-        const newId = isValidId ? toObjectId(p._id) : new mongoose.Types.ObjectId();
+        const newId = isValidId
+          ? toObjectId(p._id)
+          : new mongoose.Types.ObjectId();
 
         const qSold = Number(p.quantitySold || 0);
         const qAvailable = Number(p.quantityAvailable || 0);
 
         if (qAvailable < qSold) {
-          errors.push(`Price level ${p.priceName || ''} capacity cannot be less than sold tickets.`);
+          errors.push(
+            `Price level ${p.priceName || ""} capacity cannot be less than sold tickets.`,
+          );
         }
 
         return {
@@ -668,12 +817,14 @@ const updateEvent = async (req, res) => {
           serviceCharge: Number(p.serviceCharge || 0),
           quantityAvailable: qAvailable,
           quantitySold: qSold,
-          isActive: p.isActive !== false
+          isActive: p.isActive !== false,
         };
       });
     }
 
-    const priceLevelIdStrings = finalPriceLevels.map((p) => p._id?.toString()).filter(Boolean);
+    const priceLevelIdStrings = finalPriceLevels
+      .map((p) => p._id?.toString())
+      .filter(Boolean);
 
     // Smart Seating Validation
     if (finalEventType === "Seating Arrangement" && finalSeatMap?.sections) {
@@ -684,7 +835,9 @@ const updateEvent = async (req, res) => {
           } else {
             const seatPillarId = seat.priceLevelId.toString();
             if (!priceLevelIdStrings.includes(seatPillarId)) {
-              errors.push(`seatMap.sections[${sIndex}].seats[${i}] invalid priceLevelId`);
+              errors.push(
+                `seatMap.sections[${sIndex}].seats[${i}] invalid priceLevelId`,
+              );
             }
             seat.priceLevelId = toObjectId(seat.priceLevelId);
           }
@@ -708,14 +861,20 @@ const updateEvent = async (req, res) => {
     }
 
     if (errors.length) {
-      return res.status(400).json({ error: "Validation failed", message: errors.join(", "), fields: errors });
+      return res
+        .status(400)
+        .json({
+          error: "Validation failed",
+          message: errors.join(", "),
+          fields: errors,
+        });
     }
 
     // Image Cleanup
     let finalImage = existingEvent.image;
     if (req.file) {
       finalImage = req.file.filename;
-      const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+      const filePath = path.join(__dirname, "..", "uploads", req.file.filename);
       await optimizeImage(filePath);
       removeEventImage(existingEvent.image);
     } else if (req.body.image === "" || req.body.image === null) {
@@ -728,17 +887,37 @@ const updateEvent = async (req, res) => {
     ========================= */
     let finalStatus = status || existingEvent.status;
     if (existingEvent.status === "completed") {
-      return res.status(403).json({ error: "Completed events cannot be updated." });
+      return res
+        .status(403)
+        .json({ error: "Completed events cannot be updated." });
     }
 
     if (roleLower === "promoter") {
       const sensitiveFields = [
-        'title', 'description', 'category', 'venue', 'startDate', 'endDate', 
-        'startTime', 'endTime', 'eventType', 'priceLevels', 'seatMap', 'booths', 
-        'image', 'ticketCategories', 'layoutData'
+        "title",
+        "description",
+        "category",
+        "venue",
+        "startDate",
+        "endDate",
+        "startTime",
+        "endTime",
+        "eventType",
+        "priceLevels",
+        "seatMap",
+        "booths",
+        "image",
+        "ticketCategories",
+        "layoutData",
       ];
-      const isUpdatingSensitiveData = sensitiveFields.some(field => req.body[field] !== undefined);
-      if (isUpdatingSensitiveData && (existingEvent.status === "approved" || existingEvent.status === "rejected")) {
+      const isUpdatingSensitiveData = sensitiveFields.some(
+        (field) => req.body[field] !== undefined,
+      );
+      if (
+        isUpdatingSensitiveData &&
+        (existingEvent.status === "approved" ||
+          existingEvent.status === "rejected")
+      ) {
         finalStatus = "pending";
       }
     }
@@ -763,28 +942,40 @@ const updateEvent = async (req, res) => {
       venue: finalVenue,
       isFeatured: String(isFeatured) === "true",
       image: finalImage,
-      assignedPromoters: assignedPromoters !== undefined ? assignedPromoters : existingEvent.assignedPromoters,
-      ticketCategories: ticketCategories !== undefined ? ticketCategories : existingEvent.ticketCategories,
-      layoutData: layoutData !== undefined ? layoutData : existingEvent.layoutData,
+      assignedPromoters:
+        assignedPromoters !== undefined
+          ? assignedPromoters
+          : existingEvent.assignedPromoters,
+      ticketCategories:
+        ticketCategories !== undefined
+          ? ticketCategories
+          : existingEvent.ticketCategories,
+      layoutData:
+        layoutData !== undefined ? layoutData : existingEvent.layoutData,
       status: finalStatus,
-      rejectionReason: rejectionReason !== undefined ? rejectionReason : existingEvent.rejectionReason,
-      cancellationReason: req.body.cancellationReason !== undefined ? req.body.cancellationReason : existingEvent.cancellationReason,
+      rejectionReason:
+        rejectionReason !== undefined
+          ? rejectionReason
+          : existingEvent.rejectionReason,
+      cancellationReason:
+        req.body.cancellationReason !== undefined
+          ? req.body.cancellationReason
+          : existingEvent.cancellationReason,
     };
 
     const updatedEvent = await Event.findByIdAndUpdate(
       id,
       { $set: updatedData },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).populate([
       { path: "createdBy", select: "firstName lastName role email avatar" },
-      { path: "assignedPromoters", select: "firstName lastName email avatar" }
+      { path: "assignedPromoters", select: "firstName lastName email avatar" },
     ]);
 
     // ... (Notification Logic remains the same as your original snippet) ...
-    
-    emitUpdate('dashboardUpdate');
-    res.status(200).json({ event: updatedEvent });
 
+    emitUpdate("dashboardUpdate");
+    res.status(200).json({ event: updatedEvent });
   } catch (error) {
     console.error("Update Event Error:", error);
     res.status(500).json({ error: "Server error", message: error.message });
@@ -794,7 +985,7 @@ const updateEvent = async (req, res) => {
 const removeEventImage = (filename) => {
   if (!filename) return;
 
-  const filePath = path.join(__dirname, '../uploads/', filename);
+  const filePath = path.join(__dirname, "../uploads/", filename);
 
   // Check if file exists before trying to delete
   fs.access(filePath, fs.constants.F_OK, (err) => {
@@ -843,8 +1034,12 @@ const saveVenueLayout = async (req, res) => {
         // Option B: Preserve occupancy if it exists, otherwise 0
         occupiedSeats: item.occupiedSeats || 0,
         unassignedIndices: item.unassignedIndices || [],
-        priceLevelId: (item.priceLevelId && item.priceLevelId !== "none" && item.priceLevelId !== "")
-          ? item.priceLevelId : null
+        priceLevelId:
+          item.priceLevelId &&
+          item.priceLevelId !== "none" &&
+          item.priceLevelId !== ""
+            ? item.priceLevelId
+            : null,
       };
 
       if (item.type === "Seat" || item.type === "Table") {
@@ -856,30 +1051,27 @@ const saveVenueLayout = async (req, res) => {
           seatCount: item.seatCount || 1,
           color: item.color || "#e0e0e0",
         });
-      }
-      else if (item.type === "Booth") {
+      } else if (item.type === "Booth") {
         newBooths.push({
           ...common,
           type: "Booth",
           code: item.code || item.label,
           label: item.label || item.code,
         });
-      }
-      else if (item.type === "Element") {
+      } else if (item.type === "Element") {
         newSeatMap.elements.push({
           ...common,
           label: item.label || "Element",
           shape: item.shape || "Rect",
-          color: item.color || "#CCCCCC"
+          color: item.color || "#CCCCCC",
         });
-      }
-      else if (item.type === "Background" || item.subType === "Image") {
+      } else if (item.type === "Background" || item.subType === "Image") {
         newSeatMap.backgrounds.push({
           ...common,
           subType: item.subType === "Image" ? "Image" : "Shape",
           imageUrl: item.imageUrl || null,
           color: item.color || "#2196F3",
-          opacity: item.opacity ?? 1
+          opacity: item.opacity ?? 1,
         });
       }
     });
@@ -888,12 +1080,12 @@ const saveVenueLayout = async (req, res) => {
     event.booths = newBooths;
     event.hasBooths = newBooths.length > 0;
 
-    event.markModified('seatMap');
-    event.markModified('booths');
+    event.markModified("seatMap");
+    event.markModified("booths");
 
     await event.save();
 
-    if (typeof emitUpdate === 'function') emitUpdate('dashboardUpdate');
+    if (typeof emitUpdate === "function") emitUpdate("dashboardUpdate");
 
     return res.status(200).json(event);
   } catch (error) {
@@ -919,10 +1111,13 @@ const assignPriceLevels = async (req, res) => {
           occupiedSeats: seat.occupiedSeats || 0,
           // ADD THIS: Ensure gaps are persisted during price assignment
           unassignedIndices: seat.unassignedIndices || [],
-          priceLevelId: (seat.priceLevelId && seat.priceLevelId !== "none" && seat.priceLevelId !== "")
-            ? seat.priceLevelId // Note: Mongoose handles string to ObjectId casting if schema is set
-            : null
-        }))
+          priceLevelId:
+            seat.priceLevelId &&
+            seat.priceLevelId !== "none" &&
+            seat.priceLevelId !== ""
+              ? seat.priceLevelId // Note: Mongoose handles string to ObjectId casting if schema is set
+              : null,
+        })),
       }));
 
       if (seatMap.elements) event.seatMap.elements = seatMap.elements;
@@ -934,25 +1129,29 @@ const assignPriceLevels = async (req, res) => {
       event.booths = booths.map((booth) => ({
         ...booth,
         status: booth.status || "available",
-        priceLevelId: (booth.priceLevelId && booth.priceLevelId !== "none" && booth.priceLevelId !== "")
-          ? booth.priceLevelId
-          : null
+        priceLevelId:
+          booth.priceLevelId &&
+          booth.priceLevelId !== "none" &&
+          booth.priceLevelId !== ""
+            ? booth.priceLevelId
+            : null,
       }));
     }
 
-    event.markModified('seatMap');
-    event.markModified('booths');
+    event.markModified("seatMap");
+    event.markModified("booths");
 
     // Save will trigger the new Revenue calculation logic in the Model
     await event.save();
     return res.status(200).json(event);
 
     // 3. Notifications (Existing Logic)
-    const creatorName = req.user ? `${req.user.firstName} ${req.user.lastName}` : "Admin";
+    const creatorName = req.user
+      ? `${req.user.firstName} ${req.user.lastName}`
+      : "Admin";
     // ... notification code ...
 
     return res.status(200).json(event);
-
   } catch (error) {
     console.error("Assign Price Error:", error);
     return res.status(500).json({ error: error.message });
@@ -974,19 +1173,27 @@ const reserveBooth = async (req, res) => {
     const boothIdStr = String(boothId);
 
     // Find the booth index - try _id match first, then layout id / label / code
-    let boothIndex = event.booths.findIndex(b => String(b._id) === boothIdStr);
+    let boothIndex = event.booths.findIndex(
+      (b) => String(b._id) === boothIdStr,
+    );
 
     if (boothIndex === -1) {
       // Fallback: search by label or code (common when IDs shift during layout saves)
-      boothIndex = event.booths.findIndex(b => b.code === boothIdStr || b.label === boothIdStr);
+      boothIndex = event.booths.findIndex(
+        (b) => b.code === boothIdStr || b.label === boothIdStr,
+      );
     }
 
     if (boothIndex === -1 && event.layoutData?.items) {
       // Third attempt: find the item in layoutData to get its label/code, then match that back to booths
-      const layoutItem = event.layoutData.items.find(item => (String(item._id || item.id) === boothIdStr));
+      const layoutItem = event.layoutData.items.find(
+        (item) => String(item._id || item.id) === boothIdStr,
+      );
       if (layoutItem) {
         const identifier = layoutItem.code || layoutItem.label;
-        boothIndex = event.booths.findIndex(b => b.code === identifier || b.label === identifier);
+        boothIndex = event.booths.findIndex(
+          (b) => b.code === identifier || b.label === identifier,
+        );
       }
     }
 
@@ -1004,11 +1211,17 @@ const reserveBooth = async (req, res) => {
     // Check Price Level capacity early
     let plIndex = -1;
     if (booth.priceLevelId && booth.priceLevelId !== "none") {
-      plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === booth.priceLevelId.toString());
+      plIndex = event.priceLevels.findIndex(
+        (pl) => pl._id.toString() === booth.priceLevelId.toString(),
+      );
       if (plIndex !== -1) {
         const pl = event.priceLevels[plIndex];
         if (pl.quantitySold >= pl.quantityAvailable) {
-          return res.status(400).json({ error: `The price level for this booth (${pl.priceName}) is sold out.` });
+          return res
+            .status(400)
+            .json({
+              error: `The price level for this booth (${pl.priceName}) is sold out.`,
+            });
         }
       }
     }
@@ -1027,7 +1240,8 @@ const reserveBooth = async (req, res) => {
     });
 
     // 2. Update the booth status and Price Level stats in the Event
-    const buyerName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
+    const buyerName =
+      req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
     event.booths[boothIndex].status = "sold";
     event.booths[boothIndex].reservedBy = buyerName;
     event.booths[boothIndex].reservedByEmail = req.user.email || "";
@@ -1040,47 +1254,49 @@ const reserveBooth = async (req, res) => {
 
     // Also update layoutData if it exists
     if (event.layoutData && event.layoutData.items) {
-      const layoutItemIndex = event.layoutData.items.findIndex(item => 
-        (String(item._id || item.id) === boothIdStr) && 
-        (item.type || "").toLowerCase() === 'booth'
+      const layoutItemIndex = event.layoutData.items.findIndex(
+        (item) =>
+          String(item._id || item.id) === boothIdStr &&
+          (item.type || "").toLowerCase() === "booth",
       );
       if (layoutItemIndex !== -1) {
         event.layoutData.items[layoutItemIndex].status = "sold";
         event.layoutData.items[layoutItemIndex].reservedBy = buyerName;
-        event.layoutData.items[layoutItemIndex].reservedByEmail = req.user.email || "";
+        event.layoutData.items[layoutItemIndex].reservedByEmail =
+          req.user.email || "";
         event.layoutData.items[layoutItemIndex].reservedByPO = poNumber || "";
-        event.markModified('layoutData');
+        event.markModified("layoutData");
       }
     }
 
     // Single save for all changes
-    event.markModified('booths');
-    event.markModified('priceLevels');
+    event.markModified("booths");
+    event.markModified("priceLevels");
     await event.save();
 
     // 4. Create Notification for Admins
-    const notificationController = require('./notificationController');
-    const sponsorName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
-    
+    const notificationController = require("./notificationController");
+    const sponsorName =
+      req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
+
     const notification = await notificationController.createNotification({
       title: `New Booth Reservation`,
       content: `${sponsorName} reserved booth ${booth.label || booth.code} for event "${event.title}"`,
-      type: 'reservation',
-      path: '/admin/payments',
+      type: "reservation",
+      path: "/admin/payments",
       unread: true,
       createdBy: req.user._id,
-      targetRole: 'admin'
+      targetRole: "admin",
     });
-    emitUpdate('newNotification', notification);
+    emitUpdate("newNotification", notification);
 
-    emitUpdate('dashboardUpdate');
+    emitUpdate("dashboardUpdate");
 
     res.status(201).json({
       message: "Booth reserved successfully",
       reservation,
-      event
+      event,
     });
-
   } catch (error) {
     console.error("Reserve Booth Error:", error);
     res.status(500).json({ error: error.message });
@@ -1099,9 +1315,12 @@ const syncBoothStatus = async (req, res) => {
     if (!event) return res.status(404).json({ error: "No such event" });
 
     // 1. Get all active reservations for this event and populate user details
-    const reservations = await Reservation.find({ event: id }).populate('user', 'firstName lastName companyName');
-    const reservedBoothIds = reservations.map(r => r.boothId.toString());
-    const reservedBoothCodes = reservations.map(r => r.boothCode);
+    const reservations = await Reservation.find({ event: id }).populate(
+      "user",
+      "firstName lastName companyName",
+    );
+    const reservedBoothIds = reservations.map((r) => r.boothId.toString());
+    const reservedBoothCodes = reservations.map((r) => r.boothCode);
 
     let changed = false;
 
@@ -1109,19 +1328,29 @@ const syncBoothStatus = async (req, res) => {
     if (event.booths && event.booths.length > 0) {
       event.booths.forEach((booth, index) => {
         const idStr = (booth._id || "").toString();
-        const res = reservations.find(r => 
-          r.boothId.toString() === idStr || 
-          r.boothCode === booth.code || 
-          r.boothCode === booth.label
+        const res = reservations.find(
+          (r) =>
+            r.boothId.toString() === idStr ||
+            r.boothCode === booth.code ||
+            r.boothCode === booth.label,
         );
 
         const isReserved = !!res;
-        const buyerName = res && res.user ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`) : "";
-        const buyerEmail = res && res.user ? res.user.email : (res?.billingAddress?.email || "");
-        const buyerPO = res ? (res.poNumber || "") : "";
+        const buyerName =
+          res && res.user
+            ? res.user.companyName ||
+              `${res.user.firstName} ${res.user.lastName}`
+            : "";
+        const buyerEmail =
+          res && res.user ? res.user.email : res?.billingAddress?.email || "";
+        const buyerPO = res ? res.poNumber || "" : "";
 
         if (isReserved) {
-          if (booth.status !== "sold" || booth.reservedBy !== buyerName || booth.reservedByEmail !== buyerEmail) {
+          if (
+            booth.status !== "sold" ||
+            booth.reservedBy !== buyerName ||
+            booth.reservedByEmail !== buyerEmail
+          ) {
             event.booths[index].status = "sold";
             event.booths[index].reservedBy = buyerName;
             event.booths[index].reservedByEmail = buyerEmail;
@@ -1142,54 +1371,72 @@ const syncBoothStatus = async (req, res) => {
     if (event.layoutData && event.layoutData.items) {
       event.layoutData.items.forEach((item, index) => {
         const type = (item.type || "").toLowerCase();
-        
+
         // FIX: Ensure we only match booth reservations against booth items.
-        if (type === 'booth') {
+        if (type === "booth") {
           const idStr = (item._id || item.id || "").toString();
-          const res = reservations.find(r => 
-            r.boothId.toString() === idStr || 
-            r.boothCode === item.code || 
-            r.boothCode === item.label
+          const res = reservations.find(
+            (r) =>
+              r.boothId.toString() === idStr ||
+              r.boothCode === item.code ||
+              r.boothCode === item.label,
           );
 
           const isReserved = !!res;
-          const buyerName = res && res.user ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`) : "";
-          const buyerEmail = res && res.user ? res.user.email : (res?.billingAddress?.email || "");
-          const buyerPO = res ? (res.poNumber || "") : "";
+          const buyerName =
+            res && res.user
+              ? res.user.companyName ||
+                `${res.user.firstName} ${res.user.lastName}`
+              : "";
+          const buyerEmail =
+            res && res.user ? res.user.email : res?.billingAddress?.email || "";
+          const buyerPO = res ? res.poNumber || "" : "";
 
           if (isReserved) {
-            if (item.status !== 'sold' || item.reservedBy !== buyerName || item.reservedByEmail !== buyerEmail) {
-              event.layoutData.items[index].status = 'sold';
+            if (
+              item.status !== "sold" ||
+              item.reservedBy !== buyerName ||
+              item.reservedByEmail !== buyerEmail
+            ) {
+              event.layoutData.items[index].status = "sold";
               event.layoutData.items[index].reservedBy = buyerName;
               event.layoutData.items[index].reservedByEmail = buyerEmail;
               event.layoutData.items[index].reservedByPO = buyerPO;
               changed = true;
-              event.markModified('layoutData');
+              event.markModified("layoutData");
             }
-          } else if (item.status === 'sold') {
-            event.layoutData.items[index].status = 'available';
-            event.layoutData.items[index].reservedBy = '';
-            event.layoutData.items[index].reservedByEmail = '';
-            event.layoutData.items[index].reservedByPO = '';
+          } else if (item.status === "sold") {
+            event.layoutData.items[index].status = "available";
+            event.layoutData.items[index].reservedBy = "";
+            event.layoutData.items[index].reservedByEmail = "";
+            event.layoutData.items[index].reservedByPO = "";
             changed = true;
-            event.markModified('layoutData');
+            event.markModified("layoutData");
           }
-        } else if (type === 'seat' && item.status === 'sold' && !item.ticketId) {
+        } else if (
+          type === "seat" &&
+          item.status === "sold" &&
+          !item.ticketId
+        ) {
           // If it's a seat and marked as sold but doesn't have a ticketId (implying it was marked by booth sync bug)
           // we reset it to available.
-          event.layoutData.items[index].status = 'available';
-          event.layoutData.items[index].reservedBy = '';
-          event.layoutData.items[index].reservedByEmail = '';
-          event.layoutData.items[index].reservedByPO = '';
+          event.layoutData.items[index].status = "available";
+          event.layoutData.items[index].reservedBy = "";
+          event.layoutData.items[index].reservedByEmail = "";
+          event.layoutData.items[index].reservedByPO = "";
           changed = true;
-          event.markModified('layoutData');
+          event.markModified("layoutData");
         }
       });
     }
 
     // 4. Recalculate quantitySold for price levels
     event.priceLevels.forEach((pl, index) => {
-      const soldCount = event.booths.filter(b => b.priceLevelId?.toString() === pl._id.toString() && b.status === "sold").length;
+      const soldCount = event.booths.filter(
+        (b) =>
+          b.priceLevelId?.toString() === pl._id.toString() &&
+          b.status === "sold",
+      ).length;
       if (pl.quantitySold !== soldCount) {
         event.priceLevels[index].quantitySold = soldCount;
         changed = true;
@@ -1197,20 +1444,19 @@ const syncBoothStatus = async (req, res) => {
     });
 
     if (changed) {
-      event.markModified('booths');
-      event.markModified('priceLevels');
+      event.markModified("booths");
+      event.markModified("priceLevels");
       await event.save();
     }
 
     const { emitUpdate } = require("../socket");
-    emitUpdate('dashboardUpdate');
+    emitUpdate("dashboardUpdate");
 
     res.status(200).json({
       message: "Sync completed",
       changed,
-      event: event // Return the full updated event
+      event: event, // Return the full updated event
     });
-
   } catch (error) {
     console.error("Sync Booth Error:", error);
     res.status(500).json({ error: error.message });

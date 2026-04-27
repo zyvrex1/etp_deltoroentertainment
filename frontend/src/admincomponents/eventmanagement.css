@@ -2,27 +2,28 @@
   padding: 32px;
   background: var(--color-bg-light);
   min-height: 100vh;
-
-  .eventmanagement-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 24px;
-    text-align: left;
-
-    h1 {
-      margin: 0;
-      color: var(--color-black-primary);
-      margin-bottom: 8px;
-    }
-
-    p {
-      color: var(--color-black-tertiary);
-      margin: 0;
-      font-size: 16px;
-    }
-  }
 }
+
+.eventmanagement-header {
+    display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+  text-align: left;
+
+  h1 {
+    margin: 0;
+    color: var(--color-black-primary);
+    margin-bottom: 8px;
+
+  }
+
+  p {
+    color: var(--color-black-tertiary);
+    margin: 0;
+    font-size: 16px;
+  }
+  }
 
 .em-content {
   background: var(--color-white-primary);

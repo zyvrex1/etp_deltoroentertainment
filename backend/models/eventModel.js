@@ -132,11 +132,11 @@ const eventSchema = new Schema(
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
 
     title: { type: String, required: true, trim: true },
-    eventType: {
-      type: String,
-      enum: ["General Admission", "Seating Arrangement", "Exhibition"],
-      default: "General Admission",
-    },
+    // eventType: {
+    //   type: String,
+    //   enum: ["General Admission", "Seating Arrangement", "Exhibition"],
+    //   default: "General Admission",
+    // },
 
     description: String,
     category: { type: String, required: true, trim: true },
