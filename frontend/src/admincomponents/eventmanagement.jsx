@@ -665,102 +665,45 @@ const EventManagement = () => {
                     </td>
 
                     <td data-label="Actions">
-                      <div className="em-actions">
-    {event.createdBy?._id === user?._id ? (
-                          // Current user owns this event → View/Edit, Approve/Reject (if pending), Cancel, Delete
-                          <>
-                            <button
-                              className="em-action-btn"
-                              onClick={() => handleEditEvent(event)}
-                              title="View/Edit Event"
-                            >
-                              <Icon icon="mdi:eye-outline" />
-                            </button>
+  <div className="em-actions">
+    {/* Dynamic Icon: Edit (for owners) vs Eye (for others) */}
+    <button
+      className="em-action-btn"
+      onClick={() => handleEditEvent(event)}
+      title={event.createdBy?._id === user?._id ? "Edit Event" : "View Event"}
+    >
+      <Icon 
+        icon={event.createdBy?._id === user?._id ? "mdi:square-edit-outline" : "mdi:eye-outline"} 
+      />
+    </button>
 
-                            {event.status === "pending" && (
-                              <>
-                                <button
-                                  className="em-action-btn approve-btn"
-                                  onClick={() => handleApproveEvent(event)}
-                                  title="Approve Event"
-                                >
-                                  <Icon icon="mdi:check-circle-outline" />
-                                </button>
-                                <button
-                                  className="em-action-btn reject-btn"
-                                  onClick={() => handleRejectEvent(event)}
-                                  title="Reject Event"
-                                >
-                                  <Icon icon="mdi:close-circle-outline" />
-                                </button>
-                              </>
-                            )}
+    {/* APPROVE/REJECT Logic */}
+    {event.status === "pending" && (event.createdBy?._id === user?._id || user.role === "admin" || user.role === "superadmin") && (
+      <>
+        <button className="em-action-btn approve-btn" onClick={() => handleApproveEvent(event)} title="Approve Event">
+          <Icon icon="mdi:check-circle-outline" />
+        </button>
+        <button className="em-action-btn reject-btn" onClick={() => handleRejectEvent(event)} title="Reject Event">
+          <Icon icon="mdi:close-circle-outline" />
+        </button>
+      </>
+    )}
 
-                            {event.status === "approved" && (
-                              <button
-                                className="em-action-btn cancel-btn"
-                                onClick={() => handleCancelEvent(event)}
-                                title="Cancel Event"
-                              >
-                                <Icon icon="mdi:cancel" />
-                              </button>
-                            )}
+    {/* CANCEL Logic */}
+    {event.status === "approved" && (event.createdBy?._id === user?._id || user.role === "admin" || user.role === "superadmin") && (
+      <button className="em-action-btn cancel-btn" onClick={() => handleCancelEvent(event)} title="Cancel Event">
+        <Icon icon="mdi:cancel" />
+      </button>
+    )}
 
-                            <button
-                              className="em-action-btn"
-                              onClick={() => handleDeleteEvent(event)}
-                              title="Delete Event"
-                            >
-                              <Icon icon="mdi:delete" />
-                            </button>
-                          </>
-                        ) : (
-                          // Event is NOT owned by user → View + Approve (if pending & admin)
-                          <>
-                            <button
-                              className="em-action-btn"
-                              onClick={() => handleEditEvent(event)}
-                              title="View Event"
-                            >
-                              <Icon icon="mdi:eye-outline" />
-                            </button>
-
-                            {event.status === "pending" &&
-                              (user.role === "admin" ||
-                                user.role === "superadmin") && (
-                                <>
-                                  <button
-                                    className="em-action-btn approve-btn"
-                                    onClick={() => handleApproveEvent(event)}
-                                    title="Approve Event"
-                                  >
-                                    <Icon icon="mdi:check-circle-outline" />
-                                  </button>
-                                  <button
-                                    className="em-action-btn reject-btn"
-                                    onClick={() => handleRejectEvent(event)}
-                                    title="Reject Event"
-                                  >
-                                    <Icon icon="mdi:close-circle-outline" />
-                                  </button>
-                                </>
-                              )}
-
-                            {event.status === "approved" &&
-                              (user.role === "admin" ||
-                                user.role === "superadmin") && (
-                                <button
-                                  className="em-action-btn cancel-btn"
-                                  onClick={() => handleCancelEvent(event)}
-                                  title="Cancel Event"
-                                >
-                                  <Icon icon="mdi:cancel" />
-                                </button>
-                              )}
-                          </>
-                        )}
-                      </div>
-                    </td>
+    {/* DELETE Logic (Owner Only) */}
+    {event.createdBy?._id === user?._id && (
+      <button className="em-action-btn" onClick={() => handleDeleteEvent(event)} title="Delete Event">
+        <Icon icon="mdi:delete" />
+      </button>
+    )}
+  </div>
+</td>
                   </tr>
                 );
               })}
