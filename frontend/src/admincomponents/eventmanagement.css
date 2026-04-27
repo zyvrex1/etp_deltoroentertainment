@@ -2,11 +2,12 @@
   padding: 32px;
   background: var(--color-bg-light);
   min-height: 100vh;
+}
 
-  .eventmanagement-header {
+.eventmanagement-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: flex-end;
     margin-bottom: 24px;
     text-align: left;
 
@@ -22,7 +23,6 @@
       font-size: 16px;
     }
   }
-}
 
 .em-content {
   background: var(--color-white-primary);

@@ -82,7 +82,6 @@ const elementSchema = new Schema({
 });
 
 
-
 const layoutItemSchema = new Schema({
   type: { type: String, default: "Background" },
   subType: { type: String, enum: ["Image", "Shape"], default: "Image" },
@@ -135,7 +134,7 @@ const eventSchema = new Schema(
     title: { type: String, required: true, trim: true },
     eventType: {
       type: String,
-      enum: ["General Admission", "Seating Arrangement", "Booth-Style"],
+      enum: ["General Admission", "Seating Arrangement", "Exhibition"],
       default: "General Admission",
     },
 
@@ -357,6 +356,34 @@ eventSchema.virtual("totalTickets").get(function () {
 eventSchema.virtual("totalRevenue").get(function () {
   return this.seatRevenue + this.boothRevenue;
 });
+
+eventSchema.statics.reserveSeat = async function(eventId, sectionName, seatId, userId) {
+  return await this.findOneAndUpdate(
+    {
+      _id: eventId,
+      "seatMap.sections.name": sectionName,
+      "seatMap.sections.seats": {
+        $elemMatch: {
+          _id: seatId,
+          status: "available" // CRITICAL: Only match if it's still available
+        }
+      }
+    },
+    {
+      $set: {
+        "seatMap.sections.$[section].seats.$[seat].status": "reserved",
+        "seatMap.sections.$[section].seats.$[seat].reservedBy": userId
+      }
+    },
+    {
+      arrayFilters: [
+        { "section.name": sectionName },
+        { "seat._id": seatId }
+      ],
+      new: true // Returns the updated document
+    }
+  );
+};
 
 /* =========================
    INDEXES

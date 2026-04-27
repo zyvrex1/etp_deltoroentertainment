@@ -18,6 +18,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   const today = new Date().toISOString().split("T")[0];
 
   const [title, setTitle] = useState("");
+  const [eventType, setEventType] = useState("General Admission");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [startDate, setStartDate] = useState(today);
@@ -68,124 +69,137 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     }
   };
 
+// 1. Define the reset function outside handleSubmit so it's reusable
+const resetForm = () => {
+  setTitle("");
+  setEventType("General Admission");
+  setDescription("");
+  setCategory("");
+  setStartDate(today);
+  setEndDate(today);
+  setStartTime("");
+  setEndTime("");
+  setVenue({
+    name: "",
+    address: "",
+    city: "",
+    zipCode: "",
+  });
+  setSeatMap({ sections: [] });
+  setBooths([]);
+  setImageFile(null);
+  setImagePreviewUrl(null);
+  setError("");
+  setEmptyFields([]);
+};
 
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  
+  setError("");
+  setEmptyFields([]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const fieldsToCheck = {
+    title,
+    eventType,
+    description,
+    category,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    venueName: venue.name,
+    venueAddress: venue.address,
+    venueCity: venue.city,
+    venueZip: venue.zipCode,
+  };
 
-    setError("");
-    setEmptyFields([]);
+  const empty = Object.entries(fieldsToCheck)
+    .filter(([_, value]) => value === "" || value === null || value === undefined)
+    .map(([key]) => key);
 
-    const fieldsToCheck = {
-      title,
-      description,
-      category,
-      startDate,
-      endDate,
-      startTime,
-      endTime,
-      venueName: venue.name,
-      venueAddress: venue.address,
-      venueCity: venue.city,
-      venueZip: venue.zipCode,
-    };
+  if (empty.length > 0) {
+    setEmptyFields(empty);
+    setError("Please fill in all required fields.");
+    return;
+  }
 
-    const empty = Object.entries(fieldsToCheck)
-      .filter(
-        ([_, value]) => value === "" || value === null || value === undefined,
-      )
-      .map(([key]) => key);
+  const startDateTime = new Date(`${startDate}T${startTime}`);
+  const endDateTime = new Date(`${endDate}T${endTime}`);
 
-    if (empty.length > 0) {
-      setEmptyFields(empty);
-      setError("Please fill in all required fields.");
-      return;
-    }
+  if (endDateTime <= startDateTime) {
+    setError("End date/time must be after the start date/time.");
+    return;
+  }
 
-    const startDateTime = new Date(`${startDate}T${startTime}`);
-    const endDateTime = new Date(`${endDate}T${endTime}`);
+  if (!user) {
+    setError("You must be logged in.");
+    return;
+  }
 
-    if (endDateTime <= startDateTime) {
-      setError("End date/time must be after the start date/time.");
-      return;
-    }
-
-    if (!user) {
-      setError("You must be logged in.");
-      return;
-    }
-
-
-    if (booths && booths.length > 0) {
-      for (const booth of booths) {
-        if (
-          booth.priceLevelId &&
-          !priceLevelIds.includes(String(booth.priceLevelId))
-        ) {
-          setError(
-            "One or more booths have an invalid price level assignment.",
-          );
-          return;
-        }
-      }
-    }
-
-    const result = await showCreateConfirmAlert(
-      "Create Event?",
-      `Are you sure you want to create "${title}"?`,
-    );
-    if (!result.isConfirmed) return;
-
-    try {
-      const formData = new FormData();
-      formData.append("title", title);
-      formData.append("description", description);
-      formData.append("category", category);
-      formData.append("startDate", startDate);
-      formData.append("endDate", endDate);
-      formData.append("startTime", startTime);
-      formData.append("endTime", endTime);
-      formData.append("venue", JSON.stringify(venue));
-      // Sends seatMap if present
-      formData.append(
-        "seatMap",
-        JSON.stringify(seatMap || null),
-      );
-      formData.append("booths", JSON.stringify(booths || []));
-
-      if (imageFile) formData.append("image", imageFile);
-
-      const response = await fetch("/api/events", {
-        method: "POST",
-        body: formData,
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-
-      const json = await response.json();
-
-      if (!response.ok) {
-        setError(json.error || "Failed to create event.");
-        await showErrorAlert(
-          "Error Creating Event",
-          json.error || "Failed to create event.",
-        );
+  if (booths && booths.length > 0) {
+    for (const booth of booths) {
+      if (booth.priceLevelId && !priceLevelIds.includes(String(booth.priceLevelId))) {
+        setError("One or more booths have an invalid price level assignment.");
         return;
       }
-
-      onClose();
-      showSuccessAlert(
-        "Event Created",
-        "The event has been created successfully.",
-      );
-      dispatch({ type: "CREATE_EVENT", payload: json.event });
-    } catch (err) {
-      console.error(err);
-      setError("Network error. Please try again.");
-      await showErrorAlert("Network Error", "Unable to connect to the server.");
     }
-  };
+  }
+
+  const result = await showCreateConfirmAlert(
+    "Create Event?",
+    `Are you sure you want to create "${title}"?`
+  );
+  if (!result.isConfirmed) return;
+
+  try {
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("eventType", eventType);
+    formData.append("description", description);
+    formData.append("category", category);
+    formData.append("startDate", startDate);
+    formData.append("endDate", endDate);
+    formData.append("startTime", startTime);
+    formData.append("endTime", endTime);
+    formData.append("venue", JSON.stringify(venue));
+    formData.append("seatMap", JSON.stringify(seatMap || null));
+    formData.append("booths", JSON.stringify(booths || []));
+
+    if (imageFile) formData.append("image", imageFile);
+
+    const response = await fetch("/api/events", {
+      method: "POST",
+      body: formData,
+      headers: { Authorization: `Bearer ${user.token}` },
+    });
+
+    const json = await response.json();
+
+    if (!response.ok) {
+      setError(json.error || "Failed to create event.");
+      await showErrorAlert("Error Creating Event", json.error || "Failed to create event.");
+      return;
+    }
+
+    // 2. SUCCESS: Reset fields before closing
+    resetForm();
+    onClose();
+
+    showSuccessAlert("Event Created", "The event has been created successfully.");
+    dispatch({ type: "CREATE_EVENT", payload: json.event });
+  } catch (err) {
+    console.error(err);
+    setError("Network error. Please try again.");
+    await showErrorAlert("Network Error", "Unable to connect to the server.");
+  }
+};
+
+// 3. Update your manual "Cancel" button or "X" button logic
+const handleManualClose = () => {
+  resetForm();
+  onClose();
+};
 
   if (!isOpen) return null;
 
@@ -220,8 +234,69 @@ const CreateEventModal = ({ isOpen, onClose }) => {
             className="add-event-modal-body add-event-form"
             onSubmit={handleSubmit}
           >
+          <div className="add-event-form-group add-event-full-width" style={{ marginBottom: "25px" }}>
+  {/* Header is now explicitly black */}
+  <h6 style={{ color: "#000000", marginBottom: "12px", fontSize: "1rem" }}>Event Type</h6>
+  
+  <div style={{ 
+    display: "flex", 
+    gap: "24px", 
+    flexWrap: "wrap",
+    padding: "5px 0", // Clean look, no background box needed
+    borderRadius: "8px",
+    border: emptyFields.includes("eventType") ? "1px solid #ff4d4d" : "1px solid transparent" // Error border if needed
+  }}>
+    {[
+      { id: "ga", value: "General Admission" },
+      { id: "sa", value: "Seating Arrangement" },
+      { id: "ex", value: "Exhibition" }
+    ].map((option) => (
+      <label 
+        key={option.id} 
+        style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          gap: "10px", 
+          cursor: "pointer",
+          fontSize: "14px",
+          color: "#000000", // Forces label text to be black
+          fontWeight: eventType === option.value ? "600" : "400", // Bolder when selected
+          transition: "all 0.2s ease"
+        }}
+        onMouseEnter={(e) => {
+          if (eventType !== option.value) e.currentTarget.style.color = "#555555"; // Dark gray on hover
+        }}
+        onMouseLeave={(e) => {
+          if (eventType !== option.value) e.currentTarget.style.color = "#000000";
+        }}
+      >
+        <input
+          type="radio"
+          name="eventType"
+          value={option.value}
+          checked={eventType === option.value}
+          onChange={(e) => setEventType(e.target.value)}
+          style={{ 
+            cursor: "pointer", 
+            width: "18px", 
+            height: "18px",
+            accentColor: "#007bff" // Standard blue for the selection dot
+          }}
+        />
+        {/* Value text itself is also explicitly black */}
+        <span style={{ color: "#000000" }}>{option.value}</span>
+      </label>
+    ))}
+  </div>
+  
+  {/* Specific error message if they missed the selection */}
+  {emptyFields.includes("eventType") && (
+    <small style={{ color: "#ff4d4d", marginTop: "5px", display: "block" }}>
+      Please select an event type.
+    </small>
+  )}
+</div>
               {/* Image Upload Area */}
-
               <div className="section-box">
                 <div
                   className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
@@ -446,7 +521,7 @@ const CreateEventModal = ({ isOpen, onClose }) => {
 
 
         </div>
-      </div>
+    </div>
   );
 };
 
