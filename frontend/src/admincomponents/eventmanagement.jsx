@@ -773,9 +773,8 @@ const EventManagement = () => {
 
   return (
     <div className="event-management">
-
       <div className="eventmanagement-header">
-       <div>
+        <div>
           <h1>Event Management</h1>
           <p>Manage all events, tickets, and booth layouts.</p>
         </div>
@@ -790,6 +789,8 @@ const EventManagement = () => {
       </div>
 
       <div className="em-content">
+        {/* Tabs */}
+        {/* Tabs */}
         <div className="tabs-container">
           {eventTabs.map((tab) => (
             <button
