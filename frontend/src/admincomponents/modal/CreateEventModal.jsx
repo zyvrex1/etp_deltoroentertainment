@@ -234,68 +234,7 @@ const handleManualClose = () => {
             className="add-event-modal-body add-event-form"
             onSubmit={handleSubmit}
           >
-          <div className="add-event-form-group add-event-full-width" style={{ marginBottom: "25px" }}>
-  {/* Header is now explicitly black */}
-  <h6 style={{ color: "#000000", marginBottom: "12px", fontSize: "1rem" }}>Event Type</h6>
-  
-  <div style={{ 
-    display: "flex", 
-    gap: "24px", 
-    flexWrap: "wrap",
-    padding: "5px 0", // Clean look, no background box needed
-    borderRadius: "8px",
-    border: emptyFields.includes("eventType") ? "1px solid #ff4d4d" : "1px solid transparent" // Error border if needed
-  }}>
-    {[
-      { id: "ga", value: "General Admission" },
-      { id: "sa", value: "Seating Arrangement" },
-      { id: "ex", value: "Exhibition" }
-    ].map((option) => (
-      <label 
-        key={option.id} 
-        style={{ 
-          display: "flex", 
-          alignItems: "center", 
-          gap: "10px", 
-          cursor: "pointer",
-          fontSize: "14px",
-          color: "#000000", // Forces label text to be black
-          fontWeight: eventType === option.value ? "600" : "400", // Bolder when selected
-          transition: "all 0.2s ease"
-        }}
-        onMouseEnter={(e) => {
-          if (eventType !== option.value) e.currentTarget.style.color = "#555555"; // Dark gray on hover
-        }}
-        onMouseLeave={(e) => {
-          if (eventType !== option.value) e.currentTarget.style.color = "#000000";
-        }}
-      >
-        <input
-          type="radio"
-          name="eventType"
-          value={option.value}
-          checked={eventType === option.value}
-          onChange={(e) => setEventType(e.target.value)}
-          style={{ 
-            cursor: "pointer", 
-            width: "18px", 
-            height: "18px",
-            accentColor: "#007bff" // Standard blue for the selection dot
-          }}
-        />
-        {/* Value text itself is also explicitly black */}
-        <span style={{ color: "#000000" }}>{option.value}</span>
-      </label>
-    ))}
-  </div>
-  
-  {/* Specific error message if they missed the selection */}
-  {emptyFields.includes("eventType") && (
-    <small style={{ color: "#ff4d4d", marginTop: "5px", display: "block" }}>
-      Please select an event type.
-    </small>
-  )}
-</div>
+
               {/* Image Upload Area */}
               <div className="section-box">
                 <div
