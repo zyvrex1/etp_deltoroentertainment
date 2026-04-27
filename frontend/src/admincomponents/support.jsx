@@ -108,9 +108,9 @@ const SupportDisputes = () => {
             if (!q) return true;
 
             return (
-                tx.sponsorName.toLowerCase().includes(q) ||
-                tx.subject.toLowerCase().includes(q) ||
-                tx._id.toLowerCase().includes(q)
+                (tx.sponsorName?.toLowerCase().includes(q) || false) ||
+                (tx.subject?.toLowerCase().includes(q) || false) ||
+                (tx._id?.toLowerCase().includes(q) || false)
             );
         });
     }, [tickets, searchQuery, activeFilter]);
@@ -389,10 +389,24 @@ const SupportDisputes = () => {
                     {paginatedTickets.length === 0 ? (
                         // Empty state outside table for mobile-friendly display
                         <div className="empty-state">
-                            <Icon icon="mdi:magnify-close" width="48" />
-                            <h4>No tickets found</h4>
+                            <Icon 
+                                icon={
+                                    activeFilter === "open"
+                                        ? "mdi:alert-circle-outline"
+                                        : activeFilter === "in-progress"
+                                            ? "mdi:clock-time-four-outline"
+                                            : activeFilter === "resolved"
+                                                ? "mdi:check-circle-outline"
+                                                : "mdi:ticket-outline"
+                                } 
+                                style={{ fontSize: '48px', marginBottom: '16px' }} 
+                            />
+                            <h4>{searchQuery ? "No tickets found" : `No ${activeFilter !== 'all' ? activeFilter.replace('-', ' ') : ''} tickets yet`}</h4>
                             <p className="small-body-text">
-                                No tickets match "<strong>{searchQuery}</strong>".
+                                {searchQuery 
+                                    ? <>No tickets match "<strong>{searchQuery}</strong>".</>
+                                    : `There are currently no ${activeFilter !== 'all' ? activeFilter.replace('-', ' ') : ''} support tickets.`
+                                }
                             </p>
                         </div>
                     ) : (

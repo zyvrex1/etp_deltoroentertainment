@@ -468,10 +468,28 @@ const EventManagement = () => {
         ) : paginatedData.length === 0 ? (
           // Empty state outside table for mobile-friendly display
           <div className="empty-state">
-            <Icon icon="mdi:magnify-close" width="48" />
-            <h4>No events found</h4>
+            <Icon 
+              icon={
+                activeTab === "pending-events" 
+                  ? "mdi:clock-outline" 
+                  : activeTab === "approved-events"
+                    ? "mdi:check-circle-outline"
+                    : activeTab === "rejected-events"
+                      ? "mdi:close-circle-outline"
+                      : activeTab === "cancelled-events"
+                        ? "mdi:cancel"
+                        : activeTab === "completed-events"
+                          ? "mdi:flag-checkered"
+                          : "mdi:calendar-multiple"
+              } 
+              style={{ fontSize: '48px', marginBottom: '16px' }} 
+            />
+            <h4>{searchQuery ? "No events found" : `No ${activeTab.split('-')[0]} events yet`}</h4>
             <p className="small-body-text">
-              No events match "<strong>{searchQuery}</strong>".
+              {searchQuery 
+                ? <>No events match "<strong>{searchQuery}</strong>".</>
+                : `There are currently no events in this category.`
+              }
             </p>
           </div>
         ) : (

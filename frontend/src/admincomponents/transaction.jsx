@@ -151,9 +151,9 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
       if (!q) return true;
 
       return (
-        tx.user.toLowerCase().includes(q) ||
-        tx.event.toLowerCase().includes(q) ||
-        tx.type.toLowerCase().includes(q)
+        (tx.user?.toLowerCase().includes(q) || false) ||
+        (tx.event?.toLowerCase().includes(q) || false) ||
+        (tx.type?.toLowerCase().includes(q) || false)
       );
     });
   }, [transactions, internalSearchQuery, internalFilter, isTab, externalSearchQuery, externalFilter]);
@@ -348,10 +348,24 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
             </table>
           ) : paginatedTransactions.length === 0 ? (
             <div className="empty-state">
-              <Icon icon="mdi:magnify-close" width="48" />
-              <h4>No transactions found</h4>
+              <Icon 
+                icon={
+                  (isTab ? externalFilter : internalFilter) === "booth"
+                    ? "mdi:store-off"
+                    : (isTab ? externalFilter : internalFilter) === "ticket"
+                      ? "mdi:ticket-off"
+                      : (isTab ? externalFilter : internalFilter) === "payout"
+                        ? "mdi:bank-off"
+                        : "mdi:cash-off"
+                } 
+                style={{ fontSize: '48px', marginBottom: '16px' }} 
+              />
+              <h4>{(isTab ? externalSearchQuery : internalSearchQuery) ? "No transactions found" : `No ${isTab ? externalFilter : internalFilter} transactions yet`}</h4>
               <p className="small-body-text">
-                No transactions match "<strong>{isTab ? externalSearchQuery : internalSearchQuery}</strong>".
+                {(isTab ? externalSearchQuery : internalSearchQuery)
+                  ? <>No transactions match "<strong>{isTab ? externalSearchQuery : internalSearchQuery}</strong>".</>
+                  : `There are currently no transactions recorded in this category.`
+                }
               </p>
             </div>
           ) : (

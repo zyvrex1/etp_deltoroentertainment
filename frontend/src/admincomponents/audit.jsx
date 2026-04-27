@@ -122,10 +122,10 @@ const AuditLogs = () => {
 
         if (searchQuery) {
             filtered = filtered.filter(log =>
-                log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                log.admin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                log.target.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                log.details.toLowerCase().includes(searchQuery.toLowerCase())
+                (log.action?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+                (log.admin?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+                (log.target?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+                (log.details?.toLowerCase().includes(searchQuery.toLowerCase()) || false)
             );
         }
 
@@ -275,10 +275,16 @@ const AuditLogs = () => {
                     ) : paginatedLogs.length === 0 ? (
                         // Empty state outside table for mobile-friendly display
                         <div className="empty-state">
-                            <Icon icon="mdi:magnify-close" width="48" />
-                            <h4>No users found</h4>
+                            <Icon 
+                                icon="mdi:clipboard-text-off-outline" 
+                                width="48" 
+                            />
+                            <h4>{searchQuery ? "No logs found" : "No audit logs yet"}</h4>
                             <p className="small-body-text">
-                                No users match "<strong>{searchQuery}</strong>".
+                                {searchQuery 
+                                    ? <>No logs match "<strong>{searchQuery}</strong>".</>
+                                    : "There are currently no administrative actions recorded in the audit log."
+                                }
                             </p>
                         </div>
                     ) : (

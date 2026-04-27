@@ -107,10 +107,10 @@ const Payments = () => {
   if (searchQuery) {
     const query = searchQuery.toLowerCase();
     filteredData = filteredData.filter(item =>
-      item.promoter.toLowerCase().includes(query) ||
-      (item.event && item.event.toLowerCase().includes(query)) ||
-      item.amount.toLowerCase().includes(query) ||
-      item.status.toLowerCase().includes(query)
+      (item.promoter?.toLowerCase().includes(query) || false) ||
+      (item.event?.toLowerCase().includes(query) || false) ||
+      (item.amount?.toLowerCase().includes(query) || false) ||
+      (item.status?.toLowerCase().includes(query) || false)
     );
   }
 
@@ -441,10 +441,20 @@ const Payments = () => {
             ) : paginatedData.length === 0 ? (
             // Empty state outside table for mobile-friendly display
             <div className="empty-state">
-              <Icon icon="mdi:magnify-close" width="48" />
-              <h4>No payments found</h4>
+              <Icon 
+                icon={
+                  activeTab === "payout-requests" 
+                    ? "mdi:bank-off" 
+                    : "mdi:store-off"
+                } 
+                style={{ fontSize: '48px', marginBottom: '16px' }} 
+              />
+              <h4>{searchQuery ? "No results found" : `No ${activeTab === "payout-requests" ? "payout requests" : "reservations"} yet`}</h4>
               <p className="small-body-text">
-                No payments match "<strong>{searchQuery}</strong>".
+                {searchQuery 
+                  ? <>No matches found for "<strong>{searchQuery}</strong>".</>
+                  : `There are currently no ${activeTab === "payout-requests" ? "payout requests" : "reservations"} in this category.`
+                }
               </p>
             </div>
           ) : (

@@ -133,13 +133,13 @@ const UserManagement = () => {
       case "all-users":
         return usersExcludingCurrent;
       case "admins":
-        return usersExcludingCurrent.filter((u) => u.roleType === "admin");
+        return usersExcludingCurrent.filter((u) => u.role === "admin");
       case "customers":
-        return usersExcludingCurrent.filter((u) => u.roleType === "customer");
+        return usersExcludingCurrent.filter((u) => u.role === "customer");
       case "promoters":
-        return usersExcludingCurrent.filter((u) => u.roleType === "promoter");
+        return usersExcludingCurrent.filter((u) => u.role === "promoter");
       case "sponsors":
-        return usersExcludingCurrent.filter((u) => u.roleType === "sponsor");
+        return usersExcludingCurrent.filter((u) => u.role === "sponsor");
       default:
         return [];
     }
@@ -196,6 +196,33 @@ const UserManagement = () => {
     setIsEditUserModalOpen(true);
   };
 
+  const renderEmptyState = (type) => {
+    let icon = "mdi:account-off";
+    let title = `No ${type} yet`;
+    let message = `There are currently no ${type} registered.`;
+
+    if (searchQuery) {
+      title = "No users found";
+      message = `No users match "${searchQuery}".`;
+    }
+
+    switch (type) {
+      case "admins": icon = "mdi:shield-off"; break;
+      case "customers": icon = "mdi:account-off"; break;
+      case "promoters": icon = "mdi:briefcase-remove"; break;
+      case "sponsors": icon = "mdi:office-building-remove"; break;
+      default: icon = "mdi:account-multiple-remove";
+    }
+
+    return (
+      <div className="empty-state">
+        <Icon icon={icon} style={{ fontSize: '48px', marginBottom: '16px' }} />
+        <h4>{title}</h4>
+        <p className="small-body-text">{message}</p>
+      </div>
+    );
+  };
+
   const renderTable = () => {
     if (activeTab === "all-users" || activeTab === "admins") {
       return (
@@ -233,14 +260,7 @@ const UserManagement = () => {
               </tbody>
             </table>
           ) : paginatedData.length === 0 ? (
-            // Empty state outside table for mobile-friendly display
-            <div className="empty-state">
-              <Icon icon="mdi:magnify-close" width="48" />
-              <h4>No users found</h4>
-              <p className="small-body-text">
-                No users match "<strong>{searchQuery}</strong>".
-              </p>
-            </div>
+            renderEmptyState(activeTab === "admins" ? "admins" : "users")
           ) : (
             <table className="data-table">
               <thead>
@@ -351,14 +371,7 @@ const UserManagement = () => {
               </tbody>
             </table>
           ) : paginatedData.length === 0 ? (
-            // Empty state outside table for mobile-friendly display
-            <div className="empty-state">
-              <Icon icon="mdi:magnify-close" width="48" />
-              <h4>No users found</h4>
-              <p className="small-body-text">
-                No users match "<strong>{searchQuery}</strong>".
-              </p>
-            </div>
+            renderEmptyState(activeTab)
           ) : (
             <table className="data-table">
               <thead>
@@ -466,14 +479,7 @@ const UserManagement = () => {
               </tbody>
             </table>
           ) : paginatedData.length === 0 ? (
-            // Empty state outside table for mobile-friendly display
-            <div className="empty-state">
-              <Icon icon="mdi:magnify-close" width="48" />
-              <h4>No users found</h4>
-              <p className="small-body-text">
-                No users match "<strong>{searchQuery}</strong>".
-              </p>
-            </div>
+            renderEmptyState(activeTab)
           ) : (
             <table className="data-table">
               <thead>
@@ -572,14 +578,7 @@ const UserManagement = () => {
               </tbody>
             </table>
           ) : paginatedData.length === 0 ? (
-            // Empty state outside table for mobile-friendly display
-            <div className="empty-state">
-              <Icon icon="mdi:magnify-close" width="48" />
-              <h4>No users found</h4>
-              <p className="small-body-text">
-                No users match "<strong>{searchQuery}</strong>".
-              </p>
-            </div>
+            renderEmptyState(activeTab)
           ) : (
             <table className="data-table">
               <thead>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuthContext } from '../hooks/useAuthContext';
+import { updateCart as updateCartAPI } from '../services/userService';
 
 export const SponsorCartContext = createContext();
 
@@ -8,22 +9,36 @@ export const useSponsorCartContext = () => {
 };
 
 export const SponsorCartProvider = ({ children }) => {
-    const { user } = useAuthContext();
+    const { user, dispatch } = useAuthContext();
     const [cartItems, setCartItems] = useState([]);
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // Load cart from localStorage on mount or when user changes
+    // Load cart from user object or localStorage on mount or when user changes
     useEffect(() => {
         if (user && !isInitialized) {
-            const savedCart = localStorage.getItem(`sponsorCart_${user.email}`);
-            if (savedCart) {
-                try {
-                    setCartItems(JSON.parse(savedCart));
-                } catch (e) {
-                    console.error("Error parsing cart from local storage", e);
-                }
+            // Check if user has cart items in their profile (from DB)
+            if (user.cart && Array.isArray(user.cart) && user.cart.length > 0) {
+                setCartItems(user.cart);
             } else {
-                setCartItems([]);
+                // Fallback to localStorage if DB cart is empty
+                const savedCart = localStorage.getItem(`sponsorCart_${user.email}`);
+                if (savedCart) {
+                    try {
+                        const parsedCart = JSON.parse(savedCart);
+                        setCartItems(parsedCart);
+                        
+                        // Sync localStorage cart to DB if DB was empty
+                        if (parsedCart.length > 0) {
+                            updateCartAPI(parsedCart, user.token).catch(err => 
+                                console.error("Error syncing local cart to DB:", err)
+                            );
+                        }
+                    } catch (e) {
+                        console.error("Error parsing cart from local storage", e);
+                    }
+                } else {
+                    setCartItems([]);
+                }
             }
             setIsInitialized(true);
         } else if (!user) {
@@ -32,10 +47,28 @@ export const SponsorCartProvider = ({ children }) => {
         }
     }, [user, isInitialized]);
 
-    // Save cart to localStorage whenever it changes
+    // Save cart to localStorage AND backend whenever it changes
     useEffect(() => {
         if (user && isInitialized) {
+            // Save to localStorage
             localStorage.setItem(`sponsorCart_${user.email}`, JSON.stringify(cartItems));
+            
+            // Sync with backend
+            const syncWithBackend = async () => {
+                try {
+                    await updateCartAPI(cartItems, user.token);
+                    
+                    // Also update the user object in AuthContext so it's consistent
+                    const updatedUser = { ...user, cart: cartItems };
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                    // We don't necessarily need to dispatch LOGIN here as it might trigger re-renders
+                    // but we should keep the localStorage in sync.
+                } catch (error) {
+                    console.error("Failed to sync cart with backend", error);
+                }
+            };
+            
+            syncWithBackend();
         }
     }, [cartItems, user, isInitialized]);
 
@@ -64,16 +97,22 @@ export const SponsorCartProvider = ({ children }) => {
         setCartItems((prevItems) => prevItems.filter(item => item.cartId !== cartId));
     };
 
+    const removeMultipleFromCart = (cartIds) => {
+        setCartItems((prevItems) => prevItems.filter(item => !cartIds.includes(item.cartId)));
+    };
+
     const clearCart = () => {
         setCartItems([]);
         if (user) {
             localStorage.removeItem(`sponsorCart_${user.email}`);
+            updateCartAPI([], user.token).catch(err => console.error("Error clearing DB cart:", err));
         }
     };
 
     return (
-        <SponsorCartContext.Provider value={{ cartItems, addToCart, removeFromCart, clearCart }}>
+        <SponsorCartContext.Provider value={{ cartItems, addToCart, removeFromCart, removeMultipleFromCart, clearCart }}>
             {children}
         </SponsorCartContext.Provider>
     );
 };
+

@@ -9,7 +9,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function SponsorCart() {
     const navigate = useNavigate();
-    const { cartItems, removeFromCart, clearCart } = useSponsorCartContext();
+    const { cartItems, removeFromCart, removeMultipleFromCart, clearCart } = useSponsorCartContext();
 
     const [selectedItems, setSelectedItems] = useState([]);
 
@@ -65,7 +65,7 @@ export default function SponsorCart() {
             `Are you sure you want to remove ${selectedItems.length} selected booths?`
         );
         if (result.isConfirmed) {
-            selectedItems.forEach(id => removeFromCart(id));
+            removeMultipleFromCart(selectedItems);
             setSelectedItems([]);
             showSuccessAlert('Removed!', 'Selected booths have been removed.');
         }

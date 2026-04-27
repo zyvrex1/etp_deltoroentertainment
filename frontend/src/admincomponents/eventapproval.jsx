@@ -284,10 +284,24 @@ const EventApproval = () => {
                     ) : paginatedEvents.length === 0 ? (
                         // Empty state outside table for mobile-friendly display
                         <div className="empty-state">
-                            <Icon icon="mdi:magnify-close" width="48" />
-                            <h4>No events found</h4>
+                            <Icon 
+                                icon={
+                                    activeFilter === "pending"
+                                        ? "mdi:calendar-clock"
+                                        : activeFilter === "approved"
+                                            ? "mdi:calendar-check"
+                                            : activeFilter === "rejected"
+                                                ? "mdi:calendar-remove"
+                                                : "mdi:calendar-multiple"
+                                } 
+                                width="48" 
+                            />
+                            <h4>{searchQuery ? "No events found" : `No ${activeFilter} events yet`}</h4>
                             <p className="small-body-text">
-                                No events match "<strong>{searchQuery}</strong>".
+                                {searchQuery 
+                                    ? <>No events match "<strong>{searchQuery}</strong>".</>
+                                    : `There are currently no events waiting for approval in this category.`
+                                }
                             </p>
                         </div>
                     ) : (
