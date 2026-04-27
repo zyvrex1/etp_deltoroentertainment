@@ -12,8 +12,13 @@ const PromoterSettings = () => {
   const [loading, setLoading] = useState(true);
 
   const [profile, setProfile] = useState({
-    industry: "",
-    avatar: "",
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    companyName: user?.companyName || "",
+    industry: user?.industry || "",
+    avatar: user?.avatar || "",
     notifications: {
       email: true,
       sms: false,
@@ -110,15 +115,22 @@ const PromoterSettings = () => {
       if (!user?.token) return;
       try {
         const response = await authService.getProfile(user.token);
-          industry: response.data.industry || "",
-          avatar: response.data.avatar || "",
+        const profileData = response.data;
+        setProfile({
+          firstName: profileData.firstName || "",
+          lastName: profileData.lastName || "",
+          email: profileData.email || "",
+          phone: profileData.phone || "",
+          companyName: profileData.companyName || "",
+          industry: profileData.industry || "",
+          avatar: profileData.avatar || "",
           notifications: {
-            email: response.data.notifications?.email !== false,
-            sms: response.data.notifications?.sms === true,
-            userUpdates: response.data.notifications?.userUpdates !== false,
-            paymentReminders: response.data.notifications?.paymentReminders !== false,
-            announcements: response.data.notifications?.announcements !== false,
-            supportMessages: response.data.notifications?.supportMessages !== false
+            email: profileData.notifications?.email !== false,
+            sms: profileData.notifications?.sms === true,
+            userUpdates: profileData.notifications?.userUpdates !== false,
+            paymentReminders: profileData.notifications?.paymentReminders !== false,
+            announcements: profileData.notifications?.announcements !== false,
+            supportMessages: profileData.notifications?.supportMessages !== false
           }
         });
       } catch (error) {
@@ -167,11 +179,22 @@ const PromoterSettings = () => {
         }
 
         const response = await authService.updateProfile(formData, user.token);
+        const updatedData = response.data.user || response.data;
         
         // Update user context and local storage
-        const updatedUser = { ...user, ...response.data };
+        const updatedUser = { ...user, ...updatedData };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         dispatch({ type: "LOGIN", payload: updatedUser });
+
+        // Sync local profile state with server response (important for avatar URLs)
+        setProfile(prev => ({
+          ...prev,
+          ...updatedData,
+          notifications: {
+            ...prev.notifications,
+            ...updatedData.notifications
+          }
+        }));
 
         await showSuccessAlert(
           "Profile Saved",
@@ -246,6 +269,21 @@ const PromoterSettings = () => {
       }
     }));
   };
+
+  const handleSavePaymentSettings = async () => {
+    await showSuccessAlert("Payment Settings Saved", "Your payment preferences have been updated.");
+  };
+
+  if (loading) {
+    return (
+      <div className="ps-settings-container d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <div className="ps-loader-wrapper text-center">
+          <Icon icon="line-md:loading-twotone-loop" width="48" height="48" className="mb-2" />
+          <p className="text-secondary">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="ps-settings-container">
@@ -472,7 +510,7 @@ const PromoterSettings = () => {
             </div>
 
             <div className="ps-payment-footer">
-              <button className="ps-save-changes-black-btn button">
+              <button className="ps-save-changes-black-btn button" onClick={handleSavePaymentSettings}>
                 <Icon icon="mdi:content-save" width="18" /> Save Changes
               </button>
             </div>

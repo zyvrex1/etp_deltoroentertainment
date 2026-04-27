@@ -57,6 +57,7 @@ const updateProfile = async (req, res) => {
     user.firstName = firstName || user.firstName;
     user.lastName = lastName || user.lastName;
     user.phone = phone || user.phone;
+    if (companyName) user.companyName = companyName;
 
     // Update notifications if provided
     if (req.body.notifications) {
@@ -82,6 +83,9 @@ const updateProfile = async (req, res) => {
 
     await user.save();
 
+    let fullProfileData = user.toObject();
+    delete fullProfileData.password;
+
     // Update promoter-specific fields
     if (user.role === 'promoter') {
       const promoter = await Promoter.findOne({ userId: user._id });
@@ -90,6 +94,8 @@ const updateProfile = async (req, res) => {
         if (industry) promoter.industry = industry;
         if (phone) promoter.phone = phone;
         await promoter.save();
+        fullProfileData.industry = promoter.industry;
+        fullProfileData.companyName = promoter.companyName;
       }
     }
 
@@ -101,10 +107,12 @@ const updateProfile = async (req, res) => {
         if (industry) sponsor.industry = industry;
         if (phone) sponsor.phone = phone;
         await sponsor.save();
+        fullProfileData.industry = sponsor.industry;
+        fullProfileData.companyName = sponsor.companyName;
       }
     }
 
-    res.status(200).json(user);
+    res.status(200).json(fullProfileData);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
