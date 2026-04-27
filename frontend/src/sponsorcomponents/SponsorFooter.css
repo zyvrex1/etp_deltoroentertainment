@@ -111,21 +111,7 @@
 
 @media (max-width: 768px) {
     .sf-footer {
-        padding-top: 50px;
-    }
-
-    .sf-footer-content {
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-    }
-
-    .sf-footer-col:first-child {
-        grid-column: 1 / -1;
-        margin-bottom: 20px;
-    }
-
-    .sf-footer-logo {
-        height: 64px;
+        display: none;
     }
 }
 
