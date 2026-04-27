@@ -277,7 +277,7 @@ const AuditLogs = () => {
                         <div className="empty-state">
                             <Icon 
                                 icon="mdi:clipboard-text-off-outline" 
-                                width="48" 
+                                style={{ fontSize: '48px', marginBottom: '16px' }} 
                             />
                             <h4>{searchQuery ? "No logs found" : "No audit logs yet"}</h4>
                             <p className="small-body-text">

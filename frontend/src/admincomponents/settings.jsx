@@ -37,11 +37,11 @@ const Settings = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  useEffect(() => {
+    useEffect(() => {
         const fetchProfile = async () => {
             // Token check
             if (!user?.token) return;
-            
+
             try {
                 // Passing the token to the service
                 const response = await authService.getProfile(user.token);
@@ -139,7 +139,7 @@ const Settings = () => {
                 if (avatarFile) {
                     formData.append("avatar", avatarFile);
                 }
-                
+
                 const response = await authService.updateProfile(formData, user.token);
 
                 // Update user context and local storage
@@ -254,7 +254,7 @@ const Settings = () => {
                             />
                         </div>
                     </div>
-
+<div className="as-form-row">
                     <div className="as-form-group">
                         <label className="as-label">Email Address</label>
                         <input
@@ -265,21 +265,40 @@ const Settings = () => {
                         />
                     </div>
 
-                    <div className="add-user-form-group">
-                            <h6>Phone Number</h6>
-                            <PhoneInput
-  defaultCountry="ph"
-  value={profile.phone || ""}
-  // The first argument is the phone string, not an event object
-  onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
-  inputClassName="add-user-form-input" 
-          className="phone-input-container"
-/>
-                          </div>
+                    <div className="as-form-group">
+                        <label className="as-label">Phone Number</label>
+                        <PhoneInput
+                            defaultCountry="ph"
+                            value={profile.phone || ""}
+                            onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
+                            inputClassName="as-input"
+                            className="phone-input-container"
+                            style={{
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0', 
+                                border: '1px solid var(--color-black-tertiary)', 
+                                borderRadius: '6px' 
+                            }}
+                            inputStyle={{
+                                border: 'none', 
+                                padding: '10px 12px', 
+                                outline: 'none', 
+                                borderRadius: '0', 
+                                flex: 1, 
+                            }}
+                            buttonStyle={{
+                                border: 'none', 
+                                backgroundColor: 'transparent', 
+                                boxShadow: 'none', 
+                                color: '#64748b' 
+                            }}
+                        />
+                    </div>
+</div>
 
-                   
 
-                    
+
 
                     <button type="button" className="as-save-btn primary-button" onClick={handleSaveProfile}>
                         Save Changes
@@ -374,8 +393,8 @@ const Settings = () => {
                             <p className="smaller-body-text text-muted">Receive updates about user signup</p>
                         </div>
                         <label className="as-toggle">
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={profile.notifications.userUpdates}
                                 onChange={() => handleNotificationToggle('userUpdates')}
                             />
@@ -391,8 +410,8 @@ const Settings = () => {
                             <p className="smaller-body-text text-muted">Get notified about upcoming payments and invoices</p>
                         </div>
                         <label className="as-toggle">
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={profile.notifications.paymentReminders}
                                 onChange={() => handleNotificationToggle('paymentReminders')}
                             />
@@ -408,8 +427,8 @@ const Settings = () => {
                             <p className="smaller-body-text text-muted">Get notified when someone messages in support tickets</p>
                         </div>
                         <label className="as-toggle">
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={profile.notifications.supportMessages}
                                 onChange={() => handleNotificationToggle('supportMessages')}
                             />
@@ -425,8 +444,8 @@ const Settings = () => {
                             <p className="smaller-body-text text-muted">Receive news about new messages</p>
                         </div>
                         <label className="as-toggle">
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={profile.notifications.announcements}
                                 onChange={() => handleNotificationToggle('announcements')}
                             />
@@ -434,8 +453,8 @@ const Settings = () => {
                         </label>
                     </div>
 
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         className="as-save-btn as-dark-btn as-notif-save-btn"
                         onClick={handleSaveProfile}
                     >

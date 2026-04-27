@@ -294,7 +294,7 @@ const EventApproval = () => {
                                                 ? "mdi:calendar-remove"
                                                 : "mdi:calendar-multiple"
                                 } 
-                                width="48" 
+                                style={{ fontSize: '48px', marginBottom: '16px' }} 
                             />
                             <h4>{searchQuery ? "No events found" : `No ${activeFilter} events yet`}</h4>
                             <p className="small-body-text">
