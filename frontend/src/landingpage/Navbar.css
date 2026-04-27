@@ -65,7 +65,15 @@
     color: var(--color-white-primary);
     cursor: pointer;
     padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
+.nav-icon {
+    display: none;
+}
+
 
 .landing-navbar-mobile-toggle {
     display: none;
@@ -119,16 +127,17 @@
         display: none;
     }
 
-    .landing-navbar-actions {
+    .landing-nav-signup-btn {
         display: none;
     }
 
-    .landing-navbar-mobile-toggle {
-        display: block;
+    .nav-text {
+        display: none;
     }
 
-    .landing-navbar-mobile-menu {
-        display: flex;
+    .nav-icon {
+        display: inline-block;
+        font-size: 24px;
     }
 }
 

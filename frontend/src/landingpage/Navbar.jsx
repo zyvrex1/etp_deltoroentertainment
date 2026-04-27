@@ -1,18 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { Icon } from '@iconify/react';
 import './Navbar.css';
 
 const Navbar = ({ openSignup, openLogin }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const handleLinkClick = () => {
-    setIsMenuOpen(false);
-  };
-
   return (
     <header className="landing-navbar-header">
       <div className="landing-navbar-container">
@@ -30,38 +21,15 @@ const Navbar = ({ openSignup, openLogin }) => {
         </nav>
 
         <div className="landing-navbar-actions">
-          <button className="landing-nav-signin-btn" onClick={openLogin}>Sign in</button>
-          <button className="primary-button" onClick={openSignup}>Get Started</button>
-        </div>
-
-        {/* Mobile Hamburger Menu */}
-        <div className="landing-navbar-mobile-toggle" onClick={toggleMenu}>
-          <svg
-            className="landing-burger-icon"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-          </svg>
+          <button className="landing-nav-signin-btn" onClick={openLogin}>
+            <span className="nav-text">Sign in</span>
+            <Icon icon="mdi:login" className="nav-icon" />
+          </button>
+          <button className="primary-button landing-nav-signup-btn" onClick={openSignup}>Get Started</button>
         </div>
       </div>
-
-      {/* Mobile Menu Dropdown */}
-      {isMenuOpen && (
-        <div className="landing-navbar-mobile-menu">
-          <a href="#home" className="landing-mobile-nav-link" onClick={handleLinkClick}>Home</a>
-          <a href="#events" className="landing-mobile-nav-link" onClick={handleLinkClick}>Events</a>
-          <a href="#benefits" className="landing-mobile-nav-link" onClick={handleLinkClick}>Benefits</a>
-          <a href="#about" className="landing-mobile-nav-link" onClick={handleLinkClick}>About</a>
-          <a href="#policies" className="landing-mobile-nav-link" onClick={handleLinkClick}>Policies</a>
-          <button className="landing-mobile-signin-btn" onClick={() => { openLogin(); toggleMenu(); }}>Sign in</button>
-          <button className="primary-button landing-mobile-getstarted-btn" onClick={() => { openSignup(); toggleMenu(); }}>Get Started</button>
-        </div>
-      )}
     </header>
   );
 };
 
-export default Navbar;
+export default Navbar;
