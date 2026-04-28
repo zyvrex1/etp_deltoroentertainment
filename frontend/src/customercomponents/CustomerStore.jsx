@@ -5,15 +5,12 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import "./CustomerStore.css";
 
 const samplePurchasedEvents = [
-  { id: 1, title: "TechInnovate Summit 2024", date: "Oct 15-17, 2024", location: "San Francisco, CA", booths: 8, status: "Live", image: "/assets/eventbg.jpg" },
-  { id: 2, title: "Global Healthcare Expo", date: "Nov 05-08, 2024", location: "Chicago, IL", booths: 12, status: "Completed", image: "/assets/eventbg.jpg" },
-  { id: 3, title: "Future of AI 2024", date: "Dec 10-12, 2024", location: "New York, NY", booths: 15, status: "Live", image: "/assets/eventbg.jpg" },
-  { id: 4, title: "Eco Sustainability Fair", date: "Jan 20-22, 2025", location: "Seattle, WA", booths: 6, status: "Upcoming", image: "/assets/eventbg.jpg" },
-  { id: 5, title: "Fintech Revolution", date: "Feb 15-17, 2025", location: "London, UK", booths: 20, status: "Live", image: "/assets/eventbg.jpg" },
-  { id: 6, title: "Cyber Security Con", date: "Mar 05-07, 2025", location: "Austin, TX", booths: 4, status: "Upcoming", image: "/assets/eventbg.jpg" },
-  { id: 7, title: "Gaming World Expo", date: "Apr 10-12, 2025", location: "Tokyo, JP", booths: 30, status: "Live", image: "/assets/eventbg.jpg" },
-  { id: 8, title: "Retail Innovation 2025", date: "May 20-22, 2025", location: "Paris, FR", booths: 10, status: "Upcoming", image: "/assets/eventbg.jpg" },
-  { id: 9, title: "Auto Show Next", date: "Jun 15-17, 2025", location: "Detroit, MI", booths: 18, status: "Live", image: "/assets/eventbg.jpg" },
+        { id: 1, title: 'Texas Home Show', date: 'Aug 7', location: 'Bert Ogden Arena', price: '$45 - $150', category: 'Concert', image: '/uploads/monday-content-post-1-0429260249.jpg', time: '14:00 - 18:00', availability: 450, products: 8, status: 'Live' },
+        { id: 2, title: 'Guey Funny Comedy Show', date: 'May 1', location: 'La Villa', price: '$30 - $80', category: 'Concert', image: '/uploads/guey-funny-comedy-show-march-20-0429260231.jpg', time: '10:00 - 15:00', availability: 120, products: 12, status: 'Completed' },
+        { id: 3, title: 'Siggno Solido Secretto', date: 'Apr 30', location: 'Magnolia Halle', price: '$50 - $200', category: 'Theater', image: '/uploads/grupo-siggno,-solido-and-secretto-flyers-2026-mock-up-0429260228.jpg', time: '16:00 - 20:00', availability: 85, products: 15, status: 'Live' },
+        { id: 4, title: 'Weslaco Texas OnionFest', date: 'Aug 1', location: 'Greet & Gather Downtown Weslaco', price: '$60 - $120', category: 'Concert', image: '/uploads/weslaco-texas-onion-fest-0429260226.jpg', time: '11:00 - 16:00', availability: 1500, products: 6, status: 'Upcoming' },
+        { id: 5, title: 'Tejano Music Awards Fanfair', date: 'Jul 25', location: 'Henry B. Gonzales Convention Center', price: '$100 - $500', category: 'Sports', image: '/uploads/siggno-advertising-poster-0429260219.jpg', time: '10:00 - 18:00', availability: 300, products: 20, status: 'Live' },
+        { id: 6, title: 'Your Health Matters', date: 'Aug 25', location: 'Creative Arts Studio (Texas)', price: '$25 - $50', category: 'Concert', image: '/uploads/yhm-event-page-cover-pharr-1777152601031.jpg', time: '10:00 - 18:00', availability: 200, products: 4, status: 'Upcoming' },
 ];
 
 const CustomerStore = () => {
@@ -152,12 +149,8 @@ const CustomerStore = () => {
 
                   <div className="cs-stats-row">
                     <div className="cs-stat-item">
-                      <span className="smaller-body-text stat-label">Booths</span>
-                      <span className="large-body-text stat-value">{event.booths}</span>
-                    </div>
-                    <div className="cs-stat-item">
-                      <span className="smaller-body-text stat-label">Status</span>
-                      <span className={`large-body-text stat-value cs-status-text ${getStatusClass(event.status)}`}>{event.status}</span>
+                      <span className="smaller-body-text stat-label">Stores</span>
+                      <span className="large-body-text stat-value">{event.products}</span>
                     </div>
                   </div>
 

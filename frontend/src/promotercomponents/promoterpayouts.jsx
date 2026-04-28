@@ -582,7 +582,7 @@ const PromoterPayouts = () => {
                         <Icon icon="mdi:domain" />
                     </div>
                     <div className="pay-method-info">
-                        <h5 className="pay-method-name">Chase Bank</h5>
+                        <h5 className="pay-method-name">Freedom Bank</h5>
                         <span className="smaller-body-text pay-method-num">
                         •••• 4242
                         </span>
@@ -595,9 +595,9 @@ const PromoterPayouts = () => {
                         <Icon icon="mdi:domain" />
                     </div>
                     <div className="pay-method-info">
-                        <h5 className="pay-method-name">Mastercard</h5>
+                        <h5 className="pay-method-name">Invoice Record</h5>
                         <span className="smaller-body-text pay-method-num">
-                        •••• 8888
+                        ••••
                         </span>
                     </div>
                     <span className="button-label pay-set-default">Set as Default</span>

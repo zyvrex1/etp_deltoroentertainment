@@ -80,7 +80,7 @@ const CustomerStoreProducts = () => {
   const getProductImage = (image) => {
     if (!image) return "/assets/eventbg.jpg";
     if (image.startsWith("http") || image.startsWith("data:")) return image;
-    return `${BACKEND_URL}${image}`;
+    return `${BACKEND_URL}/uploads/${image}`;
   };
 
   return (

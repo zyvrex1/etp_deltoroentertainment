@@ -7,6 +7,8 @@ import SponsorEditProduct from "./SponsorModal/SponsorEditProduct";
 import merchandiseService from "../services/merchandiseService";
 import { useAuthContext } from "../hooks/useAuthContext";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 const initialProducts = [
   { id: 1, image: "/assets/eventbg.jpg", category: "Food", name: "Gourmet Burger", price: "$12.99", description: "Premium beef patty with artisan cheese and house sauce.", stock: 40, stockStatus: "Medium Stock", active: true },
   { id: 2, image: "/assets/eventbg.jpg", category: "Food", name: "Loaded Nachos", price: "$9.99", description: "Crispy tortilla chips topped with melted cheese, jalapeños, and salsa.", stock: 25, stockStatus: "Medium Stock", active: true },
@@ -58,6 +60,12 @@ const SponsorManageProduct = ({ eventId }) => {
     } finally {
       setLoading(false);
     }
+  };
+ 
+  const getProductImage = (image) => {
+    if (!image) return "/assets/eventbg.jpg";
+    if (image.startsWith("http") || image.startsWith("data:") || image.startsWith("/assets/")) return image;
+    return `${BACKEND_URL}/uploads/${image}`;
   };
 
   const updateStats = (items) => {
@@ -254,7 +262,7 @@ const SponsorManageProduct = ({ eventId }) => {
           paginatedData.map((product) => (
             <div key={product._id} className="smp-card">
               <div className="smp-card-img-wrap">
-                <img src={product.image || "/assets/eventbg.jpg"} alt={product.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                <img src={getProductImage(product.image)} alt={product.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
                 <div className={`smp-category-badge button-label ${product.category.toLowerCase()}`}>{product.category}</div>
               </div>
               <div className="smp-card-content">

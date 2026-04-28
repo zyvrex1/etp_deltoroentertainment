@@ -358,6 +358,7 @@ const createEvent = async (req, res) => {
       booths = [],
 
       isFeatured = false,
+      eventType,
     } = req.body;
 
     if (typeof venue === "string") venue = JSON.parse(venue);

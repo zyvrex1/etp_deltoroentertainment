@@ -13,7 +13,13 @@ export default function CustomerCart() {
     const [cartItems, setCartItems] = useState([
         {
             cartId: '1',
-            event: { _id: 'e1', title: 'Neon Dreams Tour', image: 'eventbg.jpg', venue: { name: 'Starlight Arena', city: 'Los Angeles' }, startDate: '2024-06-15T20:00:00Z' },
+            event: { 
+                _id: 'e1', 
+                title: 'Texas Home Show', 
+                image: 'monday-content-post-1-0429260249.jpg', 
+                venue: { name: 'Bert Ogden Arena', city: 'Edinburg' }, 
+                startDate: '2026-08-07T14:00:00Z' 
+            },
             category: { priceName: 'VIP Ticket' },
             seat: { row: 'B', label: '8' },
             facePrice: 150,
@@ -21,7 +27,13 @@ export default function CustomerCart() {
         },
         {
             cartId: '2',
-            event: { _id: 'e1', title: 'Neon Dreams Tour', image: 'eventbg.jpg', venue: { name: 'Starlight Arena', city: 'Los Angeles' }, startDate: '2024-06-15T20:00:00Z' },
+            event: { 
+                _id: 'e1', 
+                title: 'Texas Home Show', 
+                image: 'monday-content-post-1-0429260249.jpg', 
+                venue: { name: 'Bert Ogden Arena', city: 'Edinburg' }, 
+                startDate: '2026-08-07T14:00:00Z' 
+            },
             category: { priceName: 'Standard Ticket' },
             seat: { row: 'E', label: '5' },
             facePrice: 65,
@@ -29,18 +41,30 @@ export default function CustomerCart() {
         },
         {
             cartId: '3',
-            event: { _id: 'e2', title: 'Comedy All-Stars', image: 'eventbg.jpg', venue: { name: 'Gotham Comedy Club', city: 'New York' }, startDate: '2024-06-20T19:30:00Z' },
-            category: { priceName: 'VIP Ticket' },
+            event: { 
+                _id: 'e2', 
+                title: 'Guey Funny Comedy Show', 
+                image: 'guey-funny-comedy-show-march-20-0429260231.jpg', 
+                venue: { name: 'La Villa', city: 'Texas' }, 
+                startDate: '2026-05-01T10:00:00Z' 
+            },
+            category: { priceName: 'General Admission' },
             seat: { row: 'A', label: '1' },
-            facePrice: 150,
+            facePrice: 80,
             serviceFee: 5
         },
         {
             cartId: '4',
-            event: { _id: 'e2', title: 'Comedy All-Stars', image: 'eventbg.jpg', venue: { name: 'Gotham Comedy Club', city: 'New York' }, startDate: '2024-06-20T19:30:00Z' },
-            category: { priceName: 'VIP Ticket' },
+            event: { 
+                _id: 'e2', 
+                title: 'Guey Funny Comedy Show', 
+                image: 'guey-funny-comedy-show-march-20-0429260231.jpg', 
+                venue: { name: 'La Villa', city: 'Texas' }, 
+                startDate: '2026-05-01T10:00:00Z' 
+            },
+            category: { priceName: 'General Admission' },
             seat: { row: 'A', label: '2' },
-            facePrice: 150,
+            facePrice: 80,
             serviceFee: 5
         }
     ]);

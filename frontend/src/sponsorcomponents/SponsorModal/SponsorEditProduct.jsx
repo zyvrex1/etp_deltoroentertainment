@@ -2,6 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./SponsorEditProduct.css";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+const getProductImage = (image) => {
+  if (!image) return null;
+  if (image.startsWith("data:image") || image.startsWith("http")) return image;
+  return `${BACKEND_URL}/uploads/${image}`;
+};
+
 const SponsorEditProduct = ({ isOpen, onClose, product, onSave }) => {
   const [productData, setProductData] = useState({
     name: "",
@@ -205,7 +213,7 @@ const SponsorEditProduct = ({ isOpen, onClose, product, onSave }) => {
               
               {productData.image ? (
                 <div className="file-preview">
-                  <img src={productData.image} alt="preview" className="preview-image" />
+                  <img src={getProductImage(productData.image)} alt="preview" className="preview-image" />
                   <p className="file-name">{productData.fileName}</p>
                   {productData.fileSize > 0 && <p className="file-size">{(productData.fileSize / 1024 / 1024).toFixed(2)} MB</p>}
                   <button type="button" className="remove-file-btn" onClick={handleRemoveImage}>

@@ -5,14 +5,12 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import "./CustomerStoreBooths.css";
 
 const sampleBooths = [
-  { id: 1, sponsorId: "s1", boothNumber: "Booth #102", companyName: "TechCorp Solutions", industry: "Technology", products: 12, logo: "/assets/eventbg.jpg", description: "Leading provider of enterprise software solutions and cloud services." },
-  { id: 2, sponsorId: "s2", boothNumber: "Booth #205", companyName: "GreenLeaf Organics", industry: "Food & Beverage", products: 18, logo: "/assets/eventbg.jpg", description: "Premium organic food and refreshments from farm to table." },
-  { id: 3, sponsorId: "s3", boothNumber: "Booth #310", companyName: "Urban Threads", industry: "Fashion & Apparel", products: 25, logo: "/assets/eventbg.jpg", description: "Trendy streetwear and custom event merchandise." },
-  { id: 4, sponsorId: "s4", boothNumber: "Booth #118", companyName: "Pixel Gear", industry: "Electronics", products: 8, logo: "/assets/eventbg.jpg", description: "Latest gadgets, accessories, and tech merchandise." },
-  { id: 5, sponsorId: "s5", boothNumber: "Booth #422", companyName: "FitLife Nutrition", industry: "Health & Wellness", products: 15, logo: "/assets/eventbg.jpg", description: "Energy drinks, protein bars, and health supplements." },
-  { id: 6, sponsorId: "s6", boothNumber: "Booth #55", companyName: "Artisan Brews", industry: "Beverages", products: 10, logo: "/assets/eventbg.jpg", description: "Craft beverages and specialty coffees." },
-  { id: 7, sponsorId: "s7", boothNumber: "Booth #77", companyName: "GameZone Merch", industry: "Entertainment", products: 30, logo: "/assets/eventbg.jpg", description: "Collectibles, posters, and exclusive gaming merchandise." },
-  { id: 8, sponsorId: "s8", boothNumber: "Booth #90", companyName: "EcoWear", industry: "Sustainable Fashion", products: 20, logo: "/assets/eventbg.jpg", description: "Eco-friendly clothing and accessories made from recycled materials." },
+  { id: 1, sponsorId: "s1", boothNumber: "Booth #102", companyName: "Texas Home Pros", industry: "Home & Living", products: 12, logo: "/uploads/monday-content-post-1-0429260249.jpg", description: "Your one-stop shop for home renovation and interior design." },
+  { id: 2, sponsorId: "s2", boothNumber: "Booth #205", companyName: "Laugh Out Loud Events", industry: "Entertainment", products: 18, logo: "/uploads/guey-funny-comedy-show-march-20-0429260231.jpg", description: "Specializing in comedy tours and live performances." },
+  { id: 3, sponsorId: "s3", boothNumber: "Booth #310", companyName: "Tejano Beats", industry: "Music", products: 25, logo: "/uploads/grupo-siggno,-solido-and-secretto-flyers-2026-mock-up-0429260228.jpg", description: "The heart of Tejano music, merchandise, and exclusive vinyls." },
+  { id: 4, sponsorId: "s4", boothNumber: "Booth #118", companyName: "Valley Harvest", industry: "Local Produce", products: 8, logo: "/uploads/weslaco-texas-onion-fest-0429260226.jpg", description: "Fresh produce and local favorites from the Rio Grande Valley." },
+  { id: 5, sponsorId: "s5", boothNumber: "Booth #422", companyName: "Fanfair Express", industry: "Sports", products: 15, logo: "/uploads/siggno-advertising-poster-0429260219.jpg", description: "Exclusive sports memorabilia and fan gear for all ages." },
+  { id: 6, sponsorId: "s6", boothNumber: "Booth #55", companyName: "Health First Texas", industry: "Health & Wellness", products: 10, logo: "/uploads/yhm-event-page-cover-pharr-1777152601031.jpg", description: "Commit to your health with our expert wellness programs." },
 ];
 
 const CustomerStoreBooths = () => {

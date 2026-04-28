@@ -6,15 +6,12 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import "./SponsorStore.css";
 
 const sampleStoreEvents = [
-  { id: 1, boothNumber: "Booth #102", title: "TechInnovate Summit 2024", date: "Oct 15-17, 2024", location: "San Francisco, CA", products: 24, activeOrders: 12, status: "Live", image: "/assets/eventbg.jpg" },
-  { id: 2, boothNumber: "Booth #405", title: "Global Healthcare Expo", date: "Nov 05-08, 2024", location: "Chicago, IL", products: 15, activeOrders: 0, status: "Completed", image: "/assets/eventbg.jpg" },
-  { id: 3, boothNumber: "Booth #10", title: "Future of AI 2024", date: "Dec 10-12, 2024", location: "New York, NY", products: 30, activeOrders: 5, status: "Live", image: "/assets/eventbg.jpg" },
-  { id: 4, boothNumber: "Booth #55", title: "Eco Sustainability Fair", date: "Jan 20-22, 2025", location: "Seattle, WA", products: 10, activeOrders: 2, status: "Upcoming", image: "/assets/eventbg.jpg" },
-  { id: 5, boothNumber: "Booth #22", title: "Fintech Revolution", date: "Feb 15-17, 2025", location: "London, UK", products: 45, activeOrders: 20, status: "Live", image: "/assets/eventbg.jpg" },
-  { id: 6, boothNumber: "Booth #108", title: "Cyber Security Con", date: "Mar 05-07, 2025", location: "Austin, TX", products: 5, activeOrders: 1, status: "Upcoming", image: "/assets/eventbg.jpg" },
-  { id: 7, boothNumber: "Booth #303", title: "Gaming World Expo", date: "Apr 10-12, 2025", location: "Tokyo, JP", products: 60, activeOrders: 100, status: "Live", image: "/assets/eventbg.jpg" },
-  { id: 8, boothNumber: "Booth #77", title: "Retail Innovation 2025", date: "May 20-22, 2025", location: "Paris, FR", products: 22, activeOrders: 8, status: "Upcoming", image: "/assets/eventbg.jpg" },
-  { id: 9, boothNumber: "Booth #99", title: "Auto Show Next", date: "Jun 15-17, 2025", location: "Detroit, MI", products: 18, activeOrders: 0, status: "Live", image: "/assets/eventbg.jpg" },
+  { id: 1, boothNumber: 'Booth #102', title: 'Texas Home Show', date: 'Aug 7', location: 'Bert Ogden Arena', products: 24, activeOrders: 12, status: 'Live', image: '/uploads/monday-content-post-1-0429260249.jpg' },
+  { id: 2, boothNumber: 'Booth #405', title: 'Guey Funny Comedy Show', date: 'May 1', location: 'La Villa', products: 15, activeOrders: 0, status: 'Completed', image: '/uploads/guey-funny-comedy-show-march-20-0429260231.jpg' },
+  { id: 3, boothNumber: 'Booth #10', title: 'Siggno Solido Secretto', date: 'Apr 30', location: 'Magnolia Halle', products: 30, activeOrders: 5, status: 'Live', image: '/uploads/grupo-siggno,-solido-and-secretto-flyers-2026-mock-up-0429260228.jpg' },
+  { id: 4, boothNumber: 'Booth #55', title: 'Weslaco Texas OnionFest', date: 'Aug 1', location: 'Greet & Gather Downtown Weslaco', products: 10, activeOrders: 2, status: 'Upcoming', image: '/uploads/weslaco-texas-onion-fest-0429260226.jpg' },
+  { id: 5, boothNumber: 'Booth #22', title: 'Tejano Music Awards Fanfair', date: 'Jul 25', location: 'Henry B. Gonzales Convention Center', products: 45, activeOrders: 20, status: 'Live', image: '/uploads/siggno-advertising-poster-0429260219.jpg' },
+  { id: 6, boothNumber: 'Booth #108', title: 'Your Health Matters', date: 'Aug 25', location: 'Creative Arts Studio (Texas)', products: 5, activeOrders: 1, status: 'Upcoming', image: '/uploads/yhm-event-page-cover-pharr-1777152601031.jpg' },
 ];
 
 const SponsorStore = () => {

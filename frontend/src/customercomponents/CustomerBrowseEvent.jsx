@@ -9,16 +9,12 @@ const CustomerBrowseEvent = () => {
 
     // Mock data for events
     const allEvents = [
-        { id: 1, title: 'Neon Dreams Tour', date: 'Jun 15 • 20:00', location: 'Starlight Arena, Los Angeles, CA', price: '$45 - $150', category: 'Concert', image: '/assets/eventbg.jpg', time: '20:00 - 23:00', availability: 450 },
-        { id: 2, title: 'Comedy All-Stars', date: 'Jun 20 • 19:30', location: 'Gotham Comedy Club, New York, NY', price: '$30 - $80', category: 'Concert', image: '/assets/eventbg.jpg', time: '19:30 - 21:30', availability: 120 },
-        { id: 3, title: 'Hamlet', date: 'Jul 1 • 19:00', location: 'Royal Globe Theatre, London, UK', price: '$50 - $200', category: 'Theater', image: '/assets/eventbg.jpg', time: '19:00 - 22:30', availability: 85 },
-        { id: 4, title: 'Summer Jazz Festival', date: 'Jul 15 • 14:00', location: 'Millennium Park, Chicago, IL', price: '$60 - $120', category: 'Concert', image: '/assets/eventbg.jpg', time: '14:00 - 22:00', availability: 1500 },
-        { id: 5, title: 'Championship Finals', date: 'Aug 10 • 18:00', location: 'Ocean Stadium, Miami, FL', price: '$100 - $500', category: 'Sports', image: '/assets/eventbg.jpg', time: '18:00 - 21:00', availability: 300 },
-        { id: 6, title: 'Indie Rock Showcase', date: 'Jun 25 • 21:00', location: 'The Red Room, Austin, TX', price: '$25 - $50', category: 'Concert', image: '/assets/eventbg.jpg', time: '21:00 - 00:00', availability: 200 },
-        { id: 7, title: 'Symphony Under the Stars', date: 'Jul 22 • 20:00', location: 'Central Park, NY', price: '$20 - $100', category: 'Concert', image: '/assets/eventbg.jpg', time: '20:00 - 22:00', availability: 2500 },
-        { id: 8, title: 'Tech Startup Conference', date: 'Sep 05 • 09:00', location: 'Silicon Valley Center', price: '$150 - $300', category: 'Concert', image: '/assets/eventbg.jpg', time: '09:00 - 17:00', availability: 500 },
-        { id: 9, title: 'Broadway Nights', date: 'Aug 10 • 19:00', location: 'City Arts Center, NY', price: '$75 - $250', category: 'Theater', image: '/assets/eventbg.jpg', time: '19:00 - 21:30', availability: 400 },
-        { id: 10, title: 'Summer Vibe Fest', date: 'Aug 20 • 12:00', location: 'Open Grounds, Miami, FL', price: '$120 - $400', category: 'Concert', image: '/assets/eventbg.jpg', time: '12:00 - 23:00', availability: 3000 },
+        { id: 1, title: 'Texas Home Show', date: 'Aug 7', location: 'Bert Ogden Arena', price: '$45 - $150', category: 'Concert', image: '/uploads/monday-content-post-1-0429260249.jpg', time: '14:00 - 18:00', availability: 450, },
+        { id: 2, title: 'Guey Funny Comedy Show', date: 'May 1', location: 'La Villa', price: '$30 - $80', category: 'Concert', image: '/uploads/guey-funny-comedy-show-march-20-0429260231.jpg', time: '10:00 - 15:00', availability: 120, },
+        { id: 3, title: 'Siggno Solido Secretto', date: 'Apr 30', location: 'Magnolia Halle', price: '$50 - $200', category: 'Theater', image: '/uploads/grupo-siggno,-solido-and-secretto-flyers-2026-mock-up-0429260228.jpg', time: '16:00 - 20:00', availability: 85,  },
+        { id: 4, title: 'Weslaco Texas OnionFest', date: 'Aug 1', location: 'Greet & Gather Downtown Weslaco', price: '$60 - $120', category: 'Concert', image: '/uploads/weslaco-texas-onion-fest-0429260226.jpg', time: '11:00 - 16:00', availability: 1500,  },
+        { id: 5, title: 'Tejano Music Awards Fanfair', date: 'Jul 25', location: 'Henry B. Gonzales Convention Center', price: '$100 - $500', category: 'Sports', image: '/uploads/siggno-advertising-poster-0429260219.jpg', time: '10:00 - 18:00', availability: 300,  },
+        { id: 6, title: 'Your Health Matters', date: 'Aug 25', location: 'Creative Arts Studio (Texas)', price: '$25 - $50', category: 'Concert', image: '/uploads/yhm-event-page-cover-pharr-1777152601031.jpg', time: '10:00 - 18:00', availability: 200, },
     ];
 
     const [currentPage, setCurrentPage] = useState(1);
