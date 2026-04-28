@@ -111,7 +111,7 @@
 
 @media (max-width: 768px) {
     .ch-footer {
-        padding-top: 50px;
+        display: none;
     }
 
     .ch-footer-content {

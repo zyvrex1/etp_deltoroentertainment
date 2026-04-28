@@ -85,6 +85,7 @@ export default function CustomerHeader() {
                 <nav className="customer-nav-links">
                     <NavLink to="/customer" className="customer-nav-link" end>Home</NavLink>
                     <NavLink to="/customer/browse-events" className="customer-nav-link">Browse Events</NavLink>
+                    <NavLink to="/customer/store" className="customer-nav-link">Store</NavLink>
                 </nav>
 
                 <div className="customer-header-actions">
@@ -167,10 +168,11 @@ export default function CustomerHeader() {
                     <Icon icon="mdi:compass-outline" width="24" />
                     <span>Browse Event</span>
                 </NavLink>
-                <NavLink to="/customer/my-ticketsorder" className="bottom-nav-item">
-                    <Icon icon="mdi:ticket-confirmation-outline" width="24" />
-                    <span>My Tickets</span>
+                <NavLink to="/customer/store" className="bottom-nav-item">
+                    <Icon icon="mdi:store-outline" width="24" />
+                    <span>Store</span>
                 </NavLink>
+
                 <button className="bottom-nav-item profile-trigger" onClick={() => setIsMobileProfileOpen(true)}>
                     <Icon icon="mdi:account-outline" width="24" />
                     <span>Profile</span>

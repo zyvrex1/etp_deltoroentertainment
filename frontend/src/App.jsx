@@ -69,6 +69,9 @@ const CustomerHistory = lazy(() => import("./customercomponents/CustomerPurchase
 const CustomerSeats = lazy(() => import("./customercomponents/CustomerSeats.jsx"));
 const CustomerCheckout = lazy(() => import("./customercomponents/CustomerCheckout.jsx"));
 const CustomerPaySuccess = lazy(() => import("./customercomponents/CustomerPaySuccess.jsx"));
+const CustomerStore = lazy(() => import("./customercomponents/CustomerStore.jsx"));
+const CustomerStoreBooths = lazy(() => import("./customercomponents/CustomerStoreBooths.jsx"));
+const CustomerStoreProducts = lazy(() => import("./customercomponents/CustomerStoreProducts.jsx"));
 
 // Loading Component
 const PageLoader = () => (
@@ -204,6 +207,9 @@ function App() {
             <Route path="support" element={<CustomerSupport />} />
             <Route path="settings" element={<CustomerSettings />} />
             <Route path="history" element={<CustomerHistory />} />
+            <Route path="store" element={<CustomerStore />} />
+            <Route path="store/booths" element={<CustomerStoreBooths />} />
+            <Route path="store/products" element={<CustomerStoreProducts />} />
           </Route>
         </Routes>
       </Suspense>

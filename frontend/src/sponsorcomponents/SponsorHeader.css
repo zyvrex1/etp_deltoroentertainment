@@ -318,12 +318,15 @@
         margin: 0;
         color: var(--color-black-primary);
         font-size: 18px;
+        text-align: left;
     }
 
     .mobile-profile-email {
         margin: 0;
         color: var(--color-black-secondary);
         font-size: 14px;
+        text-align: left;
+
     }
 
     .mobile-profile-close {
