@@ -215,6 +215,11 @@
         padding: 10px 0;
         z-index: 1000;
         box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .sponsor-bottom-nav.hidden {
+        transform: translateY(100%);
     }
 
     .bottom-nav-item {

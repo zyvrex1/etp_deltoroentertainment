@@ -12,6 +12,8 @@ export default function SponsorHeader() {
     const { cartItems } = useSponsorCartContext();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
+    const [showBottomNav, setShowBottomNav] = useState(true);
+    const lastScrollY = useRef(0);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
@@ -42,6 +44,27 @@ export default function SponsorHeader() {
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            
+            if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+                // Scrolling down
+                setShowBottomNav(false);
+            } else {
+                // Scrolling up
+                setShowBottomNav(true);
+            }
+            
+            lastScrollY.current = currentScrollY;
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
         };
     }, []);
 
@@ -140,7 +163,7 @@ export default function SponsorHeader() {
             </div>
 
             {/* Mobile Bottom Navigation */}
-            <div className="sponsor-bottom-nav">
+            <div className={`sponsor-bottom-nav ${!showBottomNav ? 'hidden' : ''}`}>
                 <NavLink to="/sponsor" className="bottom-nav-item" end>
                     <Icon icon="mdi:home" width="24" />
                     <span>Home</span>
