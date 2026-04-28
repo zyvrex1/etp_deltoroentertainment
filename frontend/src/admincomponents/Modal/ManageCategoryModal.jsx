@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
+import "./CreateEventModal";
 
 const ManageCategoryModal = ({ isOpen, onClose, onSave, editingCategory }) => {
   const [modalType, setModalType] = useState("Seat (Circle)");

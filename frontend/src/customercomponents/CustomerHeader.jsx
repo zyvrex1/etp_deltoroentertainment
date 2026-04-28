@@ -13,6 +13,9 @@ export default function CustomerHeader() {
     const { logout } = useLogout();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
+    const [showBottomNav, setShowBottomNav] = useState(true);
+    const lastScrollY = useRef(0);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
@@ -44,6 +47,27 @@ export default function CustomerHeader() {
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            
+            if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+                // Scrolling down
+                setShowBottomNav(false);
+            } else {
+                // Scrolling up
+                setShowBottomNav(true);
+            }
+            
+            lastScrollY.current = currentScrollY;
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
         };
     }, []);
 
@@ -131,12 +155,76 @@ export default function CustomerHeader() {
                         <Icon icon={isMobileMenuOpen ? "mdi:close" : "mdi:menu"} width="28" />
                     </button>
                 </div>
-
-                <div className={`customer-mobile-nav ${isMobileMenuOpen ? 'open' : ''}`}>
-                    <NavLink to="/customer" className="customer-mobile-nav-link regular-body-text" onClick={() => setIsMobileMenuOpen(false)} end>Home</NavLink>
-                    <NavLink to="/customer/browse-events" className="customer-mobile-nav-link regular-body-text" onClick={() => setIsMobileMenuOpen(false)}>Browse Events</NavLink>
-                </div>
             </div>
+
+            {/* Mobile Bottom Navigation */}
+            <div className={`customer-bottom-nav ${!showBottomNav ? 'hidden' : ''}`}>
+                <NavLink to="/customer" className="bottom-nav-item" end>
+                    <Icon icon="mdi:home" width="24" />
+                    <span>Home</span>
+                </NavLink>
+                <NavLink to="/customer/browse-events" className="bottom-nav-item">
+                    <Icon icon="mdi:compass-outline" width="24" />
+                    <span>Browse Event</span>
+                </NavLink>
+                <NavLink to="/customer/my-ticketsorder" className="bottom-nav-item">
+                    <Icon icon="mdi:ticket-confirmation-outline" width="24" />
+                    <span>My Tickets</span>
+                </NavLink>
+                <button className="bottom-nav-item profile-trigger" onClick={() => setIsMobileProfileOpen(true)}>
+                    <Icon icon="mdi:account-outline" width="24" />
+                    <span>Profile</span>
+                </button>
+            </div>
+
+            {/* Full-Screen Mobile Profile Modal */}
+            {isMobileProfileOpen && (
+                <div className="customer-mobile-profile-overlay" onClick={() => setIsMobileProfileOpen(false)}>
+                    <div className="customer-mobile-profile-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="mobile-profile-header">
+                            <div className="mobile-profile-user-info">
+                                <div className="mobile-profile-avatar">
+                                    {authUser.avatar ? (
+                                        <img 
+                                            src={authUser.avatar.startsWith('http') || authUser.avatar.startsWith('data:') 
+                                                ? authUser.avatar 
+                                                : `${BACKEND_URL}${authUser.avatar}`} 
+                                            alt="Profile" 
+                                            className="mobile-avatar-img" 
+                                        />
+                                    ) : (
+                                        getInitials(authUser.firstName, authUser.lastName)
+                                    )}
+                                </div>
+                                <div className="mobile-profile-details">
+                                    <h3 className="mobile-profile-name">{authUser.firstName} {authUser.lastName}</h3>
+                                    <p className="mobile-profile-email">{authUser.email}</p>
+                                </div>
+                            </div>
+                            <button className="mobile-profile-close" onClick={() => setIsMobileProfileOpen(false)}>
+                                <Icon icon="mdi:close" width="24" />
+                            </button>
+                        </div>
+                        <div className="mobile-profile-body">
+                            <NavLink to="/customer/my-ticketsorder" className="mobile-profile-link" onClick={() => setIsMobileProfileOpen(false)}>
+                                <Icon icon="mdi:ticket-confirmation-outline" width="24" /> My Tickets
+                            </NavLink>
+                            <NavLink to="/customer/history" className="mobile-profile-link" onClick={() => setIsMobileProfileOpen(false)}>
+                                <Icon icon="mdi:history" width="24" /> Purchase History
+                            </NavLink>
+                            <NavLink to="/customer/settings" className="mobile-profile-link" onClick={() => setIsMobileProfileOpen(false)}>
+                                <Icon icon="mdi:cog-outline" width="24" /> Settings
+                            </NavLink>
+                            <NavLink to="/customer/support" className="mobile-profile-link" onClick={() => setIsMobileProfileOpen(false)}>
+                                <Icon icon="mdi:help-circle-outline" width="24" /> Support
+                            </NavLink>
+                            <button className="mobile-profile-link logout-btn" onClick={handleSignOut}>
+                                <Icon icon="mdi:logout" width="24" /> Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </header>
     );
 }
