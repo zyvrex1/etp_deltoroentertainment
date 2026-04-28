@@ -740,12 +740,20 @@ const LayoutBuilder = ({ selectedEvent }) => {
                       rotation={item.rotation}
                       draggable
                       dragBoundFunc={(pos) => {
-                        if (!snapToGrid) return pos;
-                        return {
-                          x: Math.round(pos.x / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom),
-                          y: Math.round(pos.y / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom),
-                        };
-                      }}
+                      const halfWidth = 20 * zoom; 
+                      const stageWidth = dimensions.width;
+                      const stageHeight = dimensions.height;
+
+                      let newX = Math.max(halfWidth, Math.min(pos.x, stageWidth - halfWidth));
+                      let newY = Math.max(halfWidth, Math.min(pos.y, stageHeight - halfWidth));
+
+                      if (snapToGrid) {
+                        newX = Math.round(newX / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom);
+                        newY = Math.round(newY / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom);
+                      }
+
+                      return { x: newX, y: newY };
+                    }}
                       onDragEnd={(e) => handleDragEnd(item.id, e.target.x(), e.target.y())}
                       onTransformEnd={handleTransformEnd}
                       onClick={() => setSelectedId(item.id)}

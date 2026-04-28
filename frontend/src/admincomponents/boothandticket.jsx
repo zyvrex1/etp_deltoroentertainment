@@ -19,7 +19,7 @@ import { useEventsContext } from "../hooks/useEventsContext";
 
 const BoothandTicket = () => {
   const { events } = useEventsContext();
-  const [activeTab, setActiveTab] = useState("booth-map");
+  const [activeTab, setActiveTab] = useState("manage-layout");
   const [selectedEventId, setSelectedEventId] = useState(null);
   const selectedEvent = events?.find(e => e._id === selectedEventId);
   const [detailPopup, setDetailPopup] = useState(null);
@@ -30,6 +30,7 @@ const BoothandTicket = () => {
     isOpen: false,
     type: "booth",
   });
+
   const [isSetupLayoutOpen, setIsSetupLayoutOpen] = useState(false);
   const [isSeatLayoutOpen, setIsSeatLayoutOpen] = useState(false);
 
@@ -65,18 +66,18 @@ const BoothandTicket = () => {
           </div>
 
           <div className="bt-tabs">
+             <button
+              className={`bt-tab ${activeTab === "manage-layout" ? "active" : ""}`}
+              onClick={() => setActiveTab("manage-layout")}
+            >
+              Manage Layout
+            </button>
+
             <button
               className={`bt-tab ${activeTab === "booth-map" ? "active" : ""}`}
               onClick={() => setActiveTab("booth-map")}
             >
               Seat/Booth Map
-            </button>
-
-            <button
-              className={`bt-tab ${activeTab === "manage-layout" ? "active" : ""}`}
-              onClick={() => setActiveTab("manage-layout")}
-            >
-              Manage Layout
             </button>
 
             <button
