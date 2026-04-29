@@ -1,38 +1,89 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './SponsorInvoice.css';
 import SponsorViewInvoiceReceipt from './SponsorModal/SponsorViewInvoiceReceipt';
 import DateRangePicker from '../utils/DateRangePicker';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
+import reservationService from '../services/reservationService';
+import { useAuthContext } from '../hooks/useAuthContext';
 
 export default function SponsorInvoice() {
-    // Mock Data
-    const allInvoices = Array.from({ length: 12 }, (_, i) => ({
-        id: i + 1,
-        title: (i % 2 === 0) ? 'TechInnovate Summit 2026' : 'Global Healthcare Expo 2024',
-        invoiceRef: (i % 2 === 0) ? 'INV-2026-001' : 'INV-2024-002',
-        booth: (i % 2 === 0) ? 'Booth #102' : 'Booth #405',
-        amount: (i % 2 === 0) ? '$5,575' : '$2,750',
-        issuedDate: (i % 2 === 0) ? 'May 15, 2026' : 'Aug 10, 2024',
-        paidDate: (i % 2 === 0) ? 'May 15, 2026' : 'Aug 10, 2024',
-        // extra info for invoice modal
-        companyName: 'TechCorp Inc.',
-        companyAddress: '123 Tech Street\nSan Francisco, CA 94105',
-        taxId: 'TAX-123456789',
-        items: [
-            { description: 'Premium Island Booth (20x20)', qty: 1, unitPrice: (i % 2 === 0) ? '$ 5,000' : '$ 2,175', total: (i % 2 === 0) ? '$ 5,000' : '$ 2,175' },
-            { description: 'Processing Fee', qty: 1, unitPrice: '$ 150', total: '$ 150' },
-            { description: 'Tax (8.5%)', qty: 1, unitPrice: '$ 425', total: '$ 425' }
-        ],
-        subtotal: (i % 2 === 0) ? '$5,575' : '$2,750',
-        totalDue: (i % 2 === 0) ? '$5,575' : '$2,750',
-        paymentMethod: 'Visa ending in 4242'
-    }));
-
+    const { user } = useAuthContext();
+    const [allInvoices, setAllInvoices] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const PAGE_TITLE = 'Invoices Report';
+
+    useEffect(() => {
+        const fetchInvoices = async () => {
+            if (!user) return;
+            try {
+                setLoading(true);
+                const reservations = await reservationService.getMyReservations(user.token);
+                
+                const formattedInvoices = reservations.map((res, index) => {
+                    const eventTitle = res.event?.title || 'Unknown Event';
+                    const invoiceRef = `INV-${new Date(res.createdAt).getFullYear()}-${res._id.slice(-5).toUpperCase()}`;
+                    const createdDate = new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    
+                    const subtotal = res.amount?.subtotal || 0;
+                    const fee = res.amount?.fee || 0;
+                    const tax = res.amount?.tax || 0;
+                    const total = res.amount?.total || 0;
+                    
+                    let companyAddr = '';
+                    if (res.billingAddress?.address) {
+                        companyAddr += res.billingAddress.address + '\n';
+                    } else if (user.streetAddress) {
+                        companyAddr += user.streetAddress + '\n';
+                    }
+
+                    if (res.billingAddress?.city) {
+                        companyAddr += res.billingAddress.city;
+                    } else if (user.city) {
+                        companyAddr += user.city;
+                    }
+
+                    if (res.billingAddress?.zipCode) {
+                        companyAddr += ' ' + res.billingAddress.zipCode;
+                    } else if (user.zipCode) {
+                        companyAddr += ' ' + user.zipCode;
+                    }
+
+                    return {
+                        id: res._id,
+                        title: eventTitle,
+                        invoiceRef: invoiceRef,
+                        booth: `Booth ${res.boothCode || 'N/A'}`,
+                        amount: `$${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`,
+                        issuedDate: createdDate,
+                        paidDate: createdDate, // Treat as paid immediately for now
+                        companyName: res.billingAddress?.companyName || user.companyName || 'Your Company',
+                        companyAddress: companyAddr.trim() || 'Address not provided',
+                        taxId: 'N/A',
+                        items: [
+                            { description: `Booth Registration (${res.boothCode || ''})`, qty: 1, unitPrice: `$${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`, total: `$${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}` },
+                            { description: 'Processing Fee', qty: 1, unitPrice: `$${fee.toLocaleString(undefined, {minimumFractionDigits: 2})}`, total: `$${fee.toLocaleString(undefined, {minimumFractionDigits: 2})}` },
+                            { description: 'Tax', qty: 1, unitPrice: `$${tax.toLocaleString(undefined, {minimumFractionDigits: 2})}`, total: `$${tax.toLocaleString(undefined, {minimumFractionDigits: 2})}` }
+                        ],
+                        subtotal: `$${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`,
+                        totalDue: `$${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`,
+                        paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice'
+                    };
+                });
+                
+                setAllInvoices(formattedInvoices);
+            } catch (error) {
+                console.error("Error fetching invoices:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchInvoices();
+    }, [user]);
 
     const exportAllInvoicesToPDF = async () => {
         const loadingToast = showExportToast();
@@ -219,44 +270,56 @@ export default function SponsorInvoice() {
             </div>
 
             <div className="si-list">
-                {paginatedInvoices.map((item) => (
-                    <div className="si-card" key={item.id}>
-                        <div className="si-card-left">
-                            <div className="si-card-icon">
-                                <Icon icon="mdi:file-document" width="24" color="var(--color-white-primary)" />
-                            </div>
-                            <div className="si-card-info">
-                                <h5 className="si-title">{item.title}</h5>
-                                <div className="si-meta small-body-text text-secondary">
-                                    Invoice {item.invoiceRef} • {item.booth}
-                                </div>
-                                <div className="si-dates small-body-text text-secondary">
-                                    <span className="si-date-item">
-                                        <Icon icon="mdi:calendar-blank" /> Issued: {item.issuedDate}
-                                    </span>
-                                    <span className="si-date-item text-green">
-                                        <Icon icon="mdi:check-circle-outline" /> Paid: {item.paidDate}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="si-card-right">
-                            <div className="si-amount-sec">
-                                <span className="smaller-body-text text-secondary">Amount</span>
-                                <h4 className="si-amount">{item.amount}</h4>
-                            </div>
-                            <div className="si-actions">
-                                <button className="si-action-btn view" onClick={() => handleViewInvoice(item)}>
-                                    <Icon icon="mdi:eye-outline" width="20" />
-                                </button>
-                                <button className="si-action-btn download" onClick={() => downloadInvoicePDF(item)}>
-                                    <Icon icon="mdi:download-outline" width="20" />
-                                </button>
-                            </div>
-                        </div>
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-black-secondary)' }}>
+                        <Icon icon="mdi:loading" className="spin-animation" width="48" />
+                        <p>Loading invoices...</p>
                     </div>
-                ))}
+                ) : paginatedInvoices.length > 0 ? (
+                    paginatedInvoices.map((item) => (
+                        <div className="si-card" key={item.id}>
+                            <div className="si-card-left">
+                                <div className="si-card-icon">
+                                    <Icon icon="mdi:file-document" width="24" color="var(--color-white-primary)" />
+                                </div>
+                                <div className="si-card-info">
+                                    <h5 className="si-title">{item.title}</h5>
+                                    <div className="si-meta small-body-text text-secondary">
+                                        Invoice {item.invoiceRef} • {item.booth}
+                                    </div>
+                                    <div className="si-dates small-body-text text-secondary">
+                                        <span className="si-date-item">
+                                            <Icon icon="mdi:calendar-blank" /> Issued: {item.issuedDate}
+                                        </span>
+                                        <span className="si-date-item text-green">
+                                            <Icon icon="mdi:check-circle-outline" /> Paid: {item.paidDate}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="si-card-right">
+                                <div className="si-amount-sec">
+                                    <span className="smaller-body-text text-secondary">Amount</span>
+                                    <h4 className="si-amount">{item.amount}</h4>
+                                </div>
+                                <div className="si-actions">
+                                    <button className="si-action-btn view" onClick={() => handleViewInvoice(item)}>
+                                        <Icon icon="mdi:eye-outline" width="20" />
+                                    </button>
+                                    <button className="si-action-btn download" onClick={() => downloadInvoicePDF(item)}>
+                                        <Icon icon="mdi:download-outline" width="20" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-black-secondary)' }}>
+                        <Icon icon="mdi:file-document-remove-outline" width="48" />
+                        <p>No invoices or receipts found.</p>
+                    </div>
+                )}
             </div>
 
             {totalPages > 1 && (

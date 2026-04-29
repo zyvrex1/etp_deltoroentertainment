@@ -3,28 +3,9 @@ import { Icon } from '@iconify/react';
 import './SponsorViewInvoiceReceipt.css';
 
 const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload }) => {
-    if (!isOpen) return null;
+    if (!isOpen || !invoiceItem) return null;
 
-    // Default mock data if none provided
-    const item = invoiceItem || {
-        invoiceRef: 'INV-2024-001',
-        title: 'TechInnovate Summit 2024',
-        booth: '102',
-        issueDate: 'May 15, 2026',
-        dueDate: 'May 15, 2026',
-        companyName: 'TechCorp Inc.',
-        companyAddress: '123 Tech Street\nSan Francisco, CA 94105',
-        taxId: 'TAX-123456789',
-        items: [
-            { description: 'Premium Island Booth (20x20)', qty: 1, unitPrice: '$ 5,000', total: '$ 5,000' },
-            { description: 'Processing Fee', qty: 1, unitPrice: '$ 150', total: '$ 150' },
-            { description: 'Tax (8.5%)', qty: 1, unitPrice: '$ 425', total: '$ 425' }
-        ],
-        subtotal: '$5,575',
-        totalDue: '$5,575',
-        paidDate: 'May 15, 2026',
-        paymentMethod: 'Visa ending in 4242'
-    };
+    const item = invoiceItem;
 
     return (
         <div className="sponsor-invoice-modal-overlay">
@@ -56,9 +37,9 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload })
 
                         <div className="sir-invoice-details">
                             <div className="sir-sender-info">
-                                <p className="small-body-text text-secondary m-0">123 Event Plaza</p>
-                                <p className="small-body-text text-secondary m-0">support@eticketspro.com</p>
-                                <p className="small-body-text text-secondary m-0">Tech City, TC 90210</p>
+                                <p className="small-body-text text-secondary m-0">717 S. 12th Street Unit #3</p>
+                                <p className="small-body-text text-secondary m-0">McAllen, Texas</p>
+                                <p className="small-body-text text-secondary m-0">sales@deltoroentertainment.com</p>
                             </div>
                             <div className="sir-meta-info">
                                 <div className="sir-meta-row">

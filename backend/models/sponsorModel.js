@@ -23,6 +23,18 @@ const sponsorSchema = new Schema({
     type: String,
     required: true,
     trim: true
+  },
+  streetAddress: {
+    type: String,
+    trim: true
+  },
+  city: {
+    type: String,
+    trim: true
+  },
+  zipCode: {
+    type: String,
+    trim: true
   }
 }, { timestamps: true });
 

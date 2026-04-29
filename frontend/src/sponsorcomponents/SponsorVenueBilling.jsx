@@ -48,9 +48,9 @@ const SponsorVenueBilling = () => {
                 setBillingInfo(prev => ({
                     ...prev,
                     companyName: p.companyName || '',
-                    streetAddress: p.billingAddress || '',
+                    streetAddress: p.streetAddress || '',
                     city: p.city || '',
-                    postalCode: p.postalCode || '',
+                    postalCode: p.zipCode || '',
                     apEmail: p.email || '',
                     poNumber: prev.poNumber || generatePONumber()
                 }));

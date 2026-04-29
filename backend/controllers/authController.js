@@ -160,6 +160,9 @@ const getProfile = async (req, res) => {
         profileData.companyName = sponsor.companyName
         profileData.industry = sponsor.industry
         if (sponsor.phone) profileData.phone = sponsor.phone
+        profileData.streetAddress = sponsor.streetAddress
+        profileData.city = sponsor.city
+        profileData.zipCode = sponsor.zipCode
       }
     }
 
@@ -171,7 +174,7 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   const { _id } = req.user
-  const { firstName, lastName, email, phone, companyName, industry, avatar, notifications } = req.body
+  const { firstName, lastName, email, phone, companyName, industry, streetAddress, city, zipCode, avatar, notifications } = req.body
 
   try {
     const user = await User.findById(_id)
@@ -217,6 +220,9 @@ const updateProfile = async (req, res) => {
         if (companyName) sponsor.companyName = companyName
         if (industry) sponsor.industry = industry
         if (phone) sponsor.phone = phone
+        if (streetAddress !== undefined) sponsor.streetAddress = streetAddress
+        if (city !== undefined) sponsor.city = city
+        if (zipCode !== undefined) sponsor.zipCode = zipCode
         await sponsor.save()
       } else if (companyName && industry) {
         // Create it if it doesn't exist yet but form data is provided
@@ -224,7 +230,10 @@ const updateProfile = async (req, res) => {
           userId: _id, 
           companyName, 
           industry, 
-          phone: phone || user.phone 
+          phone: phone || user.phone,
+          streetAddress,
+          city,
+          zipCode
         })
       }
     }

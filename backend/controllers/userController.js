@@ -43,7 +43,7 @@ const getUserById = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, companyName, industry } = req.body;
+    const { firstName, lastName, email, phone, companyName, industry, streetAddress, city, zipCode } = req.body;
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -106,9 +106,15 @@ const updateProfile = async (req, res) => {
         if (companyName) sponsor.companyName = companyName;
         if (industry) sponsor.industry = industry;
         if (phone) sponsor.phone = phone;
+        if (streetAddress !== undefined) sponsor.streetAddress = streetAddress;
+        if (city !== undefined) sponsor.city = city;
+        if (zipCode !== undefined) sponsor.zipCode = zipCode;
         await sponsor.save();
         fullProfileData.industry = sponsor.industry;
         fullProfileData.companyName = sponsor.companyName;
+        fullProfileData.streetAddress = sponsor.streetAddress;
+        fullProfileData.city = sponsor.city;
+        fullProfileData.zipCode = sponsor.zipCode;
       }
     }
 

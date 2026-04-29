@@ -5,6 +5,8 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import * as authService from '../services/authService';
 import './SponsorSettings.css';
 import SponsorAddPaymentMethod from './SponsorModal/SponsorAddPaymentMethod';
+import { PhoneInput } from "react-international-phone";
+import "react-international-phone/style.css";
 
 export default function SponsorSettings() {
     const { user, dispatch } = useAuthContext();
@@ -19,8 +21,9 @@ export default function SponsorSettings() {
         companyName: "",
         industry: "",
         avatar: "",
-        website: "https://techcorp.com",
-        companyDescription: "Leading provider of enterprise software solutions..."
+        streetAddress: "",
+        city: "",
+        zipCode: ""
     });
     const [avatarFile, setAvatarFile] = useState(null);
 
@@ -69,25 +72,38 @@ export default function SponsorSettings() {
             if (!user?.token) return;
             try {
                 const response = await authService.getProfile(user.token);
+                const data = response.data;
+
+                // Fix for the phone number display issue
+                let formattedPhone = data.phone || "";
+                if (formattedPhone && !formattedPhone.startsWith('+')) {
+                    if (formattedPhone.startsWith('0')) {
+                        formattedPhone = `+63${formattedPhone.substring(1)}`;
+                    } else {
+                        formattedPhone = `+${formattedPhone}`;
+                    }
+                }
+
                 setProfile({
-                    firstName: response.data.firstName || "",
-                    lastName: response.data.lastName || "",
-                    email: response.data.email || "",
-                    phone: response.data.phone || "",
-                    companyName: response.data.companyName || "",
-                    industry: response.data.industry || "",
-                    avatar: response.data.avatar || "",
-                    website: response.data.website || "https://techcorp.com",
-                    companyDescription: response.data.companyDescription || "Leading provider of enterprise software solutions..."
+                    firstName: data.firstName || "",
+                    lastName: data.lastName || "",
+                    email: data.email || "",
+                    phone: formattedPhone,
+                    companyName: data.companyName || "",
+                    industry: data.industry || "",
+                    avatar: data.avatar || "",
+                    streetAddress: data.streetAddress || "",
+                    city: data.city || "",
+                    zipCode: data.zipCode || ""
                 });
-                if (response.data.notifications) {
+                if (data.notifications) {
                     setNotifications({
-                        email: response.data.notifications.email !== false,
-                        sms: response.data.notifications.sms === true,
-                        userUpdates: response.data.notifications.userUpdates !== false,
-                        paymentReminders: response.data.notifications.paymentReminders !== false,
-                        announcements: response.data.notifications.announcements !== false,
-                        supportMessages: response.data.notifications.supportMessages !== false
+                        email: data.notifications.email !== false,
+                        sms: data.notifications.sms === true,
+                        userUpdates: data.notifications.userUpdates !== false,
+                        paymentReminders: data.notifications.paymentReminders !== false,
+                        announcements: data.notifications.announcements !== false,
+                        supportMessages: data.notifications.supportMessages !== false
                     });
                 }
             } catch (error) {
@@ -145,8 +161,9 @@ export default function SponsorSettings() {
                 formData.append("phone", profile.phone);
                 if (profile.companyName) formData.append("companyName", profile.companyName);
                 if (profile.industry) formData.append("industry", profile.industry);
-                if (profile.website) formData.append("website", profile.website);
-                if (profile.companyDescription) formData.append("companyDescription", profile.companyDescription);
+                if (profile.streetAddress !== undefined) formData.append("streetAddress", profile.streetAddress);
+                if (profile.city !== undefined) formData.append("city", profile.city);
+                if (profile.zipCode !== undefined) formData.append("zipCode", profile.zipCode);
                 formData.append("notifications", JSON.stringify(notifications));
                 
                 if (avatarFile) {
@@ -282,11 +299,32 @@ export default function SponsorSettings() {
 
                         <div className="ss-form-group">
                             <label className="ss-label">Phone Number</label>
-                            <input
-                                type="text"
-                                className="ss-input"
-                                value={profile.phone}
-                                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                            <PhoneInput
+                                defaultCountry="ph"
+                                value={profile.phone || ""}
+                                onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
+                                inputClassName="ss-input"
+                                className="phone-input-container"
+                                style={{
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '0', 
+                                    border: '1px solid var(--color-black-tertiary)', 
+                                    borderRadius: '6px' 
+                                }}
+                                inputStyle={{
+                                    border: 'none', 
+                                    padding: '10px 12px', 
+                                    outline: 'none', 
+                                    borderRadius: '0', 
+                                    flex: 1, 
+                                }}
+                                buttonStyle={{
+                                    border: 'none', 
+                                    backgroundColor: 'transparent', 
+                                    boxShadow: 'none', 
+                                    color: '#64748b' 
+                                }}
                             />
                         </div>
 
@@ -317,24 +355,35 @@ export default function SponsorSettings() {
                         </div>
 
                         <div className="ss-form-group">
-                            <label className="ss-label">Website</label>
+                            <label className="ss-label">Street Address</label>
                             <input 
                                 type="text" 
                                 className="ss-input" 
-                                value={profile.website} 
-                                onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                                value={profile.streetAddress} 
+                                onChange={(e) => setProfile({ ...profile, streetAddress: e.target.value })}
                             />
                         </div>
 
-                        <div className="ss-form-group">
-                            <label className="ss-label">Company Description</label>
-                            <textarea 
-                                className="ss-input ss-textarea" 
-                                rows="4" 
-                                value={profile.companyDescription} 
-                                onChange={(e) => setProfile({ ...profile, companyDescription: e.target.value })}
-                            ></textarea>
-                            <p className="ss-notification-desc mt-1">This will be displayed on your exhibitor profile.</p>
+                        <div className="ss-form-row">
+                            <div className="ss-form-group">
+                                <label className="ss-label">City</label>
+                                <input 
+                                    type="text" 
+                                    className="ss-input" 
+                                    value={profile.city} 
+                                    onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                                    placeholder="e.g. New York (US)"
+                                />
+                            </div>
+                            <div className="ss-form-group">
+                                <label className="ss-label">Zip Code</label>
+                                <input 
+                                    type="text" 
+                                    className="ss-input" 
+                                    value={profile.zipCode} 
+                                    onChange={(e) => setProfile({ ...profile, zipCode: e.target.value })}
+                                />
+                            </div>
                         </div>
 
                         <button type="button" className="ss-save-btn primary-button" onClick={handleSaveProfile}>
