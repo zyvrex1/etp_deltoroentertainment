@@ -75,6 +75,29 @@ export default function CustomerHome() {
     useEffect(() => {
         fetchData();
     }, []);
+ 
+    // Intersection Observer for scroll reveal
+    useEffect(() => {
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: "0px 0px -50px 0px"
+        };
+ 
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+ 
+        const revealElements = document.querySelectorAll('.reveal');
+        revealElements.forEach(el => observer.observe(el));
+ 
+        return () => {
+            revealElements.forEach(el => observer.unobserve(el));
+        };
+    }, [isLoading, announcements, policies]);
 
     const openModal = (item, type) => {
         setModalData(item);
@@ -137,9 +160,9 @@ export default function CustomerHome() {
                     </div>
 
                     {/* Features Grid */}
-                    <div className="ch-stats-cards">
+                    <div className="ch-stats-cards reveal">
                         {features.map((feat, idx) => (
-                            <div className="ch-stat-card ch-glass" key={idx}>
+                            <div className={`ch-stat-card ch-glass reveal stagger-${(idx % 4) + 1}`} key={idx}>
                                 <div className="ch-stat-icon">
                                     <Icon icon={feat.icon} />
                                 </div>
@@ -152,7 +175,7 @@ export default function CustomerHome() {
             </section>
 
             {/* Announcements Section */}
-            <section className="ch-section">
+            <section className="ch-section reveal">
                 <div className="ch-container">
                     <div className="ch-section-header">
                         <div className="ch-section-header-left">
@@ -203,7 +226,7 @@ export default function CustomerHome() {
             </section>
 
             {/* Trending Now */}
-            <section id="events" className="ch-section ch-container">
+            <section id="events" className="ch-section ch-container reveal">
                 <div className="ch-section-header">
                     <div className="ch-section-header-left">
                         <h3>Upcoming Events</h3>
@@ -222,7 +245,7 @@ export default function CustomerHome() {
                 ) : events.length > 0 ? (
                     <div className="ch-grid">
                         {events.map((evt, idx) => (
-                            <div className={`ch-event-card-v2 ch-glass`} key={evt._id || idx}>
+                            <div className={`ch-event-card-v2 ch-glass reveal stagger-${(idx % 4) + 1}`} key={evt._id || idx}>
                                 <div className="ch-v2-image-area">
                                     <img
                                         src={evt.image ? (evt.image.startsWith('http') ? evt.image : `${BACKEND_URL}/uploads/${evt.image}`) : '/assets/eventbg.jpg'}
@@ -286,7 +309,7 @@ export default function CustomerHome() {
             </section>
 
             {/* Platform Policies */}
-            <section className="ch-section ch-container">
+            <section className="ch-section ch-container reveal">
                 <div className="ch-section-header">
                     <div className="ch-section-header-left">
                         <h3>Platform Policies</h3>
@@ -299,7 +322,7 @@ export default function CustomerHome() {
                         policies.map((item, idx) => (
                             <div
                                 key={item._id || idx}
-                                className="ch-policy-item ch-glass"
+                                className={`ch-policy-item ch-glass reveal stagger-${(idx % 4) + 1}`}
                                 onClick={() => openModal(item, 'policy')}
                             >
                                 <div className="ch-policy-icon-box">

@@ -74,6 +74,29 @@ export default function SponsorHome() {
     useEffect(() => {
         fetchData();
     }, [user?.token]);
+ 
+    // Intersection Observer for scroll reveal
+    useEffect(() => {
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: "0px 0px -50px 0px"
+        };
+ 
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+ 
+        const revealElements = document.querySelectorAll('.reveal');
+        revealElements.forEach(el => observer.observe(el));
+ 
+        return () => {
+            revealElements.forEach(el => observer.unobserve(el));
+        };
+    }, [isLoading, announcements, policies]);
 
     const openModal = (item, type) => {
         setModalData(item);
@@ -127,9 +150,9 @@ export default function SponsorHome() {
                     </div>
 
                     {/* Features Grid */}
-                    <div className="sh-stats-cards">
+                    <div className="sh-stats-cards reveal">
                         {features.map((feat, idx) => (
-                            <div className="sh-stat-card sh-glass" key={idx}>
+                            <div className={`sh-stat-card sh-glass reveal stagger-${(idx % 4) + 1}`} key={idx}>
                                 <div className="sh-stat-icon">
                                     <Icon icon={feat.icon} />
                                 </div>
@@ -142,7 +165,7 @@ export default function SponsorHome() {
             </section>
 
             {/* Announcements Section */}
-            <section className="sh-section">
+            <section className="sh-section reveal">
                 <div className="sh-container">
                     <div className="sh-section-header">
                         <div className="sh-section-header-left">
@@ -193,7 +216,7 @@ export default function SponsorHome() {
             </section>
 
             {/* Upcoming Events */}
-            <section id="events" className="sh-section sh-container">
+            <section id="events" className="sh-section sh-container reveal">
                 <div className="sh-section-header">
                     <div className="sh-section-header-left">
                         <h3>Upcoming Events</h3>
@@ -212,7 +235,7 @@ export default function SponsorHome() {
                 ) : events.length > 0 ? (
                     <div className="sh-grid">
                         {events.map((evt, idx) => (
-                            <div className={`sh-event-card-v2 sh-glass`} key={evt._id || idx}>
+                            <div className={`sh-event-card-v2 sh-glass reveal stagger-${(idx % 4) + 1}`} key={evt._id || idx}>
                                 <div className="sh-v2-image-area">
                                     <img
                                         src={evt.image ? (evt.image.startsWith('http') ? evt.image : `${BACKEND_URL}/uploads/${evt.image}`) : '/assets/eventbg.jpg'}
@@ -272,7 +295,7 @@ export default function SponsorHome() {
             </section>
 
             {/* Platform Policies */}
-            <section className="sh-section sh-container">
+            <section className="sh-section sh-container reveal">
                 <div className="sh-section-header">
                     <div className="sh-section-header-left">
                         <h3>Platform Policies</h3>
@@ -285,7 +308,7 @@ export default function SponsorHome() {
                         {policies.map((item, idx) => (
                             <div
                                 key={item._id || idx}
-                                className="sh-policy-item sh-glass"
+                                className={`sh-policy-item sh-glass reveal stagger-${(idx % 4) + 1}`}
                                 onClick={() => openModal(item, 'policy')}
                             >
                                 <div className="sh-policy-icon-box">
