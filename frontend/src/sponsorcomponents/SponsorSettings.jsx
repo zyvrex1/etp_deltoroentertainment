@@ -340,17 +340,13 @@ export default function SponsorSettings() {
                             </div>
                             <div className="ss-form-group">
                                 <label className="ss-label">Industry</label>
-                                <select 
-                                    className="ss-input ss-select" 
+                                <input 
+                                    type="text"
+                                    className="ss-input" 
                                     value={profile.industry} 
                                     onChange={(e) => setProfile({ ...profile, industry: e.target.value })}
-                                >
-                                    <option value="">Select Industry</option>
-                                    <option value="Technology">Technology</option>
-                                    <option value="Healthcare">Healthcare</option>
-                                    <option value="Finance">Finance</option>
-                                    <option value="Education">Education</option>
-                                </select>
+                                    placeholder="e.g. Technology"
+                                />
                             </div>
                         </div>
 

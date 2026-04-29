@@ -38,7 +38,7 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload })
                         <div className="sir-invoice-details">
                             <div className="sir-sender-info">
                                 <p className="small-body-text text-secondary m-0">717 S. 12th Street Unit #3</p>
-                                <p className="small-body-text text-secondary m-0">McAllen, Texas</p>
+                                <p className="small-body-text text-secondary m-0">McAllen, TX 78501</p>
                                 <p className="small-body-text text-secondary m-0">sales@deltoroentertainment.com</p>
                             </div>
                             <div className="sir-meta-info">

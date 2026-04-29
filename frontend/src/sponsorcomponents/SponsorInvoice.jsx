@@ -35,21 +35,19 @@ export default function SponsorInvoice() {
                     
                     let companyAddr = '';
                     if (res.billingAddress?.address) {
-                        companyAddr += res.billingAddress.address + '\n';
+                        companyAddr += res.billingAddress.address;
                     } else if (user.streetAddress) {
-                        companyAddr += user.streetAddress + '\n';
+                        companyAddr += user.streetAddress;
                     }
 
-                    if (res.billingAddress?.city) {
-                        companyAddr += res.billingAddress.city;
-                    } else if (user.city) {
-                        companyAddr += user.city;
+                    if (res.billingAddress?.city || user.city) {
+                        if (companyAddr) companyAddr += ', ';
+                        companyAddr += res.billingAddress?.city || user.city;
                     }
 
-                    if (res.billingAddress?.zipCode) {
-                        companyAddr += ' ' + res.billingAddress.zipCode;
-                    } else if (user.zipCode) {
-                        companyAddr += ' ' + user.zipCode;
+                    if (res.billingAddress?.zipCode || user.zipCode) {
+                        if (companyAddr) companyAddr += ' ';
+                        companyAddr += res.billingAddress?.zipCode || user.zipCode;
                     }
 
                     return {
@@ -153,6 +151,15 @@ export default function SponsorInvoice() {
             y += 6;
             pdf.text(`Company: ${item.companyName}`, MARGIN, y);
             y += 6;
+            
+            // Wrap address text if it's too long
+            const addressText = `Address: ${item.companyAddress}`;
+            const maxWidth = pdf.internal.pageSize.getWidth() - (MARGIN * 2);
+            const wrappedAddress = pdf.splitTextToSize(addressText, maxWidth);
+            
+            pdf.text(wrappedAddress, MARGIN, y);
+            y += (wrappedAddress.length * 5); // Adjust Y based on wrapped lines count
+
             pdf.text(`Tax ID: ${item.taxId}`, MARGIN, y);
             y += 6;
             pdf.text(`Issued Date: ${item.issuedDate}`, MARGIN, y);
