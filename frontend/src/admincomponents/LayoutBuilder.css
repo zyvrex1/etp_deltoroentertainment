@@ -596,6 +596,7 @@
 
 .canvas-title {
   color: var(--color-black-primary);
+  text-align: left;
 }
 
 /* Responsive Breakpoints */
@@ -643,9 +644,7 @@
   }
 
   .canvas-title {
-    text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--color-black-tertiary);
   }
 
   .toolbar-actions {

@@ -2,17 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import merchandiseService from "../services/merchandiseService";
+import reservationService from "../services/reservationService";
 import { useAuthContext } from "../hooks/useAuthContext";
 import "./SponsorStore.css";
 
-const sampleStoreEvents = [
-  { id: 1, boothNumber: 'Booth #102', title: 'Texas Home Show', date: 'Aug 7', location: 'Bert Ogden Arena', products: 24, activeOrders: 12, status: 'Live', image: '/uploads/monday-content-post-1-0429260249.jpg' },
-  { id: 2, boothNumber: 'Booth #405', title: 'Guey Funny Comedy Show', date: 'May 1', location: 'La Villa', products: 15, activeOrders: 0, status: 'Completed', image: '/uploads/guey-funny-comedy-show-march-20-0429260231.jpg' },
-  { id: 3, boothNumber: 'Booth #10', title: 'Siggno Solido Secretto', date: 'Apr 30', location: 'Magnolia Halle', products: 30, activeOrders: 5, status: 'Live', image: '/uploads/grupo-siggno,-solido-and-secretto-flyers-2026-mock-up-0429260228.jpg' },
-  { id: 4, boothNumber: 'Booth #55', title: 'Weslaco Texas OnionFest', date: 'Aug 1', location: 'Greet & Gather Downtown Weslaco', products: 10, activeOrders: 2, status: 'Upcoming', image: '/uploads/weslaco-texas-onion-fest-0429260226.jpg' },
-  { id: 5, boothNumber: 'Booth #22', title: 'Tejano Music Awards Fanfair', date: 'Jul 25', location: 'Henry B. Gonzales Convention Center', products: 45, activeOrders: 20, status: 'Live', image: '/uploads/siggno-advertising-poster-0429260219.jpg' },
-  { id: 6, boothNumber: 'Booth #108', title: 'Your Health Matters', date: 'Aug 25', location: 'Creative Arts Studio (Texas)', products: 5, activeOrders: 1, status: 'Upcoming', image: '/uploads/yhm-event-page-cover-pharr-1777152601031.jpg' },
-];
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const SponsorStore = () => {
   const { user } = useAuthContext();
@@ -23,7 +17,7 @@ const SponsorStore = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [merchandise, setMerchandise] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [eventData, setEventData] = useState(sampleStoreEvents);
+  const [eventData, setEventData] = useState([]);
   
   const itemsPerPage = 8;
   const dropdownRef = useRef(null);
@@ -42,17 +36,55 @@ const SponsorStore = () => {
       if (!user) return;
       try {
         setLoading(true);
-        // Fetch ALL merchandise for this sponsor to count them per store
-        const merchData = await merchandiseService.getMerchandises(user.token);
+        
+        const [merchData, reservationsData] = await Promise.all([
+          merchandiseService.getMerchandises(user.token),
+          reservationService.getMyReservations(user.token)
+        ]);
+        
         setMerchandise(merchData);
         
-        // Update product counts in our event listing
-        const updatedEvents = sampleStoreEvents.map(event => {
-          // In a real app, match by event._id. Using id for mock comparison here.
-          const count = merchData.filter(m => m.eventId?._id === event._id || m.eventId === event._id).length;
-          return { ...event, products: count };
+        const now = new Date();
+        const today = new Date(now.setHours(0,0,0,0));
+
+        const formattedEvents = reservationsData.map(res => {
+          const event = res.event || {};
+          
+          let status = "Upcoming";
+          const startDate = new Date(event.startDate || new Date());
+          const endDate = new Date(event.endDate || event.startDate || new Date());
+          
+          const sDate = new Date(startDate.setHours(0,0,0,0));
+          const eDate = new Date(endDate.setHours(0,0,0,0));
+
+          if (today > eDate) status = "Completed";
+          else if (today >= sDate && today <= eDate) status = "Live";
+
+          const count = merchData.filter(m => (m.eventId?._id === event._id || m.eventId === event._id) && m.boothCode === res.boothCode).length;
+          
+          const formattedDate = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+          let imageUrl = event.image || '/assets/eventbg.jpg';
+          if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/assets/')) {
+            imageUrl = `${BACKEND_URL}/uploads/${imageUrl.replace('/uploads/', '')}`;
+          }
+
+          return {
+            id: res._id,
+            _id: event._id,
+            boothCodeRaw: res.boothCode,
+            boothNumber: `Booth ${res.boothCode || ''}`,
+            title: event.title || 'Unknown Event',
+            date: formattedDate,
+            location: event.venue?.name || 'TBA',
+            products: count,
+            activeOrders: 0,
+            status: status,
+            image: imageUrl
+          };
         });
-        setEventData(updatedEvents);
+        
+        setEventData(formattedEvents);
 
       } catch (error) {
         console.error("Error fetching store data:", error);
@@ -195,7 +227,7 @@ const SponsorStore = () => {
                     className="primary-button store-manage-btn"
                     disabled={event.status === "Completed"}
                     onClick={() => navigate("/sponsor/store/dashboard", { 
-                      state: { eventId: event._id || event.id, eventName: event.title } 
+                      state: { eventId: event._id || event.id, eventName: event.title, boothCode: event.boothCodeRaw } 
                     })}
                   >
                     Manage Store <Icon icon="mdi:arrow-right" />

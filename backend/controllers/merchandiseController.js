@@ -6,7 +6,7 @@ const path = require('path');
 
 // CREATE
 const createMerchandise = async (req, res) => {
-  const { name, description, price, category, stock, image, eventId, status } = req.body;
+  const { name, description, price, category, stock, image, eventId, boothCode, status } = req.body;
   const userId = req.user._id;
 
   if (!name || !price || !category || !eventId) {
@@ -34,6 +34,7 @@ const createMerchandise = async (req, res) => {
       stock,
       image: finalImage,
       eventId,
+      boothCode,
       status,
       sponsorId: sponsor._id, // 🔥 Linking to Sponsor profile
       createdBy: userId,
@@ -46,10 +47,11 @@ const createMerchandise = async (req, res) => {
 
 // READ (GET ALL with filters)
 const getMerchandises = async (req, res) => {
-  const { eventId, category, status, sponsorId } = req.query;
+  const { eventId, boothCode, category, status, sponsorId } = req.query;
   const filter = {};
 
   if (eventId) filter.eventId = eventId;
+  if (boothCode) filter.boothCode = boothCode;
   if (category) filter.category = category;
   if (status) filter.status = status;
   if (sponsorId) filter.sponsorId = sponsorId;

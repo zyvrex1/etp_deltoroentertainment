@@ -21,7 +21,7 @@ const initialProducts = [
   { id: 9, image: "/assets/eventbg.jpg", category: "Drinks", name: "Bottled Water", price: "$2.99", description: "Spring water.", stock: 150, stockStatus: "High Stock", active: true },
 ];
 
-const SponsorManageProduct = ({ eventId }) => {
+const SponsorManageProduct = ({ eventId, boothCode }) => {
   const { user } = useAuthContext();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,8 +48,11 @@ const SponsorManageProduct = ({ eventId }) => {
     if (!user) return;
     try {
       setLoading(true);
-      // Fetch products filter by event if eventId provided
-      const filters = eventId ? { eventId } : {};
+      // Fetch products filter by event and booth
+      const filters = {};
+      if (eventId) filters.eventId = eventId;
+      if (boothCode) filters.boothCode = boothCode;
+      
       const data = await merchandiseService.getMerchandises(user.token, filters);
       
       setProducts(data);
@@ -84,7 +87,7 @@ const SponsorManageProduct = ({ eventId }) => {
 
   useEffect(() => {
     fetchProducts();
-  }, [user, eventId]);
+  }, [user, eventId, boothCode]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -123,6 +126,7 @@ const SponsorManageProduct = ({ eventId }) => {
       const payload = {
         ...newProductData,
         eventId: eventId,
+        boothCode: boothCode,
         status: newProductData.stock > 0 ? "Available" : "Out of Stock"
       };
 

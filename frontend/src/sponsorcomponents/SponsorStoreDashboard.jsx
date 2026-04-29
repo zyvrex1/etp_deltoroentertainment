@@ -14,9 +14,10 @@ const SponsorStoreDashboard = () => {
   const [activeTab, setActiveTab] = useState("Products");
 
   // Get event data from navigation state
-  const { eventId, eventName } = location.state || { 
+  const { eventId, eventName, boothCode } = location.state || { 
     eventId: null, 
-    eventName: "General Inventory" 
+    eventName: "General Inventory",
+    boothCode: null
   };
 
   return (
@@ -27,7 +28,7 @@ const SponsorStoreDashboard = () => {
       
       <div className="ssd-header">
         <h1>Store Dashboard</h1>
-        <p className="regular-body-text">{eventName}</p>
+        <p className="regular-body-text">{eventName} {boothCode ? `- Booth ${boothCode}` : ''}</p>
       </div>
 
       <div className="ssd-tabs-container">
@@ -60,9 +61,9 @@ const SponsorStoreDashboard = () => {
       </div>
 
       <div className="ssd-content">
-        {activeTab === 'Products' && <SponsorManageProduct eventId={eventId} />}
-        {activeTab === 'Orders' && <SponsorManageOrder />}
-        {activeTab === 'Analytics' && <SponsorProductAnalytics eventId={eventId} />}
+        {activeTab === 'Products' && <SponsorManageProduct eventId={eventId} boothCode={boothCode} />}
+        {activeTab === 'Orders' && <SponsorManageOrder boothCode={boothCode} />}
+        {activeTab === 'Analytics' && <SponsorProductAnalytics eventId={eventId} boothCode={boothCode} />}
         {activeTab === 'Info' && <SponsorPaymentInfo />}
       </div>
     </div>

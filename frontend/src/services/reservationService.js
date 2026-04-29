@@ -25,6 +25,31 @@ const reservationService = {
       console.error("Error in getAdminReservations service:", error);
       throw error;
     }
+  },
+
+  /**
+   * Fetch personal reservations for the sponsor
+   * @param {string} token - The authentication token
+   * @returns {Promise<Array>} List of reservations
+   */
+  getMyReservations: async (token) => {
+    try {
+      const response = await fetch(`${API_URL}/my-booths`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const json = await response.json();
+
+      if (!response.ok) {
+        throw new Error(json.error || "Failed to fetch personal reservations");
+      }
+
+      return json;
+    } catch (error) {
+      console.error("Error in getMyReservations service:", error);
+      throw error;
+    }
   }
 };
 

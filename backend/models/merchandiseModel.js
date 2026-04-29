@@ -39,6 +39,10 @@ const merchandiseSchema = new Schema({
     type: String,
     required: true,
   },
+  boothCode: {
+    type: String,
+    required: false,
+  },
   sponsorId: {
     type: Schema.Types.ObjectId,
     ref: 'Sponsor',
