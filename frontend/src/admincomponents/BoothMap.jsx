@@ -455,6 +455,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                                 cornerRadius={2}
                                 stroke="white"
                                 strokeWidth={1}
+                                strokeScaleEnabled={false}
                               />
                             ))}
                           </>
@@ -465,9 +466,9 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                             width={40}
                             height={40}
                             fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (priceLevels.find(c => c._id === item.categoryId)?.color || "#e0e0e0")}
-                            stroke="white"
+                            stroke="#000"
                             strokeWidth={1}
-                            cornerRadius={4}
+                            strokeScaleEnabled={false}
                           />
                         ) : (
                           /* Standard Seat - Exact Match to LayoutBuilder */

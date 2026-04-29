@@ -762,7 +762,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
               }}
             >
               <Layer>
-                {/* Enhanced blueprint grid - Fade when snap is off */}
                 {(() => {
                   const lines = [];
                   const extent = 5000;
@@ -772,12 +771,10 @@ const LayoutBuilder = ({ selectedEvent }) => {
                     const isMajor = i % MAJOR_GRID === 0;
                     const isAxis = i === 0;
 
-                    // Adjust visibility based on snapToGrid state
                     const baseOpacity = snapToGrid ? 1 : 0.3;
                     const strokeColor = isAxis ? "#94a3b8" : (isMajor ? "#cbd5e1" : "#e5e7eb");
                     const strokeWidth = isAxis ? 1.5 : (isMajor ? 1 : 0.5);
 
-                    // Vertical lines
                     lines.push(
                       <Line
                         key={`v-${i}`}
@@ -788,7 +785,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
                         listening={false}
                       />
                     );
-                    // Horizontal lines
                     lines.push(
                       <Line
                         key={`h-${i}`}
