@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Icon } from "@iconify/react";
 import { Stage, Layer, Circle, Text, Group, Rect, Line, Transformer } from "react-konva";
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -24,6 +24,38 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const stageRef = useRef(null);
   const trRef = useRef(null);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Undo / Redo history
+  const historyStack = useRef([]);   // past snapshots
+  const futureStack = useRef([]);    // redo snapshots
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  /** Call this BEFORE every mutation to placedItems to record a snapshot. */
+  const pushHistory = useCallback((snapshot) => {
+    historyStack.current.push(snapshot);
+    futureStack.current = []; // clear redo branch
+    setCanUndo(true);
+    setCanRedo(false);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (historyStack.current.length === 0) return;
+    const prev = historyStack.current.pop();
+    futureStack.current.push(placedItems); // save current for redo — captured via closure below
+    setPlacedItems(prev);
+    setCanUndo(historyStack.current.length > 0);
+    setCanRedo(true);
+  }, [placedItems]);
+
+  const handleRedo = useCallback(() => {
+    if (futureStack.current.length === 0) return;
+    const next = futureStack.current.pop();
+    historyStack.current.push(placedItems);
+    setPlacedItems(next);
+    setCanUndo(true);
+    setCanRedo(futureStack.current.length > 0);
+  }, [placedItems]);
 
   const handleSyncBooths = async () => {
     if (!selectedEvent?._id || !user?.token) return;
@@ -101,6 +133,11 @@ const LayoutBuilder = ({ selectedEvent }) => {
     }
 
     if (selectedEvent?.layoutData) {
+      // Reset history when a new event is loaded
+      historyStack.current = [];
+      futureStack.current = [];
+      setCanUndo(false);
+      setCanRedo(false);
       setPlacedItems(selectedEvent.layoutData.items || []);
     }
   }, [selectedEvent]);
@@ -260,6 +297,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
       isSeat: category.type.includes("Seat"),
     };
 
+    pushHistory([...placedItems]);
     setPlacedItems([...placedItems, newItem]);
     setSelectedId(newItem.id);
   };
@@ -283,6 +321,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
     const node = e.target;
     const id = node.id();
 
+    pushHistory([...placedItems]);
     setPlacedItems(placedItems.map(item =>
       item.id === id ? {
         ...item,
@@ -304,6 +343,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
       newY = Math.round(y / GRID_SIZE) * GRID_SIZE;
     }
 
+    pushHistory([...placedItems]);
     setPlacedItems(placedItems.map(item =>
       item.id === id ? { ...item, x: newX, y: newY } : item
     ));
@@ -405,6 +445,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
       showErrorAlert("Protected Booth", "This booth has already been sold/reserved and cannot be removed from the map.");
       return;
     }
+    pushHistory([...placedItems]);
     setPlacedItems(placedItems.filter(item => item.id !== id));
     setSelectedId(null);
   };
@@ -415,6 +456,24 @@ const LayoutBuilder = ({ selectedEvent }) => {
     const cat = categories.find(c => c.id === item.categoryId);
     return sum + (cat ? cat.price : 0);
   }, 0);
+
+  // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Y = redo
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const tag = e.target.tagName;
+      // Don't intercept while typing in inputs
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
+      } else if (e.ctrlKey && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleUndo, handleRedo]);
 
   const renderGrid = () => {
     const lines = [];
@@ -617,6 +676,24 @@ const LayoutBuilder = ({ selectedEvent }) => {
           <div className="canvas-toolbar">
             <h4 className="canvas-title">{selectedEvent?.venue?.name || "Venue Map"}</h4>
             <div className="toolbar-actions">
+              {/* Undo / Redo */}
+              <button
+                className="bt-btn"
+                onClick={handleUndo}
+                disabled={!canUndo}
+                title="Undo (Ctrl+Z)"
+              >
+                <Icon icon="mdi:undo" /> <span>Undo</span>
+              </button>
+              <button
+                className="bt-btn"
+                onClick={handleRedo}
+                disabled={!canRedo}
+                title="Redo (Ctrl+Y)"
+              >
+                <Icon icon="mdi:redo" /> <span>Redo</span>
+              </button>
+
               <button
                 className={`bt-btn ${snapToGrid ? 'active' : ''}`}
                 onClick={() => setSnapToGrid(!snapToGrid)}
@@ -651,6 +728,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
                   "This will remove ALL shapes from the canvas. You will have to re-place items from the sidebar. This cannot be undone."
                 );
                 if (result.isConfirmed) {
+                  pushHistory([...placedItems]);
                   setPlacedItems([]);
                   showSuccessAlert("Cleared", "The map has been cleared.");
                 }
@@ -740,20 +818,20 @@ const LayoutBuilder = ({ selectedEvent }) => {
                       rotation={item.rotation}
                       draggable
                       dragBoundFunc={(pos) => {
-                      const halfWidth = 20 * zoom; 
-                      const stageWidth = dimensions.width;
-                      const stageHeight = dimensions.height;
+                        const halfWidth = 20 * zoom;
+                        const stageWidth = dimensions.width;
+                        const stageHeight = dimensions.height;
 
-                      let newX = Math.max(halfWidth, Math.min(pos.x, stageWidth - halfWidth));
-                      let newY = Math.max(halfWidth, Math.min(pos.y, stageHeight - halfWidth));
+                        let newX = Math.max(halfWidth, Math.min(pos.x, stageWidth - halfWidth));
+                        let newY = Math.max(halfWidth, Math.min(pos.y, stageHeight - halfWidth));
 
-                      if (snapToGrid) {
-                        newX = Math.round(newX / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom);
-                        newY = Math.round(newY / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom);
-                      }
+                        if (snapToGrid) {
+                          newX = Math.round(newX / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom);
+                          newY = Math.round(newY / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom);
+                        }
 
-                      return { x: newX, y: newY };
-                    }}
+                        return { x: newX, y: newY };
+                      }}
                       onDragEnd={(e) => handleDragEnd(item.id, e.target.x(), e.target.y())}
                       onTransformEnd={handleTransformEnd}
                       onClick={() => setSelectedId(item.id)}
@@ -766,9 +844,9 @@ const LayoutBuilder = ({ selectedEvent }) => {
                           width={40}
                           height={40}
                           fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
-                          stroke={'#fff'}
+                          stroke={'#000'}
                           strokeWidth={1}
-                          cornerRadius={4}
+                          strokeScaleEnabled={false}
                           shadowBlur={isSelected ? 10 : 0}
                           shadowColor="#000"
                           shadowOpacity={0.2}
