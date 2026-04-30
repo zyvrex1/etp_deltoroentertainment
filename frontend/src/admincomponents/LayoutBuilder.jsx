@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Icon } from "@iconify/react";
-import { Stage, Layer, Circle, Text, Group, Rect, Line, Transformer } from "react-konva";
+import { Stage, Layer, Circle, Text, Group, Rect, Line, Transformer, Image as KonvaImage } from "react-konva";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useEventsContext } from "../hooks/useEventsContext";
 import "./LayoutBuilder.css";
@@ -17,25 +17,31 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
 
-  // Builder state
   const [placedItems, setPlacedItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(1);
+  const [fitScale, setFitScale] = useState(1);
+  const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+  const [containerSize, setContainerSize] = useState({ w: 800, h: 600 });
   const [snapToGrid, setSnapToGrid] = useState(true);
   const stageRef = useRef(null);
   const trRef = useRef(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Undo / Redo history
-  const historyStack = useRef([]);   // past snapshots
-  const futureStack = useRef([]);    // redo snapshots
+  const [backgroundImage, setBackgroundImage] = useState(null);
+  const [bgOpacity, setBgOpacity] = useState(0.4);
+  const [bgKonvaImage, setBgKonvaImage] = useState(null);
+  const [bgModalOpen, setBgModalOpen] = useState(false);
+  const bgFileInputRef = useRef(null);
+
+  const historyStack = useRef([]);
+  const futureStack = useRef([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
-  /** Call this BEFORE every mutation to placedItems to record a snapshot. */
   const pushHistory = useCallback((snapshot) => {
     historyStack.current.push(snapshot);
-    futureStack.current = []; // clear redo branch
+    futureStack.current = [];
     setCanUndo(true);
     setCanRedo(false);
   }, []);
@@ -43,7 +49,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const handleUndo = useCallback(() => {
     if (historyStack.current.length === 0) return;
     const prev = historyStack.current.pop();
-    futureStack.current.push(placedItems); // save current for redo — captured via closure below
+    futureStack.current.push(placedItems);
     setPlacedItems(prev);
     setCanUndo(historyStack.current.length > 0);
     setCanRedo(true);
@@ -86,32 +92,45 @@ const LayoutBuilder = ({ selectedEvent }) => {
     }
   };
 
-  const [dimensions, setDimensions] = useState({ width: 1000, height: 600 });
-  const containerRef = useRef(null);
+  const [canvasWidth, setCanvasWidth] = useState(1400);
+  const [canvasHeight, setCanvasHeight] = useState(900);
+  const [canvasWInput, setCanvasWInput] = useState(1400);
+  const [canvasHInput, setCanvasHInput] = useState(900);
 
+  const [bgWidth, setBgWidth] = useState(null);
+  const [bgHeight, setBgHeight] = useState(null);
+
+  const containerRef = useRef(null);
   const GRID_SIZE = 20;
 
-  // Handle container resizing
+  // Re-fit whenever the container or canvas size changes
   useEffect(() => {
-    if (!containerRef.current) return;
+    const recalc = () => {
+      if (!containerRef.current) return;
+      const { clientWidth, clientHeight } = containerRef.current;
+      setContainerSize({ w: clientWidth, h: clientHeight });
+      const padding = 40;
+      const scaleX = (clientWidth - padding) / canvasWidth;
+      const scaleY = (clientHeight - padding) / canvasHeight;
+      const fs = Math.min(scaleX, scaleY, 1);
+      setFitScale(fs);
+      setZoom(fs); // reset to 100% (fit)
+      // Center the canvas in the container
+      setStagePos({
+        x: (clientWidth - canvasWidth * fs) / 2,
+        y: (clientHeight - canvasHeight * fs) / 2,
+      });
+    };
+    // Run after mount (so containerRef is attached)
+    const timer = setTimeout(recalc, 50);
+    const ro = new ResizeObserver(recalc);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => { clearTimeout(timer); ro.disconnect(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasWidth, canvasHeight]);
 
-    const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        setDimensions({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height
-        });
-      }
-    });
-
-    observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  // Sync categories with event if available (or empty)
   useEffect(() => {
     if (selectedEvent?.priceLevels) {
-      // Normalize priceLevels to categories for internal editor consistency
       const normalizedCategories = selectedEvent.priceLevels.map(pl => ({
         id: pl._id,
         name: pl.priceName,
@@ -124,7 +143,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
       setCategories(normalizedCategories);
     }
 
-    // We can also check for ticketCategories fallback if any (but now prioritize priceLevels)
     else if (selectedEvent?.ticketCategories) {
       const normalizedCategories = selectedEvent.ticketCategories.map(cat => ({
         ...cat,
@@ -134,12 +152,33 @@ const LayoutBuilder = ({ selectedEvent }) => {
     }
 
     if (selectedEvent?.layoutData) {
-      // Reset history when a new event is loaded
       historyStack.current = [];
       futureStack.current = [];
       setCanUndo(false);
       setCanRedo(false);
       setPlacedItems(selectedEvent.layoutData.items || []);
+
+      const cw = selectedEvent.layoutData.canvasWidth || 1400;
+      const ch = selectedEvent.layoutData.canvasHeight || 900;
+      setCanvasWidth(cw); setCanvasWInput(cw);
+      setCanvasHeight(ch); setCanvasHInput(ch);
+
+      const savedBg = selectedEvent.layoutData.backgroundImage || null;
+      setBackgroundImage(savedBg);
+      setBgOpacity(selectedEvent.layoutData.bgOpacity ?? 0.4);
+      if (savedBg) {
+        const img = new window.Image();
+        img.src = savedBg;
+        img.onload = () => {
+          setBgKonvaImage(img);
+          setBgWidth(selectedEvent.layoutData.bgWidth || cw);
+          setBgHeight(selectedEvent.layoutData.bgHeight || ch);
+        };
+      } else {
+        setBgKonvaImage(null);
+        setBgWidth(null);
+        setBgHeight(null);
+      }
     }
   }, [selectedEvent]);
 
@@ -148,7 +187,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
     try {
       if (editingCategory) {
-        // Update existing price level
         const updatedPriceLevel = {
           priceName: categoryData.name,
           facePrice: categoryData.price,
@@ -168,7 +206,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
         if (result) {
           const updatedEvent = result.event || result;
-          // Refresh local state based on updated event from backend
           const normalizedCategories = updatedEvent.priceLevels.map(pl => ({
             id: pl._id,
             name: pl.priceName,
@@ -183,7 +220,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
           showSuccessAlert("Updated", "Category has been updated successfully.");
         }
       } else {
-        // Add new price level
         const newPriceLevel = {
           priceName: categoryData.name,
           facePrice: categoryData.price,
@@ -202,7 +238,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
         if (result) {
           const updatedEvent = result.event || result;
-          // Refresh categories
           const normalizedCategories = updatedEvent.priceLevels.map(pl => ({
             id: pl._id,
             name: pl.priceName,
@@ -214,10 +249,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
           }));
           setCategories(normalizedCategories);
 
-          // Find the newly created category from the backend (match by name)
           const matchedBack = updatedEvent.priceLevels.find(pl => pl.priceName === categoryData.name);
           if (matchedBack) {
-            // Update any items that were placed with the temporary ID to the new backend ID
             setPlacedItems(prev => prev.map(item =>
               item.categoryId === categoryData.id ? { ...item, categoryId: matchedBack._id } : item
             ));
@@ -243,7 +276,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
       "Deleting this category will also remove all placed shapes associated with it from the map. This cannot be undone."
     );
 
-    // Check if any placed items in this category are sold
     const hasSoldItems = placedItems.some(i => i.categoryId === id && (i.status === 'sold' || i.status === 'reserved'));
     if (hasSoldItems) {
       showErrorAlert("Cannot Delete", "This category contains sold booths and cannot be deleted.");
@@ -353,9 +385,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const handleSaveLayout = async () => {
     if (!user) return showErrorAlert("Unauthorized", "You must be logged in.");
 
-    // Map categories to priceLevels
     const priceLevels = categories.map(c => ({
-      _id: (c.id && c.id.length === 24) ? c.id : undefined, // Keep existing ID if it looks like a MongoId
+      _id: (c.id && c.id.length === 24) ? c.id : undefined,
       priceName: c.name,
       facePrice: c.price,
       quantityAvailable: c.quantity,
@@ -365,7 +396,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
       isActive: true
     }));
 
-    // Map placedItems to seatMap seats and booths
     const seats = placedItems
       .filter(i => i.type === 'seat' || (!i.isBooth && !i.isElement && !i.isBackground && i.type !== 'booth'))
       .map(item => {
@@ -409,7 +439,15 @@ const LayoutBuilder = ({ selectedEvent }) => {
       },
       booths: boothsData,
       ticketCategories: categories,
-      layoutData: { items: placedItems }
+      layoutData: {
+        items: placedItems,
+        canvasWidth,
+        canvasHeight,
+        backgroundImage: backgroundImage || null,
+        bgOpacity,
+        bgWidth: bgWidth || null,
+        bgHeight: bgHeight || null,
+      }
     };
 
     if (!user || !user.token) {
@@ -501,11 +539,68 @@ const LayoutBuilder = ({ selectedEvent }) => {
     return lines;
   };
 
+  const computeFitDimensions = (img, cw = canvasWidth, ch = canvasHeight) => {
+    const imgAspect = img.naturalWidth / img.naturalHeight;
+    const canvasAspect = cw / ch;
+    if (imgAspect > canvasAspect) {
+      return { w: cw, h: cw / imgAspect };
+    } else {
+      return { w: ch * imgAspect, h: ch };
+    }
+  };
+
+  const handleBgImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      setBackgroundImage(dataUrl);
+      const img = new window.Image();
+      img.src = dataUrl;
+      img.onload = () => {
+        setBgKonvaImage(img);
+        const { w, h } = computeFitDimensions(img);
+        setBgWidth(w);
+        setBgHeight(h);
+      };
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleFitToStage = () => {
+    if (!bgKonvaImage) return;
+    const { w, h } = computeFitDimensions(bgKonvaImage);
+    setBgWidth(w);
+    setBgHeight(h);
+  };
+
+  const handleRemoveBgImage = () => {
+    setBackgroundImage(null);
+    setBgKonvaImage(null);
+    setBgWidth(null);
+    setBgHeight(null);
+  };
+
+  const applyCanvasSize = () => {
+    const w = Math.max(200, Math.min(5000, Number(canvasWInput) || 1400));
+    const h = Math.max(200, Math.min(5000, Number(canvasHInput) || 900));
+    setCanvasWidth(w);
+    setCanvasHeight(h);
+    setCanvasWInput(w);
+    setCanvasHInput(h);
+    if (bgKonvaImage) {
+      const { w: bw, h: bh } = computeFitDimensions(bgKonvaImage, w, h);
+      setBgWidth(bw);
+      setBgHeight(bh);
+    }
+  };
+
   return (
     <div className="layout-builder-container unified-view">
       <div className="builder-main">
         <div className="builder-sidebar">
-          {/* Category Configuration & Palette Combined */}
           <div className="sidebar-card categories-card">
             <div className="sidebar-header">
               <h4 className="bt-section-title-layout">Ticket Categories</h4>
@@ -680,7 +775,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
           <div className="canvas-toolbar">
             <h4 className="canvas-title">{selectedEvent?.venue?.name || "Venue Map"}</h4>
             <div className="toolbar-actions">
-              {/* Undo / Redo */}
               <button
                 className="bt-btn"
                 onClick={handleUndo}
@@ -698,6 +792,22 @@ const LayoutBuilder = ({ selectedEvent }) => {
                 <Icon icon="mdi:redo" /> <span>Redo</span>
               </button>
 
+              <input
+                ref={bgFileInputRef}
+                type="file" accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleBgImageUpload}
+              />
+
+              <button
+                className={`bt-btn${backgroundImage ? ' bg-loaded' : ''}`}
+                onClick={() => backgroundImage ? setBgModalOpen(true) : bgFileInputRef.current?.click()}
+                title={backgroundImage ? 'Floor plan loaded — click to edit' : 'Upload floor plan image'}
+              >
+                <Icon icon={backgroundImage ? 'mdi:image-check-outline' : 'mdi:image-plus-outline'} />
+                <span>Floor Plan</span>
+              </button>
+
               <button
                 className={`bt-btn ${snapToGrid ? 'active' : ''}`}
                 onClick={() => setSnapToGrid(!snapToGrid)}
@@ -707,7 +817,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
               </button>
 
               <div className="zoom-controls">
-                <button
+                {/* <button
                   className={`bt-btn sync-btn-small ${isSyncing ? 'spinning' : ''}`}
                   onClick={handleSyncBooths}
                   disabled={isSyncing}
@@ -716,12 +826,35 @@ const LayoutBuilder = ({ selectedEvent }) => {
                 >
                   <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
                   <span style={{ fontSize: '11px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
-                </button>
-                <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} title="Zoom Out">
+                </button> */}
+                <button className="bt-btn" onClick={() => {
+                  setZoom(z => {
+                    const next = Math.max(z - 0.1, fitScale * 0.3);
+                    return next;
+                  });
+                }} title="Zoom Out">
                   <Icon icon="mdi:minus" />
                 </button>
-                <span className="zoom-value">{Math.round(zoom * 100)}%</span>
-                <button className="bt-btn" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} title="Zoom In">
+                <span
+                  className="zoom-value"
+                  title="Click to reset to fit"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    setZoom(fitScale);
+                    if (containerRef.current) {
+                      const { clientWidth, clientHeight } = containerRef.current;
+                      setStagePos({
+                        x: (clientWidth - canvasWidth * fitScale) / 2,
+                        y: (clientHeight - canvasHeight * fitScale) / 2,
+                      });
+                    }
+                  }}
+                >
+                  {Math.round((zoom / fitScale) * 100)}%
+                </span>
+                <button className="bt-btn" onClick={() => {
+                  setZoom(z => Math.min(z + 0.1, fitScale * 4));
+                }} title="Zoom In">
                   <Icon icon="mdi:plus" />
                 </button>
               </div>
@@ -748,12 +881,17 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
           <div className="konva-container" ref={containerRef}>
             <Stage
-              width={dimensions.width}
-              height={dimensions.height}
+              width={containerSize.w}
+              height={containerSize.h}
               ref={stageRef}
               scaleX={zoom}
               scaleY={zoom}
+              x={stagePos.x}
+              y={stagePos.y}
               draggable
+              onDragEnd={(e) => {
+                setStagePos({ x: e.target.x(), y: e.target.y() });
+              }}
               onClick={(e) => {
                 if (e.target === e.target.getStage()) {
                   setSelectedId(null);
@@ -764,7 +902,41 @@ const LayoutBuilder = ({ selectedEvent }) => {
                   setSelectedId(null);
                 }
               }}
+              onWheel={(e) => {
+                e.evt.preventDefault();
+                const stage = stageRef.current;
+                const oldScale = zoom;
+                const pointer = stage.getPointerPosition();
+                const minScale = fitScale * 0.3;
+                const maxScale = fitScale * 4;
+                const direction = e.evt.deltaY > 0 ? -1 : 1;
+                const newScale = Math.min(maxScale, Math.max(minScale, oldScale + direction * 0.05));
+                const mousePointTo = {
+                  x: (pointer.x - stagePos.x) / oldScale,
+                  y: (pointer.y - stagePos.y) / oldScale,
+                };
+                const newPos = {
+                  x: pointer.x - mousePointTo.x * newScale,
+                  y: pointer.y - mousePointTo.y * newScale,
+                };
+                setZoom(newScale);
+                setStagePos(newPos);
+              }}
             >
+              {bgKonvaImage && bgWidth && bgHeight && (
+                <Layer>
+                  <KonvaImage
+                    image={bgKonvaImage}
+                    x={0}
+                    y={0}
+                    width={bgWidth}
+                    height={bgHeight}
+                    opacity={bgOpacity}
+                    onClick={() => setBgModalOpen(true)}
+                    onTap={() => setBgModalOpen(true)}
+                  />
+                </Layer>
+              )}
               <Layer>
                 {(() => {
                   const lines = [];
@@ -818,19 +990,24 @@ const LayoutBuilder = ({ selectedEvent }) => {
                       rotation={item.rotation}
                       draggable
                       dragBoundFunc={(pos) => {
-                        const halfWidth = 20 * zoom;
-                        const stageWidth = dimensions.width;
-                        const stageHeight = dimensions.height;
+                        // pos is in stage (screen) coords; convert to canvas coords
+                        const canvasX = (pos.x - stagePos.x) / zoom;
+                        const canvasY = (pos.y - stagePos.y) / zoom;
 
-                        let newX = Math.max(halfWidth, Math.min(pos.x, stageWidth - halfWidth));
-                        let newY = Math.max(halfWidth, Math.min(pos.y, stageHeight - halfWidth));
+                        const pad = 20;
+                        let clampedX = Math.max(pad, Math.min(canvasX, canvasWidth - pad));
+                        let clampedY = Math.max(pad, Math.min(canvasY, canvasHeight - pad));
 
                         if (snapToGrid) {
-                          newX = Math.round(newX / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom);
-                          newY = Math.round(newY / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom);
+                          clampedX = Math.round(clampedX / GRID_SIZE) * GRID_SIZE;
+                          clampedY = Math.round(clampedY / GRID_SIZE) * GRID_SIZE;
                         }
 
-                        return { x: newX, y: newY };
+                        // Convert back to stage coords
+                        return {
+                          x: clampedX * zoom + stagePos.x,
+                          y: clampedY * zoom + stagePos.y,
+                        };
                       }}
                       onDragEnd={(e) => handleDragEnd(item.id, e.target.x(), e.target.y())}
                       onTransformEnd={handleTransformEnd}
@@ -906,6 +1083,52 @@ const LayoutBuilder = ({ selectedEvent }) => {
         onSave={handleSaveCategory}
         editingCategory={editingCategory}
       />
+
+      {bgModalOpen && (
+        <div className="bg-modal-overlay" onClick={() => setBgModalOpen(false)}>
+          <div className="bg-modal" onClick={(e) => e.stopPropagation()}>
+
+            <div className="bg-modal-header">
+              <h4><Icon icon="mdi:image-edit-outline" /> Floor Plan Settings</h4>
+              <button className="bg-modal-close" onClick={() => setBgModalOpen(false)}>
+                <Icon icon="mdi:close" />
+              </button>
+            </div>
+
+            <div className="bg-modal-body">
+              <img src={backgroundImage} alt="Floor plan" className="bg-modal-thumb" />
+
+              <button className="bg-fit-btn bg-fit-btn--full" onClick={handleFitToStage}>
+                <Icon icon="mdi:fit-to-screen-outline" />
+                <span>Fit to Canvas</span>
+              </button>
+
+              <label className="bg-opacity-label">
+                <Icon icon="mdi:opacity" />
+                <span>Opacity</span>
+                <span className="bg-opacity-value">{Math.round(bgOpacity * 100)}%</span>
+              </label>
+
+              <input
+                type="range" min="0.05" max="1" step="0.05"
+                value={bgOpacity}
+                onChange={(e) => setBgOpacity(parseFloat(e.target.value))}
+                className="bg-opacity-slider"
+              />
+
+              <div className="bg-modal-actions">
+                <button className="bt-btn" onClick={() => bgFileInputRef.current?.click()}>
+                  <Icon icon="mdi:image-edit-outline" /><span>Replace</span>
+                </button>
+                <button className="bt-btn clear" onClick={() => { handleRemoveBgImage(); setBgModalOpen(false); }}>
+                  <Icon icon="mdi:image-remove-outline" /><span>Remove</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };

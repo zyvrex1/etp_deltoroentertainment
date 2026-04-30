@@ -300,10 +300,13 @@
 /* Canvas Area */
 .canvas-area {
   flex: 1;
+  min-width: 0;
+  /* Prevents flex child from overflowing into sidebar */
   display: flex;
   flex-direction: column;
   background: var(--color-bg-light);
   position: relative;
+  overflow: hidden;
 }
 
 .canvas-toolbar {
@@ -347,10 +350,19 @@
 
 .unified-view .konva-container {
   flex: 1;
-  background-color: var(--color-bg-light);
-  background-image:
-    radial-gradient(var(--color-black-quaternary) 0.5px, transparent 0.5px);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* Panning handled by Konva Stage dragging */
+  position: relative;
+  background-color: #f1f5f9;
+  background-image: radial-gradient(var(--color-black-quaternary) 0.5px, transparent 0.5px);
   background-size: 20px 20px;
+  cursor: grab;
+}
+
+.unified-view .konva-container:active {
+  cursor: grabbing;
 }
 
 .sidebar-empty-state {
@@ -722,6 +734,7 @@
   .mobile-only-icon {
     display: inline-block;
   }
+
   .summary-list:not(.expanded) .mobile-collapsible {
     display: none !important;
   }
@@ -777,4 +790,373 @@
 .sync-btn-small.spinning {
   color: var(--color-red-primary) !important;
   border-color: var(--color-red-primary) !important;
+}
+
+/* ── Background / Floor Plan Upload Card ── */
+.bg-image-card {
+  border-bottom: 1px solid var(--color-black-quaternary);
+  flex-shrink: 0;
+}
+
+.bg-image-card .sidebar-header {
+  margin-bottom: 12px;
+}
+
+.bg-image-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Upload drop-zone button (no image yet) */
+.bg-upload-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 20px 12px;
+  border: 2px dashed var(--color-black-quaternary);
+  border-radius: 12px;
+  background: var(--color-bg-light);
+  color: var(--color-black-tertiary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bg-upload-btn:hover {
+  border-color: var(--color-red-primary);
+  color: var(--color-red-primary);
+  background: #fff5f5;
+}
+
+.bg-upload-btn small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-black-tertiary);
+}
+
+.bg-upload-icon {
+  font-size: 28px;
+  margin-bottom: 2px;
+}
+
+/* Preview wrap when image is loaded */
+.bg-image-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bg-image-thumb {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--color-black-quaternary);
+  background: #f1f5f9;
+}
+
+.bg-image-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bg-opacity-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-black-secondary);
+}
+
+.bg-opacity-value {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--color-black-primary);
+}
+
+.bg-opacity-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-black-quaternary);
+  outline: none;
+  cursor: pointer;
+}
+
+.bg-opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-red-primary);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.bg-opacity-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.bg-image-action-row {
+  display: flex;
+  gap: 8px;
+}
+
+.bg-image-action-row .bt-btn {
+  flex: 1;
+  height: 34px;
+  font-size: 12px;
+  padding: 0 10px;
+  border-radius: 8px;
+}
+
+/* "Fit to Stage" primary action button */
+.bg-fit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid var(--color-red-primary);
+  border-radius: 10px;
+  background: #fff5f5;
+  color: var(--color-red-primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bg-fit-btn:hover {
+  background: var(--color-red-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+/* Canvas dimension hint */
+.bg-dim-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-black-tertiary);
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* ── Canvas Size Card ── */
+.canvas-size-card {
+  border-bottom: 1px solid var(--color-black-quaternary);
+  flex-shrink: 0;
+}
+
+.canvas-size-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.canvas-size-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.canvas-size-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.canvas-size-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-black-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.canvas-size-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--color-black-quaternary);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-black-primary);
+  background: var(--color-bg-light);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.canvas-size-input:focus {
+  border-color: var(--color-red-primary);
+  background: white;
+}
+
+.canvas-size-apply-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--color-red-primary);
+  border-radius: 8px;
+  background: #fff5f5;
+  color: var(--color-red-primary);
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+
+.canvas-size-apply-btn:hover {
+  background: var(--color-red-primary);
+  color: white;
+}
+
+.canvas-size-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-black-tertiary);
+  font-weight: 500;
+}
+
+/* ── Floor Plan toolbar button: "loaded" indicator ── */
+.bt-btn.bg-loaded {
+  border-color: #16a34a;
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+.bt-btn.bg-loaded:hover {
+  background: #16a34a;
+  color: white;
+  border-color: #16a34a;
+}
+
+/* ── BG Settings Modal ── */
+.bg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.bg-modal {
+  background: white;
+  border-radius: 16px;
+  width: 340px;
+  max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.bg-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-black-quaternary);
+  background: var(--color-bg-light);
+}
+
+.bg-modal-header h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-black-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bg-modal-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-black-tertiary);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.bg-modal-close:hover {
+  background: var(--color-bg-light);
+  color: var(--color-black-primary);
+}
+
+.bg-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bg-modal-thumb {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--color-black-quaternary);
+}
+
+.bg-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.bg-modal-actions .bt-btn {
+  flex: 1;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+/* Full-width Fit to Canvas button inside the modal */
+.bg-fit-btn--full {
+  width: 100%;
+  justify-content: center;
 }
