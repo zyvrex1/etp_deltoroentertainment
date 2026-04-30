@@ -100,6 +100,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
   const [localItems, setLocalItems] = useState([]);
   const [priceLevels, setPriceLevels] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -292,29 +293,32 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                   const category = priceLevels.find(pl => pl._id === item.categoryId);
                   return (
                     <>
-                      <div className="inspector-header-main">
-                        <span className="shape-id">{item.label || item.code}</span>
+                      <div className="inspector-header-main" onClick={() => setIsInspectorExpanded(!isInspectorExpanded)} style={{ cursor: 'pointer' }}>
+                        <span className="shape-id">
+                          {item.label || item.code}
+                          <Icon icon={isInspectorExpanded ? "mdi:chevron-up" : "mdi:chevron-down"} className="mobile-only-icon" style={{ marginLeft: '4px', verticalAlign: 'middle', fontSize: '20px' }} />
+                        </span>
                         <span className={`value-badge type-${item.type}`}>{item.type?.toUpperCase()}</span>
                       </div>
-                      <div className="summary-list">
+                      <div className={`summary-list ${isInspectorExpanded ? 'expanded' : ''}`}>
                         <div className="summary-item">
                           <span className="label">Status</span>
                           <span className={`value status-${item.status}`}>{item.status?.toUpperCase()}</span>
                         </div>
                         {item.reservedBy && (
                           <>
-                            <div className="summary-item">
+                            <div className="summary-item mobile-collapsible">
                               <span className="label">Buyer</span>
                               <span className="value-bold" style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
                             </div>
                             {item.reservedByEmail && (
-                              <div className="summary-item">
+                              <div className="summary-item mobile-collapsible">
                                 <span className="label">Email</span>
                                 <span className="value" style={{ fontSize: '11px' }}>{item.reservedByEmail}</span>
                               </div>
                             )}
                             {item.reservedByPO && (
-                              <div className="summary-item">
+                              <div className="summary-item mobile-collapsible">
                                 <span className="label">PO Number</span>
                                 <span className="value">{item.reservedByPO}</span>
                               </div>
@@ -323,11 +327,11 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                         )}
                         {category && (
                           <>
-                            <div className="summary-item">
+                            <div className="summary-item mobile-collapsible">
                               <span className="label">Category</span>
                               <span className="value">{category.priceName}</span>
                             </div>
-                            <div className="summary-item">
+                            <div className="summary-item mobile-collapsible">
                               <span className="label">Price</span>
                               <span className="value-bold">${category.facePrice?.toFixed(2)}</span>
                             </div>

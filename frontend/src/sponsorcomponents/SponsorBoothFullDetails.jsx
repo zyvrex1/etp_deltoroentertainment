@@ -665,14 +665,16 @@ export default function SponsorBoothFullDetails() {
                         <div className="payment-actions">
                             <button className="outlined-button full-width-btn" onClick={handleEventDetails}>View Event Details</button>
                             <button className="outlined-button full-width-btn" onClick={exportInvoiceToPDF}><Icon icon="mdi:download-outline" width="18" /> Download Invoice</button>
-                            <button className="primary-button cancel-reservation-btn" onClick={() => {
-                                navigate('/sponsor/support', {
-                                    state: {
-                                        tab: 'Submit a Concern',
-                                        prefill: { subject: 'Refund Booth', category: 'Billing & Payment', priority: 'High', event: reservation.event?.title }
-                                    }
-                                });
-                            }}>Request Refund</button>
+                            {(reservation.user?._id === user?._id || reservation.user === user?._id) && (
+                                <button className="primary-button cancel-reservation-btn" onClick={() => {
+                                    navigate('/sponsor/support', {
+                                        state: {
+                                            tab: 'Submit a Concern',
+                                            prefill: { subject: 'Refund Booth', category: 'Billing & Payment', priority: 'High', event: reservation.event?.title }
+                                        }
+                                    });
+                                }}>Request Refund</button>
+                            )}
                         </div>
                     </div>
                 </div>

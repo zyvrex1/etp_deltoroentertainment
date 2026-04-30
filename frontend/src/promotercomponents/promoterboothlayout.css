@@ -321,12 +321,39 @@
     }
     
     .unified-view .builder-main {
-        flex-direction: column;
+        flex-direction: column-reverse;
     }
     
     .layout-builder-container.unified-view.promoter-view {
         height: auto;
         overflow: visible;
     }
+
+    .inspector-card {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: #ffffff !important;
+        border-top-left-radius: 24px;
+        border-top-right-radius: 24px;
+        box-shadow: 0 -8px 24px rgba(0,0,0,0.15);
+        max-height: 45vh;
+        overflow-y: auto;
+        animation: slideUpInFixed 0.3s ease-out;
+        border-bottom: none !important;
+        margin: 0;
+        padding: 20px;
+    }
+
+    .inspector-card .inspector-body {
+        padding-bottom: 20px;
+    }
+}
+
+@keyframes slideUpInFixed {
+    from { opacity: 0; transform: translateY(100%); }
+    to { opacity: 1; transform: translateY(0); }
 }
 

@@ -718,6 +718,14 @@
     display: none;
   }
 
+  /* Shape Inspector Expandable Items */
+  .mobile-only-icon {
+    display: inline-block;
+  }
+  .summary-list:not(.expanded) .mobile-collapsible {
+    display: none !important;
+  }
+
   /* Summary refinements for mobile */
   .summary-card {
     padding: 16px;
@@ -732,6 +740,12 @@
   .summary-item.total {
     margin-top: 4px;
     padding-top: 4px;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-only-icon {
+    display: none !important;
   }
 }
 

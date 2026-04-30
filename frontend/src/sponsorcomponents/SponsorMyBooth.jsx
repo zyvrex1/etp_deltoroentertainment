@@ -225,12 +225,14 @@ export default function SponsorMyBooth() {
                                         <NavLink to={`/sponsor/sponsor-booth-details/${res._id}`} className="view-details-btn">
                                             <Icon icon="mdi:eye-outline" /> View Full Details
                                         </NavLink>
-                                        <button 
-                                            className="request-refund-btn"
-                                            onClick={() => handleOpenRefund(res)}
-                                        >
-                                            Request Refund
-                                        </button>
+                                        {(res.user?._id === user?._id || res.user === user?._id) && (
+                                            <button 
+                                                className="request-refund-btn"
+                                                onClick={() => handleOpenRefund(res)}
+                                            >
+                                                Request Refund
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             );

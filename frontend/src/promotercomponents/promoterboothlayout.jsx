@@ -34,6 +34,7 @@ const BackgroundImage = ({ item, onClick }) => {
       scaleY={item.scaleY || 1}
       rotation={item.rotation || 0}
       onClick={onClick}
+      onTap={onClick}
       opacity={0.6}
     />
   );
@@ -54,6 +55,7 @@ const BackgroundShape = ({ item, onClick }) => {
       scaleY={item.scaleY || 1}
       rotation={item.rotation || 0}
       onClick={onClick}
+      onTap={onClick}
     >
       <Rect
         width={w}
@@ -333,6 +335,10 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                                 const clickedOnEmpty = e.target === e.target.getStage();
                                 if (clickedOnEmpty) setSelectedId(null);
                             }}
+                            onTouchStart={(e) => {
+                                const clickedOnEmpty = e.target === e.target.getStage();
+                                if (clickedOnEmpty) setSelectedId(null);
+                            }}
                         >
                             <Layer>
                                 {renderGrid()}
@@ -352,6 +358,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                                                 scaleY={item.scaleY || 1}
                                                 rotation={item.rotation || 0}
                                                 onClick={() => setSelectedId(item.id)}
+                                                onTap={() => setSelectedId(item.id)}
                                             >
                                                 {item.type === "table" ? (
                                                     <>

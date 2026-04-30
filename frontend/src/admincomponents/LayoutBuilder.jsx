@@ -12,6 +12,7 @@ import { showDeleteConfirmAlert, showSuccessAlert, showErrorAlert } from "../uti
 const LayoutBuilder = ({ selectedEvent }) => {
   const { user } = useAuthContext();
   const { dispatch } = useEventsContext();
+  const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
   const [categories, setCategories] = useState([]);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -594,46 +595,49 @@ const LayoutBuilder = ({ selectedEvent }) => {
                   if (!item) return null;
                   return (
                     <>
-                      <div className="inspector-header-main">
-                        <span className="shape-id">{item.label}</span>
+                      <div className="inspector-header-main" onClick={() => setIsInspectorExpanded(!isInspectorExpanded)} style={{ cursor: 'pointer' }}>
+                        <span className="shape-id">
+                          {item.label}
+                          <Icon icon={isInspectorExpanded ? "mdi:chevron-up" : "mdi:chevron-down"} className="mobile-only-icon" style={{ marginLeft: '4px', verticalAlign: 'middle', fontSize: '20px' }} />
+                        </span>
                         <span className={`value-badge type-${item.type}`}>{cat?.type.toLowerCase().split(' ')[0]}</span>
                       </div>
 
-                      <div className="summary-list">
+                      <div className={`summary-list ${isInspectorExpanded ? 'expanded' : ''}`}>
                         <div className="summary-item">
                           <span className="label">Status</span>
                           <span className={`value status-${item.status || 'available'}`}>{item.status?.toUpperCase() || 'AVAILABLE'}</span>
                         </div>
                         {item.reservedBy && (
                           <>
-                            <div className="summary-item">
+                            <div className="summary-item mobile-collapsible">
                               <span className="label">Buyer</span>
                               <span className="value-semi" style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
                             </div>
                             {item.reservedByEmail && (
-                              <div className="summary-item">
+                              <div className="summary-item mobile-collapsible">
                                 <span className="label">Email</span>
                                 <span className="value" style={{ fontSize: '11px' }}>{item.reservedByEmail}</span>
                               </div>
                             )}
                             {item.reservedByPO && (
-                              <div className="summary-item">
+                              <div className="summary-item mobile-collapsible">
                                 <span className="label">PO Number</span>
                                 <span className="value">{item.reservedByPO}</span>
                               </div>
                             )}
                           </>
                         )}
-                        <div className="summary-item">
+                        <div className="summary-item mobile-collapsible">
                           <span className="label">Category</span>
                           <span className="value">{cat?.name}</span>
                         </div>
-                        <div className="summary-item">
+                        <div className="summary-item mobile-collapsible">
                           <span className="label">Price</span>
                           <span className="value-bold">${cat?.price.toFixed(2)}</span>
                         </div>
                         {cat?.boothSize && (
-                          <div className="summary-item">
+                          <div className="summary-item mobile-collapsible">
                             <span className="label">Size</span>
                             <span className="value">{cat.boothSize}</span>
                           </div>

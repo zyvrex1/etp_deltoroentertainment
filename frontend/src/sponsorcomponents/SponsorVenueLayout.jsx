@@ -32,6 +32,7 @@ const BackgroundImage = ({ item, onClick }) => {
             scaleY={item.scaleY || 1}
             rotation={item.rotation || 0}
             onClick={onClick}
+            onTap={onClick}
             opacity={isBg ? 0.6 : 1}
         />
     );
@@ -52,6 +53,7 @@ const BackgroundShape = ({ item, onClick }) => {
             scaleY={item.scaleY || 1}
             rotation={item.rotation || 0}
             onClick={onClick}
+            onTap={onClick}
         >
             <Rect
                 width={w}
@@ -292,6 +294,11 @@ const SponsorVenueLayout = () => {
                                                     rotation={item.rotation || 0}
                                                     onClick={() => {
                                                         // Only allow booths to be selected
+                                                        if (item.status === 'available' && (item.type === 'booth' || item.isBooth)) {
+                                                            setSelectedId(item.id);
+                                                        }
+                                                    }}
+                                                    onTap={() => {
                                                         if (item.status === 'available' && (item.type === 'booth' || item.isBooth)) {
                                                             setSelectedId(item.id);
                                                         }
