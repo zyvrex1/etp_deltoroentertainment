@@ -3,6 +3,8 @@ import { Icon } from "@iconify/react";
 import { useSignup } from "../hooks/useSignup";
 import policyService from "../services/policyService";
 import AuthPolicyModal from "./AuthPolicyModal";
+import { PhoneInput } from "react-international-phone";
+import "react-international-phone/style.css";
 
 import { showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 
@@ -195,17 +197,37 @@ const Signup = ({ role, onBack, onClose }) => {
         {/* Phone */}
         <div>
           <label className="auth-form-label">Phone Number</label>
-          <div className="auth-input-wrapper">
-            <Icon icon="mdi:phone-outline" className="auth-input-icon" />
-            <input
-              type="text"
-              name="phone"
-              placeholder="+1 (555) 000-0000"
-              value={form.phone}
-              onChange={handleChange}
-              className="auth-input"
-            />
-          </div>
+          <PhoneInput
+            defaultCountry="ph"
+            value={form.phone}
+            onChange={(phone) => setForm((prev) => ({ ...prev, phone }))}
+            inputClassName="auth-input"
+            className="phone-input-container"
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              backgroundColor: "rgba(0, 0, 0, 0.3)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "10px",
+              padding: "0 0 0 12px",
+              transition: "all 0.3s ease",
+            }}
+            inputStyle={{
+              width: "100%",
+              background: "transparent",
+              border: "none",
+              color: "white",
+              padding: "14px 12px",
+              fontSize: "15px",
+              outline: "none",
+            }}
+            buttonStyle={{
+              background: "transparent",
+              border: "none",
+              padding: "0 8px",
+            }}
+          />
         </div>
 
         {/* Sponsor-only fields */}

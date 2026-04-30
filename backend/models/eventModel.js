@@ -201,7 +201,7 @@ const eventSchema = new Schema(
 
     booths: { type: [boothSchema], default: [] },
 
-    ticketsSold: { type: Number, default: 0 },
+
 
     seatRevenue: { type: Number, default: 0 },
     boothRevenue: { type: Number, default: 0 },
@@ -222,7 +222,11 @@ const eventSchema = new Schema(
     rejectionReason: { type: String, default: "" },
     cancellationReason: { type: String, default: "" },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  }
 );
 
 eventSchema.pre("save", function (next) {
@@ -279,10 +283,10 @@ eventSchema.pre("save", function (next) {
     this.markModified('layoutData');
   }
 
-  // 5. Revenue Calculations
+  // 5. Revenue & Progress Calculations
   let seatRevenue = 0;
   let boothRevenue = 0;
-
+  let ticketsSold = 0;
   const priceMap = {};
   this.priceLevels.forEach((p) => {
     if (p && p._id) {
@@ -290,50 +294,57 @@ eventSchema.pre("save", function (next) {
     }
   });
 
-  // Calculate Seat/Table Revenue
+  // Calculate Seat/Table Revenue & Progress
   if (this.seatMap && this.seatMap.sections) {
     for (const section of this.seatMap.sections) {
       if (!section.seats) continue;
       for (const seat of section.seats) {
-        if ((seat.status === "sold" || seat.status === "partially-sold") &&
+        if (
+          (seat.status === "sold" || seat.status === "partially-sold") &&
           seat.priceLevelId &&
-          seat.priceLevelId !== "none") {
-
+          seat.priceLevelId !== "none"
+        ) {
           const p = priceMap[seat.priceLevelId.toString()];
           if (p) {
-            // Use occupiedSeats for tables/rows, or 1 for individual seats
-            const soldCount = (seat.type === "Table" || seat.seatCount > 1)
-              ? (seat.occupiedSeats || 0)
-              : 1;
+            const soldCount =
+              seat.type === "Table" || seat.seatCount > 1
+                ? seat.occupiedSeats || 0
+                : 1;
 
-            seatRevenue += ((p.facePrice || 0) + (p.serviceCharge || 0)) * soldCount;
+            seatRevenue +=
+              ((p.facePrice || 0) + (p.serviceCharge || 0)) * soldCount;
+            ticketsSold += soldCount;
           }
         }
       }
     }
   }
 
-  // Calculate Booth Revenue & Validate
+  // Calculate Booth Revenue & Progress
   if (this.hasBooths && this.booths) {
     for (const booth of this.booths) {
-      // 1. Validation Check
-      if (booth.priceLevelId &&
+      if (
+        booth.priceLevelId &&
         booth.priceLevelId !== "none" &&
-        !priceIds.includes(booth.priceLevelId.toString())) {
-        return next(new Error(`Booth ${booth.code || booth.label} has invalid priceLevelId`));
+        !priceIds.includes(booth.priceLevelId.toString())
+      ) {
+        return next(
+          new Error(
+            `Booth ${booth.code || booth.label} has invalid priceLevelId`,
+          ),
+        );
       }
-
-      // 2. Revenue Accumulation
-      if (booth.status === "sold" && booth.priceLevelId && booth.priceLevelId !== "none") {
+      if (
+        booth.status === "sold" &&
+        booth.priceLevelId &&
+        booth.priceLevelId !== "none"
+      ) {
         const p = priceMap[booth.priceLevelId.toString()];
         if (p) {
           boothRevenue += (p.facePrice || 0) + (p.serviceCharge || 0);
         }
       }
     }
-  } else if (this.hasBooths && (!this.booths || !this.booths.length)) {
-    // Relaxed for LayoutBuilder saves
-    console.warn("Save note: hasBooths is true but no booths are defined yet.");
   }
 
   this.seatRevenue = seatRevenue;
@@ -345,12 +356,69 @@ eventSchema.pre("save", function (next) {
 
 eventSchema.virtual("totalTickets").get(function () {
   if (this.eventType === "General Admission") {
-    return this.priceLevels.reduce(
+    return (this.priceLevels || []).reduce(
       (sum, p) => sum + (p.quantityAvailable || 0),
-      0
+      0,
     );
+  } else if (this.eventType === "Seating Arrangement" && this.seatMap) {
+    let total = 0;
+    (this.seatMap.sections || []).forEach((s) => {
+      (s.seats || []).forEach((seat) => {
+        total += seat.seatCount || 1;
+      });
+    });
+    return total;
+  } else if (this.eventType === "Exhibition") {
+    if (this.layoutData && Array.isArray(this.layoutData.items)) {
+      const layoutBooths = this.layoutData.items.filter(
+        (i) => (i.type || "").toLowerCase() === "booth",
+      );
+      if (layoutBooths.length > 0) return layoutBooths.length;
+    }
+    return (this.booths || []).length;
   }
-  return null;
+  return 0;
+});
+
+eventSchema.virtual("ticketsSold").get(function () {
+  let soldCount = 0;
+  if (this.eventType === "General Admission") {
+    soldCount = (this.priceLevels || []).reduce(
+      (sum, p) => sum + (p.quantitySold || 0),
+      0,
+    );
+  } else if (this.eventType === "Seating Arrangement" && this.seatMap) {
+    (this.seatMap.sections || []).forEach((s) => {
+      (s.seats || []).forEach((seat) => {
+        if (seat.status === "sold" || seat.status === "partially-sold") {
+          soldCount +=
+            seat.type === "Table" || seat.seatCount > 1
+              ? seat.occupiedSeats || 0
+              : 1;
+        }
+      });
+    });
+  } else if (this.eventType === "Exhibition") {
+    let layoutBoothsSold = 0;
+    let hasLayoutBooths = false;
+    if (this.layoutData && Array.isArray(this.layoutData.items)) {
+      const layoutBooths = this.layoutData.items.filter(
+        (i) => (i.type || "").toLowerCase() === "booth",
+      );
+      if (layoutBooths.length > 0) {
+        layoutBoothsSold = layoutBooths.filter(
+          (i) => i.status === "sold",
+        ).length;
+        hasLayoutBooths = true;
+      }
+    }
+    if (hasLayoutBooths) {
+      soldCount = layoutBoothsSold;
+    } else {
+      soldCount = (this.booths || []).filter((b) => b.status === "sold").length;
+    }
+  }
+  return soldCount;
 });
 
 eventSchema.virtual("totalRevenue").get(function () {

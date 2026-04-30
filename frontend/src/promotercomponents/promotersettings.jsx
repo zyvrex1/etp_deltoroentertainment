@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./promotersettings.css";
 import PromoterPayoutMethodModal from "./PromoterModal/PromoterPayoutMethodModal.jsx";
+import { PhoneInput } from "react-international-phone";
+import "react-international-phone/style.css";
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 import { useAuthContext } from "../hooks/useAuthContext";
 import * as authService from "../services/authService";
@@ -116,11 +118,24 @@ const PromoterSettings = () => {
       try {
         const response = await authService.getProfile(user.token);
         const profileData = response.data;
+
+        // Fix for the phone number display issue
+        let formattedPhone = profileData.phone || "";
+        if (formattedPhone && !formattedPhone.startsWith('+')) {
+          // If it's a local number like 0908..., replace 0 with +63
+          if (formattedPhone.startsWith('0')) {
+            formattedPhone = `+63${formattedPhone.substring(1)}`;
+          } else {
+            // If it's 63908..., just add the +
+            formattedPhone = `+${formattedPhone}`;
+          }
+        }
+
         setProfile({
           firstName: profileData.firstName || "",
           lastName: profileData.lastName || "",
           email: profileData.email || "",
-          phone: profileData.phone || "",
+          phone: formattedPhone,
           companyName: profileData.companyName || "",
           industry: profileData.industry || "",
           avatar: profileData.avatar || "",
@@ -355,11 +370,32 @@ const PromoterSettings = () => {
 
             <div className="ps-form-group">
               <label className="ps-label">Phone Number</label>
-              <input
-                type="text"
-                className="ps-input"
-                value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+              <PhoneInput
+                defaultCountry="ph"
+                value={profile.phone || ""}
+                onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
+                inputClassName="ps-input"
+                className="phone-input-container"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0',
+                  border: '1px solid var(--color-black-tertiary)',
+                  borderRadius: '6px'
+                }}
+                inputStyle={{
+                  border: 'none',
+                  padding: '10px 12px',
+                  outline: 'none',
+                  borderRadius: '0',
+                  flex: 1,
+                }}
+                buttonStyle={{
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  boxShadow: 'none',
+                  color: '#64748b'
+                }}
               />
             </div>
 

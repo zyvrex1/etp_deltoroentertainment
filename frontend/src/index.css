@@ -860,3 +860,32 @@ li {
   }
 }
 
+
+/* React International Phone Overrides */
+.react-international-phone-country-selector-button {
+  background-color: transparent !important;
+  border: none!important;
+}
+
+.react-international-phone-input {
+  background-color: transparent !important;
+  border: none !important;
+  color: inherit !important;
+  width: 100% !important;
+}
+
+/* Context-specific colors */
+.auth-form-container .react-international-phone-input {
+  color: white !important;
+}
+
+.ps-settings-container .react-international-phone-input,
+.ss-settings-container .react-international-phone-input,
+.as-settings-container .react-international-phone-input,
+.general-createuser-modal-container .react-international-phone-input {
+  color: black !important;
+}
+
+.react-international-phone-country-selector-button__button-content {
+  background-color: transparent !important;
+}
