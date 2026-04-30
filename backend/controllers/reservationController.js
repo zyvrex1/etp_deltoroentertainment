@@ -6,7 +6,7 @@ const Event = require('../models/eventModel');
 const getMyReservations = async (req, res) => {
     try {
         const reservations = await Reservation.find({ user: req.user._id })
-            .populate('event', 'title startDate endDate image venue')
+            .populate('event', 'title startDate endDate startTime endTime image venue')
             .sort({ createdAt: -1 });
 
         res.status(200).json(reservations);

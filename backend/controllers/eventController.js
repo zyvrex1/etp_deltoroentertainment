@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 const Event = require("../models/eventModel");
 const Reservation = require("../models/reservationModel");
+const Merchandise = require("../models/merchandiseModel");
 const { toObjectId } = require("../utils/helpers");
 
 const fs = require("fs");
@@ -668,6 +669,21 @@ const deleteEvent = async (req, res) => {
         });
       emitUpdate("newNotification", promoterNotification);
     }
+  }
+
+  // 3. Cascade delete associated records
+  try {
+    // Delete all reservations for this event
+    await Reservation.deleteMany({ event: id });
+    
+    // Delete all merchandise/products for this event
+    // Note: Merchandise eventId is a string in the model
+    await Merchandise.deleteMany({ eventId: id.toString() });
+    
+    console.log(`Cascade delete completed for event: ${id}`);
+  } catch (cascadeError) {
+    console.error("Error during cascade delete:", cascadeError);
+    // We don't return an error response here because the main event is already deleted
   }
 
   emitUpdate("dashboardUpdate");

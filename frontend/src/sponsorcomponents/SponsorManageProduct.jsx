@@ -21,7 +21,7 @@ const initialProducts = [
   { id: 9, image: "/assets/eventbg.jpg", category: "Drinks", name: "Bottled Water", price: "$2.99", description: "Spring water.", stock: 150, stockStatus: "High Stock", active: true },
 ];
 
-const SponsorManageProduct = ({ eventId, boothCode }) => {
+const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
   const { user } = useAuthContext();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -200,12 +200,14 @@ const SponsorManageProduct = ({ eventId, boothCode }) => {
           <h1>Products Inventory</h1>
           <p className="regular-body-text">Manage your booth's food, drinks, and merchandise.</p>
         </div>
-        <button 
-          className="primary-button add-product-btn"
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          <Icon icon="mdi:plus" /> Add Product
-        </button>
+        {!isCompleted && (
+          <button 
+            className="primary-button add-product-btn"
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            <Icon icon="mdi:plus" /> Add Product
+          </button>
+        )}
       </div>
 
       <div className="smp-content-card">
@@ -295,14 +297,16 @@ const SponsorManageProduct = ({ eventId, boothCode }) => {
 
                 <div className="smp-card-actions">
                   
-                  <div className="smp-action-icons">
-                    <button className="smp-icon-btn" onClick={() => openEditModal(product)}>
-                      <Icon icon="mdi:square-edit-outline" />
-                    </button>
-                    <button className="smp-icon-btn" onClick={() => handleDeleteProduct(product._id)}>
-                      <Icon icon="mdi:trash-can-outline" />
-                    </button>
-                  </div>
+                  {!isCompleted && (
+                    <div className="smp-action-icons">
+                      <button className="smp-icon-btn" onClick={() => openEditModal(product)}>
+                        <Icon icon="mdi:square-edit-outline" />
+                      </button>
+                      <button className="smp-icon-btn" onClick={() => handleDeleteProduct(product._id)}>
+                        <Icon icon="mdi:trash-can-outline" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

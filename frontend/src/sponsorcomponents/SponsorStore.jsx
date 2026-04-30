@@ -45,44 +45,57 @@ const SponsorStore = () => {
         setMerchandise(merchData);
         
         const now = new Date();
-        const today = new Date(now.setHours(0,0,0,0));
 
-        const formattedEvents = reservationsData.map(res => {
-          const event = res.event || {};
-          
-          let status = "Upcoming";
-          const startDate = new Date(event.startDate || new Date());
-          const endDate = new Date(event.endDate || event.startDate || new Date());
-          
-          const sDate = new Date(startDate.setHours(0,0,0,0));
-          const eDate = new Date(endDate.setHours(0,0,0,0));
+        const formattedEvents = reservationsData
+          .filter(res => res.event && res.event.title) // Ensure event exists and has a title
+          .map(res => {
+            const event = res.event || {};
+            
+            let status = "Upcoming";
+            const startDate = event.startDate ? new Date(event.startDate) : new Date();
+            const endDate = (event.endDate || event.startDate) ? new Date(event.endDate || event.startDate) : new Date();
+            
+            // Incorporate startTime and endTime if available (format: HH:mm)
+            if (event.startTime) {
+              const [sHours, sMinutes] = event.startTime.split(':').map(Number);
+              startDate.setHours(sHours, sMinutes, 0, 0);
+            }
+            
+            if (event.endTime) {
+              const [eHours, eMinutes] = event.endTime.split(':').map(Number);
+              endDate.setHours(eHours, eMinutes, 0, 0);
+            }
 
-          if (today > eDate) status = "Completed";
-          else if (today >= sDate && today <= eDate) status = "Live";
+            // Use adjusted end time for comparison
+            if (now > endDate) {
+              status = "Completed";
+            } else if (now >= startDate && now <= endDate) {
+              status = "Live";
+            }
 
-          const count = merchData.filter(m => (m.eventId?._id === event._id || m.eventId === event._id) && m.boothCode === res.boothCode).length;
-          
-          const formattedDate = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const count = merchData.filter(m => (m.eventId?._id === event._id || m.eventId === event._id) && m.boothCode === res.boothCode).length;
+            
+            const formattedDate = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-          let imageUrl = event.image || '/assets/eventbg.jpg';
-          if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/assets/')) {
-            imageUrl = `${BACKEND_URL}/uploads/${imageUrl.replace('/uploads/', '')}`;
-          }
+            let imageUrl = event.image || '/assets/eventbg.jpg';
+            if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/assets/')) {
+              imageUrl = `${BACKEND_URL}/uploads/${imageUrl.replace('/uploads/', '')}`;
+            }
 
-          return {
-            id: res._id,
-            _id: event._id,
-            boothCodeRaw: res.boothCode,
-            boothNumber: `Booth ${res.boothCode || ''}`,
-            title: event.title || 'Unknown Event',
-            date: formattedDate,
-            location: event.venue?.name || 'TBA',
-            products: count,
-            activeOrders: 0,
-            status: status,
-            image: imageUrl
-          };
-        });
+            return {
+              id: res._id,
+              _id: event._id,
+              boothCodeRaw: res.boothCode,
+              boothNumber: `Booth ${res.boothCode || ''}`,
+              title: event.title || 'Unknown Event',
+              date: formattedDate,
+              location: event.venue?.name || 'TBA',
+              products: count,
+              activeOrders: 0,
+              status: status,
+              image: imageUrl
+            };
+          });
         
         setEventData(formattedEvents);
 
@@ -224,13 +237,20 @@ const SponsorStore = () => {
                   </div>
 
                   <button 
-                    className="primary-button store-manage-btn"
-                    disabled={event.status === "Completed"}
-                    onClick={() => navigate("/sponsor/store/dashboard", { 
-                      state: { eventId: event._id || event.id, eventName: event.title, boothCode: event.boothCodeRaw } 
-                    })}
+                    className={`primary-button store-manage-btn ${event.status === "Completed" ? "see-reports-btn" : ""}`}
+                    onClick={() => {
+                      navigate("/sponsor/store/dashboard", { 
+                        state: { 
+                          eventId: event._id || event.id, 
+                          eventName: event.title, 
+                          boothCode: event.boothCodeRaw,
+                          isCompleted: event.status === "Completed"
+                        } 
+                      });
+                    }}
                   >
-                    Manage Store <Icon icon="mdi:arrow-right" />
+                    {event.status === "Completed" ? "See Reports" : "Manage Store"} 
+                    <Icon icon="mdi:arrow-right" />
                   </button>
                 </div>
               </div>

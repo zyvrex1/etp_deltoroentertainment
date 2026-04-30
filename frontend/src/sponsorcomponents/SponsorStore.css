@@ -296,6 +296,15 @@
             opacity: 0.5;
             cursor: not-allowed;
           }
+
+          &.see-reports-btn {
+            background: var(--color-bg-dark);
+            color: var(--color-white-primary);
+          }
+
+          &.see-reports-btn:hover:not(:disabled) {
+            background: var(--color-black-primary);
+          }
         }
       }
     }

@@ -14,10 +14,11 @@ const SponsorStoreDashboard = () => {
   const [activeTab, setActiveTab] = useState("Products");
 
   // Get event data from navigation state
-  const { eventId, eventName, boothCode } = location.state || { 
+  const { eventId, eventName, boothCode, isCompleted } = location.state || { 
     eventId: null, 
     eventName: "General Inventory",
-    boothCode: null
+    boothCode: null,
+    isCompleted: false
   };
 
   return (
@@ -27,7 +28,7 @@ const SponsorStoreDashboard = () => {
       </div>
       
       <div className="ssd-header">
-        <h1>Store Dashboard</h1>
+        <h1>Store Dashboard {isCompleted && <span style={{ color: 'var(--color-black-tertiary)', fontSize: '0.6em', marginLeft: '10px' }}>(Closed)</span>}</h1>
         <p className="regular-body-text">{eventName} {boothCode ? `- Booth ${boothCode}` : ''}</p>
       </div>
 
@@ -61,8 +62,8 @@ const SponsorStoreDashboard = () => {
       </div>
 
       <div className="ssd-content">
-        {activeTab === 'Products' && <SponsorManageProduct eventId={eventId} boothCode={boothCode} />}
-        {activeTab === 'Orders' && <SponsorManageOrder boothCode={boothCode} />}
+        {activeTab === 'Products' && <SponsorManageProduct eventId={eventId} boothCode={boothCode} isCompleted={isCompleted} />}
+        {activeTab === 'Orders' && <SponsorManageOrder boothCode={boothCode} isCompleted={isCompleted} />}
         {activeTab === 'Analytics' && <SponsorProductAnalytics eventId={eventId} boothCode={boothCode} />}
         {activeTab === 'Info' && <SponsorPaymentInfo />}
       </div>

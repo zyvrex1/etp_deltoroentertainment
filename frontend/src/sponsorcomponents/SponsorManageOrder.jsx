@@ -16,7 +16,7 @@ const initialOrders = [
   { id: "ORD-8895", customer: "Tom Hanks", time: "08:45 AM", items: "1 item", itemDesc: "1x Ceramic Mug", total: "$14.99", payment: "Unpaid", status: "Pending" }
 ];
 
-const SponsorManageOrder = () => {
+const SponsorManageOrder = ({ isCompleted }) => {
   const [orders, setOrders] = useState(initialOrders);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -246,7 +246,8 @@ const SponsorManageOrder = () => {
                         <select
                           value={order.payment}
                           onChange={(e) => handleOrderChange(order.id, 'payment', e.target.value)}
-                          className={`smo-select-payment button-label ${order.payment === 'Paid' ? 'paid-bg' : 'unpaid-bg'}`}
+                          disabled={isCompleted}
+                          className={`smo-select-payment button-label ${order.payment === 'Paid' ? 'paid-bg' : 'unpaid-bg'} ${isCompleted ? "disabled" : ""}`}
                         >
                           <option value="Paid">Paid</option>
                           <option value="Unpaid">Unpaid</option>
@@ -260,7 +261,8 @@ const SponsorManageOrder = () => {
                         <select
                           value={order.status}
                           onChange={(e) => handleOrderChange(order.id, 'status', e.target.value)}
-                          className={`smo-select-status button-label ${getStatusClass(order.status)}`}
+                          disabled={isCompleted}
+                          className={`smo-select-status button-label ${getStatusClass(order.status)} ${isCompleted ? "disabled" : ""}`}
                         >
                           <option value="Pending">Pending</option>
                           <option value="Preparing">Preparing</option>
