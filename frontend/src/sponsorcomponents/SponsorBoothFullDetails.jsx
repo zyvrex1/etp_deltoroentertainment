@@ -6,6 +6,7 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import { showDeleteConfirmAlert, showSuccessAlert, showConfirmAlert } from '../utils/sweetAlert';
 import SponsorAddExhibitor from './SponsorModal/SponsorAddExhibitor';
 import SponsorDocuments from './SponsorModal/SponsorDocuments';
+import SponsorViewInvoiceReceipt from './SponsorModal/SponsorViewInvoiceReceipt';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, drawLongText, finalizeReport } from '../utils/pdfExport';
 import './SponsorBoothFullDetails.css';
@@ -20,6 +21,7 @@ export default function SponsorBoothFullDetails() {
     const [isLoading, setIsLoading] = useState(true);
     const [isAddExhibitorModalOpen, setIsAddExhibitorModalOpen] = useState(false);
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+    const [isInvoiceReceiptModalOpen, setIsInvoiceReceiptModalOpen] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
 
     const fetchReservation = React.useCallback(async () => {
@@ -189,6 +191,29 @@ export default function SponsorBoothFullDetails() {
             });
         });
     }
+
+    let billingAddress = '';
+    if (reservation.billingAddress?.address) {
+        billingAddress += reservation.billingAddress.address;
+    } else if (reservation.user?.streetAddress) {
+        billingAddress += reservation.user.streetAddress;
+    }
+
+    if (reservation.billingAddress?.city || reservation.user?.city) {
+        if (billingAddress) billingAddress += ', ';
+        billingAddress += reservation.billingAddress?.city || reservation.user?.city;
+    }
+
+    if (reservation.billingAddress?.zipCode || reservation.user?.zipCode) {
+        if (billingAddress) billingAddress += ' ';
+        billingAddress += reservation.billingAddress?.zipCode || reservation.user?.zipCode;
+    }
+
+    const billTo = {
+        companyName: reservation.billingAddress?.companyName || reservation.user?.companyName || 'Your Company',
+        address: billingAddress.trim() || 'Address not provided',
+        taxId: 'N/A'
+    };
 
     const documents = [
         {
@@ -502,7 +527,63 @@ export default function SponsorBoothFullDetails() {
                 }
             ]
         },
+        {
+            id: 5,
+            title: 'Official Invoice',
+            size: '0.5 MB',
+            format: "PDF",
+            isInvoice: true,
+            sections: [
+                {
+                    title: 'Invoice Details',
+                    content: (
+                        <div className="sd-invoice-summary">
+                            <p className="small-body-text" style={{ marginBottom: '12px' }}>
+                                This is your official invoice for Booth #{reservation.boothCode}.
+                            </p>
+                            <ul className="sd-list small-body-text text-secondary">
+                                <li>Booth Price: ${(reservation.amount?.subtotal || 0).toLocaleString()}</li>
+                                <li>Processing Fee: ${(reservation.amount?.fee || 0).toLocaleString()}</li>
+                                <li>Tax: ${(reservation.amount?.tax || 0).toLocaleString()}</li>
+                                <li><strong>Total Paid: ${(reservation.amount?.total || 0).toLocaleString()}</strong></li>
+                            </ul>
+                        </div>
+                    ),
+                    pdfContent: [
+                        `Official Invoice for Booth #${reservation.boothCode}`,
+                        `Event: ${reservation.event?.title}`,
+                        `Confirmation: Booth-${reservation._id.toString().slice(-6).toUpperCase()}`,
+                        '',
+                        `• Booth Price: $${(reservation.amount?.subtotal || 0).toLocaleString()}`,
+                        `• Processing Fee: $${(reservation.amount?.fee || 0).toLocaleString()}`,
+                        `• Tax: $${(reservation.amount?.tax || 0).toLocaleString()}`,
+                        `• Total Paid: $${(reservation.amount?.total || 0).toLocaleString()}`
+                    ]
+                }
+            ]
+        }
     ];
+
+    const invoiceItem = {
+        id: reservation._id,
+        title: reservation.event?.title || 'Unknown Event',
+        invoiceRef: `INV-${new Date(reservation.createdAt).getFullYear()}-${reservation._id.slice(-5).toUpperCase()}`,
+        booth: `Booth ${reservation.boothCode || 'N/A'}`,
+        issueDate: new Date(reservation.createdAt).toLocaleDateString(),
+        dueDate: new Date(reservation.createdAt).toLocaleDateString(),
+        paidDate: new Date(reservation.createdAt).toLocaleDateString(),
+        companyName: billTo.companyName,
+        companyAddress: billTo.address,
+        taxId: billTo.taxId,
+        items: [
+            { description: `Booth Registration (${reservation.boothCode || ''})`, qty: 1, unitPrice: `$${(reservation.amount?.subtotal || 0).toLocaleString()}`, total: `$${(reservation.amount?.subtotal || 0).toLocaleString()}` },
+            { description: 'Processing Fee', qty: 1, unitPrice: `$${(reservation.amount?.fee || 0).toLocaleString()}`, total: `$${(reservation.amount?.fee || 0).toLocaleString()}` },
+            { description: 'Tax', qty: 1, unitPrice: `$${(reservation.amount?.tax || 0).toLocaleString()}`, total: `$${(reservation.amount?.tax || 0).toLocaleString()}` }
+        ],
+        subtotal: `$${(reservation.amount?.subtotal || 0).toLocaleString()}`,
+        totalDue: `$${(reservation.amount?.total || 0).toLocaleString()}`,
+        paymentMethod: reservation.paymentMethod === 'card' ? 'Credit Card' : 'Invoice'
+    };
 
     const priceLevel = reservation.event?.priceLevels?.find(pl => pl._id === reservation.event?.booths?.find(b => b.code === reservation.boothCode)?.priceLevelId);
 
@@ -564,14 +645,34 @@ export default function SponsorBoothFullDetails() {
                     </div>
 
                     <div className="booth-section">
-                        <h4>Included Features</h4>
-                        <div className="booth-features-grid">
-                            {(priceLevel?.description?.split(',') || ['Standard Booth Inclusions', 'WiFi Access', 'Power Circuit']).map((feature, idx) => (
-                                <div key={idx} className="booth-feature-item">
-                                    <Icon icon="mdi:check-circle" className="text-green" width="20" />
-                                    <span className="regular-body-text">{feature.trim()}</span>
+                        <h4>Invoice Information</h4>
+                        <div className="booth-invoice-content" style={{ display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
+                            <div className="booth-bill-to" style={{ flex: '1', minWidth: '200px' }}>
+                                <h5 className="text-black m-0 mb-8" style={{ marginBottom: '8px' }}>Bill To:</h5>
+                                <p className="regular-body-text text-black m-0 font-medium" style={{ fontWeight: '500', marginBottom: '4px' }}>{billTo.companyName}</p>
+                                <p className="small-body-text text-secondary m-0" style={{ whiteSpace: 'pre-line', lineHeight: '1.4' }}>{billTo.address}</p>
+                                <p className="small-body-text text-secondary m-0 mt-4" style={{ marginTop: '4px' }}>Tax ID: <span className="text-black">{billTo.taxId}</span></p>
+                            </div>
+                            <div className="booth-price-details" style={{ flex: '1', minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <h5 className="text-black m-0 mb-8" style={{ marginBottom: '8px' }}>Price Breakdown:</h5>
+                                <div className="payment-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span className="small-body-text text-secondary">Booth Price:</span>
+                                    <span className="small-body-text text-black">${(reservation.amount?.subtotal || 0).toLocaleString()}</span>
                                 </div>
-                            ))}
+                                <div className="payment-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span className="small-body-text text-secondary">Processing Fee:</span>
+                                    <span className="small-body-text text-black">${(reservation.amount?.fee || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="payment-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span className="small-body-text text-secondary">Tax:</span>
+                                    <span className="small-body-text text-black">${(reservation.amount?.tax || 0).toLocaleString()}</span>
+                                </div>
+                                <hr style={{ border: 'none', borderTop: '1px solid var(--color-black-quaternary)', margin: '8px 0' }} />
+                                <div className="payment-total-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h5 className="m-0 text-black">Total Paid:</h5>
+                                    <h4 className="m-0 text-red">${(reservation.amount?.total || 0).toLocaleString()}</h4>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -632,8 +733,15 @@ export default function SponsorBoothFullDetails() {
                                         <p className="small-body-text text-secondary">PDF • {doc.size}</p>
                                     </div>
                                     <div className="document-actions">
-                                        <button className="doc-action-btn" onClick={() => { setSelectedDocument(doc); setIsDocumentModalOpen(true); }}><Icon icon="mdi:eye-outline" width="18" /> View</button>
-                                        <button className="doc-action-btn" onClick={() => exportDocumentToPDF(doc)}><Icon icon="mdi:download-outline" width="18" /> Download</button>
+                                        <button className="doc-action-btn" onClick={() => {
+                                            if (doc.isInvoice) {
+                                                setIsInvoiceReceiptModalOpen(true);
+                                            } else {
+                                                setSelectedDocument(doc);
+                                                setIsDocumentModalOpen(true);
+                                            }
+                                        }}><Icon icon="mdi:eye-outline" width="18" /> View</button>
+                                        <button className="doc-action-btn" onClick={() => doc.isInvoice ? exportInvoiceToPDF() : exportDocumentToPDF(doc)}><Icon icon="mdi:download-outline" width="18" /> Download</button>
                                     </div>
                                 </div>
                             ))}
@@ -690,6 +798,12 @@ export default function SponsorBoothFullDetails() {
                 onClose={() => setIsDocumentModalOpen(false)}
                 document={selectedDocument}
                 onDownload={() => exportDocumentToPDF(selectedDocument)}
+            />
+            <SponsorViewInvoiceReceipt
+                isOpen={isInvoiceReceiptModalOpen}
+                onClose={() => setIsInvoiceReceiptModalOpen(false)}
+                invoiceItem={invoiceItem}
+                onDownload={exportInvoiceToPDF}
             />
         </div>
     );
