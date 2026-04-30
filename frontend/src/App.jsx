@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthContext } from "./hooks/useAuthContext.jsx";
 import { useState, lazy, Suspense } from "react";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import "./App.css";
 
 // Layouts
@@ -143,8 +144,9 @@ const PageLoader = () => (
 function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
           <Route element={<LandingLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -211,8 +213,9 @@ function App() {
             <Route path="store/booths" element={<CustomerStoreBooths />} />
             <Route path="store/products" element={<CustomerStoreProducts />} />
           </Route>
-        </Routes>
-      </Suspense>
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

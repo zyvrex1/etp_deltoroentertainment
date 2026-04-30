@@ -5,11 +5,17 @@ const Event = require('../models/eventModel');
 // Fetch personal reservations for the sponsor
 const getMyReservations = async (req, res) => {
     try {
-        const reservations = await Reservation.find({ user: req.user._id })
+        const reservations = await Reservation.find({ 
+            $or: [{ user: req.user._id }, { exhibitors: req.user._id }] 
+        })
             .populate('event', 'title startDate endDate startTime endTime image venue')
+            .populate('exhibitors', 'firstName lastName email avatar')
             .sort({ createdAt: -1 });
 
-        res.status(200).json(reservations);
+        // Filter out reservations where the event was deleted (orphaned reservations)
+        const validReservations = reservations.filter(r => r.event !== null);
+
+        res.status(200).json(validReservations);
     } catch (error) {
         console.error("GET MY RESERVATIONS ERROR:", error);
         res.status(500).json({ error: error.message });
@@ -27,8 +33,11 @@ const getAllReservations = async (req, res) => {
             .sort({ createdAt: -1 })
             .lean(); // Use lean() for faster, read-only results
 
-        console.log(`Admin Reservations: Successfully fetched ${reservations.length} records.`);
-        res.status(200).json(reservations);
+        // Filter out reservations where the event was deleted
+        const validReservations = reservations.filter(r => r.event !== null);
+
+        console.log(`Admin Reservations: Successfully fetched ${validReservations.length} records.`);
+        res.status(200).json(validReservations);
     } catch (error) {
         console.error("CRITICAL ADMIN RESERVATIONS ERROR:", error);
         res.status(500).json({ error: error.message || "Internal Server Error" });
@@ -125,14 +134,17 @@ const getReservationById = async (req, res) => {
     try {
         const reservation = await Reservation.findById(id)
             .populate('event', 'title startDate endDate image venue booths priceLevels layoutData hasBooths description')
-            .populate('user', 'firstName lastName email companyName');
+            .populate('user', 'firstName lastName email companyName phone avatar')
+            .populate('exhibitors', 'firstName lastName email avatar');
 
         if (!reservation) {
             return res.status(404).json({ error: "Reservation not found" });
         }
 
         // Security check: ensure the reservation belongs to the user (unless admin)
-        if (req.user.role !== 'admin' && reservation.user._id.toString() !== req.user._id.toString()) {
+        const isOwner = reservation.user._id.toString() === req.user._id.toString();
+        const isExhibitor = reservation.exhibitors.some(e => e._id.toString() === req.user._id.toString());
+        if (req.user.role !== 'admin' && !isOwner && !isExhibitor) {
             return res.status(403).json({ error: "You are not authorized to view this reservation" });
         }
 
@@ -143,9 +155,60 @@ const getReservationById = async (req, res) => {
     }
 };
 
+const addExhibitors = async (req, res) => {
+    const { id } = req.params;
+    const { userIds } = req.body;
+
+    try {
+        const reservation = await Reservation.findById(id);
+        if (!reservation) {
+            return res.status(404).json({ error: "Reservation not found" });
+        }
+
+        if (reservation.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ error: "Only the reservation owner can add exhibitors" });
+        }
+
+        // Add userIds to exhibitors array if not already present
+        const newExhibitors = userIds.filter(userId => !reservation.exhibitors.includes(userId));
+        reservation.exhibitors.push(...newExhibitors);
+
+        await reservation.save();
+        res.status(200).json(reservation);
+    } catch (error) {
+        console.error("Add Exhibitors Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const removeExhibitor = async (req, res) => {
+    const { id, userId } = req.params;
+
+    try {
+        const reservation = await Reservation.findById(id);
+        if (!reservation) {
+            return res.status(404).json({ error: "Reservation not found" });
+        }
+
+        if (reservation.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ error: "Only the reservation owner can remove exhibitors" });
+        }
+
+        reservation.exhibitors = reservation.exhibitors.filter(e => e.toString() !== userId);
+
+        await reservation.save();
+        res.status(200).json(reservation);
+    } catch (error) {
+        console.error("Remove Exhibitor Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getMyReservations,
     getAllReservations,
     deleteReservation,
-    getReservationById
+    getReservationById,
+    addExhibitors,
+    removeExhibitor
 };

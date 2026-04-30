@@ -11,6 +11,10 @@ const reservationSchema = new mongoose.Schema({
         ref: 'Event',
         required: true
     },
+    exhibitors: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     boothId: {
         type: String, // The _id of the booth within the event's booths array
         required: true

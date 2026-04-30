@@ -22,24 +22,24 @@ export default function SponsorBoothFullDetails() {
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
 
-    useEffect(() => {
-        const fetchReservation = async () => {
-            if (!user?.token || !reservationId) return;
-            setIsLoading(true);
-            try {
-                const response = await axios.get(`${BACKEND_URL}/api/reservations/${reservationId}`, {
-                    headers: { Authorization: `Bearer ${user.token}` }
-                });
-                setReservation(response.data);
-            } catch (error) {
-                console.error("Fetch reservation error:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchReservation();
+    const fetchReservation = React.useCallback(async () => {
+        if (!user?.token || !reservationId) return;
+        setIsLoading(true);
+        try {
+            const response = await axios.get(`${BACKEND_URL}/api/reservations/${reservationId}`, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            setReservation(response.data);
+        } catch (error) {
+            console.error("Fetch reservation error:", error);
+        } finally {
+            setIsLoading(false);
+        }
     }, [reservationId, user?.token]);
+
+    useEffect(() => {
+        fetchReservation();
+    }, [fetchReservation]);
 
     const exportDocumentToPDF = async (doc) => {
         if (!doc) return;
@@ -75,8 +75,8 @@ export default function SponsorBoothFullDetails() {
                 pdf.text(sec.title, MARGIN, y);
                 y += 6;
 
-                const sectionContent = sec.pdfContent && sec.pdfContent.length > 0 
-                    ? sec.pdfContent.join('\n') 
+                const sectionContent = sec.pdfContent && sec.pdfContent.length > 0
+                    ? sec.pdfContent.join('\n')
                     : 'Please refer to the application portal for the full detailed content of this section.';
 
                 y = drawLongText(pdf, y, sectionContent, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, logoData, DOCUMENT_TITLE);
@@ -164,9 +164,31 @@ export default function SponsorBoothFullDetails() {
         );
     }
 
-    const exhibitors = [
-        { id: 1, name: (reservation.user?.firstName || 'Sponsor') + ' ' + (reservation.user?.lastName || ''), role: 'Sponsor Lead', email: reservation.user?.email || 'N/A', phone: 'N/A', initial: reservation.user?.firstName?.[0] || 'S' },
-    ];
+    const exhibitors = [];
+    if (reservation?.user) {
+        exhibitors.push({
+            id: reservation.user._id,
+            name: `${reservation.user.firstName || 'Sponsor'} ${reservation.user.lastName || ''}`,
+            role: 'Sponsor Lead',
+            email: reservation.user.email || 'N/A',
+            phone: reservation.user.phone || 'N/A',
+            initial: reservation.user.firstName?.[0]?.toUpperCase() || 'S',
+            isOwner: true
+        });
+    }
+    if (reservation?.exhibitors) {
+        reservation.exhibitors.forEach(e => {
+            exhibitors.push({
+                id: e._id,
+                name: `${e.firstName || ''} ${e.lastName || ''}`,
+                role: 'Exhibitor',
+                email: e.email || 'N/A',
+                phone: e.phone || 'N/A',
+                initial: e.firstName?.[0]?.toUpperCase() || 'E',
+                isOwner: false
+            });
+        });
+    }
 
     const documents = [
         {
@@ -504,11 +526,11 @@ export default function SponsorBoothFullDetails() {
             <div className="booth-details-layout">
                 <div className="booth-details-main">
                     <div className="booth-details-cover">
-                        <img 
-                            src={reservation.event?.image ? 
-                                (reservation.event.image.startsWith('http') ? reservation.event.image : `${BACKEND_URL}/uploads/${reservation.event.image}`) 
-                                : "/assets/eventbg.jpg"} 
-                            alt="Event Cover" 
+                        <img
+                            src={reservation.event?.image ?
+                                (reservation.event.image.startsWith('http') ? reservation.event.image : `${BACKEND_URL}/uploads/${reservation.event.image}`)
+                                : "/assets/eventbg.jpg"}
+                            alt="Event Cover"
                         />
                         <div className="booth-details-cover-overlay">
                             <h3>{reservation.event?.title || 'Unknown Event'}</h3>
@@ -555,10 +577,12 @@ export default function SponsorBoothFullDetails() {
 
                     <div className="booth-section">
                         <div className="booth-section-header">
-                            <h4>Exhibitor Passes (1/6)</h4>
-                            <button className="primary-button add-exhibitor-btn" onClick={() => setIsAddExhibitorModalOpen(true)}>
-                                <Icon icon="mdi:plus" width="18" /> Add Exhibitor
-                            </button>
+                            <h4>Exhibitor Passes ({exhibitors.length}/6)</h4>
+                            {reservation?.user?._id === user?._id && (
+                                <button className="primary-button add-exhibitor-btn" onClick={() => setIsAddExhibitorModalOpen(true)}>
+                                    <Icon icon="mdi:plus" width="18" /> Add Exhibitor
+                                </button>
+                            )}
                         </div>
                         <div className="exhibitors-list">
                             {exhibitors.map(ex => (
@@ -572,12 +596,23 @@ export default function SponsorBoothFullDetails() {
                                         </div>
                                     </div>
                                     <div className="exhibitor-actions">
-                                        <button className="icon-btn" onClick={async () => {
-                                            const result = await showDeleteConfirmAlert("Remove Exhibitor?", `Are you sure you want to remove ${ex.name}?`);
-                                            if (result.isConfirmed) {
-                                                await showSuccessAlert("Removed", "Exhibitor has been removed successfully.");
-                                            }
-                                        }}><Icon icon="mdi:trash-can-outline" width="20" /></button>
+                                        {!ex.isOwner && reservation?.user?._id === user?._id && (
+                                            <button className="icon-btn" onClick={async () => {
+                                                const result = await showDeleteConfirmAlert("Remove Exhibitor?", `Are you sure you want to remove ${ex.name}?`);
+                                                if (result.isConfirmed) {
+                                                    try {
+                                                        await axios.delete(`${BACKEND_URL}/api/reservations/${reservation._id}/exhibitors/${ex.id}`, {
+                                                            headers: { Authorization: `Bearer ${user.token}` }
+                                                        });
+                                                        await showSuccessAlert("Removed", "Exhibitor has been removed successfully.");
+                                                        fetchReservation();
+                                                    } catch (error) {
+                                                        console.error("Remove exhibitor error:", error);
+                                                        alert("Failed to remove exhibitor.");
+                                                    }
+                                                }
+                                            }}><Icon icon="mdi:trash-can-outline" width="20" /></button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -631,18 +666,23 @@ export default function SponsorBoothFullDetails() {
                             <button className="outlined-button full-width-btn" onClick={handleEventDetails}>View Event Details</button>
                             <button className="outlined-button full-width-btn" onClick={exportInvoiceToPDF}><Icon icon="mdi:download-outline" width="18" /> Download Invoice</button>
                             <button className="primary-button cancel-reservation-btn" onClick={() => {
-                                navigate('/sponsor/support', { 
-                                    state: { 
-                                        tab: 'Submit a Concern', 
-                                        prefill: { subject: 'Refund Booth', category: 'Billing & Payment', priority: 'High', event: reservation.event?.title } 
-                                    } 
+                                navigate('/sponsor/support', {
+                                    state: {
+                                        tab: 'Submit a Concern',
+                                        prefill: { subject: 'Refund Booth', category: 'Billing & Payment', priority: 'High', event: reservation.event?.title }
+                                    }
                                 });
                             }}>Request Refund</button>
                         </div>
                     </div>
                 </div>
             </div>
-            <SponsorAddExhibitor isOpen={isAddExhibitorModalOpen} onClose={() => setIsAddExhibitorModalOpen(false)} />
+            <SponsorAddExhibitor
+                isOpen={isAddExhibitorModalOpen}
+                onClose={() => setIsAddExhibitorModalOpen(false)}
+                reservationId={reservation._id}
+                onSuccess={fetchReservation}
+            />
             <SponsorDocuments
                 isOpen={isDocumentModalOpen}
                 onClose={() => setIsDocumentModalOpen(false)}

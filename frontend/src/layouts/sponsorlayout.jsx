@@ -1,9 +1,10 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import SponsorHeader from "../sponsorcomponents/SponsorHeader.jsx";
 import SponsorFooter from "../sponsorcomponents/SponsorFooter.jsx";
 import { SponsorCartProvider } from "../context/SponsorCartContext.jsx";
 
 export default function SponsorLayout() {
+  const location = useLocation();
   const currentUser = {
     name: "Maria Santos",
     email: "maria@sponsorpro.com",
@@ -19,7 +20,7 @@ export default function SponsorLayout() {
       {/* Page Content */}
       <main className="sponsor-main-content">
         <div className="sponsor-content-wrapper">
-          <Outlet />
+          <Outlet key={location.pathname} />
         </div>
       </main>
 

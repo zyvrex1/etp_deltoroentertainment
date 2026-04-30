@@ -190,6 +190,26 @@ const getPromoters = async (req, res) => {
   }
 };
 
+const getSponsors = async (req, res) => {
+  try {
+    const { search } = req.query;
+    const query = { role: 'sponsor' }; // Restrict searching to only sponsor accounts
+    
+    if (search) {
+      query.$or = [
+        { email: { $regex: search, $options: 'i' } },
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    const sponsors = await User.find(query).select('firstName lastName email avatar role').limit(10);
+    res.json(sponsors);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 const updateCart = async (req, res) => {
   try {
     const { cart } = req.body;
@@ -211,6 +231,7 @@ module.exports = {
   updateSecurity,
   updateNotifications,
   getPromoters,
+  getSponsors,
   updateCart,
   upload,
 };
