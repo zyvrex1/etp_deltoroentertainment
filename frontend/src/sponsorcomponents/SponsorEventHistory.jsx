@@ -270,13 +270,7 @@ export default function SponsorEventHistory() {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="sponsor-history-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-                <Icon icon="line-md:loading-twotone-loop" width="48" />
-            </div>
-        );
-    }
+
 
     return (
         <div className="sponsor-history-wrapper">
@@ -360,43 +354,69 @@ export default function SponsorEventHistory() {
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedHistory.map((item) => (
-                                <tr key={item.id}>
-                                    <td className="regular-body-text text-secondary">{item.displayId}</td>
-                                    <td>
-                                        <div className="sh-event-details">
-                                            <h6 className="sh-event-title">{item.title}</h6>
-                                            <div className="sh-event-meta text-secondary small-body-text">
-                                                {item.booth} • {item.date}
-                                                <span className={`button-label ${item.eventStatus.toLowerCase()}`}>
-                                                    {item.eventStatus}
-                                                </span>                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="regular-body-text text-secondary">{item.invoiceRef}</td>
-                                    <td className="regular-body-text text-secondary">{item.amount}</td>
-                                    <td>
-                                        <span className={`button-label ${item.paymentStatus.toLowerCase()}`}>{item.paymentStatus}</span>
-                                    </td>
-                                    <td className="regular-body-text text-secondary">{item.paymentDate}</td>
-                                    <td>
-                                        <div className="sh-actions">
-                                            <button
-                                                className="sh-action-btn view-btn"
-                                                onClick={() => {
-                                                    setSelectedHistoryItem(item);
-                                                    setIsHistoryModalOpen(true);
-                                                }}
-                                            >
-                                                View
-                                            </button>
-                                            <button className="sh-action-btn text-secondary" onClick={() => downloadHistoryItemPDF(item)}>
-                                                <Icon icon="mdi:download" width="20" />
-                                            </button>
+                            {isLoading ? (
+                                [...Array(6)].map((_, i) => (
+                                    <tr key={i}>
+                                        <td><div className="skeleton skeleton-text" style={{width: '60px', height: '14px'}}></div></td>
+                                        <td>
+                                            <div className="skeleton skeleton-text" style={{width: '150px', height: '16px', marginBottom: '8px'}}></div>
+                                            <div className="skeleton skeleton-text" style={{width: '100px', height: '12px'}}></div>
+                                        </td>
+                                        <td><div className="skeleton skeleton-text" style={{width: '80px', height: '14px'}}></div></td>
+                                        <td><div className="skeleton skeleton-text" style={{width: '70px', height: '14px'}}></div></td>
+                                        <td><div className="skeleton skeleton-text" style={{width: '60px', height: '24px', borderRadius: '4px'}}></div></td>
+                                        <td><div className="skeleton skeleton-text" style={{width: '100px', height: '14px'}}></div></td>
+                                        <td><div className="skeleton skeleton-text" style={{width: '40px', height: '24px', borderRadius: '4px'}}></div></td>
+                                    </tr>
+                                ))
+                            ) : paginatedHistory.length === 0 ? (
+                                <tr>
+                                    <td colSpan="7" style={{textAlign: 'center', padding: '40px'}}>
+                                        <div className="empty-state">
+                                            <Icon icon="mdi:history" width="48" />
+                                            <p>No history found matching your filters.</p>
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                paginatedHistory.map((item) => (
+                                    <tr key={item.id}>
+                                        <td className="regular-body-text text-secondary">{item.displayId}</td>
+                                        <td>
+                                            <div className="sh-event-details">
+                                                <h6 className="sh-event-title">{item.title}</h6>
+                                                <div className="sh-event-meta text-secondary small-body-text">
+                                                    {item.booth} • {item.date}
+                                                    <span className={`button-label ${item.eventStatus.toLowerCase()}`}>
+                                                        {item.eventStatus}
+                                                    </span>                                            </div>
+                                            </div>
+                                        </td>
+                                        <td className="regular-body-text text-secondary">{item.invoiceRef}</td>
+                                        <td className="regular-body-text text-secondary">{item.amount}</td>
+                                        <td>
+                                            <span className={`button-label ${item.paymentStatus.toLowerCase()}`}>{item.paymentStatus}</span>
+                                        </td>
+                                        <td className="regular-body-text text-secondary">{item.paymentDate}</td>
+                                        <td>
+                                            <div className="sh-actions">
+                                                <button
+                                                    className="sh-action-btn view-btn"
+                                                    onClick={() => {
+                                                        setSelectedHistoryItem(item);
+                                                        setIsHistoryModalOpen(true);
+                                                    }}
+                                                >
+                                                    View
+                                                </button>
+                                                <button className="sh-action-btn text-secondary" onClick={() => downloadHistoryItemPDF(item)}>
+                                                    <Icon icon="mdi:download" width="20" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>

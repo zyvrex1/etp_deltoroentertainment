@@ -202,7 +202,24 @@ const SponsorStore = () => {
         </div>
 
         <div className="store-events-grid">
-          {paginatedData.length > 0 ? (
+          {loading ? (
+            [...Array(6)].map((_, i) => (
+              <div key={i} className="store-event-card">
+                <div className="skeleton skeleton-image"></div>
+                <div className="store-card-details">
+                  <div className="skeleton skeleton-text title" style={{width: '80%'}}></div>
+                  <div className="skeleton skeleton-text" style={{width: '60%'}}></div>
+                  <div className="skeleton skeleton-text" style={{width: '70%'}}></div>
+                  <div className="skeleton skeleton-text" style={{width: '50%'}}></div>
+                  <div className="store-stats-row">
+                    <div className="skeleton skeleton-stat-box"></div>
+                    <div className="skeleton skeleton-stat-box"></div>
+                  </div>
+                  <div className="skeleton skeleton-button"></div>
+                </div>
+              </div>
+            ))
+          ) : paginatedData.length > 0 ? (
             paginatedData.map((event) => (
               <div key={event.id} className="store-event-card">
                 <div className="store-card-image-wrap">

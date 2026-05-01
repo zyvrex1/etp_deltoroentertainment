@@ -303,10 +303,25 @@ export default function SponsorInvoice() {
 
             <div className="si-list">
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-black-secondary)' }}>
-                        <Icon icon="mdi:loading" className="spin-animation" width="48" />
-                        <p>Loading invoices...</p>
-                    </div>
+                    [...Array(5)].map((_, i) => (
+                        <div className="si-card" key={i}>
+                            <div className="si-card-left">
+                                <div className="skeleton" style={{width: '40px', height: '40px', borderRadius: '8px'}}></div>
+                                <div className="si-card-info">
+                                    <div className="skeleton skeleton-text title" style={{width: '200px'}}></div>
+                                    <div className="skeleton skeleton-text" style={{width: '150px'}}></div>
+                                    <div className="skeleton skeleton-text" style={{width: '180px'}}></div>
+                                </div>
+                            </div>
+                            <div className="si-card-right">
+                                <div className="si-amount-sec">
+                                    <div className="skeleton skeleton-text" style={{width: '40px'}}></div>
+                                    <div className="skeleton skeleton-text title" style={{width: '80px'}}></div>
+                                </div>
+                                <div className="skeleton skeleton-button" style={{width: '80px'}}></div>
+                            </div>
+                        </div>
+                    ))
                 ) : paginatedInvoices.length > 0 ? (
                     paginatedInvoices.map((item) => (
                         <div className="si-card" key={item.id}>

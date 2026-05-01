@@ -44,9 +44,37 @@ const SponsorEventDetails = () => {
 
     if (isLoading) {
         return (
-            <div className="sed-loading-container">
-                <Icon icon="line-md:loading-twotone-loop" width="48" />
-                <p>Loading event details...</p>
+            <div className="sed-page-wrapper">
+                <div className="sed-top-header">
+                    <div className="sed-header-left">
+                        <div className="skeleton" style={{width: '40px', height: '40px', borderRadius: '50%'}}></div>
+                        <div className="skeleton skeleton-text title" style={{width: '300px', margin: '0 0 0 20px'}}></div>
+                    </div>
+                </div>
+                <div className="sed-hero-banner skeleton" style={{background: '#eee'}}></div>
+                <div className="sed-main-container">
+                    <div className="sed-content-left">
+                        <div className="sed-tabs" style={{gap: '20px'}}>
+                            <div className="skeleton" style={{width: '100px', height: '40px', borderRadius: '8px'}}></div>
+                            <div className="skeleton" style={{width: '150px', height: '40px', borderRadius: '8px'}}></div>
+                            <div className="skeleton" style={{width: '80px', height: '40px', borderRadius: '8px'}}></div>
+                        </div>
+                        <div className="sed-tab-content">
+                            <div className="skeleton skeleton-text title" style={{width: '40%'}}></div>
+                            <div className="skeleton skeleton-text" style={{width: '100%'}}></div>
+                            <div className="skeleton skeleton-text" style={{width: '100%'}}></div>
+                            <div className="skeleton skeleton-text" style={{width: '90%'}}></div>
+                            <div className="sed-summary-grid" style={{marginTop: '30px'}}>
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="skeleton" style={{height: '80px', borderRadius: '12px'}}></div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="sed-content-right">
+                        <div className="sed-reserve-card skeleton" style={{height: '350px', borderRadius: '16px'}}></div>
+                    </div>
+                </div>
             </div>
         );
     }

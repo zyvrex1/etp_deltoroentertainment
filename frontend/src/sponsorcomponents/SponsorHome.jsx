@@ -227,10 +227,23 @@ export default function SponsorHome() {
 
                 {isLoading ? (
                     <div className="sh-grid">
-                        <div className="sh-empty sh-container">
-                            <Icon icon="mdi:loading" className="sh-spin" />
-                            <p>Loading the latest events...</p>
-                        </div>
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="sh-event-card-v2 sh-glass">
+                                <div className="sh-v2-image-area skeleton" style={{ height: '180px' }}></div>
+                                <div className="sh-v2-content">
+                                    <div className="skeleton skeleton-text" style={{ width: '40%' }}></div>
+                                    <div className="skeleton skeleton-text title" style={{ width: '80%' }}></div>
+                                    <div className="skeleton skeleton-text" style={{ width: '60%' }}></div>
+                                    <div className="sh-v2-details-row">
+                                        <div className="skeleton" style={{ height: '30px', width: '100px' }}></div>
+                                        <div className="skeleton" style={{ height: '30px', width: '100px' }}></div>
+                                    </div>
+                                    <div className="sh-v2-footer">
+                                        <div className="skeleton skeleton-button"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : events.length > 0 ? (
                     <div className="sh-grid">

@@ -189,8 +189,21 @@ export default function SponsorBoothFullDetails() {
 
     if (isLoading) {
         return (
-            <div className="booth-details-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <Icon icon="line-md:loading-twotone-loop" width="48" />
+            <div className="booth-details-container">
+                <div className="booth-header-section">
+                    <div className="skeleton skeleton-text title" style={{width: '300px'}}></div>
+                </div>
+                <div className="booth-main-grid">
+                    <div className="booth-info-cards-sec">
+                        <div className="skeleton" style={{height: '200px', borderRadius: '12px', marginBottom: '24px'}}></div>
+                        <div className="skeleton" style={{height: '150px', borderRadius: '12px', marginBottom: '24px'}}></div>
+                        <div className="skeleton" style={{height: '250px', borderRadius: '12px'}}></div>
+                    </div>
+                    <div className="booth-side-cards-sec">
+                        <div className="skeleton" style={{height: '300px', borderRadius: '12px', marginBottom: '24px'}}></div>
+                        <div className="skeleton" style={{height: '200px', borderRadius: '12px'}}></div>
+                    </div>
+                </div>
             </div>
         );
     }

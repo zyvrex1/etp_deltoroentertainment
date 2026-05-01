@@ -111,17 +111,7 @@ export default function SponsorMyBooth() {
         setSelectedBooth(null);
     };
 
-    if (isLoading) {
-        return (
-            <div className="sponsor-my-booth-wrapper">
-                <div className="sponsor-my-booth-container">
-                    <div className="sed-loading-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-                        <Icon icon="line-md:loading-twotone-loop" width="48" />
-                    </div>
-                </div>
-            </div>
-        );
-    }
+
 
     return (
         <div className="sponsor-my-booth-wrapper">
@@ -176,7 +166,27 @@ export default function SponsorMyBooth() {
                 </div>
 
                 <div className="my-booth-list-new">
-                    {paginatedBooths.length > 0 ? (
+                    {isLoading ? (
+                        [...Array(6)].map((_, i) => (
+                            <div key={i} className="booth-card-new">
+                                <div className="booth-card-top">
+                                    <div className="skeleton skeleton-text title"></div>
+                                </div>
+                                <div className="booth-card-body">
+                                    <div className="skeleton" style={{ width: '80px', height: '80px', borderRadius: '8px', flexShrink: 0 }}></div>
+                                    <div className="booth-details" style={{ flex: 1 }}>
+                                        <div className="skeleton skeleton-text" style={{ width: '80%', height: '18px', marginBottom: '12px' }}></div>
+                                        <div className="skeleton skeleton-text" style={{ width: '60%', height: '14px', marginBottom: '8px' }}></div>
+                                        <div className="skeleton skeleton-text" style={{ width: '50%', height: '14px', marginBottom: '8px' }}></div>
+                                        <div className="skeleton skeleton-text" style={{ width: '40%', height: '14px' }}></div>
+                                    </div>
+                                </div>
+                                <div className="booth-card-footer">
+                                    <div className="skeleton skeleton-button" style={{ width: '120px' }}></div>
+                                </div>
+                            </div>
+                        ))
+                    ) : paginatedBooths.length > 0 ? (
                         paginatedBooths.map(res => {
                             const status = getStatus(res.event);
                             return (
