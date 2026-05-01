@@ -15,6 +15,75 @@ const SponsorKit = ({ isOpen, onClose, event }) => {
     const handleContact = () => {
         navigate('/sponsor/support');
     };
+
+    const calculateDays = (startDate, endDate) => {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays + 1;
+    };
+
+    const formatCurrency = (amount) => {
+        if (amount === undefined || amount === null) return "TBA";
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+    };
+
+    const boothPrices = event?.priceLevels?.filter(pl => pl.type?.toLowerCase().includes("booth")) || [];
+
+    const sortedBooths = [...boothPrices].sort((a, b) => (a.facePrice || 0) - (b.facePrice || 0));
+
+    const getPackageDisplay = (booth, index, total) => {
+        const name = booth.priceName?.toLowerCase() || "";
+        
+        // Style defaults
+        let headerClass = 'sk-pkg-standard-header';
+        let cardClass = '';
+        let badge = null;
+
+        // Exclusive Role Assignment
+        const isCheapest = index === 0;
+        const isBestDeal = index === total - 1;
+        const middleIndex = Math.floor(total / 2);
+        const isStandard = index === middleIndex && total >= 3;
+        const isRecommended = total >= 5 && index === total - 2;
+        
+        // Priority logic for unique and repeating colors
+        if (isBestDeal) {
+            headerClass = 'bg-red-primary text-white';
+            cardClass = 'sk-pkg-premium';
+            badge = { text: 'Best Deal', class: 'sk-best-value-label' };
+        } else if (isCheapest) {
+            headerClass = 'bg-green-primary text-white';
+            cardClass = 'sk-pkg-green';
+            badge = { text: 'Cheapest', class: 'sk-cheapest-label' };
+        } else if (isStandard) {
+            headerClass = 'bg-blue-primary text-white';
+            cardClass = 'sk-pkg-highlight';
+            badge = { text: 'Standard', class: 'sk-standard-label' };
+        } else if (isRecommended) {
+            headerClass = 'bg-purple-primary text-white';
+            cardClass = 'sk-pkg-purple';
+        } else if (index < middleIndex) {
+            // All packages between Cheapest and Standard use Yellow
+            headerClass = 'bg-yellow-primary text-black';
+            cardClass = 'sk-pkg-yellow';
+            if (index === 1 || total < 6);
+        } else {
+            // All other packages (between Standard and Recommended/Best Deal) use Dark
+            headerClass = 'sk-pkg-standard-header';
+            cardClass = 'sk-pkg-dark';
+            if (index === total - 3 || total < 6) ;
+        }
+
+        return { headerClass, cardClass, badge };
+    };
+
     return (
         <div className="sponsor-kit-overlay">
             <div className="sponsor-kit-modal">
@@ -30,7 +99,7 @@ const SponsorKit = ({ isOpen, onClose, event }) => {
 
                 <div className="sponsor-kit-body">
                     <div className="sk-hero">
-                        <div className="button-label sk-sponsored-by bg-red-primary text-white">SPONSORSHIP OPEN</div>
+                        <div className="button-label sk-sponsored-by bg-red-primary text-white"> {event?.category}</div>
                         <h2>{event?.title}</h2>
                         <div className="sk-hero-details">
                             <span><Icon icon="mdi:calendar" /> {event?.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ""}</span>
@@ -46,25 +115,17 @@ const SponsorKit = ({ isOpen, onClose, event }) => {
                         </p>
                         <div className="sk-stats-grid">
                             <div className="sk-stat-card sk-stat-red">
-                                <h4 className="text-red" style={{ fontSize: '1rem', margin: '0' }}>{event?.startTime} - {event?.endTime}</h4>
+                                <h4 className="text-red">{event?.startTime} - {event?.endTime}</h4>
                                 <p className="smaller-body-text text-secondary">Event Time</p>
                             </div>
                             <div className="sk-stat-card sk-stat-blue">
-                                <h3 className="text-blue">3 Days</h3>
-                                <p className="smaller-body-text text-secondary">Of Programming</p>
-                            </div>
-                            <div className="sk-stat-card sk-stat-green">
-                                <h3 className="text-green">150+</h3>
-                                <p className="smaller-body-text text-secondary">Speakers</p>
-                            </div>
-                            <div className="sk-stat-card sk-stat-purple">
-                                <h3 className="text-purple">8th</h3>
-                                <p className="smaller-body-text text-secondary">Annual Edition</p>
+                                <h3 className="text-blue">{calculateDays(event?.startDate, event?.endDate)} Days</h3>
+                                <p className="smaller-body-text text-secondary">Of Event</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="sk-section">
+                    {/* <div className="sk-section">
                         <h4 className="sk-section-title">Who Attends</h4>
                         <div className="sk-attends-grid">
                             <div className="sk-attends-bars">
@@ -96,71 +157,37 @@ const SponsorKit = ({ isOpen, onClose, event }) => {
                                 </ul>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="sk-section">
                         <h4 className="sk-section-title">Sponsorship Packages</h4>
                         <div className="sk-packages-grid">
-                            <div className="sk-package-card">
-                                <div className="sk-pkg-header sk-pkg-standard-header">
-                                    <h6>Standard</h6>
+                            {sortedBooths.length > 0 ? (
+                                sortedBooths.map((booth, index) => {
+                                    const { headerClass, cardClass, badge } = getPackageDisplay(booth, index, sortedBooths.length);
+                                    return (
+                                        <div key={booth._id || booth.id || index} className={`sk-package-card ${cardClass}`}>
+                                            <div className={`sk-pkg-header ${headerClass}`}>
+                                                <h6>{booth.priceName}</h6>
+                                                {badge && <span className={`button-label ${badge.class}`}>{badge.text}</span>}
+                                            </div>
+                                            <div className="sk-pkg-price">
+                                                <h2>{formatCurrency(booth.facePrice)} {index > 0 && <span className="smaller-body-text text-secondary">+ tax</span>}</h2>
+                                                <p className="smaller-body-text">{booth.boothSize || "Booth Space"}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="sk-empty-packages text-secondary">
+                                    <p>No sponsorship packages available for this event yet.</p>
                                 </div>
-                                <div className="sk-pkg-price">
-                                    <h2>$2,500 <span className="smaller-body-text text-secondary">+ tax</span></h2>
-                                    <p className="smaller-body-text">10x10 ft booth space</p>
-                                </div>
-                                <ul className="sk-pkg-features">
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> 3 Exhibitor Passes</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Basic WiFi</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> 1 Power Outlet</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Company listing in directory</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Logo on event website</li>
-                                </ul>
-                            </div>
-                            <div className="sk-package-card sk-pkg-highlight">
-                                <div className="sk-pkg-header bg-blue-primary text-white">
-                                    <h6>Corner</h6>
-                                    <span className="button-label sk-popular-label">Popular</span>
-                                </div>
-                                <div className="sk-pkg-price">
-                                    <h2>$3,000 <span className="smaller-body-text text-secondary">+ tax</span></h2>
-                                    <p className="smaller-body-text">10x10 ft booth space</p>
-                                </div>
-                                <ul className="sk-pkg-features">
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> 3 Exhibitor Passes</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Premium WiFi</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> 2 Power Outlets</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Corner visibility</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Priority directory listing</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Social media mention</li>
-                                </ul>
-                            </div>
-                            <div className="sk-package-card sk-pkg-premium">
-                                <div className="sk-pkg-header bg-red-primary text-white">
-                                    <div className="sk-pkg-header-left">
-                                        <h6>VIP</h6>
-                                    </div>
-                                    <span className="button-label sk-best-value-label text-right">Best Value</span>
-                                </div>
-                                <div className="sk-pkg-price">
-                                    <h2>$8,000 <span className="smaller-body-text text-secondary">+ tax</span></h2>
-                                    <p className="smaller-body-text">20x20 ft booth space</p>
-                                </div>
-                                <ul className="sk-pkg-features">
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> 6 Exhibitor Passes</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Dedicated WiFi circuit</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Multiple power drops</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Premium floor location</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Custom carpet included</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Featured in keynote slides</li>
-                                    <li><Icon icon="mdi:check-circle-outline" className="text-green" /> Post-event lead report</li>
-                                </ul>
-                            </div>
+                            )}
                         </div>
                     </div>
 
                     <div className="sk-section">
-                        <h4 className="sk-section-title">Why Sponsor TechInnovate?</h4>
+                        <h4 className="sk-section-title">Why Sponsor {event.title}?</h4>
                         <div className="sk-why-grid">
                             <div className="sk-why-card">
                                 <div className="sk-why-header">
@@ -192,7 +219,7 @@ const SponsorKit = ({ isOpen, onClose, event }) => {
 
                     <div className="sk-section">
                         <div className="sk-quote border-blue-light">
-                            <p className="regular-body-text text-blue sk-mb-2">"TechInnovate Summit delivered more qualified leads in 2 days than our entire trade show calendar last year. The audience quality is unmatched."</p>
+                            <p className="regular-body-text text-blue sk-mb-2">"{event.title} delivered more qualified leads in 2 days than our entire trade show calendar last year. The audience quality is unmatched."</p>
                             <p className="smaller-body-text text-secondary">— VP of Marketing, Fortune 500 Tech Company</p>
                         </div>
                     </div>

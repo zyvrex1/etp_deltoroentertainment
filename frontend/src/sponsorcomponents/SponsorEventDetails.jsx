@@ -61,6 +61,15 @@ const SponsorEventDetails = () => {
         );
     }
 
+    const calculateDays = (startDate, endDate) => {
+        if (!startDate || !endDate) return 1;
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays + 1;
+    };
+
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
     return (
@@ -130,19 +139,43 @@ const SponsorEventDetails = () => {
                                     {event.description || "No description available for this event."}
                                 </p>
 
-                                <h4>Attendee Demographics</h4>
-                                <div className="sed-demographics-grid">
-                                    <div className="sed-demo-card">
-                                        <h4 className="h6">CTOs & CIOs (30%)</h4>
+                                <h4>Event Highlights</h4>
+                                <div className="sed-summary-grid">
+                                    <div className="sed-summary-card">
+                                        <div className="sed-summary-icon bg-red-light text-red">
+                                            <Icon icon="mdi:calendar-clock" />
+                                        </div>
+                                        <div className="sed-summary-text">
+                                            <p className="smaller-body-text text-secondary">Duration</p>
+                                            <h6>{calculateDays(event.startDate, event.endDate)} Days</h6>
+                                        </div>
                                     </div>
-                                    <div className="sed-demo-card">
-                                        <h4 className="h6">Developers (40%)</h4>
+                                    <div className="sed-summary-card">
+                                        <div className="sed-summary-icon bg-blue-light text-blue">
+                                            <Icon icon="mdi:storefront" />
+                                        </div>
+                                        <div className="sed-summary-text">
+                                            <p className="smaller-body-text text-secondary">Total Booths</p>
+                                            <h6>{event.booths?.length || 0} Spaces</h6>
+                                        </div>
                                     </div>
-                                    <div className="sed-demo-card">
-                                        <h4 className="h6">Investors (15%)</h4>
+                                    <div className="sed-summary-card">
+                                        <div className="sed-summary-icon bg-green-light text-green">
+                                            <Icon icon="mdi:tag-outline" />
+                                        </div>
+                                        <div className="sed-summary-text">
+                                            <p className="smaller-body-text text-secondary">Category</p>
+                                            <h6>{event.category}</h6>
+                                        </div>
                                     </div>
-                                    <div className="sed-demo-card">
-                                        <h4 className="h6">Media (15%)</h4>
+                                    <div className="sed-summary-card">
+                                        <div className="sed-summary-icon bg-purple-light text-purple">
+                                            <Icon icon="mdi:map-marker-radius" />
+                                        </div>
+                                        <div className="sed-summary-text">
+                                            <p className="smaller-body-text text-secondary">Location</p>
+                                            <h6>{event.venue?.city || "TBA"}</h6>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -150,30 +183,60 @@ const SponsorEventDetails = () => {
 
                         {activeTab === 'Sponsorship Benefits' && (
                             <div className="sed-tab-pane">
-                                <h3>Why Sponsor?</h3>
+                                <h3>Why Sponsor TechInnovate?</h3>
+                                <div className="sed-why-grid">
+                                    <div className="sed-why-card">
+                                        <div className="sed-why-header">
+                                            <div className="sed-why-icon sed-bg-red-light text-red">
+                                                <Icon icon="mdi:chart-line" />
+                                            </div>
+                                            <h5>Proven ROI</h5>
+                                                                </div>
+                                                            <p className="smaller-body-text text-secondary">
+                                                                Sponsors report an average of 127 qualified leads and 3.2x return on investment from booth participation.
+                                                            </p>
+                                                        </div>
+                                                        <div className="sed-why-card">
+                                                            <div className="sed-why-header">
+                                                                <div className="sed-why-icon sed-bg-blue-light text-blue"><Icon icon="mdi:earth" /></div>
+                                                                <h5>Global Reach</h5>
+                                                            </div>
+                                                            <p className="smaller-body-text text-secondary">Gain exposure to attendees from 40+ countries and media coverage reaching 500,000+ industry professionals.</p>
+                                                        </div>
+                                                        <div className="sed-why-card">
+                                                            <div className="sed-why-header">
+                                                                <div className="sed-why-icon sed-bg-green-light text-green"><Icon icon="mdi:flash-outline" /></div>
+                                                                <h5>Instant Impact</h5>
+                                                            </div>
+                                                            <p className="smaller-body-text text-secondary">From day one, your brand is front and center — in the app, on signage, and in the hands of decision-makers.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                            // <div className="sed-tab-pane">
+                            //     <h3>Why Sponsor?</h3>
 
-                                <div className="sed-benefits-list">
-                                    <div className="sed-benefit-item">
-                                        <div className="sed-benefit-icon bg-red-light text-red">
-                                            <Icon icon="mdi:account-group" />
-                                        </div>
-                                        <div className="sed-benefit-text">
-                                            <h6 className="text-primary">Direct Access to Decision Makers</h6>
-                                            <p className="small-body-text text-secondary">Over 70% of our attendees are C-level executives or directors with purchasing power.</p>
-                                        </div>
-                                    </div>
+                            //     <div className="sed-benefits-list">
+                            //         <div className="sed-benefit-item">
+                            //             <div className="sed-benefit-icon bg-red-light text-red">
+                            //                 <Icon icon="mdi:account-group" />
+                            //             </div>
+                            //             <div className="sed-benefit-text">
+                            //                 <h6 className="text-primary">Direct Access to Decision Makers</h6>
+                            //                 <p className="small-body-text text-secondary">Over 70% of our attendees are C-level executives or directors with purchasing power.</p>
+                            //             </div>
+                            //         </div>
 
-                                    <div className="sed-benefit-item">
-                                        <div className="sed-benefit-icon bg-blue-light text-blue">
-                                            <Icon icon="mdi:shield-check-outline" />
-                                        </div>
-                                        <div className="sed-benefit-text">
-                                            <h6 className="text-primary">Brand Visibility</h6>
-                                            <p className="small-body-text text-secondary">Get featured in our event app, website, and signage throughout the venue.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            //         <div className="sed-benefit-item">
+                            //             <div className="sed-benefit-icon bg-blue-light text-blue">
+                            //                 <Icon icon="mdi:shield-check-outline" />
+                            //             </div>
+                            //             <div className="sed-benefit-text">
+                            //                 <h6 className="text-primary">Brand Visibility</h6>
+                            //                 <p className="small-body-text text-secondary">Get featured in our event app, website, and signage throughout the venue.</p>
+                            //             </div>
+                            //         </div>
+                            //     </div>
+                            // </div>
                         )}
 
                         {activeTab === 'Pricing' && (

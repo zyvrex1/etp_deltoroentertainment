@@ -165,7 +165,7 @@
 
     .sk-stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 16px;
         margin-top: 24px;
 
@@ -320,6 +320,22 @@
         border-color: var(--color-red-primary);
     }
 
+    .sk-pkg-green {
+        border-color: var(--color-green-primary);
+    }
+
+    .sk-pkg-yellow {
+        border-color: var(--color-yellow-primary);
+    }
+
+    .sk-pkg-purple {
+        border-color: var(--color-purple-primary);
+    }
+
+    .sk-pkg-dark {
+        border-color: var(--color-bg-dark);
+    }
+
     .sk-package-card.sk-pkg-highlight .sk-pkg-header {
         background-color: var(--color-blue-primary);
         color: var(--color-white-primary);
@@ -336,10 +352,35 @@
     }
 
     .sk-best-value-label {
-        text-align: right;
         background-color: var(--color-red-tertiary);
         color: var(--color-red-primary);
     }
+
+    .sk-cheapest-label {
+        background-color: var(--color-green-tertiary);
+        color: var(--color-green-primary);
+    }
+
+    .sk-popular-label {
+        background-color: var(--color-bg-light);
+        color: var(--color-black-primary);
+    }
+
+      .sk-standard-label {
+         background-color: var(--color-blue-tertiary);
+        color: var(--color-blue-primary);
+    }
+
+    .sk-value-label {
+        background-color: var(--color-yellow-tertiary);
+        color: var(--color-yellow-primary);
+    }
+
+    .sk-recommended-label {
+        background-color: var(--color-purple-tertiary);
+        color: var(--color-purple-primary);
+    }
+
 
     .sk-pkg-price {
         padding: 24px 16px;
@@ -558,16 +599,20 @@
     background-color: var(--color-yellow-primary) !important;
 }
 
+.bg-light {
+    background-color: var(--color-bg-light) !important;
+}
+
 .sk-bg-red-light {
-    background-color: var(--color-red-quaternary);
+    background-color: var(--color-red-tertiary);
 }
 
 .sk-bg-blue-light {
-    background-color: var(--color-blue-quaternary);
+    background-color: var(--color-blue-tertiary);
 }
 
 .sk-bg-green-light {
-    background-color: var(--color-green-quaternary);
+    background-color: var(--color-green-tertiary);
 }
 
 .border-blue-light {
@@ -611,9 +656,13 @@
     }
 
     .sk-attends-grid,
-    .sk-packages-grid,
+
     .sk-why-grid {
         grid-template-columns: 1fr !important;
+    }
+
+     .sk-packages-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
     }
 
     .sk-cta {
@@ -634,15 +683,14 @@
     }
 
     .sk-section {
-        margin-bottom: 24px;
+        margin-bottom: 0 !important;
     }
 }
 
 @media (max-width: 480px) {
-    .sk-stats-grid {
-        grid-template-columns: 1fr !important;
+      .sk-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
-
     .sk-hero,
     .sk-section {
         padding: 16px !important;
