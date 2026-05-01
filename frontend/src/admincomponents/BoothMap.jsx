@@ -117,6 +117,21 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
 
   const containerRef = useRef(null);
 
+  /**
+   * Parse boothSize string (e.g. "10x10", "10x20") into pixel dimensions.
+   * Base rule: "10x10" = 40×40 px (1 unit = 4 px), matching LayoutBuilder.
+   */
+  const parseBoothSizePx = useCallback((boothSize) => {
+    const UNIT = 4;
+    if (!boothSize || typeof boothSize !== 'string') return { w: 40, h: 40 };
+    const parts = boothSize.toLowerCase().split('x');
+    if (parts.length !== 2) return { w: 40, h: 40 };
+    const wUnits = parseInt(parts[0], 10);
+    const hUnits = parseInt(parts[1], 10);
+    if (isNaN(wUnits) || isNaN(hUnits) || wUnits <= 0 || hUnits <= 0) return { w: 40, h: 40 };
+    return { w: Math.max(20, wUnits * UNIT), h: Math.max(20, hUnits * UNIT) };
+  }, []);
+
   const handleSyncBooths = async () => {
     if (!selectedEvent?._id || !user?.token) return;
 
@@ -522,84 +537,87 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                         onClick={() => setSelectedId(item.id)}
                       />
                     ) : (item.type === "seat" || item.type === "booth" || item.type === "table") ? (
-                      <Group
-                        id={item.id?.toString()}
-                        x={item.x}
-                        y={item.y}
-                        scaleX={item.scaleX || 1}
-                        scaleY={item.scaleY || 1}
-                        rotation={item.rotation || 0}
-                        onClick={() => setSelectedId(item.id)}
-                      >
-                        {item.type === "table" ? (
-                          <>
-                            <Circle
-                              radius={25}
-                              fill={priceLevels.find(c => c._id === item.categoryId)?.color || "#e0e0e0"}
-                              stroke="white"
-                              strokeWidth={1}
-                            />
-                            {calculateTableSeats(
-                              0,
-                              0,
-                              25,
-                              item.seatCount || 4,
-                            ).map((seat, index) => (
+                      (() => {
+                        const isBooth = item.type === "booth";
+                        const cat = priceLevels.find(c => c._id === item.categoryId);
+                        const { w: boothW, h: boothH } = isBooth
+                          ? parseBoothSizePx(cat?.boothSize)
+                          : { w: 40, h: 40 };
+                        return (
+                          <Group
+                            id={item.id?.toString()}
+                            x={item.x}
+                            y={item.y}
+                            scaleX={item.scaleX || 1}
+                            scaleY={item.scaleY || 1}
+                            rotation={item.rotation || 0}
+                            onClick={() => setSelectedId(item.id)}
+                          >
+                            {item.type === "table" ? (
+                              <>
+                                <Circle
+                                  radius={25}
+                                  fill={cat?.color || "#e0e0e0"}
+                                  stroke="white"
+                                  strokeWidth={1}
+                                />
+                                {calculateTableSeats(0, 0, 25, item.seatCount || 4).map((seat, index) => (
+                                  <Rect
+                                    key={index}
+                                    x={seat.x - 6}
+                                    y={seat.y - 6}
+                                    width={12}
+                                    height={12}
+                                    fill="#bdbdbd"
+                                    cornerRadius={2}
+                                    stroke="white"
+                                    strokeWidth={1}
+                                    strokeScaleEnabled={false}
+                                  />
+                                ))}
+                              </>
+                            ) : isBooth ? (
                               <Rect
-                                key={index}
-                                x={seat.x - 6}
-                                y={seat.y - 6}
-                                width={12}
-                                height={12}
-                                fill="#bdbdbd"
-                                cornerRadius={2}
-                                stroke="white"
+                                x={-boothW / 2}
+                                y={-boothH / 2}
+                                width={boothW}
+                                height={boothH}
+                                fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#e0e0e0")}
+                                stroke="#000"
                                 strokeWidth={1}
                                 strokeScaleEnabled={false}
                               />
-                            ))}
-                          </>
-                        ) : item.type === "booth" ? (
-                          <Rect
-                            x={-20}
-                            y={-20}
-                            width={40}
-                            height={40}
-                            fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (priceLevels.find(c => c._id === item.categoryId)?.color || "#e0e0e0")}
-                            stroke="#000"
-                            strokeWidth={1}
-                            strokeScaleEnabled={false}
-                          />
-                        ) : (
-                          /* Standard Seat - Exact Match to LayoutBuilder */
-                          <Circle
-                            radius={20}
-                            fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (priceLevels.find(c => c._id === item.categoryId)?.color || "#666666")}
-                            stroke="white"
-                            strokeWidth={1}
-                          />
-                        )}
-                        <Text
-                          text={item.label || item.code || ""}
-                          fontSize={9}
-                          fontStyle="bold"
-                          fill="white"
-                          align="center"
-                          verticalAlign="middle"
-                          x={0}
-                          y={0}
-                          offsetX={20}
-                          offsetY={20}
-                          width={40}
-                          height={40}
-                          scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
-                          scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
-                          shadowColor="black"
-                          shadowBlur={2}
-                          shadowOpacity={0.8}
-                          shadowOffset={{ x: 1, y: 1 }}
-                        />
-                      </Group>
+                            ) : (
+                              <Circle
+                                radius={20}
+                                fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#666666")}
+                                stroke="white"
+                                strokeWidth={1}
+                              />
+                            )}
+                            <Text
+                              text={item.label || item.code || ""}
+                              fontSize={isBooth ? Math.max(8, Math.min(boothW, boothH) / 5) : 9}
+                              fontStyle="bold"
+                              fill="white"
+                              align="center"
+                              verticalAlign="middle"
+                              x={0}
+                              y={0}
+                              offsetX={isBooth ? boothW / 2 : 20}
+                              offsetY={isBooth ? boothH / 2 : 20}
+                              width={isBooth ? boothW : 40}
+                              height={isBooth ? boothH : 40}
+                              scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
+                              scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
+                              shadowColor="black"
+                              shadowBlur={2}
+                              shadowOpacity={0.8}
+                              shadowOffset={{ x: 1, y: 1 }}
+                            />
+                          </Group>
+                        );
+                      })()
                     ) : (
                       <BackgroundShape
                         item={item}
