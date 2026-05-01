@@ -1,4 +1,6 @@
 import React from 'react';
+import './ErrorBoundary.css';
+import { Icon } from '@iconify/react';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -18,20 +20,55 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-          <h2 style={{ color: '#e74c3c' }}>Something went wrong.</h2>
-          <p>The application encountered an unexpected error.</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            style={{ padding: '10px 20px', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: '20px' }}
-          >
-            Refresh Page
-          </button>
-          <details style={{ whiteSpace: 'pre-wrap', marginTop: '20px', textAlign: 'left', background: '#f8f9fa', padding: '20px', borderRadius: '8px' }}>
-            {this.state.error && this.state.error.toString()}
-            <br />
-            {this.state.errorInfo && this.state.errorInfo.componentStack}
-          </details>
+        <div className="error-boundary-wrapper">
+          <img src="/logo/Logo1.png" alt="Company Logo" className="error-boundary-logo" />
+          
+          <img 
+            src="/Computer troubleshooting-pana.svg" 
+            alt="Troubleshooting" 
+            className="error-boundary-image" 
+          />
+
+          <div className="error-boundary-content">
+            <h1>Oops! Something went wrong</h1>
+            <p className="regular-body-text">
+              The application encountered an unexpected error. Don't worry, our team has been notified. 
+              In the meantime, you can try refreshing the page.
+            </p>
+            
+            <div className="error-boundary-actions">
+              <button 
+                className="primary-button"
+                onClick={() => window.location.reload()} 
+              >
+                <Icon icon="mdi:refresh" style={{ marginRight: '8px' }} />
+                Refresh Page
+              </button>
+              
+              <button 
+                className="outlined-button"
+                onClick={() => window.location.href = '/'} 
+              style={{color:'var(--color-black-primary)'}}>
+                Return Home
+              </button>
+            </div>
+          </div>
+
+          {/* <div className="error-details-container">
+            <details>
+              <summary className="error-details-summary">
+                <Icon icon="mdi:chevron-down" />
+                Technical Details (For support)
+              </summary>
+              <div className="error-details-content">
+                <strong>Error:</strong> {this.state.error && this.state.error.toString()}
+                <br /><br />
+                <strong>Stack Trace:</strong>
+                <br />
+                {this.state.errorInfo && this.state.errorInfo.componentStack}
+              </div>
+            </details>
+          </div> */}
         </div>
       );
     }
