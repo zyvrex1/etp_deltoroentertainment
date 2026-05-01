@@ -132,16 +132,19 @@ const autoHealEvents = async (eventsArr) => {
         });
       }
 
-      // 4. Update the document implicitly if changed
-      // Note: We don't blindly save here to avoid N+1 DB locks on reads,
-      // but modifying the object in memory ensures the client gets the right data!
-      // We will save it asynchronously in the background so it self heals over time.
-      if (changed && typeof event.save === "function") {
-        event.markModified("booths");
-        event.markModified("layoutData");
-        event
-          .save()
-          .catch((err) => console.error("Auto-heal save failed:", err.message));
+      // 4. Persist corrections using findByIdAndUpdate to avoid VersionError.
+      // event.save() uses optimistic concurrency (__v check) which fails when
+      // another request has already saved the document in between. $set bypasses this.
+      if (changed) {
+        const updatePayload = {};
+        if (event.booths) updatePayload.booths = event.booths;
+        if (event.layoutData) updatePayload.layoutData = event.layoutData;
+
+        Event.findByIdAndUpdate(
+          event._id,
+          { $set: updatePayload },
+          { new: false }
+        ).catch((err) => console.error("Auto-heal update failed:", err.message));
       }
     }
   } catch (error) {

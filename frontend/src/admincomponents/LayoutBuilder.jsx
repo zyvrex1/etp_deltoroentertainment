@@ -28,6 +28,10 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const trRef = useRef(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Manual panning refs — no React state = no re-render lag during pan
+  const isPanningRef = useRef(false);
+  const lastPointerRef = useRef({ x: 0, y: 0 });
+
   const [backgroundImage, setBackgroundImage] = useState(null);
   const [bgOpacity, setBgOpacity] = useState(0.4);
   const [bgKonvaImage, setBgKonvaImage] = useState(null);
@@ -102,6 +106,24 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
   const containerRef = useRef(null);
   const GRID_SIZE = 20;
+
+  /**
+   * Parse a booth size string like "10x10", "10x20", "10x30" into pixel dimensions.
+   * Base: "10x10" = 40×40 px  →  1 unit = 4 px.
+   */
+  const parseBoothSizePx = useCallback((boothSize) => {
+    const UNIT = 4;
+    if (!boothSize || typeof boothSize !== 'string') return { w: 40, h: 40 };
+    const parts = boothSize.toLowerCase().split('x');
+    if (parts.length !== 2) return { w: 40, h: 40 };
+    const wUnits = parseInt(parts[0], 10);
+    const hUnits = parseInt(parts[1], 10);
+    if (isNaN(wUnits) || isNaN(hUnits) || wUnits <= 0 || hUnits <= 0) return { w: 40, h: 40 };
+    return {
+      w: Math.max(20, wUnits * UNIT),
+      h: Math.max(20, hUnits * UNIT),
+    };
+  }, []);
 
   // Re-fit whenever the container or canvas size changes
   useEffect(() => {
@@ -888,10 +910,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
               scaleY={zoom}
               x={stagePos.x}
               y={stagePos.y}
-              draggable
-              onDragEnd={(e) => {
-                setStagePos({ x: e.target.x(), y: e.target.y() });
-              }}
               onClick={(e) => {
                 if (e.target === e.target.getStage()) {
                   setSelectedId(null);
@@ -901,6 +919,45 @@ const LayoutBuilder = ({ selectedEvent }) => {
                 if (e.target === e.target.getStage()) {
                   setSelectedId(null);
                 }
+              }}
+              onMouseDown={(e) => {
+                // Only pan when clicking the empty stage background — never when an item is clicked
+                if (e.target !== e.target.getStage()) return;
+                isPanningRef.current = true;
+                const pos = stageRef.current.getPointerPosition();
+                lastPointerRef.current = { x: pos.x, y: pos.y };
+                stageRef.current.container().style.cursor = 'grabbing';
+              }}
+              onMouseMove={(e) => {
+                if (!isPanningRef.current) return;
+                const stage = stageRef.current;
+                const pos = stage.getPointerPosition();
+                const dx = pos.x - lastPointerRef.current.x;
+                const dy = pos.y - lastPointerRef.current.y;
+                lastPointerRef.current = { x: pos.x, y: pos.y };
+                // Move stage imperatively — no re-render, no flicker
+                stage.x(stage.x() + dx);
+                stage.y(stage.y() + dy);
+                stage.batchDraw();
+              }}
+              onMouseUp={() => {
+                if (!isPanningRef.current) return;
+                isPanningRef.current = false;
+                stageRef.current.container().style.cursor = 'default';
+                // Sync React state once panning is done
+                setStagePos({
+                  x: stageRef.current.x(),
+                  y: stageRef.current.y(),
+                });
+              }}
+              onMouseLeave={() => {
+                if (!isPanningRef.current) return;
+                isPanningRef.current = false;
+                stageRef.current.container().style.cursor = 'default';
+                setStagePos({
+                  x: stageRef.current.x(),
+                  y: stageRef.current.y(),
+                });
               }}
               onWheel={(e) => {
                 e.evt.preventDefault();
@@ -978,6 +1035,10 @@ const LayoutBuilder = ({ selectedEvent }) => {
                   const category = categories.find(c => c.id === item.categoryId);
                   const isSelected = selectedId === item.id;
                   const isBooth = item.type === 'booth';
+                  // Auto-size the booth rect from the category's boothSize string
+                  const { w: boothW, h: boothH } = isBooth
+                    ? parseBoothSizePx(category?.boothSize)
+                    : { w: 40, h: 40 };
 
                   return (
                     <Group
@@ -1016,10 +1077,10 @@ const LayoutBuilder = ({ selectedEvent }) => {
                     >
                       {isBooth ? (
                         <Rect
-                          x={-20}
-                          y={-20}
-                          width={40}
-                          height={40}
+                          x={-boothW / 2}
+                          y={-boothH / 2}
+                          width={boothW}
+                          height={boothH}
                           fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
                           stroke={'#000'}
                           strokeWidth={1}
@@ -1041,17 +1102,17 @@ const LayoutBuilder = ({ selectedEvent }) => {
                       )}
                       <Text
                         text={item.label}
-                        fontSize={9}
+                        fontSize={isBooth ? Math.max(8, Math.min(boothW, boothH) / 5) : 9}
                         fontStyle="bold"
                         fill="white"
                         align="center"
                         verticalAlign="middle"
                         x={0}
                         y={0}
-                        offsetX={20}
-                        offsetY={20}
-                        width={40}
-                        height={40}
+                        offsetX={isBooth ? boothW / 2 : 20}
+                        offsetY={isBooth ? boothH / 2 : 20}
+                        width={isBooth ? boothW : 40}
+                        height={isBooth ? boothH : 40}
                         scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
                         scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
                         shadowColor="black"

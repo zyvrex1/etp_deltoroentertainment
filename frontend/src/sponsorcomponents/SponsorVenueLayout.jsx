@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -94,31 +94,71 @@ const SponsorVenueLayout = () => {
     const [localItems, setLocalItems] = useState([]);
     const [priceLevels, setPriceLevels] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
-    const [zoom, setZoom] = useState(0.8);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Canvas sizing (read from layoutData)
+    const [canvasWidth, setCanvasWidth] = useState(1400);
+    const [canvasHeight, setCanvasHeight] = useState(900);
+
+    // Background image (read from layoutData)
+    const [bgKonvaImage, setBgKonvaImage] = useState(null);
+    const [bgOpacity, setBgOpacity] = useState(0.4);
+    const [bgWidth, setBgWidth] = useState(null);
+    const [bgHeight, setBgHeight] = useState(null);
+
+    // Zoom + pan state (mirrors BoothMap / LayoutBuilder)
+    const [zoom, setZoom] = useState(1);
+    const [fitScale, setFitScale] = useState(1);
+    const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+    const [containerSize, setContainerSize] = useState({ w: 800, h: 600 });
+
     const stageRef = useRef(null);
     const containerRef = useRef(null);
-    const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+    // Manual panning refs — no React state = no re-render lag during pan
+    const isPanningRef = useRef(false);
+    const lastPointerRef = useRef({ x: 0, y: 0 });
 
-    useEffect(() => {
-        const updateDimensions = () => {
-            if (containerRef.current) {
-                setDimensions({
-                    width: containerRef.current.offsetWidth,
-                    height: containerRef.current.offsetHeight || 600
-                });
-            }
-        };
-
-        window.addEventListener('resize', updateDimensions);
-        updateDimensions();
-        // Trigger again after a small delay to ensure container has rendered
-        setTimeout(updateDimensions, 100);
-        return () => window.removeEventListener('resize', updateDimensions);
+    /**
+     * Parse boothSize string (e.g. "10x10", "10x20") into pixel dimensions.
+     * Base rule: "10x10" = 40×40 px (1 unit = 4 px).
+     */
+    const parseBoothSizePx = useCallback((boothSize) => {
+        const UNIT = 4;
+        if (!boothSize || typeof boothSize !== 'string') return { w: 40, h: 40 };
+        const parts = boothSize.toLowerCase().split('x');
+        if (parts.length !== 2) return { w: 40, h: 40 };
+        const wUnits = parseInt(parts[0], 10);
+        const hUnits = parseInt(parts[1], 10);
+        if (isNaN(wUnits) || isNaN(hUnits) || wUnits <= 0 || hUnits <= 0) return { w: 40, h: 40 };
+        return { w: Math.max(20, wUnits * UNIT), h: Math.max(20, hUnits * UNIT) };
     }, []);
 
-    const CANVAS_WIDTH = 1400;
-    const CANVAS_HEIGHT = 800;
+    // Fit canvas to container whenever canvas size changes
+    useEffect(() => {
+        const recalc = () => {
+            if (!containerRef.current) return;
+            const { clientWidth, clientHeight } = containerRef.current;
+            setContainerSize({ w: clientWidth, h: clientHeight });
+            const padding = 40;
+            const scaleX = (clientWidth - padding) / canvasWidth;
+            const scaleY = (clientHeight - padding) / canvasHeight;
+            const fs = Math.min(scaleX, scaleY, 1);
+            setFitScale(fs);
+            setZoom(fs);
+            setStagePos({
+                x: (clientWidth - canvasWidth * fs) / 2,
+                y: (clientHeight - canvasHeight * fs) / 2,
+            });
+        };
+        const timer = setTimeout(recalc, 50);
+        const ro = new ResizeObserver(recalc);
+        if (containerRef.current) ro.observe(containerRef.current);
+        return () => { clearTimeout(timer); ro.disconnect(); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [canvasWidth, canvasHeight]);
+
+    const CANVAS_WIDTH = canvasWidth;
+    const CANVAS_HEIGHT = canvasHeight;
 
     useEffect(() => {
         const fetchEventData = async () => {
@@ -161,6 +201,30 @@ const SponsorVenueLayout = () => {
 
                 setLocalItems(normalizedItems);
                 setPriceLevels(data.priceLevels || []);
+
+                // ── Load canvas size & background image from layoutData ──
+                if (data.layoutData) {
+                    const ld = data.layoutData;
+                    const cw = ld.canvasWidth || 1400;
+                    const ch = ld.canvasHeight || 900;
+                    setCanvasWidth(cw);
+                    setCanvasHeight(ch);
+
+                    if (ld.backgroundImage) {
+                        setBgOpacity(ld.bgOpacity ?? 0.4);
+                        const img = new window.Image();
+                        img.src = ld.backgroundImage;
+                        img.onload = () => {
+                            setBgKonvaImage(img);
+                            setBgWidth(ld.bgWidth || cw);
+                            setBgHeight(ld.bgHeight || ch);
+                        };
+                    } else {
+                        setBgKonvaImage(null);
+                        setBgWidth(null);
+                        setBgHeight(null);
+                    }
+                }
             } catch (error) {
                 console.error("Error fetching event layout:", error);
             } finally {
@@ -264,20 +328,95 @@ const SponsorVenueLayout = () => {
 
                     <div className="svl-map-container" ref={containerRef} style={{ padding: 0, overflow: 'hidden' }}>
                         <div className="svl-zoom-controls" style={{ zIndex: 10 }}>
-                            <button onClick={() => setZoom(z => Math.min(z + 0.1, 2))} title="Zoom In"><Icon icon="mdi:magnify-plus-outline" /></button>
-                            <button onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} title="Zoom Out"><Icon icon="mdi:magnify-minus-outline" /></button>
-                            <button onClick={() => setZoom(0.8)} title="Reset View"><Icon icon="mdi:refresh" /></button>
+                            <button onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))} title="Zoom In"><Icon icon="mdi:magnify-plus-outline" /></button>
+                            <button onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))} title="Zoom Out"><Icon icon="mdi:magnify-minus-outline" /></button>
+                            <button onClick={() => {
+                                setZoom(fitScale);
+                                if (containerRef.current) {
+                                    const { clientWidth, clientHeight } = containerRef.current;
+                                    setStagePos({
+                                        x: (clientWidth - canvasWidth * fitScale) / 2,
+                                        y: (clientHeight - canvasHeight * fitScale) / 2,
+                                    });
+                                }
+                            }} title="Reset View"><Icon icon="mdi:fit-to-screen-outline" /></button>
                         </div>
 
                         <div className="svl-map-wrapper" style={{ height: '100%', overflow: 'hidden' }}>
                             <Stage
-                                width={dimensions.width}
-                                height={dimensions.height}
+                                width={containerSize.w}
+                                height={containerSize.h}
                                 ref={stageRef}
                                 scaleX={zoom}
                                 scaleY={zoom}
-                                draggable
+                                x={stagePos.x}
+                                y={stagePos.y}
+                                onMouseDown={(e) => {
+                                    // Only pan on empty canvas background, not on items
+                                    if (e.target !== e.target.getStage()) return;
+                                    isPanningRef.current = true;
+                                    const pos = stageRef.current.getPointerPosition();
+                                    lastPointerRef.current = { x: pos.x, y: pos.y };
+                                    stageRef.current.container().style.cursor = 'grabbing';
+                                    setSelectedId(null);
+                                }}
+                                onMouseMove={() => {
+                                    if (!isPanningRef.current) return;
+                                    const stage = stageRef.current;
+                                    const pos = stage.getPointerPosition();
+                                    const dx = pos.x - lastPointerRef.current.x;
+                                    const dy = pos.y - lastPointerRef.current.y;
+                                    lastPointerRef.current = { x: pos.x, y: pos.y };
+                                    stage.x(stage.x() + dx);
+                                    stage.y(stage.y() + dy);
+                                    stage.batchDraw();
+                                }}
+                                onMouseUp={() => {
+                                    if (!isPanningRef.current) return;
+                                    isPanningRef.current = false;
+                                    stageRef.current.container().style.cursor = 'default';
+                                    setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
+                                }}
+                                onMouseLeave={() => {
+                                    if (!isPanningRef.current) return;
+                                    isPanningRef.current = false;
+                                    stageRef.current.container().style.cursor = 'default';
+                                    setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
+                                }}
+                                onWheel={(e) => {
+                                    e.evt.preventDefault();
+                                    const stage = stageRef.current;
+                                    const oldScale = zoom;
+                                    const pointer = stage.getPointerPosition();
+                                    const minScale = fitScale * 0.3;
+                                    const maxScale = fitScale * 4;
+                                    const direction = e.evt.deltaY > 0 ? -1 : 1;
+                                    const newScale = Math.min(maxScale, Math.max(minScale, oldScale + direction * 0.05));
+                                    const mousePointTo = {
+                                        x: (pointer.x - stagePos.x) / oldScale,
+                                        y: (pointer.y - stagePos.y) / oldScale,
+                                    };
+                                    setZoom(newScale);
+                                    setStagePos({
+                                        x: pointer.x - mousePointTo.x * newScale,
+                                        y: pointer.y - mousePointTo.y * newScale,
+                                    });
+                                }}
                             >
+                                {/* Background image from layoutData */}
+                                {bgKonvaImage && bgWidth && bgHeight && (
+                                    <Layer>
+                                        <KonvaImage
+                                            image={bgKonvaImage}
+                                            x={0}
+                                            y={0}
+                                            width={bgWidth}
+                                            height={bgHeight}
+                                            opacity={bgOpacity}
+                                            listening={false}
+                                        />
+                                    </Layer>
+                                )}
                                 <Layer>
                                     {sortedItems.map((item, i) => (
                                         <React.Fragment key={item.id || i}>
@@ -286,61 +425,65 @@ const SponsorVenueLayout = () => {
                                                     if (item.type === "booth" || item.isBooth) setSelectedId(item.id);
                                                 }} />
                                             ) : (item.type === "seat" || item.type === "booth") ? (
-                                                <Group
-                                                    x={item.x}
-                                                    y={item.y}
-                                                    scaleX={item.scaleX || 1}
-                                                    scaleY={item.scaleY || 1}
-                                                    rotation={item.rotation || 0}
-                                                    onClick={() => {
-                                                        // Only allow booths to be selected
-                                                        if (item.status === 'available' && (item.type === 'booth' || item.isBooth)) {
-                                                            setSelectedId(item.id);
-                                                        }
-                                                    }}
-                                                    onTap={() => {
-                                                        if (item.status === 'available' && (item.type === 'booth' || item.isBooth)) {
-                                                            setSelectedId(item.id);
-                                                        }
-                                                    }}
-                                                >
-                                                    {item.type === "booth" ? (
-                                                        <Rect
-                                                            x={-20}
-                                                            y={-20}
-                                                            width={40}
-                                                            height={40}
-                                                            fill={selectedId === item.id ? "#3b82f6" : (item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (item.status !== 'available' ? '#ef4444' : (priceLevels.find(c => c._id === item.categoryId)?.color || "#e0e0e0")))}
-                                                            stroke="white"
-                                                            strokeWidth={selectedId === item.id ? 2 : 1}
-                                                            cornerRadius={4}
-                                                        />
-                                                    ) : (
-                                                        <Circle
-                                                            radius={20}
-                                                            fill={priceLevels.find(c => c._id === item.categoryId)?.color || "#666666"}
-                                                            stroke="white"
-                                                            strokeWidth={1}
-                                                            opacity={0.3} // Visual cue that seats are not for sponsors
-                                                        />
-                                                    )}
-                                                    <Text
-                                                        text={item.label || item.code || ""}
-                                                        fontSize={9}
-                                                        fontStyle="bold"
-                                                        fill="white"
-                                                        align="center"
-                                                        verticalAlign="middle"
-                                                        x={0}
-                                                        y={0}
-                                                        offsetX={20}
-                                                        offsetY={20}
-                                                        width={40}
-                                                        height={40}
-                                                        scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
-                                                        scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
-                                                    />
-                                                </Group>
+                                                (() => {
+                                                    const isBooth = item.type === 'booth' || item.isBooth;
+                                                    const cat = priceLevels.find(c => c._id === item.categoryId);
+                                                    const { w: boothW, h: boothH } = isBooth
+                                                        ? parseBoothSizePx(cat?.boothSize)
+                                                        : { w: 40, h: 40 };
+                                                    return (
+                                                        <Group
+                                                            x={item.x}
+                                                            y={item.y}
+                                                            scaleX={item.scaleX || 1}
+                                                            scaleY={item.scaleY || 1}
+                                                            rotation={item.rotation || 0}
+                                                            onClick={() => {
+                                                                if (item.status === 'available' && isBooth) setSelectedId(item.id);
+                                                            }}
+                                                            onTap={() => {
+                                                                if (item.status === 'available' && isBooth) setSelectedId(item.id);
+                                                            }}
+                                                        >
+                                                            {isBooth ? (
+                                                                <Rect
+                                                                    x={-boothW / 2}
+                                                                    y={-boothH / 2}
+                                                                    width={boothW}
+                                                                    height={boothH}
+                                                                    fill={selectedId === item.id ? "#3b82f6" : (item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#e0e0e0"))}
+                                                                    stroke="white"
+                                                                    strokeWidth={selectedId === item.id ? 2 : 1}
+                                                                    cornerRadius={4}
+                                                                />
+                                                            ) : (
+                                                                <Circle
+                                                                    radius={20}
+                                                                    fill={cat?.color || "#666666"}
+                                                                    stroke="white"
+                                                                    strokeWidth={1}
+                                                                    opacity={0.3}
+                                                                />
+                                                            )}
+                                                            <Text
+                                                                text={item.label || item.code || ""}
+                                                                fontSize={isBooth ? Math.max(8, Math.min(boothW, boothH) / 5) : 9}
+                                                                fontStyle="bold"
+                                                                fill="white"
+                                                                align="center"
+                                                                verticalAlign="middle"
+                                                                x={0}
+                                                                y={0}
+                                                                offsetX={isBooth ? boothW / 2 : 20}
+                                                                offsetY={isBooth ? boothH / 2 : 20}
+                                                                width={isBooth ? boothW : 40}
+                                                                height={isBooth ? boothH : 40}
+                                                                scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
+                                                                scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
+                                                            />
+                                                        </Group>
+                                                    );
+                                                })()
                                             ) : (
                                                 <BackgroundShape item={item} />
                                             )}

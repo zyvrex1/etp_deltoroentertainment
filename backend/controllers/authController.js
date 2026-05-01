@@ -215,7 +215,7 @@ const updateProfile = async (req, res) => {
     // 🔥 Update sponsor-specific fields if applicable
     if (user.role === 'sponsor') {
       let sponsor = await Sponsor.findOne({ userId: _id })
-      
+
       if (sponsor) {
         if (companyName) sponsor.companyName = companyName
         if (industry) sponsor.industry = industry
@@ -226,10 +226,10 @@ const updateProfile = async (req, res) => {
         await sponsor.save()
       } else if (companyName && industry) {
         // Create it if it doesn't exist yet but form data is provided
-        await Sponsor.create({ 
-          userId: _id, 
-          companyName, 
-          industry, 
+        await Sponsor.create({
+          userId: _id,
+          companyName,
+          industry,
           phone: phone || user.phone,
           streetAddress,
           city,
