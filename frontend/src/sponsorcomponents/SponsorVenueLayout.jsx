@@ -110,7 +110,7 @@ const SponsorVenueLayout = () => {
     const [zoom, setZoom] = useState(1);
     const [fitScale, setFitScale] = useState(1);
     const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
-    const [containerSize, setContainerSize] = useState({ w: 800, h: 600 });
+    const [containerSize, setContainerSize] = useState({ w: 1000, h: 600 });
 
     const stageRef = useRef(null);
     const containerRef = useRef(null);
@@ -133,29 +133,48 @@ const SponsorVenueLayout = () => {
         return { w: Math.max(20, wUnits * UNIT), h: Math.max(20, hUnits * UNIT) };
     }, []);
 
-    // Fit canvas to container whenever canvas size changes
+    /**
+     * Shared recalc: reads the container's current dimensions and computes
+     * fitScale, zoom and stagePos so the entire canvas fits in view.
+     * Extracted as a useCallback so multiple effects can call it.
+     */
+    const recalc = useCallback(() => {
+        if (!containerRef.current) return;
+        const { clientWidth, clientHeight } = containerRef.current;
+        if (!clientWidth || !clientHeight) return;
+        setContainerSize({ w: clientWidth, h: clientHeight });
+        const padding = 20;
+        const scaleX = (clientWidth - padding) / canvasWidth;
+        const scaleY = (clientHeight - padding) / canvasHeight;
+        const fs = Math.min(scaleX, scaleY, 1);
+        setFitScale(fs);
+        setZoom(fs);
+        setStagePos({
+            x: (clientWidth - canvasWidth * fs) / 2,
+            y: (clientHeight - canvasHeight * fs) / 2,
+        });
+    }, [canvasWidth, canvasHeight]);
+
+    // Re-fit when canvas size changes or container is resized
     useEffect(() => {
-        const recalc = () => {
-            if (!containerRef.current) return;
-            const { clientWidth, clientHeight } = containerRef.current;
-            setContainerSize({ w: clientWidth, h: clientHeight });
-            const padding = 40;
-            const scaleX = (clientWidth - padding) / canvasWidth;
-            const scaleY = (clientHeight - padding) / canvasHeight;
-            const fs = Math.min(scaleX, scaleY, 1);
-            setFitScale(fs);
-            setZoom(fs);
-            setStagePos({
-                x: (clientWidth - canvasWidth * fs) / 2,
-                y: (clientHeight - canvasHeight * fs) / 2,
-            });
-        };
-        const timer = setTimeout(recalc, 50);
+        const t1 = setTimeout(recalc, 50);
+        const t2 = setTimeout(recalc, 300);
         const ro = new ResizeObserver(recalc);
         if (containerRef.current) ro.observe(containerRef.current);
-        return () => { clearTimeout(timer); ro.disconnect(); };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [canvasWidth, canvasHeight]);
+        return () => { clearTimeout(t1); clearTimeout(t2); ro.disconnect(); };
+    }, [recalc]);
+
+    /**
+     * THE KEY FIX: when isLoading flips false, the map container mounts for
+     * the first time. The canvasWidth/Height effect already fired while the
+     * loading spinner was showing (containerRef was null → returned early).
+     * We need a second recalc NOW that the DOM is ready.
+     */
+    useEffect(() => {
+        if (isLoading) return;
+        const t = setTimeout(recalc, 150);
+        return () => clearTimeout(t);
+    }, [isLoading, recalc]);
 
     const CANVAS_WIDTH = canvasWidth;
     const CANVAS_HEIGHT = canvasHeight;
@@ -250,7 +269,7 @@ const SponsorVenueLayout = () => {
         if (!selectedId) return;
         const selectedItem = localItems.find(i => i.id === selectedId);
         const category = priceLevels.find(pl => pl._id === selectedItem?.categoryId);
-        
+
         const facePrice = category?.facePrice || 0;
         const processingFee = facePrice * 0.03;
         const estimatedTax = facePrice * 0.08;
@@ -326,7 +345,7 @@ const SponsorVenueLayout = () => {
                         </span>
                     </div>
 
-                    <div className="svl-map-container" ref={containerRef} style={{ padding: 0, overflow: 'hidden' }}>
+                    <div className="svl-map-container" style={{ padding: 0, overflow: 'hidden', position: 'relative' }}>
                         <div className="svl-zoom-controls" style={{ zIndex: 10 }}>
                             <button onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))} title="Zoom In"><Icon icon="mdi:magnify-plus-outline" /></button>
                             <button onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))} title="Zoom Out"><Icon icon="mdi:magnify-minus-outline" /></button>
@@ -342,7 +361,7 @@ const SponsorVenueLayout = () => {
                             }} title="Reset View"><Icon icon="mdi:fit-to-screen-outline" /></button>
                         </div>
 
-                        <div className="svl-map-wrapper" style={{ height: '100%', overflow: 'hidden' }}>
+                        <div className="svl-map-wrapper" ref={containerRef} style={{ height: '100%', overflow: 'hidden', touchAction: 'none' }}>
                             <Stage
                                 width={containerSize.w}
                                 height={containerSize.h}
@@ -381,6 +400,31 @@ const SponsorVenueLayout = () => {
                                     if (!isPanningRef.current) return;
                                     isPanningRef.current = false;
                                     stageRef.current.container().style.cursor = 'default';
+                                    setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
+                                }}
+                                onTouchStart={(e) => {
+                                    // Single-finger pan only
+                                    if (e.evt.touches.length !== 1) return;
+                                    e.evt.preventDefault();
+                                    const touch = e.evt.touches[0];
+                                    isPanningRef.current = true;
+                                    lastPointerRef.current = { x: touch.clientX, y: touch.clientY };
+                                }}
+                                onTouchMove={(e) => {
+                                    if (!isPanningRef.current || e.evt.touches.length !== 1) return;
+                                    e.evt.preventDefault();
+                                    const touch = e.evt.touches[0];
+                                    const dx = touch.clientX - lastPointerRef.current.x;
+                                    const dy = touch.clientY - lastPointerRef.current.y;
+                                    lastPointerRef.current = { x: touch.clientX, y: touch.clientY };
+                                    const stage = stageRef.current;
+                                    stage.x(stage.x() + dx);
+                                    stage.y(stage.y() + dy);
+                                    stage.batchDraw();
+                                }}
+                                onTouchEnd={() => {
+                                    if (!isPanningRef.current) return;
+                                    isPanningRef.current = false;
                                     setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
                                 }}
                                 onWheel={(e) => {
