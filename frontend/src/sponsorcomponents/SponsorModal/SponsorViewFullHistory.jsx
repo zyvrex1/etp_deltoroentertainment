@@ -1,8 +1,10 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
+import { useAuthContext } from '../../hooks/useAuthContext';
 import './SponsorViewFullHistory.css';
 
 const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) => {
+    const { user: authUser } = useAuthContext();
     if (!isOpen) return null;
 
     // Map backend reservation data (passed as historyItem.fullReservation or historyItem)
@@ -20,9 +22,53 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) =>
         paymentMethod: res?.paymentMethod === 'card' ? 'Credit Card' : 'Invoice',
         paymentDate: historyItem?.paymentDate || 'N/A',
         paymentStatus: historyItem?.paymentStatus || 'Paid',
-        exhibitors: [
-            { initial: res?.user?.firstName?.[0] || 'S', name: (res?.user?.firstName || 'Sponsor') + ' ' + (res?.user?.lastName || ''), role: 'Sponsor Lead' },
-        ],
+        exhibitors: (() => {
+            const leadId = res?.user?._id || res?.user;
+            const isLeadAuthUser = authUser?._id === leadId;
+            
+            // Try user object, then flattened fields, then auth user if it matches
+            let leadFirstName = res?.user?.firstName || res?.user?.name || res?.firstName || res?.billingAddress?.firstName || res?.billingAddress?.name || res?.userName || (isLeadAuthUser ? authUser?.firstName : "");
+            let leadLastName = res?.user?.lastName || res?.lastName || res?.billingAddress?.lastName || (isLeadAuthUser ? authUser?.lastName : "");
+            const leadCompanyName = res?.user?.companyName || res?.billingAddress?.companyName || res?.companyName;
+            const leadEmail = res?.user?.email || res?.email;
+
+            // NEW: Check if the lead is also listed in the exhibitors array (common for populated lists)
+            const leadFromExhibitors = res?.exhibitors?.find(ex => (ex._id || ex.id) === leadId);
+            if (leadFromExhibitors) {
+                if (!leadFirstName) leadFirstName = leadFromExhibitors.firstName;
+                if (!leadLastName) leadLastName = leadFromExhibitors.lastName;
+            }
+
+            let leadName = "";
+            if (leadFirstName || leadLastName) {
+                leadName = `${leadFirstName || ''} ${leadLastName || ''}`.trim();
+            } 
+            
+            if (!leadName && leadEmail) {
+                leadName = leadEmail.split('@')[0];
+            }
+
+            if (!leadName) {
+                leadName = "Lead Representative";
+            }
+
+            const leadInitial = leadFirstName?.[0] || leadCompanyName?.[0] || leadEmail?.[0] || "S";
+
+            return [
+                { 
+                    initial: leadInitial, 
+                    name: leadName, 
+                    company: leadCompanyName,
+                    role: 'Sponsor Lead' 
+                },
+                ...(res?.exhibitors || []).map(ex => ({
+                    initial: ex.firstName?.[0] || 'E',
+                    name: `${ex.firstName || ''} ${ex.lastName || ''}`.trim() || "Exhibitor",
+                    company: ex.companyName || leadCompanyName,
+                    role: 'Exhibitor'
+                }))
+            ];
+        })(),
         features: res?.event?.priceLevels?.find(pl => pl._id === res?.event?.booths?.find(b => b.code === res?.boothCode)?.priceLevelId)?.description?.split(',') || [
             'Standard Booth Inclusions', 'WiFi Access', 'Power Circuit'
         ],
@@ -121,7 +167,8 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) =>
                                     </div>
                                     <div className="svfh-exhibitor-info">
                                         <h6 className="text-black m-0">{ex.name}</h6>
-                                        <p className="smaller-body-text text-secondary m-0">{ex.role}</p>
+                                        {ex.company && <p className="smaller-body-text text-black m-0" style={{ fontWeight: '500', fontSize: '11px' }}>{ex.company}</p>}
+                                        <p className="smaller-body-text text-secondary m-0" style={{ fontSize: '10px' }}>{ex.role}</p>
                                     </div>
                                 </div>
                             ))}
@@ -129,7 +176,7 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) =>
                     </div>
 
                     {/* Included Features */}
-                    <div className="svfh-section-block">
+                    {/* <div className="svfh-section-block">
                         <h4 className="text-black m-0">Included Features</h4>
                         <div className="svfh-features-grid">
                             {item.features.map((feature, idx) => (
@@ -139,10 +186,10 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) =>
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Event Performance */}
-                    <div className="svfh-section-block">
+                    {/* <div className="svfh-section-block">
                         <h4 className="text-black m-0">Event Performance</h4>
                         <div className="svfh-performance-grid">
                             <div className="svfh-performance-card svfh-card-blue">
@@ -158,7 +205,7 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) =>
                                 <span className="smaller-body-text text-secondary">Total Interactions</span>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Payment Summary */}
                     <div className="svfh-section-block">

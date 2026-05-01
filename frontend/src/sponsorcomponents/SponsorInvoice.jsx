@@ -14,6 +14,7 @@ export default function SponsorInvoice() {
     const [loading, setLoading] = useState(true);
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [searchQuery, setSearchQuery] = useState("");
     const PAGE_TITLE = 'Invoices Report';
 
     useEffect(() => {
@@ -102,7 +103,7 @@ export default function SponsorInvoice() {
             y += 20;
 
             const headers = ['Event', 'Invoice #', 'Booth', 'Amount', 'Issued', 'Paid'];
-            const rows = allInvoices.map(item => [
+            const rows = filteredInvoices.map(item => [
                 item.title,
                 item.invoiceRef,
                 item.booth,
@@ -240,9 +241,24 @@ export default function SponsorInvoice() {
         setCurrentPage(1);
     };
 
-    const totalPages = Math.ceil(allInvoices.length / itemsPerPage);
+    const filteredInvoices = allInvoices.filter(item => {
+        // Search filter
+        const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            item.invoiceRef.toLowerCase().includes(searchQuery.toLowerCase());
+
+        // Date range filtering (based on original createdAt date stored in the item if possible, 
+        // or re-parse issuedDate. Since issuedDate is formatted, it's better to use the raw date.
+        // In this component, we mapped res.createdAt to issuedDate string.
+        // Let's re-parse issuedDate for filtering or add rawDate to the object.)
+        const invoiceDate = new Date(item.paidDate); // paidDate is mapped from res.createdAt
+        const matchesDate = invoiceDate >= dateRange.start && invoiceDate <= dateRange.end;
+
+        return matchesSearch && matchesDate;
+    });
+
+    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedInvoices = allInvoices.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + itemsPerPage);
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -260,7 +276,16 @@ export default function SponsorInvoice() {
             <div className="si-controls">
                 <div className="si-search">
                     <Icon icon="mdi:magnify" width="20" color="var(--color-black-secondary)" />
-                    <input type="text" placeholder="Search by event or invoice order" className="small-body-text" />
+                    <input 
+                        type="text" 
+                        placeholder="Search by event or invoice order" 
+                        className="small-body-text" 
+                        value={searchQuery}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                    />
                 </div>
                 <div className="si-filters">
                     <button className="outlined-button si-filter-btn" onClick={exportAllInvoicesToPDF}>

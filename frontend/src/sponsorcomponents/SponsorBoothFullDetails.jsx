@@ -7,6 +7,7 @@ import { showDeleteConfirmAlert, showSuccessAlert, showConfirmAlert } from '../u
 import SponsorAddExhibitor from './SponsorModal/SponsorAddExhibitor';
 import SponsorDocuments from './SponsorModal/SponsorDocuments';
 import SponsorViewInvoiceReceipt from './SponsorModal/SponsorViewInvoiceReceipt';
+import SponsorRequestRefund from './SponsorModal/SponsorRequestRefund';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, drawLongText, finalizeReport } from '../utils/pdfExport';
 import './SponsorBoothFullDetails.css';
@@ -22,6 +23,7 @@ export default function SponsorBoothFullDetails() {
     const [isAddExhibitorModalOpen, setIsAddExhibitorModalOpen] = useState(false);
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
     const [isInvoiceReceiptModalOpen, setIsInvoiceReceiptModalOpen] = useState(false);
+    const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
 
     const fetchReservation = React.useCallback(async () => {
@@ -102,6 +104,8 @@ export default function SponsorBoothFullDetails() {
         try {
             const logoData = await loadLogo();
             const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
             const MARGIN = 15;
             let y = 45;
 
@@ -123,7 +127,40 @@ export default function SponsorBoothFullDetails() {
             pdf.text(`Confirmation Number: Booth-${reservation._id.toString().slice(-6).toUpperCase()}`, MARGIN, y);
             y += 6;
             pdf.text(`Booking Date: ${new Date(reservation.createdAt).toLocaleDateString()}`, MARGIN, y);
+            y += 6;
+            const priceLevel = reservation.event?.priceLevels?.find(pl => pl._id === reservation.event?.booths?.find(b => b.code === reservation.boothCode)?.priceLevelId);
+            pdf.text(`Booth Type: ${priceLevel?.priceName || 'Standard'} • ${priceLevel?.boothSize || '10x10'}`, MARGIN, y);
             y += 10;
+
+            // Exhibitors Section
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Exhibitors', MARGIN, y);
+            y += 6;
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+
+            // Lead
+            const leadName = `${reservation.user?.firstName || ''} ${reservation.user?.lastName || ''}`.trim() || reservation.user?.email || "Lead Representative";
+            pdf.text(`• ${leadName} (Lead Representative)`, MARGIN, y);
+            y += 6;
+
+            // Others
+            (reservation.exhibitors || []).forEach(ex => {
+                if (y > 270) {
+                    pdf.addPage();
+                    addReportHeader(pdf, INVOICE_TITLE, logoData);
+                    y = 45;
+                }
+                const exName = `${ex.firstName || ''} ${ex.lastName || ''}`.trim() || ex.email || "Exhibitor";
+                pdf.text(`• ${exName} (Exhibitor)`, MARGIN, y);
+                y += 6;
+            });
+            y += 10;
+
+            y += 4;
 
             const headers = ['Description', 'Amount'];
             const rows = [
@@ -132,7 +169,7 @@ export default function SponsorBoothFullDetails() {
                 ['Tax', `$${(reservation.amount?.tax || 0).toLocaleString()}`],
                 ['Total Paid', `$${(reservation.amount?.total || 0).toLocaleString()}`]
             ];
-            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5, logoData, INVOICE_TITLE);
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5, logoData, INVOICE_TITLE);
 
             finalizeReport(pdf);
             pdf.save(`Invoice_${reservation._id}.pdf`);
@@ -774,14 +811,7 @@ export default function SponsorBoothFullDetails() {
                             <button className="outlined-button full-width-btn" onClick={handleEventDetails}>View Event Details</button>
                             <button className="outlined-button full-width-btn" onClick={exportInvoiceToPDF}><Icon icon="mdi:download-outline" width="18" /> Download Invoice</button>
                             {(reservation.user?._id === user?._id || reservation.user === user?._id) && (
-                                <button className="primary-button cancel-reservation-btn" onClick={() => {
-                                    navigate('/sponsor/support', {
-                                        state: {
-                                            tab: 'Submit a Concern',
-                                            prefill: { subject: 'Refund Booth', category: 'Billing & Payment', priority: 'High', event: reservation.event?.title }
-                                        }
-                                    });
-                                }}>Request Refund</button>
+                                <button className="primary-button cancel-reservation-btn" onClick={() => setIsRefundModalOpen(true)}>Request Refund</button>
                             )}
                         </div>
                     </div>
@@ -804,6 +834,11 @@ export default function SponsorBoothFullDetails() {
                 onClose={() => setIsInvoiceReceiptModalOpen(false)}
                 invoiceItem={invoiceItem}
                 onDownload={exportInvoiceToPDF}
+            />
+            <SponsorRequestRefund
+                show={isRefundModalOpen}
+                onClose={() => setIsRefundModalOpen(false)}
+                boothData={reservation}
             />
         </div>
     );

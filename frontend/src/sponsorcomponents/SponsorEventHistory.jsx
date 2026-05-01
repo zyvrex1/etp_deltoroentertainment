@@ -63,9 +63,13 @@ export default function SponsorEventHistory() {
     const downloadHistoryItemPDF = async (item) => {
         const loadingToast = showExportToast();
         const INVOICE_TITLE = 'Invoice Receipt';
+        const res = item.fullReservation;
+
         try {
             const logoData = await loadLogo();
             const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
             const MARGIN = 15;
             let y = 45;
 
@@ -88,9 +92,11 @@ export default function SponsorEventHistory() {
             y += 6;
             pdf.text(`Payment Date: ${item.paymentDate}`, MARGIN, y);
             y += 6;
-            pdf.text(`Booking Date: ${item.bookingDate || 'May 15, 2026'}`, MARGIN, y);
+            pdf.text(`Booking Date: ${item.paymentDate}`, MARGIN, y);
             y += 6;
-            pdf.text(`Booth Type: Standard • 10x10`, MARGIN, y);
+            
+            const priceLevel = res?.event?.priceLevels?.find(pl => pl._id === res?.event?.booths?.find(b => b.code === res?.boothCode)?.priceLevelId);
+            pdf.text(`Booth Type: ${priceLevel?.priceName || 'Standard'} • ${priceLevel?.boothSize || '10x10'}`, MARGIN, y);
             y += 10;
 
             pdf.setFontSize(14);
@@ -101,9 +107,9 @@ export default function SponsorEventHistory() {
             pdf.setFontSize(10);
             pdf.setTextColor(50, 50, 50);
             pdf.setFont('helvetica', 'normal');
-            pdf.text(`Payment Method: Visa ending in 4242`, MARGIN, y);
+            pdf.text(`Payment Method: ${res?.paymentMethod === 'card' ? 'Credit Card' : 'Invoice'}`, MARGIN, y);
             y += 6;
-            pdf.text(`Payment Date: ${item.paymentDate}`, MARGIN, y);
+            pdf.text(`Payment Status: ${item.paymentStatus}`, MARGIN, y);
             y += 10;
 
             pdf.setFontSize(12);
@@ -114,42 +120,35 @@ export default function SponsorEventHistory() {
             pdf.setFontSize(10);
             pdf.setTextColor(50, 50, 50);
             pdf.setFont('helvetica', 'normal');
-            pdf.text('• John Smith (Lead Representative)', MARGIN, y);
+            
+            // Lead
+            const leadName = `${res?.user?.firstName || ''} ${res?.user?.lastName || ''}`.trim() || res?.user?.email || "Lead Representative";
+            pdf.text(`• ${leadName} (Lead Representative)`, MARGIN, y);
             y += 6;
-            pdf.text('• Sarah Johnson (Sales Manager)', MARGIN, y);
-            y += 6;
-            pdf.text('• Mike Chen (Technical Specialist)', MARGIN, y);
-            y += 10;
 
-            pdf.setFontSize(12);
-            pdf.setTextColor(30, 60, 114);
-            pdf.setFont('helvetica', 'bold');
-            pdf.text('Included Features', MARGIN, y);
-            y += 6;
-            pdf.setFontSize(10);
-            pdf.setTextColor(50, 50, 50);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text('• High Visibility Location', MARGIN, y);
-            y += 6;
-            pdf.text('• Near Main Entrance', MARGIN, y);
-            y += 6;
-            pdf.text('• Dedicated 20A Power Circuit', MARGIN, y);
-            y += 6;
-            pdf.text('• Premium Carpet Included', MARGIN, y);
-            y += 6;
-            pdf.text('• WiFi Access', MARGIN, y);
-            y += 6;
-            pdf.text('• 6 Exhibitor Passes', MARGIN, y);
-            y += 20;
+            // Other exhibitors
+            (res?.exhibitors || []).forEach(ex => {
+                if (y > 270) { // Page break if needed
+                    pdf.addPage();
+                    addReportHeader(pdf, INVOICE_TITLE, logoData);
+                    y = 45;
+                }
+                const exName = `${ex.firstName || ''} ${ex.lastName || ''}`.trim() || ex.email || "Exhibitor";
+                pdf.text(`• ${exName} (Exhibitor)`, MARGIN, y);
+                y += 6;
+            });
+            y += 4;
+
+            y += 4;
 
             const headers = ['Description', 'Amount'];
             const rows = [
-                ['Booth Price', '$5,000.00'],
-                ['Processing Fee', '$150.00'],
-                ['Tax', '$425.00'],
+                ['Booth Price', `$${(res?.amount?.subtotal || 0).toLocaleString()}`],
+                ['Processing Fee', `$${(res?.amount?.fee || 0).toLocaleString()}`],
+                ['Tax', `$${(res?.amount?.tax || 0).toLocaleString()}`],
                 ['Total Paid', item.amount]
             ];
-            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5, logoData, INVOICE_TITLE);
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5, logoData, INVOICE_TITLE);
 
             finalizeReport(pdf);
             pdf.save(`Invoice_${item.invoiceRef}.pdf`);
@@ -189,6 +188,7 @@ export default function SponsorEventHistory() {
     const { user } = useAuthContext();
     const [allHistory, setAllHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
     useEffect(() => {
@@ -227,21 +227,31 @@ export default function SponsorEventHistory() {
         fetchHistory();
     }, [user?.token]);
 
-    const filteredHistory =
-        selectedStatus === "All Events"
-            ? allHistory
-            : allHistory.filter(item => item.eventStatus === selectedStatus);
-
-    // Pagination Logic
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 6;
-
+    // Date Range Logic
     const [dateRange, setDateRange] = useState(() => ({
         preset: 'all',
         presetLabel: 'All time',
         start: new Date(2000, 0, 1),
         end: new Date(2100, 11, 31),
     }));
+
+    const filteredHistory = allHistory.filter(item => {
+        const matchesStatus = selectedStatus === "All Events" || item.eventStatus === selectedStatus;
+        
+        // Search filter
+        const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            item.invoiceRef.toLowerCase().includes(searchQuery.toLowerCase());
+
+        // Date range filtering (based on payment date/createdAt)
+        const paymentDate = new Date(item.fullReservation.createdAt);
+        const matchesDate = paymentDate >= dateRange.start && paymentDate <= dateRange.end;
+
+        return matchesStatus && matchesSearch && matchesDate;
+    });
+
+    // Pagination Logic
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
 
     const handleDateRangeChange = (newRange) => {
         setDateRange(newRange);
@@ -285,7 +295,16 @@ export default function SponsorEventHistory() {
                 <div className="sponsor-history-controls">
                     <div className="sh-search">
                         <Icon icon="mdi:magnify" width="20" color="var(--color-black-secondary)" />
-                        <input type="text" placeholder="Search by event or invoice order" className="small-body-text" />
+                        <input 
+                            type="text" 
+                            placeholder="Search by event or invoice order" 
+                            className="small-body-text" 
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                        />
                     </div>
                     <div className="sh-filters">
                         <DateRangePicker

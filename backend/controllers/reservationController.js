@@ -8,6 +8,7 @@ const getMyReservations = async (req, res) => {
         const reservations = await Reservation.find({ 
             $or: [{ user: req.user._id }, { exhibitors: req.user._id }] 
         })
+            .populate('user', 'firstName lastName email companyName phone avatar')
             .populate('event', 'title startDate endDate startTime endTime image venue')
             .populate('exhibitors', 'firstName lastName email avatar')
             .sort({ createdAt: -1 });

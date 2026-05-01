@@ -118,10 +118,21 @@ const SponsorBrowseEvents = () => {
 
                 <div className="sbe-events-grid">
                     {isLoading ? (
-                        <div className="sbe-loading-state">
-                            <Icon icon="line-md:loading-twotone-loop" width="48" />
-                            <p>Loading events...</p>
-                        </div>
+                        [...Array(8)].map((_, i) => (
+                            <div key={i} className="sbe-skeleton-card">
+                                <div className="sbe-skeleton-image"></div>
+                                <div className="sbe-skeleton-details">
+                                    <div className="sbe-skeleton-text sbe-skeleton-title"></div>
+                                    <div className="sbe-skeleton-text sbe-skeleton-meta"></div>
+                                    <div className="sbe-skeleton-text sbe-skeleton-meta"></div>
+                                    <div className="sbe-skeleton-stats">
+                                        <div className="sbe-skeleton-stat-box"></div>
+                                        <div className="sbe-skeleton-stat-box"></div>
+                                    </div>
+                                    <div className="sbe-skeleton-button"></div>
+                                </div>
+                            </div>
+                        ))
                     ) : paginatedEvents.length > 0 ? (
                         paginatedEvents.map((event) => (
                             <div key={event._id} className="sbe-event-card" onClick={() => handleEventClick(event._id)}>
@@ -139,7 +150,20 @@ const SponsorBrowseEvents = () => {
 
                                     <div className="sbe-card-info small-body-text">
                                         <Icon icon="mdi:calendar-blank-outline" />
-                                        <span>{new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                        <span>
+                                            {(() => {
+                                                const start = new Date(event.startDate);
+                                                const end = event.endDate ? new Date(event.endDate) : null;
+                                                const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                                
+                                                if (!end || start.toDateString() === end.toDateString()) {
+                                                    return startStr;
+                                                }
+                                                
+                                                const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                                return `${startStr} - ${endStr}`;
+                                            })()}
+                                        </span>
                                     </div>
                                     <div className="sbe-card-info small-body-text">
                                         <Icon icon="mdi:map-marker-outline" />

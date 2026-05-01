@@ -119,7 +119,7 @@ const SponsorKit = ({ isOpen, onClose, event }) => {
                                 <p className="smaller-body-text text-secondary">Event Time</p>
                             </div>
                             <div className="sk-stat-card sk-stat-blue">
-                                <h3 className="text-blue">{calculateDays(event?.startDate, event?.endDate)} Days</h3>
+                                <h3 className="text-blue">{calculateDays(event?.startDate, event?.endDate)} Day(s)</h3>
                                 <p className="smaller-body-text text-secondary">Of Event</p>
                             </div>
                         </div>
