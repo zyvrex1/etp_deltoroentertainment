@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   Stage,
   Layer,
@@ -102,7 +102,20 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
   const [selectedId, setSelectedId] = useState(null);
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [fitScale, setFitScale] = useState(1);
+  const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+  const [containerSize, setContainerSize] = useState({ w: 800, h: 600 });
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Canvas & background image state (loaded from layoutData)
+  const [canvasWidth, setCanvasWidth] = useState(1400);
+  const [canvasHeight, setCanvasHeight] = useState(900);
+  const [bgKonvaImage, setBgKonvaImage] = useState(null);
+  const [bgOpacity, setBgOpacity] = useState(0.4);
+  const [bgWidth, setBgWidth] = useState(null);
+  const [bgHeight, setBgHeight] = useState(null);
+
+  const containerRef = useRef(null);
 
   const handleSyncBooths = async () => {
     if (!selectedEvent?._id || !user?.token) return;
@@ -137,9 +150,31 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
   };
   const stageRef = useRef(null);
 
-  const CANVAS_WIDTH = 1400;
-  const CANVAS_HEIGHT = 800;
   const GRID_SIZE = 20;
+
+  // Re-fit whenever the container or canvas size changes (mirrors LayoutBuilder)
+  useEffect(() => {
+    const recalc = () => {
+      if (!containerRef.current) return;
+      const { clientWidth, clientHeight } = containerRef.current;
+      setContainerSize({ w: clientWidth, h: clientHeight });
+      const padding = 40;
+      const scaleX = (clientWidth - padding) / canvasWidth;
+      const scaleY = (clientHeight - padding) / canvasHeight;
+      const fs = Math.min(scaleX, scaleY, 1);
+      setFitScale(fs);
+      setZoom(fs);
+      setStagePos({
+        x: (clientWidth - canvasWidth * fs) / 2,
+        y: (clientHeight - canvasHeight * fs) / 2,
+      });
+    };
+    const timer = setTimeout(recalc, 50);
+    const ro = new ResizeObserver(recalc);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => { clearTimeout(timer); ro.disconnect(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasWidth, canvasHeight]);
 
   useEffect(() => {
     const fetchLayout = async () => {
@@ -183,6 +218,30 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
           }));
           setPriceLevels(normalizedCategories);
         }
+
+        // ── Load canvas size & background image from layoutData ──
+        if (data.layoutData) {
+          const ld = data.layoutData;
+          const cw = ld.canvasWidth || 1400;
+          const ch = ld.canvasHeight || 900;
+          setCanvasWidth(cw);
+          setCanvasHeight(ch);
+
+          if (ld.backgroundImage) {
+            setBgOpacity(ld.bgOpacity ?? 0.4);
+            const img = new window.Image();
+            img.src = ld.backgroundImage;
+            img.onload = () => {
+              setBgKonvaImage(img);
+              setBgWidth(ld.bgWidth || cw);
+              setBgHeight(ld.bgHeight || ch);
+            };
+          } else {
+            setBgKonvaImage(null);
+            setBgWidth(null);
+            setBgHeight(null);
+          }
+        }
       } catch (error) {
         console.error("Error loading layout:", error);
       }
@@ -214,24 +273,18 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
 
   const renderGrid = () => {
     const lines = [];
-    for (let i = 0; i <= CANVAS_WIDTH / GRID_SIZE; i++) {
+    const extent = 5000;
+    const MAJOR_GRID = 100;
+    for (let i = -extent; i <= extent; i += GRID_SIZE) {
+      const isMajor = i % MAJOR_GRID === 0;
+      const isAxis = i === 0;
+      const strokeColor = isAxis ? "#94a3b8" : (isMajor ? "#cbd5e1" : "#e5e7eb");
+      const strokeWidth = isAxis ? 1.5 : (isMajor ? 1 : 0.5);
       lines.push(
-        <Line
-          key={`v-${i}`}
-          points={[i * GRID_SIZE, 0, i * GRID_SIZE, CANVAS_HEIGHT]}
-          stroke="#eee"
-          strokeWidth={1}
-        />
+        <Line key={`v-${i}`} points={[i, -extent, i, extent]} stroke={strokeColor} strokeWidth={strokeWidth} listening={false} />
       );
-    }
-    for (let i = 0; i <= CANVAS_HEIGHT / GRID_SIZE; i++) {
       lines.push(
-        <Line
-          key={`h-${i}`}
-          points={[0, i * GRID_SIZE, CANVAS_WIDTH, i * GRID_SIZE]}
-          stroke="#eee"
-          strokeWidth={1}
-        />
+        <Line key={`h-${i}`} points={[-extent, i, extent, i]} stroke={strokeColor} strokeWidth={strokeWidth} listening={false} />
       );
     }
     return lines;
@@ -381,41 +434,84 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                 <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
                 <span style={{ marginLeft: '5px', fontSize: '12px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
               </button>
-              <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))}>
+              <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))} title="Zoom Out">
                 <Icon icon="mdi:minus" />
               </button>
-              <span className="zoom-value">{Math.round(zoom * 100)}%</span>
-              <button className="bt-btn" onClick={() => setZoom(z => Math.min(z + 0.1, 2))}>
+              <span
+                className="zoom-value"
+                title="Click to reset to fit"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  setZoom(fitScale);
+                  if (containerRef.current) {
+                    const { clientWidth, clientHeight } = containerRef.current;
+                    setStagePos({
+                      x: (clientWidth - canvasWidth * fitScale) / 2,
+                      y: (clientHeight - canvasHeight * fitScale) / 2,
+                    });
+                  }
+                }}
+              >
+                {Math.round((zoom / fitScale) * 100)}%
+              </span>
+              <button className="bt-btn" onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))} title="Zoom In">
                 <Icon icon="mdi:plus" />
               </button>
             </div>
           </div>
 
-          <div className="konva-container">
+          <div className="konva-container" ref={containerRef}>
             <Stage
-              width={1000} // This will be handled by container, but staging a fixed value
-              height={600}
+              width={containerSize.w}
+              height={containerSize.h}
               ref={stageRef}
               scaleX={zoom}
               scaleY={zoom}
+              x={stagePos.x}
+              y={stagePos.y}
               draggable
-              onDragStart={() => {
-                if (stageRef.current) stageRef.current.container().style.cursor = 'grabbing';
-              }}
-              onDragEnd={() => {
-                if (stageRef.current) stageRef.current.container().style.cursor = 'grab';
-              }}
-              onMouseEnter={() => {
-                if (stageRef.current) stageRef.current.container().style.cursor = 'grab';
-              }}
-              onMouseLeave={() => {
-                if (stageRef.current) stageRef.current.container().style.cursor = 'default';
+              onDragEnd={(e) => {
+                setStagePos({ x: e.target.x(), y: e.target.y() });
               }}
               onMouseDown={(e) => {
                 const clickedOnEmpty = e.target === e.target.getStage();
                 if (clickedOnEmpty) setSelectedId(null);
               }}
+              onWheel={(e) => {
+                e.evt.preventDefault();
+                const stage = stageRef.current;
+                const oldScale = zoom;
+                const pointer = stage.getPointerPosition();
+                const minScale = fitScale * 0.3;
+                const maxScale = fitScale * 4;
+                const direction = e.evt.deltaY > 0 ? -1 : 1;
+                const newScale = Math.min(maxScale, Math.max(minScale, oldScale + direction * 0.05));
+                const mousePointTo = {
+                  x: (pointer.x - stagePos.x) / oldScale,
+                  y: (pointer.y - stagePos.y) / oldScale,
+                };
+                const newPos = {
+                  x: pointer.x - mousePointTo.x * newScale,
+                  y: pointer.y - mousePointTo.y * newScale,
+                };
+                setZoom(newScale);
+                setStagePos(newPos);
+              }}
             >
+              {/* Background image layer — pulled from layoutData.backgroundImage */}
+              {bgKonvaImage && bgWidth && bgHeight && (
+                <Layer>
+                  <KonvaImage
+                    image={bgKonvaImage}
+                    x={0}
+                    y={0}
+                    width={bgWidth}
+                    height={bgHeight}
+                    opacity={bgOpacity}
+                    listening={false}
+                  />
+                </Layer>
+              )}
               <Layer>
                 {renderGrid()}
                 {sortedItems.map((item, i) => (
