@@ -21,49 +21,72 @@ const getPresetRange = (preset) => {
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
 
+    const endOfToday = new Date(now);
+    endOfToday.setHours(23, 59, 59, 999);
+
     switch (preset) {
         case 'all':
             return null;
-        case 'yesterday':
-            start.setDate(start.getDate() - 1);
-            return { start, end: new Date(start) };
-        case 'last7':
-            start.setDate(start.getDate() - 6);
-            return { start, end: new Date(now) };
-        case 'last28':
-            start.setDate(start.getDate() - 27);
-            return { start, end: new Date(now) };
-        case 'last90':
-            start.setDate(start.getDate() - 89);
-            return { start, end: new Date(now) };
-        case 'thisWeek': {
-            const day = start.getDay();
-            const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-            start.setDate(diff);
-            return { start, end: new Date(now) };
+        case 'yesterday': {
+            const yesterdayStart = new Date(start);
+            yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+            const yesterdayEnd = new Date(yesterdayStart);
+            yesterdayEnd.setHours(23, 59, 59, 999);
+            return { start: yesterdayStart, end: yesterdayEnd };
         }
-        case 'thisMonth':
-            start.setDate(1);
-            return { start, end: new Date(now) };
-        case 'thisYear':
-            start.setMonth(0, 1);
-            return { start, end: new Date(now) };
+        case 'last7': {
+            const s = new Date(start);
+            s.setDate(s.getDate() - 6);
+            return { start: s, end: endOfToday };
+        }
+        case 'last28': {
+            const s = new Date(start);
+            s.setDate(s.getDate() - 27);
+            return { start: s, end: endOfToday };
+        }
+        case 'last90': {
+            const s = new Date(start);
+            s.setDate(s.getDate() - 89);
+            return { start: s, end: endOfToday };
+        }
+        case 'thisWeek': {
+            const s = new Date(start);
+            const day = s.getDay();
+            const diff = s.getDate() - day + (day === 0 ? -6 : 1);
+            s.setDate(diff);
+            return { start: s, end: endOfToday };
+        }
+        case 'thisMonth': {
+            const s = new Date(start);
+            s.setDate(1);
+            return { start: s, end: endOfToday };
+        }
+        case 'thisYear': {
+            const s = new Date(start);
+            s.setMonth(0, 1);
+            const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+            return { start: s, end: endOfYear };
+        }
         case 'lastWeek': {
             const d = new Date(now);
             d.setDate(d.getDate() - 7);
             const day = d.getDay();
             const diff = d.getDate() - day + (day === 0 ? -6 : 1);
             const weekStart = new Date(d);
+            weekStart.setHours(0, 0, 0, 0);
             weekStart.setDate(diff);
             const weekEnd = new Date(weekStart);
+            weekEnd.setHours(23, 59, 59, 999);
             weekEnd.setDate(weekStart.getDate() + 6);
             return { start: weekStart, end: weekEnd };
         }
         case 'lastMonth': {
-            start.setMonth(start.getMonth() - 1);
-            start.setDate(1);
-            const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
-            return { start, end };
+            const s = new Date(start);
+            s.setMonth(s.getMonth() - 1);
+            s.setDate(1);
+            const e = new Date(s.getFullYear(), s.getMonth() + 1, 0);
+            e.setHours(23, 59, 59, 999);
+            return { start: s, end: e };
         }
         default:
             return null;
@@ -92,7 +115,8 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
     const [rangeEnd, setRangeEnd] = useState(null);
     const [selectingStart, setSelectingStart] = useState(true);
     const [viewMonth, setViewMonth] = useState(() => {
-        const d = value?.start ? new Date(value.start) : new Date();
+        const now = new Date();
+        const d = (value?.preset === 'all' || !value?.start) ? now : new Date(value.start);
         return { year: d.getFullYear(), month: d.getMonth() };
     });
     const modalRef = useRef(null);
@@ -113,7 +137,9 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
             setRangeStart(range.start);
             setRangeEnd(range.end);
             setActivePreset(value?.preset ?? null);
-            setViewMonth({ year: range.start.getFullYear(), month: range.start.getMonth() });
+            const now = new Date();
+            const viewDate = (value?.preset === 'all' || !range.start) ? now : range.start;
+            setViewMonth({ year: viewDate.getFullYear(), month: viewDate.getMonth() });
             setSelectingStart(true);
         }
     }, [isOpen, value]);
