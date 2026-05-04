@@ -1215,6 +1215,124 @@ const assignPriceLevels = async (req, res) => {
   }
 };
 
+/**
+ * POST /:id/buy-seats
+ * Customer purchases one or more seats by their layoutData item IDs.
+ * Body: { seatIds: string[], billingInfo: {...}, amount: {...} }
+ */
+const buySeats = async (req, res) => {
+  const { id } = req.params;
+  const { seatIds, billingInfo, amount } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ error: "No such event" });
+  }
+  if (!Array.isArray(seatIds) || seatIds.length === 0) {
+    return res.status(400).json({ error: "seatIds must be a non-empty array" });
+  }
+
+  try {
+    const event = await Event.findById(id);
+    if (!event) return res.status(404).json({ error: "No such event" });
+
+    const items = event.layoutData?.items;
+    if (!items) return res.status(400).json({ error: "This event has no layout data" });
+
+    const buyerName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
+    const buyerEmail = req.user.email || "";
+    const ticketIdBase = new mongoose.Types.ObjectId().toString();
+
+    const notFound = [];
+    const alreadySold = [];
+    const purchasedSeats = [];
+
+    // Build price level map for quick lookup
+    const plMap = {};
+    event.priceLevels.forEach((pl, idx) => { plMap[pl._id.toString()] = idx; });
+    const plSoldDelta = {}; // categoryId -> increment count
+
+    seatIds.forEach((sid, i) => {
+      const idx = items.findIndex(
+        (item) =>
+          (item.type || "").toLowerCase() === "seat" &&
+          (String(item._id || item.id) === sid || item.id === sid)
+      );
+
+      if (idx === -1) { notFound.push(sid); return; }
+      const item = items[idx];
+
+      if (item.status === "sold" || item.status === "reserved") {
+        alreadySold.push(item.label || sid); return;
+      }
+
+      // Mark sold
+      event.layoutData.items[idx].status = "sold";
+      event.layoutData.items[idx].reservedBy = buyerName;
+      event.layoutData.items[idx].reservedByEmail = buyerEmail;
+      event.layoutData.items[idx].ticketId = `${ticketIdBase}-${i}`;
+
+      // Track price level delta
+      const catId = item.categoryId?.toString();
+      if (catId && plMap[catId] !== undefined) {
+        plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
+      }
+
+      purchasedSeats.push({ ...item, ticketId: `${ticketIdBase}-${i}` });
+    });
+
+    if (alreadySold.length > 0) {
+      return res.status(409).json({
+        error: `Some seats are no longer available: ${alreadySold.join(", ")}`,
+      });
+    }
+
+    if (notFound.length > 0) {
+      return res.status(404).json({ error: `Seats not found: ${notFound.join(", ")}` });
+    }
+
+    // Update quantitySold on priceLevels
+    Object.entries(plSoldDelta).forEach(([catId, delta]) => {
+      const plIdx = plMap[catId];
+      if (plIdx !== undefined) {
+        event.priceLevels[plIdx].quantitySold = (event.priceLevels[plIdx].quantitySold || 0) + delta;
+      }
+    });
+
+    event.markModified("layoutData");
+    event.markModified("priceLevels");
+    await event.save();
+
+    // Notify admin
+    try {
+      const notificationController = require("./notificationController");
+      const notification = await notificationController.createNotification({
+        title: `New Seat Purchase`,
+        content: `${buyerName} purchased ${seatIds.length} seat(s) for "${event.title}"`,
+        type: "reservation",
+        path: "/admin/payments",
+        unread: true,
+        createdBy: req.user._id,
+        targetRole: "admin",
+      });
+      emitUpdate("newNotification", notification);
+    } catch (notifErr) {
+      console.error("Seat purchase notification error:", notifErr);
+    }
+
+    emitUpdate("dashboardUpdate");
+
+    res.status(201).json({
+      message: "Seats purchased successfully",
+      ticketIdBase,
+      purchasedSeats,
+      event,
+    });
+  } catch (error) {
+    console.error("Buy Seats Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const reserveBooth = async (req, res) => {
   const { id } = req.params; // Event ID
   const { boothId, billingAddress, amount, paymentMethod, poNumber } = req.body;
@@ -1558,6 +1676,7 @@ module.exports = {
   updateEvent,
   saveVenueLayout,
   assignPriceLevels,
+  buySeats,
   reserveBooth,
   syncBoothStatus,
   upload,
