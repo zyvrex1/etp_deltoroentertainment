@@ -173,7 +173,32 @@ const eventsService = {
       console.error("Error in updateSeatMap service:", error);
       throw error;
     }
-  }
+  },
+  /**
+   * Customer purchases seats on the venue map
+   * @param {string} id - Event ID
+   * @param {string[]} seatIds - Array of layoutData item IDs for seats
+   * @param {Object} amount - { total, subtotal, fee }
+   * @param {string} token - Auth token
+   */
+  buySeats: async (id, seatIds, amount, token) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}/buy-seats`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ seatIds, amount }),
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || "Failed to purchase seats");
+      return json;
+    } catch (error) {
+      console.error("Error in buySeats service:", error);
+      throw error;
+    }
+  },
 };
 
 export default eventsService;

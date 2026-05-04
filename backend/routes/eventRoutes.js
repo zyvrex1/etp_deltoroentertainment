@@ -10,6 +10,7 @@ const {
   updateEvent,
   saveVenueLayout,
   assignPriceLevels,
+  buySeats,
   reserveBooth,
   syncBoothStatus,
   upload,
@@ -39,6 +40,7 @@ router.put('/:id/layout', saveVenueLayout)
 router.put('/:id/assign-prices', assignPriceLevels)
 router.post('/:id/reserve-booth', reserveBooth)
 router.post('/:id/sync-booths', syncBoothStatus)
+router.post('/:id/buy-seats', buySeats)
 
 // Price Level Management
 router.post("/:eventId/price-levels", addPriceLevels);
