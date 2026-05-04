@@ -123,7 +123,7 @@ export default function SponsorHeader() {
     useEffect(() => {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
-            
+
             if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
                 // Scrolling down
                 setShowBottomNav(false);
@@ -131,7 +131,7 @@ export default function SponsorHeader() {
                 // Scrolling up
                 setShowBottomNav(true);
             }
-            
+
             lastScrollY.current = currentScrollY;
         };
 
@@ -160,8 +160,8 @@ export default function SponsorHeader() {
 
                 <div className="sponsor-header-actions">
                     <div className="sponsor-notification-wrapper" ref={notifRef}>
-                        <button 
-                            className={`notif-trigger ${isNotifOpen ? 'active' : ''}`} 
+                        <button
+                            className={`notif-trigger ${isNotifOpen ? 'active' : ''}`}
                             onClick={toggleNotif}
                         >
                             <Icon icon={unreadCount > 0 ? "mdi:bell-badge-outline" : "mdi:bell-outline"} width="24" />
@@ -172,8 +172,8 @@ export default function SponsorHeader() {
                             )}
                         </button>
                         {isNotifOpen && (
-                            <SponsorNotificationDropdown 
-                                notifications={notifications} 
+                            <SponsorNotificationDropdown
+                                notifications={notifications}
                                 onClose={() => setIsNotifOpen(false)}
                                 onMarkAsRead={handleMarkRead}
                                 onMarkAllRead={handleMarkAllRead}
@@ -192,12 +192,12 @@ export default function SponsorHeader() {
                         <button className="sponsor-profile-btn" onClick={toggleDropdown}>
                             <div className="sponsor-avatar">
                                 {authUser.avatar ? (
-                                    <img 
-                                        src={authUser.avatar.startsWith('http') || authUser.avatar.startsWith('data:') 
-                                            ? authUser.avatar 
-                                            : `${BACKEND_URL}${authUser.avatar}`} 
-                                        alt="Profile" 
-                                        className="sponsor-avatar-img" 
+                                    <img
+                                        src={authUser.avatar.startsWith('http') || authUser.avatar.startsWith('data:')
+                                            ? authUser.avatar
+                                            : `${BACKEND_URL}${authUser.avatar}`}
+                                        alt="Profile"
+                                        className="sponsor-avatar-img"
                                     />
                                 ) : (
                                     getInitials(authUser.firstName, authUser.lastName)
@@ -281,12 +281,12 @@ export default function SponsorHeader() {
                             <div className="mobile-profile-user-info">
                                 <div className="mobile-profile-avatar">
                                     {authUser.avatar ? (
-                                        <img 
-                                            src={authUser.avatar.startsWith('http') || authUser.avatar.startsWith('data:') 
-                                                ? authUser.avatar 
-                                                : `${BACKEND_URL}${authUser.avatar}`} 
-                                            alt="Profile" 
-                                            className="mobile-avatar-img" 
+                                        <img
+                                            src={authUser.avatar.startsWith('http') || authUser.avatar.startsWith('data:')
+                                                ? authUser.avatar
+                                                : `${BACKEND_URL}${authUser.avatar}`}
+                                            alt="Profile"
+                                            className="mobile-avatar-img"
                                         />
                                     ) : (
                                         getInitials(authUser.firstName, authUser.lastName)
@@ -325,9 +325,9 @@ export default function SponsorHeader() {
                 </div>
             )}
 
-            <SponsorViewNotif 
-                isOpen={showAllNotifs} 
-                onClose={() => setShowAllNotifs(false)} 
+            <SponsorViewNotif
+                isOpen={showAllNotifs}
+                onClose={() => setShowAllNotifs(false)}
                 notifications={notifications}
                 onMarkAsRead={handleMarkRead}
             />

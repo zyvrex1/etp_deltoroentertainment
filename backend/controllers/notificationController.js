@@ -48,10 +48,18 @@ const getNotifications = async (req, res) => {
 
         // Filter based on user preferences
         const filteredNotifications = notifications.filter(notif => {
+            // 1. Reservations or about payments
+            if ((notif.type === 'payment' || notif.type === 'reservation') && preferences.paymentReminders === false) return false;
+            
+            // 2. Concerns
             if (notif.type === 'concern' && preferences.supportMessages === false) return false;
-            if (notif.type === 'user' && preferences.userUpdates === false) return false;
-            if (notif.type === 'payment' && preferences.paymentReminders === false) return false;
-            if ((notif.type === 'update' || notif.type === 'announcement') && preferences.announcements === false) return false;
+            
+            // 3. Event Updates (New/Modified Events)
+            if (notif.type === 'event' && preferences.userUpdates === false) return false;
+
+            // 4. Platform Updates (Policies/Announcements)
+            if (['update', 'announcement', 'policy'].includes(notif.type) && preferences.announcements === false) return false;
+            
             return true;
         });
 

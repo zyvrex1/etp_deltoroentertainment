@@ -13,7 +13,7 @@ export const getProfile = (token) => API.get("/profile", {
 });
 
 export const updateProfile = (formData, token) => axios.put(`${BASE_URL}/api/user/profile`, formData, {
-  headers: { 
+  headers: {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'multipart/form-data'
   }

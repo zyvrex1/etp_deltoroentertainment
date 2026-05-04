@@ -134,7 +134,7 @@ const updateSecurity = async (req, res) => {
     // Only check current password if the user wants to change it
     if (newPassword) {
       if (!currentPassword) throw new Error('Current password is required');
-      
+
       const match = await bcrypt.compare(currentPassword, user.password);
       if (!match) throw new Error('Current password is incorrect');
 
@@ -174,7 +174,7 @@ const getPromoters = async (req, res) => {
   try {
     const { search } = req.query;
     const query = { role: 'promoter' };
-    
+
     if (search) {
       query.$or = [
         { email: { $regex: search, $options: 'i' } },
@@ -182,7 +182,7 @@ const getPromoters = async (req, res) => {
         { lastName: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     const promoters = await User.find(query).select('firstName lastName email avatar').limit(10);
     res.json(promoters);
   } catch (err) {
@@ -194,7 +194,7 @@ const getSponsors = async (req, res) => {
   try {
     const { search } = req.query;
     const query = { role: 'sponsor' }; // Restrict searching to only sponsor accounts
-    
+
     if (search) {
       query.$or = [
         { email: { $regex: search, $options: 'i' } },
@@ -202,7 +202,7 @@ const getSponsors = async (req, res) => {
         { lastName: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     const sponsors = await User.find(query).select('firstName lastName email avatar role').limit(10);
     res.json(sponsors);
   } catch (err) {

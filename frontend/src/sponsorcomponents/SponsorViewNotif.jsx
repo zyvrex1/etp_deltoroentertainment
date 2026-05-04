@@ -48,7 +48,7 @@ const SponsorViewNotif = ({ isOpen, onClose, notifications, onMarkAsRead }) => {
                     <div className="header-actions">
                         <div className="notif-filters">
                             {['All', 'Unread', 'Concerns', 'Events', 'Payments', 'Announcements'].map(filter => (
-                                <button 
+                                <button
                                     key={filter}
                                     className={`filter-btn ${activeFilter === filter ? 'active' : ''} ${filter.toLowerCase()}`}
                                     onClick={() => setActiveFilter(filter)}
@@ -67,8 +67,8 @@ const SponsorViewNotif = ({ isOpen, onClose, notifications, onMarkAsRead }) => {
                     <div className="notif-full-list">
                         {filteredNotifications.length > 0 ? (
                             filteredNotifications.map((notif) => (
-                                <div 
-                                    className={`notif-full-item ${notif.unread ? 'unread' : ''}`} 
+                                <div
+                                    className={`notif-full-item ${notif.unread ? 'unread' : ''}`}
                                     key={notif._id}
                                     onClick={() => handleItemClick(notif)}
                                 >

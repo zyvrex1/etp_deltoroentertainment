@@ -60,11 +60,20 @@ export const NotificationsContextProvider = ({ children }) => {
 
       // Check user preferences
       const preferences = user.notifications || {};
-      if (notification.type === 'user' && !isAdmin) return; // Hard filter for sponsors
+      
+      // 1. Reservations or about payments
+      if ((notification.type === 'payment' || notification.type === 'reservation') && preferences.paymentReminders === false) return;
+      
+      // 2. Concerns
       if (notification.type === 'concern' && preferences.supportMessages === false) return;
-      if (notification.type === 'user' && preferences.userUpdates === false) return;
-      if (notification.type === 'payment' && preferences.paymentReminders === false) return;
-      if ((notification.type === 'update' || notification.type === 'announcement') && preferences.announcements === false) return;
+      
+      // 3. Event Updates (New/Modified Events)
+      if (notification.type === 'event' && preferences.userUpdates === false) return;
+
+      // 4. Platform Updates (Policies/Announcements)
+      if (['update', 'announcement', 'policy'].includes(notification.type) && preferences.announcements === false) return;
+
+      if (notification.type === 'user' && !isAdmin) return; // Hard filter for sponsors
 
       // Check visibility
 

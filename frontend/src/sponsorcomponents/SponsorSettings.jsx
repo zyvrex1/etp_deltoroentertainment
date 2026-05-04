@@ -132,7 +132,7 @@ export default function SponsorSettings() {
             if (file.size > 2 * 1024 * 1024) { // 2MB Limit
                 return showErrorAlert("File Too Large", "Please upload an image smaller than 2MB.");
             }
-            
+
             setAvatarFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -165,13 +165,13 @@ export default function SponsorSettings() {
                 if (profile.city !== undefined) formData.append("city", profile.city);
                 if (profile.zipCode !== undefined) formData.append("zipCode", profile.zipCode);
                 formData.append("notifications", JSON.stringify(notifications));
-                
+
                 if (avatarFile) {
                     formData.append("avatar", avatarFile);
                 }
 
                 const response = await authService.updateProfile(formData, user.token);
-                
+
                 // Update user context and local storage
                 const updatedUser = { ...user, ...response.data };
                 localStorage.setItem("user", JSON.stringify(updatedUser));
@@ -306,24 +306,24 @@ export default function SponsorSettings() {
                                 inputClassName="ss-input"
                                 className="phone-input-container"
                                 style={{
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '0', 
-                                    border: '1px solid var(--color-black-tertiary)', 
-                                    borderRadius: '6px' 
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0',
+                                    border: '1px solid var(--color-black-tertiary)',
+                                    borderRadius: '6px'
                                 }}
                                 inputStyle={{
-                                    border: 'none', 
-                                    padding: '10px 12px', 
-                                    outline: 'none', 
-                                    borderRadius: '0', 
-                                    flex: 1, 
+                                    border: 'none',
+                                    padding: '10px 12px',
+                                    outline: 'none',
+                                    borderRadius: '0',
+                                    flex: 1,
                                 }}
                                 buttonStyle={{
-                                    border: 'none', 
-                                    backgroundColor: 'transparent', 
-                                    boxShadow: 'none', 
-                                    color: '#64748b' 
+                                    border: 'none',
+                                    backgroundColor: 'transparent',
+                                    boxShadow: 'none',
+                                    color: '#64748b'
                                 }}
                             />
                         </div>
@@ -340,10 +340,10 @@ export default function SponsorSettings() {
                             </div>
                             <div className="ss-form-group">
                                 <label className="ss-label">Industry</label>
-                                <input 
+                                <input
                                     type="text"
-                                    className="ss-input" 
-                                    value={profile.industry} 
+                                    className="ss-input"
+                                    value={profile.industry}
                                     onChange={(e) => setProfile({ ...profile, industry: e.target.value })}
                                     placeholder="e.g. Technology"
                                 />
@@ -352,10 +352,10 @@ export default function SponsorSettings() {
 
                         <div className="ss-form-group">
                             <label className="ss-label">Street Address</label>
-                            <input 
-                                type="text" 
-                                className="ss-input" 
-                                value={profile.streetAddress} 
+                            <input
+                                type="text"
+                                className="ss-input"
+                                value={profile.streetAddress}
                                 onChange={(e) => setProfile({ ...profile, streetAddress: e.target.value })}
                             />
                         </div>
@@ -363,20 +363,20 @@ export default function SponsorSettings() {
                         <div className="ss-form-row">
                             <div className="ss-form-group">
                                 <label className="ss-label">City</label>
-                                <input 
-                                    type="text" 
-                                    className="ss-input" 
-                                    value={profile.city} 
+                                <input
+                                    type="text"
+                                    className="ss-input"
+                                    value={profile.city}
                                     onChange={(e) => setProfile({ ...profile, city: e.target.value })}
                                     placeholder="e.g. New York (US)"
                                 />
                             </div>
                             <div className="ss-form-group">
                                 <label className="ss-label">Zip Code</label>
-                                <input 
-                                    type="text" 
-                                    className="ss-input" 
-                                    value={profile.zipCode} 
+                                <input
+                                    type="text"
+                                    className="ss-input"
+                                    value={profile.zipCode}
                                     onChange={(e) => setProfile({ ...profile, zipCode: e.target.value })}
                                 />
                             </div>
@@ -427,14 +427,14 @@ export default function SponsorSettings() {
                                     <Icon icon={showNewPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"} width="20" />
                                 </button>
                             </div>
-                            
+
                             {/* Password Strength Indicators */}
                             <div className="ss-password-criteria">
                                 {getPasswordCriteria(passwords.new).map((crit, idx) => (
                                     <div key={idx} className={`ss-criteria-item ${crit.met ? "met" : ""}`}>
-                                        <Icon 
-                                            icon={crit.met ? "mdi:check-circle" : "mdi:circle-outline"} 
-                                            width="14" 
+                                        <Icon
+                                            icon={crit.met ? "mdi:check-circle" : "mdi:circle-outline"}
+                                            width="14"
                                         />
                                         <span className="smaller-body-text">{crit.label}</span>
                                     </div>
@@ -516,26 +516,12 @@ export default function SponsorSettings() {
                         <div className="ss-notifications-list">
                             <div className="ss-notification-item">
                                 <div className="ss-notification-info">
-                                    <span className="ss-notification-label">Email Notifications</span>
-                                    <span className="ss-notification-desc">Receive updates via email about your reservations</span>
+                                    <span className="ss-notification-label">Reservations & Payments</span>
+                                    <span className="ss-notification-desc">Get notified about your booth reservations and payment status</span>
                                 </div>
                                 <label className="ss-toggle-switch">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={notifications.email} 
-                                        onChange={() => handleNotificationChange('email')}
-                                    />
-                                    <span className="ss-slider"></span>
-                                </label>
-                            </div>
-                            <div className="ss-notification-item">
-                                <div className="ss-notification-info">
-                                    <span className="ss-notification-label">Payment & Invoice Alerts</span>
-                                    <span className="ss-notification-desc">Get notified about upcoming payments and invoices</span>
-                                </div>
-                                <label className="ss-toggle-switch">
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
                                         checked={notifications.paymentReminders}
                                         onChange={() => handleNotificationChange('paymentReminders')}
                                     />
@@ -544,12 +530,12 @@ export default function SponsorSettings() {
                             </div>
                             <div className="ss-notification-item">
                                 <div className="ss-notification-info">
-                                    <span className="ss-notification-label">Support Messages</span>
-                                    <span className="ss-notification-desc">Receive news about your support ticket replies</span>
+                                    <span className="ss-notification-label">Concerns</span>
+                                    <span className="ss-notification-desc">Receive updates about your support ticket replies and concerns</span>
                                 </div>
                                 <label className="ss-toggle-switch">
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
                                         checked={notifications.supportMessages}
                                         onChange={() => handleNotificationChange('supportMessages')}
                                     />
@@ -558,12 +544,26 @@ export default function SponsorSettings() {
                             </div>
                             <div className="ss-notification-item">
                                 <div className="ss-notification-info">
-                                    <span className="ss-notification-label">Event Announcements</span>
-                                    <span className="ss-notification-desc">Receive news about new events and sponsorship opportunities</span>
+                                    <span className="ss-notification-label">Event Updates</span>
+                                    <span className="ss-notification-desc">Get notified when events are added or modified</span>
                                 </div>
                                 <label className="ss-toggle-switch">
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
+                                        checked={notifications.userUpdates}
+                                        onChange={() => handleNotificationChange('userUpdates')}
+                                    />
+                                    <span className="ss-slider"></span>
+                                </label>
+                            </div>
+                            <div className="ss-notification-item">
+                                <div className="ss-notification-info">
+                                    <span className="ss-notification-label">Platform Updates</span>
+                                    <span className="ss-notification-desc">Receive news about policies, announcements, and platform changes</span>
+                                </div>
+                                <label className="ss-toggle-switch">
+                                    <input
+                                        type="checkbox"
                                         checked={notifications.announcements}
                                         onChange={() => handleNotificationChange('announcements')}
                                     />
@@ -572,11 +572,11 @@ export default function SponsorSettings() {
                             </div>
                         </div>
 
-                        <button 
-                            type="button" 
-                            className="ss-save-btn ss-dark-btn mt-3" 
+                        <button
+                            type="button"
+                            className="ss-save-btn ss-dark-btn mt-3"
                             onClick={handleSaveProfile}
-                            style={{marginTop: '24px'}}
+                            style={{ marginTop: '24px' }}
                         >
                             Save Preferences
                         </button>

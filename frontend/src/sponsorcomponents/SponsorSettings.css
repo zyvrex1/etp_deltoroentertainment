@@ -136,12 +136,12 @@
         outline: none;
         border-color: var(--color-black-secondary);
       }
-      
+
       &.ss-textarea {
         resize: vertical;
         min-height: 100px;
       }
-      
+
       &.ss-select {
         appearance: none;
         background-image: url('data:image/svg+xml;utf8,<svg fill="%23666666" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
@@ -174,7 +174,8 @@
         }
 
         &.met {
-          color: #10b981; /* Green */
+          color: #10b981;
+          /* Green */
           font-weight: 500;
 
           svg {
@@ -232,7 +233,7 @@
         justify-content: center;
         cursor: pointer;
         color: #1e293b;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         transition: transform 0.2s, background-color 0.2s;
 
         &:hover {
@@ -447,11 +448,11 @@
       }
     }
 
-    input:checked + .ss-slider {
+    input:checked+.ss-slider {
       background-color: var(--color-red-primary);
     }
 
-    input:checked + .ss-slider:before {
+    input:checked+.ss-slider:before {
       transform: translateX(20px);
     }
   }
@@ -476,7 +477,7 @@
     .ss-main-grid {
       grid-template-columns: 1fr;
     }
-    
+
     .ss-card {
       padding: 16px;
     }
@@ -504,13 +505,13 @@
         justify-content: space-between;
       }
     }
-    
+
     .ss-card-header-flex {
       flex-direction: column;
       align-items: flex-start;
       gap: 12px;
     }
-    
+
     .ss-add-card-btn {
       width: 100%;
       justify-content: center;
