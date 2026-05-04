@@ -91,7 +91,7 @@
                             color: white;
                             border-color: var(--color-red-primary);
 
-                            &.finance, &.reservations {
+                            &.payments, &.reservations, &.finance {
                                 background: var(--color-purple-primary);
                                 border-color: var(--color-purple-primary);
                             }
@@ -110,7 +110,7 @@
                     align-items: center;
                     gap: 8px;
                     cursor: pointer;
-                    align-self: flex-end;
+                    align-self: flex-start;
 
                     &:hover { text-decoration: underline; }
                 }
@@ -170,7 +170,7 @@
                             &.payment { background: var(--color-purple-quaternary); color: var(--color-purple-primary); }
                             &.reservation { background: var(--color-purple-quaternary); color: var(--color-purple-primary); }
                             &.user { background: var(--color-blue-quaternary); color: var(--color-blue-primary); }
-                            &.update { background: var(--color-bg-dark); color: white; }
+                            &.update, &.announcement, &.policy { background: var(--color-bg-dark); color: white; }
                         }
                     }
 

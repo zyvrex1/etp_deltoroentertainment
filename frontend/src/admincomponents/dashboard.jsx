@@ -20,13 +20,13 @@ import { io } from 'socket.io-client';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function Dashboard() {
-    const { user } = useAuthContext();
-    const { notifications } = useNotificationsContext();
-    const navigate = useNavigate();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-    const [showAllNotifs, setShowAllNotifs] = useState(false);
+        const { user } = useAuthContext();
+        const { notifications } = useNotificationsContext();
+        const navigate = useNavigate();
+        const [isModalOpen, setIsModalOpen] = useState(false);
+        const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+        const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+        const [showAllNotifs, setShowAllNotifs] = useState(false);
 
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 

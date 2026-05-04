@@ -9,6 +9,7 @@ const getNotifications = async (req, res) => {
 
         const isAdmin = user.role === 'admin' || user.role === 'superadmin';
 
+        const userRoleLower = user.role.toLowerCase();
         let query;
         if (isAdmin) {
             query = {
@@ -17,31 +18,40 @@ const getNotifications = async (req, res) => {
                     { userId: user._id }
                 ]
             };
-        } else if (user.role === 'promoter') {
+        } else if (userRoleLower === 'promoter') {
             query = {
                 $or: [
                     { userId: user._id },
-                    { userId: null, targetRole: { $in: ['promoter', 'all'] } },
-                    { userId: null, type: 'update' } // Fallback for old style broadcast
+                    { userId: null, targetRole: { $in: ['promoter', 'all'] } }
                 ]
             };
         } else {
             query = {
                 $or: [
                     { userId: user._id },
-                    { userId: null, targetRole: user.role }
+                    { userId: null, targetRole: { $in: [userRoleLower, 'all'] } }
                 ]
             };
         }
 
-        let notifications = await Notification.find(query).sort({ createdAt: -1 }).limit(50);
+        let notifications = await Notification.find({
+            $and: [
+                query,
+                {
+                    $or: [
+                        { userId: user._id },
+                        { createdBy: { $ne: user._id } }
+                    ]
+                }
+            ]
+        }).sort({ createdAt: -1 }).limit(50);
 
         // Filter based on user preferences
         const filteredNotifications = notifications.filter(notif => {
             if (notif.type === 'concern' && preferences.supportMessages === false) return false;
             if (notif.type === 'user' && preferences.userUpdates === false) return false;
             if (notif.type === 'payment' && preferences.paymentReminders === false) return false;
-            if (notif.type === 'update' && preferences.announcements === false) return false;
+            if ((notif.type === 'update' || notif.type === 'announcement') && preferences.announcements === false) return false;
             return true;
         });
 
@@ -76,7 +86,7 @@ const markAllAsRead = async (req, res) => {
         } else if (isPromoter) {
             query = { unread: true, $or: [{ userId: req.user._id }, { userId: null, targetRole: { $in: ['promoter', 'all'] } }, { userId: null, type: 'update' }] };
         } else {
-            query = { unread: true, $or: [{ userId: req.user._id }, { userId: null, targetRole: req.user.role }] };
+            query = { unread: true, $or: [{ userId: req.user._id }, { userId: null, targetRole: { $in: [req.user.role, 'all'] } }, { userId: null, type: { $in: ['update', 'announcement'] } }] };
         }
 
         await Notification.updateMany(query, { unread: false });

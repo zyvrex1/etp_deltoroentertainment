@@ -34,9 +34,9 @@ const createAnnouncement = async (req, res) => {
     
     // 1. Notification for Admins
     const adminNotification = await notificationController.createNotification({
-      title: `${creatorName} shared an update: ${title}`,
+      title: `Platform Update: New Announcement - ${title}`,
       content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
-      type: 'update',
+      type: 'announcement',
       path: '/admin/content',
       unread: true,
       createdBy: req.user._id,
@@ -46,15 +46,27 @@ const createAnnouncement = async (req, res) => {
 
     // 2. Notification for Promoters
     const promoterNotification = await notificationController.createNotification({
-      title: `${creatorName} shared an update: ${title}`,
+      title: `Platform Update: New Announcement - ${title}`,
       content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
-      type: 'update',
+      type: 'announcement',
       path: '/promoter/promoter-announcement',
       unread: true,
       createdBy: req.user._id,
       targetRole: 'promoter'
     });
     socket.emitUpdate('newNotification', promoterNotification);
+
+    // 3. Notification for Sponsors
+    const sponsorNotification = await notificationController.createNotification({
+      title: `Platform Update: New Announcement - ${title}`,
+      content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+      type: 'announcement',
+      path: '/sponsor',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'sponsor'
+    });
+    socket.emitUpdate('newNotification', sponsorNotification);
 
     res.status(201).json(announcement);
   } catch (error) {
@@ -88,9 +100,9 @@ const updateAnnouncement = async (req, res) => {
     
     // 1. Notification for Admins
     const adminNotification = await notificationController.createNotification({
-      title: `${creatorName} updated an announcement: ${updatedAnnouncement.title}`,
+      title: `Platform Update: Announcement Modified - ${updatedAnnouncement.title}`,
       content: updatedAnnouncement.content.substring(0, 50) + (updatedAnnouncement.content.length > 50 ? '...' : ''),
-      type: 'update',
+      type: 'announcement',
       path: '/admin/content',
       unread: true,
       createdBy: req.user._id,
@@ -100,15 +112,27 @@ const updateAnnouncement = async (req, res) => {
 
     // 2. Notification for Promoters
     const promoterNotification = await notificationController.createNotification({
-      title: `${creatorName} shared an update: ${updatedAnnouncement.title}`,
+      title: `Platform Update: Announcement Modified - ${updatedAnnouncement.title}`,
       content: updatedAnnouncement.content.substring(0, 50) + (updatedAnnouncement.content.length > 50 ? '...' : ''),
-      type: 'update',
+      type: 'announcement',
       path: '/promoter/promoter-announcement',
       unread: true,
       createdBy: req.user._id,
       targetRole: 'promoter'
     });
     socket.emitUpdate('newNotification', promoterNotification);
+
+    // 3. Notification for Sponsors
+    const sponsorNotification = await notificationController.createNotification({
+      title: `Platform Update: Announcement Modified - ${updatedAnnouncement.title}`,
+      content: updatedAnnouncement.content.substring(0, 50) + (updatedAnnouncement.content.length > 50 ? '...' : ''),
+      type: 'announcement',
+      path: '/sponsor',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'sponsor'
+    });
+    socket.emitUpdate('newNotification', sponsorNotification);
 
     res.status(200).json(updatedAnnouncement);
   } catch (error) {
@@ -138,9 +162,9 @@ const deleteAnnouncement = async (req, res) => {
     
     // 1. Notification for Admins
     const adminNotification = await notificationController.createNotification({
-      title: `${creatorName} deleted an announcement: ${deletedAnnouncement.title}`,
+      title: `Platform Update: Announcement Removed - ${deletedAnnouncement.title}`,
       content: `The announcement has been removed.`,
-      type: 'update',
+      type: 'announcement',
       path: '/admin/content',
       unread: true,
       createdBy: req.user._id,
@@ -150,15 +174,27 @@ const deleteAnnouncement = async (req, res) => {
 
     // 2. Notification for Promoters
     const promoterNotification = await notificationController.createNotification({
-      title: `${creatorName} deleted an announcement: ${deletedAnnouncement.title}`,
+      title: `Platform Update: Announcement Removed - ${deletedAnnouncement.title}`,
       content: `An announcement was removed.`,
-      type: 'update',
+      type: 'announcement',
       path: '/promoter/promoter-announcement',
       unread: true,
       createdBy: req.user._id,
       targetRole: 'promoter'
     });
     socket.emitUpdate('newNotification', promoterNotification);
+
+    // 3. Notification for Sponsors
+    const sponsorNotification = await notificationController.createNotification({
+      title: `Platform Update: Announcement Removed - ${deletedAnnouncement.title}`,
+      content: `An announcement was removed.`,
+      type: 'announcement',
+      path: '/sponsor',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'sponsor'
+    });
+    socket.emitUpdate('newNotification', sponsorNotification);
 
     res.status(200).json({ message: "Announcement deleted successfully" });
   } catch (error) {

@@ -38,7 +38,7 @@ export const NotificationsContextProvider = ({ children }) => {
   const { user } = useAuthContext();
 
   useEffect(() => {
-    if (!user || (user.role !== 'admin' && user.role !== 'superadmin' && user.role !== 'promoter')) {
+    if (!user || (user.role !== 'admin' && user.role !== 'superadmin' && user.role !== 'promoter' && user.role !== 'sponsor')) {
         return;
     }
 
@@ -48,21 +48,25 @@ export const NotificationsContextProvider = ({ children }) => {
     })
 
     socket.on('newNotification', (notification) => {
-      // Don't notify the person who created the action
+      // Don't notify the person who created the action, UNLESS it's specifically for them (self-success notification)
       if (notification.createdBy && String(notification.createdBy) === String(user._id)) {
-        return;
+        if (!notification.userId || String(notification.userId) !== String(user._id)) {
+          return;
+        }
       }
+
+      const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+      const userRoleLower = user.role.toLowerCase();
 
       // Check user preferences
       const preferences = user.notifications || {};
+      if (notification.type === 'user' && !isAdmin) return; // Hard filter for sponsors
       if (notification.type === 'concern' && preferences.supportMessages === false) return;
       if (notification.type === 'user' && preferences.userUpdates === false) return;
       if (notification.type === 'payment' && preferences.paymentReminders === false) return;
-      if (notification.type === 'update' && preferences.announcements === false) return;
+      if ((notification.type === 'update' || notification.type === 'announcement') && preferences.announcements === false) return;
 
       // Check visibility
-      const isAdmin = user.role === 'admin' || user.role === 'superadmin';
-      const userRoleLower = user.role.toLowerCase();
 
       if (notification.userId) {
         // Specifically for one user
@@ -80,8 +84,8 @@ export const NotificationsContextProvider = ({ children }) => {
         }
       } else {
         // Legacy system - userId is null and no targetRole
-        // Usually targetted at admins, but 'update' type was seen by promoters too
-        if (!isAdmin && notification.type !== 'update') return;
+        // Usually targetted at admins, but 'update' and 'announcement' types are seen by all
+        if (!isAdmin && notification.type !== 'update' && notification.type !== 'announcement' && notification.type !== 'policy') return;
       }
 
       dispatch({ type: 'CREATE_NOTIFICATION', payload: notification })

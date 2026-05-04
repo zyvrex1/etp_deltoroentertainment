@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const Policy = require("../models/policyModel");
+const notificationController = require('./notificationController');
+const socket = require('../socket');
 
 // GET all policies
 const getPolicies = async (req, res) => {
@@ -52,15 +54,13 @@ const createPolicy = async (req, res) => {
     });
 
     // Create Notification and Emit
-    const notificationController = require('./notificationController');
-    const socket = require('../socket');
     const creatorName = `${req.user.firstName} ${req.user.lastName}`;
     
     // 1. Notification for Admins
     const adminNotification = await notificationController.createNotification({
-      title: `${creatorName} created a new policy: ${title}`,
+      title: `Platform Update: New Policy - ${title}`,
       content: `A new platform policy has been added.`,
-      type: 'update',
+      type: 'policy',
       path: '/admin/content',
       unread: true,
       createdBy: req.user._id,
@@ -72,13 +72,25 @@ const createPolicy = async (req, res) => {
     const promoterNotification = await notificationController.createNotification({
       title: `Platform Update: New policy added`,
       content: `A new policy "${title}" has been published.`,
-      type: 'update',
+      type: 'policy',
       path: '/promoter/promoter-announcement',
       unread: true,
       createdBy: req.user._id,
       targetRole: 'promoter'
     });
     socket.emitUpdate('newNotification', promoterNotification);
+
+    // 3. Notification for Sponsors
+    const sponsorNotification = await notificationController.createNotification({
+      title: `New Policy: ${title}`,
+      content: `A new platform policy has been added. Please review it.`,
+      type: 'policy',
+      path: '/sponsor',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'sponsor'
+    });
+    socket.emitUpdate('newNotification', sponsorNotification);
 
     res.status(201).json(policy);
   } catch (error) {
@@ -112,15 +124,13 @@ const updatePolicy = async (req, res) => {
     }
 
     // Create Notification and Emit
-    const notificationController = require('./notificationController');
-    const socket = require('../socket');
     const creatorName = `${req.user.firstName} ${req.user.lastName}`;
     
     // 1. Notification for Admins
     const adminNotification = await notificationController.createNotification({
-      title: `${creatorName} updated a policy: ${title}`,
+      title: `Platform Update: Policy Modified - ${title}`,
       content: `The policy "${title}" has been modified.`,
-      type: 'update',
+      type: 'policy',
       path: '/admin/content',
       unread: true,
       createdBy: req.user._id,
@@ -132,13 +142,25 @@ const updatePolicy = async (req, res) => {
     const promoterNotification = await notificationController.createNotification({
       title: `Platform Update: Policy modified`,
       content: `The policy "${title}" has been updated.`,
-      type: 'update',
+      type: 'policy',
       path: '/promoter/promoter-announcement',
       unread: true,
       createdBy: req.user._id,
       targetRole: 'promoter'
     });
     socket.emitUpdate('newNotification', promoterNotification);
+
+    // 3. Notification for Sponsors
+    const sponsorNotification = await notificationController.createNotification({
+      title: `Policy Updated: ${title}`,
+      content: `The platform policy "${title}" has been updated.`,
+      type: 'policy',
+      path: '/sponsor',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'sponsor'
+    });
+    socket.emitUpdate('newNotification', sponsorNotification);
 
     res.status(200).json(updatedPolicy);
   } catch (error) {

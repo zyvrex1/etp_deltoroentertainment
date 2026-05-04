@@ -283,7 +283,9 @@
           &.event { background: var(--color-red-quaternary); color: var(--color-red-primary); }
           &.payment { background: var(--color-blue-quaternary); color: var(--color-blue-primary); }
           &.user { background: var(--color-purple-quaternary); color: var(--color-purple-primary); }
-          &.update { background: var(--color-bg-dark); color: white; }
+          &.update,
+          &.announcement,
+          &.policy { background: var(--color-bg-dark); color: white; }
         }
 
         .notif-content {

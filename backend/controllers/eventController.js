@@ -612,6 +612,19 @@ const createEvent = async (req, res) => {
       });
 
       emitUpdate("newNotification", notification);
+    } else if (status === "approved") {
+      // Notify sponsors of a new approved (live) event
+      const notificationController = require("./notificationController");
+      const notification = await notificationController.createNotification({
+        title: `New Event: ${title}`,
+        content: `A new event has been posted. Check it out!`,
+        type: "event",
+        path: "/sponsor/sponsor-events",
+        unread: true,
+        createdBy: userId,
+        targetRole: "sponsor",
+      });
+      emitUpdate("newNotification", notification);
     }
 
     emitUpdate("dashboardUpdate");
@@ -992,7 +1005,31 @@ const updateEvent = async (req, res) => {
       { path: "assignedPromoters", select: "firstName lastName email avatar" },
     ]);
 
-    // ... (Notification Logic remains the same as your original snippet) ...
+    // Notification Logic
+    const notificationController = require("./notificationController");
+    if (finalStatus === "approved" && existingEvent.status !== "approved") {
+        const sponsorNotification = await notificationController.createNotification({
+            title: `New Event: ${updatedEvent.title}`,
+            content: `A new event has been posted. Check it out!`,
+            type: "event",
+            path: "/sponsor/sponsor-events",
+            unread: true,
+            createdBy: req.user._id,
+            targetRole: "sponsor",
+        });
+        emitUpdate("newNotification", sponsorNotification);
+    } else if (finalStatus === "rejected" && existingEvent.status !== "rejected") {
+        const rejectionNotification = await notificationController.createNotification({
+            title: `Event Rejected: ${updatedEvent.title}`,
+            content: `Reason: ${rejectionReason || 'No reason provided'}`,
+            type: "event",
+            path: "/promoter/events",
+            unread: true,
+            userId: updatedEvent.createdBy._id,
+            createdBy: req.user._id,
+        });
+        emitUpdate("newNotification", rejectionNotification);
+    }
 
     emitUpdate("dashboardUpdate");
     res.status(200).json({ event: updatedEvent });
@@ -1310,6 +1347,18 @@ const reserveBooth = async (req, res) => {
     });
     emitUpdate("newNotification", notification);
 
+    // 5. Notification for the Sponsor (Success)
+    const sponsorNotification = await notificationController.createNotification({
+      title: `Reservation Success!`,
+      content: `Your reservation for booth ${booth.label || booth.code} in "${event.title}" has been confirmed.`,
+      type: "reservation",
+      path: "/sponsor/my-booth",
+      unread: true,
+      userId: req.user._id,
+      createdBy: req.user._id
+    });
+    emitUpdate("newNotification", sponsorNotification);
+
     emitUpdate("dashboardUpdate");
 
     res.status(201).json({
@@ -1319,6 +1368,24 @@ const reserveBooth = async (req, res) => {
     });
   } catch (error) {
     console.error("Reserve Booth Error:", error);
+    
+    // Notification for the Sponsor (Error/Failure)
+    try {
+        const notificationController = require("./notificationController");
+        await notificationController.createNotification({
+            title: `Reservation Failed`,
+            content: `We encountered an error while processing your reservation: ${error.message}`,
+            type: "reservation",
+            path: "/sponsor/sponsor-events",
+            unread: true,
+            userId: req.user._id,
+            createdBy: req.user._id
+        });
+        emitUpdate("newNotification", { userId: req.user._id }); // Trigger refresh
+    } catch (notifError) {
+        console.error("Failed to create error notification:", notifError);
+    }
+
     res.status(500).json({ error: error.message });
   }
 };

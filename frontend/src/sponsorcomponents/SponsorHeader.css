@@ -57,8 +57,44 @@
     align-items: center;
     gap: 20px;
 
-    .sponsor-profile-container {
+    .sponsor-profile-container,
+    .sponsor-notification-wrapper {
         position: relative;
+
+        .notif-trigger {
+            background: transparent;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: var(--color-white-primary);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+
+            &:hover, &.active {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            .notif-badge {
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                background: var(--color-red-primary);
+                color: white;
+                font-size: 10px;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid var(--color-bg-dark);
+                font-weight: bold;
+            }
+        }
 
         .sponsor-profile-btn {
             background: transparent;
@@ -200,6 +236,11 @@
     .sponsor-user-name,
     .sponsor-profile-container {
         display: none;
+    }
+
+    .sponsor-notification-wrapper,
+    .sponsor-cart-btn {
+        display: flex;
     }
 
     .sponsor-bottom-nav {
@@ -376,6 +417,7 @@
         justify-content: center;
         background: var(--color-red-quaternary);
     }
+
 }
 
 /* RESPONSIVE 480px */
@@ -383,7 +425,6 @@
     .sponsor-header-container {
         padding: 10px 15px !important;
     }
-
     .sponsor-head-logo{
         height: 54px !important;
     }

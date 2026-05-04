@@ -175,6 +175,25 @@ const addExhibitors = async (req, res) => {
         reservation.exhibitors.push(...newExhibitors);
 
         await reservation.save();
+
+        // Notify new exhibitors
+        const notificationController = require('./notificationController');
+        const { emitUpdate } = require('../socket');
+        const sponsorName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
+        
+        for (const userId of newExhibitors) {
+            const notification = await notificationController.createNotification({
+                title: `Added as Exhibitor`,
+                content: `${sponsorName} added you as an exhibitor for booth ${reservation.boothCode}`,
+                type: 'reservation',
+                path: '/sponsor/sponsor-my-booths',
+                unread: true,
+                userId: userId,
+                createdBy: req.user._id
+            });
+            emitUpdate('newNotification', notification);
+        }
+
         res.status(200).json(reservation);
     } catch (error) {
         console.error("Add Exhibitors Error:", error);

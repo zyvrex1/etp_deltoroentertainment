@@ -229,11 +229,11 @@ const addMessage = async (req, res) => {
       };
     })) : [];
 
-    const senderName = `${user.firstName} ${user.lastName}`;
+    const senderName = (user.role === 'admin' || user.role === 'superadmin') ? 'Admin' : `${user.firstName} ${user.lastName}`;
 
     const newMessage = {
       sender: user._id,
-      senderName: `${user.firstName} ${user.lastName}`,
+      senderName: senderName,
       text,
       attachments,
       isSystem: false
@@ -251,17 +251,21 @@ const addMessage = async (req, res) => {
 
     await concern.save();
 
-    // Create Notification (Targeted if assigned, otherwise global for admins)
+    // Create Notification
     const notificationController = require('./notificationController');
+    const recipientId = (user.role === 'admin' || user.role === 'superadmin') ? concern.sponsorId : (concern.assignedTo || null);
+    const targetRole = (user.role === 'admin' || user.role === 'superadmin') ? null : (concern.assignedTo ? null : 'admin');
+    const path = (user.role === 'admin' || user.role === 'superadmin') ? '/sponsor/support' : '/admin/support';
+
     const notification = await notificationController.createNotification({
       title: `New message for ticket: ${concern.subject}`,
-      content: `${senderName}: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`,
+      content: `New message: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`,
       type: 'concern',
-      path: `/admin/support`,
+      path,
       unread: true,
-      userId: concern.assignedTo || null, // TARGETED IF ASSIGNED
+      userId: recipientId,
       createdBy: user._id,
-      targetRole: concern.assignedTo ? null : 'admin'
+      targetRole
     });
     socket.emitUpdate('newNotification', notification);
 

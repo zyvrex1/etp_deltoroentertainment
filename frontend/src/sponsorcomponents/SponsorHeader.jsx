@@ -4,17 +4,27 @@ import { Icon } from '@iconify/react';
 import { showConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { useSponsorCartContext } from '../context/SponsorCartContext';
+import { useNotificationsContext } from '../hooks/useNotificationsContext';
+import axios from 'axios';
+import SponsorNotificationDropdown from './SponsorNotificationDropdown';
+import SponsorViewNotif from './SponsorViewNotif';
 import './SponsorHeader.css';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function SponsorHeader() {
     const { user: authUser } = useAuthContext();
     const { cartItems } = useSponsorCartContext();
+    const { notifications, dispatch } = useNotificationsContext();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
+    const [showAllNotifs, setShowAllNotifs] = useState(false);
     const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
     const [showBottomNav, setShowBottomNav] = useState(true);
     const lastScrollY = useRef(0);
     const dropdownRef = useRef(null);
+    const notifRef = useRef(null);
+
+    const unreadCount = notifications.filter(n => n.unread).length;
     const navigate = useNavigate();
 
     const getInitials = (firstName, lastName) => {
@@ -33,12 +43,75 @@ export default function SponsorHeader() {
         }
     };
 
-    const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+    const toggleDropdown = () => {
+        setIsDropdownOpen(!isDropdownOpen);
+        setIsNotifOpen(false);
+    };
+
+    const toggleNotif = () => {
+        if (window.innerWidth <= 768) {
+            setShowAllNotifs(true);
+            setIsNotifOpen(false);
+        } else {
+            setIsNotifOpen(!isNotifOpen);
+        }
+        setIsDropdownOpen(false);
+    };
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const response = await axios.get(`${BACKEND_URL}/api/notifications`, {
+                    headers: {
+                        'Authorization': `Bearer ${authUser.token}`
+                    }
+                });
+                // Filter out notifications created by the current user
+                const filteredNotifs = response.data.filter(n => !n.createdBy || String(n.createdBy) !== String(authUser._id));
+                dispatch({ type: 'SET_NOTIFICATIONS', payload: filteredNotifs });
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+            }
+        };
+
+        if (authUser) {
+            fetchNotifications();
+        }
+    }, [authUser, dispatch]);
+
+    const handleMarkRead = async (id) => {
+        try {
+            const response = await axios.patch(`${BACKEND_URL}/api/notifications/${id}/read`, {}, {
+                headers: {
+                    'Authorization': `Bearer ${authUser.token}`
+                }
+            });
+            dispatch({ type: 'MARK_READ', payload: response.data });
+        } catch (error) {
+            console.error('Error marking as read:', error);
+        }
+    };
+
+    const handleMarkAllRead = async () => {
+        try {
+            await axios.patch(`${BACKEND_URL}/api/notifications/read-all`, {}, {
+                headers: {
+                    'Authorization': `Bearer ${authUser.token}`
+                }
+            });
+            dispatch({ type: 'MARK_ALL_READ' });
+        } catch (error) {
+            console.error('Error marking all as read:', error);
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
+            }
+            if (notifRef.current && !notifRef.current.contains(event.target)) {
+                setIsNotifOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -86,11 +159,29 @@ export default function SponsorHeader() {
                 </nav>
 
                 <div className="sponsor-header-actions">
-                    {/* 
-                    <button className="sponsor-notification-btn" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', padding: '8px', color: 'var(--color-white)' }}>
-                        <Icon icon="mdi:bell-outline" width="24" />
-                    </button> 
-                    */}
+                    <div className="sponsor-notification-wrapper" ref={notifRef}>
+                        <button 
+                            className={`notif-trigger ${isNotifOpen ? 'active' : ''}`} 
+                            onClick={toggleNotif}
+                        >
+                            <Icon icon={unreadCount > 0 ? "mdi:bell-badge-outline" : "mdi:bell-outline"} width="24" />
+                            {unreadCount > 0 && (
+                                <span className="notif-badge">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </button>
+                        {isNotifOpen && (
+                            <SponsorNotificationDropdown 
+                                notifications={notifications} 
+                                onClose={() => setIsNotifOpen(false)}
+                                onMarkAsRead={handleMarkRead}
+                                onMarkAllRead={handleMarkAllRead}
+                                onViewAll={() => setShowAllNotifs(true)}
+                            />
+                        )}
+                    </div>
+
                     <NavLink to="/sponsor/cart" className="sponsor-cart-btn" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', padding: '8px', color: 'var(--color-white)' }}>
                         <Icon icon="mdi:cart-outline" width="24" />
                         <span className="cart-badge" style={{ position: 'absolute', top: '0px', right: '0px', background: 'var(--color-red-primary)', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
@@ -233,6 +324,13 @@ export default function SponsorHeader() {
                     </div>
                 </div>
             )}
+
+            <SponsorViewNotif 
+                isOpen={showAllNotifs} 
+                onClose={() => setShowAllNotifs(false)} 
+                notifications={notifications}
+                onMarkAsRead={handleMarkRead}
+            />
         </header>
     );
 }

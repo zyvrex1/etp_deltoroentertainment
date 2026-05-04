@@ -31,7 +31,9 @@ const Header = ({ mobileExpanded, setMobileExpanded }) => {
     event: "mdi:calendar-outline",
     user: "mdi:account-plus-outline",
     update: "mdi:file-document-outline",
-    reservation: "mdi:ticket-confirmation-outline"
+    reservation: "mdi:ticket-confirmation-outline",
+    announcement: "mdi:bullhorn-outline",
+    policy: "mdi:file-document-outline"
   };
 
   useEffect(() => {

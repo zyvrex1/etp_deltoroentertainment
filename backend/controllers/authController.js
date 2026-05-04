@@ -59,6 +59,18 @@ const signupUser = async (req, res) => {
         targetRole: 'admin'
       });
       emitUpdate('newNotification', notification);
+
+      // Also notify the sponsor themselves of successful registration
+      const selfNotification = await notificationController.createNotification({
+        title: `Welcome to eTicketsPro!`,
+        content: `Your sponsor account has been successfully created.`,
+        type: 'user',
+        path: '/sponsor/settings',
+        unread: true,
+        userId: user._id,
+        createdBy: user._id
+      });
+      emitUpdate('newNotification', selfNotification);
     }
 
     const token = createToken(user)
