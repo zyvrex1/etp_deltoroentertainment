@@ -18,7 +18,18 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const [editingCategory, setEditingCategory] = useState(null);
 
   const [placedItems, setPlacedItems] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
+  // Batch placement modal
+  const [batchModal, setBatchModal] = useState(null); // null or { category }
+  const [batchDirection, setBatchDirection] = useState('row');
+  const [batchCount, setBatchCount] = useState(1);
+  const [batchSpacing, setBatchSpacing] = useState(50);
+  const [batchStartX, setBatchStartX] = useState(100);
+  const [batchStartY, setBatchStartY] = useState(100);
+  const [batchLabelStart, setBatchLabelStart] = useState(1);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const lastClickedIdRef = useRef(null);
+  // drag-group refs — store start positions of all selected items when drag begins
+  const dragStartPositions = useRef({});
   const [zoom, setZoom] = useState(1);
   const [fitScale, setFitScale] = useState(1);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
@@ -331,53 +342,68 @@ const LayoutBuilder = ({ selectedEvent }) => {
     }
   };
 
-  const handlePlaceItem = (category) => {
+  const openBatchModal = (category) => {
     const placedCount = placedItems.filter(i => i.categoryId === category.id).length;
-    if (placedCount >= category.quantity) {
+    const remaining = category.quantity - placedCount;
+    if (remaining <= 0) {
       showErrorAlert("Limit Reached", "All units for this category have been placed.");
       return;
     }
+    setBatchModal({ category });
+    setBatchDirection('row');
+    setBatchCount(Math.min(remaining, 10));
+    setBatchSpacing(50);
+    setBatchStartX(100);
+    setBatchStartY(100);
+    setBatchLabelStart(placedCount + 1);
+  };
 
-    const newItem = {
-      id: `item-${Date.now()}`,
-      categoryId: category.id,
-      label: `${category.name.length > 5 ? category.name.substring(0, 3).toUpperCase() : category.name}-${placedCount + 1}`,
-      x: 100,
-      y: 100,
-      scaleX: 1,
-      scaleY: 1,
-      rotation: 0,
-      type: category.type.includes("Seat") ? "seat" : "booth",
-      isBooth: !category.type.includes("Seat"),
-      isSeat: category.type.includes("Seat"),
-    };
-
+  const handleConfirmBatchPlace = () => {
+    if (!batchModal) return;
+    const { category } = batchModal;
+    const placedCount = placedItems.filter(i => i.categoryId === category.id).length;
+    const remaining = category.quantity - placedCount;
+    const count = Math.max(1, Math.min(Number(batchCount) || 1, remaining));
+    const spacing = Math.max(20, Number(batchSpacing) || 50);
+    const prefix = category.name.length > 5 ? category.name.substring(0, 3).toUpperCase() : category.name;
+    const newItems = [];
+    for (let i = 0; i < count; i++) {
+      const labelNum = Number(batchLabelStart) + i;
+      newItems.push({
+        id: `item-${Date.now()}-${i}`,
+        categoryId: category.id,
+        label: `${prefix}-${labelNum}`,
+        x: batchDirection === 'row' ? Number(batchStartX) + i * spacing : Number(batchStartX),
+        y: batchDirection === 'row' ? Number(batchStartY) : Number(batchStartY) + i * spacing,
+        scaleX: 1,
+        scaleY: 1,
+        rotation: 0,
+        type: category.type.includes("Seat") ? "seat" : "booth",
+        isBooth: !category.type.includes("Seat"),
+        isSeat: category.type.includes("Seat"),
+      });
+    }
     pushHistory([...placedItems]);
-    setPlacedItems([...placedItems, newItem]);
-    setSelectedId(newItem.id);
+    setPlacedItems(prev => [...prev, ...newItems]);
+    setSelectedIds(new Set(newItems.map(i => i.id)));
+    lastClickedIdRef.current = newItems[newItems.length - 1]?.id || null;
+    setBatchModal(null);
   };
 
   useEffect(() => {
-    if (trRef.current) {
-      if (selectedId) {
-        const node = stageRef.current.findOne(`#${selectedId}`);
-        if (node) {
-          trRef.current.nodes([node]);
-          trRef.current.getLayer().batchDraw();
-        }
-      } else {
-        trRef.current.nodes([]);
-        trRef.current.getLayer().batchDraw();
-      }
-    }
-  }, [selectedId]);
+    if (!trRef.current || !stageRef.current) return;
+    const nodes = [...selectedIds]
+      .map(id => stageRef.current.findOne(`#${id}`))
+      .filter(Boolean);
+    trRef.current.nodes(nodes);
+    trRef.current.getLayer()?.batchDraw();
+  }, [selectedIds]);
 
   const handleTransformEnd = (e) => {
     const node = e.target;
     const id = node.id();
-
     pushHistory([...placedItems]);
-    setPlacedItems(placedItems.map(item =>
+    setPlacedItems(prev => prev.map(item =>
       item.id === id ? {
         ...item,
         x: node.x(),
@@ -389,19 +415,61 @@ const LayoutBuilder = ({ selectedEvent }) => {
     ));
   };
 
-  const handleDragEnd = (id, x, y) => {
-    let newX = x;
-    let newY = y;
-
-    if (snapToGrid) {
-      newX = Math.round(x / GRID_SIZE) * GRID_SIZE;
-      newY = Math.round(y / GRID_SIZE) * GRID_SIZE;
+  // Called when ANY dragged item finishes — moves entire selection by the same delta
+  const handleDragEnd = (draggedId, newX, newY) => {
+    const startPos = dragStartPositions.current[draggedId];
+    if (!startPos) {
+      // Fallback: single item, snap and commit
+      const snappedX = snapToGrid ? Math.round(newX / GRID_SIZE) * GRID_SIZE : newX;
+      const snappedY = snapToGrid ? Math.round(newY / GRID_SIZE) * GRID_SIZE : newY;
+      pushHistory([...placedItems]);
+      setPlacedItems(prev => prev.map(item =>
+        item.id === draggedId ? { ...item, x: snappedX, y: snappedY } : item
+      ));
+      return;
     }
-
+    const dx = newX - startPos.x;
+    const dy = newY - startPos.y;
     pushHistory([...placedItems]);
-    setPlacedItems(placedItems.map(item =>
-      item.id === id ? { ...item, x: newX, y: newY } : item
-    ));
+    setPlacedItems(prev => prev.map(item => {
+      if (!selectedIds.has(item.id)) return item;
+      const orig = dragStartPositions.current[item.id];
+      if (!orig) return item;
+      let nx = orig.x + dx;
+      let ny = orig.y + dy;
+      if (snapToGrid) {
+        nx = Math.round(nx / GRID_SIZE) * GRID_SIZE;
+        ny = Math.round(ny / GRID_SIZE) * GRID_SIZE;
+      }
+      return { ...item, x: nx, y: ny };
+    }));
+    dragStartPositions.current = {};
+  };
+
+  // Ctrl+Click = toggle, Shift+Click = range, plain click = single
+  const handleItemClick = (itemId, e) => {
+    const nativeEvt = e.evt;
+    if (nativeEvt.ctrlKey || nativeEvt.metaKey) {
+      // Toggle this item
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        if (next.has(itemId)) { next.delete(itemId); }
+        else { next.add(itemId); lastClickedIdRef.current = itemId; }
+        return next;
+      });
+    } else if (nativeEvt.shiftKey && lastClickedIdRef.current) {
+      // Range select from lastClickedId to itemId
+      const ids = placedItems.map(i => i.id);
+      const a = ids.indexOf(lastClickedIdRef.current);
+      const b = ids.indexOf(itemId);
+      const [from, to] = a < b ? [a, b] : [b, a];
+      const rangeIds = ids.slice(from, to + 1);
+      setSelectedIds(prev => new Set([...prev, ...rangeIds]));
+    } else {
+      // Plain click — single select
+      setSelectedIds(new Set([itemId]));
+      lastClickedIdRef.current = itemId;
+    }
   };
 
   const handleSaveLayout = async () => {
@@ -501,14 +569,20 @@ const LayoutBuilder = ({ selectedEvent }) => {
   };
 
   const removePlacedItem = (id) => {
-    const item = placedItems.find(i => i.id === id);
-    if (item && (item.status === 'sold' || item.status === 'reserved')) {
-      showErrorAlert("Protected Booth", "This booth has already been sold/reserved and cannot be removed from the map.");
+    // If multiple selected, remove all selected; otherwise just the given id
+    const toRemove = selectedIds.size > 1 ? [...selectedIds] : [id];
+    const locked = toRemove.filter(rid => {
+      const it = placedItems.find(i => i.id === rid);
+      return it && (it.status === 'sold' || it.status === 'reserved');
+    });
+    if (locked.length > 0) {
+      showErrorAlert("Protected", `${locked.length} item(s) are sold/reserved and cannot be removed.`);
       return;
     }
     pushHistory([...placedItems]);
-    setPlacedItems(placedItems.filter(item => item.id !== id));
-    setSelectedId(null);
+    setPlacedItems(prev => prev.filter(item => !toRemove.includes(item.id)));
+    setSelectedIds(new Set());
+    lastClickedIdRef.current = null;
   };
 
   const totalPlaced = placedItems.length;
@@ -518,13 +592,15 @@ const LayoutBuilder = ({ selectedEvent }) => {
     return sum + (cat ? cat.price : 0);
   }, 0);
 
-  // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Y = redo
+  // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Y = redo, Escape = deselect
   useEffect(() => {
     const onKeyDown = (e) => {
       const tag = e.target.tagName;
-      // Don't intercept while typing in inputs
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      if (e.ctrlKey && e.key === 'z') {
+      if (e.key === 'Escape') {
+        setSelectedIds(new Set());
+        lastClickedIdRef.current = null;
+      } else if (e.ctrlKey && e.key === 'z') {
         e.preventDefault();
         handleUndo();
       } else if (e.ctrlKey && (e.key === 'y' || e.key === 'Y')) {
@@ -654,8 +730,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
                       <div
                         className="cat-palette-visual"
                         style={{ backgroundColor: cat.color }}
-                        onClick={() => !isFull && handlePlaceItem(cat)}
-                        title={isFull ? "All units placed" : "Click to place on map"}
+                        onClick={() => !isFull && openBatchModal(cat)}
+                        title={isFull ? "All units placed" : "Click to place seats/booths on map"}
                       >
                         {cat.type.includes("Seat") ? <Icon icon="mdi:circle" /> : <Icon icon="mdi:square" />}
                       </div>
@@ -697,82 +773,121 @@ const LayoutBuilder = ({ selectedEvent }) => {
             </div>
           </div>
 
-          {selectedId && (
-            <div className="sidebar-card inspector-card">
-              <div className="sidebar-header">
-                <h4 className="bt-section-title-layout">Shape Inspector</h4>
-                <button className="close-btn" onClick={() => setSelectedId(null)}>
-                  <Icon icon="mdi:close" />
-                </button>
-              </div>
-              <div className="inspector-body">
-                {(() => {
-                  const item = placedItems.find(i => i.id === selectedId);
-                  const cat = categories.find(c => c.id === item?.categoryId);
-                  if (!item) return null;
-                  return (
+          {selectedIds.size > 0 && (() => {
+            const selArray = [...selectedIds];
+            const selItems = placedItems.filter(i => selectedIds.has(i.id));
+            const isSingle = selArray.length === 1;
+            const singleItem = isSingle ? selItems[0] : null;
+            const singleCat = singleItem ? categories.find(c => c.id === singleItem.categoryId) : null;
+            const anyLocked = selItems.some(i => i.status === 'sold' || i.status === 'reserved');
+            return (
+              <div className="sidebar-card inspector-card">
+                <div className="sidebar-header">
+                  <h4 className="bt-section-title-layout">
+                    {isSingle ? 'Shape Inspector' : `${selArray.length} Selected`}
+                  </h4>
+                  <button className="close-btn" onClick={() => { setSelectedIds(new Set()); lastClickedIdRef.current = null; }}>
+                    <Icon icon="mdi:close" />
+                  </button>
+                </div>
+                <div className="inspector-body">
+                  {isSingle ? (
                     <>
                       <div className="inspector-header-main" onClick={() => setIsInspectorExpanded(!isInspectorExpanded)} style={{ cursor: 'pointer' }}>
                         <span className="shape-id">
-                          {item.label}
+                          {singleItem.label}
                           <Icon icon={isInspectorExpanded ? "mdi:chevron-up" : "mdi:chevron-down"} className="mobile-only-icon" style={{ marginLeft: '4px', verticalAlign: 'middle', fontSize: '20px' }} />
                         </span>
-                        <span className={`value-badge type-${item.type}`}>{cat?.type.toLowerCase().split(' ')[0]}</span>
+                        <span className={`value-badge type-${singleItem.type}`}>{singleCat?.type.toLowerCase().split(' ')[0]}</span>
                       </div>
-
                       <div className={`summary-list ${isInspectorExpanded ? 'expanded' : ''}`}>
                         <div className="summary-item">
                           <span className="label">Status</span>
-                          <span className={`value status-${item.status || 'available'}`}>{item.status?.toUpperCase() || 'AVAILABLE'}</span>
+                          <span className={`value status-${singleItem.status || 'available'}`}>{singleItem.status?.toUpperCase() || 'AVAILABLE'}</span>
                         </div>
-                        {item.reservedBy && (
+                        {singleItem.reservedBy && (
                           <>
                             <div className="summary-item mobile-collapsible">
                               <span className="label">Buyer</span>
-                              <span className="value-semi" style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
+                              <span className="value-semi" style={{ color: 'var(--color-green-primary)' }}>{singleItem.reservedBy}</span>
                             </div>
-                            {item.reservedByEmail && (
+                            {singleItem.reservedByEmail && (
                               <div className="summary-item mobile-collapsible">
                                 <span className="label">Email</span>
-                                <span className="value" style={{ fontSize: '11px' }}>{item.reservedByEmail}</span>
+                                <span className="value" style={{ fontSize: '11px' }}>{singleItem.reservedByEmail}</span>
                               </div>
                             )}
-                            {item.reservedByPO && (
+                            {singleItem.reservedByPO && (
                               <div className="summary-item mobile-collapsible">
                                 <span className="label">PO Number</span>
-                                <span className="value">{item.reservedByPO}</span>
+                                <span className="value">{singleItem.reservedByPO}</span>
                               </div>
                             )}
                           </>
                         )}
                         <div className="summary-item mobile-collapsible">
                           <span className="label">Category</span>
-                          <span className="value">{cat?.name}</span>
+                          <span className="value">{singleCat?.name}</span>
                         </div>
                         <div className="summary-item mobile-collapsible">
                           <span className="label">Price</span>
-                          <span className="value-bold">${cat?.price.toFixed(2)}</span>
+                          <span className="value-bold">${singleCat?.price.toFixed(2)}</span>
                         </div>
-                        {cat?.boothSize && (
+                        {singleCat?.boothSize && (
                           <div className="summary-item mobile-collapsible">
                             <span className="label">Size</span>
-                            <span className="value">{cat.boothSize}</span>
+                            <span className="value">{singleCat.boothSize}</span>
                           </div>
                         )}
                       </div>
                       <button
-                        className={`remove-shape-btn-side ${(item.status === 'sold' || item.status === 'reserved') ? 'disabled' : ''}`}
-                        onClick={() => removePlacedItem(selectedId)}
-                        disabled={item.status === 'sold' || item.status === 'reserved'}
+                        className={`remove-shape-btn-side ${anyLocked ? 'disabled' : ''}`}
+                        onClick={() => removePlacedItem(singleItem.id)}
+                        disabled={anyLocked}
                       >
-                        <Icon icon="mdi:trash-can-outline" /> {(item.status === 'sold' || item.status === 'reserved') ? 'Sold (Locked)' : 'Remove from Map'}
+                        <Icon icon="mdi:trash-can-outline" /> {anyLocked ? 'Sold (Locked)' : 'Remove from Map'}
                       </button>
                     </>
-                  );
-                })()}
+                  ) : (
+                    // Multi-select summary
+                    <>
+                      <div className="multiselect-summary">
+                        <Icon icon="mdi:cursor-pointer" className="multiselect-icon" />
+                        <span><strong>{selArray.length}</strong> items selected</span>
+                      </div>
+                      <div className="summary-list" style={{ marginTop: '10px' }}>
+                        {/* Group by category */}
+                        {Object.entries(
+                          selItems.reduce((acc, it) => {
+                            const cat = categories.find(c => c.id === it.categoryId);
+                            const key = cat?.name || 'Unknown';
+                            acc[key] = (acc[key] || 0) + 1;
+                            return acc;
+                          }, {})
+                        ).map(([catName, count]) => (
+                          <div key={catName} className="summary-item">
+                            <span className="label">{catName}</span>
+                            <span className="value">{count} item{count !== 1 ? 's' : ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="multiselect-hint">
+                        <Icon icon="mdi:drag" /> Drag any selected item to move the group
+                      </div>
+                      <button
+                        className={`remove-shape-btn-side ${anyLocked ? 'disabled' : ''}`}
+                        onClick={() => removePlacedItem(selArray[0])}
+                        disabled={anyLocked}
+                      >
+                        <Icon icon="mdi:trash-can-outline" />
+                        {anyLocked ? 'Some items locked' : `Remove ${selArray.length} items`}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <div className="sidebar-card summary-card">
             <h4 className="bt-section-title-layout">Layout Summary</h4>
@@ -912,12 +1027,14 @@ const LayoutBuilder = ({ selectedEvent }) => {
               y={stagePos.y}
               onClick={(e) => {
                 if (e.target === e.target.getStage()) {
-                  setSelectedId(null);
+                  setSelectedIds(new Set());
+                  lastClickedIdRef.current = null;
                 }
               }}
               onTap={(e) => {
                 if (e.target === e.target.getStage()) {
-                  setSelectedId(null);
+                  setSelectedIds(new Set());
+                  lastClickedIdRef.current = null;
                 }
               }}
               onMouseDown={(e) => {
@@ -1033,9 +1150,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
                 })()}
                 {placedItems.map(item => {
                   const category = categories.find(c => c.id === item.categoryId);
-                  const isSelected = selectedId === item.id;
+                  const isSelected = selectedIds.has(item.id);
                   const isBooth = item.type === 'booth';
-                  // Auto-size the booth rect from the category's boothSize string
                   const { w: boothW, h: boothH } = isBooth
                     ? parseBoothSizePx(category?.boothSize)
                     : { w: 40, h: 40 };
@@ -1050,30 +1166,39 @@ const LayoutBuilder = ({ selectedEvent }) => {
                       scaleY={item.scaleY}
                       rotation={item.rotation}
                       draggable
-                      dragBoundFunc={(pos) => {
-                        // pos is in stage (screen) coords; convert to canvas coords
-                        const canvasX = (pos.x - stagePos.x) / zoom;
-                        const canvasY = (pos.y - stagePos.y) / zoom;
-
-                        const pad = 20;
-                        let clampedX = Math.max(pad, Math.min(canvasX, canvasWidth - pad));
-                        let clampedY = Math.max(pad, Math.min(canvasY, canvasHeight - pad));
-
-                        if (snapToGrid) {
-                          clampedX = Math.round(clampedX / GRID_SIZE) * GRID_SIZE;
-                          clampedY = Math.round(clampedY / GRID_SIZE) * GRID_SIZE;
+                      onDragStart={() => {
+                        // Snapshot positions of all selected items at drag start
+                        const snap = {};
+                        placedItems.forEach(pi => {
+                          if (selectedIds.has(pi.id)) snap[pi.id] = { x: pi.x, y: pi.y };
+                        });
+                        // If dragging an unselected item, select only it
+                        if (!selectedIds.has(item.id)) {
+                          snap[item.id] = { x: item.x, y: item.y };
+                          setSelectedIds(new Set([item.id]));
+                          lastClickedIdRef.current = item.id;
                         }
-
-                        // Convert back to stage coords
-                        return {
-                          x: clampedX * zoom + stagePos.x,
-                          y: clampedY * zoom + stagePos.y,
-                        };
+                        dragStartPositions.current = snap;
+                      }}
+                      onDragMove={(e) => {
+                        // Move all other selected nodes in real-time imperatively
+                        if (selectedIds.size <= 1) return;
+                        const startPos = dragStartPositions.current[item.id];
+                        if (!startPos) return;
+                        const dx = e.target.x() - startPos.x;
+                        const dy = e.target.y() - startPos.y;
+                        selectedIds.forEach(sid => {
+                          if (sid === item.id) return;
+                          const orig = dragStartPositions.current[sid];
+                          if (!orig) return;
+                          const node = stageRef.current?.findOne(`#${sid}`);
+                          if (node) { node.x(orig.x + dx); node.y(orig.y + dy); }
+                        });
                       }}
                       onDragEnd={(e) => handleDragEnd(item.id, e.target.x(), e.target.y())}
                       onTransformEnd={handleTransformEnd}
-                      onClick={() => setSelectedId(item.id)}
-                      onTap={() => setSelectedId(item.id)}
+                      onClick={(e) => handleItemClick(item.id, e)}
+                      onTap={(e) => handleItemClick(item.id, e)}
                     >
                       {isBooth ? (
                         <Rect
@@ -1123,7 +1248,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
                     </Group>
                   );
                 })}
-                {selectedId && (
+                {selectedIds.size > 0 && (
                   <Transformer
                     ref={trRef}
                     boundBoxFunc={(oldBox, newBox) => {
@@ -1144,6 +1269,156 @@ const LayoutBuilder = ({ selectedEvent }) => {
         onSave={handleSaveCategory}
         editingCategory={editingCategory}
       />
+
+      {/* ── Batch Placement Modal ── */}
+      {batchModal && (() => {
+        const cat = batchModal.category;
+        const placedCount = placedItems.filter(i => i.categoryId === cat.id).length;
+        const remaining = cat.quantity - placedCount;
+        const safeCount = Math.max(1, Math.min(Number(batchCount) || 1, remaining));
+        return (
+          <div className="batch-modal-overlay" onClick={() => setBatchModal(null)}>
+            <div className="batch-modal" onClick={e => e.stopPropagation()}>
+              <div className="batch-modal-header">
+                <div className="batch-modal-title">
+                  <span className="batch-cat-dot" style={{ background: cat.color }} />
+                  <h4>Place {cat.type.includes('Seat') ? 'Seats' : 'Booths'}</h4>
+                  <span className="batch-cat-name">{cat.name}</span>
+                </div>
+                <button className="batch-modal-close" onClick={() => setBatchModal(null)}>
+                  <Icon icon="mdi:close" />
+                </button>
+              </div>
+
+              <div className="batch-modal-body">
+                {/* Direction Toggle */}
+                <div className="batch-field">
+                  <label className="batch-label">Arrangement</label>
+                  <div className="batch-direction-toggle">
+                    <button
+                      className={`batch-dir-btn ${batchDirection === 'row' ? 'active' : ''}`}
+                      onClick={() => setBatchDirection('row')}
+                    >
+                      <Icon icon="mdi:arrow-right" />
+                      <span>Row (Horizontal)</span>
+                    </button>
+                    <button
+                      className={`batch-dir-btn ${batchDirection === 'column' ? 'active' : ''}`}
+                      onClick={() => setBatchDirection('column')}
+                    >
+                      <Icon icon="mdi:arrow-down" />
+                      <span>Column (Vertical)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Preview strip */}
+                <div className="batch-preview">
+                  {Array.from({ length: Math.min(safeCount, 12) }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`batch-preview-dot ${batchDirection === 'column' ? 'col-mode' : ''}`}
+                      style={{
+                        background: cat.color,
+                        borderRadius: cat.type.includes('Seat') ? '50%' : '4px',
+                      }}
+                    />
+                  ))}
+                  {safeCount > 12 && <span className="batch-preview-more">+{safeCount - 12} more</span>}
+                </div>
+
+                <div className="batch-fields-grid">
+                  {/* Count */}
+                  <div className="batch-field">
+                    <label className="batch-label">
+                      <Icon icon="mdi:counter" /> Count
+                      <span className="batch-hint">max {remaining}</span>
+                    </label>
+                    <input
+                      id="batch-count"
+                      type="number" min="1" max={remaining}
+                      className="batch-input"
+                      value={batchCount}
+                      onChange={e => setBatchCount(Math.min(remaining, Math.max(1, Number(e.target.value))))}
+                    />
+                  </div>
+
+                  {/* Spacing */}
+                  <div className="batch-field">
+                    <label className="batch-label">
+                      <Icon icon="mdi:arrow-expand-horizontal" /> Spacing (px)
+                    </label>
+                    <input
+                      id="batch-spacing"
+                      type="number" min="20" max="500"
+                      className="batch-input"
+                      value={batchSpacing}
+                      onChange={e => setBatchSpacing(Number(e.target.value))}
+                    />
+                  </div>
+
+                  {/* Start X */}
+                  <div className="batch-field">
+                    <label className="batch-label">
+                      <Icon icon="mdi:map-marker" /> Start X
+                    </label>
+                    <input
+                      id="batch-start-x"
+                      type="number" min="0"
+                      className="batch-input"
+                      value={batchStartX}
+                      onChange={e => setBatchStartX(Number(e.target.value))}
+                    />
+                  </div>
+
+                  {/* Start Y */}
+                  <div className="batch-field">
+                    <label className="batch-label">
+                      <Icon icon="mdi:map-marker" /> Start Y
+                    </label>
+                    <input
+                      id="batch-start-y"
+                      type="number" min="0"
+                      className="batch-input"
+                      value={batchStartY}
+                      onChange={e => setBatchStartY(Number(e.target.value))}
+                    />
+                  </div>
+
+                  {/* Label start number */}
+                  <div className="batch-field">
+                    <label className="batch-label">
+                      <Icon icon="mdi:label-outline" /> Label Start #
+                    </label>
+                    <input
+                      id="batch-label-start"
+                      type="number" min="1"
+                      className="batch-input"
+                      value={batchLabelStart}
+                      onChange={e => setBatchLabelStart(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+
+                <div className="batch-info-row">
+                  <Icon icon="mdi:information-outline" />
+                  <span>Placing <strong>{safeCount}</strong> {cat.type.includes('Seat') ? 'seat' : 'booth'}{safeCount !== 1 ? 's' : ''} as a <strong>{batchDirection}</strong> — {remaining - safeCount} of {remaining} remaining units left after.</span>
+                </div>
+              </div>
+
+              <div className="batch-modal-footer">
+                <button className="batch-cancel-btn" onClick={() => setBatchModal(null)}>
+                  Cancel
+                </button>
+                <button className="batch-confirm-btn" onClick={handleConfirmBatchPlace}>
+                  <Icon icon="mdi:check-circle-outline" />
+                  Place {safeCount} {cat.type.includes('Seat') ? (safeCount === 1 ? 'Seat' : 'Seats') : (safeCount === 1 ? 'Booth' : 'Booths')}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {bgModalOpen && (
         <div className="bg-modal-overlay" onClick={() => setBgModalOpen(false)}>

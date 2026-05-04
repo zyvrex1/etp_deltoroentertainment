@@ -1160,3 +1160,335 @@
   width: 100%;
   justify-content: center;
 }
+
+/* ══════════════════════════════════════════════
+   Batch Placement Modal
+══════════════════════════════════════════════ */
+.batch-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3500;
+  animation: fadeIn 0.15s ease;
+  backdrop-filter: blur(2px);
+}
+
+.batch-modal {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 460px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0,0,0,0.06);
+  animation: scaleIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.batch-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--color-black-quaternary);
+  background: #f8fafc;
+  border-radius: 20px 20px 0 0;
+  flex-shrink: 0;
+}
+
+.batch-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.batch-modal-title h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-black-primary);
+}
+
+.batch-cat-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.08);
+}
+
+.batch-cat-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-black-tertiary);
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-black-quaternary);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.batch-modal-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-black-tertiary);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.batch-modal-close:hover {
+  background: var(--color-bg-light);
+  color: var(--color-black-primary);
+}
+
+/* Body */
+.batch-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Direction Toggle */
+.batch-direction-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.batch-dir-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 2px solid var(--color-black-quaternary);
+  border-radius: 12px;
+  background: white;
+  color: var(--color-black-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.batch-dir-btn:hover {
+  border-color: var(--color-red-primary);
+  color: var(--color-red-primary);
+  background: #fff5f5;
+}
+
+.batch-dir-btn.active {
+  border-color: var(--color-red-primary);
+  background: var(--color-red-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Live Preview Strip */
+.batch-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid var(--color-black-quaternary);
+  border-radius: 12px;
+  min-height: 52px;
+}
+
+.batch-preview-dot {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  opacity: 0.85;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* When column mode is active, arrange preview dots vertically */
+.batch-preview-dot.col-mode {
+  width: 22px;
+  height: 22px;
+}
+
+.batch-preview .batch-preview-more {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-black-tertiary);
+  background: var(--color-black-quaternary);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+/* Fields Grid */
+.batch-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.batch-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.batch-field:first-child {
+  grid-column: 1 / -1;
+}
+
+.batch-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-black-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.batch-hint {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--color-red-primary);
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.batch-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1.5px solid var(--color-black-quaternary);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-black-primary);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.batch-input:focus {
+  border-color: var(--color-red-primary);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+/* Info row */
+.batch-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-black-tertiary);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 10px 12px;
+  line-height: 1.5;
+}
+
+.batch-info-row strong {
+  color: var(--color-black-primary);
+}
+
+/* Footer */
+.batch-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--color-black-quaternary);
+  background: #f8fafc;
+  border-radius: 0 0 20px 20px;
+  flex-shrink: 0;
+}
+
+.batch-cancel-btn {
+  flex: 1;
+  padding: 11px 18px;
+  border: 1.5px solid var(--color-black-quaternary);
+  border-radius: 12px;
+  background: white;
+  color: var(--color-black-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.batch-cancel-btn:hover {
+  background: var(--color-bg-light);
+  border-color: var(--color-black-secondary);
+  color: var(--color-black-primary);
+}
+
+.batch-confirm-btn {
+  flex: 2;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 12px;
+  background: var(--color-red-primary);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.batch-confirm-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.4);
+}
+
+.batch-confirm-btn:active {
+  transform: translateY(0);
+}
+
+/* ── Multi-select inspector styles ── */
+.multiselect-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-black-primary);
+  padding: 10px 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+}
+
+.multiselect-icon {
+  font-size: 20px;
+  color: #3b82f6;
+}
+
+.multiselect-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-black-tertiary);
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: var(--color-bg-light);
+  border-radius: 8px;
+  font-weight: 500;
+}
