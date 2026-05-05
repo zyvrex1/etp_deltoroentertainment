@@ -476,7 +476,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
     if (!user) return showErrorAlert("Unauthorized", "You must be logged in.");
 
     const priceLevels = categories.map(c => ({
-      _id: (c.id && c.id.length === 24) ? c.id : undefined,
+      _id: c.id,
       priceName: c.name,
       facePrice: c.price,
       quantityAvailable: c.quantity,

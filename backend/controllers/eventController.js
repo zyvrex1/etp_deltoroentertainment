@@ -417,9 +417,7 @@ const createEvent = async (req, res) => {
       });
     }
 
-    if (eventType === "General Admission" && priceLevels.length > 2) {
-      errors.push("General Admission allows maximum of 2 price levels only");
-    }
+
 
     if (priceLevels && priceLevels.length > 0) {
       priceLevels = priceLevels.map((p) => {
@@ -809,10 +807,7 @@ const updateEvent = async (req, res) => {
       errors.push("End date must be strictly after start date.");
     }
 
-    // Sync validation with createEvent (Limit of 2 for GA)
-    if (finalEventType === "General Admission" && priceLevels?.length > 2) {
-      errors.push("General Admission allows maximum of 2 price levels only");
-    }
+
 
     /* =========================
         DATA PROCESSING
@@ -826,20 +821,41 @@ const updateEvent = async (req, res) => {
     let finalBooths =
       booths !== undefined ? booths : existingEvent.booths || [];
 
+    // Map to track input IDs and names to final ObjectIds
+    const idMap = {};
+
     // Process Price Levels
     if (finalPriceLevels.length > 0) {
       finalPriceLevels = finalPriceLevels.map((p) => {
-        const isValidId = p._id && mongoose.Types.ObjectId.isValid(p._id);
+        const inputId = p._id || p.id;
+        const isValidId = inputId && mongoose.Types.ObjectId.isValid(inputId);
         const newId = isValidId
-          ? toObjectId(p._id)
+          ? toObjectId(inputId)
           : new mongoose.Types.ObjectId();
 
-        const qSold = Number(p.quantitySold || 0);
+        if (inputId) {
+          idMap[inputId.toString()] = newId.toString();
+        }
+        if (p.priceName) {
+          idMap[p.priceName] = newId.toString();
+        }
+
+        // Recover quantitySold from existing event if missing in payload
+        let qSold = Number(p.quantitySold);
+        if (isNaN(qSold)) {
+          const existing = existingEvent.priceLevels.find(
+            (ep) =>
+              (ep._id && ep._id.toString() === inputId?.toString()) ||
+              ep.priceName === p.priceName,
+          );
+          qSold = existing ? existing.quantitySold : 0;
+        }
+
         const qAvailable = Number(p.quantityAvailable || 0);
 
         if (qAvailable < qSold) {
           errors.push(
-            `Price level ${p.priceName || ""} capacity cannot be less than sold tickets.`,
+            `Price level ${p.priceName || ""} capacity (${qAvailable}) cannot be less than sold tickets (${qSold}).`,
           );
         }
 
@@ -855,9 +871,13 @@ const updateEvent = async (req, res) => {
       });
     }
 
+    console.log("updateEvent idMap:", idMap);
+
     const priceLevelIdStrings = finalPriceLevels
       .map((p) => p._id?.toString())
       .filter(Boolean);
+
+    console.log("updateEvent priceLevelIdStrings:", priceLevelIdStrings);
 
     // Smart Seating Validation
     if (finalEventType === "Seating Arrangement" && finalSeatMap?.sections) {
@@ -867,12 +887,15 @@ const updateEvent = async (req, res) => {
             seat.priceLevelId = "none";
           } else {
             const seatPillarId = seat.priceLevelId.toString();
-            if (!priceLevelIdStrings.includes(seatPillarId)) {
+            // Check if it's in our mapping or already a valid ID in the list
+            const finalId = idMap[seatPillarId] || seatPillarId;
+            
+            if (!priceLevelIdStrings.includes(finalId)) {
               errors.push(
-                `seatMap.sections[${sIndex}].seats[${i}] invalid priceLevelId`,
+                `seatMap.sections[${sIndex}].seats[${i}] invalid priceLevelId (${seatPillarId})`,
               );
             }
-            seat.priceLevelId = toObjectId(seat.priceLevelId);
+            seat.priceLevelId = toObjectId(finalId);
           }
         });
       });
@@ -885,22 +908,23 @@ const updateEvent = async (req, res) => {
           b.priceLevelId = "none";
         } else {
           const boothPidString = b.priceLevelId.toString();
-          if (!priceLevelIdStrings.includes(boothPidString)) {
-            errors.push(`booths[${i}] invalid priceLevelId`);
+          const finalId = idMap[boothPidString] || boothPidString;
+
+          if (!priceLevelIdStrings.includes(finalId)) {
+            errors.push(`booths[${i}] invalid priceLevelId (${boothPidString})`);
           }
-          b.priceLevelId = toObjectId(b.priceLevelId);
+          b.priceLevelId = toObjectId(finalId);
         }
       });
     }
 
     if (errors.length) {
-      return res
-        .status(400)
-        .json({
-          error: "Validation failed",
-          message: errors.join(", "),
-          fields: errors,
-        });
+      console.log("Validation errors in updateEvent:", errors);
+      return res.status(400).json({
+        error: "Validation failed",
+        message: errors.join(", "),
+        fields: errors,
+      });
     }
 
     // Image Cleanup
