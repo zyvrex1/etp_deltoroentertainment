@@ -111,12 +111,14 @@ export default function Dashboard() {
             // Calculate Booths Trends
             const boothsThisMonth = reservations.filter(res => {
                 const d = new Date(res.createdAt);
-                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                const isBooth = res.type === 'booth' || (!res.type && !res.seatIds);
+                return isBooth && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
             }).length;
 
             const boothsLastMonth = reservations.filter(res => {
                 const d = new Date(res.createdAt);
-                return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+                const isBooth = res.type === 'booth' || (!res.type && !res.seatIds);
+                return isBooth && d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
             }).length;
 
             const boothTrend = calculateTrend(boothsThisMonth, boothsLastMonth);
@@ -138,8 +140,23 @@ export default function Dashboard() {
 
             const revenueTrend = calculateTrend(revenueThisMonth, revenueLastMonth);
 
-            // Calculate Ticket Trends (Placeholder for now)
-            const ticketTrend = 0;
+            // Calculate Ticket Trends
+            const ticketsThisMonth = reservations.filter(res => {
+                const d = new Date(res.createdAt);
+                const isTicket = res.type === 'seat' || !!res.seatIds;
+                return isTicket && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            }).reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
+
+            const ticketsLastMonth = reservations.filter(res => {
+                const d = new Date(res.createdAt);
+                const isTicket = res.type === 'seat' || !!res.seatIds;
+                return isTicket && d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+            }).reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
+
+            const ticketTrend = calculateTrend(ticketsThisMonth, ticketsLastMonth);
+
+            const totalTicketsSold = reservations.filter(res => res.type === 'seat' || !!res.seatIds)
+                .reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
 
             const usersThisYear = users.filter(u => {
                 const d = new Date(u.createdAt);
@@ -164,14 +181,20 @@ export default function Dashboard() {
             });
 
             const dynamicRevenueData = months.map((month, i) => {
-                const monthRevenue = reservations
-                    .filter(res => {
-                        const d = new Date(res.createdAt);
-                        return d.getMonth() === i && d.getFullYear() === currentYear;
-                    })
+                const monthReservations = reservations.filter(res => {
+                    const d = new Date(res.createdAt);
+                    return d.getMonth() === i && d.getFullYear() === currentYear;
+                });
+
+                const total = monthReservations.reduce((sum, res) => sum + (res.amount?.total || 0), 0);
+                const boothRevenue = monthReservations
+                    .filter(res => res.type !== 'seat' && !res.seatIds)
+                    .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
+                const seatRevenue = monthReservations
+                    .filter(res => res.type === 'seat' || !!res.seatIds)
                     .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
                 
-                return { month, total: monthRevenue };
+                return { month, total, boothRevenue, seatRevenue };
             });
 
             // Calculate 4 most upcoming events stats
@@ -184,24 +207,13 @@ export default function Dashboard() {
                 .slice(0, 4);
 
             const dynamicUpcomingEventsData = upcomingEvents.map(e => {
-                const boothsSold = (e.booths || []).filter(b => b.status === 'sold').length;
-                const boothsTotal = (e.booths || []).length;
-                
-                // Simplified ticket capacity logic
-                let ticketsTotal = 0;
-                if (e.eventType === 'General Admission') {
-                    ticketsTotal = (e.priceLevels || []).reduce((sum, pl) => sum + (pl.quantityAvailable || 0), 0);
-                } else if (e.seatMap && e.seatMap.sections) {
-                    ticketsTotal = e.seatMap.sections.reduce((sum, section) => sum + (section.seats?.length || 0), 0);
-                }
-
                 return {
                     name: e.title.length > 12 ? e.title.substring(0, 10) + '...' : e.title,
                     fullName: e.title,
                     ticketsSold: e.ticketsSold || 0,
-                    ticketsRemaining: Math.max(0, ticketsTotal - (e.ticketsSold || 0)),
-                    boothsSold: boothsSold,
-                    boothsRemaining: Math.max(0, boothsTotal - boothsSold)
+                    ticketsRemaining: Math.max(0, (e.totalTickets || 0) - (e.ticketsSold || 0)),
+                    boothsSold: e.boothsSold || 0,
+                    boothsRemaining: Math.max(0, (e.totalBooths || 0) - (e.boothsSold || 0))
                 };
             });
 
@@ -288,7 +300,8 @@ export default function Dashboard() {
                     (c.status === 'open' || c.status === 'in-progress') &&
                     String(c.assignedTo) === String(user._id)
                 ).length,
-                totalBoothsReserved: reservations.length,
+                totalBoothsReserved: reservations.filter(res => res.type !== 'seat' && !res.seatIds).length,
+                totalTicketsSold: totalTicketsSold,
                 totalRevenue: reservations.reduce((total, res) => total + (res.amount?.total || 0), 0),
                 revenueData: dynamicRevenueData,
                 upcomingEventsData: dynamicUpcomingEventsData,
@@ -543,8 +556,8 @@ export default function Dashboard() {
                             </span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Tickets Sold</p>
-                            <h3>0</h3>
+                            <p className="regular-body-text left-aligned">Seats Sold</p>
+                            <h3>{stats.loading ? "..." : stats.totalTicketsSold}</h3>
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
@@ -679,14 +692,31 @@ export default function Dashboard() {
 
                                     <Area
                                         type="monotone"
-                                        dataKey="total"
-                                        stroke="#c62828"
+                                        dataKey="seatRevenue"
+                                        stackId="1"
+                                        name="Seats Revenue"
+                                        stroke="#0059ff"
                                         strokeWidth={isMobile ? 2 : 3}
-                                        fillOpacity={1}
-                                        fill="url(#colorRevenue)"
+                                        fillOpacity={0.6}
+                                        fill="#0059ff"
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="boothRevenue"
+                                        stackId="1"
+                                        name="Booths Revenue"
+                                        stroke="#ff6b00"
+                                        strokeWidth={isMobile ? 2 : 3}
+                                        fillOpacity={0.6}
+                                        fill="#ff6b00"
                                     />
                                 </AreaChart>
-                            </ResponsiveContainer>                        </div>
+                            </ResponsiveContainer>
+                            <div className="chart-legend revenue-legend" style={{ marginTop: '10px', display: 'flex', gap: '20px', justifyContent: 'center' }}>
+                                <span className="legend-item"><span className="dot blue"></span>Seats Revenue</span>
+                                <span className="legend-item"><span className="dot orange"></span>Booths Revenue</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="chart-card wide line">

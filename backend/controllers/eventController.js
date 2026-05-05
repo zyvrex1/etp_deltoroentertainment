@@ -1368,6 +1368,10 @@ const buySeats = async (req, res) => {
       }
     });
 
+    // Update Seat Revenue
+    const saleTotal = amount?.total || 0;
+    event.seatRevenue = (event.seatRevenue || 0) + saleTotal;
+
     event.markModified("layoutData");
     event.markModified("priceLevels");
     await event.save();
@@ -1487,10 +1491,15 @@ const reserveBooth = async (req, res) => {
     // 2. Update the booth status and Price Level stats in the Event
     const buyerName =
       req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
+    
     event.booths[boothIndex].status = "sold";
     event.booths[boothIndex].reservedBy = buyerName;
     event.booths[boothIndex].reservedByEmail = req.user.email || "";
     event.booths[boothIndex].reservedByPO = poNumber || "";
+
+    // Update Revenue
+    const saleTotal = amount?.total || 0;
+    event.boothRevenue = (event.boothRevenue || 0) + saleTotal;
 
     // Update Price Level stats if found
     if (plIndex !== -1) {
