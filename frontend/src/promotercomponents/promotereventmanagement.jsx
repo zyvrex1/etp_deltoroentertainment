@@ -216,6 +216,30 @@ const PromoterEventManagement = () => {
                             <Icon icon="mdi:map-marker" />
                             <span>{eventLocation}</span>
                           </div>
+
+                          {/* Overall Sales Progress */}
+                          {(() => {
+                            const total = (event.totalTickets || 0) + (event.totalBooths || 0);
+                            const sold = (event.ticketsSold || 0) + (event.boothsSold || 0);
+                            const percent = total > 0 ? Math.round((sold / total) * 100) : 0;
+
+                            if (total === 0) return null;
+
+                            return (
+                              <div className="pem-sales-progress">
+                                <div className="pem-progress-labels">
+                                  <span className="smaller-body-text">{sold} / {total} Sold</span>
+                                  <span className="smaller-body-text font-bold">{percent}%</span>
+                                </div>
+                                <div className="pem-progress-bar-bg">
+                                  <div 
+                                    className="pem-progress-bar-fill" 
+                                    style={{ width: `${percent}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     );

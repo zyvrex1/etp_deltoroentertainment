@@ -462,9 +462,9 @@ export default function Dashboard() {
                     <p>System overview and key metrics.</p>
                 </div>
                 <div className="header-actions">
-                    <button className="outlined-button view-report-btn" onClick={() => setIsReportModalOpen(true)}>
+                    {/* <button className="outlined-button view-report-btn" onClick={() => setIsReportModalOpen(true)}>
                         View Report
-                    </button>
+                    </button> */}
                     <button className="primary-button create-btn" onClick={() => setIsModalOpen(true)}>
                         Create Event
                     </button>

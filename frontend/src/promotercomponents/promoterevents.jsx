@@ -294,9 +294,9 @@ const PromoterEvents = () => {
                 if (statusRaw === "rejected") statusClass = "draft";
                 if (statusRaw === "cancelled") statusClass = "cancelled";
 
-                const totalTickets = evt.priceLevels?.reduce((sum, p) => sum + (p.quantityAvailable || 0), 0) || 0;
-                const ticketsSold = evt.ticketsSold || 0;
-                const percent = totalTickets > 0 ? Math.round((ticketsSold / totalTickets) * 100) : 0;
+                const overallTotal = (evt.totalTickets || 0) + (evt.totalBooths || 0);
+                const overallSold = (evt.ticketsSold || 0) + (evt.boothsSold || 0);
+                const percent = overallTotal > 0 ? Math.round((overallSold / overallTotal) * 100) : 0;
 
                 const eventDate = new Date(evt.startDate).toLocaleDateString("en-US", {
                   month: "short",
@@ -348,11 +348,11 @@ const PromoterEvents = () => {
                         </div>
                       </div>
 
-                      {totalTickets > 0 && (
+                      {overallTotal > 0 && (
                         <>
                           <div className="pe-progress-row">
                             <span className="small-body-text">
-                              {ticketsSold} / {totalTickets} tickets
+                              {overallSold} / {overallTotal} Overall Sales
                             </span>
                             <span>{percent}%</span>
                           </div>

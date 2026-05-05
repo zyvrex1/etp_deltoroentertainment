@@ -56,24 +56,14 @@ export default function PromoterDashboard() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 5)
     .map(evt => {
-      // Calculate capacity and sold
-      let totalCapacity = 0;
-      let totalSold = 0;
+      // Calculate capacity and sold using virtuals
+      const totalTickets = evt.totalTickets || 0;
+      const ticketsSold = evt.ticketsSold || 0;
+      const totalBooths = evt.totalBooths || 0;
+      const boothsSold = evt.boothsSold || 0;
       
-      if (evt.eventType === "General Admission") {
-        totalCapacity = evt.priceLevels.reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
-        totalSold = evt.priceLevels.reduce((sum, p) => sum + (p.quantitySold || 0), 0);
-      } else {
-        // Seating Arrangement
-        if (evt.seatMap && evt.seatMap.sections) {
-          evt.seatMap.sections.forEach(sec => {
-            if (sec.seats) {
-              totalCapacity += sec.seats.length;
-              totalSold += sec.seats.filter(s => s.status === "sold").length;
-            }
-          });
-        }
-      }
+      const totalCapacity = totalTickets + totalBooths;
+      const totalSold = ticketsSold + boothsSold;
 
       const progress = totalCapacity > 0 ? Math.round((totalSold / totalCapacity) * 100) : 0;
       const totalRevenue = (evt.seatRevenue || 0) + (evt.boothRevenue || 0);

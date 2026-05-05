@@ -508,8 +508,11 @@ const EventManagement = () => {
 
             <tbody>
               {paginatedData.map((event) => {
-                const salesPercent = event.totalTickets
-                  ? Math.round((event.ticketsSold / event.totalTickets) * 100)
+                const totalOverall = (event.totalTickets || 0) + (event.totalBooths || 0);
+                const soldOverall = (event.ticketsSold || 0) + (event.boothsSold || 0);
+                
+                const salesPercent = totalOverall > 0
+                  ? Math.round((soldOverall / totalOverall) * 100)
                   : 0;
 
                 const statusClass = `status-${event.status}`;
@@ -651,7 +654,7 @@ const EventManagement = () => {
                     <td data-label="Sales">
                       <div className="sales-cell">
                         <span className="small-body-text sales-label">
-                          {event.ticketsSold} / {event.totalTickets} (
+                          {soldOverall} / {totalOverall} (
                           {salesPercent}%)
                         </span>
 
