@@ -1,74 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
-import { showDeleteConfirmAlert, showSuccessAlert, showCheckoutConfirmAlert } from '../utils/sweetAlert';
+import { useCustomerCart } from '../context/CustomerCartContext';
+import { useAuthContext } from '../hooks/useAuthContext';
+import eventsService from '../services/eventsService';
+import { showDeleteConfirmAlert, showSuccessAlert, showCheckoutConfirmAlert, showErrorAlert } from '../utils/sweetAlert';
 import './CustomerCart.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function CustomerCart() {
     const navigate = useNavigate();
+    const { cartItems, removeFromCart, clearCart, completePurchase } = useCustomerCart();
 
-    // Mock cart items for now since CustomerCartContext is not yet implemented
-    const [cartItems, setCartItems] = useState([
-        {
-            cartId: '1',
-            event: { 
-                _id: 'e1', 
-                title: 'Texas Home Show', 
-                image: 'monday-content-post-1-0429260249.jpg', 
-                venue: { name: 'Bert Ogden Arena', city: 'Edinburg' }, 
-                startDate: '2026-08-07T14:00:00Z' 
-            },
-            category: { priceName: 'VIP Ticket' },
-            seat: { row: 'B', label: '8' },
-            facePrice: 150,
-            serviceFee: 5
-        },
-        {
-            cartId: '2',
-            event: { 
-                _id: 'e1', 
-                title: 'Texas Home Show', 
-                image: 'monday-content-post-1-0429260249.jpg', 
-                venue: { name: 'Bert Ogden Arena', city: 'Edinburg' }, 
-                startDate: '2026-08-07T14:00:00Z' 
-            },
-            category: { priceName: 'Standard Ticket' },
-            seat: { row: 'E', label: '5' },
-            facePrice: 65,
-            serviceFee: 5
-        },
-        {
-            cartId: '3',
-            event: { 
-                _id: 'e2', 
-                title: 'Guey Funny Comedy Show', 
-                image: 'guey-funny-comedy-show-march-20-0429260231.jpg', 
-                venue: { name: 'La Villa', city: 'Texas' }, 
-                startDate: '2026-05-01T10:00:00Z' 
-            },
-            category: { priceName: 'General Admission' },
-            seat: { row: 'A', label: '1' },
-            facePrice: 80,
-            serviceFee: 5
-        },
-        {
-            cartId: '4',
-            event: { 
-                _id: 'e2', 
-                title: 'Guey Funny Comedy Show', 
-                image: 'guey-funny-comedy-show-march-20-0429260231.jpg', 
-                venue: { name: 'La Villa', city: 'Texas' }, 
-                startDate: '2026-05-01T10:00:00Z' 
-            },
-            category: { priceName: 'General Admission' },
-            seat: { row: 'A', label: '2' },
-            facePrice: 80,
-            serviceFee: 5
-        }
-    ]);
-
+    const { user } = useAuthContext();
     const [selectedItems, setSelectedItems] = useState([]);
 
     const isCartEmpty = cartItems.length === 0;
@@ -85,8 +30,8 @@ export default function CustomerCart() {
     const total = subtotal + serviceFees;
 
     const toggleItem = (cartId) => {
-        setSelectedItems(prev => 
-            prev.includes(cartId) 
+        setSelectedItems(prev =>
+            prev.includes(cartId)
                 ? prev.filter(id => id !== cartId)
                 : [...prev, cartId]
         );
@@ -107,7 +52,8 @@ export default function CustomerCart() {
         );
 
         if (result.isConfirmed) {
-            setCartItems(prev => prev.filter(item => item.cartId !== cartId));
+            removeFromCart(cartId);
+            setSelectedItems(prev => prev.filter(id => id !== cartId));
             showSuccessAlert('Removed!', 'The ticket has been removed from your cart.');
         }
     };
@@ -119,7 +65,7 @@ export default function CustomerCart() {
             `Are you sure you want to remove ${selectedItems.length} selected tickets?`
         );
         if (result.isConfirmed) {
-            setCartItems(prev => prev.filter(item => !selectedItems.includes(item.cartId)));
+            selectedItems.forEach(id => removeFromCart(id));
             setSelectedItems([]);
             showSuccessAlert('Removed!', 'Selected tickets have been removed.');
         }
@@ -127,10 +73,10 @@ export default function CustomerCart() {
 
     const handleCheckout = async () => {
         if (countSelected === 0) return;
-        
-        const result = await showCheckoutConfirmAlert(countSelected);
+
+        const result = await showCheckoutConfirmAlert(countSelected, total);
         if (result.isConfirmed) {
-            navigate('/customer/checkout');
+            navigate('/customer/checkout', { state: { selectedItems } });
         }
     };
 
@@ -165,6 +111,11 @@ export default function CustomerCart() {
                         )}
                     </div>
                 </div>
+                {!isCartEmpty && (
+                    <button className="text-button" onClick={clearCart} style={{ color: 'var(--color-red-primary)', cursor: 'pointer', background: 'none', border: 'none' }}>
+                        Clear All
+                    </button>
+                )}
             </div>
 
             {isCartEmpty ? (
@@ -187,33 +138,34 @@ export default function CustomerCart() {
                     <div className="cart-content-layout">
                         {Object.values(groupedItems).map(({ event, items }) => (
                             <div className="cart-event-card" key={event._id || event.id}>
-                                <div className="event-card-header">
-                                    <h4>{event.title}</h4>
+                                <div className="event-card-header" onClick={() => navigate(`/customer/event-details/${event._id}`)} style={{ cursor: 'pointer' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <img 
+                                            src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                            alt={event.title}
+                                            style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }}
+                                        />
+                                        <h4>{event.title}</h4>
+                                    </div>
                                     <span className="live-badge">Live</span>
                                 </div>
                                 <div className="ticket-list">
                                     {items.map(item => (
                                         <div className={`ticket-item ${selectedItems.includes(item.cartId) ? 'checked' : ''}`} key={item.cartId}>
                                             <label className="custom-checkbox">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={selectedItems.includes(item.cartId)} 
-                                                    onChange={() => toggleItem(item.cartId)} 
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedItems.includes(item.cartId)}
+                                                    onChange={() => toggleItem(item.cartId)}
                                                 />
                                                 <span className="checkmark"></span>
                                             </label>
                                             <div className="ticket-main">
-                                                <img 
-                                                    src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"} 
-                                                    alt={event.title} 
-                                                    className="ticket-image" 
-                                                    onError={(e) => { e.target.src = "https://via.placeholder.com/80" }} 
-                                                />
                                                 <div className="ticket-info">
                                                     <div className="ticket-type-info">
-                                                        <h5>{item.category?.priceName || 'Ticket'} (Row {item.seat?.row}, Seat {item.seat?.label})</h5>
+                                                        <h5>{item.categoryName || 'Ticket'} (Seat {item.seat?.label})</h5>
                                                         <p>
-                                                            <Icon icon="mdi:map-marker-outline" width="16" /> {event.venue?.name}, {event.venue?.city}
+                                                            <Icon icon="mdi:map-marker-outline" width="16" /> {event.venue?.name}
                                                         </p>
                                                     </div>
                                                     <div className="ticket-meta">
@@ -223,13 +175,13 @@ export default function CustomerCart() {
                                                         </div>
                                                         <div className="ticket-meta-item">
                                                             <Icon icon="mdi:clock-outline" width="16" />
-                                                            <span>{new Date(event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            <span>{event.startTime || 'TBA'}</span>
                                                         </div>
                                                     </div>
                                                 </div>
 
                                                 <div className="ticket-price-right">
-                                                    <h5>${item.facePrice.toLocaleString()}</h5>
+                                                    <h5>${(item.facePrice + item.serviceFee).toLocaleString()}</h5>
                                                     <button className="del-btn" onClick={() => handleDeleteItem(item.cartId)}>
                                                         <Icon icon="mdi:trash-can-outline" width="20" />
                                                     </button>
@@ -245,26 +197,26 @@ export default function CustomerCart() {
                     <div className="cart-bottom-actions">
                         <div className="bottom-left-actions">
                             <label className="custom-checkbox" style={{ marginRight: '0.5rem' }}>
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={selectedItems.length > 0 && selectedItems.length === cartItems.length}
-                                    onChange={handleSelectAll} 
+                                    onChange={handleSelectAll}
                                 />
                                 <span className="checkmark"></span>
                             </label>
                             <span className="select-all-label" onClick={handleSelectAll}>Select All</span>
-                            
+
                             {selectedItems.length > 0 && (
                                 <button className="del-btn ml-4" onClick={handleDeleteSelected}>
-                                    Delete
+                                    Delete Selected
                                 </button>
                             )}
                         </div>
                         <div className="bottom-right-actions">
                             <span className="total-text">Total ({countSelected} item{countSelected !== 1 && 's'})</span>
                             <span className="total-amount">${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            <button 
-                                className={`primary-button checkout-btn ${countSelected === 0 ? 'disabled' : ''}`} 
+                            <button
+                                className={`primary-button checkout-btn ${countSelected === 0 ? 'disabled' : ''}`}
                                 onClick={handleCheckout}
                                 disabled={countSelected === 0}
                             >

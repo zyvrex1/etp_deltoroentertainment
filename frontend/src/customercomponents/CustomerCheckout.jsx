@@ -1,23 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
-import { showConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useCustomerCart } from '../context/CustomerCartContext';
+import { useAuthContext } from '../hooks/useAuthContext';
+import eventsService from '../services/eventsService';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 import './CustomerCheckout.css';
 
 const CustomerCheckout = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { cartItems, completePurchase } = useCustomerCart();
+    const { user } = useAuthContext();
     const [paymentMethod, setPaymentMethod] = useState('card');
+
+    const selectedIds = location.state?.selectedItems || [];
+    
+    const checkoutItems = useMemo(() => {
+        return cartItems.filter(item => selectedIds.includes(item.cartId));
+    }, [cartItems, selectedIds]);
+
+    const subtotal = useMemo(() => {
+        return checkoutItems.reduce((sum, item) => sum + item.facePrice, 0);
+    }, [checkoutItems]);
+
+    const serviceFees = useMemo(() => {
+        return checkoutItems.reduce((sum, item) => sum + item.serviceFee, 0);
+    }, [checkoutItems]);
+
+    const total = subtotal + serviceFees;
 
     const handlePay = async () => {
         const result = await showConfirmAlert(
             "Confirm Payment",
-            "Are you sure you want to proceed with the payment of $215.00?",
+            `Are you sure you want to proceed with the payment of $${total.toFixed(2)}?`,
             "Yes, Pay Now"
         );
+
         if (result.isConfirmed) {
-            navigate('/customer/success');
+            try {
+                // Group selected items by event ID
+                const itemsByEvent = checkoutItems.reduce((acc, item) => {
+                    const eventId = item.event._id || item.event.id;
+                    if (!acc[eventId]) acc[eventId] = [];
+                    acc[eventId].push(item);
+                    return acc;
+                }, {});
+
+                // Process each event purchase
+                for (const eventId in itemsByEvent) {
+                    const eventItems = itemsByEvent[eventId];
+                    const seatIds = eventItems.map(item => item.seat.id);
+                    const eventTotal = eventItems.reduce((sum, item) => sum + item.facePrice + item.serviceFee, 0);
+                    const eventSubtotal = eventItems.reduce((sum, item) => sum + item.facePrice, 0);
+                    const eventFees = eventItems.reduce((sum, item) => sum + item.serviceFee, 0);
+                    
+                    await eventsService.buySeats(
+                        eventId, 
+                        seatIds, 
+                        { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
+                        user.token
+                    );
+                }
+
+                completePurchase(selectedIds);
+                showSuccessAlert('Payment Successful', 'Your tickets have been confirmed.');
+                navigate('/customer/success');
+            } catch (error) {
+                console.error("Payment Error:", error);
+                showErrorAlert('Payment Failed', error.message || 'There was an error processing your payment.');
+            }
         }
     };
+
+    if (checkoutItems.length === 0) {
+        return (
+            <div className="cc-page-wrapper">
+                <div className="cc-main-container" style={{ textAlign: 'center', padding: '100px 20px' }}>
+                    <Icon icon="mdi:cart-outline" width="60" color="var(--color-black-tertiary)" />
+                    <h3>No items selected for checkout</h3>
+                    <button className="primary-button mt-4" onClick={() => navigate('/customer/cart')}>
+                        Back to Cart
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="cc-page-wrapper">
@@ -35,7 +103,7 @@ const CustomerCheckout = () => {
                     <div>
                         <h2 className="text-black m-0">Secure Checkout</h2>
                         <span className="small-body-text text-secondary mt-1">
-                            Purchasing 1 event(s)
+                            Purchasing tickets for {new Set(checkoutItems.map(i => i.event._id)).size} event(s)
                         </span>
                     </div>
                 </div>
@@ -50,17 +118,17 @@ const CustomerCheckout = () => {
                             <div className="cc-form-grid">
                                 <div className="cc-form-group">
                                     <label>First Name</label>
-                                    <input type="text" placeholder="John" className="cc-input" />
+                                    <input type="text" defaultValue={user?.firstName} className="cc-input" readOnly />
                                 </div>
                                 <div className="cc-form-group">
                                     <label>Last Name</label>
-                                    <input type="text" placeholder="Doe" className="cc-input" />
+                                    <input type="text" defaultValue={user?.lastName} className="cc-input" readOnly />
                                 </div>
                             </div>
 
                             <div className="cc-form-group mt-3">
                                 <label>Email Address</label>
-                                <input type="email" placeholder="john@example.com" className="cc-input" />
+                                <input type="email" defaultValue={user?.email} className="cc-input" readOnly />
                             </div>
 
                             <div className="cc-form-group mt-3">
@@ -146,7 +214,7 @@ const CustomerCheckout = () => {
 
                                         <div className="cc-form-group mt-3">
                                             <label>Name on Card</label>
-                                            <input type="text" placeholder="John Doe" className="cc-input" />
+                                            <input type="text" placeholder={`${user?.firstName} ${user?.lastName}`} className="cc-input" />
                                         </div>
                                     </div>
                                 )}
@@ -173,10 +241,6 @@ const CustomerCheckout = () => {
                                             <span className="smaller-body-text text-secondary cc-block">Net 30 payment terms available for qualified businesses</span>
                                         </div>
                                     </div>
-
-                                    {paymentMethod !== 'invoice' && (
-                                        <Icon icon="mdi:information-outline" className="text-red icon-font-size" />
-                                    )}
                                 </div>
 
                                 {paymentMethod === 'invoice' && (
@@ -195,13 +259,11 @@ const CustomerCheckout = () => {
 
                                         <div className="cc-form-group">
                                             <label>Accounts Payable Email</label>
-                                            <input type="email" placeholder="sample@company.com" className="cc-input" />
+                                            <input type="email" placeholder={user?.email} className="cc-input" />
                                         </div>
                                     </div>
                                 )}
                             </div>
-
-
                         </div>
                     </div>
                 </div>
@@ -211,37 +273,42 @@ const CustomerCheckout = () => {
                         <div className="cc-card-body">
                             <h4 className="mb-4 text-black">Order Summary</h4>
 
-                            <h5 className="mb-3 text-black">Comedy All-Stars</h5>
-
-                            <div className="cc-summary-row mb-2">
-                                <span className="small-body-text text-secondary">Row B, Seat 8</span>
-                                <h5 className="text-secondary">$150.00</h5>
-                            </div>
-                            <div className="cc-summary-row mb-4">
-                                <span className="small-body-text text-secondary">Row G, Seat 5</span>
-                                <h5 className="text-secondary">$55.00</h5>
-                            </div>
+                            {Array.from(new Set(checkoutItems.map(i => i.event._id))).map(eventId => {
+                                const eventItems = checkoutItems.filter(i => i.event._id === eventId);
+                                const event = eventItems[0].event;
+                                return (
+                                    <div key={eventId} className="mb-4">
+                                        <h5 className="mb-2 text-black">{event.title}</h5>
+                                        {eventItems.map((item, idx) => (
+                                            <div key={idx} className="cc-summary-row mb-1">
+                                                <span className="small-body-text text-secondary">{item.categoryName} - Row {item.seat.row}, Seat {item.seat.label}</span>
+                                                <h6 className="text-secondary m-0">${item.facePrice.toFixed(2)}</h6>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })}
 
                             <hr className="cc-divider mb-3" />
 
                             <div className="cc-summary-row mb-2">
                                 <span className="small-body-text text-secondary">Subtotal</span>
-                                <h5 className="text-secondary">$205.00</h5>
+                                <h5 className="text-secondary">${subtotal.toFixed(2)}</h5>
                             </div>
                             <div className="cc-summary-row mb-3">
                                 <span className="small-body-text text-secondary">Service Fees</span>
-                                <h5 className="text-secondary">$10.00</h5>
+                                <h5 className="text-secondary">${serviceFees.toFixed(2)}</h5>
                             </div>
 
                             <hr className="cc-divider mb-3" />
 
                             <div className="cc-summary-row mt-3">
                                 <h4 className="m-0 text-black">Total</h4>
-                                <h4 className="text-red m-0">$215.00</h4>
+                                <h4 className="text-red m-0">${total.toFixed(2)}</h4>
                             </div>
 
                             <button className="primary-button cc-pay-btn mt-4 w-100" onClick={handlePay}>
-                                Pay $215.00
+                                Pay ${total.toFixed(2)}
                             </button>
                         </div>
                     </div>

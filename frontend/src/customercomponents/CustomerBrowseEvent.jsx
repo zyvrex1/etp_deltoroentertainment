@@ -1,22 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 import DateRangePicker from '../utils/DateRangePicker';
+import { useAuthContext } from '../hooks/useAuthContext';
+import eventsService from '../services/eventsService';
 import './CustomerBrowseEvent.css';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const CustomerBrowseEvent = () => {
     const navigate = useNavigate();
+    const { user } = useAuthContext();
 
-    // Mock data for events
-    const allEvents = [
-        { id: 1, title: 'Texas Home Show', date: 'Aug 7', location: 'Bert Ogden Arena', price: '$45 - $150', category: 'Concert', image: '/uploads/monday-content-post-1-0429260249.jpg', time: '14:00 - 18:00', availability: 450, },
-        { id: 2, title: 'Guey Funny Comedy Show', date: 'May 1', location: 'La Villa', price: '$30 - $80', category: 'Concert', image: '/uploads/guey-funny-comedy-show-march-20-0429260231.jpg', time: '10:00 - 15:00', availability: 120, },
-        { id: 3, title: 'Siggno Solido Secretto', date: 'Apr 30', location: 'Magnolia Halle', price: '$50 - $200', category: 'Theater', image: '/uploads/grupo-siggno,-solido-and-secretto-flyers-2026-mock-up-0429260228.jpg', time: '16:00 - 20:00', availability: 85,  },
-        { id: 4, title: 'Weslaco Texas OnionFest', date: 'Aug 1', location: 'Greet & Gather Downtown Weslaco', price: '$60 - $120', category: 'Concert', image: '/uploads/weslaco-texas-onion-fest-0429260226.jpg', time: '11:00 - 16:00', availability: 1500,  },
-        { id: 5, title: 'Tejano Music Awards Fanfair', date: 'Jul 25', location: 'Henry B. Gonzales Convention Center', price: '$100 - $500', category: 'Sports', image: '/uploads/siggno-advertising-poster-0429260219.jpg', time: '10:00 - 18:00', availability: 300,  },
-        { id: 6, title: 'Your Health Matters', date: 'Aug 25', location: 'Creative Arts Studio (Texas)', price: '$25 - $50', category: 'Concert', image: '/uploads/yhm-event-page-cover-pharr-1777152601031.jpg', time: '10:00 - 18:00', availability: 200, },
-    ];
-
+    const [allEvents, setAllEvents] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState("");
     const itemsPerPage = 8;
@@ -28,6 +25,23 @@ const CustomerBrowseEvent = () => {
         end: new Date(2100, 11, 31),
     }));
 
+    useEffect(() => {
+        const fetchEvents = async () => {
+            setIsLoading(true);
+            try {
+                // Backend handles role-based filtering, but we specify 'approved' to be sure
+                const data = await eventsService.getEvents(user?.token, 'approved');
+                setAllEvents(data || []);
+            } catch (error) {
+                console.error("Error fetching events:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchEvents();
+    }, [user?.token]);
+
     const handleDateRangeChange = (newRange) => {
         setDateRange(newRange);
         setCurrentPage(1);
@@ -35,10 +49,14 @@ const CustomerBrowseEvent = () => {
 
     const filteredEvents = allEvents.filter((event) => {
         const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            event.location.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        // Date range filtering (simplified for mock data)
-        return matchesSearch;
+            (event.venue?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (event.venue?.city || "").toLowerCase().includes(searchQuery.toLowerCase());
+
+        // Date range filtering
+        const eventDate = new Date(event.startDate);
+        const matchesDate = eventDate >= dateRange.start && eventDate <= dateRange.end;
+
+        return matchesSearch && matchesDate;
     });
 
     const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
@@ -53,6 +71,31 @@ const CustomerBrowseEvent = () => {
 
     const handleEventClick = (eventId) => {
         navigate(`/customer/event-details/${eventId}`);
+    };
+
+    const handleGetTickets = (eventId) => {
+        navigate(`/customer/seats/${eventId}`);
+    };
+
+    const formatEventDate = (startDate, endDate) => {
+        const start = new Date(startDate);
+        const end = endDate ? new Date(endDate) : null;
+        const options = { month: 'short', day: 'numeric' };
+
+        const startStr = start.toLocaleDateString('en-US', options);
+        if (!end || start.toDateString() === end.toDateString()) {
+            return startStr;
+        }
+
+        const endStr = end.toLocaleDateString('en-US', options);
+        return `${startStr} - ${endStr}`;
+    };
+
+    const getStartingPrice = (event) => {
+        if (!event.priceLevels || event.priceLevels.length === 0) return "TBA";
+        const prices = event.priceLevels.map(p => p.facePrice).filter(p => p > 0);
+        if (prices.length === 0) return "TBA";
+        return `$${Math.min(...prices)}`;
     };
 
     return (
@@ -98,13 +141,28 @@ const CustomerBrowseEvent = () => {
                 </div>
 
                 <div className="cbe-grid">
-                    {paginatedEvents.length > 0 ? (
+                    {isLoading ? (
+                        [...Array(4)].map((_, i) => (
+                            <div key={i} className="cbe-event-card skeleton">
+                                <div className="cbe-card-image-wrap skeleton-box" style={{ height: '160px' }}></div>
+                                <div className="cbe-card-details">
+                                    <div className="skeleton-box" style={{ height: '24px', width: '70%', marginBottom: '12px' }}></div>
+                                    <div className="skeleton-box" style={{ height: '16px', width: '50%', marginBottom: '8px' }}></div>
+                                    <div className="skeleton-box" style={{ height: '16px', width: '60%', marginBottom: '20px' }}></div>
+                                    <div className="skeleton-box" style={{ height: '40px', width: '100%' }}></div>
+                                </div>
+                            </div>
+                        ))
+                    ) : paginatedEvents.length > 0 ? (
                         paginatedEvents.map((event) => (
-                            <div key={event.id} className="cbe-event-card" onClick={() => handleEventClick(event.id)}>
+                            <div key={event._id} className="cbe-event-card" onClick={() => handleEventClick(event._id)}>
                                 <div className="cbe-card-image-wrap">
-                                    <img src={event.image} alt={event.title} />
+                                    <img
+                                        src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : '/assets/eventbg.jpg'}
+                                        alt={event.title}
+                                    />
                                     <div className="cbe-category-badge button-label">
-                                        {event.category}
+                                        {event.category || "Event"}
                                     </div>
                                 </div>
                                 <div className="cbe-card-details">
@@ -112,25 +170,31 @@ const CustomerBrowseEvent = () => {
 
                                     <div className="cbe-card-info small-body-text">
                                         <Icon icon="mdi:calendar-blank-outline" />
-                                        <span>{event.date}</span>
+                                        <span>{formatEventDate(event.startDate, event.endDate)}</span>
                                     </div>
                                     <div className="cbe-card-info small-body-text">
                                         <Icon icon="mdi:map-marker-outline" />
-                                        <span>{event.location}</span>
+                                        <span>{event.venue?.name || "TBA"}</span>
                                     </div>
 
                                     <div className="cbe-stats-row">
                                         <div className="cbe-stat-item">
                                             <span className="smaller-body-text stat-label">Time</span>
-                                            <span className="large-body-text stat-value">{event.time}</span>
+                                            <span className="large-body-text stat-value">{event.startTime || "TBA"}</span>
                                         </div>
                                         <div className="cbe-stat-item">
                                             <span className="smaller-body-text stat-label">Starting Price</span>
-                                            <span className="large-body-text stat-value">{event.price.split('-')[0].trim()}</span>
+                                            <span className="large-body-text stat-value">{getStartingPrice(event)}</span>
                                         </div>
                                     </div>
 
-                                    <button className="primary-button cbe-view-btn">
+                                    <button 
+                                        className="primary-button cbe-view-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleGetTickets(event._id);
+                                        }}
+                                    >
                                         Get Tickets <Icon icon="mdi:arrow-right" />
                                     </button>
                                 </div>
@@ -167,6 +231,18 @@ const CustomerBrowseEvent = () => {
                     </div>
                 )}
             </div>
+            <style>{`
+                .skeleton-box {
+                    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+                    background-size: 200% 100%;
+                    animation: skeleton-loading 1.5s infinite;
+                    border-radius: 4px;
+                }
+                @keyframes skeleton-loading {
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                }
+            `}</style>
         </div>
     );
 };

@@ -201,7 +201,7 @@ function App() {
             <Route index element={<CustomerHome />} />
             <Route path="browse-events" element={<CustomerBrowseEvent />} />
             <Route path="event-details/:id" element={<CustomerEventDetails />} />
-            <Route path="seats" element={<CustomerSeats />} />
+            <Route path="seats/:id" element={<CustomerSeats />} />
             <Route path="cart" element={<CustomerCart />} />
             <Route path="checkout" element={<CustomerCheckout />} />
             <Route path="success" element={<CustomerPaySuccess />} />

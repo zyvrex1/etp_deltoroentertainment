@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { showConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
 import { useAuthContext } from '../hooks/useAuthContext';
+import { useCustomerCart } from '../context/CustomerCartContext';
 import './CustomerHeader.css';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -10,6 +11,7 @@ import { useLogout } from '../hooks/useLogout';
 
 export default function CustomerHeader() {
     const { user: authUser } = useAuthContext();
+    const { totalItems } = useCustomerCart();
     const { logout } = useLogout();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -92,7 +94,7 @@ export default function CustomerHeader() {
                     
                     <button className="customer-cart-btn" onClick={() => navigate('/customer/cart')}>
                         <Icon icon="mdi:cart-outline" width="24" />
-                        <span className="cart-badge">3</span>
+                        {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
                     </button>
 
                     <div className="customer-profile-container" ref={dropdownRef}>

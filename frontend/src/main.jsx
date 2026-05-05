@@ -5,13 +5,16 @@ import App from './App.jsx';
 import { EventsContextProvider } from './context/EventsContext.jsx';
 import { AuthContextProvider } from './context/AuthContext.jsx';
 import { NotificationsContextProvider } from './context/NotificationsContext.jsx';
+import { CustomerCartProvider } from './context/CustomerCartContext.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthContextProvider>
       <NotificationsContextProvider>
         <EventsContextProvider>
-          <App />
+          <CustomerCartProvider>
+            <App />
+          </CustomerCartProvider>
         </EventsContextProvider>
       </NotificationsContextProvider>
     </AuthContextProvider>

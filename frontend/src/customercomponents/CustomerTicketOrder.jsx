@@ -1,10 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Icon } from '@iconify/react';
+import { useCustomerCart } from '../context/CustomerCartContext';
 import './CustomerTicketOrder.css';
 import CustomerEnlargeQr from './Modal/CustomerEnlargeQr';
 import CustomerRequestRefund from './Modal/CustomerRequestRefund';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 const CustomerTicketOrder = () => {
+    const { purchaseHistory } = useCustomerCart();
+    
     const [qrModalShow, setQrModalShow] = useState(false);
     const [refundModalShow, setRefundModalShow] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
@@ -22,53 +27,20 @@ const CustomerTicketOrder = () => {
         setRefundModalShow(true);
     };
 
-    // Mock active events/tickets mapping
-    const [activeTickets] = useState([
-        {
-            id: 1,
-            title: "Indie Rock Showcase",
-            date: "6/25/2026",
-            time: "19:00",
-            location: "The Red Room, Austin, TX",
-            seat: "Row A, Seat 12",
-            status: "Live",
-            image: "/assets/eventbg.jpg",
-            purchasedAt: "2026-04-20T10:00:00Z"
-        },
-        {
-            id: 2,
-            title: "Hamlet",
-            date: "7/1/2026",
-            time: "20:00",
-            location: "Royal Globe Theatre, London, UK",
-            seat: "Box 4, Seat 1",
-            status: "Upcoming",
-            image: "/assets/eventbg.jpg",
-            purchasedAt: "2026-04-21T11:00:00Z"
-        },
-        {
-            id: 3,
-            title: "Indie Rock Showcase",
-            date: "6/25/2026",
-            time: "19:00",
-            location: "The Red Room, Austin, TX",
-            seat: "Row A, Seat 13",
-            status: "Live",
-            image: "/assets/eventbg.jpg",
-            purchasedAt: "2026-04-20T10:05:00Z"
-        },
-        {
-            id: 4,
-            title: "Jazz Night",
-            date: "4/15/2026",
-            time: "21:00",
-            location: "Blue Note, New York, NY",
-            seat: "Table 5, Seat 2",
-            status: "Completed",
-            image: "/assets/eventbg.jpg",
-            purchasedAt: "2026-04-10T09:00:00Z"
-        }
-    ]);
+    // Map purchaseHistory to the UI structure
+    const activeTickets = useMemo(() => {
+        return purchaseHistory.map(item => ({
+            id: item.cartId,
+            title: item.event.title,
+            date: new Date(item.event.startDate).toLocaleDateString(),
+            time: item.event.startTime || "TBA",
+            location: item.event.venue?.name || "TBA",
+            seat: `Row ${item.seat.row}, Seat ${item.seat.label}`,
+            status: item.status || "Upcoming",
+            image: item.event.image ? `${BACKEND_URL}/uploads/${item.event.image}` : "/assets/eventbg.jpg",
+            purchasedAt: item.purchaseDate
+        }));
+    }, [purchaseHistory]);
 
     const filteredAndSortedTickets = useMemo(() => {
         let result = [...activeTickets];
@@ -197,7 +169,7 @@ const CustomerTicketOrder = () => {
                     ) : (
                         <div className="empty-state">
                             <Icon icon="mdi:ticket-outline" width="48" />
-                            <p>No tickets found matching your search.</p>
+                            <p>No tickets found. Start by browsing events!</p>
                         </div>
                     )}
                 </div>

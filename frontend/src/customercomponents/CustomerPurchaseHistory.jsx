@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Icon } from '@iconify/react';
+import { useCustomerCart } from '../context/CustomerCartContext';
+import { useAuthContext } from '../hooks/useAuthContext';
 import DateRangePicker from '../utils/DateRangePicker';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../utils/pdfExport';
@@ -7,6 +9,8 @@ import './CustomerPurchaseHistory.css';
 import CustomerHistoryViewReceipt from './Modal/CustomerHistoryViewReceipt';
 
 export default function CustomerPurchaseHistory() {
+    const { purchaseHistory } = useCustomerCart();
+    const { user } = useAuthContext();
     const [activeTab, setActiveTab] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
@@ -22,65 +26,44 @@ export default function CustomerPurchaseHistory() {
 
     const tabs = [
         { id: 'all', label: 'All Purchases' },
-        { id: 'tickets', label: 'Tickets' },
+        { id: 'ticket', label: 'Tickets' },
         { id: 'merchandise', label: 'Merchandise' },
         { id: 'food', label: 'Food & Drinks' },
         { id: 'refunds', label: 'Refunds' }
     ];
 
-    const mockData = [
-        {
-            id: 1,
-            type: 'ticket',
-            title: 'Neon Dreams Tour',
-            status: 'Confirmed',
-            statusClass: 'status-confirmed',
-            orderNum: '#ORD-12345',
-            date: '5/1/2026',
-            total: '$155.00',
-            paymentMethod: 'Visa ending in 4242',
-            items: [
-                { name: '1x Row A, Seat 12', price: '$150.00' }
-            ],
-            hasRefund: true
-        },
-        {
-            id: 2,
-            type: 'merchandise',
-            title: 'Neon Dreams Tour',
-            status: 'Ready for Pickup',
-            statusClass: 'status-pickup',
-            orderNum: '#MC-1042',
-            date: '6/15/2026',
-            total: '$45.00',
-            paymentMethod: 'Apple Pay',
-            items: [
-                { name: '1x Event Hoodie', price: '$45.00' }
-            ],
-            hasRefund: false
-        },
-        {
-            id: 3,
-            type: 'food',
-            title: 'Neon Dreams Tour',
-            status: 'Preparing',
-            statusClass: 'status-preparing',
-            orderNum: '#FD-3621',
-            date: '6/15/2026',
-            total: '$29.00',
-            paymentMethod: 'Apple Pay',
-            items: [
-                { name: '2x Burger Combo', price: '$24.00' }
-            ],
-            hasRefund: false
-        }
-    ];
-
-    const purchases = Array.from({ length: 15 }, (_, i) => ({
-        ...mockData[i % 3],
-        id: i + 1,
-        orderNum: `${mockData[i % 3].orderNum.split('-')[0]}-${1000 + i}`
-    }));
+    // Group real purchases into orders
+    const purchases = useMemo(() => {
+        const groups = {};
+        purchaseHistory.forEach(item => {
+            const date = item.purchaseDate;
+            if (!groups[date]) {
+                groups[date] = {
+                    id: date,
+                    type: item.type || 'ticket',
+                    title: item.event.title,
+                    status: item.status || 'Confirmed',
+                    statusClass: item.status === 'Refunded' ? 'status-refunded' : 'status-confirmed',
+                    orderNum: `#ORD-${item.cartId.toUpperCase().slice(0, 5)}`,
+                    date: new Date(date).toLocaleDateString(),
+                    totalAmount: 0,
+                    paymentMethod: 'Credit Card',
+                    items: [],
+                    purchasedAt: date
+                };
+            }
+            groups[date].items.push({
+                name: `1x ${item.categoryName} - Seat ${item.seat.label} (Row ${item.seat.row})`,
+                price: `$${(item.facePrice + item.serviceFee).toFixed(2)}`
+            });
+            groups[date].totalAmount += (item.facePrice + item.serviceFee);
+        });
+        
+        return Object.values(groups).map(g => ({
+            ...g,
+            total: `$${g.totalAmount.toFixed(2)}`
+        })).sort((a, b) => new Date(b.purchasedAt) - new Date(a.purchasedAt));
+    }, [purchaseHistory]);
 
     const filteredPurchases = purchases.filter(p => {
         const matchesTab = activeTab === 'all' || p.type === activeTab;
@@ -144,8 +127,8 @@ export default function CustomerPurchaseHistory() {
             orderNum: purchase.orderNum.replace('#', ''),
             date: purchase.date,
             billedTo: {
-                name: 'Zyvrex Perez',
-                email: 'hello@zyvrex.com'
+                name: user ? `${user.firstName} ${user.lastName}` : 'Guest Customer',
+                email: user ? user.email : ''
             },
             paymentMethod: purchase.paymentMethod,
             status: 'Paid',
@@ -154,7 +137,7 @@ export default function CustomerPurchaseHistory() {
                 type: purchase.type === 'ticket' ? 'Ticket' : purchase.type === 'merchandise' ? 'Merch' : 'Food/Drink',
                 qty: parseInt(item.name.match(/^\d+/)?.[0] || 1, 10),
                 price: item.price,
-                total: item.price // Simplify total calculation for mock data
+                total: item.price
             })),
             subtotal: purchase.total,
             serviceFee: '$0.00',
