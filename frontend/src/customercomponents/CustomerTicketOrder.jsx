@@ -36,7 +36,7 @@ const CustomerTicketOrder = () => {
             date: new Date(item.event.startDate).toLocaleDateString(),
             time: item.event.startTime || "TBA",
             location: item.event.venue?.name || "TBA",
-            seat: `Row ${item.seat.row}, Seat ${item.seat.label}`,
+            seat: `Seat ${item.seat.label}`,
             status: item.status || "Upcoming",
             image: item.event.image ? `${BACKEND_URL}/uploads/${item.event.image}` : "/assets/eventbg.jpg",
             purchasedAt: item.purchaseDate

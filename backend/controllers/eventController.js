@@ -852,10 +852,22 @@ const updateEvent = async (req, res) => {
         }
 
         const qAvailable = Number(p.quantityAvailable || 0);
+        let finalQAvailable = qAvailable;
 
-        if (qAvailable < qSold) {
+        // Auto-sync quantityAvailable with map count for seated/exhibition events
+        if (finalEventType !== "General Admission") {
+          const placedCount = (layoutData?.items || []).filter(item => 
+            (item.categoryId?.toString() === inputId?.toString() || item.categoryId === p.priceName)
+          ).length;
+          
+          if (placedCount > finalQAvailable) {
+            finalQAvailable = placedCount;
+          }
+        }
+
+        if (finalQAvailable < qSold) {
           errors.push(
-            `Price level ${p.priceName || ""} capacity (${qAvailable}) cannot be less than sold tickets (${qSold}).`,
+            `Price level ${p.priceName || ""} capacity (${finalQAvailable}) cannot be less than sold tickets (${qSold}).`,
           );
         }
 
@@ -864,7 +876,7 @@ const updateEvent = async (req, res) => {
           _id: newId,
           facePrice: Number(p.facePrice || 0),
           serviceCharge: Number(p.serviceCharge || 0),
-          quantityAvailable: qAvailable,
+          quantityAvailable: finalQAvailable,
           quantitySold: qSold,
           isActive: p.isActive !== false,
         };
@@ -1246,7 +1258,7 @@ const assignPriceLevels = async (req, res) => {
  */
 const buySeats = async (req, res) => {
   const { id } = req.params;
-  const { seatIds, billingInfo, amount } = req.body;
+  const { seatIds, billingInfo, amount, paymentMethod } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).json({ error: "No such event" });
@@ -1314,11 +1326,45 @@ const buySeats = async (req, res) => {
       return res.status(404).json({ error: `Seats not found: ${notFound.join(", ")}` });
     }
 
+    // Create the Reservation record for the database
+    try {
+      await Reservation.create({
+        user: req.user._id,
+        event: id,
+        type: 'seat',
+        seatIds: seatIds,
+        seatLabels: purchasedSeats.map(s => s.label || s.code),
+        amount: {
+          total: amount.total || 0,
+          subtotal: amount.subtotal || 0,
+          fee: amount.fee || 0,
+          tax: 0
+        },
+        billingAddress: {
+          email: billingInfo?.email || buyerEmail,
+          companyName: req.user.companyName || ""
+        },
+        paymentMethod: paymentMethod || 'invoice',
+        poNumber: billingInfo?.poNumber || "",
+        status: 'confirmed'
+      });
+    } catch (resErr) {
+      console.error("Failed to create reservation record:", resErr);
+      // We continue even if reservation record fails, as long as event save works
+    }
+
     // Update quantitySold on priceLevels
     Object.entries(plSoldDelta).forEach(([catId, delta]) => {
       const plIdx = plMap[catId];
       if (plIdx !== undefined) {
-        event.priceLevels[plIdx].quantitySold = (event.priceLevels[plIdx].quantitySold || 0) + delta;
+        const currentSold = event.priceLevels[plIdx].quantitySold || 0;
+        const newSold = currentSold + delta;
+        event.priceLevels[plIdx].quantitySold = newSold;
+        
+        // Ensure quantityAvailable is synced for seated events to prevent validation errors
+        if (event.eventType !== "General Admission" && event.priceLevels[plIdx].quantityAvailable < newSold) {
+          event.priceLevels[plIdx].quantityAvailable = newSold;
+        }
       }
     });
 

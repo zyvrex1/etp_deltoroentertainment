@@ -16,6 +16,8 @@ const CustomerCheckout = () => {
     const { cartItems, completePurchase } = useCustomerCart();
     const { user } = useAuthContext();
     const [paymentMethod, setPaymentMethod] = useState('invoice');
+    const [poNumber, setPoNumber] = useState(`PO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+    const [apEmail, setApEmail] = useState(user?.email || "");
     
     // Pull and format phone number
     const [phoneNumber, setPhoneNumber] = useState(() => {
@@ -96,11 +98,16 @@ const CustomerCheckout = () => {
                         eventId, 
                         seatIds, 
                         { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
+                        { email: apEmail, poNumber: poNumber },
+                        paymentMethod === 'card' ? 'card' : 'invoice',
                         user.token
                     );
                 }
 
-                completePurchase(selectedIds);
+                completePurchase(
+                    selectedIds, 
+                    paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer'
+                );
                 showSuccessAlert('Payment Successful', 'Your tickets have been confirmed.');
                 navigate('/customer/success');
             } catch (error) {
@@ -321,14 +328,20 @@ const CustomerCheckout = () => {
                                             <label>Purchase Order Number (Optional)</label>
                                             <input 
                                                 type="text" 
-                                                defaultValue={`PO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`} 
+                                                value={poNumber} 
+                                                onChange={(e) => setPoNumber(e.target.value)}
                                                 className="cc-input" 
                                             />
                                         </div>
 
                                         <div className="cc-form-group">
                                             <label>Accounts Payable Email</label>
-                                            <input type="email" defaultValue={user?.email} className="cc-input" />
+                                            <input 
+                                                type="email" 
+                                                value={apEmail} 
+                                                onChange={(e) => setApEmail(e.target.value)}
+                                                className="cc-input" 
+                                            />
                                         </div>
                                     </div>
                                 )}
@@ -350,7 +363,7 @@ const CustomerCheckout = () => {
                                         <h5 className="mb-2 text-black">{event.title}</h5>
                                         {eventItems.map((item, idx) => (
                                             <div key={idx} className="cc-summary-row mb-1">
-                                                <span className="small-body-text text-secondary">{item.categoryName} - Row {item.seat.row}, Seat {item.seat.label}</span>
+                                                <span className="small-body-text text-secondary">{item.categoryName} - Seat {item.seat.label}</span>
                                                 <h6 className="text-secondary m-0">${item.facePrice.toFixed(2)}</h6>
                                             </div>
                                         ))}

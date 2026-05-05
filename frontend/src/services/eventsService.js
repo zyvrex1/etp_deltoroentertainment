@@ -181,7 +181,7 @@ const eventsService = {
    * @param {Object} amount - { total, subtotal, fee }
    * @param {string} token - Auth token
    */
-  buySeats: async (id, seatIds, amount, token) => {
+  buySeats: async (id, seatIds, amount, billingInfo, paymentMethod, token) => {
     try {
       const response = await fetch(`${API_URL}/${id}/buy-seats`, {
         method: "POST",
@@ -189,7 +189,7 @@ const eventsService = {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ seatIds, amount }),
+        body: JSON.stringify({ seatIds, amount, billingInfo, paymentMethod }),
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Failed to purchase seats");

@@ -17,11 +17,22 @@ const reservationSchema = new mongoose.Schema({
     }],
     boothId: {
         type: String, // The _id of the booth within the event's booths array
-        required: true
+        required: false
     },
     boothCode: {
         type: String, // e.g., "B01"
-        required: true
+        required: false
+    },
+    seatIds: [{
+        type: String
+    }],
+    seatLabels: [{
+        type: String
+    }],
+    type: {
+        type: String,
+        enum: ['booth', 'seat'],
+        default: 'booth'
     },
     amount: {
         total: Number,

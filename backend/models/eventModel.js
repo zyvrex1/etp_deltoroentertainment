@@ -21,12 +21,6 @@ const priceLevelSchema = new Schema({
   quantitySold: {
     type: Number,
     default: 0,
-    validate: {
-      validator: function (value) {
-        return value <= this.quantityAvailable;
-      },
-      message: "quantitySold cannot exceed quantityAvailable",
-    },
   },
 
   isActive: { type: Boolean, default: true },

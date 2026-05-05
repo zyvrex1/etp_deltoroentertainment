@@ -44,16 +44,16 @@ export default function CustomerPurchaseHistory() {
                     title: item.event.title,
                     status: item.status || 'Confirmed',
                     statusClass: item.status === 'Refunded' ? 'status-refunded' : 'status-confirmed',
-                    orderNum: `#ORD-${item.cartId.toUpperCase().slice(0, 5)}`,
+                    orderNum: `Seat - ${item.cartId.toUpperCase().slice(0, 8)}`,
                     date: new Date(date).toLocaleDateString(),
                     totalAmount: 0,
-                    paymentMethod: 'Credit Card',
+                    paymentMethod: item.paymentMethod || 'Credit Card',
                     items: [],
                     purchasedAt: date
                 };
             }
             groups[date].items.push({
-                name: `1x ${item.categoryName} - Seat ${item.seat.label} (Row ${item.seat.row})`,
+                name: `1x ${item.categoryName} - Seat ${item.seat.label}`,
                 price: `$${(item.facePrice + item.serviceFee).toFixed(2)}`
             });
             groups[date].totalAmount += (item.facePrice + item.serviceFee);

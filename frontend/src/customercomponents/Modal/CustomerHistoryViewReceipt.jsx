@@ -9,7 +9,7 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
 
     // Use mock data if no receiptData provided
     const data = receiptData || {
-        orderNum: 'ORD-12345',
+        orderNum: 'Seat - 12345',
         date: '5/1/2026 10:30:00 PM',
         billedTo: {
             name: 'Zyvrex Perez',
@@ -18,7 +18,7 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
         paymentMethod: 'Visa ending in 4242',
         status: 'Paid',
         items: [
-            { item: 'Row A, Seat 12', type: 'VIP Ticket', qty: 1, price: '$150.00', total: '$150.00' },
+            { item: 'Seat 12', type: 'VIP Ticket', qty: 1, price: '$150.00', total: '$150.00' },
             { item: 'Event Hoodie', type: 'Merch', qty: 1, price: '$45.00', total: '$45.00' }
         ],
         subtotal: '$195.00',
@@ -44,7 +44,7 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
             pdf.setFontSize(14);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
-            pdf.text(`Order #${data.orderNum}`, MARGIN, y);
+            pdf.text(data.orderNum, MARGIN, y);
             pdf.setFontSize(10);
             pdf.setTextColor(50, 50, 50);
             pdf.setFont('helvetica', 'normal');
@@ -121,7 +121,7 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                         <p className="small-body-text text-secondary mt-1 m-0">Transaction Receipt</p>
                     </div>
                     <div className="chvr-header-right text-right" style={{ paddingRight: '0' }}>
-                        <h4 className="text-black m-0 mb-1">Order #{data.orderNum}</h4>
+                        <h4 className="text-black m-0 mb-1">{data.orderNum}</h4>
                         <p className="small-body-text text-secondary m-0">{data.date}</p>
                     </div>
                 </div>

@@ -82,7 +82,7 @@ const CustomerPaySuccess = () => {
                                 <div className="cps-ticket-item" key={index}>
                                     <div className="cps-ticket-left">
                                         <p className="small-body-text cps-ticket-type">{item.categoryName}</p>
-                                        <p className="smaller-body-text cps-ticket-seat mb-1">Row {item.seat.row}, Seat {item.seat.label}</p>
+                                        <p className="smaller-body-text cps-ticket-seat mb-1">Seat {item.seat.label}</p>
                                         <p className="small-body-text cps-ticket-price">${(item.facePrice + item.serviceFee).toFixed(2)}</p>
                                     </div>
                                     <div className="cps-ticket-right cps-qr-container">
@@ -95,7 +95,7 @@ const CustomerPaySuccess = () => {
                                                 level={"M"}
                                             />
                                         </div>
-                                        <p className="smaller-body-text mt-1 text-secondary">#{item.cartId.toUpperCase().slice(0, 8)}</p>
+                                        <p className="smaller-body-text mt-1 text-secondary">Seat - {item.cartId.toUpperCase().slice(0, 8)}</p>
                                     </div>
                                 </div>
                             ))}
