@@ -40,6 +40,72 @@ const CustomerEventDetails = () => {
         navigate('/customer/browse-events');
     };
 
+    const calculateDays = (startDate, endDate) => {
+        if (!startDate || !endDate) return 1;
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays + 1;
+    };
+
+    const stats = React.useMemo(() => {
+        let totalCount = 0;
+        let availableCount = 0;
+        let ticketsSold = 0;
+        const plStats = {}; // priceLevelId -> { total, available, sold }
+
+        let layout = event?.layoutData;
+        if (typeof layout === 'string') {
+            try {
+                layout = JSON.parse(layout);
+            } catch (e) {
+                layout = null;
+            }
+        }
+
+        if (layout?.items && Array.isArray(layout.items)) {
+            layout.items.forEach(item => {
+                const isCircle = item.type === 'seat' || item.isSeat || (!item.isBooth && !item.isElement && !item.isBackground && item.type !== 'booth');
+                if (isCircle) {
+                    totalCount++;
+                    const isAvailable = !item.status || item.status === 'available';
+                    const isSold = item.status === 'sold' || item.status === 'partially-sold';
+                    
+                    if (isAvailable) availableCount++;
+                    if (isSold) ticketsSold++;
+
+                    if (item.priceLevelId) {
+                        const plId = item.priceLevelId;
+                        if (!plStats[plId]) {
+                            plStats[plId] = { total: 0, available: 0, sold: 0 };
+                        }
+                        plStats[plId].total++;
+                        if (isAvailable) plStats[plId].available++;
+                        if (isSold) plStats[plId].sold++;
+                    }
+                }
+            });
+        } else if (event?.seatMap?.sections) {
+            event.seatMap.sections.forEach(sec => {
+                (sec.seats || []).forEach(seat => {
+                    const count = seat.seatCount || 1;
+                    totalCount += count;
+                    const isAvailable = !seat.status || seat.status === 'available';
+                    if (isAvailable) availableCount += count;
+                    else ticketsSold += count;
+                });
+            });
+        } else {
+            // "Display ONLY what is placed" - if no layout/seatMap found, 0 is the correct count for "placed" items
+            totalCount = 0;
+            ticketsSold = 0;
+            availableCount = 0;
+        }
+
+        return { totalCount, availableCount, ticketsSold, plStats };
+    }, [event]);
+
     if (isLoading) {
         return (
             <div className="sed-page-wrapper">
@@ -84,14 +150,6 @@ const CustomerEventDetails = () => {
         );
     }
 
-    const calculateDays = (startDate, endDate) => {
-        if (!startDate || !endDate) return 1;
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays + 1;
-    };
 
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -170,7 +228,7 @@ const CustomerEventDetails = () => {
                                         </div>
                                         <div className="sed-summary-text">
                                             <p className="smaller-body-text text-secondary">Duration</p>
-                                            <h6>{calculateDays(event.startDate, event.endDate)} Days</h6>
+                                            <h6>{calculateDays(event.startDate, event.endDate)} Day(s)</h6>
                                         </div>
                                     </div>
                                     <div className="sed-summary-card">
@@ -179,7 +237,7 @@ const CustomerEventDetails = () => {
                                         </div>
                                         <div className="sed-summary-text">
                                             <p className="smaller-body-text text-secondary">Total Seats</p>
-                                            <h6>{event.totalTickets || 0} Capacity</h6>
+                                            <h6>{stats.totalCount} Capacity</h6>
                                         </div>
                                     </div>
                                     <div className="sed-summary-card">
@@ -210,9 +268,18 @@ const CustomerEventDetails = () => {
 
                                 <div className="sed-pricing-grid">
                                     {(event.priceLevels || [])
-                                        .filter(pl => (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle"))
+                                        .filter(pl => {
+                                            const isSeat = (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle");
+                                            const isPlaced = stats.plStats[pl._id]?.total > 0 || stats.plStats[pl.id]?.total > 0;
+                                            
+                                            // If no layout data/seatMap at all, everything is "unplaced" -> hide it to match CustomerBrowseEvent's 0 count
+                                            if (!event.layoutData && !event.seatMap) return false;
+                                            
+                                            return isSeat && isPlaced;
+                                        })
                                         .map((pl, idx) => {
-                                            const totalAvailable = pl.quantityAvailable - (pl.quantitySold || 0);
+                                            const plStat = stats.plStats[pl._id] || stats.plStats[pl.id] || { available: 0 };
+                                            const totalAvailable = plStat.available;
 
                                             return (
                                                 <div className="sed-pricing-card" key={idx}>
@@ -228,7 +295,12 @@ const CustomerEventDetails = () => {
                                             );
                                         })
                                     }
-                                    {(!event.priceLevels || event.priceLevels.filter(pl => (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle")).length === 0) && (
+                                    {(!event.priceLevels || (event.priceLevels || []).filter(pl => {
+                                        const isSeat = (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle");
+                                        const isPlaced = stats.plStats[pl._id]?.total > 0 || stats.plStats[pl.id]?.total > 0;
+                                        if (!event.layoutData && !event.seatMap) return false;
+                                        return isSeat && isPlaced;
+                                    }).length === 0) && (
                                         <p className="text-secondary">No ticket pricing available yet.</p>
                                     )}
                                 </div>
@@ -245,10 +317,16 @@ const CustomerEventDetails = () => {
                         </p>
 
                         {(event.priceLevels || [])
-                            .filter(pl => (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle"))
+                            .filter(pl => {
+                                const isSeat = (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle");
+                                const isPlaced = stats.plStats[pl._id]?.total > 0 || stats.plStats[pl.id]?.total > 0;
+                                if (!event.layoutData && !event.seatMap) return false;
+                                return isSeat && isPlaced;
+                            })
                             .slice(0, 3)
                             .map((pl, idx) => {
-                                const totalAvailable = pl.quantityAvailable - (pl.quantitySold || 0);
+                                const plStat = stats.plStats[pl._id] || stats.plStats[pl.id] || { available: 0 };
+                                const totalAvailable = plStat.available;
 
                                 return (
                                     <div className="sed-availability-row" key={idx}>
@@ -262,8 +340,8 @@ const CustomerEventDetails = () => {
                         }
 
                         {(() => {
-                            const totalCapacity = event.totalTickets || 0;
-                            const sold = event.ticketsSold || 0;
+                            const totalCapacity = stats.totalCount;
+                            const sold = stats.ticketsSold;
                             const percent = totalCapacity > 0 ? Math.round((sold / totalCapacity) * 100) : 0;
 
                             return (

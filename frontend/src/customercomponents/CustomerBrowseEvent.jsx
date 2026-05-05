@@ -94,8 +94,17 @@ const CustomerBrowseEvent = () => {
     const getAvailableSeats = (event) => {
         let availableCount = 0;
 
-        if (event.layoutData && Array.isArray(event.layoutData.items)) {
-            event.layoutData.items.forEach(item => {
+        let layout = event.layoutData;
+        if (typeof layout === 'string') {
+            try {
+                layout = JSON.parse(layout);
+            } catch (e) {
+                layout = null;
+            }
+        }
+
+        if (layout && Array.isArray(layout.items)) {
+            layout.items.forEach(item => {
                 // Identify circle shapes (seats)
                 const isCircle = item.type === 'seat' || item.isSeat || (!item.isBooth && !item.isElement && !item.isBackground && item.type !== 'booth');
                 // Identify if it is available
