@@ -1,10 +1,57 @@
-.ced-page-wrapper {
+/* Customer Event Details - Following Sponsor Premium Design */
+.sed-page-wrapper {
     background-color: var(--color-bg-light);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 
-    .ced-hero-banner {
+    .sed-top-header {
+        display: flex;
+        align-items: center;
+        padding: 24px 5%;
+        background: var(--color-white-primary);
+        border-bottom: 1px solid var(--color-black-quaternary);
+        width: 100%;
+        box-sizing: border-box;
+
+        .sed-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            max-width: 1440px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 0 30px;
+
+            h1 {
+                margin: 0;
+                color: var(--color-black-primary);
+                font-size: 24px;
+                font-weight: 700;
+            }
+
+            .sed-back-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: none;
+                border: 1px solid var(--color-black-quaternary);
+                border-radius: 8px;
+                padding: 8px;
+                cursor: pointer;
+                color: var(--color-black-secondary);
+                transition: all 0.2s ease;
+
+                &:hover {
+                    background: var(--color-bg-light);
+                    color: var(--color-black-primary);
+                    border-color: var(--color-black-secondary);
+                }
+            }
+        }
+    }
+
+    .sed-hero-banner {
         position: relative;
         height: 300px;
         background-image: url('/assets/eventbg.jpg');
@@ -16,7 +63,7 @@
         justify-content: flex-end;
         padding: 40px 5%;
 
-        .ced-hero-overlay {
+        .sed-hero-overlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -26,7 +73,7 @@
             z-index: 1;
         }
 
-        .ced-hero-content {
+        .sed-hero-content {
             position: relative;
             z-index: 2;
             text-align: left;
@@ -35,41 +82,32 @@
             margin: 0 auto;
             padding: 0 30px;
 
-            .ced-open-pill {
-                background: rgba(255, 255, 255, 0.15);
-                border: 1px solid rgba(255, 255, 255, 0.1);
+            .sed-open-pill {
+                background-color: var(--color-red-primary);
                 color: var(--color-white-primary);
                 display: inline-block;
                 margin-bottom: 16px;
-                padding: 4px 12px;
-                border-radius: 4px;
-                font-size: 10px;
             }
 
-            .ced-hero-title {
+            .sed-hero-title {
                 color: var(--color-white-primary);
                 margin-bottom: 10px;
             }
 
-            .ced-hero-info {
+            .sed-hero-info {
                 display: flex;
                 align-items: center;
                 gap: 32px;
                 flex-wrap: wrap;
 
-                .ced-hero-info-item {
+                .sed-hero-info-item {
                     display: flex;
                     align-items: center;
                     gap: 8px;
                     color: var(--color-white-primary);
 
                     svg {
-                        color: var(--color-white-primary);
-                        font-size: 18px;
-                    }
-
-                    .regular-body-text {
-                        font-size: 14px;
+                        color: var(--color-red-primary);
                     }
                 }
             }
@@ -77,13 +115,39 @@
     }
 }
 
-.ced-page-wrapper {
+.sed-page-wrapper {
     overflow-x: hidden;
 }
 
-.ced-main-container {
+.link-btn {
+    background-color: transparent;
+    color: var(--color-red-primary);
+    display: inline-block;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.sed-loading-container,
+.sed-error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 20px;
+    padding: 20px;
+    color: var(--color-black-secondary);
+    background-color: var(--color-bg-light);
+
+    svg {
+        color: var(--color-red-primary);
+    }
+}
+
+.sed-main-container {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1440px;
     margin: 0 auto;
     padding: 60px 30px;
     display: flex;
@@ -92,19 +156,19 @@
     align-items: flex-start;
     min-width: 0;
 
-    .ced-content-left {
+    .sed-content-left {
         flex: 2;
         min-width: 0;
         flex-shrink: 0;
         background: transparent;
 
-        .ced-tabs {
+        .sed-tabs {
             display: flex;
             gap: 32px;
-            border-bottom: 1px solid var(--color-black-quaternary);
+            border-bottom: 1px solid var(--color-black-tertiary);
             margin-bottom: 40px;
 
-            .ced-tab {
+            .sed-tab {
                 background: transparent;
                 border: none;
                 padding: 0 0 16px 0;
@@ -112,36 +176,28 @@
                 cursor: pointer;
                 border-bottom: 3px solid transparent;
                 border-radius: 0;
-                display: flex;
-                align-items: center;
-                gap: 8px;
 
                 &:hover {
                     color: var(--color-black-primary);
                 }
-
-                .ced-live-badge {
-                    background-color: var(--color-red-tertiary);
-                    color: var(--color-white-primary);
-                    font-size: 10px;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    font-weight: 700;
-                }
             }
 
-            .ced-tab.active {
+            .sed-tab.active {
                 color: var(--color-red-primary);
                 border-bottom-color: var(--color-red-primary);
             }
         }
 
-        .ced-tab-content {
+        .sed-tab-content {
             text-align: left;
 
             h3 {
                 color: var(--color-black-primary);
                 margin-bottom: 16px;
+            }
+
+            p {
+                color: var(--color-black-secondary);
             }
 
             h4 {
@@ -154,456 +210,196 @@
                 color: var(--color-black-primary);
             }
 
-            .ced-desc {
+            .sed-desc {
                 max-width: 800px;
                 line-height: 1.6;
             }
 
-            .ced-venue-card {
-                background: var(--color-white-primary);
-                border: 1px solid var(--color-black-quaternary);
-                border-radius: 12px;
-                padding: 24px;
-                max-width: 800px;
-
-                .text-secondary {
-                    line-height: 1.6;
-                }
-
-                .ced-venue-amenities {
-                    display: flex;
-                    gap: 24px;
-                    margin-top: 24px;
-
-                    .ced-amenity-item {
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                        color: var(--color-black-secondary);
-
-                        svg {
-                            font-size: 18px;
-                        }
-                    }
-                }
-            }
-
-            .ced-tickets-list {
-                display: flex;
-                flex-direction: column;
+            .sed-summary-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
                 gap: 16px;
                 max-width: 800px;
+            }
 
-                .ced-ticket-item {
-                    background: var(--color-white-primary);
-                    border: 1px solid var(--color-red-primary);
-                    border-radius: 12px;
-                    padding: 24px;
+            .sed-summary-card {
+                background: var(--color-white-primary);
+                padding: 16px 20px;
+                border-radius: 12px;
+                border: 1px solid var(--color-black-quaternary);
+                display: flex;
+                align-items: center;
+                gap: 16px;
+
+                .sed-summary-icon {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 10px;
                     display: flex;
-                    flex-direction: column;
-                    gap: 18px;
-
-                    .ced-ticket-top {
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: flex-start;
-                    }
-
-                    .ced-ticket-info {
-                        h6 {
-                            color: var(--color-black-primary);
-                            margin-bottom: 4px;
-                        }
-                    }
-
-                    .ced-ticket-action {
-                        display: flex;
-                        flex-direction: column;
-                        align-items: flex-end;
-                        gap: 12px;
-                        min-width: 150px;
-
-                        h6 {
-                            color: var(--color-black-primary);
-                            white-space: nowrap;
-                            margin-bottom: 0px;
-                        }
-
-                        .ced-full-btn {
-                            width: 100%;
-                            padding: 8px 16px;
-                        }
-                    }
-                }
-
-                .ced-full-btn {
-                    width: 100%;
-                    padding: 10px 16px;
-                }
-
-                .ced-ticket-item.ced-vip-ticket {
-                    border: 1px solid var(--color-purple-primary);
-                }
-            }
-
-            .ced-marketplace-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 24px;
-                max-width: 800px;
-
-                .ced-live-pill {
-                    background-color: var(--color-white-quaternary);
-                    color: var(--color-white-primary);
-                }
-            }
-
-            .ced-warning-alert {
-                background-color: var(--color-yellow-quaternary);
-                border: 1px solid var(--color-yellow-tertiary);
-                border-radius: 8px;
-                padding: 16px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                color: var(--color-red-primary);
-                max-width: 800px;
-                margin-bottom: 24px;
-
-
-                svg {
+                    align-items: center;
+                    justify-content: center;
                     font-size: 20px;
                     flex-shrink: 0;
-                    margin-top: 2px;
+                }
+
+                .sed-summary-text {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    text-align: left;
+
+                    h6 {
+                        margin: 0;
+                        color: var(--color-black-primary);
+                    }
+                    p {
+                        margin: 0;
+                    }
                 }
             }
 
-            .ced-marketplace-grid {
+            .sed-pricing-grid {
                 display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 24px;
-                max-width: 800px;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 16px;
+                margin-top: 24px;
 
-                .ced-store-card {
+                .sed-pricing-card {
                     background: var(--color-white-primary);
                     border: 1px solid var(--color-black-quaternary);
                     border-radius: 12px;
-                    padding: 24px;
+                    padding: 24px 16px;
                     text-align: center;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
+                    width: 100%;
 
-                    .ced-store-icon {
-                        width: 64px;
-                        height: 64px;
-                        background: var(--color-bg-light);
-                        border-radius: 50%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        margin-bottom: 12px;
-
-                        svg {
-                            font-size: 32px;
-                        }
+                    .text-center {
+                        text-align: center;
                     }
 
-                    .merch-icon svg {
-                        color: var(--color-red-primary);
+                    .mt-2 {
+                        margin-top: 16px;
                     }
-
-                    .burger-icon svg {
-                        color: var(--color-yellow-primary);
-                    }
-
-                    .coffee-icon svg {
-                        color: var(--color-blue-primary);
-                    }
-
-                    .pizza-icon svg {
-                        color: var(--color-purple-primary);
-                    }
-
-                    .ced-store-badge {
-                        font-size: 10px;
-                        font-weight: 700;
-                        padding: 2px 8px;
-                        border-radius: 4px;
-                        margin-top: 8px;
-                    }
-
-                    .bg-red-quaternary {
-                        background-color: #ffebee;
-                    }
-
-                    .text-red {
-                        color: #c62828;
-                        border: 1px solid #ffcdd2;
-                    }
-
-                    .border-red {
-                        border: 1px solid #ffcdd2;
-                        color: #c62828;
-                    }
-
-                    .bg-blue-quaternary {
-                        background-color: var(--color-blue-quaternary);
-                    }
-
-                    .text-blue {
-                        color: var(--color-blue-primary);
-                        border: 1px solid var(--color-blue-tertiary);
-                    }
-
-                    .bg-yellow-quaternary {
-                        background-color: #fff8e1;
-                    }
-
-                    .text-orange {
-                        color: #f57c00;
-                        border: 1px solid #ffe0b2;
-                    }
-
-                    .ced-store-btn {
-                        width: 100%;
-                        margin-top: auto;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        gap: 8px;
-                        border: none;
-                        color: var(--color-red-primary);
-                    }
-                }
-            }
-
-            .ced-venue-map-card {
-                background: var(--color-white-primary);
-                border: 1px dashed border-color;
-                /* Wait, index.css doesn't have border-color. Actually in screenshot it's dashed gray */
-                border-color: var(--color-black-tertiary);
-                border-radius: 12px;
-                padding: 60px 24px;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                max-width: 800px;
-
-                .ced-venue-map-placeholder {
-                    text-align: center;
                 }
             }
         }
     }
 
-    .ced-content-right {
+    .sed-help-link {
+        margin-top: 15px;
+        text-align: center;
+        align-items: center;
+        color: var(--color-black-secondary);
+    }
+
+    .sed-content-right {
         flex: 1;
         min-width: 300px;
-        max-width: 350px;
+        max-width: 400px;
         position: sticky;
         top: 40px;
 
-        .text-primary {
-            color: var(--color-black-primary);
-            text-align: left;
-        }
-
-        .ced-right-card {
+        .sed-reserve-card {
             background: var(--color-white-primary);
-            border: 1px solid var(--color-red-primary);
-            /* In screenshot Ticket box has a red top/border? No, looks like a red top border? Let's stick with red border as ticket box has red outline in image 1 */
+            border: 1px solid var(--color-black-tertiary);
             border-radius: 12px;
             padding: 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             text-align: left;
-            margin-bottom: 24px;
-
-            /* Override to add top thick border */
-            border: 1px solid var(--color-black-quaternary);
-            border-top: 4px solid var(--color-red-primary);
-
-
-            .mt-1 {
-                margin-top: 4px;
-            }
-
-            .mb-3 {
-                margin-bottom: 16px;
-            }
-
-            .mb-4 {
-                margin-bottom: 24px;
-            }
-
-            .m-0 {
-                margin: 0;
-            }
-
-            .ced-full-btn {
-                width: 100%;
-                margin-bottom: 24px;
-            }
-
-            .ced-guarantee {
-                display: flex;
-                align-items: flex-start;
-                gap: 12px;
-                border-top: 1px solid var(--color-black-quaternary);
-                padding-top: 24px;
-
-                svg {
-                    font-size: 20px;
-                    flex-shrink: 0;
-                    margin-top: 2px;
-                }
-            }
         }
 
-        .ced-marketplace-live-card {
-            background-color: var(--color-yellow-quaternary);
-            border: 1px solid var(--color-yellow-primary);
-            border-radius: 12px;
-            padding: 24px;
-            text-align: left;
+        h4 {
+            margin-bottom: 12px;
+            color: var(--color-black-primary);
+        }
 
-            .flex {
-                display: flex;
+        p {
+            color: var(--color-black-secondary);
+        }
+
+        .mb-4 {
+            margin-bottom: 24px;
+        }
+
+        .sed-availability-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+
+            .text-secondary {
+                color: var(--color-black-secondary);
             }
 
-            .row {
-                flex-direction: row;
-            }
-
-            .align-center {
-                align-items: center;
-            }
-
-            .gap-2 {
-                gap: 8px;
-            }
-
-            .mb-2 {
-                margin-bottom: 8px;
-            }
-
-            .mb-3 {
-                margin-bottom: 16px;
-            }
-
-            .m-0 {
-                margin: 0;
+            .text-green {
+                color: var(--color-green-primary);
             }
 
             .text-red {
                 color: var(--color-red-primary);
             }
+        }
 
-            .ced-full-btn {
-                width: 100%;
+        .sed-progress-bar-container {
+            height: 8px;
+            background-color: var(--color-black-quaternary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+
+            .sed-progress-bar {
+                height: 100%;
+                background-color: var(--color-red-primary);
+                border-radius: 4px;
             }
         }
-    }
-}
 
-/* Base utility margins for right panel just in case */
-.mt-1 {
-    margin-top: 4px;
-}
+        .sed-progress-text {
+            text-align: right;
+            margin-bottom: 32px;
 
-.mt-2 {
-    margin-top: 8px;
-}
+            .text-secondary {
+                color: var(--color-black-secondary);
+            }
+        }
 
-.mt-3 {
-    margin-top: 16px;
-}
-
-.mb-2 {
-    margin-bottom: 8px;
-}
-
-.mb-3 {
-    margin-bottom: 16px;
-}
-
-/* Media Queries */
-@media (max-width: 1024px) {
-    .ced-main-container {
-        flex-direction: column;
-    }
-
-    .ced-content-right {
-        width: 100%;
-        max-width: none;
-        position: static;
-
-        .ced-right-card {
-            max-width: 100%;
+        .sed-full-btn {
+            width: 100%;
+            margin-bottom: 12px;
         }
     }
+
+    .bg-blue-light { background-color: var(--color-blue-tertiary); }
+    .bg-green-light { background-color: var(--color-green-tertiary); }
+    .bg-red-light { background-color: var(--color-red-tertiary); }
+    .bg-purple-light { background-color: var(--color-purple-tertiary); }
+
+    .text-blue { color: var(--color-blue-primary); }
+    .text-green { color: var(--color-green-primary); }
+    .text-red { color: var(--color-red-primary); }
+    .text-purple { color: var(--color-purple-primary); }
+}
+
+@media (max-width: 1024px) {
+    .sed-main-container { flex-direction: column; }
+    .sed-content-right { width: 100%; max-width: none; position: static; }
+    .sed-pricing-grid { grid-template-columns: 1fr !important; gap: 16px; width: 100%; }
+    .sed-pricing-card { width: 100%; box-sizing: border-box; }
 }
 
 @media (max-width: 768px) {
-    .ced-main-container {
-        flex-direction: column;
-    }
-
-    .ced-content-left,
-    .ced-content-right {
-        width: 100% !important;
-        max-width: 100%;
-    }
-
-    .ced-hero-info {
-        gap: 16px;
-    }
-
-    .ced-tabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        white-space: nowrap;
-        min-width: 0;
-        justify-content: center !important;
-        padding-bottom: 4px;
-    }
-
-    .ced-tab-content {
-        .ced-tickets-list {
-            .ced-ticket-item {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 16px;
-
-                .ced-ticket-action {
-                    align-items: flex-start;
-
-                    .ced-full-btn {
-                        width: 100%;
-                    }
-                }
-            }
-        }
-
-        .ced-marketplace-grid {
-            grid-template-columns: 1fr !important;
-        }
-    }
+    .sed-main-container { flex-direction: column; }
+    .sed-content-left, .sed-content-right { width: 100% !important; max-width: 100%; }
+    .sed-hero-info { gap: 16px; }
+    .sed-summary-grid { grid-template-columns: 1fr; }
+    .sed-tabs { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; min-width: 0; justify-content: center; }
+    .sed-pricing-grid { grid-template-columns: 1fr !important; gap: 16px; width: 100%; padding: 0; margin: 0; }
+    .sed-pricing-card { width: 100%; box-sizing: border-box; }
 }
 
 @media (max-width: 480px) {
-    .ced-hero-content {
-        padding: 0 !important;
-    }
-
-    .ced-main-container {
-        padding: 24px;
-    }
-
-    .ced-hero-info {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 10px !important;
-    }
+    .sed-hero-content { padding: 0 !important; }
+    .sed-main-container { padding: 24px; }
+    .sed-hero-info { gap: 10px !important; }
+    .sed-pricing-grid { grid-template-columns: 1fr !important; gap: 16px; width: 100%; }
+    .sed-pricing-card { width: 100%; box-sizing: border-box; }
 }
