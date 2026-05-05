@@ -60,7 +60,8 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
             
             pdf.setFont('helvetica', 'normal');
             pdf.text(data.billedTo.name, MARGIN, y);
-            pdf.text(data.paymentMethod, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
+            const paymentText = data.poNumber ? `${data.paymentMethod} (PO: ${data.poNumber})` : data.paymentMethod;
+            pdf.text(paymentText, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
             y += 6;
             
             pdf.text(data.billedTo.email, MARGIN, y);
@@ -136,7 +137,10 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                     </div>
                     <div className="chvr-info-block text-right">
                         <span className="smaller-body-text chvr-info-label">PAYMENT METHOD</span>
-                        <h6 className="text-black m-0 mb-1">{data.paymentMethod}</h6>
+                        <h6 className="text-black m-0 mb-1">
+                            {data.paymentMethod}
+                            {data.poNumber && <span className="text-secondary ml-1" style={{ fontWeight: 'normal' }}> {data.poNumber}</span>}
+                        </h6>
                         <span className="small-body-text chvr-text-green">{data.status}</span>
                     </div>
                 </div>

@@ -48,6 +48,7 @@ export default function CustomerPurchaseHistory() {
                     date: new Date(date).toLocaleDateString(),
                     totalAmount: 0,
                     paymentMethod: item.paymentMethod || 'Credit Card',
+                    poNumber: item.poNumber || '',
                     items: [],
                     purchasedAt: date
                 };
@@ -131,6 +132,7 @@ export default function CustomerPurchaseHistory() {
                 email: user ? user.email : ''
             },
             paymentMethod: purchase.paymentMethod,
+            poNumber: purchase.poNumber,
             status: 'Paid',
             items: purchase.items.map(item => ({
                 item: item.name.replace(/^\d+x\s*/, ''),
@@ -257,7 +259,9 @@ export default function CustomerPurchaseHistory() {
                                     </div>
                                     <div className="history-info-right text-right">
                                         <h4 className="history-total">{purchase.total}</h4>
-                                        <p className="small-body-text text-muted mt-1">{purchase.paymentMethod}</p>
+                                        <p className="small-body-text text-muted mt-1">
+                                            {purchase.paymentMethod} {purchase.poNumber && ` ${purchase.poNumber}`}
+                                        </p>
                                     </div>
                                 </div>
 

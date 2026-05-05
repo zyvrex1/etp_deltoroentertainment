@@ -76,12 +76,13 @@ export const CustomerCartProvider = ({ children }) => {
         setCartItems(prev => prev.filter(item => item.cartId !== cartId));
     };
 
-    const completePurchase = (cartIds, paymentMethod = 'Credit Card') => {
+    const completePurchase = (cartIds, paymentMethod = 'Credit Card', poNumber = '') => {
         const itemsToPurchase = cartItems.filter(item => cartIds.includes(item.cartId));
         const purchasedItems = itemsToPurchase.map(item => ({
             ...item,
             purchaseDate: new Date().toISOString(),
-            paymentMethod, // Store payment method
+            paymentMethod,
+            poNumber, // Store PO Number
             status: 'Upcoming' // Default status for new purchases
         }));
 

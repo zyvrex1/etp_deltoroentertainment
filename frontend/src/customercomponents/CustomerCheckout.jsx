@@ -106,7 +106,8 @@ const CustomerCheckout = () => {
 
                 completePurchase(
                     selectedIds, 
-                    paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer'
+                    paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
+                    paymentMethod === 'invoice' ? poNumber : ''
                 );
                 showSuccessAlert('Payment Successful', 'Your tickets have been confirmed.');
                 navigate('/customer/success');
