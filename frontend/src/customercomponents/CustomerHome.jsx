@@ -115,11 +115,19 @@ export default function CustomerHome() {
 
     const getPriceRange = (priceLevels) => {
         if (!priceLevels || priceLevels.length === 0) return "TBA";
-        const prices = priceLevels.map(p => p.facePrice);
-        const min = Math.min(...prices);
-        const max = Math.max(...prices);
-        if (min === max) return `$${min}`;
-        return `$${min} - $${max}`;
+        
+        // Filter for seat/circle related price levels
+        const seatPrices = priceLevels
+            .filter(pl => (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle"))
+            .map(p => p.facePrice);
+
+        // If no seat prices found, fallback to all prices
+        const targetPrices = seatPrices.length > 0 ? seatPrices : priceLevels.map(p => p.facePrice);
+        
+        if (targetPrices.length === 0) return "TBA";
+        
+        const min = Math.min(...targetPrices);
+        return `$${min.toLocaleString()}`;
     };
 
     const features = [
@@ -277,7 +285,7 @@ export default function CustomerHome() {
                                             </span>
                                         </div>
                                         <div className="ch-v2-detail-item ch-text-right">
-                                            <span className="ch-v2-label">Price Range</span>
+                                            <span className="ch-v2-label">Price Starts at</span>
                                             <span className="ch-v2-value">{getPriceRange(evt.priceLevels)}</span>
                                         </div>
                                     </div>
