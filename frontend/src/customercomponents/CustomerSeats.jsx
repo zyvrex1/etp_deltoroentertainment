@@ -155,8 +155,8 @@ const CustomerSeats = () => {
 
     // Rendering Helpers
     const getSeatColor = (item) => {
-        if (selectedSeats.find(s => s.id === item.id)) return "#2ECC71"; // Selected Green
-        if (item.status === 'sold' || item.status === 'reserved' || item.status === 'blocked') return "#E0E0E0";
+        if (selectedSeats.find(s => s.id === item.id)) return "#2563EB"; // Selected Blue
+        if (item.status === 'sold' || item.status === 'reserved' || item.status === 'blocked') return "#2ECC71"; // Occupied Green
         const cat = priceLevels.find(c => c._id === item.categoryId);
         return cat?.color || "#666666";
     };
@@ -325,7 +325,7 @@ const CustomerSeats = () => {
                                                 />
                                                 <Text
                                                     text={item.label || ""}
-                                                    fontSize={9} fill={item.status === 'available' ? "#fff" : "#888"}
+                                                    fontSize={9} fill="#fff"
                                                     align="center" verticalAlign="middle"
                                                     x={-20} y={-20} width={40} height={40}
                                                 />
@@ -375,19 +375,17 @@ const CustomerSeats = () => {
 
                     <div className="cs-seat-legend">
                         <div className="cs-legend-item">
-                            <span className="cs-legend-dot" style={{ backgroundColor: '#2ECC71' }}></span>
+                            <span className="cs-legend-dot" style={{ backgroundColor: '#2563EB' }}></span>
                             <span className="smaller-body-text text-secondary">Selected</span>
                         </div>
                         <div className="cs-legend-item">
-                            <span className="cs-legend-dot" style={{ backgroundColor: '#E0E0E0' }}></span>
-                            <span className="smaller-body-text text-secondary">Occupied</span>
+                            <span className="cs-legend-dot" style={{ backgroundColor: '#2ECC71' }}></span>
+                            <span className="smaller-body-text text-secondary">Sold / Occupied</span>
                         </div>
-                        {/* {priceLevels.map(pl => (
-                            <div className="cs-legend-item" key={pl._id}>
-                                <span className="cs-legend-dot" style={{ backgroundColor: pl.color }}></span>
-                                <span className="smaller-body-text text-secondary">{pl.priceName} (${pl.facePrice})</span>
-                            </div>
-                        ))} */}
+                        <div className="cs-legend-item">
+                            <span className="cs-legend-dot" style={{ backgroundColor: '#666666' }}></span>
+                            <span className="smaller-body-text text-secondary">Available</span>
+                        </div>
                     </div>
                 </div>
 

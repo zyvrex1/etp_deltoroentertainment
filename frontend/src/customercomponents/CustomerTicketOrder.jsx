@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Icon } from '@iconify/react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { useCustomerCart } from '../context/CustomerCartContext';
 import './CustomerTicketOrder.css';
 import CustomerEnlargeQr from './Modal/CustomerEnlargeQr';
@@ -153,7 +154,15 @@ const CustomerTicketOrder = () => {
                                         </div>
                                     </div>
                                     <div className="ticket-qr-section" onClick={() => handleEnlargeQr(ticket)}>
-                                        <Icon icon="mdi:qrcode" width="70" />
+                                        <div className="ticket-qr-wrapper" style={{ background: '#fff', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}>
+                                            <QRCodeCanvas 
+                                                value={ticket.id}
+                                                size={70}
+                                                bgColor={"#ffffff"}
+                                                fgColor={"#000000"}
+                                                level={"M"}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="ticket-card-footer">

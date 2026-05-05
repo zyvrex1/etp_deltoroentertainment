@@ -91,11 +91,34 @@ const CustomerBrowseEvent = () => {
         return `${startStr} - ${endStr}`;
     };
 
-    const getStartingPrice = (event) => {
-        if (!event.priceLevels || event.priceLevels.length === 0) return "TBA";
-        const prices = event.priceLevels.map(p => p.facePrice).filter(p => p > 0);
-        if (prices.length === 0) return "TBA";
-        return `$${Math.min(...prices)}`;
+    const getAvailableSeats = (event) => {
+        let availableCount = 0;
+
+        if (event.layoutData && Array.isArray(event.layoutData.items)) {
+            event.layoutData.items.forEach(item => {
+                // Identify circle shapes (seats)
+                const isCircle = item.type === 'seat' || item.isSeat || (!item.isBooth && !item.isElement && !item.isBackground && item.type !== 'booth');
+                // Identify if it is available
+                const isAvailable = !item.status || item.status === 'available';
+                
+                if (isCircle && isAvailable) {
+                    availableCount++;
+                }
+            });
+            return availableCount;
+        } else if (event.seatMap && event.seatMap.sections) {
+            event.seatMap.sections.forEach(sec => {
+                (sec.seats || []).forEach(seat => {
+                    const isAvailable = !seat.status || seat.status === 'available';
+                    if (isAvailable) {
+                        availableCount += seat.seatCount || 1;
+                    }
+                });
+            });
+            return availableCount;
+        }
+
+        return 0;
     };
 
     return (
@@ -183,8 +206,8 @@ const CustomerBrowseEvent = () => {
                                             <span className="large-body-text stat-value">{event.startTime || "TBA"}</span>
                                         </div>
                                         <div className="cbe-stat-item">
-                                            <span className="smaller-body-text stat-label">Starting Price</span>
-                                            <span className="large-body-text stat-value">{getStartingPrice(event)}</span>
+                                            <span className="smaller-body-text stat-label">Available Seats</span>
+                                            <span className="large-body-text stat-value">{getAvailableSeats(event)}</span>
                                         </div>
                                     </div>
 

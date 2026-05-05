@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
+import { QRCodeCanvas } from 'qrcode.react';
 import './CustomerEnlargeQr.css';
 
 const CustomerEnlargeQr = ({ show, onClose, ticketData }) => {
@@ -22,7 +23,15 @@ const CustomerEnlargeQr = ({ show, onClose, ticketData }) => {
                     <p className="ceq-seat-location large-body-text">{ticketData?.seat || 'Location'}</p>
 
                     <div className="ceq-qr-container">
-                        <Icon icon="mdi:qrcode" width="200" className="ceq-qr-image" />
+                        <div className="ceq-qr-wrapper" style={{ background: '#fff', padding: '15px', borderRadius: '12px', display: 'inline-block' }}>
+                            <QRCodeCanvas 
+                                value={ticketData?.id || ''}
+                                size={200}
+                                bgColor={"#ffffff"}
+                                fgColor={"#000000"}
+                                level={"H"}
+                            />
+                        </div>
                     </div>
 
                     <p className="ceq-caption small-body-text">Show this code at the entrance to be scanned.</p>

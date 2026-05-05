@@ -1,9 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import { PhoneInput } from "react-international-phone";
+import "react-international-phone/style.css";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCustomerCart } from '../context/CustomerCartContext';
 import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
+import * as authService from '../services/authService';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 import './CustomerCheckout.css';
 
@@ -12,7 +15,41 @@ const CustomerCheckout = () => {
     const location = useLocation();
     const { cartItems, completePurchase } = useCustomerCart();
     const { user } = useAuthContext();
-    const [paymentMethod, setPaymentMethod] = useState('card');
+    const [paymentMethod, setPaymentMethod] = useState('invoice');
+    
+    // Pull and format phone number
+    const [phoneNumber, setPhoneNumber] = useState(() => {
+        let phone = user?.phone || "";
+        if (phone && !phone.startsWith('+')) {
+            if (phone.startsWith('0')) {
+                phone = `+63${phone.substring(1)}`;
+            } else {
+                phone = `+${phone}`;
+            }
+        }
+        return phone;
+    });
+
+    useEffect(() => {
+        const fetchPhone = async () => {
+            if (!user?.token) return;
+            try {
+                const response = await authService.getProfile(user.token);
+                let phone = response.data.phone || "";
+                if (phone && !phone.startsWith('+')) {
+                    if (phone.startsWith('0')) {
+                        phone = `+63${phone.substring(1)}`;
+                    } else {
+                        phone = `+${phone}`;
+                    }
+                }
+                if (phone) setPhoneNumber(phone);
+            } catch (error) {
+                console.error("Error fetching phone:", error);
+            }
+        };
+        fetchPhone();
+    }, [user]);
 
     const selectedIds = location.state?.selectedItems || [];
     
@@ -133,7 +170,35 @@ const CustomerCheckout = () => {
 
                             <div className="cc-form-group mt-3">
                                 <label>Phone Number</label>
-                                <input type="text" placeholder="(555) 123-4567" className="cc-input" />
+                                <PhoneInput
+                                    defaultCountry="ph"
+                                    value={phoneNumber}
+                                    onChange={(phone) => setPhoneNumber(phone)}
+                                    inputClassName="cc-input"
+                                    className="phone-input-container"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0',
+                                        border: '1px solid var(--color-black-secondary)',
+                                        borderRadius: '6px',
+                                        marginTop: '4px'
+                                    }}
+                                    inputStyle={{
+                                        border: 'none',
+                                        padding: '10px 12px',
+                                        outline: 'none',
+                                        borderRadius: '0',
+                                        flex: 1,
+                                        color: 'var(--color-black-secondary)'
+                                    }}
+                                    buttonStyle={{
+                                        border: 'none',
+                                        backgroundColor: 'transparent',
+                                        boxShadow: 'none',
+                                        color: 'var(--color-black-secondary)'
+                                    }}
+                                />
                             </div>
                         </div>
                     </div>
@@ -254,12 +319,16 @@ const CustomerCheckout = () => {
 
                                         <div className="cc-form-group mb-3">
                                             <label>Purchase Order Number (Optional)</label>
-                                            <input type="text" placeholder="PO-2026-001" className="cc-input" />
+                                            <input 
+                                                type="text" 
+                                                defaultValue={`PO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`} 
+                                                className="cc-input" 
+                                            />
                                         </div>
 
                                         <div className="cc-form-group">
                                             <label>Accounts Payable Email</label>
-                                            <input type="email" placeholder={user?.email} className="cc-input" />
+                                            <input type="email" defaultValue={user?.email} className="cc-input" />
                                         </div>
                                     </div>
                                 )}

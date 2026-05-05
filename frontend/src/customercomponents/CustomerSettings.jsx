@@ -5,6 +5,8 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import * as authService from '../services/authService';
 import './CustomerSettings.css';
 import CustomerAddPaymentMethod from './Modal/CustomerAddPaymentMethod';
+import { PhoneInput } from "react-international-phone";
+import "react-international-phone/style.css";
 
 export default function CustomerSettings() {
     const { user, dispatch } = useAuthContext();
@@ -62,12 +64,24 @@ export default function CustomerSettings() {
             if (!user?.token) return;
             try {
                 const response = await authService.getProfile(user.token);
+                const data = response.data;
+                
+                // Fix for the phone number display issue
+                let formattedPhone = data.phone || "";
+                if (formattedPhone && !formattedPhone.startsWith('+')) {
+                    if (formattedPhone.startsWith('0')) {
+                        formattedPhone = `+63${formattedPhone.substring(1)}`;
+                    } else {
+                        formattedPhone = `+${formattedPhone}`;
+                    }
+                }
+
                 setProfile({
-                    firstName: response.data.firstName || "",
-                    lastName: response.data.lastName || "",
-                    email: response.data.email || "",
-                    phone: response.data.phone || "",
-                    avatar: response.data.avatar || ""
+                    firstName: data.firstName || "",
+                    lastName: data.lastName || "",
+                    email: data.email || "",
+                    phone: formattedPhone,
+                    avatar: data.avatar || ""
                 });
             } catch (error) {
                 console.error("Error fetching profile:", error);
@@ -256,11 +270,33 @@ export default function CustomerSettings() {
 
                         <div className="cs-form-group">
                             <label className="cs-label">Phone Number</label>
-                            <input
-                                type="text"
-                                className="cs-input"
-                                value={profile.phone}
-                                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                            <PhoneInput
+                                defaultCountry="ph"
+                                value={profile.phone || ""}
+                                onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
+                                inputClassName="cs-input"
+                                className="phone-input-container"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0',
+                                    border: '1px solid var(--color-black-secondary)',
+                                    borderRadius: '6px'
+                                }}
+                                inputStyle={{
+                                    border: 'none',
+                                    padding: '10px 12px',
+                                    outline: 'none',
+                                    borderRadius: '0',
+                                    flex: 1,
+                                    color: 'var(--color-black-secondary)'
+                                }}
+                                buttonStyle={{
+                                    border: 'none',
+                                    backgroundColor: 'transparent',
+                                    boxShadow: 'none',
+                                    color: 'var(--color-black-secondary)'
+                                }}
                             />
                         </div>
 

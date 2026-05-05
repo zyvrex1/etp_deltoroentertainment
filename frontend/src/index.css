@@ -901,6 +901,8 @@ li {
 .ps-settings-container .react-international-phone-input,
 .ss-settings-container .react-international-phone-input,
 .as-settings-container .react-international-phone-input,
+.cs-settings-container .react-international-phone-input,
+.cc-form-group .react-international-phone-input,
 .general-createuser-modal-container .react-international-phone-input {
   color: black !important;
 }

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeCanvas } from 'qrcode.react';
 import { useCustomerCart } from '../context/CustomerCartContext';
 import './CustomerPaySuccess.css';
 
@@ -85,7 +86,15 @@ const CustomerPaySuccess = () => {
                                         <p className="small-body-text cps-ticket-price">${(item.facePrice + item.serviceFee).toFixed(2)}</p>
                                     </div>
                                     <div className="cps-ticket-right cps-qr-container">
-                                        <Icon icon="mdi:qrcode" className="cps-ticket-qr" />
+                                        <div className="cps-qr-wrapper" style={{ background: '#fff', padding: '5px', borderRadius: '4px' }}>
+                                            <QRCodeCanvas 
+                                                value={item.cartId}
+                                                size={60}
+                                                bgColor={"#ffffff"}
+                                                fgColor={"#000000"}
+                                                level={"M"}
+                                            />
+                                        </div>
                                         <p className="smaller-body-text mt-1 text-secondary">#{item.cartId.toUpperCase().slice(0, 8)}</p>
                                     </div>
                                 </div>

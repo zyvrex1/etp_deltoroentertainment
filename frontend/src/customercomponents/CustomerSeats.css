@@ -122,8 +122,7 @@
     z-index: 10;
 
     button {
-        width: 40px;
-        height: 40px;
+
         background-color: var(--color-white-primary);
         border: 1px solid var(--color-black-quaternary);
         border-radius: 8px;
