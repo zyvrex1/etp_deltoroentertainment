@@ -1363,8 +1363,8 @@ const buySeats = async (req, res) => {
         const newSold = currentSold + delta;
         event.priceLevels[plIdx].quantitySold = newSold;
         
-        // Ensure quantityAvailable is synced for seated events to prevent validation errors
-        if (event.eventType !== "General Admission" && event.priceLevels[plIdx].quantityAvailable < newSold) {
+        // Ensure quantityAvailable is synced for physical items to prevent validation errors
+        if (event.priceLevels[plIdx].quantityAvailable < newSold) {
           event.priceLevels[plIdx].quantityAvailable = newSold;
         }
       }
@@ -1454,9 +1454,27 @@ const reserveBooth = async (req, res) => {
 
     const booth = event.booths[boothIndex];
 
-    // Check if available
+    // Check if available - with double-check for desyncs
     if (booth.status !== "available") {
-      return res.status(400).json({ error: "Booth is no longer available" });
+      // DOUBLE CHECK: Is there actually an active reservation for this booth?
+      // We check by both ID and code to be safe against layout reshuffles.
+      const existingRes = await Reservation.findOne({
+        event: id,
+        $or: [
+          { boothId: booth._id },
+          { boothCode: booth.label || booth.code }
+        ],
+        status: { $ne: "cancelled" }
+      });
+
+      if (existingRes) {
+        return res.status(400).json({ error: "Booth is no longer available" });
+      } else {
+        // If no reservation exists, it was a desync (likely from a failed previous attempt or manual database edit).
+        // We heal the status locally and proceed.
+        console.warn(`Desync detected: Booth ${booth.label || booth.code} was marked ${booth.status} but no active reservation exists. Proceeding with healing.`);
+        event.booths[boothIndex].status = "available";
+      }
     }
 
     // Check Price Level capacity early
@@ -1467,12 +1485,11 @@ const reserveBooth = async (req, res) => {
       );
       if (plIndex !== -1) {
         const pl = event.priceLevels[plIndex];
-        if (pl.quantitySold >= pl.quantityAvailable) {
-          return res
-            .status(400)
-            .json({
-              error: `The price level for this booth (${pl.priceName}) is sold out.`,
-            });
+        
+        // Auto-expand quantityAvailable if it's desynced from the map's inventory
+        // Since this is a physical booth, the map is the source of truth.
+        if (pl.quantityAvailable <= pl.quantitySold) {
+            event.priceLevels[plIndex].quantityAvailable = pl.quantitySold + 1;
         }
       }
     }

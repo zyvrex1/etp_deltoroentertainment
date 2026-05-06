@@ -1,13 +1,15 @@
-import axios from 'axios';
+import api from './api';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
-const API = axios.create({
-  baseURL: `${BASE_URL}/api/user`
-});
+const API = {
+  get: (url, config) => api.get(`/user${url}`, config),
+  put: (url, data, config) => api.put(`/user${url}`, data, config),
+};
 
 const getAuthHeaders = (token) => ({
   headers: { Authorization: `Bearer ${token}` }
 });
+
+// No longer need separate interceptor here as it's in api.js
 
 export const getPromoters = (token) => API.get('/promoters', getAuthHeaders(token));
 export const getUserById = (id, token) => API.get(`/${id}`, getAuthHeaders(token));

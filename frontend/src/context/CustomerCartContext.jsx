@@ -19,7 +19,8 @@ export const CustomerCartProvider = ({ children }) => {
         const savedCart = localStorage.getItem('customerCart');
         if (savedCart) {
             try {
-                return JSON.parse(savedCart);
+                const items = JSON.parse(savedCart);
+                return Array.isArray(items) ? items.filter(item => item?.seat?.id) : [];
             } catch (error) {
                 console.error("Error parsing cart from localStorage:", error);
                 return [];
@@ -32,7 +33,8 @@ export const CustomerCartProvider = ({ children }) => {
         const savedHistory = localStorage.getItem('customerPurchaseHistory');
         if (savedHistory) {
             try {
-                return JSON.parse(savedHistory);
+                const items = JSON.parse(savedHistory);
+                return Array.isArray(items) ? items.filter(item => item?.purchaseDate) : [];
             } catch (error) {
                 console.error("Error parsing history from localStorage:", error);
                 return [];
@@ -48,8 +50,8 @@ export const CustomerCartProvider = ({ children }) => {
             if (user.cart && user.cart.length > 0) {
                 setCartItems(prev => {
                     // Merge local cart with remote cart, avoiding duplicates by seat.id
-                    const localIds = new Set(prev.map(item => item.seat.id));
-                    const remoteItems = user.cart.filter(item => !localIds.has(item.seat.id));
+                    const localIds = new Set(prev.filter(item => item?.seat?.id).map(item => item.seat.id));
+                    const remoteItems = user.cart.filter(item => item?.seat?.id && !localIds.has(item.seat.id));
                     return [...prev, ...remoteItems];
                 });
             }

@@ -1,55 +1,18 @@
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || "";
-const API_URL = `${BASE_URL}/api/reservations`;
+import api from './api';
 
 const reservationService = {
-  /**
-   * Fetch all reservations for admin view
-   * @param {string} token - The authentication token
-   * @returns {Promise<Array>} List of reservations
-   */
+  getAuthHeaders: (token) => ({
+    headers: { Authorization: `Bearer ${token}` }
+  }),
+
   getAdminReservations: async (token) => {
-    try {
-      const response = await fetch(`${API_URL}/admin`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      const json = await response.json();
-
-      if (!response.ok) {
-        throw new Error(json.error || "Failed to fetch reservations");
-      }
-
-      return json;
-    } catch (error) {
-      console.error("Error in getAdminReservations service:", error);
-      throw error;
-    }
+    const response = await api.get('/reservations/admin', reservationService.getAuthHeaders(token));
+    return response.data;
   },
 
-  /**
-   * Fetch personal reservations for the sponsor
-   * @param {string} token - The authentication token
-   * @returns {Promise<Array>} List of reservations
-   */
   getMyReservations: async (token) => {
-    try {
-      const response = await fetch(`${API_URL}/my-booths`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      const json = await response.json();
-
-      if (!response.ok) {
-        throw new Error(json.error || "Failed to fetch personal reservations");
-      }
-
-      return json;
-    } catch (error) {
-      console.error("Error in getMyReservations service:", error);
-      throw error;
-    }
+    const response = await api.get('/reservations/my-booths', reservationService.getAuthHeaders(token));
+    return response.data;
   }
 };
 
