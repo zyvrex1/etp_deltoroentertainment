@@ -37,15 +37,16 @@ export default function CustomerPurchaseHistory() {
         const groups = {};
         purchaseHistory.forEach(item => {
             const date = item.purchaseDate;
+            const eventTitle = item.event?.title || "Unknown Event";
             if (!groups[date]) {
                 groups[date] = {
                     id: date,
                     type: item.type || 'ticket',
-                    title: item.event.title,
+                    title: eventTitle,
                     status: item.status || 'Confirmed',
                     statusClass: item.status === 'Refunded' ? 'status-refunded' : 'status-confirmed',
-                    orderNum: `Seat - ${item.cartId.toUpperCase().slice(0, 8)}`,
-                    date: new Date(date).toLocaleDateString(),
+                    orderNum: `Seat - ${(item.cartId || '').toUpperCase().slice(0, 8)}`,
+                    date: date ? new Date(date).toLocaleDateString() : 'N/A',
                     totalAmount: 0,
                     paymentMethod: item.paymentMethod || 'Credit Card',
                     poNumber: item.poNumber || '',
@@ -54,10 +55,10 @@ export default function CustomerPurchaseHistory() {
                 };
             }
             groups[date].items.push({
-                name: `1x ${item.categoryName} - Seat ${item.seat.label}`,
-                price: `$${(item.facePrice + item.serviceFee).toFixed(2)}`
+                name: `1x ${item.categoryName || 'Ticket'} - Seat ${item.seat?.label || 'N/A'}`,
+                price: `$${((item.facePrice || 0) + (item.serviceFee || 0)).toFixed(2)}`
             });
-            groups[date].totalAmount += (item.facePrice + item.serviceFee);
+            groups[date].totalAmount += ((item.facePrice || 0) + (item.serviceFee || 0));
         });
         
         return Object.values(groups).map(g => ({

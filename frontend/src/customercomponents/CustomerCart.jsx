@@ -82,7 +82,8 @@ export default function CustomerCart() {
 
     // Group items by event
     const groupedItems = cartItems.reduce((acc, item) => {
-        const eventId = item.event._id || item.event.id;
+        const eventId = item.event?._id || item.event?.id;
+        if (!eventId) return acc;
         if (!acc[eventId]) {
             acc[eventId] = {
                 event: item.event,
@@ -137,15 +138,15 @@ export default function CustomerCart() {
 
                     <div className="cart-content-layout">
                         {Object.values(groupedItems).map(({ event, items }) => (
-                            <div className="cart-event-card" key={event._id || event.id}>
-                                <div className="event-card-header" onClick={() => navigate(`/customer/event-details/${event._id}`)} style={{ cursor: 'pointer' }}>
+                            <div className="cart-event-card" key={event?._id || event?.id}>
+                                <div className="event-card-header" onClick={() => navigate(`/customer/event-details/${event?._id}`)} style={{ cursor: 'pointer' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <img 
-                                            src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"}
-                                            alt={event.title}
+                                            src={event?.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                            alt={event?.title || 'Event'}
                                             style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }}
                                         />
-                                        <h4>{event.title}</h4>
+                                        <h4>{event?.title || 'Unknown Event'}</h4>
                                     </div>
                                     <span className="live-badge">Live</span>
                                 </div>
@@ -165,17 +166,17 @@ export default function CustomerCart() {
                                                     <div className="ticket-type-info">
                                                         <h5>{item.categoryName || 'Ticket'} (Seat {item.seat?.label})</h5>
                                                         <p>
-                                                            <Icon icon="mdi:map-marker-outline" width="16" /> {event.venue?.name}
+                                                            <Icon icon="mdi:map-marker-outline" width="16" /> {event?.venue?.name || 'Venue TBA'}
                                                         </p>
                                                     </div>
                                                     <div className="ticket-meta">
                                                         <div className="ticket-meta-item">
                                                             <Icon icon="mdi:calendar-blank-outline" width="16" />
-                                                            <span>{new Date(event.startDate).toLocaleDateString()}</span>
+                                                            <span>{event?.startDate ? new Date(event.startDate).toLocaleDateString() : 'Date TBA'}</span>
                                                         </div>
                                                         <div className="ticket-meta-item">
                                                             <Icon icon="mdi:clock-outline" width="16" />
-                                                            <span>{event.startTime || 'TBA'}</span>
+                                                            <span>{event?.startTime || 'TBA'}</span>
                                                         </div>
                                                     </div>
                                                 </div>

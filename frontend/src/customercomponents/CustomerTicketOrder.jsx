@@ -32,13 +32,13 @@ const CustomerTicketOrder = () => {
     const activeTickets = useMemo(() => {
         return purchaseHistory.map(item => ({
             id: item.cartId,
-            title: item.event.title,
-            date: new Date(item.event.startDate).toLocaleDateString(),
-            time: item.event.startTime || "TBA",
-            location: item.event.venue?.name || "TBA",
-            seat: `Seat ${item.seat.label}`,
+            title: item.event?.title || "Unknown Event",
+            date: item.event?.startDate ? new Date(item.event.startDate).toLocaleDateString() : "TBA",
+            time: item.event?.startTime || "TBA",
+            location: item.event?.venue?.name || "TBA",
+            seat: `Seat ${item.seat?.label || 'N/A'}`,
             status: item.status || "Upcoming",
-            image: item.event.image ? `${BACKEND_URL}/uploads/${item.event.image}` : "/assets/eventbg.jpg",
+            image: item.event?.image ? `${BACKEND_URL}/uploads/${item.event.image}` : "/assets/eventbg.jpg",
             purchasedAt: item.purchaseDate
         }));
     }, [purchaseHistory]);

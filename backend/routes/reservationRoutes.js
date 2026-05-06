@@ -9,8 +9,8 @@ router.use(requireAuth);
 // Admin routes
 router.get('/admin', requireRole('admin'), reservationController.getAllReservations);
 
-// Sponsor routes
-router.get('/my-booths', requireRole('sponsor'), reservationController.getMyReservations);
+// My Reservations (both Sponsors/Booths and Customers/Seats)
+router.get('/my-booths', reservationController.getMyReservations);
 router.get('/:id', reservationController.getReservationById);
 router.post('/:id/exhibitors', requireRole('sponsor'), reservationController.addExhibitors);
 router.delete('/:id/exhibitors/:userId', requireRole('sponsor'), reservationController.removeExhibitor);

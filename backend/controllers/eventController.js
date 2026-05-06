@@ -67,10 +67,12 @@ const autoHealEvents = async (eventsArr) => {
       const eventReservations = reservations.filter(
         (r) => r.event.toString() === event._id.toString(),
       );
-      const reservedBoothIds = eventReservations.map((r) =>
-        r.boothId.toString(),
-      );
-      const reservedBoothCodes = eventReservations.map((r) => r.boothCode);
+      const reservedBoothIds = eventReservations
+        .filter((r) => r.boothId)
+        .map((r) => r.boothId.toString());
+      const reservedBoothCodes = eventReservations
+        .filter((r) => r.boothCode)
+        .map((r) => r.boothCode);
 
       // 2. Cross-reference booths array
       if (event.booths && event.booths.length > 0) {
