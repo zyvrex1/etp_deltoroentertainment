@@ -713,7 +713,7 @@
 
 @media (max-width: 768px) {
     .sponsor-support-page {
-        padding: 20px;
+        padding: 20px 12px;
 
         .concerns-toolbar {
             flex-direction: column;
@@ -743,7 +743,7 @@
 
 @media (max-width: 480px) {
     .sponsor-support-page {
-        padding: 15px;
+        padding: 15px 12px;
 
         .support-tabs {
             gap: 12px;

@@ -120,6 +120,12 @@
     }
 
     .vt-badge-customer {
+        background-color: var(--color-blue-quaternary);
+        color: var(--color-blue-primary);
+        border: 1px solid var(--color-blue-tertiary);
+    }
+
+    .vt-badge-sponsor {
         background-color: var(--color-green-quaternary);
         color: var(--color-green-primary);
         border: 1px solid var(--color-green-tertiary);

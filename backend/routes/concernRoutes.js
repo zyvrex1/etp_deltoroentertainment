@@ -9,9 +9,9 @@ const router = express.Router();
 // All routes require authentication
 router.use(requireAuth);
 
-// Sponsor/Customer routes
+// User (Sponsor/Customer) routes
 router.post('/', requireRole('sponsor', 'customer'), concernUpload.array('attachments', 5), concernController.createConcern);
-router.get('/sponsor', requireRole('sponsor'), concernController.getSponsorConcerns);
+router.get('/my-concerns', requireRole('sponsor', 'customer'), concernController.getSponsorConcerns);
 
 // Admin routes
 router.get('/admin', requireRole('admin'), concernController.getAdminConcerns);

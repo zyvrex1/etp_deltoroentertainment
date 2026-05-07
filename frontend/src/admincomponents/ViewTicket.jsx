@@ -184,7 +184,7 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onUpdatePriority, o
                             <div className="vt-user-details">
                                 <div className="vt-user-name-row">
                                     <span className="regular-body-text fw-600">{ticket.sponsorName}</span>
-                                    <span className="button-label vt-badge-customer">SPONSOR</span>
+                                    <span className={`button-label vt-badge-${ticket.userRole || 'sponsor'}`}>{(ticket.userRole || 'sponsor').toUpperCase()}</span>
                                 </div>
                                 <div className="vt-contact-row">
                                     <Icon icon="mdi:email-outline" />

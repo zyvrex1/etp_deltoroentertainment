@@ -47,7 +47,7 @@ export default function SponsorSupport() {
         if (!user?.token) return;
         setLoading(true);
         try {
-            const data = await concernService.getSponsorConcerns(user.token);
+            const data = await concernService.getMyConcerns(user.token);
             setConcerns(data);
         } catch (error) {
             console.error("Error fetching concerns:", error);
@@ -145,7 +145,7 @@ export default function SponsorSupport() {
     const faqs = [
         {
             question: "How do I reserve a booth?",
-            answer: "Navigate to the event page, click 'View Booth Map', select an available green booth, and follow the checkout process. Your booth is temporarily held for 15 minutes while you complete payment."
+            answer:"Navigate to the browse event page, select your desired booth, add it to your cart, and proceed to checkout. Your booth will be held for a short period while you complete payment."
         },
         {
             question: "Can I cancel my sponsorship?",

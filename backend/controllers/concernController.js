@@ -29,6 +29,7 @@ const createConcern = async (req, res) => {
     const concern = await Concern.create({
       sponsorId: user._id,
       sponsorName,
+      userRole: user.role,
       subject,
       category,
       priority: priority ? priority.toLowerCase() : 'medium',

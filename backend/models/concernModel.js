@@ -37,6 +37,11 @@ const concernSchema = new Schema({
     type: String,
     required: true
   },
+  userRole: {
+    type: String,
+    enum: ['sponsor', 'customer'],
+    default: 'sponsor'
+  },
   subject: {
     type: String,
     required: true

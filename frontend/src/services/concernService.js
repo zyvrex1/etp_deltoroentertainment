@@ -17,8 +17,8 @@ const concernService = {
     return json;
   },
 
-  getSponsorConcerns: async (token) => {
-    const response = await fetch(`${API_URL}/sponsor`, {
+  getMyConcerns: async (token) => {
+    const response = await fetch(`${API_URL}/my-concerns`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
