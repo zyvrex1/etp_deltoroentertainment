@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './EditUserModal.css';
-import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert, showErrorAlert } from '../../utils/sweetAlert';
+import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert, showErrorAlert, showWarningAlert } from '../../utils/sweetAlert';
 import adminService from '../../services/adminService';
 import { useAuthContext } from '../../hooks/useAuthContext';
 
@@ -73,10 +73,14 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
         }
 
         try {
-            await adminService.updateUser(user._id, { password: formData.newPassword }, currentUser.token);
+            const response = await adminService.updateUser(user._id, { password: formData.newPassword }, currentUser.token);
             
             onClose();
-            showSuccessAlert('Password Updated', 'The user\'s password has been updated successfully.');
+            if (response.warning) {
+                showWarningAlert('Partial Success', response.message);
+            } else {
+                showSuccessAlert('Password Updated', 'The user\'s password has been updated successfully.');
+            }
         } catch (error) {
             console.error('Error updating password:', error);
             showErrorAlert('Update Failed', error.message || 'Could not update password.');
@@ -254,10 +258,14 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                                     try {
                                         // Generate a random 8-character password
                                         const tempPass = Math.random().toString(36).slice(-8);
-                                        await adminService.updateUser(user._id, { password: tempPass }, currentUser.token);
+                                        const response = await adminService.updateUser(user._id, { password: tempPass }, currentUser.token);
                                         
                                         onClose();
-                                        showSuccessAlert('Success', `A temporary password has been set and sent to ${formData.email}.`);
+                                        if (response.warning) {
+                                            showWarningAlert('Partial Success', response.message);
+                                        } else {
+                                            showSuccessAlert('Success', `A temporary password has been set and sent to ${formData.email}.`);
+                                        }
                                     } catch (error) {
                                         console.error('Error sending temp password:', error);
                                         showErrorAlert('Error', 'Could not set temporary password.');

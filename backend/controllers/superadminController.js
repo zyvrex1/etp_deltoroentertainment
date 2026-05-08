@@ -293,13 +293,33 @@ const updateUser = async (req, res) => {
     if (req.body.companyName) user.companyName = req.body.companyName
     if (req.body.phone) user.phone = req.body.phone
 
+    let passwordUpdated = false;
     if (req.body.password) {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(req.body.password, salt);
+      passwordUpdated = true;
     }
 
     await user.save()
     emitUpdate('dashboardUpdate');
+
+    if (passwordUpdated) {
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Your Password Has Been Updated',
+          text: `Hello ${user.firstName}, \n\nAn administrator has updated your password. \n\nYour new temporary password is: ${req.body.password} \n\nPlease log in and change your password as soon as possible for security reasons. \n\nBest regards, \nThe eTicketsPro Team`
+        });
+        return res.status(200).json({ message: 'User updated and password email sent', user })
+      } catch (emailError) {
+        console.error('Password update email failed:', emailError);
+        return res.status(200).json({ 
+          message: 'User updated successfully, but password email failed to send.', 
+          user,
+          warning: 'Could not send the password notification email.' 
+        })
+      }
+    }
 
     res.status(200).json({ message: 'User updated successfully', user })
   } catch (err) {
