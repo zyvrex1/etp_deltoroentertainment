@@ -21,6 +21,8 @@ const merchandiseRoutes = require('./routes/merchandiseRoutes');
 const concernRoutes = require('./routes/concernRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+
 
 // express app
 const app = express()
@@ -64,6 +66,8 @@ app.use('/api/merchandise', merchandiseRoutes)
 app.use('/api/concerns', concernRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/reservations', reservationRoutes)
+app.use('/api/analytics', analyticsRoutes)
+
 
 // Global error handler
 app.use((err, req, res, next) => {

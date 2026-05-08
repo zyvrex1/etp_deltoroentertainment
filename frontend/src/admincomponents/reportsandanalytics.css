@@ -376,6 +376,35 @@
     .table-wrapper {
         overflow-x: auto;
 
+        &.scrollable {
+            max-height: 440px; /* Approximately 5 events + header */
+            overflow-y: auto;
+            padding-right: 4px;
+
+            &::-webkit-scrollbar {
+                width: 6px;
+            }
+            &::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            &::-webkit-scrollbar-thumb {
+                background: var(--color-black-quaternary);
+                border-radius: 10px;
+            }
+            &::-webkit-scrollbar-thumb:hover {
+                background: var(--color-black-tertiary);
+            }
+
+            .data-table thead {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background: var(--color-white-primary);
+                box-shadow: 0 1px 0 var(--color-black-quaternary);
+            }
+        }
+
+
         .data-table {
             width: 100%;
             border-collapse: collapse;

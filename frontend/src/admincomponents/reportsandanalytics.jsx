@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+
 import "./reportsandanalytics.css";
 import { Icon } from "@iconify/react";
 import jsPDF from "jspdf";
@@ -16,8 +18,8 @@ import {
     Area
 } from "recharts";
 import DateRangePicker from "../utils/DateRangePicker";
-
 export default function ReportsAnalytics() {
+    const { user } = useContext(AuthContext);
     const [dateRange, setDateRange] = useState(() => {
         const now = new Date();
         const start = new Date(now);
@@ -27,6 +29,50 @@ export default function ReportsAnalytics() {
 
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [expandedRow, setExpandedRow] = useState(null);
+    const [topEvents, setTopEvents] = useState([]);
+    const [overviewStats, setOverviewStats] = useState({
+        grossRevenue: 0,
+        netRevenue: 0,
+        ticketsSold: 0,
+        boothsSold: 0,
+        refundRate: 0.8
+    });
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            if (!user?.token) return;
+            
+            try {
+                setIsLoading(true);
+                const [topRes, overviewRes] = await Promise.all([
+                    fetch('/api/analytics/top-performing-events', {
+                        headers: { 'Authorization': `Bearer ${user.token}` }
+                    }),
+                    fetch('/api/analytics/overview-stats', {
+                        headers: { 'Authorization': `Bearer ${user.token}` }
+                    })
+                ]);
+
+                if (topRes.ok) {
+                    const topData = await topRes.json();
+                    setTopEvents(topData);
+                }
+
+                if (overviewRes.ok) {
+                    const overviewData = await overviewRes.json();
+                    setOverviewStats(overviewData);
+                }
+            } catch (error) {
+                console.error("Error fetching analytics:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAnalytics();
+    }, [user?.token]);
+
 
     useEffect(() => {
         const handleResize = () => {
@@ -40,7 +86,8 @@ export default function ReportsAnalytics() {
         setExpandedRow(expandedRow === id ? null : id);
     };
 
-    // Static Data for Charts
+    // Category and Revenue Trends are still static for now as per design scope, 
+    // but topEvents and overview are now dynamic.
     const revenueData = [
         { month: "Jun", total: 420000 },
         { month: "Jul", total: 480000 },
@@ -57,13 +104,6 @@ export default function ReportsAnalytics() {
         { name: "Others", value: 25, color: "#e6e6e6" },
     ];
 
-    const topEvents = [
-        { id: 1, name: "TechStart Summit 2024", tickets: "450 tickets sold", revenue: "$103,550.00", cap: "75% cap" },
-        { id: 2, name: "Creator Economy Expo", tickets: "0 tickets sold", revenue: "$0.00", cap: "0% cap" },
-        { id: 3, name: "Summer Music Festival", tickets: "5000 tickets sold", revenue: "$250,000.00", cap: "100% cap" },
-        { id: 4, name: "AI Innovation Conference", tickets: "300 tickets sold", revenue: "$75,000.00", cap: "60% cap" },
-        { id: 5, name: "Startup Pitch Night", tickets: "30 tickets sold", revenue: "$1,500.00", cap: "30% cap" }
-    ];
 
     const exportReport = async () => {
         const loadingToast = showExportToast();
@@ -89,10 +129,11 @@ export default function ReportsAnalytics() {
             pdf.setFontSize(10);
             pdf.setTextColor(50, 50, 50);
             pdf.setFont("helvetica", "normal");
-            pdf.text("Gross Revenue: $687,550.00 (↑ 15%)", margin + 2, y); y += lineHeight;
-            pdf.text("Net Revenue: $34,377.50 (↑ 12%)", margin + 2, y); y += lineHeight;
-            pdf.text("Tickets Sold: 7,330 (↑ 8%)", margin + 2, y); y += lineHeight;
-            pdf.text("Refund Rate: 0.8% (↓ 2%)", margin + 2, y); y += lineHeight + 6;
+            pdf.text(`Gross Revenue: $${overviewStats.grossRevenue.toLocaleString()} (↑ 15%)`, margin + 2, y); y += lineHeight;
+            pdf.text(`Net Revenue: $${overviewStats.netRevenue.toLocaleString()} (↑ 12%)`, margin + 2, y); y += lineHeight;
+            pdf.text(`Tickets Sold: ${overviewStats.ticketsSold.toLocaleString()} (↑ 8%)`, margin + 2, y); y += lineHeight;
+            pdf.text(`Refund Rate: ${overviewStats.refundRate}% (↓ 2%)`, margin + 2, y); y += lineHeight + 6;
+
 
             pdf.setFontSize(12);
             pdf.setTextColor(30, 60, 114);
@@ -101,11 +142,11 @@ export default function ReportsAnalytics() {
             y += 8;
             
             const eventHeaders = ['Rank', 'Event Name', 'Tickets Info', 'Revenue Info'];
-            const eventRows = topEvents.map(e => [
-                `#${e.id}`,
+            const eventRows = topEvents.map((e, index) => [
+                `#${index + 1}`,
                 e.name,
-                e.tickets,
-                `${e.revenue} (${e.cap})`
+                e.ticketsText,
+                `${e.revenueText} (${e.cap})`
             ]);
             y = drawTable(pdf, y, eventHeaders, eventRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, REPORT_TITLE);
 
@@ -155,7 +196,7 @@ export default function ReportsAnalytics() {
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Gross Revenue</p>
-                            <h4>$687,550.00</h4>
+                            <h4>${overviewStats.grossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h4>
                         </div>
                     </div>
 
@@ -166,7 +207,7 @@ export default function ReportsAnalytics() {
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Net Revenue</p>
-                            <h4>$34,377.50</h4>
+                            <h4>${overviewStats.netRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h4>
                         </div>
                     </div>
 
@@ -177,7 +218,7 @@ export default function ReportsAnalytics() {
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Tickets Sold</p>
-                            <h4>7,330</h4>
+                            <h4>{overviewStats.ticketsSold.toLocaleString()}</h4>
                         </div>
                     </div>
 
@@ -188,9 +229,10 @@ export default function ReportsAnalytics() {
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Refund Rate</p>
-                            <h4>0.8%</h4>
+                            <h4>{overviewStats.refundRate}%</h4>
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -245,7 +287,7 @@ export default function ReportsAnalytics() {
                         <div className="card-header">
                             <h4 className="left-aligned">Top Performing Events</h4>
                         </div>
-                        <div className="table-wrapper">
+                        <div className="table-wrapper scrollable">
                             <table className="data-table">
                                 <thead>
                                     <tr>
@@ -255,7 +297,13 @@ export default function ReportsAnalytics() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {topEvents.map((row) => (
+                                    {topEvents.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="3" style={{ textAlign: 'center', padding: '2rem' }}>
+                                                {isLoading ? "Loading performance data..." : "No event data available yet."}
+                                            </td>
+                                        </tr>
+                                    ) : topEvents.map((row, index) => (
                                         <tr key={row.id} className={expandedRow === row.id ? "expanded" : ""}>
                                             <td data-label="Event Name" className="regular-body-text event-name-td">
                                                 <div className="mobile-expand-icon" onClick={() => toggleRow(row.id)}>
@@ -267,21 +315,24 @@ export default function ReportsAnalytics() {
                                                     </div>
                                                     <div className="event-info-wrapper left-aligned">
                                                         <span className="event-name-text">{row.name}</span>
-                                                        <span className="event-sub-text smaller-body-text">{row.tickets}</span>
+                                                        <span className="event-sub-text smaller-body-text">
+                                                            {row.ticketsSold} seats sold {row.ticketsReserved > 0 ? `(${row.ticketsReserved} reserved)` : ""} • {row.boothsSold} booths
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td data-label="Revenue" className="regular-body-text rev-td">
                                                 <div className="event-rev-wrapper">
-                                                    <span className="event-rev-text">{row.revenue}</span>
+                                                    <span className="event-rev-text">{row.revenueText}</span>
                                                     <span className="event-sub-text smaller-body-text">{row.cap}</span>
                                                 </div>
                                             </td>
                                             <td className="small-body-text rank-td" data-label="Rank">
-                                                <span>#{row.id}</span>
+                                                <span>#{index + 1}</span>
                                             </td>
                                         </tr>
                                     ))}
+
                                 </tbody>
                             </table>
                         </div>
