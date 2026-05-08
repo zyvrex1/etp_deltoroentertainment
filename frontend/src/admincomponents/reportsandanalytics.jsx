@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
+import analyticsService from "../services/analyticsService";
 
 import "./reportsandanalytics.css";
 import { Icon } from "@iconify/react";
@@ -18,6 +19,7 @@ import {
     Area
 } from "recharts";
 import DateRangePicker from "../utils/DateRangePicker";
+
 export default function ReportsAnalytics() {
     const { user } = useContext(AuthContext);
     const [dateRange, setDateRange] = useState(() => {
@@ -47,24 +49,13 @@ export default function ReportsAnalytics() {
             
             try {
                 setIsLoading(true);
-                const [topRes, overviewRes] = await Promise.all([
-                    fetch('/api/analytics/top-performing-events', {
-                        headers: { 'Authorization': `Bearer ${user.token}` }
-                    }),
-                    fetch('/api/analytics/overview-stats', {
-                        headers: { 'Authorization': `Bearer ${user.token}` }
-                    })
+                const [topData, overviewData] = await Promise.all([
+                    analyticsService.getTopPerformingEvents(user.token),
+                    analyticsService.getOverviewStats(user.token)
                 ]);
 
-                if (topRes.ok) {
-                    const topData = await topRes.json();
-                    setTopEvents(topData);
-                }
-
-                if (overviewRes.ok) {
-                    const overviewData = await overviewRes.json();
-                    setOverviewStats(overviewData);
-                }
+                if (topData) setTopEvents(topData);
+                if (overviewData) setOverviewStats(overviewData);
             } catch (error) {
                 console.error("Error fetching analytics:", error);
             } finally {

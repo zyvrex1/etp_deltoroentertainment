@@ -18,7 +18,7 @@ const SponsorStore = () => {
   const [merchandise, setMerchandise] = useState([]);
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState([]);
-  
+
   const itemsPerPage = 8;
   const dropdownRef = useRef(null);
 
@@ -36,31 +36,31 @@ const SponsorStore = () => {
       if (!user) return;
       try {
         setLoading(true);
-        
+
         const [merchData, reservationsData] = await Promise.all([
           merchandiseService.getMerchandises(user.token),
           reservationService.getMyReservations(user.token)
         ]);
-        
+
         setMerchandise(merchData);
-        
+
         const now = new Date();
 
         const formattedEvents = reservationsData
           .filter(res => res.event && res.event.title) // Ensure event exists and has a title
           .map(res => {
             const event = res.event || {};
-            
+
             let status = "Upcoming";
             const startDate = event.startDate ? new Date(event.startDate) : new Date();
             const endDate = (event.endDate || event.startDate) ? new Date(event.endDate || event.startDate) : new Date();
-            
+
             // Incorporate startTime and endTime if available (format: HH:mm)
             if (event.startTime) {
               const [sHours, sMinutes] = event.startTime.split(':').map(Number);
               startDate.setHours(sHours, sMinutes, 0, 0);
             }
-            
+
             if (event.endTime) {
               const [eHours, eMinutes] = event.endTime.split(':').map(Number);
               endDate.setHours(eHours, eMinutes, 0, 0);
@@ -74,7 +74,7 @@ const SponsorStore = () => {
             }
 
             const count = merchData.filter(m => (m.eventId?._id === event._id || m.eventId === event._id) && m.boothCode === res.boothCode).length;
-            
+
             const formattedDate = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
             let imageUrl = event.image || '/assets/eventbg.jpg';
@@ -96,7 +96,7 @@ const SponsorStore = () => {
               image: imageUrl
             };
           });
-        
+
         setEventData(formattedEvents);
 
       } catch (error) {
@@ -207,10 +207,10 @@ const SponsorStore = () => {
               <div key={i} className="store-event-card">
                 <div className="skeleton skeleton-image"></div>
                 <div className="store-card-details">
-                  <div className="skeleton skeleton-text title" style={{width: '80%'}}></div>
-                  <div className="skeleton skeleton-text" style={{width: '60%'}}></div>
-                  <div className="skeleton skeleton-text" style={{width: '70%'}}></div>
-                  <div className="skeleton skeleton-text" style={{width: '50%'}}></div>
+                  <div className="skeleton skeleton-text title" style={{ width: '80%' }}></div>
+                  <div className="skeleton skeleton-text" style={{ width: '60%' }}></div>
+                  <div className="skeleton skeleton-text" style={{ width: '70%' }}></div>
+                  <div className="skeleton skeleton-text" style={{ width: '50%' }}></div>
                   <div className="store-stats-row">
                     <div className="skeleton skeleton-stat-box"></div>
                     <div className="skeleton skeleton-stat-box"></div>
@@ -223,7 +223,9 @@ const SponsorStore = () => {
             paginatedData.map((event) => (
               <div key={event.id} className="store-event-card">
                 <div className="store-card-image-wrap">
-                  <img src={event.image} alt={event.title} />
+                  <img src={event.image} alt={event.title}
+                    onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
+                  />
                   <div className={`store-booth-badge button-label ${getStatusClass(event.status)}`}>
                     {event.status}
                   </div>
@@ -253,20 +255,20 @@ const SponsorStore = () => {
                     </div>
                   </div>
 
-                  <button 
+                  <button
                     className={`primary-button store-manage-btn ${event.status === "Completed" ? "see-reports-btn" : ""}`}
                     onClick={() => {
-                      navigate("/sponsor/store/dashboard", { 
-                        state: { 
-                          eventId: event._id || event.id, 
-                          eventName: event.title, 
+                      navigate("/sponsor/store/dashboard", {
+                        state: {
+                          eventId: event._id || event.id,
+                          eventName: event.title,
                           boothCode: event.boothCodeRaw,
                           isCompleted: event.status === "Completed"
-                        } 
+                        }
                       });
                     }}
                   >
-                    {event.status === "Completed" ? "See Reports" : "Manage Store"} 
+                    {event.status === "Completed" ? "See Reports" : "Manage Store"}
                     <Icon icon="mdi:arrow-right" />
                   </button>
                 </div>
