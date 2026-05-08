@@ -88,12 +88,12 @@ const SponsorVenueLayout = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const { user } = useAuthContext();
-    const { addToCart } = useSponsorCartContext();
+    const { addToCart, addMultipleToCart } = useSponsorCartContext();
 
     const [event, setEvent] = useState(null);
     const [localItems, setLocalItems] = useState([]);
     const [priceLevels, setPriceLevels] = useState([]);
-    const [selectedId, setSelectedId] = useState(null);
+    const [selectedIds, setSelectedIds] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Canvas sizing (read from layoutData)
@@ -266,26 +266,47 @@ const SponsorVenueLayout = () => {
     }, [localItems]);
 
     const handleAddToCart = () => {
-        if (!selectedId) return;
-        const selectedItem = localItems.find(i => i.id === selectedId);
-        const category = priceLevels.find(pl => pl._id === selectedItem?.categoryId);
+        if (selectedIds.length === 0) return;
+        
+        const itemsToAdd = selectedIds.map(id => {
+            const selectedItem = localItems.find(i => i.id === id);
+            if (!selectedItem) return null;
+            
+            const category = priceLevels.find(pl => pl._id === selectedItem.categoryId);
 
-        const facePrice = category?.facePrice || 0;
-        const processingFee = facePrice * 0.03;
-        const estimatedTax = facePrice * 0.08;
-        const total = facePrice + processingFee + estimatedTax;
+            const facePrice = category?.facePrice || 0;
+            const processingFee = facePrice * 0.03;
+            const estimatedTax = facePrice * 0.08;
+            const total = facePrice + processingFee + estimatedTax;
 
-        addToCart({ event, booth: selectedItem, category, total, facePrice, processingFee, estimatedTax });
-        showSuccessAlert('Added to Cart', `${selectedItem.label || selectedItem.code} has been added to your cart.`);
-        setSelectedId(null);
+            return { event, booth: selectedItem, category, total, facePrice, processingFee, estimatedTax };
+        }).filter(Boolean);
+
+        if (itemsToAdd.length > 0) {
+            addMultipleToCart(itemsToAdd);
+            showSuccessAlert('Added to Cart', `${itemsToAdd.length} booth(s) added to your cart.`);
+            setSelectedIds([]);
+        }
     };
 
-    const selectedItemData = useMemo(() => {
-        const item = localItems.find(i => i.id === selectedId);
-        if (!item) return null;
-        const cat = priceLevels.find(pl => pl._id === item.categoryId);
-        return { ...item, category: cat };
-    }, [selectedId, localItems, priceLevels]);
+    const selectedItemsData = useMemo(() => {
+        return selectedIds.map(id => {
+            const item = localItems.find(i => i.id === id);
+            if (!item) return null;
+            const cat = priceLevels.find(pl => pl._id === item.categoryId);
+            return { ...item, category: cat };
+        }).filter(Boolean);
+    }, [selectedIds, localItems, priceLevels]);
+
+    const toggleSelection = (id) => {
+        setSelectedIds(prev => {
+            if (prev.includes(id)) {
+                return prev.filter(i => i !== id);
+            } else {
+                return [...prev, id];
+            }
+        });
+    };
 
     if (isLoading) return <div className="sed-loading-container"><Icon icon="line-md:loading-twotone-loop" width="48" /></div>;
 
@@ -377,7 +398,7 @@ const SponsorVenueLayout = () => {
                                     const pos = stageRef.current.getPointerPosition();
                                     lastPointerRef.current = { x: pos.x, y: pos.y };
                                     stageRef.current.container().style.cursor = 'grabbing';
-                                    setSelectedId(null);
+                                    // Removed setSelectedId(null) to allow panning without clearing selection
                                 }}
                                 onMouseMove={() => {
                                     if (!isPanningRef.current) return;
@@ -466,7 +487,7 @@ const SponsorVenueLayout = () => {
                                         <React.Fragment key={item.id || i}>
                                             {item.imageUrl ? (
                                                 <BackgroundImage item={item} onClick={() => {
-                                                    if (item.type === "booth" || item.isBooth) setSelectedId(item.id);
+                                                    if (item.type === "booth" || item.isBooth) toggleSelection(item.id);
                                                 }} />
                                             ) : (item.type === "seat" || item.type === "booth") ? (
                                                 (() => {
@@ -483,10 +504,10 @@ const SponsorVenueLayout = () => {
                                                             scaleY={item.scaleY || 1}
                                                             rotation={item.rotation || 0}
                                                             onClick={() => {
-                                                                if (item.status === 'available' && isBooth) setSelectedId(item.id);
+                                                                if (item.status === 'available') toggleSelection(item.id);
                                                             }}
                                                             onTap={() => {
-                                                                if (item.status === 'available' && isBooth) setSelectedId(item.id);
+                                                                if (item.status === 'available') toggleSelection(item.id);
                                                             }}
                                                         >
                                                             {isBooth ? (
@@ -495,18 +516,18 @@ const SponsorVenueLayout = () => {
                                                                     y={-boothH / 2}
                                                                     width={boothW}
                                                                     height={boothH}
-                                                                    fill={selectedId === item.id ? "#3b82f6" : (item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#e0e0e0"))}
+                                                                    fill={selectedIds.includes(item.id) ? "#3b82f6" : (item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#e0e0e0"))}
                                                                     stroke="white"
-                                                                    strokeWidth={selectedId === item.id ? 2 : 1}
+                                                                    strokeWidth={selectedIds.includes(item.id) ? 2 : 1}
                                                                     cornerRadius={4}
                                                                 />
                                                             ) : (
                                                                 <Circle
                                                                     radius={20}
-                                                                    fill={cat?.color || "#666666"}
+                                                                    fill={selectedIds.includes(item.id) ? "#3b82f6" : (item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#666666"))}
                                                                     stroke="white"
-                                                                    strokeWidth={1}
-                                                                    opacity={0.3}
+                                                                    strokeWidth={selectedIds.includes(item.id) ? 2 : 1}
+                                                                    opacity={1}
                                                                 />
                                                             )}
                                                             <Text
@@ -549,41 +570,51 @@ const SponsorVenueLayout = () => {
                     <div className="svl-summary-card">
                         <h4 className="text-primary mb-4 block">Selection Summary</h4>
 
-                        {selectedItemData ? (
+                        {selectedItemsData.length > 0 ? (
                             <>
                                 <div className="svl-summary-header">
-                                    <span className="blue-pill button-label">Selected</span>
-                                    <h4 className="text-red">${(selectedItemData.category?.facePrice || 0).toLocaleString()}</h4>
+                                    <span className="blue-pill button-label">{selectedItemsData.length} Selected</span>
+                                    <h4 className="text-red">
+                                        ${selectedItemsData.reduce((acc, item) => acc + (item.category?.facePrice || 0), 0).toLocaleString()}
+                                    </h4>
                                 </div>
 
-                                <div className="svl-booth-title">
-                                    <h3 className="text-primary">{selectedItemData.label || 'Booth'}</h3>
-                                    <p className="smaller-body-text text-secondary mt-1">{selectedItemData.category?.priceName || 'Booth Category'}</p>
+                                <div className="svl-selected-items-list" style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '16px' }}>
+                                    {selectedItemsData.map((item, idx) => (
+                                        <div key={item.id || idx} className="svl-booth-item-row" style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
+                                            <div className="svl-booth-title">
+                                                <h5 className="text-primary m-0">{item.label || item.code || 'Booth'}</h5>
+                                                <p className="smaller-body-text text-secondary">{item.category?.priceName || 'Booth Category'}</p>
+                                            </div>
+                                            <div style={{ textAlign: 'right', color: 'var(--color-black-primary)' }}>
+                                                <span className="small-body-text font-bold">${(item.category?.facePrice || 0).toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
 
                                 <hr className="svl-divider" />
 
                                 <div className="svl-dim-row">
-                                    <span className="smaller-body-text text-secondary">Dimensions</span>
-                                    <span className="smaller-body-text text-secondary font-bold">{selectedItemData.category?.boothSize || selectedItemData.boothSize || 'Standard'}</span>
+                                    <span className="smaller-body-text text-secondary">Total Subtotal</span>
+                                    <span className="smaller-body-text text-secondary font-bold">
+                                        ${selectedItemsData.reduce((acc, item) => acc + (item.category?.facePrice || 0), 0).toLocaleString()}
+                                    </span>
                                 </div>
 
                                 <div className="svl-features">
-                                    <span className="smaller-body-text font-bold text-secondary">KEY FEATURES</span>
-                                    <ul className="svl-feature-list">
-                                        <li><span className="svl-dot-icon small-green small"></span><span className="smaller-body-text text-secondary">Premium Location</span></li>
-                                        <li><span className="svl-dot-icon small-green small"></span><span className="smaller-body-text text-secondary">Electricity Access</span></li>
-                                    </ul>
+                                    <span className="smaller-body-text font-bold text-secondary">ESTIMATED FEES & TAXES</span>
+                                    <p className="smaller-body-text text-secondary">Processing fees and taxes will be calculated at checkout.</p>
                                 </div>
 
                                 <button className="primary-button svl-confirm-btn" onClick={handleAddToCart}>
-                                    Add to Cart
+                                    Add {selectedItemsData.length} to Cart
                                 </button>
                             </>
                         ) : (
                             <div className="text-center py-5">
                                 <Icon icon="mdi:cursor-default-click-outline" width="48" className="text-secondary opacity-20 mb-3" />
-                                <p className="small-body-text text-secondary">Select a booth on the map to see details and pricing</p>
+                                <p className="small-body-text text-secondary">Select one or more booths on the map to see details and pricing</p>
                             </div>
                         )}
                     </div>

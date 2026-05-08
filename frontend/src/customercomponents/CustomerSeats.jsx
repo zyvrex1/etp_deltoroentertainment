@@ -147,7 +147,8 @@ const CustomerSeats = () => {
         if (result.isConfirmed) {
             addToCart(event, selectedSeats);
             showSuccessAlert('Added!', 'Ticket(s) added to your cart.');
-            navigate('/customer/cart');
+            // Removed navigate('/customer/cart') to allow continued selection
+            setSelectedSeats([]); // Clear selection after adding to cart
         }
     };
 
@@ -335,15 +336,23 @@ const CustomerSeats = () => {
 
                                     if (isBooth) {
                                         return (
-                                            <Group key={item.id} x={item.x} y={item.y} rotation={item.rotation} listening={false}>
+                                            <Group 
+                                                key={item.id} 
+                                                x={item.x} y={item.y} 
+                                                rotation={item.rotation}
+                                                onClick={() => toggleSeat(item)}
+                                                onTap={() => toggleSeat(item)}
+                                            >
                                                 <Rect
                                                     width={50} height={50} x={-25} y={-25}
-                                                    fill="#F5F5F5" stroke="#CCC" strokeWidth={1}
-                                                    opacity={0.6}
+                                                    fill={selectedSeats.find(s => s.id === item.id) ? "#2563EB" : (item.status === 'sold' || item.status === 'reserved' || item.status === 'blocked' ? '#2ECC71' : '#F5F5F5')}
+                                                    stroke={selectedSeats.find(s => s.id === item.id) ? "#fff" : "#CCC"}
+                                                    strokeWidth={selectedSeats.find(s => s.id === item.id) ? 2 : 1}
+                                                    opacity={0.8}
                                                 />
                                                 <Text
                                                     text={item.code || "Booth"}
-                                                    fontSize={10} fill="#AAA"
+                                                    fontSize={10} fill={selectedSeats.find(s => s.id === item.id) ? "#fff" : "#AAA"}
                                                     align="center" verticalAlign="middle"
                                                     x={-25} y={-25} width={50} height={50}
                                                 />

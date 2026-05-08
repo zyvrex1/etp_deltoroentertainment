@@ -192,6 +192,10 @@ const CustomerBrowseEvent = () => {
                                     <img
                                         src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : '/assets/eventbg.jpg'}
                                         alt={event.title}
+                                        onError={(e) => {
+                                            e.target.src = '/assets/eventbg.jpg';
+                                            e.target.onerror = null; // Prevent infinite loop if fallback also fails
+                                        }}
                                     />
                                     <div className="cbe-category-badge button-label">
                                         {event.category || "Event"}

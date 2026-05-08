@@ -259,6 +259,10 @@ export default function CustomerHome() {
                                         src={evt.image ? (evt.image.startsWith('http') ? evt.image : `${BACKEND_URL}/uploads/${evt.image}`) : '/assets/eventbg.jpg'}
                                         alt={evt.title}
                                         className="ch-v2-img"
+                                        onError={(e) => {
+                                            e.target.src = '/assets/eventbg.jpg';
+                                            e.target.onerror = null;
+                                        }}
                                     />
                                     <div className="ch-v2-date-badge">
                                         <Icon icon="mdi:calendar-month" />

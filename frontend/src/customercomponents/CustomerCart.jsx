@@ -145,6 +145,7 @@ export default function CustomerCart() {
                                             src={event?.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"}
                                             alt={event?.title || 'Event'}
                                             style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }}
+                                            onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
                                         />
                                         <h4>{event?.title || 'Unknown Event'}</h4>
                                     </div>

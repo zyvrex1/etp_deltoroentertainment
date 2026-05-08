@@ -105,23 +105,41 @@ export const SponsorCartProvider = ({ children }) => {
     }, [cartItems, user, isInitialized]);
 
     const addToCart = (item) => {
-        // item will have { event, booth, category, total, facePrice, processingFee, estimatedTax }
-        // Check if booth is already in cart
+        if (!item || !item.booth) return;
         setCartItems((prevItems) => {
-            const exists = prevItems.find(i => {
-                const iId = String(i.booth._id || i.booth.id);
-                const newItemId = String(item.booth._id || item.booth.id);
+            const newItemId = String(item.booth._id || item.booth.id);
+            const exists = prevItems.some(i => {
+                const iId = String(i.booth?._id || i.booth?.id || '');
                 return iId === newItemId;
             });
-            if (exists) {
-                return prevItems; // Don't add duplicates
-            }
-            // generate a unique id for the cart item
+            
+            if (exists) return prevItems;
+
             const cartItem = {
                 ...item,
-                cartId: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+                cartId: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9)
             };
             return [...prevItems, cartItem];
+        });
+    };
+
+    const addMultipleToCart = (items) => {
+        if (!Array.isArray(items) || items.length === 0) return;
+        
+        setCartItems((prevItems) => {
+            const newItems = items
+                .filter(newItem => {
+                    if (!newItem || !newItem.booth) return false;
+                    const newItemId = String(newItem.booth._id || newItem.booth.id);
+                    return !prevItems.some(i => String(i.booth?._id || i.booth?.id || '') === newItemId);
+                })
+                .map((item, idx) => ({
+                    ...item,
+                    cartId: (Date.now() + idx).toString() + '-' + Math.random().toString(36).substr(2, 9)
+                }));
+            
+            if (newItems.length === 0) return prevItems;
+            return [...prevItems, ...newItems];
         });
     };
 
@@ -142,7 +160,7 @@ export const SponsorCartProvider = ({ children }) => {
     };
 
     return (
-        <SponsorCartContext.Provider value={{ cartItems, addToCart, removeFromCart, removeMultipleFromCart, clearCart }}>
+        <SponsorCartContext.Provider value={{ cartItems, addToCart, addMultipleToCart, removeFromCart, removeMultipleFromCart, clearCart }}>
             {children}
         </SponsorCartContext.Provider>
     );

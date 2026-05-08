@@ -9,6 +9,42 @@ import { useEventsContext } from "../hooks/useEventsContext";
 import { useAuthContext } from "../hooks/useAuthContext";
 import eventsService from "../services/eventsService";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+ 
+const EventCardImage = ({ imageUrl, statusClass, evt, onEdit }) => {
+  const [currentImg, setCurrentImg] = useState(imageUrl);
+  const statusRaw = evt.status?.toLowerCase() || "";
+
+  useEffect(() => {
+    setCurrentImg(imageUrl);
+  }, [imageUrl]);
+
+  return (
+    <div 
+      className="pe-card-image"
+      style={{ backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.6)), url(${currentImg})` }}
+    >
+      <img 
+        src={currentImg} 
+        style={{ display: 'none' }} 
+        onError={() => setCurrentImg("/assets/eventbg.jpg")}
+        alt=""
+      />
+      <div className="pe-card-top">
+        <span className={`button-label pe-status-pill ${statusClass}`}>
+          {evt.status}
+        </span>
+
+        {["pending", "approved", "rejected"].includes(statusRaw) && (
+          <button className="pe-edit-top" onClick={onEdit}>
+            <Icon icon="mdi:pencil-outline" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+ 
 const PromoterEvents = () => {
   const { events, dispatch } = useEventsContext();
   const { user } = useAuthContext();
@@ -309,29 +345,16 @@ const PromoterEvents = () => {
 
                 return (
                   <div key={evt._id} className="pe-card">
-                    <div 
-                      className="pe-card-image"
-                      style={{ backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.6)), url(${imageUrl})` }}
-                    >
-                      <div className="pe-card-top">
-                        <span className={`button-label pe-status-pill ${statusClass}`}>
-                          {evt.status}
-                        </span>
-
-                        {["pending", "approved", "rejected"].includes(statusRaw) && (
-                          <button
-                            className="pe-edit-top"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedEventToEdit(evt);
-                              setIsEditOpen(true);
-                            }}
-                          >
-                            <Icon icon="mdi:pencil-outline" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                    <EventCardImage 
+                        imageUrl={imageUrl} 
+                        statusClass={statusClass} 
+                        evt={evt} 
+                        onEdit={(e) => {
+                            e.stopPropagation();
+                            setSelectedEventToEdit(evt);
+                            setIsEditOpen(true);
+                        }}
+                    />
 
                     <div className="pe-card-body">
                       <h4>{evt.title}</h4>

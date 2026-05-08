@@ -1286,37 +1286,102 @@ const buySeats = async (req, res) => {
 
     // Build price level map for quick lookup
     const plMap = {};
-    event.priceLevels.forEach((pl, idx) => { plMap[pl._id.toString()] = idx; });
+    event.priceLevels.forEach((pl, idx) => {
+      plMap[pl._id.toString()] = idx;
+    });
     const plSoldDelta = {}; // categoryId -> increment count
 
-    seatIds.forEach((sid, i) => {
-      const idx = items.findIndex(
-        (item) =>
-          (item.type || "").toLowerCase() === "seat" &&
-          (String(item._id || item.id) === sid || item.id === sid)
-      );
-
-      if (idx === -1) { notFound.push(sid); return; }
-      const item = items[idx];
-
-      if (item.status === "sold" || item.status === "reserved") {
-        alreadySold.push(item.label || sid); return;
+    // Support both layoutData and legacy seatMap
+    let layout = event.layoutData;
+    if (typeof layout === "string") {
+      try {
+        layout = JSON.parse(layout);
+      } catch (e) {
+        layout = null;
       }
+    }
 
-      // Mark sold
-      event.layoutData.items[idx].status = "sold";
-      event.layoutData.items[idx].reservedBy = buyerName;
-      event.layoutData.items[idx].reservedByEmail = buyerEmail;
-      event.layoutData.items[idx].ticketId = `${ticketIdBase}-${i}`;
+    if (layout && Array.isArray(layout.items)) {
+      const items = layout.items;
+      seatIds.forEach((sid, i) => {
+        const idx = items.findIndex((item) => {
+          const isSeatType =
+            (item.type || "").toLowerCase() === "seat" || item.isSeat;
+          const isCircle =
+            !item.isBooth &&
+            !item.isElement &&
+            !item.isBackground &&
+            item.type !== "booth";
+          const matchesId = String(item._id || item.id) === sid || item.id === sid;
+          return (isSeatType || isCircle) && matchesId;
+        });
 
-      // Track price level delta
-      const catId = item.categoryId?.toString();
-      if (catId && plMap[catId] !== undefined) {
-        plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
-      }
+        if (idx === -1) {
+          notFound.push(sid);
+          return;
+        }
+        const item = items[idx];
 
-      purchasedSeats.push({ ...item, ticketId: `${ticketIdBase}-${i}` });
-    });
+        if (
+          item.status === "sold" ||
+          item.status === "reserved" ||
+          item.status === "blocked"
+        ) {
+          alreadySold.push(item.label || sid);
+          return;
+        }
+
+        // Mark sold
+        event.layoutData.items[idx].status = "sold";
+        event.layoutData.items[idx].reservedBy = buyerName;
+        event.layoutData.items[idx].reservedByEmail = buyerEmail;
+        event.layoutData.items[idx].ticketId = `${ticketIdBase}-${i}`;
+
+        // Track price level delta
+        const catId = (item.categoryId || item.priceLevelId)?.toString();
+        if (catId && plMap[catId] !== undefined) {
+          plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
+        }
+
+        purchasedSeats.push({ ...item, ticketId: `${ticketIdBase}-${i}` });
+      });
+    } else if (event.seatMap && event.seatMap.sections) {
+      // Process using legacy seatMap
+      seatIds.forEach((sid, i) => {
+        let found = false;
+        event.seatMap.sections.forEach((section) => {
+          const seatIdx = section.seats.findIndex(
+            (s) => String(s._id || s.id) === sid,
+          );
+          if (seatIdx !== -1) {
+            const seat = section.seats[seatIdx];
+            if (
+              seat.status === "sold" ||
+              seat.status === "reserved" ||
+              seat.status === "blocked"
+            ) {
+              alreadySold.push(seat.label || sid);
+            } else {
+              seat.status = "sold";
+              seat.reservedBy = buyerName;
+              seat.reservedByEmail = buyerEmail;
+
+              const catId = seat.priceLevelId?.toString();
+              if (catId && plMap[catId] !== undefined) {
+                plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
+              }
+              purchasedSeats.push({ ...seat, ticketId: `${ticketIdBase}-${i}` });
+            }
+            found = true;
+          }
+        });
+        if (!found) notFound.push(sid);
+      });
+    } else {
+      return res
+        .status(400)
+        .json({ error: "This event has no layout data or seat map" });
+    }
 
     if (alreadySold.length > 0) {
       return res.status(409).json({
@@ -1325,7 +1390,9 @@ const buySeats = async (req, res) => {
     }
 
     if (notFound.length > 0) {
-      return res.status(404).json({ error: `Seats not found: ${notFound.join(", ")}` });
+      return res
+        .status(404)
+        .json({ error: `Seats not found: ${notFound.join(", ")}` });
     }
 
     // Create the Reservation record for the database

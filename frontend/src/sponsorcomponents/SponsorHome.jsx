@@ -254,6 +254,7 @@ export default function SponsorHome() {
                                         src={evt.image ? (evt.image.startsWith('http') ? evt.image : `${BACKEND_URL}/uploads/${evt.image}`) : '/assets/eventbg.jpg'}
                                         alt={evt.title}
                                         className="sh-v2-img"
+                                        onError={(e) => { e.target.src = '/assets/eventbg.jpg' }}
                                     />
                                     <div className="sh-v2-date-badge">
                                         <Icon icon="mdi:calendar-month" />

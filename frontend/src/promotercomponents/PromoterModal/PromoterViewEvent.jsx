@@ -44,7 +44,15 @@ const PromoterViewEvent = ({ isOpen, onClose, event }) => {
          
 
           <div className="pve-image-section">
-            <img src={imageUrl} alt={event.title} className="pve-event-image" />
+            <img 
+                src={imageUrl} 
+                alt={event.title} 
+                className="pve-event-image" 
+                onError={(e) => {
+                    e.target.src = '/assets/eventbg.jpg';
+                    e.target.onerror = null;
+                }}
+            />
           </div>
 
           <div className="pve-info-grid">

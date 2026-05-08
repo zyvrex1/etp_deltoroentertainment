@@ -35,6 +35,8 @@ export default function ReportsAnalytics() {
         netRevenue: 0,
         ticketsSold: 0,
         boothsSold: 0,
+        ticketsReserved: 0,
+        boothsReserved: 0,
         refundRate: 0.8
     });
     const [isLoading, setIsLoading] = useState(true);
@@ -99,10 +101,16 @@ export default function ReportsAnalytics() {
     ];
 
     const categoryData = [
-        { name: "Concerts", value: 45, color: "#8c52ff" },
-        { name: "Conferences", value: 30, color: "#0059ff" },
-        { name: "Others", value: 25, color: "#e6e6e6" },
+        { name: "Booth", value: overviewStats.boothsSold || 0, color: "#0059ff" },
+        { name: "Seats", value: overviewStats.ticketsSold || 0, color: "#8c52ff" },
+        { name: "Refund", value: Math.round((overviewStats.ticketsSold + overviewStats.boothsSold) * (overviewStats.refundRate / 100)) || 0, color: "#e6e6e6" },
     ];
+
+    const totalSalesForChart = categoryData.reduce((acc, item) => acc + item.value, 0);
+    const getPercent = (value) => {
+        if (totalSalesForChart === 0) return 0;
+        return Math.round((value / totalSalesForChart) * 100);
+    };
 
 
     const exportReport = async () => {
@@ -195,7 +203,7 @@ export default function ReportsAnalytics() {
                             <span className="trend up"><Icon icon="mdi:trending-up" /> 15%</span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Gross Revenue</p>
+                            <p className="regular-body-text left-aligned">Total Revenue</p>
                             <h4>${overviewStats.grossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h4>
                         </div>
                     </div>
@@ -206,8 +214,11 @@ export default function ReportsAnalytics() {
                             <span className="trend up"><Icon icon="mdi:trending-up" /> 12%</span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Net Revenue</p>
-                            <h4>${overviewStats.netRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h4>
+                            <p className="regular-body-text left-aligned">Booths Sold</p>
+                            <h4>{overviewStats.boothsSold.toLocaleString()}</h4>
+                            {overviewStats.boothsReserved > 0 && (
+                                <p className="smaller-body-text left-aligned">({overviewStats.boothsReserved} reserved)</p>
+                            )}
                         </div>
                     </div>
 
@@ -217,8 +228,11 @@ export default function ReportsAnalytics() {
                             <span className="trend up"><Icon icon="mdi:trending-up" /> 8%</span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Tickets Sold</p>
+                            <p className="regular-body-text left-aligned">Seats Sold</p>
                             <h4>{overviewStats.ticketsSold.toLocaleString()}</h4>
+                            {overviewStats.ticketsReserved > 0 && (
+                                <p className="smaller-body-text left-aligned">({overviewStats.ticketsReserved} reserved)</p>
+                            )}
                         </div>
                     </div>
 
@@ -316,7 +330,7 @@ export default function ReportsAnalytics() {
                                                     <div className="event-info-wrapper left-aligned">
                                                         <span className="event-name-text">{row.name}</span>
                                                         <span className="event-sub-text smaller-body-text">
-                                                            {row.ticketsSold} seats sold {row.ticketsReserved > 0 ? `(${row.ticketsReserved} reserved)` : ""} • {row.boothsSold} booths
+                                                            {row.ticketsSold} seats sold {row.ticketsReserved > 0 ? `(${row.ticketsReserved} reserved)` : ""} • {row.boothsSold} booths {row.boothsReserved > 0 ? `(${row.boothsReserved} reserved)` : ""}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -361,24 +375,20 @@ export default function ReportsAnalytics() {
                                 </PieChart>
                             </ResponsiveContainer>
                             <div className="donut-center-text">
-                                <h3>12.4k</h3>
+                                <h3>{totalSalesForChart >= 1000 ? `${(totalSalesForChart / 1000).toFixed(1)}k` : totalSalesForChart}</h3>
                                 <p>Total Sales</p>
                             </div>
                             <div className="chart-legend multi">
-                                <span className="legend-item"><span className="dot purple"></span>Concerts (45%)</span>
-                                <span className="legend-item"><span className="dot blue"></span>Conferences (30%)</span>
-                                <span className="legend-item"><span className="dot gray"></span>Others (25%)</span>
+                                <span className="legend-item"><span className="dot blue"></span>Booth ({getPercent(categoryData[0].value)}%)</span>
+                                <span className="legend-item"><span className="dot purple"></span>Seats ({getPercent(categoryData[1].value)}%)</span>
+                                <span className="legend-item"><span className="dot gray"></span>Refund ({getPercent(categoryData[2].value)}%)</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="list-card sponsor-metrics-card">
                         <div className="card-header">
-                            <h4 className="left-aligned">Sponsor Metrics</h4>
-                        </div>
-                        <div className="sponsor-total">
-                            <span className="small-body-text label-text">Total Booth Revenue</span>
-                            <h3 className="amount-text">$185,000.00</h3>
+                            <h4 className="left-aligned">Event Distribution Ratings</h4>
                         </div>
                         <div className="progress-list">
                             <div className="progress-group">
@@ -392,7 +402,7 @@ export default function ReportsAnalytics() {
                             </div>
                             <div className="progress-group">
                                 <div className="progress-header">
-                                    <span className="small-body-text label-text">Sponsor Retention</span>
+                                    <span className="small-body-text label-text">Seats Occupancy</span>
                                     <span className="small-body-text percent-text">92%</span>
                                 </div>
                                 <div className="progress-bar">

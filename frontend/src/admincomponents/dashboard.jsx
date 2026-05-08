@@ -542,7 +542,7 @@ export default function Dashboard() {
                             </span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Booths Reserved</p>
+                            <p className="regular-body-text left-aligned">Booths Sold</p>
                             <h3>{stats.loading ? "..." : stats.totalBoothsReserved}</h3>
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
@@ -832,7 +832,7 @@ export default function Dashboard() {
 
                         <div className="list-card sponsors-card">
                             <div className="card-header">
-                                <h4 className="left-aligned">Top Sponsors</h4>
+                                <h4 className="left-aligned">Top Buyers</h4>
                             </div>
                             <div className="promoters-list">
                                 {stats.topSponsorsData.length > 0 ? (

@@ -5,6 +5,8 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import './CustomerEventDetails.css';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+ 
 const CustomerEventDetails = () => {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -12,6 +14,7 @@ const CustomerEventDetails = () => {
     const [activeTab, setActiveTab] = useState('Overview');
     const [event, setEvent] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [heroImage, setHeroImage] = useState('/assets/eventbg.jpg');
 
     const tabs = ['Overview', 'Pricing'];
 
@@ -22,6 +25,16 @@ const CustomerEventDetails = () => {
             try {
                 const data = await eventsService.getEvent(id, user?.token);
                 setEvent(data);
+                // Set initial hero image and validate it
+                if (data?.image) {
+                    const imgUrl = `${BACKEND_URL}/uploads/${data.image}`;
+                    setHeroImage(imgUrl);
+                    const img = new Image();
+                    img.src = imgUrl;
+                    img.onerror = () => setHeroImage('/assets/eventbg.jpg');
+                } else {
+                    setHeroImage('/assets/eventbg.jpg');
+                }
             } catch (error) {
                 console.error("Error fetching event:", error);
             } finally {
@@ -30,7 +43,7 @@ const CustomerEventDetails = () => {
         };
 
         fetchEvent();
-    }, [id, user?.token]);
+    }, [id, user?.token, BACKEND_URL]);
 
     const handleBuyTickets = () => {
         navigate(`/customer/seats/${id}`);
@@ -151,7 +164,6 @@ const CustomerEventDetails = () => {
     }
 
 
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
     return (
         <div className="sed-page-wrapper">
@@ -167,9 +179,7 @@ const CustomerEventDetails = () => {
             <div
                 className="sed-hero-banner"
                 style={{
-                    backgroundImage: event.image
-                        ? `url(${BACKEND_URL}/uploads/${event.image})`
-                        : "url('/assets/eventbg.jpg')"
+                    backgroundImage: `url(${heroImage})`
                 }}
             >
                 <div className="sed-hero-overlay"></div>

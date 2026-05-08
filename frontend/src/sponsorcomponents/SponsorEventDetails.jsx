@@ -6,6 +6,8 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import './SponsorEventDetails.css';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 const SponsorEventDetails = () => {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -14,6 +16,7 @@ const SponsorEventDetails = () => {
     const [isSponsorKitModalOpen, setIsSponsorKitModalOpen] = useState(false);
     const [event, setEvent] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [heroImage, setHeroImage] = useState('/assets/eventbg.jpg');
 
     const tabs = ['Overview', 'Sponsorship Benefits', 'Pricing'];
 
@@ -24,6 +27,17 @@ const SponsorEventDetails = () => {
             try {
                 const data = await eventsService.getEvent(id, user.token);
                 setEvent(data);
+                
+                // Handle hero image validation
+                if (data?.image) {
+                    const imgUrl = `${BACKEND_URL}/uploads/${data.image}`;
+                    setHeroImage(imgUrl);
+                    const img = new Image();
+                    img.src = imgUrl;
+                    img.onerror = () => setHeroImage('/assets/eventbg.jpg');
+                } else {
+                    setHeroImage('/assets/eventbg.jpg');
+                }
             } catch (error) {
                 console.error("Error fetching event:", error);
             } finally {
@@ -32,7 +46,7 @@ const SponsorEventDetails = () => {
         };
 
         fetchEvent();
-    }, [id, user?.token]);
+    }, [id, user?.token, BACKEND_URL]);
 
     const handleViewMap = () => {
         navigate(`/sponsor/sponsor-venue-layout/${id}`);
@@ -98,7 +112,6 @@ const SponsorEventDetails = () => {
         return diffDays + 1;
     };
 
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
     return (
         <div className="sed-page-wrapper">
@@ -114,9 +127,7 @@ const SponsorEventDetails = () => {
             <div
                 className="sed-hero-banner"
                 style={{
-                    backgroundImage: event.image
-                        ? `url(${BACKEND_URL}/uploads/${event.image})`
-                        : "url('/assets/eventbg.jpg')"
+                    backgroundImage: `url(${heroImage})`
                 }}
             >
                 <div className="sed-hero-overlay"></div>

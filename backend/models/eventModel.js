@@ -234,6 +234,11 @@ eventSchema.pre("save", function (next) {
       for (const section of this.seatMap.sections) {
         if (!section.seats) continue;
         for (const seat of section.seats) {
+          if (seat.status === "available") {
+            seat.reservedBy = "";
+            seat.reservedByEmail = "";
+            seat.reservedByPO = "";
+          }
           if (seat.priceLevelId && seat.priceLevelId !== "none") {
             if (!priceIds.includes(seat.priceLevelId.toString())) {
               // Instead of failing, we clean up the dangling reference
@@ -255,6 +260,11 @@ eventSchema.pre("save", function (next) {
   // 3. Logic for Booths - CLEANUP & Validation
   if (this.hasBooths && this.booths) {
     for (const booth of this.booths) {
+      if (booth.status === "available") {
+        booth.reservedBy = "";
+        booth.reservedByEmail = "";
+        booth.reservedByPO = "";
+      }
       if (booth.priceLevelId && booth.priceLevelId !== "none") {
         if (!priceIds.includes(booth.priceLevelId.toString())) {
           console.warn(`Cleaning up invalid priceLevelId on booth ${booth.code || booth.label}`);
@@ -268,6 +278,11 @@ eventSchema.pre("save", function (next) {
   // 4. Cleanup layoutData items
   if (this.layoutData && Array.isArray(this.layoutData.items)) {
     this.layoutData.items = this.layoutData.items.filter(item => {
+      if (item.status === "available") {
+        item.reservedBy = "";
+        item.reservedByEmail = "";
+        item.reservedByPO = "";
+      }
       // If it's a shape (has categoryId), check if category still exists
       if (item.categoryId) {
         return priceIds.includes(item.categoryId.toString());
@@ -364,10 +379,22 @@ eventSchema.virtual("boothsSold").get(function () {
       (i) => (i.type || "").toLowerCase() === "booth"
     );
     if (layoutBooths.length > 0) {
-      return layoutBooths.filter(i => i.status === "sold" || i.status === "reserved").length;
+      return layoutBooths.filter(i => i.status === "sold").length;
     }
   }
-  return (this.booths || []).filter(b => b.status === "sold" || b.status === "reserved").length;
+  return (this.booths || []).filter(b => b.status === "sold").length;
+});
+
+eventSchema.virtual("boothsReserved").get(function () {
+  if (this.layoutData && Array.isArray(this.layoutData.items)) {
+    const layoutBooths = this.layoutData.items.filter(
+      (i) => (i.type || "").toLowerCase() === "booth"
+    );
+    if (layoutBooths.length > 0) {
+      return layoutBooths.filter(i => i.status === "reserved").length;
+    }
+  }
+  return (this.booths || []).filter(b => b.status === "reserved").length;
 });
 
 eventSchema.virtual("totalTickets").get(function () {
@@ -399,6 +426,30 @@ eventSchema.virtual("totalTickets").get(function () {
   }
 
   return 0;
+});
+
+eventSchema.virtual("ticketsReserved").get(function () {
+  let reservedCount = 0;
+
+  // 1. Count from layoutData
+  if (this.layoutData && Array.isArray(this.layoutData.items)) {
+    reservedCount = this.layoutData.items.filter(
+      (item) => (item.type || "").toLowerCase() === "seat" && item.status === "reserved"
+    ).length;
+  }
+
+  // 2. Count from legacy seatMap
+  if (this.seatMap && Array.isArray(this.seatMap.sections)) {
+    this.seatMap.sections.forEach((s) => {
+      (s.seats || []).forEach((seat) => {
+        if (seat.status === "reserved") {
+          reservedCount += seat.seatCount || 1;
+        }
+      });
+    });
+  }
+
+  return reservedCount;
 });
 
 eventSchema.virtual("ticketsSold").get(function () {

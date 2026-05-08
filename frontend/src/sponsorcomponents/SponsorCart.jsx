@@ -154,7 +154,7 @@ export default function SponsorCart() {
                                                     src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"} 
                                                     alt={event.title} 
                                                     className="ticket-image" 
-                                                    onError={(e) => { e.target.src = "https://via.placeholder.com/80" }} 
+                                                    onError={(e) => { e.target.src = "/assets/eventbg.jpg" }} 
                                                 />
                                                 <div className="ticket-info">
                                                     <div className="ticket-type-info">

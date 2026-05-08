@@ -174,10 +174,14 @@ const EventSelection = ({ setSelectedEvent }) => {
                   <img
                     src={
                       event.image
-                        ? `http://localhost:4000/uploads/${event.image}`
+                        ? `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/uploads/${event.image}`
                         : "/assets/eventbg.jpg"
                     }
                     alt={event.title}
+                    onError={(e) => {
+                        e.target.src = '/assets/eventbg.jpg';
+                        e.target.onerror = null;
+                    }}
                   />
                 </div>
 

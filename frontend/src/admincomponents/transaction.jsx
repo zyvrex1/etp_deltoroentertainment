@@ -51,76 +51,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
     return option ? option.label : "All Transactions";
   };
 
-  const [transactions, setTransactions] = useState([
-    {
-      id: 1,
-      user: "Emily Blunt",
-      event: "TechStart Summit 2026",
-      type: "Ticket Purchase",
-      category: "VIP",
-      amount: "$299.00",
-      status: "completed",
-      date: "Sep 15, 2025",
-      filterType: "ticket",
-    },
-    {
-      id: 2,
-      user: "Mike Ross",
-      event: "TechStart Summit 2026",
-      type: "Booth Rental",
-      category: "VIP Booth",
-      amount: "$5,000.00",
-      status: "completed",
-      date: "Sep 10, 2025",
-      filterType: "booth",
-    },
-    {
-      id: 3,
-      user: "Sarah Chen",
-      event: "TechStart Summit 2026",
-      type: "Payout",
-      category: "-",
-      amount: "$15,240.00",
-      status: "pending",
-      date: "Oct 1, 2025",
-      filterType: "payout",
-    },
-    {
-      id: 4,
-      user: "James Wilson",
-      event: "TechStart Summit 2026",
-      type: "Booth Rental",
-      category: "Corner Booth",
-      amount: "$3,000.00",
-      status: "completed",
-      date: "Sep 16, 2025",
-      filterType: "booth",
-    },
-    {
-      id: 5,
-      user: "Sophia Garcia",
-      event: "AI Innovation Conference",
-      type: "Ticket Purchase",
-      category: "Standard",
-      amount: "$150.00",
-      status: "completed",
-      date: "Oct 1, 2024",
-      filterType: "ticket",
-    },
-    {
-      id: 6,
-      user: "Liam Anderson",
-      event: "Summer Music Festival",
-      type: "Ticket Purchase",
-      category: "Standard",
-      amount: "$120.00",
-      status: "completed",
-      date: "Jul 5, 2025",
-      filterType: "ticket",
-    },
-
-
-  ]);
+  const [transactions, setTransactions] = useState([]);
 
   const displayTransactions = data || transactions;
 

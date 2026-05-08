@@ -142,7 +142,11 @@ const CustomerTicketOrder = () => {
                                 </div>
                                 <div className="ticket-card-body">
                                     <div className="ticket-image-container">
-                                        <img src={ticket.image} alt={ticket.title} />
+                                        <img 
+                                            src={ticket.image} 
+                                            alt={ticket.title} 
+                                            onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
+                                        />
                                     </div>
                                     <div className="ticket-details">
                                         <h5 className="ticket-seat-info">{ticket.seat}</h5>

@@ -248,6 +248,10 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                         src={imagePreviewUrl}
                                         alt="Event Preview"
                                         className="preview-image"
+                                        onError={(e) => {
+                                            e.target.src = '/assets/eventbg.jpg';
+                                            e.target.onerror = null;
+                                        }}
                                     />
                                     {imageFile && (
                                         <>

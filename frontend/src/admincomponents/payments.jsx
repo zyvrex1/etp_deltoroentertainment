@@ -42,29 +42,11 @@ const Payments = () => {
     fetchData();
   }, [user?.token]);
 
-  const [payoutRequests, setPayoutRequests] = useState([
-    { id: 1, promoter: "Sarah Chen", amount: "$15,240.00", method: "Wire Transfer", status: "pending", requested: "Oct 1, 2024" },
-    { id: 2, promoter: "David Kim", amount: "$45,000.00", method: "PayPal", status: "paid", requested: "Aug 1, 2024" },
-    { id: 3, promoter: "Lisa Zhang", amount: "$20,000.00", method: "Wire Transfer", status: "paid", requested: "Sep 12, 2024" },
-    { id: 4, promoter: "James Wilson", amount: "$5,000.00", method: "Wire Transfer", status: "pending", requested: "Oct 20, 2024" },
-    { id: 5, promoter: "Sarah Chen", amount: "$10,000.00", method: "Wire Transfer", status: "processing", requested: "Oct 22, 2024" },
-    { id: 6, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
-    { id: 7, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
-    { id: 8, promoter: "Maria Santos", amount: "$8,500.00", method: "PayPal", status: "paid", requested: "Sep 5, 2024" },
-
-
-  ]);
+  const [payoutRequests, setPayoutRequests] = useState([]);
 
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
 
-  const paymentMethods = [
-    { id: 1, promoter: "Alice Brown", event: "TechStart Summit 2026", amount: "$15,240.00", method: "Wire Transfer", status: "paid", date: "Oct 1, 2024" },
-    { id: 2, promoter: "Bob Wilson", event: "TechStart Summit 2026", amount: "$45,000.00", method: "PayPal", status: "paid", date: "Aug 1, 2024" },
-    { id: 3, promoter: "Maria Santos", event: "Creator Economy Expo", amount: "$20,000.00", method: "Wire Transfer", status: "paid", date: "Sep 12, 2024" },
-    { id: 4, promoter: "James Wilson", event: "Creator Economy Expo", amount: "$5,000.00", method: "Wire Transfer", status: "paid", date: "Oct 20, 2024" },
-    { id: 5, promoter: "Sarah Chen", event: "Creator Economy Expo", amount: "$10,000.00", method: "Wire Transfer", status: "paid", date: "Oct 22, 2024" },
-  ];
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
@@ -196,34 +178,7 @@ const Payments = () => {
       paymentMethod: p.method
     }));
 
-    const mockSeatTx = [
-      {
-        id: "Seats-772154",
-        user: "Emily Blunt",
-        event: "TechStart Summit 2026",
-        category: "Seats",
-        amount: "$299.00",
-        status: "completed",
-        date: "Sep 15, 2025",
-        filterType: "ticket",
-        rawDate: new Date("2025-09-15"),
-        paymentMethod: "Card"
-      },
-      {
-        id: "Seats-772155",
-        user: "Liam Anderson",
-        event: "Summer Music Festival",
-        category: "Seats",
-        amount: "$120.00",
-        status: "completed",
-        date: "Jul 5, 2025",
-        filterType: "ticket",
-        rawDate: new Date("2025-07-05"),
-        paymentMethod: "Card"
-      }
-    ];
-
-    return [...reservationTx, ...payoutTx, ...mockSeatTx].sort((a, b) => b.rawDate - a.rawDate);
+    return [...reservationTx, ...payoutTx].sort((a, b) => b.rawDate - a.rawDate);
   };
 
   const handleApprove = async (id, promoter, amount) => {
@@ -294,10 +249,15 @@ const Payments = () => {
       <div className="payments-cards">
         <div className="pay-card pay-card-pending">
           <p className="regular-body-text pay-card-title">Pending Payouts</p>
-          <h4 className="pay-card-amount">$15,240.00</h4>
+          <h4 className="pay-card-amount">
+            ${payoutRequests
+              .filter(p => p.status === "pending")
+              .reduce((sum, p) => sum + parseFloat(p.amount?.toString().replace(/[$,]/g, '') || 0), 0)
+              .toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </h4>
           <span className="small-body-text pay-card-meta">
             <Icon icon="mdi:file-document-outline" />
-            3 requests waiting
+            {payoutRequests.filter(p => p.status === "pending").length} requests waiting
           </span>
         </div>
         <div className="pay-card pay-card-total">

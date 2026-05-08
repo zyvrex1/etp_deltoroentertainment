@@ -204,6 +204,7 @@ export default function SponsorMyBooth() {
                                                     (res.event.image.startsWith('http') ? res.event.image : `${BACKEND_URL}/uploads/${res.event.image}`)
                                                     : "/assets/eventbg.jpg"}
                                                 alt={res.event?.title}
+                                                onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
                                             />
                                         </div>
                                         <div className="booth-details">
