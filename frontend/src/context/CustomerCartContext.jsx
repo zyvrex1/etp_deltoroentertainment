@@ -101,7 +101,8 @@ export const CustomerCartProvider = ({ children }) => {
                             purchaseDate: res.createdAt,
                             paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
                             poNumber: res.poNumber || '',
-                            status: res.status === 'confirmed' ? 'Upcoming' : 'Confirmed'
+                            status: res.status === 'confirmed' ? 'Upcoming' : 'Confirmed',
+                            qrData: res.qrData || res._id.toString()
                         });
                     });
                 } else if (res.type === 'booth') {
@@ -120,7 +121,8 @@ export const CustomerCartProvider = ({ children }) => {
                         purchaseDate: res.createdAt,
                         paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
                         poNumber: res.poNumber || '',
-                        status: 'Confirmed'
+                        status: 'Confirmed',
+                        qrData: res.qrData || res._id.toString()
                     });
                 }
             });

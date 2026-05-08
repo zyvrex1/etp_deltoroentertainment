@@ -24,8 +24,8 @@ const CustomerEnlargeQr = ({ show, onClose, ticketData }) => {
 
                     <div className="ceq-qr-container">
                         <div className="ceq-qr-wrapper" style={{ background: '#fff', padding: '15px', borderRadius: '12px', display: 'inline-block' }}>
-                            <QRCodeCanvas 
-                                value={ticketData?.id || ''}
+                            <QRCodeCanvas
+                                value={ticketData?.qrData || ticketData?.id || ''}
                                 size={200}
                                 bgColor={"#ffffff"}
                                 fgColor={"#000000"}

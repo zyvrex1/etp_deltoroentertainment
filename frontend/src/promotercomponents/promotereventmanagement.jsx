@@ -6,6 +6,7 @@ import { useLocation } from "react-router-dom";
 import PromoterAccessManagement from "./promoteraccessmanagement.jsx";
 import PromoterBoothLayout from "./promoterboothlayout.jsx";
 import PromoterScan from "./promoterscan.jsx";
+import PromoterTicketLayout from "./promoterticketlayout.jsx";
 
 import { useEventsContext } from "../hooks/useEventsContext";
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -182,11 +183,11 @@ const PromoterEventManagement = () => {
                       day: "numeric",
                       year: "numeric"
                     });
-                    const eventLocation = event.venue 
-                      ? `${event.venue.name}, ${event.venue.city}` 
+                    const eventLocation = event.venue
+                      ? `${event.venue.name}, ${event.venue.city}`
                       : "TBA";
-                    const imageUrl = event.image 
-                      ? `${import.meta.env.VITE_BACKEND_URL || ""}/uploads/${event.image}` 
+                    const imageUrl = event.image
+                      ? `${import.meta.env.VITE_BACKEND_URL || ""}/uploads/${event.image}`
                       : "/assets/eventbg.jpg";
 
                     return (
@@ -232,8 +233,8 @@ const PromoterEventManagement = () => {
                                   <span className="smaller-body-text font-bold">{percent}%</span>
                                 </div>
                                 <div className="pem-progress-bar-bg">
-                                  <div 
-                                    className="pem-progress-bar-fill" 
+                                  <div
+                                    className="pem-progress-bar-fill"
                                     style={{ width: `${percent}%` }}
                                   />
                                 </div>
@@ -301,6 +302,12 @@ const PromoterEventManagement = () => {
               Seat/Booth map
             </button>
             <button
+              className={`pem-tab ${activeTab === "ticket-layout" ? "active" : ""}`}
+              onClick={() => setActiveTab("ticket-layout")}
+            >
+              Ticket Layout
+            </button>
+            <button
               className={`pem-tab ${activeTab === "ticket-setup" ? "active" : ""}`}
               onClick={() => setActiveTab("ticket-setup")}
             >
@@ -317,6 +324,7 @@ const PromoterEventManagement = () => {
           <div className="pem-main-content">
             {activeTab === "ticket-setup" && <PromoterAccessManagement selectedEvent={selectedEvent} />}
             {activeTab === "booth-layout" && <PromoterBoothLayout selectedEvent={selectedEvent} />}
+            {activeTab === "ticket-layout" && <PromoterTicketLayout selectedEvent={selectedEvent} />}
             {activeTab === "scan" && <PromoterScan />}
           </div>
         </div>

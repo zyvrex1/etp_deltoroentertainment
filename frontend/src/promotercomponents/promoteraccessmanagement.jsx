@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import './promoteraccessmanagement.css'; 
+import './promoteraccessmanagement.css';
 import PromoterCollaboratorsModal from './PromoterModal/PromoterCollaboratorsModal';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../utils/sweetAlert';
@@ -61,10 +61,10 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
 
     const handleRemovePromoter = async (promoterId) => {
         const confirm = await showConfirmAlert(
-            "Revoke Access?", 
-            "This user will lose all management privileges for this event immediately.", 
-            "Revoke Access", 
-            "Keep Access", 
+            "Revoke Access?",
+            "This user will lose all management privileges for this event immediately.",
+            "Revoke Access",
+            "Keep Access",
             true
         );
         if (!confirm.isConfirmed) return;
@@ -112,7 +112,7 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
     const Avatar = ({ person, isSecondary, size = "md" }) => {
         const [imgError, setImgError] = useState(false);
         const avatarPath = person?.avatar;
-        
+
         const getFullUrl = (path) => {
             if (!path) return null;
             if (path.startsWith('http') || path.startsWith('data:')) return path;
@@ -125,13 +125,13 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
         if (avatarUrl) {
             return (
                 <div className={`am-card-avatar ${size} ${isSecondary ? 'secondary' : ''} has-image`}>
-                    <img 
-                        src={avatarUrl} 
-                        alt={`${person?.firstName || 'User'} avatar`} 
+                    <img
+                        src={avatarUrl}
+                        alt={`${person?.firstName || 'User'} avatar`}
                         onError={() => {
                             console.error(`Failed to load avatar: ${avatarUrl}`);
                             setImgError(true);
-                        }} 
+                        }}
                     />
                 </div>
             );
@@ -168,9 +168,9 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
                 <div className="am-toolbar">
                     <div className="am-search">
                         <Icon icon="solar:magnifer-linear" />
-                        <input 
-                            type="text" 
-                            placeholder="Find an assigned promoter..." 
+                        <input
+                            type="text"
+                            placeholder="Find an assigned promoter..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -300,7 +300,7 @@ const PromoterAccessManagement = ({ selectedEvent }) => {
                 </div>
             </main>
 
-            <PromoterCollaboratorsModal 
+            <PromoterCollaboratorsModal
                 isOpen={isCollaboratorsModalOpen}
                 onClose={() => setIsCollaboratorsModalOpen(false)}
                 currentCollaborators={[eventOwner, ...assignedPromoters].filter(Boolean)}

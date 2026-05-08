@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Icon } from "@iconify/react";
 
 import BoothMap from "./BoothMap";
-import SeatMap from "./SeatMap";
+import TicketDesigner from "./TicketDesigner";
 import LiveScanning from "./LiveScanning";
 import LayoutBuilder from "./LayoutBuilder";
 import EventSelection from "./EventSelection";
@@ -66,7 +66,7 @@ const BoothandTicket = () => {
           </div>
 
           <div className="bt-tabs">
-             <button
+            <button
               className={`bt-tab ${activeTab === "manage-layout" ? "active" : ""}`}
               onClick={() => setActiveTab("manage-layout")}
             >
@@ -78,6 +78,13 @@ const BoothandTicket = () => {
               onClick={() => setActiveTab("booth-map")}
             >
               Seat/Booth Map
+            </button>
+
+            <button
+              className={`bt-tab ${activeTab === "ticket-layout" ? "active" : ""}`}
+              onClick={() => setActiveTab("ticket-layout")}
+            >
+              Ticket Layout
             </button>
 
             <button
@@ -99,6 +106,12 @@ const BoothandTicket = () => {
                   setIsPricingModalOpen={setIsPricingModalOpen}
                   setIsEditEventModalOpen={setIsEditEventModalOpen} // ✅ new prop
                   boothLayoutConfig={boothLayoutConfig}
+                />
+              )}
+
+              {activeTab === "ticket-layout" && (
+                <TicketDesigner
+                  selectedEvent={selectedEvent}
                 />
               )}
 

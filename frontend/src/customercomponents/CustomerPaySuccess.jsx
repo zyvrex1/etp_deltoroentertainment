@@ -55,10 +55,10 @@ const CustomerPaySuccess = () => {
                 <div className="cps-card-container">
                     <div className="cps-card">
                         <div className="cps-event-header">
-                            <img 
-                                src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"} 
-                                alt={event.title} 
-                                className="cps-event-img" 
+                            <img
+                                src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                alt={event.title}
+                                className="cps-event-img"
                             />
                             <div className="cps-event-info">
                                 <h4 className="cps-event-title">{event.title}</h4>
@@ -87,8 +87,8 @@ const CustomerPaySuccess = () => {
                                     </div>
                                     <div className="cps-ticket-right cps-qr-container">
                                         <div className="cps-qr-wrapper" style={{ background: '#fff', padding: '5px', borderRadius: '4px' }}>
-                                            <QRCodeCanvas 
-                                                value={item.cartId}
+                                            <QRCodeCanvas
+                                                value={item.qrData || item.cartId}
                                                 size={60}
                                                 bgColor={"#ffffff"}
                                                 fgColor={"#000000"}

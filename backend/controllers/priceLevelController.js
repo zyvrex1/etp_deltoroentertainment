@@ -18,7 +18,7 @@ const addPriceLevels = async (req, res) => {
       return res.status(400).json({ error: "No priceLevels provided in request body" });
     }
 
-    // Parse JSON if it's sent as a string (common with multipart/form-data but also good safe check)
+    // Parse JSON if it's sent as a string
     if (typeof priceLevels === "string") {
       try {
         priceLevels = JSON.parse(priceLevels);
@@ -38,6 +38,9 @@ const addPriceLevels = async (req, res) => {
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ error: "Event not found" });
 
+    // Safety check for event.priceLevels
+    if (!event.priceLevels) event.priceLevels = [];
+
     // Map incoming price levels with safe checks
     const mappedPriceLevels = priceLevels.map(p => {
       if (!p) return null;
@@ -55,7 +58,8 @@ const addPriceLevels = async (req, res) => {
         increment: Number(p.increment || 1),
         quantityAvailable: Number(p.quantityAvailable || p.quantity || 0),
         quantitySold: Number(p.quantitySold || 0),
-        isActive: p.isActive !== false
+        isActive: p.isActive !== false,
+        ticketDesign: p.ticketDesign || null
       };
     }).filter(Boolean);
 
@@ -66,9 +70,6 @@ const addPriceLevels = async (req, res) => {
     // Update existing or add new
     const incomingIds = mappedPriceLevels.map(p => p._id.toString());
     
-    // Safety check for event.priceLevels
-    if (!event.priceLevels) event.priceLevels = [];
-
     // Filter out existing price levels that are being replaced
     event.priceLevels = event.priceLevels.filter(
       existing => existing && existing._id && !incomingIds.includes(existing._id.toString())
@@ -87,8 +88,7 @@ const addPriceLevels = async (req, res) => {
     console.error("Add PriceLevels Error:", err);
     return res.status(500).json({ 
       error: "Server encountered an error while adding price levels", 
-      message: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      message: err.message
     });
   }
 };
@@ -111,23 +111,48 @@ const updatePriceLevel = async (req, res) => {
     const { eventId, priceLevelId } = req.params;
     const updateData = req.body;
 
-    // Remove _id from body to prevent Mongoose errors during $set
-    delete updateData._id;
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ error: "Event not found" });
 
-    const event = await Event.findOneAndUpdate(
-      { _id: eventId, "priceLevels._id": priceLevelId },
-      {
-        $set: {
-          "priceLevels.$": { ...updateData, _id: priceLevelId }
+    // Handle ticketDesign specifically if present
+    if (updateData.ticketDesign) {
+      if (!event.ticketLayouts) event.ticketLayouts = [];
+
+      const layoutIndex = event.ticketLayouts.findIndex(l =>
+        (l.priceLevelId?._id || l.priceLevelId)?.toString() === priceLevelId
+      );
+
+      if (layoutIndex > -1) {
+        event.ticketLayouts[layoutIndex].layout = updateData.ticketDesign;
+        if (updateData.themeColor) event.ticketLayouts[layoutIndex].themeColor = updateData.themeColor;
+      } else {
+        event.ticketLayouts.push({
+          priceLevelId: new mongoose.Types.ObjectId(priceLevelId),
+          layout: updateData.ticketDesign,
+          themeColor: updateData.themeColor || "#D32F2F"
+        });
+      }
+      delete updateData.ticketDesign;
+      delete updateData.themeColor;
+      event.markModified('ticketLayouts');
+    }
+
+    // Update other price level fields if any
+    if (Object.keys(updateData).length > 0) {
+      const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === priceLevelId);
+      if (plIndex > -1) {
+        for (const key in updateData) {
+          event.priceLevels[plIndex][key] = updateData[key];
         }
-      },
-      { new: true, runValidators: true }
-    );
+        event.markModified('priceLevels');
+      }
+    }
 
-    if (!event) return res.status(404).json({ error: "Event or Price Level not found" });
-
-    res.status(200).json({ message: "Price level updated", event });
+    console.log("Attempting to save event...");
+    await event.save();
+    res.status(200).json({ message: "Price level and layout updated", event });
   } catch (err) {
+    console.error("Update PriceLevel Error:", err);
     res.status(500).json({ error: "Update failed", message: err.message });
   }
 };
@@ -142,8 +167,6 @@ const deletePriceLevel = async (req, res) => {
     // Remove the price level
     event.priceLevels = event.priceLevels.filter(p => p._id.toString() !== priceLevelId);
 
-    // Save will trigger the pre-save hook in eventModel.js, 
-    // which now also cleans up layoutData.items
     await event.save();
 
     res.status(200).json({ message: "Price level removed", event });

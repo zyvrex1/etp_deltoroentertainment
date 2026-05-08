@@ -10,7 +10,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const CustomerTicketOrder = () => {
     const { purchaseHistory } = useCustomerCart();
-    
+
     const [qrModalShow, setQrModalShow] = useState(false);
     const [refundModalShow, setRefundModalShow] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
@@ -39,7 +39,8 @@ const CustomerTicketOrder = () => {
             seat: `Seat ${item.seat?.label || 'N/A'}`,
             status: item.status || "Upcoming",
             image: item.event?.image ? `${BACKEND_URL}/uploads/${item.event.image}` : "/assets/eventbg.jpg",
-            purchasedAt: item.purchaseDate
+            purchasedAt: item.purchaseDate,
+            qrData: item.qrData || item.cartId
         }));
     }, [purchaseHistory]);
 
@@ -48,7 +49,7 @@ const CustomerTicketOrder = () => {
 
         // Search Filter
         if (searchQuery) {
-            result = result.filter(ticket => 
+            result = result.filter(ticket =>
                 ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 ticket.seat.toLowerCase().includes(searchQuery.toLowerCase())
             );
@@ -94,9 +95,9 @@ const CustomerTicketOrder = () => {
                 <div className="ticket-order-toolbar">
                     <div className="search-box">
                         <Icon icon="mdi:magnify" width="20" />
-                        <input 
-                            type="text" 
-                            placeholder="Search by event title, seat..." 
+                        <input
+                            type="text"
+                            placeholder="Search by event title, seat..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -104,8 +105,8 @@ const CustomerTicketOrder = () => {
                     <div className="toolbar-filters">
                         <div className="filter-dropdown-wrapper">
                             <Icon icon="mdi:filter-variant" className="filter-icon" />
-                            <select 
-                                value={statusFilter} 
+                            <select
+                                value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
                                 className="status-dropdown"
                             >
@@ -117,8 +118,8 @@ const CustomerTicketOrder = () => {
                         </div>
                         <div className="filter-dropdown-wrapper">
                             <Icon icon="mdi:sort-variant" className="filter-icon" />
-                            <select 
-                                value={sortFilter} 
+                            <select
+                                value={sortFilter}
                                 onChange={(e) => setSortFilter(e.target.value)}
                                 className="status-dropdown"
                             >
@@ -159,8 +160,8 @@ const CustomerTicketOrder = () => {
                                     </div>
                                     <div className="ticket-qr-section" onClick={() => handleEnlargeQr(ticket)}>
                                         <div className="ticket-qr-wrapper" style={{ background: '#fff', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}>
-                                            <QRCodeCanvas 
-                                                value={ticket.id}
+                                            <QRCodeCanvas
+                                                value={ticket.qrData}
                                                 size={70}
                                                 bgColor={"#ffffff"}
                                                 fgColor={"#000000"}
@@ -170,7 +171,7 @@ const CustomerTicketOrder = () => {
                                     </div>
                                 </div>
                                 <div className="ticket-card-footer">
-                                    <button 
+                                    <button
                                         className="request-refund-btn"
                                         onClick={() => handleRequestRefund(ticket)}
                                     >

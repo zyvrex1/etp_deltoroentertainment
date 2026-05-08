@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
+const ticketLayoutSchema = new Schema({
+  priceLevelId: { type: Schema.Types.ObjectId, required: true },
+  layout: { type: Schema.Types.Mixed, default: [] },
+  themeColor: { type: String, default: "#D32F2F" }
+});
+
 const priceLevelSchema = new Schema({
   priceName: { type: String, required: true },
   description: String,
@@ -213,6 +219,9 @@ const eventSchema = new Schema(
     ticketCategories: { type: Schema.Types.Mixed, default: [] },
     layoutData: { type: Schema.Types.Mixed, default: null },
 
+    // Ticket Layouts
+    ticketLayouts: { type: [ticketLayoutSchema], default: [] },
+
     rejectionReason: { type: String, default: "" },
     cancellationReason: { type: String, default: "" },
   },
@@ -412,8 +421,8 @@ eventSchema.virtual("totalTickets").get(function () {
       (sum, p) => sum + (p.quantityAvailable || 0),
       0
     );
-  } 
-  
+  }
+
   // 3. Fallback to legacy seatMap
   if (this.seatMap && Array.isArray(this.seatMap.sections)) {
     let total = 0;
@@ -475,8 +484,8 @@ eventSchema.virtual("ticketsSold").get(function () {
     this.seatMap.sections.forEach((s) => {
       (s.seats || []).forEach((seat) => {
         if (seat.status === "sold" || seat.status === "partially-sold") {
-          legacySeatsSold += (seat.type === "Table" || seat.seatCount > 1) 
-            ? (seat.occupiedSeats || 0) 
+          legacySeatsSold += (seat.type === "Table" || seat.seatCount > 1)
+            ? (seat.occupiedSeats || 0)
             : 1;
         }
       });
@@ -487,7 +496,7 @@ eventSchema.virtual("ticketsSold").get(function () {
   // If we have seats on the layout, that's our source of truth for seated events
   if (layoutSeatsSold > 0) return layoutSeatsSold;
   if (legacySeatsSold > 0) return legacySeatsSold;
-  
+
   // Otherwise fallback to price level statistics
   return plSold;
 });
@@ -496,7 +505,7 @@ eventSchema.virtual("totalRevenue").get(function () {
   return this.seatRevenue + this.boothRevenue;
 });
 
-eventSchema.statics.reserveSeat = async function(eventId, sectionName, seatId, userId) {
+eventSchema.statics.reserveSeat = async function (eventId, sectionName, seatId, userId) {
   return await this.findOneAndUpdate(
     {
       _id: eventId,
