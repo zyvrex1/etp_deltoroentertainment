@@ -325,7 +325,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
   border: none;
   border-radius: 6px;
   background: none;
@@ -333,29 +332,20 @@
   transition: all 0.2s ease;
   color: var(--color-black-secondary);
 
-
   svg {
     width: 16px;
     height: 16px;
   }
 
-  .view-btn {
-
-
-    &:hover {
-      background: var(--color-bg-light);
-      color: var(--color-black-primary);
-    }
+  &.view-btn:hover {
+    background: var(--color-bg-light);
+    color: var(--color-black-primary);
   }
 
-  .edit-btn {
-
-    &:hover {
-      background: var(--color-bg-light);
-      color: var(--color-black-primary);
-    }
+  &.edit-btn:hover {
+    background: var(--color-bg-light);
+    color: var(--color-black-primary);
   }
-
 }
 
 /* Pagination */

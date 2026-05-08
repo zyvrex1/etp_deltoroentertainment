@@ -290,6 +290,13 @@ const updateUser = async (req, res) => {
     if (lastName) user.lastName = lastName
     if (email) user.email = email
     if (role) user.role = role
+    if (req.body.companyName) user.companyName = req.body.companyName
+    if (req.body.phone) user.phone = req.body.phone
+
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(req.body.password, salt);
+    }
 
     await user.save()
     emitUpdate('dashboardUpdate');

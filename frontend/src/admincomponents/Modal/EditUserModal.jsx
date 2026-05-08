@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import './EditUserModal.css';
-import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert } from '../../utils/sweetAlert';
+import { showSuccessAlert, showCancelConfirmAlert, showUpdateConfirmAlert, showErrorAlert } from '../../utils/sweetAlert';
+import adminService from '../../services/adminService';
+import { useAuthContext } from '../../hooks/useAuthContext';
 
 const EditUserModal = ({ isOpen, onClose, user, type }) => {
-    if (!isOpen || !user) return null;
+    const { user: currentUser } = useAuthContext();
 
     // Form States
     const [formData, setFormData] = useState({
@@ -19,46 +21,35 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
     });
 
     const [showPassword, setShowPassword] = useState(false);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 
     // Initialize form data when user/type changes
     useEffect(() => {
         if (user) {
             let initialData = {
-                fullName: '',
-                email: '',
-                phone: '+1 (555) 000-0000', // Mock default
-                companyName: '',
-                industry: '',
-                bankAccount: '',
+                fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+                email: user.email || '',
+                phone: user.phone || '',
+                companyName: user.roleDetails?.companyName || '',
+                industry: user.roleDetails?.industry || '',
+                bankAccount: user.roleDetails?.bankAccount || '',
                 currentPassword: '*************',
                 newPassword: ''
             };
 
-            if (type === 'admin' || type === 'customer') {
-                initialData.fullName = user.name;
-                initialData.email = user.email;
-            } else if (type === 'promoter') {
-                // Promoter: name is Org, contact is Email
-                initialData.companyName = user.name;
-                initialData.email = user.contact;
-                initialData.fullName = "Alex Thompson"; // Mock person name
-                initialData.industry = "Event Management"; // Mock
-                initialData.bankAccount = "1234"; // Mock
+            // Adjustments based on type if needed
+            if (type === 'promoter') {
+                initialData.companyName = user.roleDetails?.companyName || '';
             } else if (type === 'sponsor') {
-                // Sponsor: company is Org, contact is Name
-                initialData.companyName = user.company;
-                initialData.fullName = user.contact;
-                initialData.email = "sponsor@example.com"; // Mock missing email
-                initialData.industry = user.industry;
-            } else {
-                // Fallback for All Users tab items that are mixed
-                initialData.fullName = user.name;
-                initialData.email = user.email || user.contact;
+                initialData.companyName = user.roleDetails?.companyName || '';
+                initialData.industry = user.roleDetails?.industry || '';
             }
 
             setFormData(initialData);
         }
     }, [user, type]);
+
+    if (!isOpen || !user) return null;
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -66,9 +57,15 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!formData.newPassword) {
+            showErrorAlert('Error', 'Please enter a new password.');
+            return;
+        }
+
         const result = await showUpdateConfirmAlert(
-            'Update User?',
-            'Are you sure you want to update this user\'s information?'
+            'Update Password?',
+            'Are you sure you want to update this user\'s password?'
         );
 
         if (!result.isConfirmed) {
@@ -76,11 +73,13 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
         }
 
         try {
-            // Here you would typically send the data to your API
+            await adminService.updateUser(user._id, { password: formData.newPassword }, currentUser.token);
+            
             onClose();
-            showSuccessAlert('User Updated', 'The user information has been updated successfully.');
+            showSuccessAlert('Password Updated', 'The user\'s password has been updated successfully.');
         } catch (error) {
-            console.error('Error updating user:', error);
+            console.error('Error updating password:', error);
+            showErrorAlert('Update Failed', error.message || 'Could not update password.');
         }
     };
 
@@ -124,7 +123,8 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                                     type="text"
                                     name="fullName"
                                     value={formData.fullName}
-                                    onChange={handleChange}
+                                    readOnly
+                                    className="read-only-input"
                                     placeholder="e.g. John Doe"
                                 />
                             </div>
@@ -134,7 +134,8 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                                     type="email"
                                     name="email"
                                     value={formData.email}
-                                    onChange={handleChange}
+                                    readOnly
+                                    className="read-only-input"
                                     placeholder="john@example.com"
                                 />
                             </div>
@@ -149,8 +150,9 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                                         type="text"
                                         name="companyName"
                                         value={formData.companyName}
-                                        onChange={handleChange}
-                                        placeholder="e.g. 1234"
+                                        readOnly
+                                        className="read-only-input"
+                                        placeholder="e.g. Acme Corp"
                                     />
                                 </div>
                                 <div className="add-user-form-group">
@@ -159,15 +161,15 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                                         type="text"
                                         name="industry"
                                         value={formData.industry}
-                                        onChange={handleChange}
+                                        readOnly
+                                        className="read-only-input"
                                         placeholder="e.g. Technology"
                                     />
                                 </div>
                             </div>
                         )}
 
-                        {/* Bank Account for Promoter (as per inference from design/context) */}
-                        {/* Design 3 has Bank Account (Last 4) */}
+                        {/* Bank Account for Promoter */}
                         {type === 'promoter' && (
                             <div className="add-user-form-row">
                                 <div className="add-user-form-group">
@@ -176,18 +178,19 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                                         type="text"
                                         name="bankAccount"
                                         value={formData.bankAccount}
-                                        onChange={handleChange}
+                                        readOnly
+                                        className="read-only-input"
                                         placeholder="e.g. 1234"
                                     />
                                 </div>
-                                {/* Phone placeholder to balance grid if needed, or maintain single row */}
                                 <div className="add-user-form-group">
                                     <h6>Phone Number</h6>
                                     <input
                                         type="text"
                                         name="phone"
                                         value={formData.phone}
-                                        onChange={handleChange}
+                                        readOnly
+                                        className="read-only-input"
                                         placeholder="+1 (555) 000-0000"
                                     />
                                 </div>
@@ -201,7 +204,8 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                                     type="text"
                                     name="phone"
                                     value={formData.phone}
-                                    onChange={handleChange}
+                                    readOnly
+                                    className="read-only-input"
                                     placeholder="+1 (555) 000-0000"
                                 />
                             </div>
@@ -213,38 +217,62 @@ const EditUserModal = ({ isOpen, onClose, user, type }) => {
                                 <h6>Current Password</h6>
                                 <div className="password-input-wrapper">
                                     <input
-                                        type="password"
+                                        type={showCurrentPassword ? "text" : "password"}
                                         name="currentPassword"
                                         value={formData.currentPassword}
                                         readOnly
                                         className="read-only-input"
                                     />
-                                    <Icon icon="mdi:eye" className="password-icon" />
+                                    <Icon 
+                                        icon={showCurrentPassword ? "mdi:eye-off" : "mdi:eye"} 
+                                        className="password-icon" 
+                                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                    />
                                 </div>
                             </div>
                             <div className="add-user-form-group">
-                                <h6>Edit Password</h6>
+                                <h6>New Password</h6>
                                 <input
-                                    type="text" // Design shows clear text placeholder "Edit Password" initially maybe?
+                                    type="text"
                                     name="newPassword"
                                     value={formData.newPassword}
                                     onChange={handleChange}
-                                    placeholder="Edit Password"
+                                    placeholder="Enter New Password"
                                 />
                             </div>
                         </div>
 
-                        <button type="button" className="primary-button add-temp-password-btn">
-                            Add Temporary Password
+                        <button 
+                            type="button" 
+                            className="primary-button add-temp-password-btn"
+                            onClick={async () => {
+                                const result = await showUpdateConfirmAlert(
+                                    'Send Temporary Password?',
+                                    `A random temporary password will be generated and saved for ${formData.email}.`
+                                );
+                                if (result.isConfirmed) {
+                                    try {
+                                        // Generate a random 8-character password
+                                        const tempPass = Math.random().toString(36).slice(-8);
+                                        await adminService.updateUser(user._id, { password: tempPass }, currentUser.token);
+                                        
+                                        onClose();
+                                        showSuccessAlert('Success', `A temporary password has been set and sent to ${formData.email}.`);
+                                    } catch (error) {
+                                        console.error('Error sending temp password:', error);
+                                        showErrorAlert('Error', 'Could not set temporary password.');
+                                    }
+                                }
+                            }}
+                        >
+                            Send Temporary Password
                         </button>
 
                         <div className="general-edituser-modal-footer">
                             <button type="button" className="outlined-button cancel-btn" onClick={handleCancel}>Cancel</button>
-                            <button type="submit" form="edit-user-form" className="primary-button save-btn">Save Changes</button>
-                            {/* Design sometimes shows "Create User" but "Save Changes" is correct for Edit */}
+                            <button type="submit" form="edit-user-form" className="primary-button save-btn">Update Password</button>
                         </div>
                     </form>
-
                 </div>
 
 

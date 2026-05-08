@@ -29,18 +29,19 @@ const ViewUserModal = ({ isOpen, onClose, user, userType: propUserType }) => {
 
         switch (user.role) {
             case 'customer':
+                mapped.company = user.companyName || user.roleDetails?.companyName || null;
                 mapped.totalSpent = formatCurrency(user.roleDetails?.totalSpent);
                 mapped.tickets = user.roleDetails?.ticketsPurchased || 0;
                 break;
             case 'promoter':
-                mapped.company = user.roleDetails?.companyName || 'N/A';
+                mapped.company = user.companyName || user.roleDetails?.companyName || null;
                 mapped.phone = user.phone || user.roleDetails?.phone || 'N/A';
                 mapped.events = user.roleDetails?.numberOfEvents || 0;
                 mapped.revenue = formatCurrency(user.roleDetails?.revenue);
                 mapped.paidOut = formatCurrency(user.roleDetails?.paidOut);
                 break;
             case 'sponsor':
-                mapped.company = user.roleDetails?.companyName || 'N/A';
+                mapped.company = user.companyName || user.roleDetails?.companyName || null;
                 mapped.phone = user.phone || user.roleDetails?.phone || 'N/A';
                 mapped.booths = user.roleDetails?.boothsBooked || 0;
                 mapped.totalSpent = formatCurrency(user.roleDetails?.totalSpent);

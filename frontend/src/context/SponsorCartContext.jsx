@@ -50,8 +50,37 @@ export const SponsorCartProvider = ({ children }) => {
     // Save cart to localStorage AND backend whenever it changes
     useEffect(() => {
         if (user && isInitialized) {
-            // Save to localStorage
-            localStorage.setItem(`sponsorCart_${user.email}`, JSON.stringify(cartItems));
+            // Create a lean version of cart items for localStorage to save space
+            const leanCartItems = cartItems.map(item => ({
+                ...item,
+                // Only keep essential fields from potentially large objects
+                event: item.event ? {
+                    _id: item.event._id,
+                    title: item.event.title,
+                    date: item.event.date,
+                    banner: item.event.banner,
+                    location: item.event.location
+                } : null,
+                booth: item.booth ? {
+                    _id: item.booth._id,
+                    id: item.booth.id,
+                    label: item.booth.label,
+                    price: item.booth.price,
+                    type: item.booth.type
+                } : null
+            }));
+
+            // Save to localStorage with error handling
+            try {
+                localStorage.setItem(`sponsorCart_${user.email}`, JSON.stringify(leanCartItems));
+            } catch (e) {
+                if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                    console.error("Local storage quota exceeded! Could not save cart locally.");
+                    // Optional: You could clear other non-essential localStorage items here
+                } else {
+                    console.error("Error saving cart to local storage:", e);
+                }
+            }
             
             // Sync with backend
             const syncWithBackend = async () => {
@@ -60,9 +89,12 @@ export const SponsorCartProvider = ({ children }) => {
                     
                     // Also update the user object in AuthContext so it's consistent
                     const updatedUser = { ...user, cart: cartItems };
-                    localStorage.setItem('user', JSON.stringify(updatedUser));
-                    // We don't necessarily need to dispatch LOGIN here as it might trigger re-renders
-                    // but we should keep the localStorage in sync.
+                    try {
+                        localStorage.setItem('user', JSON.stringify(updatedUser));
+                    } catch (storageErr) {
+                        // If user object is too big, at least the cart is synced to DB
+                        console.warn("Could not save updated user to localStorage (quota exceeded)");
+                    }
                 } catch (error) {
                     console.error("Failed to sync cart with backend", error);
                 }

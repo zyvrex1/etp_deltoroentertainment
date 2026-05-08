@@ -321,8 +321,16 @@ const UserManagement = () => {
                         <button
                           className="action-btn view-btn"
                           onClick={() => handleViewUser(user)}
+                          title="View User"
                         >
                           <Icon icon="mdi:eye" />
+                        </button>
+                        <button
+                          className="action-btn edit-btn"
+                          onClick={() => handleEditUser(user)}
+                          title="Edit User"
+                        >
+                          <Icon icon="mdi:pencil" />
                         </button>
                       </div>
                     </td>
@@ -431,8 +439,16 @@ const UserManagement = () => {
                         <button
                           className="action-btn view-btn"
                           onClick={() => handleViewUser(customer)}
+                          title="View User"
                         >
                           <Icon icon="mdi:eye" />
+                        </button>
+                        <button
+                          className="action-btn edit-btn"
+                          onClick={() => handleEditUser(customer, 'customer')}
+                          title="Edit User"
+                        >
+                          <Icon icon="mdi:pencil" />
                         </button>
                       </div>
                     </td>
@@ -512,7 +528,7 @@ const UserManagement = () => {
                       <h5 className="smaller-body-text">{promoter.email}</h5>
                     </td>
                     <td data-label="Organization" className="small-body-text">
-                      {promoter.roleDetails.companyName}
+                      {promoter.companyName || "N/A"}
                     </td>
                     <td data-label="Phone" className="small-body-text">
                       {promoter.phone || "N/A"}
@@ -530,8 +546,16 @@ const UserManagement = () => {
                         <button
                           className="action-btn view-btn"
                           onClick={() => handleViewUser(promoter)}
+                          title="View User"
                         >
                           <Icon icon="mdi:eye" />
+                        </button>
+                        <button
+                          className="action-btn edit-btn"
+                          onClick={() => handleEditUser(promoter, 'promoter')}
+                          title="Edit User"
+                        >
+                          <Icon icon="mdi:pencil" />
                         </button>
                       </div>
                     </td>
@@ -611,7 +635,7 @@ const UserManagement = () => {
                       <h5 className="smaller-body-text">{sponsor.email}</h5>
                     </td>
                     <td data-label="Organization" className="small-body-text">
-                      {sponsor.roleDetails.companyName}
+                      {sponsor.companyName || "N/A"}
                     </td>
                     <td data-label="Phone" className="small-body-text">
                       {sponsor.phone || "N/A"}
@@ -629,8 +653,16 @@ const UserManagement = () => {
                         <button
                           className="action-btn view-btn"
                           onClick={() => handleViewUser(sponsor)}
+                          title="View User"
                         >
                           <Icon icon="mdi:eye" />
+                        </button>
+                        <button
+                          className="action-btn edit-btn"
+                          onClick={() => handleEditUser(sponsor, 'sponsor')}
+                          title="Edit User"
+                        >
+                          <Icon icon="mdi:pencil" />
                         </button>
                       </div>
                     </td>

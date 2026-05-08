@@ -127,6 +127,13 @@
 
         }
 
+        input.read-only-input {
+            background-color: #f8f9fa;
+            cursor: default;
+            border-color: var(--color-black-quaternary);
+            color: var(--color-black-tertiary);
+        }
+
         .password-input-wrapper {
             position: relative;
             display: flex;
@@ -142,11 +149,6 @@
                 right: 12px;
                 color: var(--color-black-tertiary);
                 cursor: pointer;
-            }
-
-            .read-only-input {
-                background-color: #f5f5f5;
-                cursor: not-allowed;
             }
         }
 
