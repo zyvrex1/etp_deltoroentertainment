@@ -425,11 +425,11 @@ const TicketDesigner = ({ selectedEvent }) => {
               </div>
               <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <button className="outlined-button w-100" onClick={handleAddText}>
+                  <button className="outlined-button w-100" style={{ color: 'var(--color-black-primary) ' }} onClick={handleAddText}>
                     <Icon icon="mdi:text-box-plus-outline" /> Text
                   </button>
-                  <button
-                    className="outlined-button w-100 text-red"
+                  <button 
+                    className="outlined-button w-100 text-red"style={{ color: 'var(--color-red-primary) ' }}
                     onClick={handleDeleteItem}
                     disabled={!selectedId || ['bg-border', 'bg-main', 'left-stripe'].includes(selectedId)}
                   >
@@ -442,7 +442,7 @@ const TicketDesigner = ({ selectedEvent }) => {
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="color"
-                      style={{ width: '45px', height: '35px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }}
+                      style={{ width: '45px', height: '35px', padding: '2px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
                       value={ticketItems.find(i => i.id === 'bg-border')?.fill || '#D32F2F'}
                       onChange={e => {
                         const themeColor = e.target.value;
@@ -455,12 +455,12 @@ const TicketDesigner = ({ selectedEvent }) => {
                     />
                     <input
                       type="text"
-                      style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd' }}
-                      value={ticketItems.find(i => i.id === 'bg-border')?.fill || '#D32F2F'}
+                      style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-black-primary)', backgroundColor: 'var(--color-white-primary)', color: 'var(--color-black-primary)'  }}
+                      value={ticketItems.find(i => i.id === 'bg-border')?.fill || 'none'}
                       onChange={e => {
                         const themeColor = e.target.value;
                         setTicketItems(prev => prev.map(item =>
-                          ['bg-border', 'left-stripe'].includes(item.id)
+                          ['left-stripe'].includes(item.id)
                             ? { ...item, fill: themeColor }
                             : item
                         ));

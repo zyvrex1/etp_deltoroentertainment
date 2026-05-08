@@ -59,6 +59,8 @@ const CustomerPaySuccess = () => {
                                 src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"}
                                 alt={event.title}
                                 className="cps-event-img"
+                                                    onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
+
                             />
                             <div className="cps-event-info">
                                 <h4 className="cps-event-title">{event.title}</h4>
