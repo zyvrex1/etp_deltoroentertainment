@@ -306,11 +306,26 @@
     transition: all 0.2s ease;
     cursor: pointer;
     border-radius: 8px;
-    padding: 6px;
+    padding: 6px 12px;
 }
 
 .bt-btn:hover {
     background: var(--color-bg-light);
+}
+
+/* Sync Button Animations */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+.sync-btn.spinning {
+    color: var(--color-red-primary) !important;
+    border-color: var(--color-red-primary) !important;
 }
 
 @media (max-width: 768px) {
@@ -350,10 +365,25 @@
     .inspector-card .inspector-body {
         padding-bottom: 20px;
     }
+
+    .summary-list:not(.expanded) .summary-item:not(:first-child):not(:last-child) {
+        display: none;
+    }
+
+    .mobile-only-icon {
+        display: inline-block !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-only-icon {
+        display: none !important;
+    }
 }
 
 @keyframes slideUpInFixed {
     from { opacity: 0; transform: translateY(100%); }
     to { opacity: 1; transform: translateY(0); }
 }
+
 

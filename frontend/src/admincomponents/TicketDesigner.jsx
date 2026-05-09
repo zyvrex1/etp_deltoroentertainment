@@ -428,8 +428,8 @@ const TicketDesigner = ({ selectedEvent }) => {
                   <button className="outlined-button w-100" style={{ color: 'var(--color-black-primary) ' }} onClick={handleAddText}>
                     <Icon icon="mdi:text-box-plus-outline" /> Text
                   </button>
-                  <button 
-                    className="outlined-button w-100 text-red"style={{ color: 'var(--color-red-primary) ' }}
+                  <button
+                    className="outlined-button w-100 text-red" style={{ color: 'var(--color-red-primary) ' }}
                     onClick={handleDeleteItem}
                     disabled={!selectedId || ['bg-border', 'bg-main', 'left-stripe'].includes(selectedId)}
                   >
@@ -455,7 +455,7 @@ const TicketDesigner = ({ selectedEvent }) => {
                     />
                     <input
                       type="text"
-                      style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-black-primary)', backgroundColor: 'var(--color-white-primary)', color: 'var(--color-black-primary)'  }}
+                      style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-black-primary)', backgroundColor: 'var(--color-white-primary)', color: 'var(--color-black-primary)' }}
                       value={ticketItems.find(i => i.id === 'bg-border')?.fill || 'none'}
                       onChange={e => {
                         const themeColor = e.target.value;

@@ -177,22 +177,21 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
           { id: 'brand-text', type: 'image', x: 30, y: 750, width: 500, height: 200, url: brandLogo, draggable: true, rotation: -90, fontStyle: 'bold' },
 
           // QR Code Area
-          { 
-            id: 'qr-code', 
-            type: 'image', 
-            x: 300, y: 100, 
-            width: 350, height: 350, 
-            url: `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=69fe2165325a962577aba0c9`,
+          {
+            id: 'qr-code',
+            type: 'image',
+            x: 300, y: 60,
+            width: 350, height: 350,
             dynamicField: 'qrData',
-            draggable: true 
+            draggable: true
           },
 
           // Event Image
           {
             id: 'event-img',
             type: 'image',
-            x: 300, y: 480,
-            width: 350, height: 300,
+            x: 300, y: 430,
+            width: 350, height: 350,
             url: eventImgUrl,
             draggable: true
           },
@@ -225,7 +224,6 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
             type: 'image',
             x: 1880, y: 150,
             width: 100, height: 700,
-            url: `https://bwipjs-api.metafloor.com/?bcid=code128&text=69fe2165325a962577aba0c9&includetext=false&rotate=R`,
             dynamicField: 'qrData',
             draggable: true
           },
@@ -264,18 +262,18 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
       if (item.id === 'event-img') return { ...item, url: eventImgUrl };
       if (item.id === 'qr-code' || item.id === 'qr-placeholder') {
         const sampleQrData = selectedCategory?._id || '69fe2165325a962577aba0c9';
-        return { 
-          ...item, 
-          id: 'qr-code', 
-          type: 'image', 
+        return {
+          ...item,
+          id: 'qr-code',
+          type: 'image',
           url: `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=${sampleQrData}`,
           dynamicField: 'qrData'
         };
       }
       if (item.id === 'barcode-img') {
         const sampleQrData = selectedCategory?._id || '69fe2165325a962577aba0c9';
-        return { 
-          ...item, 
+        return {
+          ...item,
           url: `https://bwipjs-api.metafloor.com/?bcid=code128&text=${sampleQrData}&includetext=false&rotate=R`,
           dynamicField: 'qrData'
         };
@@ -331,7 +329,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
       const result = await priceLevelService.updatePriceLevel(
         selectedEvent._id,
         selectedCategoryId,
-        { 
+        {
           ticketDesign: ticketItems,
           themeColor: themeColor
         },
@@ -415,11 +413,12 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
               </div>
               <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <button className="outlined-button w-100" onClick={handleAddText}>
+                  <button className="outlined-button w-100" style={{ color: 'var(--color-black-primary)' }} onClick={handleAddText}>
                     <Icon icon="mdi:text-box-plus-outline" /> Text
                   </button>
                   <button
                     className="outlined-button w-100 text-red"
+                    style={{ color: 'var(--color-red-primary)' }}
                     onClick={handleDeleteItem}
                     disabled={!selectedId || ['bg-border', 'bg-main', 'left-stripe'].includes(selectedId)}
                   >
@@ -432,27 +431,27 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="color"
-                      style={{ width: '45px', height: '35px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }}
+                      style={{ width: '45px', height: '35px', padding: '2px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
                       value={ticketItems.find(i => i.id === 'bg-border')?.fill || '#D32F2F'}
                       onChange={e => {
                         const themeColor = e.target.value;
-                        setTicketItems(prev => prev.map(item => 
-                          ['bg-border', 'left-stripe'].includes(item.id) 
-                          ? { ...item, fill: themeColor } 
-                          : item
+                        setTicketItems(prev => prev.map(item =>
+                          ['bg-border', 'left-stripe'].includes(item.id)
+                            ? { ...item, fill: themeColor }
+                            : item
                         ));
                       }}
                     />
                     <input
                       type="text"
-                      style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd' }}
-                      value={ticketItems.find(i => i.id === 'bg-border')?.fill || '#D32F2F'}
+                      style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-black-primary)', backgroundColor: 'var(--color-white-primary)', color: 'var(--color-black-primary)' }}
+                      value={ticketItems.find(i => i.id === 'bg-border')?.fill || 'none'}
                       onChange={e => {
                         const themeColor = e.target.value;
-                        setTicketItems(prev => prev.map(item => 
-                          ['bg-border', 'left-stripe'].includes(item.id) 
-                          ? { ...item, fill: themeColor } 
-                          : item
+                        setTicketItems(prev => prev.map(item =>
+                          ['left-stripe'].includes(item.id)
+                            ? { ...item, fill: themeColor }
+                            : item
                         ));
                       }}
                     />
@@ -500,20 +499,20 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                         </div>
                         <div>
                           <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px' }}>Color</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <input
-                            type="color"
-                            style={{ width: '45px', height: '35px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }}
-                            value={selectedItem.fill}
-                            onChange={e => updateItem(selectedId, { fill: e.target.value })}
-                          />
-                          <input
-                            type="text"
-                            style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd' }}
-                            value={selectedItem.fill}
-                            onChange={e => updateItem(selectedId, { fill: e.target.value })}
-                          />
-                        </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <input
+                              type="color"
+                              style={{ width: '45px', height: '35px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }}
+                              value={selectedItem.fill}
+                              onChange={e => updateItem(selectedId, { fill: e.target.value })}
+                            />
+                            <input
+                              type="text"
+                              style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd' }}
+                              value={selectedItem.fill}
+                              onChange={e => updateItem(selectedId, { fill: e.target.value })}
+                            />
+                          </div>
                         </div>
                       </>
                     )}
