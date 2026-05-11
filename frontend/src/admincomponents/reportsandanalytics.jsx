@@ -19,6 +19,36 @@ import {
     Area
 } from "recharts";
 import DateRangePicker from "../utils/DateRangePicker";
+ 
+ const CustomTooltip = ({ active, payload, label }) => {
+     if (active && payload && payload.length) {
+         return (
+             <div className="custom-chart-tooltip">
+                 <p className="tooltip-label">{label}</p>
+                 <div className="tooltip-items">
+                     {payload.map((entry, index) => {
+                         let value = entry.value;
+                         // Check if name exists and contains 'total' or 'revenue'
+                         const isRevenue = entry.name?.toLowerCase().includes('revenue') || 
+                                          entry.dataKey === 'total' || 
+                                          entry.name === 'Total Revenue';
+                         
+                         if (isRevenue) {
+                             value = `$${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                         }
+                         return (
+                             <div key={index} className="tooltip-item" style={{ color: entry.color || '#333' }}>
+                                 <span className="item-name">{entry.name || 'Total'} : </span>
+                                 <span className="item-value">{value ?? 0}</span>
+                             </div>
+                         );
+                     })}
+                 </div>
+             </div>
+         );
+     }
+     return null;
+ };
 
 export default function ReportsAnalytics() {
     const { user } = useContext(AuthContext);
@@ -39,7 +69,10 @@ export default function ReportsAnalytics() {
         boothsSold: 0,
         ticketsReserved: 0,
         boothsReserved: 0,
-        refundRate: 0.8
+        seatOccupancy: 0,
+        boothOccupancy: 0,
+        refundRate: 0.8,
+        revenueTrends: []
     });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -81,14 +114,19 @@ export default function ReportsAnalytics() {
 
     // Category and Revenue Trends are still static for now as per design scope, 
     // but topEvents and overview are now dynamic.
-    const revenueData = [
-        { month: "Jun", total: 420000 },
-        { month: "Jul", total: 480000 },
-        { month: "Aug", total: 430000 },
-        { month: "Sep", total: 550000 },
-        { month: "Oct", total: 610000 },
-        { month: "Nov", total: 580000 },
-        { month: "Dec", total: 687550 },
+    const revenueData = overviewStats.revenueTrends?.length > 0 ? overviewStats.revenueTrends : [
+        { month: "Jan", total: 0 },
+        { month: "Feb", total: 0 },
+        { month: "Mar", total: 0 },
+        { month: "Apr", total: 0 },
+        { month: "May", total: 0 },
+        { month: "Jun", total: 0 },
+        { month: "Jul", total: 0 },
+        { month: "Aug", total: 0 },
+        { month: "Sep", total: 0 },
+        { month: "Oct", total: 0 },
+        { month: "Nov", total: 0 },
+        { month: "Dec", total: 0 },
     ];
 
     const categoryData = [
@@ -274,7 +312,7 @@ export default function ReportsAnalytics() {
                                         tick={{ fontSize: isMobile ? 10 : 12 }}
                                         tickFormatter={(val) => `$${val / 1000}k`}
                                     />
-                                    <RechartsTooltip formatter={(value) => `$${value}`} />
+                                    <RechartsTooltip content={<CustomTooltip />} />
                                     <Area
                                         type="monotone"
                                         dataKey="total"
@@ -385,19 +423,19 @@ export default function ReportsAnalytics() {
                             <div className="progress-group">
                                 <div className="progress-header">
                                     <span className="small-body-text label-text">Booth Occupancy</span>
-                                    <span className="small-body-text percent-text">85%</span>
+                                    <span className="small-body-text percent-text">{overviewStats.boothOccupancy}%</span>
                                 </div>
                                 <div className="progress-bar">
-                                    <div className="progress-fill blue" style={{ width: "85%" }}></div>
+                                    <div className="progress-fill blue" style={{ width: `${overviewStats.boothOccupancy}%` }}></div>
                                 </div>
                             </div>
                             <div className="progress-group">
                                 <div className="progress-header">
                                     <span className="small-body-text label-text">Seats Occupancy</span>
-                                    <span className="small-body-text percent-text">92%</span>
+                                    <span className="small-body-text percent-text">{overviewStats.seatOccupancy}%</span>
                                 </div>
                                 <div className="progress-bar">
-                                    <div className="progress-fill green" style={{ width: "92%" }}></div>
+                                    <div className="progress-fill green" style={{ width: `${overviewStats.seatOccupancy}%` }}></div>
                                 </div>
                             </div>
                         </div>
