@@ -73,6 +73,7 @@ const TicketDesigner = ({ selectedEvent }) => {
   const [ticketItems, setTicketItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [zoom, setZoom] = useState(0.4);
   const [fitScale, setFitScale] = useState(0.4);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
@@ -146,6 +147,15 @@ const TicketDesigner = ({ selectedEvent }) => {
     priceLevels.find(pl => pl._id === selectedCategoryId),
     [priceLevels, selectedCategoryId]
   );
+
+  // Auto-select category if there's only one and none is selected
+  useEffect(() => {
+    if (!selectedCategoryId && priceLevels.length > 0) {
+      if (priceLevels.length === 1) {
+        setSelectedCategoryId(priceLevels[0]._id);
+      }
+    }
+  }, [priceLevels, selectedCategoryId]);
 
   // Initial load when category changes
   useEffect(() => {
@@ -362,6 +372,77 @@ const TicketDesigner = ({ selectedEvent }) => {
     }
   };
 
+  const handleSyncData = async () => {
+    if (!selectedEvent?._id || !user?.token) return;
+    setIsSyncing(true);
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+      const response = await fetch(`${backendUrl}/api/events/${selectedEvent._id}`, {
+        headers: { "Authorization": `Bearer ${user.token}` }
+      });
+      const data = await response.json();
+      if (response.ok && data) {
+        // Update global context first
+        dispatch({ type: 'UPDATE_EVENT', payload: data });
+        
+        // Find the current category in the new data
+        const updatedPriceLevels = data.priceLevels || [];
+        const updatedCat = updatedPriceLevels.find(pl => pl._id === selectedCategoryId);
+        
+        if (updatedCat) {
+            const eventDate = formatDate(data.startDate);
+            const eventTime = formatTime(data.startTime);
+            const venueStr = `${data.venue?.name || 'Venue'} - ${data.venue?.address || 'Address'}`;
+            const eventImgUrl = data.image && data.image !== "null"
+              ? `${backendUrl}/uploads/${data.image}`
+              : "/assets/eventbg.jpg";
+
+            setTicketItems(prev => prev.map(item => {
+              if (item.id === 'event-title') return { ...item, text: data.title || item.text };
+              if (item.id === 'date-label') return { ...item, text: eventDate.dayName };
+              if (item.id === 'day-text') return { ...item, text: eventDate.day };
+              if (item.id === 'month-year') return { ...item, text: eventDate.monthYear };
+              if (item.id === 'time-text') return { ...item, text: eventTime };
+              if (item.id === 'venue-name') return { ...item, text: venueStr };
+              if (item.id === 'category-name') return { ...item, text: updatedCat.priceName || item.text };
+              if (item.id === 'category-sub') {
+                const typePrefix = updatedCat.type?.startsWith('Seat') ? 'Seat' : 'Booth';
+                return { ...item, text: typePrefix };
+              }
+              if (item.id === 'event-img') return { ...item, url: eventImgUrl };
+              if (item.id === 'qr-code' || item.id === 'qr-placeholder') {
+                return {
+                  ...item,
+                  id: 'qr-code',
+                  type: 'image',
+                  url: `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=${updatedCat._id}`,
+                  dynamicField: 'qrData'
+                };
+              }
+              if (item.id === 'barcode-img') {
+                return {
+                  ...item,
+                  url: `https://bwipjs-api.metafloor.com/?bcid=code128&text=${updatedCat._id}&includetext=false&rotate=R`,
+                  dynamicField: 'qrData'
+                };
+              }
+              if (item.id === 'price-text') return { ...item, text: updatedCat.facePrice > 0 ? `$${updatedCat.facePrice}` : 'FREE' };
+              return item;
+            }));
+        }
+
+        showSuccessAlert("Synced", "Event data and ticket layout refreshed!");
+      } else {
+        throw new Error(data.message || "Failed to sync");
+      }
+    } catch (err) {
+      console.error("Sync error:", err);
+      showErrorAlert("Error", err.message || "Failed to sync event data.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const updateItem = (id, updates) => {
     setTicketItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
   };
@@ -571,6 +652,16 @@ const TicketDesigner = ({ selectedEvent }) => {
               {selectedCategory ? `Designing: ${selectedCategory.priceName}` : "Select a category to design"}
             </h4>
             <div className="zoom-controls">
+              <button
+                className={`bt-btn sync-btn-small ${isSyncing ? 'spinning' : ''}`}
+                onClick={handleSyncData}
+                disabled={isSyncing}
+                title="Sync Event Data with Database"
+                style={{ marginRight: '10px', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', height: 'auto' }}
+              >
+                <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
+                <span style={{ fontSize: '11px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+              </button>
               <button
                 className={`bt-btn ${isStageDraggable ? 'active' : ''}`}
                 onClick={() => setIsStageDraggable(!isStageDraggable)}

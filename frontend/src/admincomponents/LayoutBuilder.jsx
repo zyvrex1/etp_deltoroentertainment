@@ -364,8 +364,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
     const placedCount = placedItems.filter(i => i.categoryId === category.id).length;
     const remaining = category.quantity - placedCount;
     const count = Math.max(1, Math.min(Number(batchCount) || 1, remaining));
-    
-    let spacing = Number(batchSpacing) || 50;
+
+    let spacing = Number(batchSpacing) || 45;
     let startX = Number(batchStartX);
     let startY = Number(batchStartY);
 
@@ -440,36 +440,30 @@ const LayoutBuilder = ({ selectedEvent }) => {
   // Called when ANY dragged item finishes — moves entire selection by the same delta
   const handleDragEnd = (draggedId, newX, newY) => {
     const startPos = dragStartPositions.current[draggedId];
-    if (!startPos) {
-      // Fallback: single item, snap and commit
-      const snappedX = snapToGrid ? Math.round(newX / GRID_SIZE) * GRID_SIZE : newX;
-      const snappedY = snapToGrid ? Math.round(newY / GRID_SIZE) * GRID_SIZE : newY;
-      pushHistory([...placedItems]);
-      setPlacedItems(prev => prev.map(item =>
-        item.id === draggedId ? { ...item, x: snappedX, y: snappedY } : item
-      ));
-      return;
-    }
 
-    // Calculate raw delta
-    let dx = newX - startPos.x;
-    let dy = newY - startPos.y;
+    // If startPos is missing, fallback to finding the item in the current state
+    const originalPos = startPos || placedItems.find(i => i.id === draggedId);
+    if (!originalPos) return;
 
-    // If snapping is on, snap the LEADER's new position and derive a snapped delta
+    // Calculate raw delta from original position
+    let dx = newX - originalPos.x;
+    let dy = newY - originalPos.y;
+
+    // If snapping is on, snap the delta to GRID_SIZE increments
     if (snapToGrid) {
-      const snappedNewX = Math.round((startPos.x + dx) / GRID_SIZE) * GRID_SIZE;
-      const snappedNewY = Math.round((startPos.y + dy) / GRID_SIZE) * GRID_SIZE;
-      dx = snappedNewX - startPos.x;
-      dy = snappedNewY - startPos.y;
+      dx = Math.round(dx / GRID_SIZE) * GRID_SIZE;
+      dy = Math.round(dy / GRID_SIZE) * GRID_SIZE;
     }
 
     pushHistory([...placedItems]);
     setPlacedItems(prev => prev.map(item => {
+      if (item.id === draggedId) return { ...item, x: originalPos.x + dx, y: originalPos.y + dy };
       if (!selectedIds.has(item.id)) return item;
+
       const orig = dragStartPositions.current[item.id];
       if (!orig) return item;
 
-      // Apply the same (possibly snapped) delta to everyone in the selection
+      // Apply the snapped delta to everyone in the selection
       return { ...item, x: orig.x + dx, y: orig.y + dy };
     }));
     dragStartPositions.current = {};
@@ -1210,19 +1204,31 @@ const LayoutBuilder = ({ selectedEvent }) => {
                         dragStartPositions.current = snap;
                       }}
                       onDragMove={(e) => {
-                        // Move all other selected nodes in real-time imperatively
-                        if (selectedIds.size <= 1) return;
                         const startPos = dragStartPositions.current[item.id];
                         if (!startPos) return;
-                        const dx = e.target.x() - startPos.x;
-                        const dy = e.target.y() - startPos.y;
-                        selectedIds.forEach(sid => {
-                          if (sid === item.id) return;
-                          const orig = dragStartPositions.current[sid];
-                          if (!orig) return;
-                          const node = stageRef.current?.findOne(`#${sid}`);
-                          if (node) { node.x(orig.x + dx); node.y(orig.y + dy); }
-                        });
+
+                        let dx = e.target.x() - startPos.x;
+                        let dy = e.target.y() - startPos.y;
+
+                        // Real-time grid snapping
+                        if (snapToGrid) {
+                          dx = Math.round(dx / GRID_SIZE) * GRID_SIZE;
+                          dy = Math.round(dy / GRID_SIZE) * GRID_SIZE;
+                          // Update leader position to stay on grid increments
+                          e.target.x(startPos.x + dx);
+                          e.target.y(startPos.y + dy);
+                        }
+
+                        // Move all other selected nodes in real-time imperatively
+                        if (selectedIds.size > 1) {
+                          selectedIds.forEach(sid => {
+                            if (sid === item.id) return;
+                            const orig = dragStartPositions.current[sid];
+                            if (!orig) return;
+                            const node = stageRef.current?.findOne(`#${sid}`);
+                            if (node) { node.x(orig.x + dx); node.y(orig.y + dy); }
+                          });
+                        }
                       }}
                       onDragEnd={(e) => handleDragEnd(item.id, e.target.x(), e.target.y())}
                       onClick={(e) => handleItemClick(item.id, e)}
