@@ -147,6 +147,13 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
     [priceLevels, selectedCategoryId]
   );
 
+  const isEditable = useMemo(() => {
+    if (!user || !selectedEvent) return false;
+    const userId = user._id || user.id;
+    const creatorId = selectedEvent.createdBy?._id || selectedEvent.createdBy;
+    return String(userId) === String(creatorId);
+  }, [user, selectedEvent]);
+
   // Initial load when category changes
   useEffect(() => {
     if (selectedCategoryId && selectedCategory) {
@@ -371,6 +378,23 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
 
   return (
     <div className="layout-builder-container unified-view">
+      {!isEditable && (
+        <div style={{
+          background: 'linear-gradient(90deg, #b45309, #92400e)',
+          color: '#fff',
+          padding: '8px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '13px',
+          fontWeight: 600,
+          letterSpacing: '0.02em',
+          borderBottom: '1px solid rgba(255,255,255,0.15)',
+        }}>
+          <Icon icon="mdi:eye-outline" style={{ fontSize: '18px', flexShrink: 0 }} />
+          <span>View Only — You are assigned to this event. Only the event creator can edit the layout.</span>
+        </div>
+      )}
       <div className="builder-main">
         <div className="builder-sidebar">
           <div className="sidebar-card categories-card">
@@ -406,7 +430,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
             </div>
           </div>
 
-          {selectedCategoryId && (
+          {selectedCategoryId && isEditable && (
             <div className="sidebar-card summary-card" style={{ marginTop: '20px' }}>
               <div className="sidebar-header">
                 <h4 className="bt-section-title-layout">Designer Tools</h4>
@@ -557,7 +581,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
         <div className="canvas-area" style={{ background: '#f5f5f5' }}>
           <div className="canvas-toolbar">
             <h4 className="canvas-title">
-              {selectedCategory ? `Designing: ${selectedCategory.priceName}` : "Select a category to design"}
+              {/* {selectedCategory ? `Designing: ${selectedCategory.priceName}` : "Select a category to design"} */}
             </h4>
             <div className="zoom-controls">
               <button
@@ -624,7 +648,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                           key={item.id}
                           id={item.id}
                           {...item}
-                          draggable={!['bg-border', 'bg-main', 'left-stripe'].includes(item.id)}
+                          draggable={isEditable && !['bg-border', 'bg-main', 'left-stripe'].includes(item.id)}
                           onClick={() => setSelectedId(item.id)}
                           onTap={() => setSelectedId(item.id)}
                           onDragEnd={e => handleDragEnd(e, item.id)}
@@ -638,7 +662,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                           key={item.id}
                           id={item.id}
                           {...item}
-                          draggable
+                          draggable={isEditable}
                           onClick={() => setSelectedId(item.id)}
                           onTap={() => setSelectedId(item.id)}
                           onDragEnd={e => handleDragEnd(e, item.id)}
@@ -651,7 +675,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                         <DynamicImage
                           key={item.id}
                           {...item}
-                          draggable
+                          draggable={isEditable}
                           onClick={() => setSelectedId(item.id)}
                           onTap={() => setSelectedId(item.id)}
                           onDragEnd={e => handleDragEnd(e, item.id)}
@@ -665,7 +689,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                           key={item.id}
                           id={item.id}
                           x={item.x} y={item.y}
-                          draggable
+                          draggable={isEditable}
                           onClick={() => setSelectedId(item.id)}
                           onTap={() => setSelectedId(item.id)}
                           onDragEnd={e => handleDragEnd(e, item.id)}
@@ -686,7 +710,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                     }
                     return null;
                   })}
-                  {selectedId && (
+                  {selectedId && isEditable && (
                     <Transformer
                       ref={transformerRef}
                       boundBoxFunc={(oldBox, newBox) => {

@@ -4,7 +4,7 @@ import { Stage, Layer, Circle, Text, Group, Rect, Line, Transformer, Image as Ko
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useEventsContext } from "../hooks/useEventsContext";
 import "./LayoutBuilder.css";
-import ManageCategoryModal from "./Modal/ManageCategoryModal";
+import ManageCategoryModal from "./modal/ManageCategoryModal";
 import priceLevelService from "../services/priceLevelService";
 
 import { showDeleteConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
@@ -364,17 +364,32 @@ const LayoutBuilder = ({ selectedEvent }) => {
     const placedCount = placedItems.filter(i => i.categoryId === category.id).length;
     const remaining = category.quantity - placedCount;
     const count = Math.max(1, Math.min(Number(batchCount) || 1, remaining));
-    const spacing = Math.max(20, Number(batchSpacing) || 50);
+    
+    let spacing = Number(batchSpacing) || 50;
+    let startX = Number(batchStartX);
+    let startY = Number(batchStartY);
+
+    if (snapToGrid) {
+      startX = Math.round(startX / GRID_SIZE) * GRID_SIZE;
+      startY = Math.round(startY / GRID_SIZE) * GRID_SIZE;
+      // Snap spacing to GRID_SIZE to maintain uniform alignment
+      spacing = Math.round(spacing / GRID_SIZE) * GRID_SIZE;
+      if (spacing < GRID_SIZE) spacing = GRID_SIZE;
+    }
+
     const prefix = category.name.length > 5 ? category.name.substring(0, 3).toUpperCase() : category.name;
     const newItems = [];
     for (let i = 0; i < count; i++) {
       const labelNum = Number(batchLabelStart) + i;
+      let x = batchDirection === 'row' ? startX + i * spacing : startX;
+      let y = batchDirection === 'row' ? startY : startY + i * spacing;
+
       newItems.push({
         id: `item-${Date.now()}-${i}`,
         categoryId: category.id,
         label: `${prefix}-${labelNum}`,
-        x: batchDirection === 'row' ? Number(batchStartX) + i * spacing : Number(batchStartX),
-        y: batchDirection === 'row' ? Number(batchStartY) : Number(batchStartY) + i * spacing,
+        x,
+        y,
         scaleX: 1,
         scaleY: 1,
         rotation: 0,
@@ -399,19 +414,26 @@ const LayoutBuilder = ({ selectedEvent }) => {
     trRef.current.getLayer()?.batchDraw();
   }, [selectedIds]);
 
-  const handleTransformEnd = (e) => {
-    const node = e.target;
-    const id = node.id();
+  const handleTransformEnd = () => {
+    if (!trRef.current) return;
+    const nodes = trRef.current.nodes();
+    if (nodes.length === 0) return;
+
     pushHistory([...placedItems]);
-    setPlacedItems(prev => prev.map(item =>
-      item.id === id ? {
-        ...item,
+
+    const updates = {};
+    nodes.forEach(node => {
+      updates[node.id()] = {
         x: node.x(),
         y: node.y(),
         scaleX: node.scaleX(),
         scaleY: node.scaleY(),
         rotation: node.rotation(),
-      } : item
+      };
+    });
+
+    setPlacedItems(prev => prev.map(item =>
+      updates[item.id] ? { ...item, ...updates[item.id] } : item
     ));
   };
 
@@ -428,20 +450,27 @@ const LayoutBuilder = ({ selectedEvent }) => {
       ));
       return;
     }
-    const dx = newX - startPos.x;
-    const dy = newY - startPos.y;
+
+    // Calculate raw delta
+    let dx = newX - startPos.x;
+    let dy = newY - startPos.y;
+
+    // If snapping is on, snap the LEADER's new position and derive a snapped delta
+    if (snapToGrid) {
+      const snappedNewX = Math.round((startPos.x + dx) / GRID_SIZE) * GRID_SIZE;
+      const snappedNewY = Math.round((startPos.y + dy) / GRID_SIZE) * GRID_SIZE;
+      dx = snappedNewX - startPos.x;
+      dy = snappedNewY - startPos.y;
+    }
+
     pushHistory([...placedItems]);
     setPlacedItems(prev => prev.map(item => {
       if (!selectedIds.has(item.id)) return item;
       const orig = dragStartPositions.current[item.id];
       if (!orig) return item;
-      let nx = orig.x + dx;
-      let ny = orig.y + dy;
-      if (snapToGrid) {
-        nx = Math.round(nx / GRID_SIZE) * GRID_SIZE;
-        ny = Math.round(ny / GRID_SIZE) * GRID_SIZE;
-      }
-      return { ...item, x: nx, y: ny };
+
+      // Apply the same (possibly snapped) delta to everyone in the selection
+      return { ...item, x: orig.x + dx, y: orig.y + dy };
     }));
     dragStartPositions.current = {};
   };
@@ -1196,7 +1225,6 @@ const LayoutBuilder = ({ selectedEvent }) => {
                         });
                       }}
                       onDragEnd={(e) => handleDragEnd(item.id, e.target.x(), e.target.y())}
-                      onTransformEnd={handleTransformEnd}
                       onClick={(e) => handleItemClick(item.id, e)}
                       onTap={(e) => handleItemClick(item.id, e)}
                     >
@@ -1251,6 +1279,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
                 {selectedIds.size > 0 && (
                   <Transformer
                     ref={trRef}
+                    onTransformEnd={handleTransformEnd}
+                    rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
                     boundBoxFunc={(oldBox, newBox) => {
                       if (newBox.width < 10 || newBox.height < 10) return oldBox;
                       return newBox;

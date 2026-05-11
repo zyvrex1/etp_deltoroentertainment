@@ -1,140 +1,101 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import {
-    Stage,
-    Layer,
-    Rect,
-    Circle,
-    Text,
-    Group,
-    Line,
-    Image as KonvaImage,
-} from 'react-konva';
-import useImage from 'use-image';
-import { Icon } from '@iconify/react';
-import { useAuthContext } from '../hooks/useAuthContext';
-import './promoterboothlayout.css';
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Icon } from "@iconify/react";
+import { Stage, Layer, Circle, Text, Group, Rect, Line, Transformer, Image as KonvaImage } from "react-konva";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { useEventsContext } from "../hooks/useEventsContext";
+import "./promoterboothlayout.css";
+import ManageCategoryModal from "../admincomponents/modal/ManageCategoryModal";
+import priceLevelService from "../services/priceLevelService";
 
-const BackgroundImage = ({ item, onClick }) => {
-    const [img] = useImage(item.imageUrl);
-    const isBg = item.isBackground || item.type === "background";
-    const w = item.width || (isBg ? 400 : 45);
-    const h = item.height || (isBg ? 300 : 45);
+import { showDeleteConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 
-    if (!img) return null;
-
-    return (
-        <KonvaImage
-            id={item.id?.toString()}
-            image={img}
-            x={item.x}
-            y={item.y}
-            width={w}
-            height={h}
-            scaleX={item.scaleX || 1}
-            scaleY={item.scaleY || 1}
-            rotation={item.rotation || 0}
-            onClick={onClick}
-            onTap={onClick}
-            opacity={0.6}
-        />
-    );
-};
-
-const BackgroundShape = ({ item, onClick }) => {
-    const isBg = item.isBackground || item.type === "background";
-    const isElement = item.isElement || item.type === "element";
-    const w = item.width || 100;
-    const h = item.height || 100;
-
-    return (
-        <Group
-            id={item.id?.toString()}
-            x={item.x}
-            y={item.y}
-            scaleX={item.scaleX || 1}
-            scaleY={item.scaleY || 1}
-            rotation={item.rotation || 0}
-            onClick={onClick}
-            onTap={onClick}
-        >
-            <Rect
-                width={w}
-                height={h}
-                fill={item.color || (isBg ? "#f5f5f5" : "#90caf9")}
-                opacity={isBg ? 0.3 : 0.8}
-                stroke={isElement ? "#333" : "transparent"}
-                strokeWidth={1}
-            />
-            {isElement && (
-                <Text
-                    text={item.label || item.code || ""}
-                    width={w}
-                    height={h}
-                    align="center"
-                    verticalAlign="middle"
-                    fontSize={14}
-                    fill="black"
-                    fontStyle="bold"
-                    listening={false}
-                />
-            )}
-        </Group>
-    );
-};
-
-const calculateTableSeats = (centerX, centerY, radius, seatCount) => {
-    const seats = [];
-    const distance = radius + 12;
-    for (let i = 0; i < seatCount; i++) {
-        const angle = (i * 2 * Math.PI) / seatCount;
-        seats.push({
-            x: centerX + distance * Math.cos(angle),
-            y: centerY + distance * Math.sin(angle),
-        });
-    }
-    return seats;
-};
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "";
+const API_URL = `${BASE_URL}/api/events`;
 
 const PromoterBoothLayout = ({ selectedEvent }) => {
     const { user } = useAuthContext();
-    const [localItems, setLocalItems] = useState([]);
-    const [priceLevels, setPriceLevels] = useState([]);
-    const [selectedId, setSelectedId] = useState(null);
+    const { dispatch } = useEventsContext();
     const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
+
+    const [placedItems, setPlacedItems] = useState([]);
+
+    const isOwner = React.useMemo(() => {
+        if (!user || !selectedEvent) return false;
+        const userId = user._id || user.id;
+        const creatorId = selectedEvent.createdBy?._id || selectedEvent.createdBy;
+        return String(userId) === String(creatorId);
+    }, [user, selectedEvent]);
+
+    // Batch placement modal
+    const [batchModal, setBatchModal] = useState(null); // null or { category }
+    const [batchDirection, setBatchDirection] = useState('row');
+    const [batchCount, setBatchCount] = useState(1);
+    const [batchSpacing, setBatchSpacing] = useState(50);
+    const [batchStartX, setBatchStartX] = useState(100);
+    const [batchStartY, setBatchStartY] = useState(100);
+    const [batchLabelStart, setBatchLabelStart] = useState(1);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const lastClickedIdRef = useRef(null);
+    // drag-group refs — store start positions of all selected items when drag begins
+    const dragStartPositions = useRef({});
     const [zoom, setZoom] = useState(1);
     const [fitScale, setFitScale] = useState(1);
     const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
     const [containerSize, setContainerSize] = useState({ w: 800, h: 600 });
+    const [snapToGrid, setSnapToGrid] = useState(true);
+    const stageRef = useRef(null);
+    const trRef = useRef(null);
     const [isSyncing, setIsSyncing] = useState(false);
 
-    // Canvas & background image state
-    const [canvasWidth, setCanvasWidth] = useState(1400);
-    const [canvasHeight, setCanvasHeight] = useState(900);
-    const [bgKonvaImage, setBgKonvaImage] = useState(null);
+    // Manual panning refs — no React state = no re-render lag during pan
+    const isPanningRef = useRef(false);
+    const lastPointerRef = useRef({ x: 0, y: 0 });
+
+    const [backgroundImage, setBackgroundImage] = useState(null);
     const [bgOpacity, setBgOpacity] = useState(0.4);
-    const [bgWidth, setBgWidth] = useState(null);
-    const [bgHeight, setBgHeight] = useState(null);
+    const [bgKonvaImage, setBgKonvaImage] = useState(null);
+    const [bgModalOpen, setBgModalOpen] = useState(false);
+    const bgFileInputRef = useRef(null);
 
-    const containerRef = useRef(null);
-    const stageRef = useRef(null);
-    const GRID_SIZE = 20;
+    const historyStack = useRef([]);
+    const futureStack = useRef([]);
+    const [canUndo, setCanUndo] = useState(false);
+    const [canRedo, setCanRedo] = useState(false);
 
-    const parseBoothSizePx = useCallback((boothSize) => {
-        const UNIT = 4;
-        if (!boothSize || typeof boothSize !== 'string') return { w: 40, h: 40 };
-        const parts = boothSize.toLowerCase().split('x');
-        if (parts.length !== 2) return { w: 40, h: 40 };
-        const wUnits = parseInt(parts[0], 10);
-        const hUnits = parseInt(parts[1], 10);
-        if (isNaN(wUnits) || isNaN(hUnits) || wUnits <= 0 || hUnits <= 0) return { w: 40, h: 40 };
-        return { w: Math.max(20, wUnits * UNIT), h: Math.max(20, hUnits * UNIT) };
+    const pushHistory = useCallback((snapshot) => {
+        historyStack.current.push(snapshot);
+        futureStack.current = [];
+        setCanUndo(true);
+        setCanRedo(false);
     }, []);
+
+    const handleUndo = useCallback(() => {
+        if (historyStack.current.length === 0) return;
+        const prev = historyStack.current.pop();
+        futureStack.current.push(placedItems);
+        setPlacedItems(prev);
+        setCanUndo(historyStack.current.length > 0);
+        setCanRedo(true);
+    }, [placedItems]);
+
+    const handleRedo = useCallback(() => {
+        if (futureStack.current.length === 0) return;
+        const next = futureStack.current.pop();
+        historyStack.current.push(placedItems);
+        setPlacedItems(next);
+        setCanUndo(true);
+        setCanRedo(futureStack.current.length > 0);
+    }, [placedItems]);
 
     const handleSyncBooths = async () => {
         if (!selectedEvent?._id || !user?.token) return;
+
         setIsSyncing(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || ""}/api/events/${selectedEvent._id}/sync-booths`, {
+            const response = await fetch(`${API_URL}/${selectedEvent._id}/sync-booths`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${user.token}`,
@@ -143,13 +104,12 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
             });
             const data = await response.json();
             if (response.ok) {
-                // Trigger layout re-fetch
-                fetchLayout();
-                const { showSuccessAlert } = await import("../utils/sweetAlert");
-                showSuccessAlert("Sync Complete", data.message || "Booth statuses updated.");
+                if (data.event) {
+                    dispatch({ type: "UPDATE_EVENT", payload: data.event });
+                }
+                showSuccessAlert("Sync Complete", data.message || "Booth statuses synced.");
             } else {
-                const { showErrorAlert } = await import("../utils/sweetAlert");
-                showErrorAlert("Sync Failed", data.error || "Failed to reconcile booths.");
+                showErrorAlert("Sync Failed", data.error || "Failed to reconcile.");
             }
         } catch (err) {
             console.error("Sync error:", err);
@@ -158,77 +118,36 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
         }
     };
 
-    const fetchLayout = async () => {
-        if (!selectedEvent?._id) return;
-        try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || ""}/api/events/${selectedEvent._id}`);
-            const data = await response.json();
+    const [canvasWidth, setCanvasWidth] = useState(1400);
+    const [canvasHeight, setCanvasHeight] = useState(900);
+    const [canvasWInput, setCanvasWInput] = useState(1400);
+    const [canvasHInput, setCanvasHInput] = useState(900);
 
-            let savedItems = [];
-            if (data.layoutData && data.layoutData.items) {
-                savedItems = data.layoutData.items;
-            } else {
-                savedItems = [
-                    ...(data.seatMap?.sections[0]?.seats || []),
-                    ...(data.seatMap?.elements || []),
-                    ...(data.seatMap?.backgrounds || []),
-                    ...(data.booths || []),
-                ];
-            }
+    const [bgWidth, setBgWidth] = useState(null);
+    const [bgHeight, setBgHeight] = useState(null);
 
-            const normalizedItems = savedItems.map((item) => ({
-                ...item,
-                id: item._id || item.id,
-                status: item.status || "available",
-                type: item.type?.toLowerCase() || (item.isBooth ? "booth" : item.isElement ? "element" : "background"),
-                categoryId: item.categoryId || item.priceLevelId,
-            }));
+    const containerRef = useRef(null);
+    const GRID_SIZE = 20;
 
-            setLocalItems(normalizedItems);
+    /**
+     * Parse a booth size string like "10x10", "10x20", "10x30" into pixel dimensions.
+     * Base: "10x10" = 40×40 px  →  1 unit = 4 px.
+     */
+    const parseBoothSizePx = useCallback((boothSize) => {
+        const UNIT = 4;
+        if (!boothSize || typeof boothSize !== 'string') return { w: 40, h: 40 };
+        const parts = boothSize.toLowerCase().split('x');
+        if (parts.length !== 2) return { w: 40, h: 40 };
+        const wUnits = parseInt(parts[0], 10);
+        const hUnits = parseInt(parts[1], 10);
+        if (isNaN(wUnits) || isNaN(hUnits) || wUnits <= 0 || hUnits <= 0) return { w: 40, h: 40 };
+        return {
+            w: Math.max(20, wUnits * UNIT),
+            h: Math.max(20, hUnits * UNIT),
+        };
+    }, []);
 
-            if (data.priceLevels) {
-                const normalizedCategories = data.priceLevels.map(pl => ({
-                    _id: pl._id,
-                    priceName: pl.priceName,
-                    facePrice: pl.facePrice,
-                    quantityAvailable: pl.quantityAvailable,
-                    color: pl.color || "#666666",
-                    type: pl.type || "Seat (Circle)",
-                    boothSize: pl.boothSize || "",
-                    quantitySold: pl.quantitySold || 0
-                }));
-                setPriceLevels(normalizedCategories);
-            }
-
-            if (data.layoutData) {
-                const ld = data.layoutData;
-                const cw = ld.canvasWidth || 1400;
-                const ch = ld.canvasHeight || 900;
-                setCanvasWidth(cw);
-                setCanvasHeight(ch);
-
-                if (ld.backgroundImage) {
-                    setBgOpacity(ld.bgOpacity ?? 0.4);
-                    const img = new window.Image();
-                    img.src = ld.backgroundImage;
-                    img.onload = () => {
-                        setBgKonvaImage(img);
-                        setBgWidth(ld.bgWidth || cw);
-                        setBgHeight(ld.bgHeight || ch);
-                    };
-                } else {
-                    setBgKonvaImage(null);
-                }
-            }
-        } catch (error) {
-            console.error("Error loading layout:", error);
-        }
-    };
-
-    useEffect(() => {
-        fetchLayout();
-    }, [selectedEvent?._id]);
-
+    // Re-fit whenever the container or canvas size changes
     useEffect(() => {
         const recalc = () => {
             if (!containerRef.current) return;
@@ -239,89 +158,679 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
             const scaleY = (clientHeight - padding) / canvasHeight;
             const fs = Math.min(scaleX, scaleY, 1);
             setFitScale(fs);
-            setZoom(fs);
+            setZoom(fs); // reset to 100% (fit)
+            // Center the canvas in the container
             setStagePos({
                 x: (clientWidth - canvasWidth * fs) / 2,
                 y: (clientHeight - canvasHeight * fs) / 2,
             });
         };
+        // Run after mount (so containerRef is attached)
         const timer = setTimeout(recalc, 50);
         const ro = new ResizeObserver(recalc);
         if (containerRef.current) ro.observe(containerRef.current);
         return () => { clearTimeout(timer); ro.disconnect(); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [canvasWidth, canvasHeight]);
 
-    const sortedItems = useMemo(() => {
-        return [...localItems].sort((a, b) => {
-            const getWeight = (item) => {
-                if (item.isBackground || item.type === "background") return 1;
-                if (item.isElement || item.type === "element") return 2;
-                return 3;
-            };
-            return getWeight(a) - getWeight(b);
-        });
-    }, [localItems]);
-
-    const totalPlacedCount = localItems.filter(i => ["seat", "booth", "table"].includes(i.type)).length;
-    const currentRevenue = localItems.reduce((sum, item) => {
-        if (item.status === 'sold' || item.status === 'partially-sold' || item.status === 'reserved') {
-            const cat = priceLevels.find(p => p._id === item.categoryId);
-            return sum + (cat ? cat.facePrice : 0);
+    useEffect(() => {
+        if (selectedEvent?.priceLevels) {
+            const normalizedCategories = selectedEvent.priceLevels.map(pl => ({
+                id: pl._id,
+                name: pl.priceName,
+                price: pl.facePrice,
+                quantity: pl.quantityAvailable,
+                color: pl.color || "#666666",
+                type: pl.type || "Seat (Circle)",
+                boothSize: pl.boothSize || ""
+            }));
+            setCategories(normalizedCategories);
         }
-        return sum;
+
+        else if (selectedEvent?.ticketCategories) {
+            const normalizedCategories = selectedEvent.ticketCategories.map(cat => ({
+                ...cat,
+                id: cat._id || cat.id || Date.now().toString()
+            }));
+            setCategories(normalizedCategories);
+        }
+
+        if (selectedEvent?.layoutData) {
+            historyStack.current = [];
+            futureStack.current = [];
+            setCanUndo(false);
+            setCanRedo(false);
+            setPlacedItems(selectedEvent.layoutData.items || []);
+
+            const cw = selectedEvent.layoutData.canvasWidth || 1400;
+            const ch = selectedEvent.layoutData.canvasHeight || 900;
+            setCanvasWidth(cw); setCanvasWInput(cw);
+            setCanvasHeight(ch); setCanvasHInput(ch);
+
+            const savedBg = selectedEvent.layoutData.backgroundImage || null;
+            setBackgroundImage(savedBg);
+            setBgOpacity(selectedEvent.layoutData.bgOpacity ?? 0.4);
+            if (savedBg) {
+                const img = new window.Image();
+                img.src = savedBg;
+                img.onload = () => {
+                    setBgKonvaImage(img);
+                    setBgWidth(selectedEvent.layoutData.bgWidth || cw);
+                    setBgHeight(selectedEvent.layoutData.bgHeight || ch);
+                };
+            } else {
+                setBgKonvaImage(null);
+                setBgWidth(null);
+                setBgHeight(null);
+            }
+        }
+    }, [selectedEvent]);
+
+    const handleSaveCategory = async (categoryData) => {
+        if (!selectedEvent?._id) return;
+        if (!isOwner) return showErrorAlert("Access Denied", "Only the event creator can manage categories.");
+
+        try {
+            if (editingCategory) {
+                const updatedPriceLevel = {
+                    priceName: categoryData.name,
+                    facePrice: categoryData.price,
+                    quantityAvailable: categoryData.quantity,
+                    color: categoryData.color,
+                    type: categoryData.type,
+                    boothSize: categoryData.boothSize,
+                    isActive: true
+                };
+
+                const result = await priceLevelService.updatePriceLevel(
+                    selectedEvent._id,
+                    editingCategory.id,
+                    updatedPriceLevel,
+                    user.token
+                );
+
+                if (result) {
+                    const updatedEvent = result.event || result;
+                    const normalizedCategories = updatedEvent.priceLevels.map(pl => ({
+                        id: pl._id,
+                        name: pl.priceName,
+                        price: pl.facePrice,
+                        quantity: pl.quantityAvailable,
+                        color: pl.color || "#666666",
+                        type: pl.type || "Seat (Circle)",
+                        boothSize: pl.boothSize || ""
+                    }));
+                    setCategories(normalizedCategories);
+                    dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
+                    showSuccessAlert("Updated", "Category has been updated successfully.");
+                }
+            } else {
+                const newPriceLevel = {
+                    priceName: categoryData.name,
+                    facePrice: categoryData.price,
+                    quantityAvailable: categoryData.quantity,
+                    color: categoryData.color,
+                    type: categoryData.type,
+                    boothSize: categoryData.boothSize,
+                    isActive: true
+                };
+
+                const result = await priceLevelService.addPriceLevels(
+                    selectedEvent._id,
+                    [newPriceLevel],
+                    user.token
+                );
+
+                if (result) {
+                    const updatedEvent = result.event || result;
+                    const normalizedCategories = updatedEvent.priceLevels.map(pl => ({
+                        id: pl._id,
+                        name: pl.priceName,
+                        price: pl.facePrice,
+                        quantity: pl.quantityAvailable,
+                        color: pl.color || "#666666",
+                        type: pl.type || "Seat (Circle)",
+                        boothSize: pl.boothSize || ""
+                    }));
+                    setCategories(normalizedCategories);
+
+                    const matchedBack = updatedEvent.priceLevels.find(pl => pl.priceName === categoryData.name);
+                    if (matchedBack) {
+                        setPlacedItems(prev => prev.map(item =>
+                            item.categoryId === categoryData.id ? { ...item, categoryId: matchedBack._id } : item
+                        ));
+                    }
+
+                    dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
+                    showSuccessAlert("Added", "New category has been created.");
+                }
+            }
+            setEditingCategory(null);
+            setIsAddCategoryModalOpen(false);
+        } catch (error) {
+            console.error("Save category error:", error);
+            showErrorAlert("Error", error.message || "Failed to save category.");
+        }
+    };
+
+    const deleteCategory = async (id) => {
+        if (!selectedEvent?._id) return;
+        if (!isOwner) return showErrorAlert("Access Denied", "You do not have permission to delete categories for this event.");
+
+        const result = await showDeleteConfirmAlert(
+            "Delete Category?",
+            "Deleting this category will also remove all placed shapes associated with it from the map. This cannot be undone."
+        );
+
+        const hasSoldItems = placedItems.some(i => i.categoryId === id && (i.status === 'sold' || i.status === 'reserved'));
+        if (hasSoldItems) {
+            showErrorAlert("Cannot Delete", "This category contains sold booths and cannot be deleted.");
+            return;
+        }
+
+        if (result.isConfirmed) {
+            try {
+                const response = await priceLevelService.deletePriceLevel(selectedEvent._id, id, user.token);
+                if (response) {
+                    const updatedEvent = response.event || response;
+                    const normalizedCats = updatedEvent.priceLevels.map(pl => ({
+                        id: pl._id,
+                        name: pl.priceName,
+                        price: pl.facePrice,
+                        quantity: pl.quantityAvailable,
+                        color: pl.color || "#666666",
+                        type: pl.type || "Seat (Circle)",
+                        boothSize: pl.boothSize || ""
+                    }));
+
+                    setCategories(normalizedCats);
+                    setPlacedItems(prev => prev.filter(item => item.categoryId !== id));
+                    dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
+                    showSuccessAlert("Deleted", "Category and associated shapes have been removed.");
+                }
+            } catch (error) {
+                console.error("Delete category error:", error);
+                showErrorAlert("Error", error.message || "Failed to delete category.");
+            }
+        }
+    };
+
+    const openBatchModal = (category) => {
+        if (!isOwner) return;
+        const placedCount = placedItems.filter(i => i.categoryId === category.id).length;
+        const remaining = category.quantity - placedCount;
+        if (remaining <= 0) {
+            showErrorAlert("Limit Reached", "All units for this category have been placed.");
+            return;
+        }
+        setBatchModal({ category });
+        setBatchDirection('row');
+        setBatchCount(Math.min(remaining, 10));
+        setBatchSpacing(50);
+        setBatchStartX(100);
+        setBatchStartY(100);
+        setBatchLabelStart(placedCount + 1);
+    };
+
+    const handleConfirmBatchPlace = () => {
+        if (!batchModal) return;
+        const { category } = batchModal;
+        const placedCount = placedItems.filter(i => i.categoryId === category.id).length;
+        const remaining = category.quantity - placedCount;
+        const count = Math.max(1, Math.min(Number(batchCount) || 1, remaining));
+        
+        let spacing = Number(batchSpacing) || 50;
+        let startX = Number(batchStartX);
+        let startY = Number(batchStartY);
+
+        if (snapToGrid) {
+            startX = Math.round(startX / GRID_SIZE) * GRID_SIZE;
+            startY = Math.round(startY / GRID_SIZE) * GRID_SIZE;
+            // Snap spacing to GRID_SIZE to maintain uniform alignment
+            spacing = Math.round(spacing / GRID_SIZE) * GRID_SIZE;
+            if (spacing < GRID_SIZE) spacing = GRID_SIZE;
+        }
+
+        const prefix = category.name.length > 5 ? category.name.substring(0, 3).toUpperCase() : category.name;
+        const newItems = [];
+        for (let i = 0; i < count; i++) {
+            const labelNum = Number(batchLabelStart) + i;
+            let x = batchDirection === 'row' ? startX + i * spacing : startX;
+            let y = batchDirection === 'row' ? startY : startY + i * spacing;
+
+            newItems.push({
+                id: `item-${Date.now()}-${i}`,
+                categoryId: category.id,
+                label: `${prefix}-${labelNum}`,
+                x,
+                y,
+                scaleX: 1,
+                scaleY: 1,
+                rotation: 0,
+                type: category.type.includes("Seat") ? "seat" : "booth",
+                isBooth: !category.type.includes("Seat"),
+                isSeat: category.type.includes("Seat"),
+            });
+        }
+        pushHistory([...placedItems]);
+        setPlacedItems(prev => [...prev, ...newItems]);
+        setSelectedIds(new Set(newItems.map(i => i.id)));
+        lastClickedIdRef.current = newItems[newItems.length - 1]?.id || null;
+        setBatchModal(null);
+    };
+
+    useEffect(() => {
+        if (!trRef.current || !stageRef.current) return;
+        const nodes = [...selectedIds]
+            .map(id => stageRef.current.findOne(`#${id}`))
+            .filter(Boolean);
+        trRef.current.nodes(nodes);
+        trRef.current.getLayer()?.batchDraw();
+    }, [selectedIds]);
+
+    const handleTransformEnd = () => {
+        if (!trRef.current) return;
+        const nodes = trRef.current.nodes();
+        if (nodes.length === 0) return;
+
+        pushHistory([...placedItems]);
+
+        const updates = {};
+        nodes.forEach(node => {
+            updates[node.id()] = {
+                x: node.x(),
+                y: node.y(),
+                scaleX: node.scaleX(),
+                scaleY: node.scaleY(),
+                rotation: node.rotation(),
+            };
+        });
+
+        setPlacedItems(prev => prev.map(item =>
+            updates[item.id] ? { ...item, ...updates[item.id] } : item
+        ));
+    };
+
+    // Called when ANY dragged item finishes — moves entire selection by the same delta
+    const handleDragEnd = (draggedId, newX, newY) => {
+        const startPos = dragStartPositions.current[draggedId];
+        if (!startPos) {
+            // Fallback: single item, snap and commit
+            const snappedX = snapToGrid ? Math.round(newX / GRID_SIZE) * GRID_SIZE : newX;
+            const snappedY = snapToGrid ? Math.round(newY / GRID_SIZE) * GRID_SIZE : newY;
+            pushHistory([...placedItems]);
+            setPlacedItems(prev => prev.map(item =>
+                item.id === draggedId ? { ...item, x: snappedX, y: snappedY } : item
+            ));
+            return;
+        }
+
+        // Calculate raw delta
+        let dx = newX - startPos.x;
+        let dy = newY - startPos.y;
+
+        // If snapping is on, snap the LEADER's new position and derive a snapped delta
+        if (snapToGrid) {
+            const snappedNewX = Math.round((startPos.x + dx) / GRID_SIZE) * GRID_SIZE;
+            const snappedNewY = Math.round((startPos.y + dy) / GRID_SIZE) * GRID_SIZE;
+            dx = snappedNewX - startPos.x;
+            dy = snappedNewY - startPos.y;
+        }
+
+        pushHistory([...placedItems]);
+        setPlacedItems(prev => prev.map(item => {
+            if (!selectedIds.has(item.id)) return item;
+            const orig = dragStartPositions.current[item.id];
+            if (!orig) return item;
+
+            // Apply the same (possibly snapped) delta to everyone in the selection
+            return { ...item, x: orig.x + dx, y: orig.y + dy };
+        }));
+
+        dragStartPositions.current = {};
+    };
+
+    // Ctrl+Click = toggle, Shift+Click = range, plain click = single
+    const handleItemClick = (itemId, e) => {
+        const nativeEvt = e.evt;
+        if (nativeEvt.ctrlKey || nativeEvt.metaKey) {
+            // Toggle this item
+            setSelectedIds(prev => {
+                const next = new Set(prev);
+                if (next.has(itemId)) { next.delete(itemId); }
+                else { next.add(itemId); lastClickedIdRef.current = itemId; }
+                return next;
+            });
+        } else if (nativeEvt.shiftKey && lastClickedIdRef.current) {
+            // Range select from lastClickedId to itemId
+            const ids = placedItems.map(i => i.id);
+            const a = ids.indexOf(lastClickedIdRef.current);
+            const b = ids.indexOf(itemId);
+            const [from, to] = a < b ? [a, b] : [b, a];
+            const rangeIds = ids.slice(from, to + 1);
+            setSelectedIds(prev => new Set([...prev, ...rangeIds]));
+        } else {
+            // Plain click — single select
+            setSelectedIds(new Set([itemId]));
+            lastClickedIdRef.current = itemId;
+        }
+    };
+
+    const handleSaveLayout = async () => {
+        if (!user) return showErrorAlert("Unauthorized", "You must be logged in.");
+        if (!isOwner) return showErrorAlert("Access Denied", "Only the event creator can save changes to the layout.");
+
+        const priceLevels = categories.map(c => ({
+            _id: c.id,
+            priceName: c.name,
+            facePrice: c.price,
+            quantityAvailable: c.quantity,
+            color: c.color,
+            type: c.type,
+            boothSize: c.boothSize,
+            isActive: true
+        }));
+
+        const seats = placedItems
+            .filter(i => i.type === 'seat' || (!i.isBooth && !i.isElement && !i.isBackground && i.type !== 'booth'))
+            .map(item => {
+                const cat = categories.find(c => c.id === item.categoryId);
+                return {
+                    id: item.id,
+                    label: item.label,
+                    priceLevelId: cat ? cat.id : "none",
+                    status: "available",
+                    x: item.x,
+                    y: item.y,
+                    scaleX: item.scaleX || 1,
+                    scaleY: item.scaleY || 1,
+                    rotation: item.rotation || 0
+                };
+            });
+
+        const boothsData = placedItems
+            .filter(i => i.type === 'booth' || i.isBooth)
+            .map(item => {
+                const cat = categories.find(c => c.id === item.categoryId);
+                return {
+                    id: item.id,
+                    label: item.label,
+                    priceLevelId: cat ? cat.id : "none",
+                    status: "available",
+                    x: item.x,
+                    y: item.y,
+                    scaleX: item.scaleX || 1,
+                    scaleY: item.scaleY || 1,
+                    rotation: item.rotation || 0,
+                    boothType: item.type || "Booth (Square)",
+                    boothSize: item.boothSize || "4x4",
+                };
+            });
+
+        const payload = {
+            priceLevels,
+            seatMap: {
+                sections: [{ name: "Main Section", seats }]
+            },
+            booths: boothsData,
+            ticketCategories: categories,
+            layoutData: {
+                items: placedItems,
+                canvasWidth,
+                canvasHeight,
+                backgroundImage: backgroundImage || null,
+                bgOpacity,
+                bgWidth: bgWidth || null,
+                bgHeight: bgHeight || null,
+            }
+        };
+
+        if (!user || !user.token) {
+            return showErrorAlert("Unauthorized", "Authentication token is missing. Please log in again.");
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/${selectedEvent._id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${user.token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const json = await response.json();
+
+            if (response.ok) {
+                dispatch({ type: "UPDATE_EVENT", payload: json.event || json });
+                showSuccessAlert("Saved", "Layout configuration saved successfully.");
+            } else {
+                showErrorAlert("Save Failed", json.error || json.message || "Failed to save layout.");
+            }
+        } catch (error) {
+            console.error("Save error:", error);
+            showErrorAlert("Error", "An unexpected error occurred while saving the layout.");
+        }
+    };
+
+    const removePlacedItem = (id) => {
+        if (!isOwner) return showErrorAlert("Access Denied", "You do not have permission to modify this layout.");
+        // If multiple selected, remove all selected; otherwise just the given id
+        const toRemove = selectedIds.size > 1 ? [...selectedIds] : [id];
+        const locked = toRemove.filter(rid => {
+            const it = placedItems.find(i => i.id === rid);
+            return it && (it.status === 'sold' || it.status === 'reserved');
+        });
+        if (locked.length > 0) {
+            showErrorAlert("Protected", `${locked.length} item(s) are sold/reserved and cannot be removed.`);
+            return;
+        }
+        pushHistory([...placedItems]);
+        setPlacedItems(prev => prev.filter(item => !toRemove.includes(item.id)));
+        setSelectedIds(new Set());
+        lastClickedIdRef.current = null;
+    };
+
+    const totalPlaced = placedItems.length;
+    const potentialRevenue = categories.reduce((sum, c) => sum + (c.price * c.quantity), 0);
+    const currentRevenue = placedItems.reduce((sum, item) => {
+        const cat = categories.find(c => c.id === item.categoryId);
+        return sum + (cat ? cat.price : 0);
     }, 0);
-    const potentialRevenue = priceLevels.reduce((sum, p) => sum + ((p.facePrice || 0) * (p.quantityAvailable || 0)), 0);
+
+    // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Y = redo, Escape = deselect
+    useEffect(() => {
+        const onKeyDown = (e) => {
+            const tag = e.target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+            if (e.key === 'Escape') {
+                setSelectedIds(new Set());
+                lastClickedIdRef.current = null;
+            } else if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                handleUndo();
+            } else if (e.ctrlKey && (e.key === 'y' || e.key === 'Y')) {
+                e.preventDefault();
+                handleRedo();
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [handleUndo, handleRedo]);
 
     const renderGrid = () => {
         const lines = [];
-        const extent = 5000;
-        const MAJOR_GRID = 100;
-        for (let i = -extent; i <= extent; i += GRID_SIZE) {
-            const isMajor = i % MAJOR_GRID === 0;
-            const isAxis = i === 0;
-            const strokeColor = isAxis ? "#94a3b8" : (isMajor ? "#cbd5e1" : "#e5e7eb");
-            const strokeWidth = isAxis ? 1.5 : (isMajor ? 1 : 0.5);
+        for (let i = 0; i <= CANVAS_WIDTH / GRID_SIZE; i++) {
             lines.push(
-                <Line key={`v-${i}`} points={[i, -extent, i, extent]} stroke={strokeColor} strokeWidth={strokeWidth} listening={false} />
+                <Line
+                    key={`v-${i}`}
+                    points={[i * GRID_SIZE, 0, i * GRID_SIZE, CANVAS_HEIGHT]}
+                    stroke="#eee"
+                    strokeWidth={1}
+                />
             );
+        }
+        for (let i = 0; i <= CANVAS_HEIGHT / GRID_SIZE; i++) {
             lines.push(
-                <Line key={`h-${i}`} points={[-extent, i, extent, i]} stroke={strokeColor} strokeWidth={strokeWidth} listening={false} />
+                <Line
+                    key={`h-${i}`}
+                    points={[0, i * GRID_SIZE, CANVAS_WIDTH, i * GRID_SIZE]}
+                    stroke="#eee"
+                    strokeWidth={1}
+                />
             );
         }
         return lines;
     };
 
+    const computeFitDimensions = (img, cw = canvasWidth, ch = canvasHeight) => {
+        const imgAspect = img.naturalWidth / img.naturalHeight;
+        const canvasAspect = cw / ch;
+        if (imgAspect > canvasAspect) {
+            return { w: cw, h: cw / imgAspect };
+        } else {
+            return { w: ch * imgAspect, h: ch };
+        }
+    };
+
+    const handleBgImageUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const dataUrl = ev.target.result;
+            setBackgroundImage(dataUrl);
+            const img = new window.Image();
+            img.src = dataUrl;
+            img.onload = () => {
+                setBgKonvaImage(img);
+                const { w, h } = computeFitDimensions(img);
+                setBgWidth(w);
+                setBgHeight(h);
+            };
+        };
+        reader.readAsDataURL(file);
+        e.target.value = "";
+    };
+
+    const handleFitToStage = () => {
+        if (!bgKonvaImage) return;
+        const { w, h } = computeFitDimensions(bgKonvaImage);
+        setBgWidth(w);
+        setBgHeight(h);
+    };
+
+    const handleRemoveBgImage = () => {
+        setBackgroundImage(null);
+        setBgKonvaImage(null);
+        setBgWidth(null);
+        setBgHeight(null);
+    };
+
+    const applyCanvasSize = () => {
+        const w = Math.max(200, Math.min(5000, Number(canvasWInput) || 1400));
+        const h = Math.max(200, Math.min(5000, Number(canvasHInput) || 900));
+        setCanvasWidth(w);
+        setCanvasHeight(h);
+        setCanvasWInput(w);
+        setCanvasHInput(h);
+        if (bgKonvaImage) {
+            const { w: bw, h: bh } = computeFitDimensions(bgKonvaImage, w, h);
+            setBgWidth(bw);
+            setBgHeight(bh);
+        }
+    };
+
     return (
-        <div className="layout-builder-container unified-view promoter-view">
+        <div className="layout-builder-container unified-view">
+            {!isOwner && (
+                <div style={{
+                    background: 'linear-gradient(90deg, #b45309, #92400e)',
+                    color: '#fff',
+                    padding: '8px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    letterSpacing: '0.02em',
+                    borderBottom: '1px solid rgba(255,255,255,0.15)',
+                }}>
+                    <Icon icon="mdi:eye-outline" style={{ fontSize: '18px', flexShrink: 0 }} />
+                    <span>View Only — You are assigned to this event. Only the event creator can edit the layout.</span>
+                </div>
+            )}
             <div className="builder-main">
                 <div className="builder-sidebar">
-                    {/* Ticket Categories */}
-                    <div className="sidebar-card categories-card" style={{ borderBottom: '1px solid #eee', background: 'transparent' }}>
+                    <div className="sidebar-card categories-card">
                         <div className="sidebar-header">
                             <h4 className="bt-section-title-layout">Ticket Categories</h4>
+                            {isOwner && (
+                                <button
+                                    className="add-category-btn-icon"
+                                    onClick={() => {
+                                        setEditingCategory(null);
+                                        setIsAddCategoryModalOpen(true);
+                                    }}
+                                    title="Add New Category"
+                                >
+                                    <Icon icon="mdi:plus" />
+                                </button>
+                            )}
                         </div>
-                        <div className="sidebar-categories-list" style={{ marginTop: '15px' }}>
-                            {priceLevels.length === 0 ? (
-                                <div className="sidebar-empty-state">No categories defined</div>
+
+                        <div className="sidebar-categories-list">
+                            {categories.length === 0 ? (
+                                <div className="sidebar-empty-state">
+                                    <p>No categories yet. Click "Add" to start.</p>
+                                </div>
                             ) : (
-                                priceLevels.map(cat => {
-                                    const itemsInCat = localItems.filter(i => i.categoryId === cat._id);
-                                    const placed = itemsInCat.length;
-                                    const sold = cat.quantitySold || 0;
+                                categories.map(cat => {
+                                    const placed = placedItems.filter(i => i.categoryId === cat.id).length;
+                                    const remaining = cat.quantity - placed;
+                                    const isFull = remaining <= 0;
 
                                     return (
-                                        <div key={cat._id} className="sidebar-cat-item" style={{ padding: '10px' }}>
-                                            <div className="cat-palette-visual" style={{ backgroundColor: cat.color, width: '32px', height: '32px', fontSize: '16px' }}>
-                                                {cat.type?.includes("Seat") ? <Icon icon="mdi:circle" /> : <Icon icon="mdi:square" />}
+                                        <div key={cat.id} className={`sidebar-cat-item ${isFull ? 'is-full' : ''}`}>
+                                            <div
+                                                className="cat-palette-visual"
+                                                style={{ backgroundColor: cat.color, cursor: isOwner ? 'pointer' : 'default' }}
+                                                onClick={() => isOwner && !isFull && openBatchModal(cat)}
+                                                title={isOwner ? (isFull ? "All units placed" : "Click to place seats/booths on map") : ""}
+                                            >
+                                                {cat.type.includes("Seat") ? <Icon icon="mdi:circle" /> : <Icon icon="mdi:square" />}
                                             </div>
+
                                             <div className="cat-details">
                                                 <div className="cat-top">
-                                                    <span className="cat-name">{cat.priceName}</span>
-                                                    <span className="price">${cat.facePrice?.toFixed(2)}</span>
+                                                    <span className="cat-name">{cat.name}</span>
+                                                    {isOwner && (
+                                                        <div className="cat-actions">
+                                                            <button className="outlined-button" onClick={() => {
+                                                                setEditingCategory(cat);
+                                                                setIsAddCategoryModalOpen(true);
+                                                            }}>
+                                                                <Icon icon="mdi:pencil-outline" />
+                                                            </button>
+                                                            <button className="primary-button" onClick={() => deleteCategory(cat.id)}>
+                                                                <Icon icon="mdi:trash-can-outline" />
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="cat-meta" style={{ fontSize: '10px' }}>
-                                                    <span>{placed} Placed</span>
-                                                    <span>{cat.quantityAvailable - sold} Avail</span>
+                                                <div className="cat-meta">
+                                                    <span className="price">${cat.price.toFixed(2)}</span>
+                                                    <span className="count">{placed}/{cat.quantity} units</span>
+                                                    {cat.boothSize && <span className="size-badge">{cat.boothSize}</span>}
+                                                </div>
+                                                <div className="progress-bar">
+                                                    <div
+                                                        className="progress-fill"
+                                                        style={{
+                                                            width: `${(placed / cat.quantity) * 100}%`,
+                                                            backgroundColor: cat.color
+                                                        }}
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
@@ -331,85 +840,140 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                         </div>
                     </div>
 
-                    {/* Shape Inspector */}
-                    {selectedId && (
-                        <div className="sidebar-card inspector-card" style={{ borderBottom: '1px solid #eee', background: 'transparent' }}>
-                            <div className="sidebar-header">
-                                <h4 className="bt-section-title-layout">Shape Inspector</h4>
-                                <button className="close-btn" onClick={() => setSelectedId(null)}>
-                                    <Icon icon="mdi:close" />
-                                </button>
-                            </div>
-                            <div className="inspector-body">
-                                {(() => {
-                                    const item = localItems.find(i => i.id === selectedId);
-                                    if (!item) return null;
-                                    const category = priceLevels.find(pl => pl._id === item.categoryId);
-                                    return (
+                    {selectedIds.size > 0 && (() => {
+                        const selArray = [...selectedIds];
+                        const selItems = placedItems.filter(i => selectedIds.has(i.id));
+                        const isSingle = selArray.length === 1;
+                        const singleItem = isSingle ? selItems[0] : null;
+                        const singleCat = singleItem ? categories.find(c => c.id === singleItem.categoryId) : null;
+                        const anyLocked = selItems.some(i => i.status === 'sold' || i.status === 'reserved');
+                        return (
+                            <div className="sidebar-card inspector-card">
+                                <div className="sidebar-header">
+                                    <h4 className="bt-section-title-layout">
+                                        {isSingle ? 'Shape Inspector' : `${selArray.length} Selected`}
+                                    </h4>
+                                    <button className="close-btn" onClick={() => { setSelectedIds(new Set()); lastClickedIdRef.current = null; }}>
+                                        <Icon icon="mdi:close" />
+                                    </button>
+                                </div>
+                                <div className="inspector-body">
+                                    {isSingle ? (
                                         <>
                                             <div className="inspector-header-main" onClick={() => setIsInspectorExpanded(!isInspectorExpanded)} style={{ cursor: 'pointer' }}>
                                                 <span className="shape-id">
-                                                    {item.label || item.code}
+                                                    {singleItem.label}
                                                     <Icon icon={isInspectorExpanded ? "mdi:chevron-up" : "mdi:chevron-down"} className="mobile-only-icon" style={{ marginLeft: '4px', verticalAlign: 'middle', fontSize: '20px' }} />
                                                 </span>
-                                                <span className={`value-badge type-${item.type}`}>{item.type?.toUpperCase()}</span>
+                                                <span className={`value-badge type-${singleItem.type}`}>{singleCat?.type.toLowerCase().split(' ')[0]}</span>
                                             </div>
                                             <div className={`summary-list ${isInspectorExpanded ? 'expanded' : ''}`}>
                                                 <div className="summary-item">
                                                     <span className="label">Status</span>
-                                                    <span className={`value status-${item.status}`}>{item.status?.toUpperCase()}</span>
+                                                    <span className={`value status-${singleItem.status || 'available'}`}>{singleItem.status?.toUpperCase() || 'AVAILABLE'}</span>
                                                 </div>
-                                                {item.reservedBy && (
+                                                {singleItem.reservedBy && (
                                                     <>
-                                                        <div className="summary-item">
+                                                        <div className="summary-item mobile-collapsible">
                                                             <span className="label">Buyer</span>
-                                                            <span className="value-bold" style={{ color: 'var(--color-green-primary)' }}>{item.reservedBy}</span>
+                                                            <span className="value-semi" style={{ color: 'var(--color-green-primary)' }}>{singleItem.reservedBy}</span>
                                                         </div>
-                                                        {item.reservedByEmail && (
-                                                            <div className="summary-item">
+                                                        {singleItem.reservedByEmail && (
+                                                            <div className="summary-item mobile-collapsible">
                                                                 <span className="label">Email</span>
-                                                                <span className="value" style={{ fontSize: '11px' }}>{item.reservedByEmail}</span>
+                                                                <span className="value" style={{ fontSize: '11px' }}>{singleItem.reservedByEmail}</span>
+                                                            </div>
+                                                        )}
+                                                        {singleItem.reservedByPO && (
+                                                            <div className="summary-item mobile-collapsible">
+                                                                <span className="label">PO Number</span>
+                                                                <span className="value">{singleItem.reservedByPO}</span>
                                                             </div>
                                                         )}
                                                     </>
                                                 )}
-                                                {category && (
-                                                    <>
-                                                        <div className="summary-item">
-                                                            <span className="label">Category</span>
-                                                            <span className="value">{category.priceName}</span>
-                                                        </div>
-                                                        <div className="summary-item">
-                                                            <span className="label">Price</span>
-                                                            <span className="value-bold">${category.facePrice?.toFixed(2)}</span>
-                                                        </div>
-                                                    </>
+                                                <div className="summary-item mobile-collapsible">
+                                                    <span className="label">Category</span>
+                                                    <span className="value">{singleCat?.name}</span>
+                                                </div>
+                                                <div className="summary-item mobile-collapsible">
+                                                    <span className="label">Price</span>
+                                                    <span className="value-bold">${singleCat?.price.toFixed(2)}</span>
+                                                </div>
+                                                {singleCat?.boothSize && (
+                                                    <div className="summary-item mobile-collapsible">
+                                                        <span className="label">Size</span>
+                                                        <span className="value">{singleCat.boothSize}</span>
+                                                    </div>
                                                 )}
                                             </div>
+                                            {isOwner && (
+                                                <button
+                                                    className={`remove-shape-btn-side ${anyLocked ? 'disabled' : ''}`}
+                                                    onClick={() => removePlacedItem(singleItem.id)}
+                                                    disabled={anyLocked}
+                                                >
+                                                    <Icon icon="mdi:trash-can-outline" /> {anyLocked ? 'Sold (Locked)' : 'Remove from Map'}
+                                                </button>
+                                            )}
                                         </>
-                                    );
-                                })()}
+                                    ) : (
+                                        // Multi-select summary
+                                        <>
+                                            <div className="multiselect-summary">
+                                                <Icon icon="mdi:cursor-pointer" className="multiselect-icon" />
+                                                <span><strong>{selArray.length}</strong> items selected</span>
+                                            </div>
+                                            <div className="summary-list" style={{ marginTop: '10px' }}>
+                                                {/* Group by category */}
+                                                {Object.entries(
+                                                    selItems.reduce((acc, it) => {
+                                                        const cat = categories.find(c => c.id === it.categoryId);
+                                                        const key = cat?.name || 'Unknown';
+                                                        acc[key] = (acc[key] || 0) + 1;
+                                                        return acc;
+                                                    }, {})
+                                                ).map(([catName, count]) => (
+                                                    <div key={catName} className="summary-item">
+                                                        <span className="label">{catName}</span>
+                                                        <span className="value">{count} item{count !== 1 ? 's' : ''}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="multiselect-hint">
+                                                <Icon icon="mdi:drag" /> {isOwner ? 'Drag any selected item to move the group' : 'Selection active'}
+                                            </div>
+                                            {isOwner && (
+                                                <button
+                                                    className={`remove-shape-btn-side ${anyLocked ? 'disabled' : ''}`}
+                                                    onClick={() => removePlacedItem(selArray[0])}
+                                                    disabled={anyLocked}
+                                                >
+                                                    <Icon icon="mdi:trash-can-outline" />
+                                                    {anyLocked ? 'Some items locked' : `Remove ${selArray.length} items`}
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
-                    {/* Venue Summary */}
-                    <div className="sidebar-card summary-card" style={{ background: 'transparent' }}>
-                        <div className="sidebar-header">
-                            <h4 className="bt-section-title-layout">Venue Summary</h4>
-                        </div>
+                    <div className="sidebar-card summary-card">
+                        <h4 className="bt-section-title-layout">Layout Summary</h4>
                         <div className="summary-list">
                             <div className="summary-item">
-                                <span className="label">Placed Items</span>
-                                <span className="value">{totalPlacedCount}</span>
+                                <span className="label">Placed Units</span>
+                                <span className="value">{totalPlaced} / {categories.reduce((a, b) => a + b.quantity, 0)}</span>
                             </div>
                             <div className="summary-item">
-                                <span className="label">Current Rev</span>
-                                <span className="value">${currentRevenue.toLocaleString()}</span>
+                                <span className="label">Current Revenue</span>
+                                <span className="value">${currentRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div className="summary-item total">
-                                <span className="label">Potential</span>
-                                <span className="value-muted">${potentialRevenue.toLocaleString()}</span>
+                                <span className="label">Potential Total</span>
+                                <span className="value-muted">${potentialRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         </div>
                     </div>
@@ -417,40 +981,125 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
 
                 <div className="canvas-area">
                     <div className="canvas-toolbar">
-                        <h4 className="canvas-title">{selectedEvent?.venue?.name || "Venue Map"}</h4>
-                        <div className="zoom-controls">
-                            <button
-                                className={`bt-btn sync-btn ${isSyncing ? 'spinning' : ''}`}
-                                onClick={handleSyncBooths}
-                                disabled={isSyncing}
-                                title="Sync Data"
-                                style={{ marginRight: '10px' }}
-                            >
-                                <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
-                                <span style={{ marginLeft: '5px', fontSize: '12px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
-                            </button>
-                            <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))}>
-                                <Icon icon="mdi:minus" />
-                            </button>
-                            <span
-                                className="zoom-value"
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => {
-                                    setZoom(fitScale);
-                                    if (containerRef.current) {
-                                        const { clientWidth, clientHeight } = containerRef.current;
-                                        setStagePos({
-                                            x: (clientWidth - canvasWidth * fitScale) / 2,
-                                            y: (clientHeight - canvasHeight * fitScale) / 2,
-                                        });
-                                    }
-                                }}
-                            >
-                                {Math.round((zoom / fitScale) * 100)}%
-                            </span>
-                            <button className="bt-btn" onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))}>
-                                <Icon icon="mdi:plus" />
-                            </button>
+                        <h4 className="canvas-title">
+                            {/* {selectedEvent?.venue?.name || "Venue Map"} */}
+                        </h4>
+                        <div className="toolbar-actions">
+                            {isOwner && (
+                                <>
+                                    <button
+                                        className="bt-btn"
+                                        onClick={handleUndo}
+                                        disabled={!canUndo}
+                                        title="Undo (Ctrl+Z)"
+                                    >
+                                        <Icon icon="mdi:undo" /> <span>Undo</span>
+                                    </button>
+                                    <button
+                                        className="bt-btn"
+                                        onClick={handleRedo}
+                                        disabled={!canRedo}
+                                        title="Redo (Ctrl+Y)"
+                                    >
+                                        <Icon icon="mdi:redo" /> <span>Redo</span>
+                                    </button>
+                                </>
+                            )}
+
+                            {isOwner && (
+                                <>
+                                    <input
+                                        ref={bgFileInputRef}
+                                        type="file" accept="image/*"
+                                        style={{ display: 'none' }}
+                                        onChange={handleBgImageUpload}
+                                    />
+
+                                    <button
+                                        className={`bt-btn${backgroundImage ? ' bg-loaded' : ''}`}
+                                        onClick={() => backgroundImage ? setBgModalOpen(true) : bgFileInputRef.current?.click()}
+                                        title={backgroundImage ? 'Floor plan loaded — click to edit' : 'Upload floor plan image'}
+                                    >
+                                        <Icon icon={backgroundImage ? 'mdi:image-check-outline' : 'mdi:image-plus-outline'} />
+                                        <span>Floor Plan</span>
+                                    </button>
+                                </>
+                            )}
+
+                            {isOwner && (
+                                <button
+                                    className={`bt-btn ${snapToGrid ? 'active' : ''}`}
+                                    onClick={() => setSnapToGrid(!snapToGrid)}
+                                    title="Toggle Snap to Grid"
+                                >
+                                    <Icon icon="mdi:grid" /> <span>Snap</span>
+                                </button>
+                            )}
+
+                            <div className="zoom-controls">
+                                {/* <button
+                  className={`bt-btn sync-btn-small ${isSyncing ? 'spinning' : ''}`}
+                  onClick={handleSyncBooths}
+                  disabled={isSyncing}
+                  title="Sync Booth Status with Database"
+                  style={{ marginRight: '10px', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', height: 'auto' }}
+                >
+                  <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
+                  <span style={{ fontSize: '11px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+                </button> */}
+                                <button className="bt-btn" onClick={() => {
+                                    setZoom(z => {
+                                        const next = Math.max(z - 0.1, fitScale * 0.3);
+                                        return next;
+                                    });
+                                }} title="Zoom Out">
+                                    <Icon icon="mdi:minus" />
+                                </button>
+                                <span
+                                    className="zoom-value"
+                                    title="Click to reset to fit"
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => {
+                                        setZoom(fitScale);
+                                        if (containerRef.current) {
+                                            const { clientWidth, clientHeight } = containerRef.current;
+                                            setStagePos({
+                                                x: (clientWidth - canvasWidth * fitScale) / 2,
+                                                y: (clientHeight - canvasHeight * fitScale) / 2,
+                                            });
+                                        }
+                                    }}
+                                >
+                                    {Math.round((zoom / fitScale) * 100)}%
+                                </span>
+                                <button className="bt-btn" onClick={() => {
+                                    setZoom(z => Math.min(z + 0.1, fitScale * 4));
+                                }} title="Zoom In">
+                                    <Icon icon="mdi:plus" />
+                                </button>
+                            </div>
+
+                            {isOwner && (
+                                <>
+                                    <button className="bt-btn clear" onClick={async () => {
+                                        const result = await showDeleteConfirmAlert(
+                                            "Clear Map?",
+                                            "This will remove ALL shapes from the canvas. You will have to re-place items from the sidebar. This cannot be undone."
+                                        );
+                                        if (result.isConfirmed) {
+                                            pushHistory([...placedItems]);
+                                            setPlacedItems([]);
+                                            showSuccessAlert("Cleared", "The map has been cleared.");
+                                        }
+                                    }} title="Clear All Items">
+                                        <Icon icon="mdi:layers-off" /> <span>Clear</span>
+                                    </button>
+
+                                    <button className="bt-btn primary save-layout-btn" onClick={handleSaveLayout} title="Save Venue Layout">
+                                        <Icon icon="mdi:check-circle-outline" /> <span>Save Layout</span>
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -463,15 +1112,56 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                             scaleY={zoom}
                             x={stagePos.x}
                             y={stagePos.y}
-                            draggable
-                            onDragEnd={(e) => {
-                                if (e.target === stageRef.current) {
-                                    setStagePos({ x: e.target.x(), y: e.target.y() });
+                            onClick={(e) => {
+                                if (e.target === e.target.getStage()) {
+                                    setSelectedIds(new Set());
+                                    lastClickedIdRef.current = null;
+                                }
+                            }}
+                            onTap={(e) => {
+                                if (e.target === e.target.getStage()) {
+                                    setSelectedIds(new Set());
+                                    lastClickedIdRef.current = null;
                                 }
                             }}
                             onMouseDown={(e) => {
-                                const clickedOnEmpty = e.target === e.target.getStage();
-                                if (clickedOnEmpty) setSelectedId(null);
+                                // Only pan when clicking the empty stage background — never when an item is clicked
+                                if (e.target !== e.target.getStage()) return;
+                                isPanningRef.current = true;
+                                const pos = stageRef.current.getPointerPosition();
+                                lastPointerRef.current = { x: pos.x, y: pos.y };
+                                stageRef.current.container().style.cursor = 'grabbing';
+                            }}
+                            onMouseMove={(e) => {
+                                if (!isPanningRef.current) return;
+                                const stage = stageRef.current;
+                                const pos = stage.getPointerPosition();
+                                const dx = pos.x - lastPointerRef.current.x;
+                                const dy = pos.y - lastPointerRef.current.y;
+                                lastPointerRef.current = { x: pos.x, y: pos.y };
+                                // Move stage imperatively — no re-render, no flicker
+                                stage.x(stage.x() + dx);
+                                stage.y(stage.y() + dy);
+                                stage.batchDraw();
+                            }}
+                            onMouseUp={() => {
+                                if (!isPanningRef.current) return;
+                                isPanningRef.current = false;
+                                stageRef.current.container().style.cursor = 'default';
+                                // Sync React state once panning is done
+                                setStagePos({
+                                    x: stageRef.current.x(),
+                                    y: stageRef.current.y(),
+                                });
+                            }}
+                            onMouseLeave={() => {
+                                if (!isPanningRef.current) return;
+                                isPanningRef.current = false;
+                                stageRef.current.container().style.cursor = 'default';
+                                setStagePos({
+                                    x: stageRef.current.x(),
+                                    y: stageRef.current.y(),
+                                });
                             }}
                             onWheel={(e) => {
                                 e.evt.preventDefault();
@@ -503,118 +1193,369 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                                         width={bgWidth}
                                         height={bgHeight}
                                         opacity={bgOpacity}
-                                        listening={false}
+                                        onClick={() => setBgModalOpen(true)}
+                                        onTap={() => setBgModalOpen(true)}
                                     />
                                 </Layer>
                             )}
                             <Layer>
-                                {renderGrid()}
-                                {sortedItems.map((item, i) => (
-                                    <React.Fragment key={item.id || i}>
-                                        {item.subType === "Image" || item.imageUrl ? (
-                                            <BackgroundImage
-                                                item={item}
-                                                onClick={() => setSelectedId(item.id)}
+                                {(() => {
+                                    const lines = [];
+                                    const extent = 5000;
+                                    const MAJOR_GRID = 100;
+
+                                    for (let i = -extent; i <= extent; i += GRID_SIZE) {
+                                        const isMajor = i % MAJOR_GRID === 0;
+                                        const isAxis = i === 0;
+
+                                        const baseOpacity = snapToGrid ? 1 : 0.3;
+                                        const strokeColor = isAxis ? "#94a3b8" : (isMajor ? "#cbd5e1" : "#e5e7eb");
+                                        const strokeWidth = isAxis ? 1.5 : (isMajor ? 1 : 0.5);
+
+                                        lines.push(
+                                            <Line
+                                                key={`v-${i}`}
+                                                points={[i, -extent, i, extent]}
+                                                stroke={strokeColor}
+                                                strokeWidth={strokeWidth}
+                                                opacity={baseOpacity}
+                                                listening={false}
                                             />
-                                        ) : (item.type === "seat" || item.type === "booth" || item.type === "table") ? (
-                                            (() => {
-                                                const isBooth = item.type === "booth";
-                                                const cat = priceLevels.find(c => c._id === item.categoryId);
-                                                const { w: boothW, h: boothH } = isBooth
-                                                    ? parseBoothSizePx(cat?.boothSize)
-                                                    : { w: 40, h: 40 };
-                                                return (
-                                                    <Group
-                                                        id={item.id?.toString()}
-                                                        x={item.x}
-                                                        y={item.y}
-                                                        scaleX={item.scaleX || 1}
-                                                        scaleY={item.scaleY || 1}
-                                                        rotation={item.rotation || 0}
-                                                        onClick={() => setSelectedId(item.id)}
-                                                        onTap={() => setSelectedId(item.id)}
-                                                    >
-                                                        {item.type === "table" ? (
-                                                            <>
-                                                                <Circle
-                                                                    radius={25}
-                                                                    fill={cat?.color || "#e0e0e0"}
-                                                                    stroke="white"
-                                                                    strokeWidth={1}
-                                                                />
-                                                                {calculateTableSeats(0, 0, 25, item.seatCount || 4).map((seat, index) => (
-                                                                    <Rect
-                                                                        key={index}
-                                                                        x={seat.x - 6}
-                                                                        y={seat.y - 6}
-                                                                        width={12}
-                                                                        height={12}
-                                                                        fill="#bdbdbd"
-                                                                        cornerRadius={2}
-                                                                        stroke="white"
-                                                                        strokeWidth={1}
-                                                                        strokeScaleEnabled={false}
-                                                                    />
-                                                                ))}
-                                                            </>
-                                                        ) : isBooth ? (
-                                                            <Rect
-                                                                x={-boothW / 2}
-                                                                y={-boothH / 2}
-                                                                width={boothW}
-                                                                height={boothH}
-                                                                fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#e0e0e0")}
-                                                                stroke="#000"
-                                                                strokeWidth={1}
-                                                                strokeScaleEnabled={false}
-                                                            />
-                                                        ) : (
-                                                            <Circle
-                                                                radius={20}
-                                                                fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#666666")}
-                                                                stroke="white"
-                                                                strokeWidth={1}
-                                                            />
-                                                        )}
-                                                        <Text
-                                                            text={item.label || item.code || ""}
-                                                            fontSize={isBooth ? Math.max(8, Math.min(boothW, boothH) / 5) : 9}
-                                                            fontStyle="bold"
-                                                            fill="white"
-                                                            align="center"
-                                                            verticalAlign="middle"
-                                                            x={0}
-                                                            y={0}
-                                                            offsetX={isBooth ? boothW / 2 : 20}
-                                                            offsetY={isBooth ? boothH / 2 : 20}
-                                                            width={isBooth ? boothW : 40}
-                                                            height={isBooth ? boothH : 40}
-                                                            scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
-                                                            scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
-                                                            shadowColor="black"
-                                                            shadowBlur={2}
-                                                            shadowOpacity={0.8}
-                                                            shadowOffset={{ x: 1, y: 1 }}
-                                                        />
-                                                    </Group>
-                                                );
-                                            })()
-                                        ) : (
-                                            <BackgroundShape
-                                                item={item}
-                                                onClick={() => setSelectedId(item.id)}
+                                        );
+                                        lines.push(
+                                            <Line
+                                                key={`h-${i}`}
+                                                points={[-extent, i, extent, i]}
+                                                stroke={strokeColor}
+                                                strokeWidth={strokeWidth}
+                                                opacity={baseOpacity}
+                                                listening={false}
                                             />
-                                        )}
-                                    </React.Fragment>
-                                ))}
+                                        );
+                                    }
+                                    return lines;
+                                })()}
+                                {placedItems.map(item => {
+                                    const category = categories.find(c => c.id === item.categoryId);
+                                    const isSelected = selectedIds.has(item.id);
+                                    const isBooth = item.type === 'booth';
+                                    const { w: boothW, h: boothH } = isBooth
+                                        ? parseBoothSizePx(category?.boothSize)
+                                        : { w: 40, h: 40 };
+
+                                    return (
+                                        <Group
+                                            key={item.id}
+                                            id={item.id}
+                                            x={item.x}
+                                            y={item.y}
+                                            scaleX={item.scaleX}
+                                            scaleY={item.scaleY}
+                                            rotation={item.rotation}
+                                            draggable={isOwner}
+                                            onDragStart={() => {
+                                                if (!isOwner) return;
+                                                // Snapshot positions of all selected items at drag start
+                                                const snap = {};
+                                                placedItems.forEach(pi => {
+                                                    if (selectedIds.has(pi.id)) snap[pi.id] = { x: pi.x, y: pi.y };
+                                                });
+                                                // If dragging an unselected item, select only it
+                                                if (!selectedIds.has(item.id)) {
+                                                    snap[item.id] = { x: item.x, y: item.y };
+                                                    setSelectedIds(new Set([item.id]));
+                                                    lastClickedIdRef.current = item.id;
+                                                }
+                                                dragStartPositions.current = snap;
+                                            }}
+                                            onDragMove={(e) => {
+                                                // Move all other selected nodes in real-time imperatively
+                                                if (selectedIds.size <= 1) return;
+                                                const startPos = dragStartPositions.current[item.id];
+                                                if (!startPos) return;
+                                                const dx = e.target.x() - startPos.x;
+                                                const dy = e.target.y() - startPos.y;
+                                                selectedIds.forEach(sid => {
+                                                    if (sid === item.id) return;
+                                                    const orig = dragStartPositions.current[sid];
+                                                    if (!orig) return;
+                                                    const node = stageRef.current?.findOne(`#${sid}`);
+                                                    if (node) { node.x(orig.x + dx); node.y(orig.y + dy); }
+                                                });
+                                            }}
+                                            onDragEnd={(e) => handleDragEnd(item.id, e.target.x(), e.target.y())}
+                                            onClick={(e) => handleItemClick(item.id, e)}
+                                            onTap={(e) => handleItemClick(item.id, e)}
+                                        >
+                                            {isBooth ? (
+                                                <Rect
+                                                    x={-boothW / 2}
+                                                    y={-boothH / 2}
+                                                    width={boothW}
+                                                    height={boothH}
+                                                    fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
+                                                    stroke={'#000'}
+                                                    strokeWidth={1}
+                                                    strokeScaleEnabled={false}
+                                                    shadowBlur={isSelected ? 10 : 0}
+                                                    shadowColor="#000"
+                                                    shadowOpacity={0.2}
+                                                />
+                                            ) : (
+                                                <Circle
+                                                    radius={20}
+                                                    fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
+                                                    stroke={'#fff'}
+                                                    strokeWidth={1}
+                                                    shadowBlur={isSelected ? 10 : 0}
+                                                    shadowColor="#000"
+                                                    shadowOpacity={0.2}
+                                                />
+                                            )}
+                                            <Text
+                                                text={item.label}
+                                                fontSize={isBooth ? Math.max(8, Math.min(boothW, boothH) / 5) : 9}
+                                                fontStyle="bold"
+                                                fill="white"
+                                                align="center"
+                                                verticalAlign="middle"
+                                                x={0}
+                                                y={0}
+                                                offsetX={isBooth ? boothW / 2 : 20}
+                                                offsetY={isBooth ? boothH / 2 : 20}
+                                                width={isBooth ? boothW : 40}
+                                                height={isBooth ? boothH : 40}
+                                                scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
+                                                scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
+                                                shadowColor="black"
+                                                shadowBlur={2}
+                                                shadowOpacity={0.8}
+                                                shadowOffset={{ x: 1, y: 1 }}
+                                            />
+                                        </Group>
+                                    );
+                                })}
+                                {isOwner && selectedIds.size > 0 && (
+                                    <Transformer
+                                        ref={trRef}
+                                        onTransformEnd={handleTransformEnd}
+                                        rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+                                        boundBoxFunc={(oldBox, newBox) => {
+                                            if (newBox.width < 10 || newBox.height < 10) return oldBox;
+                                            return newBox;
+                                        }}
+                                    />
+                                )}
                             </Layer>
                         </Stage>
                     </div>
                 </div>
             </div>
+
+            <ManageCategoryModal
+                isOpen={isAddCategoryModalOpen}
+                onClose={() => setIsAddCategoryModalOpen(false)}
+                onSave={handleSaveCategory}
+                editingCategory={editingCategory}
+            />
+
+            {/* ── Batch Placement Modal ── */}
+            {batchModal && (() => {
+                const cat = batchModal.category;
+                const placedCount = placedItems.filter(i => i.categoryId === cat.id).length;
+                const remaining = cat.quantity - placedCount;
+                const safeCount = Math.max(1, Math.min(Number(batchCount) || 1, remaining));
+                return (
+                    <div className="batch-modal-overlay" onClick={() => setBatchModal(null)}>
+                        <div className="batch-modal" onClick={e => e.stopPropagation()}>
+                            <div className="batch-modal-header">
+                                <div className="batch-modal-title">
+                                    <span className="batch-cat-dot" style={{ background: cat.color }} />
+                                    <h4>Place {cat.type.includes('Seat') ? 'Seats' : 'Booths'}</h4>
+                                    <span className="batch-cat-name">{cat.name}</span>
+                                </div>
+                                <button className="batch-modal-close" onClick={() => setBatchModal(null)}>
+                                    <Icon icon="mdi:close" />
+                                </button>
+                            </div>
+
+                            <div className="batch-modal-body">
+                                {/* Direction Toggle */}
+                                <div className="batch-field">
+                                    <label className="batch-label">Arrangement</label>
+                                    <div className="batch-direction-toggle">
+                                        <button
+                                            className={`batch-dir-btn ${batchDirection === 'row' ? 'active' : ''}`}
+                                            onClick={() => setBatchDirection('row')}
+                                        >
+                                            <Icon icon="mdi:arrow-right" />
+                                            <span>Row (Horizontal)</span>
+                                        </button>
+                                        <button
+                                            className={`batch-dir-btn ${batchDirection === 'column' ? 'active' : ''}`}
+                                            onClick={() => setBatchDirection('column')}
+                                        >
+                                            <Icon icon="mdi:arrow-down" />
+                                            <span>Column (Vertical)</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Preview strip */}
+                                <div className="batch-preview">
+                                    {Array.from({ length: Math.min(safeCount, 12) }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={`batch-preview-dot ${batchDirection === 'column' ? 'col-mode' : ''}`}
+                                            style={{
+                                                background: cat.color,
+                                                borderRadius: cat.type.includes('Seat') ? '50%' : '4px',
+                                            }}
+                                        />
+                                    ))}
+                                    {safeCount > 12 && <span className="batch-preview-more">+{safeCount - 12} more</span>}
+                                </div>
+
+                                <div className="batch-fields-grid">
+                                    {/* Count */}
+                                    <div className="batch-field">
+                                        <label className="batch-label">
+                                            <Icon icon="mdi:counter" /> Count
+                                            <span className="batch-hint">max {remaining}</span>
+                                        </label>
+                                        <input
+                                            id="batch-count"
+                                            type="number" min="1" max={remaining}
+                                            className="batch-input"
+                                            value={batchCount}
+                                            onChange={e => setBatchCount(Math.min(remaining, Math.max(1, Number(e.target.value))))}
+                                        />
+                                    </div>
+
+                                    {/* Spacing */}
+                                    <div className="batch-field">
+                                        <label className="batch-label">
+                                            <Icon icon="mdi:arrow-expand-horizontal" /> Spacing (px)
+                                        </label>
+                                        <input
+                                            id="batch-spacing"
+                                            type="number" min="20" max="500"
+                                            className="batch-input"
+                                            value={batchSpacing}
+                                            onChange={e => setBatchSpacing(Number(e.target.value))}
+                                        />
+                                    </div>
+
+                                    {/* Start X */}
+                                    <div className="batch-field">
+                                        <label className="batch-label">
+                                            <Icon icon="mdi:map-marker" /> Start X
+                                        </label>
+                                        <input
+                                            id="batch-start-x"
+                                            type="number" min="0"
+                                            className="batch-input"
+                                            value={batchStartX}
+                                            onChange={e => setBatchStartX(Number(e.target.value))}
+                                        />
+                                    </div>
+
+                                    {/* Start Y */}
+                                    <div className="batch-field">
+                                        <label className="batch-label">
+                                            <Icon icon="mdi:map-marker" /> Start Y
+                                        </label>
+                                        <input
+                                            id="batch-start-y"
+                                            type="number" min="0"
+                                            className="batch-input"
+                                            value={batchStartY}
+                                            onChange={e => setBatchStartY(Number(e.target.value))}
+                                        />
+                                    </div>
+
+                                    {/* Label start number */}
+                                    <div className="batch-field">
+                                        <label className="batch-label">
+                                            <Icon icon="mdi:label-outline" /> Label Start #
+                                        </label>
+                                        <input
+                                            id="batch-label-start"
+                                            type="number" min="1"
+                                            className="batch-input"
+                                            value={batchLabelStart}
+                                            onChange={e => setBatchLabelStart(Number(e.target.value))}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="batch-info-row">
+                                    <Icon icon="mdi:information-outline" />
+                                    <span>Placing <strong>{safeCount}</strong> {cat.type.includes('Seat') ? 'seat' : 'booth'}{safeCount !== 1 ? 's' : ''} as a <strong>{batchDirection}</strong> — {remaining - safeCount} of {remaining} remaining units left after.</span>
+                                </div>
+                            </div>
+
+                            <div className="batch-modal-footer">
+                                <button className="batch-cancel-btn" onClick={() => setBatchModal(null)}>
+                                    Cancel
+                                </button>
+                                <button className="batch-confirm-btn" onClick={handleConfirmBatchPlace}>
+                                    <Icon icon="mdi:check-circle-outline" />
+                                    Place {safeCount} {cat.type.includes('Seat') ? (safeCount === 1 ? 'Seat' : 'Seats') : (safeCount === 1 ? 'Booth' : 'Booths')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {bgModalOpen && (
+                <div className="bg-modal-overlay" onClick={() => setBgModalOpen(false)}>
+                    <div className="bg-modal" onClick={(e) => e.stopPropagation()}>
+
+                        <div className="bg-modal-header">
+                            <h4><Icon icon="mdi:image-edit-outline" /> Floor Plan Settings</h4>
+                            <button className="bg-modal-close" onClick={() => setBgModalOpen(false)}>
+                                <Icon icon="mdi:close" />
+                            </button>
+                        </div>
+
+                        <div className="bg-modal-body">
+                            <img src={backgroundImage} alt="Floor plan" className="bg-modal-thumb" />
+
+                            <button className="bg-fit-btn bg-fit-btn--full" onClick={handleFitToStage}>
+                                <Icon icon="mdi:fit-to-screen-outline" />
+                                <span>Fit to Canvas</span>
+                            </button>
+
+                            <label className="bg-opacity-label">
+                                <Icon icon="mdi:opacity" />
+                                <span>Opacity</span>
+                                <span className="bg-opacity-value">{Math.round(bgOpacity * 100)}%</span>
+                            </label>
+
+                            <input
+                                type="range" min="0.05" max="1" step="0.05"
+                                value={bgOpacity}
+                                onChange={(e) => setBgOpacity(parseFloat(e.target.value))}
+                                className="bg-opacity-slider"
+                            />
+
+                            <div className="bg-modal-actions">
+                                <button className="bt-btn" onClick={() => bgFileInputRef.current?.click()}>
+                                    <Icon icon="mdi:image-edit-outline" /><span>Replace</span>
+                                </button>
+                                <button className="bt-btn clear" onClick={() => { handleRemoveBgImage(); setBgModalOpen(false); }}>
+                                    <Icon icon="mdi:image-remove-outline" /><span>Remove</span>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 export default PromoterBoothLayout;
-
