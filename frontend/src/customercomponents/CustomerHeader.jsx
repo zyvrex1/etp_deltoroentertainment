@@ -101,13 +101,14 @@ export default function CustomerHeader() {
                         <button className="customer-profile-btn" onClick={toggleDropdown}>
                             <div className="customer-avatar">
                                 {authUser.avatar ? (
-                                    <img 
-                                        src={authUser.avatar.startsWith('http') || authUser.avatar.startsWith('data:') 
-                                            ? authUser.avatar 
-                                            : `${BACKEND_URL}${authUser.avatar}`} 
-                                        alt="Profile" 
-                                        className="customer-avatar-img" 
-                                    />
+                                        <img 
+                                            src={authUser.avatar.startsWith('http') || authUser.avatar.startsWith('data:') 
+                                                ? authUser.avatar 
+                                                : `${BACKEND_URL}${authUser.avatar}`} 
+                                            alt="Profile" 
+                                            className="customer-avatar-img" 
+                                            onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
+                                        />
                                 ) : (
                                     getInitials(authUser.firstName, authUser.lastName)
                                 )}
@@ -195,6 +196,7 @@ export default function CustomerHeader() {
                                                 : `${BACKEND_URL}${authUser.avatar}`} 
                                             alt="Profile" 
                                             className="mobile-avatar-img" 
+                                            onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
                                         />
                                     ) : (
                                         getInitials(authUser.firstName, authUser.lastName)

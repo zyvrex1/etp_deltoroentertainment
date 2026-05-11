@@ -13,6 +13,11 @@ const reservationService = {
   getMyReservations: async (token) => {
     const response = await api.get('/reservations/my-booths', reservationService.getAuthHeaders(token));
     return response.data;
+  },
+  
+  getEventBooths: async (eventId, token) => {
+    const response = await api.get(`/reservations/event/${eventId}/booths`, reservationService.getAuthHeaders(token));
+    return response.data;
   }
 };
 

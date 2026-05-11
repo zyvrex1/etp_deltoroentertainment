@@ -2,16 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { useAuthContext } from "../hooks/useAuthContext";
+import reservationService from "../services/reservationService";
 import "./CustomerStoreBooths.css";
 
-const sampleBooths = [
-  { id: 1, sponsorId: "s1", boothNumber: "Booth #102", companyName: "Texas Home Pros", industry: "Home & Living", products: 12, logo: "/uploads/monday-content-post-1-0429260249.jpg", description: "Your one-stop shop for home renovation and interior design." },
-  { id: 2, sponsorId: "s2", boothNumber: "Booth #205", companyName: "Laugh Out Loud Events", industry: "Entertainment", products: 18, logo: "/uploads/guey-funny-comedy-show-march-20-0429260231.jpg", description: "Specializing in comedy tours and live performances." },
-  { id: 3, sponsorId: "s3", boothNumber: "Booth #310", companyName: "Tejano Beats", industry: "Music", products: 25, logo: "/uploads/grupo-siggno,-solido-and-secretto-flyers-2026-mock-up-0429260228.jpg", description: "The heart of Tejano music, merchandise, and exclusive vinyls." },
-  { id: 4, sponsorId: "s4", boothNumber: "Booth #118", companyName: "Valley Harvest", industry: "Local Produce", products: 8, logo: "/uploads/weslaco-texas-onion-fest-0429260226.jpg", description: "Fresh produce and local favorites from the Rio Grande Valley." },
-  { id: 5, sponsorId: "s5", boothNumber: "Booth #422", companyName: "Fanfair Express", industry: "Sports", products: 15, logo: "/uploads/siggno-advertising-poster-0429260219.jpg", description: "Exclusive sports memorabilia and fan gear for all ages." },
-  { id: 6, sponsorId: "s6", boothNumber: "Booth #55", companyName: "Health First Texas", industry: "Health & Wellness", products: 10, logo: "/uploads/yhm-event-page-cover-pharr-1777152601031.jpg", description: "Commit to your health with our expert wellness programs." },
-];
+
 
 const CustomerStoreBooths = () => {
   const { user } = useAuthContext();
@@ -25,9 +19,41 @@ const CustomerStoreBooths = () => {
     eventName: "Event"
   };
 
+  const [boothData, setBoothData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBooths = async () => {
+      if (!eventId || !user?.token) return;
+      try {
+        setLoading(true);
+        const reservations = await reservationService.getEventBooths(eventId, user.token);
+        
+        const mappedBooths = reservations.map(res => ({
+          id: res._id,
+          sponsorId: res.user?._id,
+          boothNumber: res.boothCode || "N/A",
+          companyName: res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
+          industry: res.user?.industry || "Sponsor",
+          products: 0, // We could fetch product count if needed
+          logo: res.user?.logo ? `/uploads/${res.user.logo}` : (res.user?.avatar ? `/uploads/${res.user.avatar}` : '/assets/eventbg.jpg'),
+          description: res.user?.description || "No description available."
+        }));
+        
+        setBoothData(mappedBooths);
+      } catch (error) {
+        console.error("Error fetching booths:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooths();
+  }, [eventId, user?.token]);
+
   const itemsPerPage = 8;
 
-  const filteredBooths = sampleBooths.filter((booth) => {
+  const filteredBooths = boothData.filter((booth) => {
     return booth.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booth.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booth.boothNumber.toLowerCase().includes(searchQuery.toLowerCase());
@@ -87,7 +113,12 @@ const CustomerStoreBooths = () => {
         </div>
 
         <div className="csb-grid">
-          {paginatedData.length > 0 ? (
+          {loading ? (
+            <div className="cs-loading-state">
+              <Icon icon="mdi:loading" className="spin" width="48" />
+              <p>Loading stores...</p>
+            </div>
+          ) : paginatedData.length > 0 ? (
             paginatedData.map((booth) => (
               <div
                 key={booth.id}
@@ -103,7 +134,11 @@ const CustomerStoreBooths = () => {
                 })}
               >
                 <div className="csb-card-image-wrap">
-                  <img src={booth.logo} alt={booth.companyName} />
+                  <img 
+                    src={booth.logo} 
+                    alt={booth.companyName} 
+                    onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
+                  />
                   <div className="csb-booth-badge button-label">{booth.boothNumber}</div>
                 </div>
                 <div className="csb-card-details">

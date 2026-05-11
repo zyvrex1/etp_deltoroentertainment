@@ -266,11 +266,32 @@ const removeExhibitor = async (req, res) => {
     }
 };
 
+// Fetch all booth reservations for a specific event (used by Customers to see "Stores")
+const getEventBoothReservations = async (req, res) => {
+    const { eventId } = req.params;
+
+    try {
+        const reservations = await Reservation.find({ 
+            event: eventId,
+            type: 'booth',
+            status: 'confirmed'
+        })
+        .populate('user', 'firstName lastName email companyName phone avatar industry description logo')
+        .sort({ createdAt: -1 });
+
+        res.status(200).json(reservations);
+    } catch (error) {
+        console.error("GET EVENT BOOTH RESERVATIONS ERROR:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getMyReservations,
     getAllReservations,
     deleteReservation,
     getReservationById,
     addExhibitors,
-    removeExhibitor
+    removeExhibitor,
+    getEventBoothReservations
 };

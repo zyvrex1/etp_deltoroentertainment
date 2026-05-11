@@ -8,6 +8,20 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
     const navigate = useNavigate();
 
+    const [heroImage, setHeroImage] = React.useState('/assets/eventbg.jpg');
+
+    React.useEffect(() => {
+        if (eventData?.image) {
+            const imgUrl = eventData.image.startsWith('http') ? eventData.image : `${BACKEND_URL}/uploads/${eventData.image}`;
+            setHeroImage(imgUrl);
+            const img = new Image();
+            img.src = imgUrl;
+            img.onerror = () => setHeroImage('/assets/eventbg.jpg');
+        } else {
+            setHeroImage('/assets/eventbg.jpg');
+        }
+    }, [eventData, BACKEND_URL]);
+
     if (!show) return null;
 
     const handleRequestRefund = () => {
@@ -36,7 +50,7 @@ const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
                     <div 
                         className="cved-banner" 
                         style={{ 
-                            backgroundImage: `url(${eventData?.image ? (eventData.image.startsWith('http') ? eventData.image : `${BACKEND_URL}/uploads/${eventData.image}`) : '/assets/eventbg.jpg'})` 
+                            backgroundImage: `url(${heroImage})` 
                         }}
                     >
                         <div className="cved-banner-text">

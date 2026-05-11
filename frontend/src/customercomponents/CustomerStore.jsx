@@ -2,25 +2,22 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { useAuthContext } from "../hooks/useAuthContext";
+import { useCustomerCart } from "../context/CustomerCartContext";
+import eventsService from "../services/eventsService";
 import "./CustomerStore.css";
 
-const samplePurchasedEvents = [
-        { id: 1, title: 'Texas Home Show', date: 'Aug 7', location: 'Bert Ogden Arena', price: '$45 - $150', category: 'Concert', image: '/uploads/monday-content-post-1-0429260249.jpg', time: '14:00 - 18:00', availability: 450, products: 8, status: 'Live' },
-        { id: 2, title: 'Guey Funny Comedy Show', date: 'May 1', location: 'La Villa', price: '$30 - $80', category: 'Concert', image: '/uploads/guey-funny-comedy-show-march-20-0429260231.jpg', time: '10:00 - 15:00', availability: 120, products: 12, status: 'Completed' },
-        { id: 3, title: 'Siggno Solido Secretto', date: 'Apr 30', location: 'Magnolia Halle', price: '$50 - $200', category: 'Theater', image: '/uploads/grupo-siggno,-solido-and-secretto-flyers-2026-mock-up-0429260228.jpg', time: '16:00 - 20:00', availability: 85, products: 15, status: 'Live' },
-        { id: 4, title: 'Weslaco Texas OnionFest', date: 'Aug 1', location: 'Greet & Gather Downtown Weslaco', price: '$60 - $120', category: 'Concert', image: '/uploads/weslaco-texas-onion-fest-0429260226.jpg', time: '11:00 - 16:00', availability: 1500, products: 6, status: 'Upcoming' },
-        { id: 5, title: 'Tejano Music Awards Fanfair', date: 'Jul 25', location: 'Henry B. Gonzales Convention Center', price: '$100 - $500', category: 'Sports', image: '/uploads/siggno-advertising-poster-0429260219.jpg', time: '10:00 - 18:00', availability: 300, products: 20, status: 'Live' },
-        { id: 6, title: 'Your Health Matters', date: 'Aug 25', location: 'Creative Arts Studio (Texas)', price: '$25 - $50', category: 'Concert', image: '/uploads/yhm-event-page-cover-pharr-1777152601031.jpg', time: '10:00 - 18:00', availability: 200, products: 4, status: 'Upcoming' },
-];
+
 
 const CustomerStore = () => {
   const { user } = useAuthContext();
+  const { purchaseHistory } = useCustomerCart();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [eventData, setEventData] = useState(samplePurchasedEvents);
+  const [eventData, setEventData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const itemsPerPage = 8;
   const dropdownRef = useRef(null);
@@ -33,6 +30,74 @@ const CustomerStore = () => {
       default: return "";
     }
   };
+
+  // Fetch and filter events
+  useEffect(() => {
+    const fetchAndFilterEvents = async () => {
+      if (!user?.token) return;
+      
+      try {
+        setLoading(true);
+        const allEvents = await eventsService.getEvents(user.token);
+        
+        // Get unique event IDs from purchase history
+        const bookedEventIds = new Set(
+          purchaseHistory
+            .map(item => item.event?._id)
+            .filter(Boolean)
+        );
+
+        // Filter allEvents to only those booked by the user
+        const bookedEvents = allEvents.filter(event => bookedEventIds.has(event._id));
+
+        // Map to UI format
+        const mappedEvents = bookedEvents.map(event => {
+          let status = "Live";
+          if (event.status === "completed") {
+            status = "Completed";
+          } else if (event.status === "approved") {
+            const now = new Date();
+            const startDate = new Date(event.startDate);
+            if (startDate > now) {
+              status = "Upcoming";
+            }
+          }
+
+          // Price range
+          let priceRange = "N/A";
+          if (event.priceLevels && event.priceLevels.length > 0) {
+            const prices = event.priceLevels.map(pl => pl.facePrice);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            priceRange = minPrice === maxPrice ? `$${minPrice}` : `$${minPrice} - $${maxPrice}`;
+          }
+
+          return {
+            id: event._id,
+            title: event.title,
+            date: new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            location: event.venue?.name || "Unknown Location",
+            price: priceRange,
+            category: event.category,
+            image: event.image ? `/uploads/${event.image}` : '/assets/eventbg.jpg',
+            time: `${event.startTime} - ${event.endTime}`,
+            availability: (event.totalTickets || 0) - (event.ticketsSold || 0),
+            products: event.boothsSold || 0, // Using boothsSold as "Stores"
+            status: status,
+            _id: event._id
+          };
+        });
+
+        setEventData(mappedEvents);
+      } catch (error) {
+        console.error("Error fetching events for store:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAndFilterEvents();
+  }, [user?.token, purchaseHistory]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -127,11 +192,20 @@ const CustomerStore = () => {
         </div>
 
         <div className="cs-events-grid">
-          {paginatedData.length > 0 ? (
+          {loading ? (
+            <div className="cs-loading-state">
+              <Icon icon="mdi:loading" className="spin" width="48" />
+              <p>Loading your events...</p>
+            </div>
+          ) : paginatedData.length > 0 ? (
             paginatedData.map((event) => (
               <div key={event.id} className="cs-event-card">
                 <div className="cs-card-image-wrap">
-                  <img src={event.image} alt={event.title} />
+                  <img 
+                    src={event.image} 
+                    alt={event.title} 
+                    onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
+                  />
                   <div className={`cs-status-badge button-label ${getStatusClass(event.status)}`}>
                     {event.status}
                   </div>
@@ -170,7 +244,11 @@ const CustomerStore = () => {
               <Icon icon="mdi:magnify-close" width="48" />
               <h4>No events found</h4>
               <p className="small-body-text">
-                No events match "<strong>{searchQuery}</strong>".
+                {searchQuery ? (
+                  <>No events match "<strong>{searchQuery}</strong>".</>
+                ) : (
+                  "You haven't booked any events yet. Book an event to see available stores!"
+                )}
               </p>
             </div>
           )}

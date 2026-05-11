@@ -218,7 +218,12 @@ export default function CustomerSettings() {
                         <div className="cs-avatar-section">
                             <div className="cs-avatar-circle">
                                 {profile.avatar ? (
-                                    <img src={profile.avatar} alt="Profile" className="cs-avatar-image" />
+                                    <img 
+                                        src={profile.avatar} 
+                                        alt="Profile" 
+                                        className="cs-avatar-image" 
+                                        onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
+                                    />
                                 ) : (
                                     <span className="cs-avatar-text">
                                         {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}

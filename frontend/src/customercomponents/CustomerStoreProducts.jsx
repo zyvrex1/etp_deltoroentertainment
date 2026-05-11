@@ -162,7 +162,12 @@ const CustomerStoreProducts = () => {
             paginatedData.map((product) => (
               <div key={product._id || product.id} className="csp-card">
                 <div className="csp-card-img-wrap">
-                  <img src={getProductImage(product.image)} alt={product.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                  <img 
+                    src={getProductImage(product.image)} 
+                    alt={product.name} 
+                    style={{width: '100%', height: '100%', objectFit: 'cover'}} 
+                    onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
+                  />
                   <div className={`csp-category-badge button-label ${product.category.toLowerCase()}`}>{product.category}</div>
                 </div>
                 <div className="csp-card-content">
