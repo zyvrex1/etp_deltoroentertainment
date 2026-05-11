@@ -1005,3 +1005,46 @@
         }
     }
 }
+
+/* Custom Chart Tooltip Styling */
+.custom-chart-tooltip {
+    background: rgba(255, 255, 255, 0.98);
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--color-black-quaternary);
+    text-align: left;
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+}
+
+.custom-chart-tooltip .tooltip-label {
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    color: var(--color-black-primary);
+    font-size: 14px;
+    border-bottom: 1px solid var(--color-black-quaternary);
+    padding-bottom: 6px;
+}
+
+.custom-chart-tooltip .tooltip-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.custom-chart-tooltip .tooltip-item {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.custom-chart-tooltip .item-name {
+    opacity: 0.9;
+}
+
+.custom-chart-tooltip .item-value {
+    font-weight: 700;
+}

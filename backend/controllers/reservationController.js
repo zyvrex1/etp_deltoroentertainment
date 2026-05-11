@@ -54,24 +54,38 @@ const deleteReservation = async (req, res) => {
             return res.status(404).json({ error: "Reservation not found" });
         }
 
-        // 1. Find the Event and the Booth
+        // 1. Find the Event and reset statuses
         const event = await Event.findById(reservation.event);
 
         if (event) {
-            // Re-use logic to find booth by id or code
-            let boothIndex = event.booths.findIndex(b => b._id.toString() === reservation.boothId.toString());
-            if (boothIndex === -1) {
-                boothIndex = event.booths.findIndex(b => b.code === reservation.boothCode || b.label === reservation.boothCode);
-            }
+            let changed = false;
 
-            if (boothIndex !== -1) {
-                // Reset booth status
-                event.booths[boothIndex].status = "available";
-                event.booths[boothIndex].reservedBy = "";
+            if (reservation.type === 'booth') {
+                // Re-use logic to find booth by id or code
+                let boothIndex = event.booths.findIndex(b => b._id.toString() === (reservation.boothId || "").toString());
+                if (boothIndex === -1) {
+                    boothIndex = event.booths.findIndex(b => b.code === reservation.boothCode || b.label === reservation.boothCode);
+                }
+
+                if (boothIndex !== -1) {
+                    // Reset booth status
+                    event.booths[boothIndex].status = "available";
+                    event.booths[boothIndex].reservedBy = "";
+                    changed = true;
+
+                    // Adjust Price Level quantitySold for booth
+                    const booth = event.booths[boothIndex];
+                    if (booth.priceLevelId && booth.priceLevelId !== "none") {
+                        const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === booth.priceLevelId.toString());
+                        if (plIndex !== -1) {
+                            event.priceLevels[plIndex].quantitySold = Math.max(0, event.priceLevels[plIndex].quantitySold - 1);
+                        }
+                    }
+                }
 
                 // Fix layoutData if exists
                 if (event.layoutData && event.layoutData.items) {
-                    const identifier = reservation.boothId.toString();
+                    const identifier = (reservation.boothId || "").toString();
                     const layoutItemIndex = event.layoutData.items.findIndex(item =>
                         (item._id?.toString() === identifier ||
                         item.id?.toString() === identifier ||
@@ -83,21 +97,49 @@ const deleteReservation = async (req, res) => {
                         event.layoutData.items[layoutItemIndex].status = "available";
                         event.layoutData.items[layoutItemIndex].reservedBy = "";
                         event.markModified('layoutData');
+                        changed = true;
                     }
                 }
+            } else if (reservation.type === 'seat') {
+                const seatIds = reservation.seatIds || [];
+                const seatLabels = reservation.seatLabels || [];
 
-                // Adjust Price Level quantitySold
-                const booth = event.booths[boothIndex];
-                if (booth.priceLevelId && booth.priceLevelId !== "none") {
-                    const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === booth.priceLevelId.toString());
-                    if (plIndex !== -1) {
-                        event.priceLevels[plIndex].quantitySold = Math.max(0, event.priceLevels[plIndex].quantitySold - 1);
-                    }
+                // Reset statuses in layoutData
+                if (event.layoutData && event.layoutData.items) {
+                    event.layoutData.items.forEach((item, index) => {
+                        const type = (item.type || "").toLowerCase();
+                        const idStr = (item._id || item.id || "").toString();
+
+                        if (type === "seat") {
+                            const isThisSeat = seatIds.includes(idStr) || seatLabels.includes(item.label) || seatLabels.includes(item.code);
+                            
+                            if (isThisSeat) {
+                                event.layoutData.items[index].status = "available";
+                                event.layoutData.items[index].reservedBy = "";
+                                event.layoutData.items[index].reservedByEmail = "";
+                                event.layoutData.items[index].reservedByPO = "";
+                                
+                                // Adjust Price Level quantitySold for seat
+                                const priceLevelId = item.categoryId || item.priceLevelId;
+                                if (priceLevelId && priceLevelId !== "none") {
+                                    const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === priceLevelId.toString());
+                                    if (plIndex !== -1) {
+                                        event.priceLevels[plIndex].quantitySold = Math.max(0, event.priceLevels[plIndex].quantitySold - 1);
+                                    }
+                                }
+                                changed = true;
+                            }
+                        }
+                    });
+                    if (changed) event.markModified('layoutData');
                 }
+            }
 
+            if (changed) {
                 await event.save();
             }
         }
+
 
         // 2. Delete the reservation
         await Reservation.findByIdAndDelete(id);

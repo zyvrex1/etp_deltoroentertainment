@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthContext } from '../hooks/useAuthContext';
 import userService from '../services/userService';
 import reservationService from '../services/reservationService';
@@ -44,35 +44,51 @@ export const CustomerCartProvider = ({ children }) => {
     });
 
     // --- Sync Cart with Backend ---
+    const hasInitialSynced = useRef(false);
+
     useEffect(() => {
-        if (user && user.token) {
+        if (user && user.token && !hasInitialSynced.current) {
             // If user just logged in, they might have cart data in their profile
             if (user.cart && user.cart.length > 0) {
                 setCartItems(prev => {
                     // Merge local cart with remote cart, avoiding duplicates by seat.id
                     const localIds = new Set(prev.filter(item => item?.seat?.id).map(item => item.seat.id));
                     const remoteItems = user.cart.filter(item => item?.seat?.id && !localIds.has(item.seat.id));
-                    return [...prev, ...remoteItems];
+                    
+                    if (remoteItems.length > 0) {
+                        return [...prev, ...remoteItems];
+                    }
+                    return prev;
                 });
             }
+            hasInitialSynced.current = true;
         }
     }, [user]);
 
+
     // Save cart to localStorage and Backend whenever it changes
+    const { dispatch } = useAuthContext();
+    
     useEffect(() => {
         localStorage.setItem('customerCart', JSON.stringify(cartItems));
         
         const syncCart = async () => {
             if (user && user.token) {
                 try {
-                    await userService.updateCart(cartItems, user.token);
+                    const updatedCart = await userService.updateCart(cartItems, user.token);
+                    
+                    // Update user in AuthContext and LocalStorage to keep cart synced
+                    const updatedUser = { ...user, cart: updatedCart };
+                    dispatch({ type: 'LOGIN', payload: updatedUser });
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
                 } catch (error) {
                     console.error("Failed to sync cart to backend:", error);
                 }
             }
         };
         syncCart();
-    }, [cartItems, user]);
+    }, [cartItems, user?.token, dispatch]); // Only trigger when items change or token changes
+
 
     // --- Sync Purchase History with Backend ---
     const fetchHistory = useCallback(async () => {

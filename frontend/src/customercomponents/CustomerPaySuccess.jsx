@@ -11,12 +11,23 @@ const CustomerPaySuccess = () => {
     const navigate = useNavigate();
     const { purchaseHistory } = useCustomerCart();
 
-    // Get the most recent purchase(s) - items purchased at the same time
+    // Get the most recent purchase(s) - group items within a 10-second window
     const latestPurchases = useMemo(() => {
         if (purchaseHistory.length === 0) return [];
-        const latestDate = purchaseHistory[0].purchaseDate;
-        return purchaseHistory.filter(item => item.purchaseDate === latestDate);
+        
+        const sortedHistory = [...purchaseHistory].sort((a, b) => 
+            new Date(b.purchaseDate) - new Date(a.purchaseDate)
+        );
+        
+        const latestTime = new Date(sortedHistory[0].purchaseDate).getTime();
+        
+        // Group items within 10 seconds of the most recent item
+        return sortedHistory.filter(item => {
+            const itemTime = new Date(item.purchaseDate).getTime();
+            return Math.abs(latestTime - itemTime) < 10000; // 10 second window
+        });
     }, [purchaseHistory]);
+
 
     if (latestPurchases.length === 0) {
         return (

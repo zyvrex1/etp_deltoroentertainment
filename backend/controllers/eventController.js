@@ -59,20 +59,33 @@ const autoHealEvents = async (eventsArr) => {
   const eventIds = events.map((e) => e._id);
 
   try {
-    // 1. Fetch all reservations for these events
-    const reservations = await Reservation.find({ event: { $in: eventIds } });
+    // 1. Fetch all ACTIVE reservations for these events (not cancelled)
+    const reservations = await Reservation.find({ 
+      event: { $in: eventIds },
+      status: { $ne: 'cancelled' }
+    });
 
     for (let event of events) {
       let changed = false;
       const eventReservations = reservations.filter(
         (r) => r.event.toString() === event._id.toString(),
       );
+
+      // Booth data
       const reservedBoothIds = eventReservations
-        .filter((r) => r.boothId)
+        .filter((r) => r.type === "booth" && r.boothId)
         .map((r) => r.boothId.toString());
       const reservedBoothCodes = eventReservations
-        .filter((r) => r.boothCode)
+        .filter((r) => r.type === "booth" && r.boothCode)
         .map((r) => r.boothCode);
+
+      // Seat data
+      const reservedSeatIds = eventReservations
+        .filter((r) => r.type === "seat" && r.seatIds)
+        .flatMap((r) => r.seatIds.map(id => id.toString()));
+      const reservedSeatLabels = eventReservations
+        .filter((r) => r.type === "seat" && r.seatLabels)
+        .flatMap((r) => r.seatLabels);
 
       // 2. Cross-reference booths array
       if (event.booths && event.booths.length > 0) {
@@ -98,11 +111,9 @@ const autoHealEvents = async (eventsArr) => {
       if (event.layoutData && event.layoutData.items) {
         event.layoutData.items.forEach((item, index) => {
           const type = (item.type || "").toLowerCase();
+          const idStr = (item._id || item.id || "").toString();
 
-          // FIX: Only reconcile booths. Seats should be handled by ticket logic (not present here).
-          // Reconciling seats with booth codes causes "REG-1" (seat) to be sold if "REG-1" (booth) is sold.
           if (type === "booth") {
-            const idStr = (item._id || item.id || "").toString();
             const isReserved =
               reservedBoothIds.includes(idStr) ||
               reservedBoothCodes.includes(item.code) ||
@@ -119,33 +130,40 @@ const autoHealEvents = async (eventsArr) => {
               event.layoutData.items[index].status = "sold";
               changed = true;
             }
-          } else if (
-            type === "seat" &&
-            item.status === "sold" &&
-            !item.ticketId
-          ) {
-            // Clean up bug from before where seats were marked sold by booth sync
-            event.layoutData.items[index].status = "available";
-            event.layoutData.items[index].reservedBy = "";
-            event.layoutData.items[index].reservedByEmail = "";
-            event.layoutData.items[index].reservedByPO = "";
-            changed = true;
+          } else if (type === "seat") {
+            const isReserved = 
+              reservedSeatIds.includes(idStr) ||
+              reservedSeatLabels.includes(item.label) ||
+              reservedSeatLabels.includes(item.code);
+
+            if (item.status === "sold" && !isReserved) {
+              // Only reset if it's not actually reserved anymore
+              event.layoutData.items[index].status = "available";
+              event.layoutData.items[index].reservedBy = "";
+              event.layoutData.items[index].reservedByEmail = "";
+              event.layoutData.items[index].reservedByPO = "";
+              changed = true;
+            } else if (
+              (item.status === "available" || !item.status) &&
+              isReserved
+            ) {
+              event.layoutData.items[index].status = "sold";
+              changed = true;
+            }
           }
         });
       }
 
-      // 4. Persist corrections using findByIdAndUpdate to avoid VersionError.
-      // event.save() uses optimistic concurrency (__v check) which fails when
-      // another request has already saved the document in between. $set bypasses this.
+      // 4. Persist corrections using findByIdAndUpdate
       if (changed) {
         const updatePayload = {};
         if (event.booths) updatePayload.booths = event.booths;
         if (event.layoutData) updatePayload.layoutData = event.layoutData;
 
-        Event.findByIdAndUpdate(
+        await Event.findByIdAndUpdate(
           event._id,
           { $set: updatePayload },
-          { new: false }
+          { new: true }
         ).catch((err) => console.error("Auto-heal update failed:", err.message));
       }
     }
@@ -155,6 +173,7 @@ const autoHealEvents = async (eventsArr) => {
 
   return isArray ? events : events[0];
 };
+
 
 const getEvents = async (req, res) => {
   try {
@@ -1303,15 +1322,10 @@ const buySeats = async (req, res) => {
 
     if (layout && Array.isArray(layout.items)) {
       const items = layout.items;
-      seatIds.forEach((sid, i) => {
+      seatIds.forEach((sid) => {
         const idx = items.findIndex((item) => {
-          const isSeatType =
-            (item.type || "").toLowerCase() === "seat" || item.isSeat;
-          const isCircle =
-            !item.isBooth &&
-            !item.isElement &&
-            !item.isBackground &&
-            item.type !== "booth";
+          const isSeatType = (item.type || "").toLowerCase() === "seat" || item.isSeat;
+          const isCircle = !item.isBooth && !item.isElement && !item.isBackground && item.type !== "booth";
           const matchesId = String(item._id || item.id) === sid || item.id === sid;
           return (isSeatType || isCircle) && matchesId;
         });
@@ -1322,20 +1336,19 @@ const buySeats = async (req, res) => {
         }
         const item = items[idx];
 
-        if (
-          item.status === "sold" ||
-          item.status === "reserved" ||
-          item.status === "blocked"
-        ) {
+        if (item.status === "sold" || item.status === "reserved" || item.status === "blocked") {
           alreadySold.push(item.label || sid);
           return;
         }
 
-        // Mark sold
+        // Generate a unique Reservation ID for this specific seat
+        const resId = new mongoose.Types.ObjectId();
+
+        // Mark sold in layoutData
         event.layoutData.items[idx].status = "sold";
         event.layoutData.items[idx].reservedBy = buyerName;
         event.layoutData.items[idx].reservedByEmail = buyerEmail;
-        event.layoutData.items[idx].ticketId = `${ticketIdBase}-${i}`;
+        event.layoutData.items[idx].ticketId = resId.toString();
 
         // Track price level delta
         const catId = (item.categoryId || item.priceLevelId)?.toString();
@@ -1343,34 +1356,30 @@ const buySeats = async (req, res) => {
           plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
         }
 
-        purchasedSeats.push({ ...item, ticketId: `${ticketIdBase}-${i}` });
+        purchasedSeats.push({ ...item, reservationId: resId });
       });
     } else if (event.seatMap && event.seatMap.sections) {
       // Process using legacy seatMap
-      seatIds.forEach((sid, i) => {
+      seatIds.forEach((sid) => {
         let found = false;
         event.seatMap.sections.forEach((section) => {
-          const seatIdx = section.seats.findIndex(
-            (s) => String(s._id || s.id) === sid,
-          );
+          const seatIdx = section.seats.findIndex((s) => String(s._id || s.id) === sid);
           if (seatIdx !== -1) {
             const seat = section.seats[seatIdx];
-            if (
-              seat.status === "sold" ||
-              seat.status === "reserved" ||
-              seat.status === "blocked"
-            ) {
+            if (seat.status === "sold" || seat.status === "reserved" || seat.status === "blocked") {
               alreadySold.push(seat.label || sid);
             } else {
+              const resId = new mongoose.Types.ObjectId();
               seat.status = "sold";
               seat.reservedBy = buyerName;
               seat.reservedByEmail = buyerEmail;
+              seat.ticketId = resId.toString(); // Map unique ID to legacy seat too
 
               const catId = seat.priceLevelId?.toString();
               if (catId && plMap[catId] !== undefined) {
                 plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
               }
-              purchasedSeats.push({ ...seat, ticketId: `${ticketIdBase}-${i}` });
+              purchasedSeats.push({ ...seat, reservationId: resId });
             }
             found = true;
           }
@@ -1378,35 +1387,30 @@ const buySeats = async (req, res) => {
         if (!found) notFound.push(sid);
       });
     } else {
-      return res
-        .status(400)
-        .json({ error: "This event has no layout data or seat map" });
+      return res.status(400).json({ error: "This event has no layout data or seat map" });
     }
 
     if (alreadySold.length > 0) {
-      return res.status(409).json({
-        error: `Some seats are no longer available: ${alreadySold.join(", ")}`,
-      });
+      return res.status(409).json({ error: `Some seats are no longer available: ${alreadySold.join(", ")}` });
     }
-
     if (notFound.length > 0) {
-      return res
-        .status(404)
-        .json({ error: `Seats not found: ${notFound.join(", ")}` });
+      return res.status(404).json({ error: `Seats not found: ${notFound.join(", ")}` });
     }
 
-    // Create the Reservation record for the database
+    // Create individual Reservation records for each seat
     try {
-      await Reservation.create({
+      const count = purchasedSeats.length;
+      const reservationObjects = purchasedSeats.map((seat) => ({
+        _id: seat.reservationId,
         user: req.user._id,
         event: id,
         type: 'seat',
-        seatIds: seatIds,
-        seatLabels: purchasedSeats.map(s => s.label || s.code),
+        seatIds: [String(seat._id || seat.id)],
+        seatLabels: [seat.label || seat.code],
         amount: {
-          total: amount.total || 0,
-          subtotal: amount.subtotal || 0,
-          fee: amount.fee || 0,
+          total: (amount.total || 0) / count,
+          subtotal: (amount.subtotal || 0) / count,
+          fee: (amount.fee || 0) / count,
           tax: 0
         },
         billingAddress: {
@@ -1416,11 +1420,14 @@ const buySeats = async (req, res) => {
         paymentMethod: paymentMethod || 'invoice',
         poNumber: billingInfo?.poNumber || "",
         status: 'confirmed'
-      });
+      }));
+
+      await Reservation.insertMany(reservationObjects);
     } catch (resErr) {
-      console.error("Failed to create reservation record:", resErr);
-      // We continue even if reservation record fails, as long as event save works
+      console.error("Failed to create individual reservation records:", resErr);
     }
+
+
 
     // Update quantitySold on priceLevels
     Object.entries(plSoldDelta).forEach(([catId, delta]) => {
@@ -1684,13 +1691,14 @@ const syncBoothStatus = async (req, res) => {
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ error: "No such event" });
 
-    // 1. Get all active reservations for this event and populate user details
-    const reservations = await Reservation.find({ event: id }).populate(
+    // 1. Get all active (non-cancelled) reservations for this event and populate user details
+    const reservations = await Reservation.find({ 
+      event: id,
+      status: { $ne: 'cancelled' } 
+    }).populate(
       "user",
-      "firstName lastName companyName",
+      "firstName lastName companyName email",
     );
-    const reservedBoothIds = reservations.map((r) => r.boothId.toString());
-    const reservedBoothCodes = reservations.map((r) => r.boothCode);
 
     let changed = false;
 
@@ -1700,9 +1708,11 @@ const syncBoothStatus = async (req, res) => {
         const idStr = (booth._id || "").toString();
         const res = reservations.find(
           (r) =>
-            r.boothId.toString() === idStr ||
-            r.boothCode === booth.code ||
-            r.boothCode === booth.label,
+            r.type === 'booth' && (
+              (r.boothId && r.boothId.toString() === idStr) ||
+              r.boothCode === booth.code ||
+              r.boothCode === booth.label
+            )
         );
 
         const isReserved = !!res;
@@ -1741,15 +1751,16 @@ const syncBoothStatus = async (req, res) => {
     if (event.layoutData && event.layoutData.items) {
       event.layoutData.items.forEach((item, index) => {
         const type = (item.type || "").toLowerCase();
+        const idStr = (item._id || item.id || "").toString();
 
-        // FIX: Ensure we only match booth reservations against booth items.
         if (type === "booth") {
-          const idStr = (item._id || item.id || "").toString();
           const res = reservations.find(
             (r) =>
-              r.boothId.toString() === idStr ||
-              r.boothCode === item.code ||
-              r.boothCode === item.label,
+              r.type === 'booth' && (
+                (r.boothId && r.boothId.toString() === idStr) ||
+                r.boothCode === item.code ||
+                r.boothCode === item.label
+              )
           );
 
           const isReserved = !!res;
@@ -1783,32 +1794,80 @@ const syncBoothStatus = async (req, res) => {
             changed = true;
             event.markModified("layoutData");
           }
-        } else if (
-          type === "seat" &&
-          item.status === "sold" &&
-          !item.ticketId
-        ) {
-          // If it's a seat and marked as sold but doesn't have a ticketId (implying it was marked by booth sync bug)
-          // we reset it to available.
-          event.layoutData.items[index].status = "available";
-          event.layoutData.items[index].reservedBy = "";
-          event.layoutData.items[index].reservedByEmail = "";
-          event.layoutData.items[index].reservedByPO = "";
-          changed = true;
-          event.markModified("layoutData");
+        } else if (type === "seat") {
+          const res = reservations.find(
+            (r) =>
+              r.type === 'seat' && (
+                (r.seatIds && r.seatIds.includes(idStr)) ||
+                (r.seatLabels && (r.seatLabels.includes(item.label) || r.seatLabels.includes(item.code)))
+              )
+          );
+
+          const isReserved = !!res;
+          const buyerName =
+            res && res.user
+              ? res.user.companyName ||
+                `${res.user.firstName} ${res.user.lastName}`
+              : "";
+          const buyerEmail =
+            res && res.user ? res.user.email : res?.billingAddress?.email || "";
+          const buyerPO = res ? res.poNumber || "" : "";
+
+          if (isReserved) {
+            if (
+              item.status !== "sold" ||
+              item.reservedBy !== buyerName ||
+              item.reservedByEmail !== buyerEmail
+            ) {
+              event.layoutData.items[index].status = "sold";
+              event.layoutData.items[index].reservedBy = buyerName;
+              event.layoutData.items[index].reservedByEmail = buyerEmail;
+              event.layoutData.items[index].reservedByPO = buyerPO;
+              changed = true;
+              event.markModified("layoutData");
+            }
+          } else if (item.status === "sold") {
+            // Only reset if it's not a ticket-purchased seat (which would have a ticketId)
+            // If the user wants to clear EVERYTHING that isn't in active reservations, they can do that,
+            // but usually tickets are separate from "reservations".
+            // However, based on the codebase, tickets seem to be handled as 'seat' type reservations too (buySeats).
+            if (!item.ticketId) {
+                event.layoutData.items[index].status = "available";
+                event.layoutData.items[index].reservedBy = "";
+                event.layoutData.items[index].reservedByEmail = "";
+                event.layoutData.items[index].reservedByPO = "";
+                changed = true;
+                event.markModified("layoutData");
+            }
+          }
         }
       });
     }
 
     // 4. Recalculate quantitySold for price levels
     event.priceLevels.forEach((pl, index) => {
-      const soldCount = event.booths.filter(
+      // For booths
+      const soldBooths = event.booths.filter(
         (b) =>
           b.priceLevelId?.toString() === pl._id.toString() &&
           b.status === "sold",
       ).length;
-      if (pl.quantitySold !== soldCount) {
-        event.priceLevels[index].quantitySold = soldCount;
+
+      // For seats in layoutData
+      let soldSeats = 0;
+      if (event.layoutData && event.layoutData.items) {
+          soldSeats = event.layoutData.items.filter(
+              (item) => 
+                (item.type || "").toLowerCase() === "seat" && 
+                (item.categoryId?.toString() === pl._id.toString() || item.priceLevelId?.toString() === pl._id.toString()) &&
+                item.status === "sold"
+          ).length;
+      }
+
+      const totalSold = soldBooths + soldSeats;
+      
+      if (pl.quantitySold !== totalSold) {
+        event.priceLevels[index].quantitySold = totalSold;
         changed = true;
       }
     });
@@ -1827,6 +1886,7 @@ const syncBoothStatus = async (req, res) => {
       changed,
       event: event, // Return the full updated event
     });
+
   } catch (error) {
     console.error("Sync Booth Error:", error);
     res.status(500).json({ error: error.message });

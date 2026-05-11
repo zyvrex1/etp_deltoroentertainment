@@ -19,6 +19,31 @@ import { io } from 'socket.io-client';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="custom-chart-tooltip">
+                <p className="tooltip-label">{label}</p>
+                <div className="tooltip-items">
+                    {payload.map((entry, index) => {
+                        let value = entry.value;
+                        if (entry.name && entry.name.toLowerCase().includes('revenue')) {
+                            value = `$${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+                        return (
+                            <div key={index} className="tooltip-item" style={{ color: entry.color }}>
+                                <span className="item-name">{entry.name} : </span>
+                                <span className="item-value">{value ?? 0}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 export default function Dashboard() {
         const { user } = useAuthContext();
         const { notifications } = useNotificationsContext();
@@ -72,6 +97,9 @@ export default function Dashboard() {
                 reservationService.getAdminReservations(user.token)
             ]);
 
+            // Filter out cancelled reservations for all metrics
+            const activeReservations = reservations.filter(res => res.status !== 'cancelled');
+
             const pendingCount = events.filter(e => e.status === 'pending').length;
             const activeCount = events.filter(e => e.status === 'approved').length;
             const completedCount = events.filter(e => e.status === 'completed').length;
@@ -90,7 +118,7 @@ export default function Dashboard() {
             const lastMonth = lastMonthDate.getMonth();
             const lastMonthYear = lastMonthDate.getFullYear();
 
-            // Calculate Users Trends (Already exists, but refining)
+            // Calculate Users Trends
             const usersThisMonth = users.filter(u => {
                 const d = new Date(u.createdAt);
                 return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
@@ -108,30 +136,30 @@ export default function Dashboard() {
 
             const userTrend = calculateTrend(usersThisMonth, usersLastMonth);
 
-            // Calculate Booths Trends
-            const boothsThisMonth = reservations.filter(res => {
+            // Calculate Booths Trends (using activeReservations)
+            const boothsThisMonth = activeReservations.filter(res => {
                 const d = new Date(res.createdAt);
-                const isBooth = res.type === 'booth' || (!res.type && !res.seatIds);
+                const isBooth = res.type === 'booth';
                 return isBooth && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
             }).length;
 
-            const boothsLastMonth = reservations.filter(res => {
+            const boothsLastMonth = activeReservations.filter(res => {
                 const d = new Date(res.createdAt);
-                const isBooth = res.type === 'booth' || (!res.type && !res.seatIds);
+                const isBooth = res.type === 'booth';
                 return isBooth && d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
             }).length;
 
             const boothTrend = calculateTrend(boothsThisMonth, boothsLastMonth);
 
-            // Calculate Revenue Trends
-            const revenueThisMonth = reservations
+            // Calculate Revenue Trends (using activeReservations)
+            const revenueThisMonth = activeReservations
                 .filter(res => {
                     const d = new Date(res.createdAt);
                     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
                 })
                 .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
 
-            const revenueLastMonth = reservations
+            const revenueLastMonth = activeReservations
                 .filter(res => {
                     const d = new Date(res.createdAt);
                     return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
@@ -140,22 +168,22 @@ export default function Dashboard() {
 
             const revenueTrend = calculateTrend(revenueThisMonth, revenueLastMonth);
 
-            // Calculate Ticket Trends
-            const ticketsThisMonth = reservations.filter(res => {
+            // Calculate Ticket Trends (using activeReservations)
+            const ticketsThisMonth = activeReservations.filter(res => {
                 const d = new Date(res.createdAt);
-                const isTicket = res.type === 'seat' || !!res.seatIds;
+                const isTicket = res.type === 'seat';
                 return isTicket && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
             }).reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
 
-            const ticketsLastMonth = reservations.filter(res => {
+            const ticketsLastMonth = activeReservations.filter(res => {
                 const d = new Date(res.createdAt);
-                const isTicket = res.type === 'seat' || !!res.seatIds;
+                const isTicket = res.type === 'seat';
                 return isTicket && d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
             }).reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
 
             const ticketTrend = calculateTrend(ticketsThisMonth, ticketsLastMonth);
 
-            const totalTicketsSold = reservations.filter(res => res.type === 'seat' || !!res.seatIds)
+            const totalTicketsSold = activeReservations.filter(res => res.type === 'seat')
                 .reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
 
             const usersThisYear = users.filter(u => {
@@ -181,17 +209,17 @@ export default function Dashboard() {
             });
 
             const dynamicRevenueData = months.map((month, i) => {
-                const monthReservations = reservations.filter(res => {
+                const monthReservations = activeReservations.filter(res => {
                     const d = new Date(res.createdAt);
                     return d.getMonth() === i && d.getFullYear() === currentYear;
                 });
 
                 const total = monthReservations.reduce((sum, res) => sum + (res.amount?.total || 0), 0);
                 const boothRevenue = monthReservations
-                    .filter(res => res.type !== 'seat' && !res.seatIds)
+                    .filter(res => res.type === 'booth')
                     .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
                 const seatRevenue = monthReservations
-                    .filter(res => res.type === 'seat' || !!res.seatIds)
+                    .filter(res => res.type === 'seat')
                     .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
                 
                 return { month, total, boothRevenue, seatRevenue };
@@ -207,21 +235,80 @@ export default function Dashboard() {
                 .slice(0, 4);
 
             const dynamicUpcomingEventsData = upcomingEvents.map(e => {
+                let totalSeats = 0;
+                let totalBooths = 0;
+
+                // 1. Capacity from Layout (Primary source)
+                if (e.layoutData && Array.isArray(e.layoutData.items)) {
+                    e.layoutData.items.forEach(item => {
+                        const type = (item.type || "").toLowerCase();
+                        const isSeat = type === "seat" || type === "table" || item.isSeat;
+                        const isBooth = type === "booth" || item.isBooth;
+
+                        if (isSeat) {
+                            totalSeats += (item.seatCount || 1);
+                        } else if (isBooth) {
+                            totalBooths++;
+                        }
+                    });
+                } 
+                
+                // 2. Fallback to legacy seatMap if no seats found
+                if (totalSeats === 0 && e.seatMap && e.seatMap.sections) {
+                    e.seatMap.sections.forEach(sec => {
+                        (sec.seats || []).forEach(seat => {
+                            totalSeats += (seat.seatCount || 1);
+                        });
+                    });
+                }
+
+                // 3. Fallback to standalone booths array
+                if (totalBooths === 0 && Array.isArray(e.booths)) {
+                    totalBooths = e.booths.length;
+                }
+
+                // 4. Fallback to priceLevels (ONLY if NO seats AND NO booths are placed on the map)
+                // Exception: General Admission events use priceLevels, but ONLY if no items of that category are on the map
+                const isGA = e.eventType === "General Admission";
+                const hasPlacedItems = totalSeats > 0 || totalBooths > 0;
+                
+                if (totalSeats === 0 && (isGA ? totalBooths === 0 : !hasPlacedItems) && Array.isArray(e.priceLevels)) {
+                    totalSeats = e.priceLevels
+                        .filter(p => !p.name?.toLowerCase().includes('booth') && !p.isBooth)
+                        .reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
+                }
+                if (totalBooths === 0 && (isGA ? totalSeats === 0 : !hasPlacedItems) && Array.isArray(e.priceLevels)) {
+                    totalBooths = e.priceLevels
+                        .filter(p => p.name?.toLowerCase().includes('booth') || p.isBooth)
+                        .reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
+                }
+
+                // 5. Actual sales from reservations (TRUSTED SOURCE)
+                const eventRes = activeReservations.filter(res => String(res.event?._id || res.event) === String(e._id));
+                const seatsSold = eventRes.filter(res => res.type === 'seat').reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
+                const boothsSold = eventRes.filter(res => res.type === 'booth').length;
+
+                // 6. Calculate Available (Remaining)
+                const seatsAvailable = Math.max(0, (totalSeats || 0) - (seatsSold || 0));
+                const boothsAvailable = Math.max(0, (totalBooths || 0) - (boothsSold || 0));
+
                 return {
                     name: e.title.length > 12 ? e.title.substring(0, 10) + '...' : e.title,
                     fullName: e.title,
-                    ticketsSold: e.ticketsSold || 0,
-                    ticketsRemaining: Math.max(0, (e.totalTickets || 0) - (e.ticketsSold || 0)),
-                    boothsSold: e.boothsSold || 0,
-                    boothsRemaining: Math.max(0, (e.totalBooths || 0) - (e.boothsSold || 0))
+                    seatsSold: seatsSold || 0,
+                    seatsAvailable: seatsAvailable || 0,
+                    boothsSold: boothsSold || 0,
+                    boothsAvailable: boothsAvailable || 0
                 };
             });
 
-            // Calculate Top Sponsors based on booth reservations
+
+
+            // Calculate Top Sponsors based on confirmed booth reservations
             const sponsorMap = {};
-            reservations.forEach(res => {
-                if (!res.user) return;
-                const sponsorId = res.user._id;
+            activeReservations.forEach(res => {
+                if (!res.user || res.type !== 'booth') return;
+                const sponsorId = String(res.user._id || res.user);
                 if (!sponsorMap[sponsorId]) {
                     sponsorMap[sponsorId] = {
                         name: res.user.companyName || `${res.user.firstName} ${res.user.lastName}`,
@@ -242,21 +329,14 @@ export default function Dashboard() {
                     type: `Top ${index + 1}`
                 }));
 
-            // Calculate Top Promoters based on total sales (tickets + booths)
+            // Calculate Top Promoters based on total sales from activeReservations
             const promoterMap = {};
             events.forEach(e => {
-                // Only include events created by accounts with the 'promoter' role
                 if (!e.createdBy || e.createdBy.role !== 'promoter') return;
+                const promoterId = String(e.createdBy._id || e.createdBy);
                 
-                const promoterId = e.createdBy._id;
-                
-                // Aggregate tickets sold across all price levels
-                const ticketsSold = (e.priceLevels || []).reduce((sum, pl) => sum + (pl.quantitySold || 0), 0);
-                
-                // Aggregate booths sold (both 'sold' and 'reserved' count as sales for ranking)
-                const boothsSold = (e.booths || []).filter(b => b.status === 'sold' || b.status === 'reserved').length;
-                
-                const totalSales = ticketsSold + boothsSold;
+                const eventRes = activeReservations.filter(res => String(res.event?._id || res.event) === String(e._id));
+                const totalSalesCount = eventRes.length; // Count of individual reservations
 
                 if (!promoterMap[promoterId]) {
                     promoterMap[promoterId] = {
@@ -265,7 +345,7 @@ export default function Dashboard() {
                         totalSales: 0
                     };
                 }
-                promoterMap[promoterId].totalSales += totalSales;
+                promoterMap[promoterId].totalSales += totalSalesCount;
             });
 
             const dynamicTopPromotersData = Object.values(promoterMap)
@@ -300,9 +380,9 @@ export default function Dashboard() {
                     (c.status === 'open' || c.status === 'in-progress') &&
                     String(c.assignedTo) === String(user._id)
                 ).length,
-                totalBoothsReserved: reservations.filter(res => res.type !== 'seat' && !res.seatIds).length,
+                totalBoothsReserved: activeReservations.filter(res => res.type === 'booth').length,
                 totalTicketsSold: totalTicketsSold,
-                totalRevenue: reservations.reduce((total, res) => total + (res.amount?.total || 0), 0),
+                totalRevenue: activeReservations.reduce((total, res) => total + (res.amount?.total || 0), 0),
                 revenueData: dynamicRevenueData,
                 upcomingEventsData: dynamicUpcomingEventsData,
                 topSponsorsData: dynamicTopSponsorsData,
@@ -310,11 +390,10 @@ export default function Dashboard() {
                 boothTrend,
                 revenueTrend,
                 ticketTrend,
-                // For now, since we don't have a payout model yet, we keep it as sample or 0
-                // If there's a payout model, we should fetch it.
                 pendingPayoutsCount: 0, 
                 loading: false
             });
+
         } catch (error) {
             console.error("Error fetching dashboard stats:", error);
             setStats(prev => ({ ...prev, loading: false }));
@@ -604,25 +683,25 @@ export default function Dashboard() {
                                             tickLine={false}
                                             tick={{ fontSize: isMobile ? 9 : 11 }}
                                         />
-                                        <RechartsTooltip />
+                                        <RechartsTooltip content={<CustomTooltip />} />
                                         
-                                        {/* Tickets Bar Stack */}
-                                        <Bar dataKey="ticketsSold" stackId="tickets" name="Tickets Sold" fill="#0059ff" radius={[0, 0, 0, 0]} />
-                                        <Bar dataKey="ticketsRemaining" stackId="tickets" name="Tickets Remaining" fill="#e6e6e6" radius={[4, 4, 0, 0]} />
-                                        
-                                        {/* Booths Bar Stack */}
-                                        <Bar dataKey="boothsSold" stackId="booths" name="Booths Sold" fill="#ff6b00" radius={[0, 0, 0, 0]} />
-                                        <Bar dataKey="boothsRemaining" stackId="booths" name="Booths Remaining" fill="#ffe0cc" radius={[4, 4, 0, 0]} />
+                                         {/* Booths Bar Stack */}
+                                         <Bar dataKey="boothsAvailable" stackId="booths" name="Booths Available" fill="#ffe0cc" radius={[4, 4, 0, 0]} />
+                                         <Bar dataKey="boothsSold" stackId="booths" name="Booths Sold" fill="#ff6b00" radius={[0, 0, 0, 0]} />
+                                         
+                                         {/* Tickets (Seats) Bar Stack */}
+                                         <Bar dataKey="seatsAvailable" stackId="tickets" name="Seats Available" fill="#e6e6e6" radius={[4, 4, 0, 0]} />
+                                         <Bar dataKey="seatsSold" stackId="tickets" name="Seats Sold" fill="#0059ff" radius={[0, 0, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                                 <div className="chart-legend sales-legend">
                                     <div className="legend-group">
-                                        <span className="legend-item"><span className="dot blue"></span>Tickets Sold</span>
-                                        <span className="legend-item"><span className="dot gray"></span>Tickets Cap</span>
+                                        <span className="legend-item"><span className="dot blue"></span>Seats Sold</span>
+                                        <span className="legend-item"><span className="dot gray"></span>Seats Available</span>
                                     </div>
                                     <div className="legend-group">
                                         <span className="legend-item"><span className="dot orange"></span>Booths Sold</span>
-                                        <span className="legend-item"><span className="dot light-orange"></span>Booths Cap</span>
+                                        <span className="legend-item"><span className="dot light-orange"></span>Booths Available</span>
                                     </div>
                                 </div>
                             </div>
@@ -645,7 +724,7 @@ export default function Dashboard() {
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                         </Pie>
-                                        <RechartsTooltip />
+                                        <RechartsTooltip content={<CustomTooltip />} />
                                     </PieChart>
                                 </ResponsiveContainer>                                <div className="donut-center-text">
                                     <h3>{stats.loading ? "..." : stats.totalEvents}</h3>
@@ -688,13 +767,13 @@ export default function Dashboard() {
                                         tickFormatter={(val) => `$${val / 1000}k`}
                                     />
 
-                                    <RechartsTooltip formatter={(value) => `$${value}`} />
+                                     <RechartsTooltip content={<CustomTooltip />} />
 
-                                    <Area
+                                     <Area
                                         type="monotone"
                                         dataKey="seatRevenue"
                                         stackId="1"
-                                        name="Seats Revenue"
+                                        name="Tickets Revenue"
                                         stroke="#0059ff"
                                         strokeWidth={isMobile ? 2 : 3}
                                         fillOpacity={0.6}
@@ -713,7 +792,7 @@ export default function Dashboard() {
                                 </AreaChart>
                             </ResponsiveContainer>
                             <div className="chart-legend revenue-legend" style={{ marginTop: '10px', display: 'flex', gap: '20px', justifyContent: 'center' }}>
-                                <span className="legend-item"><span className="dot blue"></span>Seats Revenue</span>
+                                <span className="legend-item"><span className="dot blue"></span>Tickets Revenue</span>
                                 <span className="legend-item"><span className="dot orange"></span>Booths Revenue</span>
                             </div>
                         </div>
@@ -751,7 +830,7 @@ export default function Dashboard() {
                                         tickFormatter={(val) => val >= 1000 ? `${val / 1000}k` : val}
                                     />
 
-                                    <RechartsTooltip />
+                                     <RechartsTooltip content={<CustomTooltip />} />
 
                                     <Line
                                         type="monotone"
