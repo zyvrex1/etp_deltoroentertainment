@@ -62,6 +62,12 @@ const reservationSchema = new mongoose.Schema({
     },
     qrData: {
         type: String // We will store the reservation ID here
+    },
+    storeSettings: {
+        companyName: String,
+        industry: String,
+        description: String,
+        logo: String
     }
 }, { timestamps: true });
 

@@ -29,6 +29,14 @@ const userSchema = new Schema({
     type: String,
     trim: true
   },
+  industry: {
+    type: String,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true
+  },
   password: {
     type: String,
     required: true

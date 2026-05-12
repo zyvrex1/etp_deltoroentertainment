@@ -258,7 +258,7 @@ const SponsorStore = () => {
                   <button
                     className={`primary-button store-manage-btn ${event.status === "Completed" ? "see-reports-btn" : ""}`}
                     onClick={() => {
-                      navigate("/sponsor/store/dashboard", {
+                      navigate(`/sponsor/store/dashboard/${event.id}`, {
                         state: {
                           eventId: event._id || event.id,
                           eventName: event.title,

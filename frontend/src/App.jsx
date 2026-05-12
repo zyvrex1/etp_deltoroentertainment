@@ -193,7 +193,7 @@ function App() {
             <Route path="settings" element={<SponsorSettings />} />
             <Route path="support" element={<SponsorSupport />} />
             <Route path="store" element={<SponsorStore />} />
-            <Route path="store/dashboard" element={<SponsorStoreDashboard />} />
+            <Route path="store/dashboard/:reservationId?" element={<SponsorStoreDashboard />} />
             <Route path="cart" element={<SponsorCart />} />
           </Route>
 

@@ -1,6 +1,8 @@
 const Reservation = require('../models/reservationModel');
 const User = require('../models/userModel');
 const Event = require('../models/eventModel');
+const path = require('path');
+const { optimizeImage } = require("../utils/imageOptimizer");
 
 // Fetch personal reservations for the sponsor
 const getMyReservations = async (req, res) => {
@@ -286,6 +288,49 @@ const getEventBoothReservations = async (req, res) => {
     }
 };
 
+const updateStoreSettings = async (req, res) => {
+    const { id } = req.params;
+    const { companyName, industry, description } = req.body;
+    
+    try {
+        const reservation = await Reservation.findById(id);
+        if (!reservation) {
+            return res.status(404).json({ error: "Reservation not found" });
+        }
+
+        // Security check: allow owner or exhibitors
+        const isOwner = reservation.user.toString() === req.user._id.toString();
+        const isExhibitor = reservation.exhibitors && reservation.exhibitors.some(e => e.toString() === req.user._id.toString());
+        
+        if (req.user.role !== 'admin' && !isOwner && !isExhibitor) {
+            return res.status(403).json({ error: "Unauthorized" });
+        }
+
+        if (!reservation.storeSettings) {
+            reservation.storeSettings = {};
+        }
+
+        if (companyName !== undefined) reservation.storeSettings.companyName = companyName;
+        if (industry !== undefined) reservation.storeSettings.industry = industry;
+        if (description !== undefined) reservation.storeSettings.description = description;
+
+        if (req.file) {
+            const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+            await optimizeImage(filePath, 70, 400);
+            reservation.storeSettings.logo = `/uploads/${req.file.filename}`;
+        }
+
+        // Mark modified since it's a nested object
+        reservation.markModified('storeSettings');
+        await reservation.save();
+
+        res.status(200).json(reservation);
+    } catch (error) {
+        console.error("UPDATE STORE SETTINGS ERROR:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getMyReservations,
     getAllReservations,
@@ -293,5 +338,6 @@ module.exports = {
     getReservationById,
     addExhibitors,
     removeExhibitor,
-    getEventBoothReservations
+    getEventBoothReservations,
+    updateStoreSettings
 };

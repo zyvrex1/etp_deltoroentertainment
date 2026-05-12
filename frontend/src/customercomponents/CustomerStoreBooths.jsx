@@ -33,11 +33,11 @@ const CustomerStoreBooths = () => {
           id: res._id,
           sponsorId: res.user?._id,
           boothNumber: res.boothCode || "N/A",
-          companyName: res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
-          industry: res.user?.industry || "Sponsor",
+          companyName: res.storeSettings?.companyName || res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
+          industry: res.storeSettings?.industry || res.user?.industry || "Sponsor",
           products: 0, // We could fetch product count if needed
-          logo: res.user?.logo ? `/uploads/${res.user.logo}` : (res.user?.avatar ? `/uploads/${res.user.avatar}` : '/assets/eventbg.jpg'),
-          description: res.user?.description || "No description available."
+          logo: res.storeSettings?.logo ? (res.storeSettings.logo.startsWith('/') ? res.storeSettings.logo : `/uploads/${res.storeSettings.logo}`) : (res.user?.avatar ? (res.user.avatar.startsWith('/') ? res.user.avatar : `/uploads/${res.user.avatar}`) : '/assets/eventbg.jpg'),
+          description: res.storeSettings?.description || res.user?.description || "No description available."
         }));
         
         setBoothData(mappedBooths);

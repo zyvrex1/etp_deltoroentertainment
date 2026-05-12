@@ -18,6 +18,16 @@ const reservationService = {
   getEventBooths: async (eventId, token) => {
     const response = await api.get(`/reservations/event/${eventId}/booths`, reservationService.getAuthHeaders(token));
     return response.data;
+  },
+
+  getReservationById: async (id, token) => {
+    const response = await api.get(`/reservations/${id}`, reservationService.getAuthHeaders(token));
+    return response.data;
+  },
+
+  updateStoreSettings: async (id, data, token) => {
+    const response = await api.put(`/reservations/${id}/store-settings`, data, reservationService.getAuthHeaders(token));
+    return response.data;
   }
 };
 

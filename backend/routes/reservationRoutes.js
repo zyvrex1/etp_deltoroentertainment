@@ -1,21 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const reservationController = require('../controllers/reservationController');
+const { getMyReservations, getAllReservations, getEventBoothReservations, getReservationById, addExhibitors, removeExhibitor, deleteReservation, updateStoreSettings } = require('../controllers/reservationController');
+const { upload } = require('../controllers/userController');
 const requireAuth = require('../middleware/requireAuth');
 const requireRole = require('../middleware/requireRole');
 
 router.use(requireAuth);
 
 // Admin routes
-router.get('/admin', requireRole('admin'), reservationController.getAllReservations);
+router.get('/admin', requireRole('admin'), getAllReservations);
 
 // My Reservations (both Sponsors/Booths and Customers/Seats)
-router.get('/my-booths', reservationController.getMyReservations);
-router.get('/event/:eventId/booths', reservationController.getEventBoothReservations);
-router.get('/:id', reservationController.getReservationById);
-router.post('/:id/exhibitors', requireRole('sponsor'), reservationController.addExhibitors);
-router.delete('/:id/exhibitors/:userId', requireRole('sponsor'), reservationController.removeExhibitor);
+router.get('/my-booths', getMyReservations);
+router.get('/event/:eventId/booths', getEventBoothReservations);
+router.get('/:id', getReservationById);
+router.post('/:id/exhibitors', requireRole('sponsor'), addExhibitors);
+router.delete('/:id/exhibitors/:userId', requireRole('sponsor'), removeExhibitor);
 
-router.delete('/:id', requireRole('admin'), reservationController.deleteReservation);
+router.delete('/:id', requireRole('admin'), deleteReservation);
+router.put('/:id/store-settings', upload.single('avatar'), updateStoreSettings);
 
 module.exports = router;
