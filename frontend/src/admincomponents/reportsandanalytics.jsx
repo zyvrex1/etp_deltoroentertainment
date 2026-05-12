@@ -83,8 +83,8 @@ export default function ReportsAnalytics() {
             try {
                 setIsLoading(true);
                 const [topData, overviewData] = await Promise.all([
-                    analyticsService.getTopPerformingEvents(user.token),
-                    analyticsService.getOverviewStats(user.token)
+                    analyticsService.getTopPerformingEvents(user.token, dateRange.start, dateRange.end),
+                    analyticsService.getOverviewStats(user.token, dateRange.start, dateRange.end)
                 ]);
 
                 if (topData) setTopEvents(topData);
@@ -97,7 +97,7 @@ export default function ReportsAnalytics() {
         };
 
         fetchAnalytics();
-    }, [user?.token]);
+    }, [user?.token, dateRange]);
 
 
     useEffect(() => {
@@ -229,53 +229,61 @@ export default function ReportsAnalytics() {
                     <div className="report-stat-card">
                         <div className="upper-stats">
                             <span className="icon green"><Icon icon="mdi:currency-usd" width="24" /></span>
-                            <span className="trend up"><Icon icon="mdi:trending-up" /> 15%</span>
+                            <span className={`trend ${overviewStats.revenueTrend >= 0 ? 'up' : 'down'}`}>
+                                <Icon icon={overviewStats.revenueTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                {Math.abs(overviewStats.revenueTrend)}%
+                            </span>
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Total Revenue</p>
                             <h4>${overviewStats.grossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h4>
+                            <p className="smaller-body-text left-aligned">vs previous period</p>
                         </div>
                     </div>
 
                     <div className="report-stat-card">
                         <div className="upper-stats">
                             <span className="icon blue"><Icon icon="mdi:trending-up" width="24" /></span>
-                            <span className="trend up"><Icon icon="mdi:trending-up" /> 12%</span>
+                            <span className={`trend ${overviewStats.boothsTrend >= 0 ? 'up' : 'down'}`}>
+                                <Icon icon={overviewStats.boothsTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                {Math.abs(overviewStats.boothsTrend)}%
+                            </span>
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Booths Sold</p>
                             <h4>{overviewStats.boothsSold.toLocaleString()}</h4>
-                            {overviewStats.boothsReserved > 0 && (
-                                <p className="smaller-body-text left-aligned">({overviewStats.boothsReserved} reserved)</p>
-                            )}
+                            <p className="smaller-body-text left-aligned">vs previous period</p>
                         </div>
                     </div>
 
                     <div className="report-stat-card">
                         <div className="upper-stats">
                             <span className="icon purple"><Icon icon="mdi:account-group-outline" width="24" /></span>
-                            <span className="trend up"><Icon icon="mdi:trending-up" /> 8%</span>
+                            <span className={`trend ${overviewStats.ticketsTrend >= 0 ? 'up' : 'down'}`}>
+                                <Icon icon={overviewStats.ticketsTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                {Math.abs(overviewStats.ticketsTrend)}%
+                            </span>
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Seats Sold</p>
                             <h4>{overviewStats.ticketsSold.toLocaleString()}</h4>
-                            {overviewStats.ticketsReserved > 0 && (
-                                <p className="smaller-body-text left-aligned">({overviewStats.ticketsReserved} reserved)</p>
-                            )}
+                            <p className="smaller-body-text left-aligned">vs previous period</p>
                         </div>
                     </div>
 
                     <div className="report-stat-card">
                         <div className="upper-stats">
                             <span className="icon red"><Icon icon="mdi:chart-bar" width="24" /></span>
-                            <span className="trend down"><Icon icon="mdi:trending-down" /> 2%</span>
+                            <span className={`trend ${overviewStats.refundTrend >= 0 ? 'down' : 'up'}`}>
+                                <Icon icon={overviewStats.refundTrend >= 0 ? "mdi:trending-down" : "mdi:trending-up"} /> 
+                                {Math.abs(overviewStats.refundTrend)}%
+                            </span>
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Refund Rate</p>
                             <h4>{overviewStats.refundRate}%</h4>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
+                            <p className="smaller-body-text left-aligned">vs previous period</p>
                         </div>
-
                     </div>
                 </div>
             </div>

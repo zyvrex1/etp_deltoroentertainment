@@ -3,13 +3,23 @@ const Reservation = require("../models/reservationModel");
 
 const getTopPerformingEvents = async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
+    
+    let reservationQuery = { status: { $ne: 'cancelled' } };
+    if (startDate && endDate) {
+      reservationQuery.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
     // Fetch all approved and completed events to calculate performance
     const events = await Event.find({ status: { $in: ["approved", "completed"] } });
     
-    // Fetch all relevant reservations
+    // Fetch all relevant reservations within the date range
     const reservations = await Reservation.find({ 
-      event: { $in: events.map(e => e._id) },
-      status: { $ne: 'cancelled' } 
+      ...reservationQuery,
+      event: { $in: events.map(e => e._id) }
     });
 
     // Calculate metrics for each event based on its reservations
@@ -68,11 +78,17 @@ const getTopPerformingEvents = async (req, res) => {
       };
     });
 
+    // Filter out events with no activity in this period if a date range is provided
+    let filteredStats = eventStats;
+    if (startDate && endDate) {
+      filteredStats = eventStats.filter(e => e.totalRevenue > 0 || e.totalSeatsTaken > 0 || e.totalBoothsTaken > 0);
+    }
+
     // Sort by total revenue descending
-    eventStats.sort((a, b) => b.totalRevenue - a.totalRevenue);
+    filteredStats.sort((a, b) => b.totalRevenue - a.totalRevenue);
 
     // Return top 10
-    res.status(200).json(eventStats.slice(0, 10));
+    res.status(200).json(filteredStats.slice(0, 10));
   } catch (error) {
     console.error("Error fetching top performing events:", error);
     res.status(500).json({ error: "Failed to fetch analytics data" });
@@ -81,55 +97,94 @@ const getTopPerformingEvents = async (req, res) => {
 
 const getOverviewStats = async (req, res) => {
     try {
-        // Fetch all non-cancelled reservations
-        const reservations = await Reservation.find({ status: { $ne: 'cancelled' } });
+        const { startDate, endDate } = req.query;
         
-        let totalGrossRevenue = 0;
-        let totalTicketsSold = 0;
-        let totalBoothsSold = 0;
-        let totalTicketsReserved = 0;
-        let totalBoothsReserved = 0;
+        let currentStart, currentEnd;
+        if (startDate && endDate) {
+            currentStart = new Date(startDate);
+            currentEnd = new Date(endDate);
+        } else {
+            // Default to last 30 days if not provided
+            currentEnd = new Date();
+            currentStart = new Date();
+            currentStart.setDate(currentStart.getDate() - 30);
+        }
+
+        // Calculate previous period for comparison
+        const duration = currentEnd.getTime() - currentStart.getTime();
+        const prevStart = new Date(currentStart.getTime() - duration);
+        const prevEnd = new Date(currentStart.getTime());
+
+        // Fetch reservations for both periods
+        const reservations = await Reservation.find({ 
+            status: { $ne: 'cancelled' },
+            createdAt: { $gte: prevStart, $lte: currentEnd }
+        });
         
-        reservations.forEach(reservation => {
-            if (reservation.status === 'confirmed') {
-                totalGrossRevenue += (reservation.amount?.total || 0);
-                if (reservation.type === 'seat') {
-                    totalTicketsSold += (reservation.seatIds?.length || 0);
-                } else if (reservation.type === 'booth') {
-                    totalBoothsSold += 1;
+        const currentReservations = reservations.filter(r => r.createdAt >= currentStart && r.createdAt <= currentEnd);
+        const prevReservations = reservations.filter(r => r.createdAt >= prevStart && r.createdAt < currentStart);
+
+        const calculateMetrics = (resList) => {
+            let grossRevenue = 0;
+            let ticketsSold = 0;
+            let boothsSold = 0;
+            let ticketsReserved = 0;
+            let boothsReserved = 0;
+            
+            resList.forEach(reservation => {
+                if (reservation.status === 'confirmed') {
+                    grossRevenue += (reservation.amount?.total || 0);
+                    if (reservation.type === 'seat') {
+                        ticketsSold += (reservation.seatIds?.length || 0);
+                    } else if (reservation.type === 'booth') {
+                        boothsSold += 1;
+                    }
+                } else if (reservation.status === 'pending') {
+                    if (reservation.type === 'seat') {
+                        ticketsReserved += (reservation.seatIds?.length || 0);
+                    } else if (reservation.type === 'booth') {
+                        boothsReserved += 1;
+                    }
                 }
-            } else if (reservation.status === 'pending') {
-                if (reservation.type === 'seat') {
-                    totalTicketsReserved += (reservation.seatIds?.length || 0);
-                } else if (reservation.type === 'booth') {
-                    totalBoothsReserved += 1;
-                }
-            }
+            });
+            return { grossRevenue, ticketsSold, boothsSold, ticketsReserved, boothsReserved };
+        };
+
+        const currentMetrics = calculateMetrics(currentReservations);
+        const prevMetrics = calculateMetrics(prevReservations);
+
+        const calculateTrend = (curr, prev) => {
+            if (prev === 0) return curr > 0 ? 100 : 0;
+            return Math.round(((curr - prev) / prev) * 100);
+        };
+
+        const trends = {
+            revenueTrend: calculateTrend(currentMetrics.grossRevenue, prevMetrics.grossRevenue),
+            ticketsTrend: calculateTrend(currentMetrics.ticketsSold, prevMetrics.ticketsSold),
+            boothsTrend: calculateTrend(currentMetrics.boothsSold, prevMetrics.boothsSold),
+            refundTrend: 0 // Placeholder
+        };
+
+        // Calculate Revenue Trends (always for the full current year as per request)
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const currentYear = new Date().getFullYear();
+        
+        // Fetch all confirmed reservations for the current year specifically for the chart
+        const yearStart = new Date(currentYear, 0, 1);
+        const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
+        const yearReservations = await Reservation.find({
+            status: 'confirmed',
+            createdAt: { $gte: yearStart, $lte: yearEnd }
         });
 
-        // Calculate Revenue Trends for the current year
-        const currentYear = new Date().getFullYear();
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        
         const revenueTrends = months.map((month, i) => {
-            const monthReservations = reservations.filter(res => {
+            const monthReservations = yearReservations.filter(res => {
                 const d = new Date(res.createdAt);
-                return d.getMonth() === i && d.getFullYear() === currentYear;
+                return d.getMonth() === i;
             });
 
-            const total = monthReservations
-                .filter(res => res.status === 'confirmed')
-                .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
-            
-            const boothRevenue = monthReservations
-                .filter(res => res.status === 'confirmed' && res.type === 'booth')
-                .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
-                
-            const seatRevenue = monthReservations
-                .filter(res => res.status === 'confirmed' && res.type === 'seat')
-                .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
-            
-            return { month, total, boothRevenue, seatRevenue };
+            const total = monthReservations.reduce((sum, res) => sum + (res.amount?.total || 0), 0);
+            return { month, total };
         });
 
         // Calculate aggregate capacity and average occupancy per event
@@ -148,8 +203,7 @@ const getOverviewStats = async (req, res) => {
             totalSeatCapacity += eventTickets;
             totalBoothCapacity += eventBooths;
 
-            // Calculate this specific event's occupancy
-            const eventReservations = reservations.filter(r => r.event.toString() === event._id.toString());
+            const eventReservations = currentReservations.filter(r => r.event.toString() === event._id.toString());
             
             let eTicketsSold = 0;
             let eBoothsSold = 0;
@@ -180,17 +234,14 @@ const getOverviewStats = async (req, res) => {
         const boothOccupancy = eventsWithBooths > 0 ? Math.round(boothOccupancySum / eventsWithBooths) : 0;
 
         res.status(200).json({
-            grossRevenue: totalGrossRevenue,
-            netRevenue: totalGrossRevenue * 0.05, // Example: 5% platform fee
-            ticketsSold: totalTicketsSold,
-            boothsSold: totalBoothsSold,
-            ticketsReserved: totalTicketsReserved,
-            boothsReserved: totalBoothsReserved,
+            ...currentMetrics,
+            ...trends,
+            netRevenue: currentMetrics.grossRevenue * 0.05,
             totalSeatCapacity,
             totalBoothCapacity,
             seatOccupancy,
             boothOccupancy,
-            refundRate: 0.8, // Static for now
+            refundRate: 0.8, 
             revenueTrends
         });
     } catch (error) {
