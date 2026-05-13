@@ -1,0 +1,248 @@
+.coqr-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    backdrop-filter: blur(4px);
+}
+
+.coqr-modal-container {
+    background-color: var(--color-white-primary);
+    width: 90%;
+    max-width: 450px;
+    max-height: 95vh; /* Prevent cutting off on small screens */
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column; /* Allows header/body/footer separation */
+    overflow: hidden;
+    animation: modalScaleUp 0.3s ease-out;
+}
+
+
+@keyframes modalScaleUp {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.coqr-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+}
+
+.coqr-modal-title {
+    color: var(--color-black-primary);
+    margin: 0;
+}
+
+
+.coqr-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-black-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.coqr-close-btn:hover {
+    background-color: var(--color-bg-light);
+    color: var(--color-black-primary);
+}
+
+.coqr-divider {
+    border: none;
+    border-top: 1px solid var(--color-black-quaternary);
+    margin: 0;
+}
+
+.coqr-modal-body {
+    padding: 30px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    overflow-y: auto; /* Allow scrolling if content is too tall */
+    flex: 1;
+}
+
+
+.coqr-order-info {
+    margin-bottom: 24px;
+}
+
+.coqr-order-id {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-blue-primary);
+    background-color: var(--color-bg-light);
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 12px;
+}
+
+.coqr-store-name {
+    color: var(--color-black-primary);
+    margin: 0 0 4px 0;
+}
+
+.coqr-booth-info {
+    color: var(--color-black-secondary);
+    margin: 0;
+}
+
+
+.coqr-qr-container {
+    margin: 20px 0;
+    padding: 10px;
+    background-color: var(--color-bg-light);
+    border-radius: 16px;
+    border: 1px solid var(--color-black-quaternary);
+}
+
+.coqr-qr-wrapper {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.coqr-footer-info {
+    margin: 20px 0;
+    width: 100%;
+}
+
+.coqr-caption {
+    color: var(--color-black-tertiary);
+    margin-bottom: 16px;
+}
+
+
+.coqr-status-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--color-bg-light);
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.coqr-status-display .label {
+    color: var(--color-black-secondary);
+}
+
+.coqr-status-display .value {
+    font-weight: 700;
+}
+
+
+.coqr-status-display .value.ready-for-pickup { color: #039855; }
+.coqr-status-display .value.preparing { color: #DC6803; }
+.coqr-status-display .value.completed { color: #344054; }
+
+.coqr-download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: var(--color-black-primary);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    width: 100%;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 10px;
+}
+
+.coqr-download-btn:hover {
+    background-color: #1d2939;
+}
+
+/* Responsiveness */
+
+/* 1024px and below */
+@media (max-width: 1024px) {
+    .coqr-modal-container {
+        max-width: 420px;
+    }
+}
+
+/* 768px and below */
+@media (max-width: 768px) {
+    .coqr-modal-container {
+        max-width: 380px;
+        border-radius: 12px;
+    }
+
+    .coqr-modal-body {
+        padding: 24px 20px;
+    }
+
+    .coqr-qr-container {
+        padding: 8px;
+    }
+}
+
+
+/* 480px and below */
+@media (max-width: 480px) {
+    .coqr-modal-container {
+        width: 92%;
+        max-width: 100%;
+        margin: 10px;
+        max-height: 90vh;
+    }
+
+    .coqr-modal-header {
+        padding: 12px 20px;
+    }
+
+    .coqr-modal-body {
+        padding: 16px 16px;
+    }
+
+    .coqr-order-info {
+        margin-bottom: 16px;
+    }
+
+    .coqr-qr-container {
+        margin: 10px 0;
+        padding: 6px;
+    }
+
+    /* Scaling the QR slightly for very small screens */
+    .coqr-qr-wrapper canvas {
+        width: 160px !important;
+        height: 160px !important;
+    }
+
+    .coqr-footer-info {
+        margin: 10px 0;
+    }
+
+    .coqr-status-display {
+        padding: 8px;
+    }
+
+    .coqr-download-btn {
+        padding: 10px 16px;
+        margin-top: 5px;
+    }
+}
+
+
+

@@ -136,6 +136,11 @@ export default function CustomerHeader() {
                                         </NavLink>
                                     </li>
                                     <li>
+                                        <NavLink to="/customer/my-orders" onClick={() => setIsDropdownOpen(false)}>
+                                            <Icon icon="mdi:shopping-outline" width="20" /> My Orders
+                                        </NavLink>
+                                    </li>
+                                    <li>
                                         <NavLink to="/customer/settings" onClick={() => setIsDropdownOpen(false)}>
                                             <Icon icon="mdi:cog-outline" width="20" /> Settings
                                         </NavLink>
@@ -217,6 +222,9 @@ export default function CustomerHeader() {
                             </NavLink>
                             <NavLink to="/customer/history" className="mobile-profile-link" onClick={() => setIsMobileProfileOpen(false)}>
                                 <Icon icon="mdi:history" width="24" /> Purchase History
+                            </NavLink>
+                            <NavLink to="/customer/my-orders" className="mobile-profile-link" onClick={() => setIsMobileProfileOpen(false)}>
+                                <Icon icon="mdi:shopping-outline" width="24" /> My Orders
                             </NavLink>
                             <NavLink to="/customer/settings" className="mobile-profile-link" onClick={() => setIsMobileProfileOpen(false)}>
                                 <Icon icon="mdi:cog-outline" width="24" /> Settings
