@@ -89,7 +89,7 @@ export default function SponsorSettings() {
                     lastName: data.lastName || "",
                     email: data.email || "",
                     phone: formattedPhone,
-                    companyName: data.companyName || "",
+                    companyName: data.companyName || `${data.firstName || ''} ${data.lastName || ''}`.trim() || "",
                     industry: data.industry || "",
                     avatar: data.avatar || "",
                     streetAddress: data.streetAddress || "",

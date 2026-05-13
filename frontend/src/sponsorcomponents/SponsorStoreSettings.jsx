@@ -25,16 +25,16 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                 const settings = reservation.storeSettings || {};
                 
                 setFormData({
-                    companyName: settings.companyName || user.companyName || '',
-                    industry: settings.industry || user.industry || '',
-                    description: settings.description || user.description || '',
+                    companyName: settings.companyName || reservation.user?.companyName || `${reservation.user?.firstName || ''} ${reservation.user?.lastName || ''}`.trim(),
+                    industry: settings.industry || reservation.user?.industry || '',
+                    description: settings.description || '',
                     logo: null
                 });
 
                 if (settings.logo) {
                     setPreviewUrl(settings.logo.startsWith('/') ? settings.logo : `/uploads/${settings.logo}`);
-                } else if (user.avatar) {
-                    setPreviewUrl(user.avatar.startsWith('/') ? user.avatar : `/uploads/${user.avatar}`);
+                } else if (reservation.user?.avatar) {
+                    setPreviewUrl(reservation.user.avatar.startsWith('/') ? reservation.user.avatar : `/uploads/${reservation.user.avatar}`);
                 }
             } catch (error) {
                 console.error("Error fetching reservation settings:", error);
@@ -243,7 +243,7 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                                 <span>{formData.industry || 'Category'}</span>
                             </div>
                             <p className="csb-card-desc smaller-body-text">
-                                {formData.description || 'Your store description will appear here...'}
+                                {formData.description || 'there is no description'}
                             </p>
 
                             <div className="csb-stats-row">

@@ -37,7 +37,7 @@ const CustomerStoreBooths = () => {
           industry: res.storeSettings?.industry || res.user?.industry || "Sponsor",
           products: 0, // We could fetch product count if needed
           logo: res.storeSettings?.logo ? (res.storeSettings.logo.startsWith('/') ? res.storeSettings.logo : `/uploads/${res.storeSettings.logo}`) : (res.user?.avatar ? (res.user.avatar.startsWith('/') ? res.user.avatar : `/uploads/${res.user.avatar}`) : '/assets/eventbg.jpg'),
-          description: res.storeSettings?.description || res.user?.description || "No description available."
+          description: res.storeSettings?.description || "there is no description"
         }));
         
         setBoothData(mappedBooths);

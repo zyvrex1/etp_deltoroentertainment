@@ -10,7 +10,7 @@ const getMyReservations = async (req, res) => {
         const reservations = await Reservation.find({ 
             $or: [{ user: req.user._id }, { exhibitors: req.user._id }] 
         })
-            .populate('user', 'firstName lastName email companyName phone avatar')
+            .populate('user', 'firstName lastName email companyName phone avatar industry description')
             .populate('event', 'title startDate endDate startTime endTime image venue')
             .populate('exhibitors', 'firstName lastName email avatar')
             .sort({ createdAt: -1 });
@@ -179,7 +179,7 @@ const getReservationById = async (req, res) => {
     try {
         const reservation = await Reservation.findById(id)
             .populate('event', 'title startDate endDate image venue booths priceLevels layoutData hasBooths description')
-            .populate('user', 'firstName lastName email companyName phone avatar')
+            .populate('user', 'firstName lastName email companyName phone avatar industry description')
             .populate('exhibitors', 'firstName lastName email avatar');
 
         if (!reservation) {
