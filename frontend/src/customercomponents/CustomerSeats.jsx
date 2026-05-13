@@ -318,7 +318,18 @@ const CustomerSeats = () => {
                                                 rotation={item.rotation}
                                                 onClick={() => toggleSeat(item)}
                                                 onTap={() => toggleSeat(item)}
+                                                onMouseEnter={(e) => {
+                                                    const stage = e.target.getStage();
+                                                    if (item.status === 'available') {
+                                                        stage.container().style.cursor = 'pointer';
+                                                    }
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    const stage = e.target.getStage();
+                                                    stage.container().style.cursor = 'default';
+                                                }}
                                             >
+
                                                 <Circle
                                                     radius={20}
                                                     fill={getSeatColor(item)}
@@ -340,9 +351,18 @@ const CustomerSeats = () => {
                                                 key={item.id} 
                                                 x={item.x} y={item.y} 
                                                 rotation={item.rotation}
-                                                onClick={() => toggleSeat(item)}
-                                                onTap={() => toggleSeat(item)}
+                                                opacity={0.3} // Visual disabled look
+                                                onMouseEnter={(e) => {
+                                                    const stage = e.target.getStage();
+                                                    stage.container().style.cursor = 'not-allowed';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    const stage = e.target.getStage();
+                                                    stage.container().style.cursor = 'default';
+                                                }}
                                             >
+
+
                                                 <Rect
                                                     width={50} height={50} x={-25} y={-25}
                                                     fill={selectedSeats.find(s => s.id === item.id) ? "#2563EB" : (item.status === 'sold' || item.status === 'reserved' || item.status === 'blocked' ? '#2ECC71' : '#F5F5F5')}

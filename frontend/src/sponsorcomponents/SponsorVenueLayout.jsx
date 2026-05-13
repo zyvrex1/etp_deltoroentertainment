@@ -503,12 +503,28 @@ const SponsorVenueLayout = () => {
                                                             scaleX={item.scaleX || 1}
                                                             scaleY={item.scaleY || 1}
                                                             rotation={item.rotation || 0}
+                                                            opacity={isBooth ? 1 : 0.3}
+                                                            onMouseEnter={(e) => {
+                                                                const stage = e.target.getStage();
+                                                                if (!isBooth) {
+                                                                    stage.container().style.cursor = 'not-allowed';
+                                                                } else if (item.status === 'available') {
+                                                                    stage.container().style.cursor = 'pointer';
+                                                                }
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                const stage = e.target.getStage();
+                                                                stage.container().style.cursor = 'default';
+                                                            }}
+
                                                             onClick={() => {
-                                                                if (item.status === 'available') toggleSelection(item.id);
+
+                                                                if (isBooth && item.status === 'available') toggleSelection(item.id);
                                                             }}
                                                             onTap={() => {
-                                                                if (item.status === 'available') toggleSelection(item.id);
+                                                                if (isBooth && item.status === 'available') toggleSelection(item.id);
                                                             }}
+
                                                         >
                                                             {isBooth ? (
                                                                 <Rect
