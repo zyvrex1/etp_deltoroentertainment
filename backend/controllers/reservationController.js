@@ -369,6 +369,63 @@ const getEventSalesForPromoter = async (req, res) => {
     }
 };
 
+// Scan a QR code and mark reservation as checked in
+const checkInReservation = async (req, res) => {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid reservation ID' });
+    }
+
+    try {
+        const reservation = await Reservation.findById(id)
+            .populate('user', 'firstName lastName email companyName avatar')
+            .populate('event', 'createdBy assignedPromoters title');
+
+        if (!reservation) {
+            return res.status(404).json({ error: 'Reservation not found' });
+        }
+
+        if (!reservation.event) {
+            return res.status(404).json({ error: 'Associated event not found' });
+        }
+
+        // Authorization: only assigned promoters or admin
+        const userId = req.user._id.toString();
+        const isAdmin = req.user.role === 'admin';
+        const isCreator = reservation.event.createdBy?.toString() === userId;
+        const isAssigned = (reservation.event.assignedPromoters || []).some(
+            id => id.toString() === userId
+        );
+
+        if (!isAdmin && !isCreator && !isAssigned) {
+            return res.status(403).json({ error: 'You are not assigned to this event.' });
+        }
+
+        // Already checked in — return current state without overwriting timestamp
+        if (reservation.checkedIn) {
+            return res.status(200).json({
+                message: 'Already checked in',
+                alreadyCheckedIn: true,
+                reservation
+            });
+        }
+
+        reservation.checkedIn = true;
+        reservation.checkedInAt = new Date();
+        await reservation.save();
+
+        return res.status(200).json({
+            message: 'Check-in successful',
+            alreadyCheckedIn: false,
+            reservation
+        });
+    } catch (error) {
+        console.error('CHECK-IN RESERVATION ERROR:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getMyReservations,
     getAllReservations,
@@ -378,5 +435,7 @@ module.exports = {
     removeExhibitor,
     getEventBoothReservations,
     getEventSalesForPromoter,
+    checkInReservation,
     updateStoreSettings
 };
+
