@@ -266,9 +266,9 @@ const PromoterEventMonitoring = () => {
                     </div>
 
                     <div className="pmon-main-content">
-                        {activeTab === "sales" && <PromoterSales />}
-                        {activeTab === "attendees" && <PromoterAttendees />}
-                        {activeTab === "sponsors" && <PromoterSponsors />}
+                        {activeTab === "sales" && <PromoterSales selectedEvent={selectedEvent} />}
+                        {activeTab === "attendees" && <PromoterAttendees selectedEvent={selectedEvent} />}
+                        {activeTab === "sponsors" && <PromoterSponsors selectedEvent={selectedEvent} />}
                     </div>
                 </div>
             )}

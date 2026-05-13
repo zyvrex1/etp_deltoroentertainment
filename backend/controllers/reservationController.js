@@ -1,6 +1,7 @@
 const Reservation = require('../models/reservationModel');
 const User = require('../models/userModel');
 const Event = require('../models/eventModel');
+const mongoose = require('mongoose');
 const path = require('path');
 const { optimizeImage } = require("../utils/imageOptimizer");
 
@@ -331,6 +332,43 @@ const updateStoreSettings = async (req, res) => {
     }
 };
 
+// Fetch all reservations (tickets + booths) for an event — promoter must be assigned
+const getEventSalesForPromoter = async (req, res) => {
+    const { eventId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+        return res.status(404).json({ error: 'Invalid event ID' });
+    }
+
+    try {
+        const event = await Event.findById(eventId).select('createdBy assignedPromoters title venue startDate endDate priceLevels');
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Authorization: promoter must be the creator OR in the assignedPromoters list
+        const userId = req.user._id.toString();
+        const isCreator = event.createdBy?.toString() === userId;
+        const isAssigned = (event.assignedPromoters || []).some(id => id.toString() === userId);
+
+        if (!isCreator && !isAssigned) {
+            return res.status(403).json({ error: 'You are not assigned to this event.' });
+        }
+
+        const reservations = await Reservation.find({
+            event: eventId,
+            status: { $ne: 'cancelled' }
+        })
+        .populate('user', 'firstName lastName email companyName avatar')
+        .sort({ createdAt: -1 });
+
+        res.status(200).json({ event, reservations });
+    } catch (error) {
+        console.error('GET EVENT SALES FOR PROMOTER ERROR:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getMyReservations,
     getAllReservations,
@@ -339,5 +377,6 @@ module.exports = {
     addExhibitors,
     removeExhibitor,
     getEventBoothReservations,
+    getEventSalesForPromoter,
     updateStoreSettings
 };

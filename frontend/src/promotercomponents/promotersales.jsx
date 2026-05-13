@@ -10,159 +10,163 @@ import {
   drawTable,
   finalizeReport,
 } from "../utils/pdfExport";
+import { useAuthContext } from "../hooks/useAuthContext";
 import "./promotersales.css";
 
-const PromoterSales = () => {
-  const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState("techstart");
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+const PromoterSales = ({ selectedEvent }) => {
+  const { user } = useAuthContext();
+
   const [activeFilter, setActiveFilter] = useState("All Sales");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState(null);
+  const [salesData, setSalesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const itemsPerPage = 5;
-  const eventDropdownRef = useRef(null);
   const filterDropdownRef = useRef(null);
 
   const toggleRow = (index) => {
     setExpandedRow(expandedRow === index ? null : index);
   };
 
+  // ─── Fetch real data when event changes ──────────────────────────────────
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        eventDropdownRef.current &&
-        !eventDropdownRef.current.contains(event.target)
-      ) {
-        setIsEventDropdownOpen(false);
+    if (!selectedEvent?._id || !user?.token) return;
+
+    const fetchSales = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(
+          `${BASE_URL}/api/reservations/event/${selectedEvent._id}/sales`,
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }
+        );
+
+        if (!res.ok) {
+          if (res.status === 403) {
+            setError("You are not assigned to this event.");
+          } else {
+            const body = await res.json().catch(() => ({}));
+            setError(body.error || "Failed to load sales data.");
+          }
+          setSalesData([]);
+          return;
+        }
+
+        const { reservations } = await res.json();
+
+        // Map reservations → table rows
+        const rows = (reservations || []).map((r) => {
+          const isBooth = r.type === "booth";
+          const customerName = r.user?.companyName
+            ? r.user.companyName
+            : `${r.user?.firstName || ""} ${r.user?.lastName || ""}`.trim();
+          const initials = customerName
+            .split(" ")
+            .map((w) => w[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
+
+          const itemLabel = isBooth
+            ? r.boothCode || r.boothId || "Booth"
+            : r.seatLabels?.length
+            ? r.seatLabels.join(", ")
+            : `${r.seatIds?.length || 1} seat(s)`;
+
+          return {
+            id: r._id?.toString().slice(-6).toUpperCase(),
+            initials,
+            name: customerName,
+            email: r.user?.email || "",
+            typePill: isBooth ? "Booth" : "Ticket",
+            typeColor: isBooth ? "purple" : "green",
+            item: itemLabel,
+            amount: `$${(r.amount?.total || 0).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`,
+            amountRaw: r.amount?.total || 0,
+            date: new Date(r.createdAt).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            }),
+            status: r.status,
+            statusColor:
+              r.status === "confirmed"
+                ? "green"
+                : r.status === "pending"
+                ? "yellow"
+                : "red",
+          };
+        });
+
+        setSalesData(rows);
+      } catch (err) {
+        console.error("PromoterSales fetch error:", err);
+        setError("Could not load sales data.");
+        setSalesData([]);
+      } finally {
+        setLoading(false);
       }
+    };
+
+    fetchSales();
+  }, [selectedEvent?._id, user?.token]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
       if (
         filterDropdownRef.current &&
-        !filterDropdownRef.current.contains(event.target)
+        !filterDropdownRef.current.contains(e.target)
       ) {
         setIsFilterDropdownOpen(false);
       }
     };
-
-    if (isEventDropdownOpen || isFilterDropdownOpen) {
+    if (isFilterDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isFilterDropdownOpen]);
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isEventDropdownOpen, isFilterDropdownOpen]);
+  // ─── Computed values ───────────────────────────────────────────────────────
+  const ticketRows = salesData.filter((r) => r.typePill === "Ticket");
+  const boothRows = salesData.filter((r) => r.typePill === "Booth");
 
-  const eventOptions = [
-    { value: "techstart", label: "TechStart Summit 2026" },
-    {
-      value: "techstart_creator",
-      label: "TechStart Summit 2026 Creator Economy Expo SaaS Growth Meetup",
-    },
-  ];
-
-  const getSelectedEventLabel = () => {
-    const option = eventOptions.find((opt) => opt.value === selectedEvent);
-    return option ? option.label : "Select Event";
-  };
+  const ticketRevenue = ticketRows.reduce((s, r) => s + r.amountRaw, 0);
+  const boothRevenue = boothRows.reduce((s, r) => s + r.amountRaw, 0);
+  const totalRevenue = ticketRevenue + boothRevenue;
 
   const salesStats = [
     {
       title: "Ticket Sales",
-      amount: "$448",
-      sub: "4 Transactions",
+      amount: `$${ticketRevenue.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
+      sub: `${ticketRows.length} Transaction${ticketRows.length !== 1 ? "s" : ""}`,
       icon: "mdi:ticket-confirmation-outline",
       colorClass: "text-green",
       bgClass: "bg-green-light",
     },
     {
       title: "Booth Sales",
-      amount: "$15,000",
-      sub: "1 transactions",
+      amount: `$${boothRevenue.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
+      sub: `${boothRows.length} Transaction${boothRows.length !== 1 ? "s" : ""}`,
       icon: "mdi:map-outline",
       colorClass: "text-purple",
       bgClass: "bg-purple-light",
-    },
-  ];
-
-  const salesData = [
-    {
-      id: "001",
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      typePill: "ticket",
-      typeColor: "green",
-      item: "VIP Access Row A, Seat 12",
-      amount: "$299",
-      date: "2026-05-13",
-      status: "completed",
-      statusColor: "green",
-    },
-    {
-      id: "002",
-      initials: "TI",
-      name: "TechCorp Inc.",
-      email: "john@techcorp.com",
-      typePill: "Booth",
-      typeColor: "purple",
-      item: "Booth VIP 101",
-      amount: "$299",
-      date: "2026-04-11",
-      status: "completed",
-      statusColor: "green",
-    },
-    {
-      id: "003",
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      typePill: "ticket",
-      typeColor: "green",
-      item: "VIP Access Row A, Seat 12",
-      amount: "$299",
-      date: "2026-05-16",
-      status: "refunded",
-      statusColor: "red",
-    },
-    {
-      id: "001",
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      typePill: "ticket",
-      typeColor: "green",
-      item: "General Admission Row C, Seat 12",
-      amount: "$299",
-      date: "2026-05-13",
-      status: "completed",
-      statusColor: "green",
-    },
-    {
-      id: "001",
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      typePill: "ticket",
-      typeColor: "green",
-      item: "Early Bird Row D, Seat 1",
-      amount: "$299",
-      date: "2026-05-13",
-      status: "completed",
-      statusColor: "green",
-    },
-    {
-      id: "001",
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      typePill: "ticket",
-      typeColor: "green",
-      item: "Early Bird Row D, Seat 1",
-      amount: "$299",
-      date: "2026-05-13",
-      status: "completed",
-      statusColor: "green",
     },
   ];
 
@@ -170,10 +174,8 @@ const PromoterSales = () => {
     const q = searchQuery.toLowerCase();
     const matchesFilter = (() => {
       if (activeFilter === "All Sales") return true;
-      if (activeFilter === "Tickets")
-        return row.typePill.toLowerCase() === "ticket";
-      if (activeFilter === "Booths")
-        return row.typePill.toLowerCase() === "booth";
+      if (activeFilter === "Tickets") return row.typePill === "Ticket";
+      if (activeFilter === "Booths") return row.typePill === "Booth";
       return true;
     })();
     if (!matchesFilter) return false;
@@ -185,25 +187,15 @@ const PromoterSales = () => {
     );
   });
 
-  const counts = {
-    all: salesData.length,
-    tickets: salesData.filter((row) => row.typePill.toLowerCase() === "ticket")
-      .length,
-    booths: salesData.filter((row) => row.typePill.toLowerCase() === "booth")
-      .length,
-  };
-
   const totalPages = Math.ceil(filteredSalesData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredSalesData.slice(
     startIndex,
-    startIndex + itemsPerPage,
+    startIndex + itemsPerPage
   );
 
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
   const handleFilterChange = (filter) => {
@@ -211,6 +203,18 @@ const PromoterSales = () => {
     setCurrentPage(1);
   };
 
+  // ─── Event banner helpers ─────────────────────────────────────────────────
+  const eventTitle = selectedEvent?.title || "—";
+  const eventDate = selectedEvent?.startDate
+    ? new Date(selectedEvent.startDate).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "—";
+  const eventVenue = selectedEvent?.venue?.name || "—";
+
+  // ─── PDF Export ───────────────────────────────────────────────────────────
   const exportReport = async () => {
     const loadingToast = showExportToast();
     const REPORT_TITLE = "Sales Overview";
@@ -235,42 +239,31 @@ const PromoterSales = () => {
       pdf.setFontSize(10);
       pdf.setTextColor(50, 50, 50);
       pdf.setFont("helvetica", "normal");
-      const currentEventLabel = getSelectedEventLabel();
 
-      const ticketSales = filteredSalesData.filter(
-        (row) => row.typePill.toLowerCase() === "ticket",
-      );
-      const boothSales = filteredSalesData.filter(
-        (row) => row.typePill.toLowerCase() === "booth",
-      );
-      const sumAmounts = (data) =>
-        data.reduce((total, row) => {
-          const numeric =
-            parseFloat(String(row.amount).replace(/[^0-9.-]+/g, "")) || 0;
-          return total + numeric;
-        }, 0);
-
-      const ticketTotal = sumAmounts(ticketSales);
-      const boothTotal = sumAmounts(boothSales);
-
-      pdf.text(`Event: ${currentEventLabel}`, margin + 2, y);
+      pdf.text(`Event: ${eventTitle}`, margin + 2, y);
       y += lineHeight;
       pdf.text(
-        `Ticket Sales: $${ticketTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${ticketSales.length} transactions)`,
+        `Ticket Sales: $${ticketRevenue.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} (${ticketRows.length} transactions)`,
         margin + 2,
-        y,
+        y
       );
       y += lineHeight;
       pdf.text(
-        `Booth Sales: $${boothTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${boothSales.length} transactions)`,
+        `Booth Sales: $${boothRevenue.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} (${boothRows.length} transactions)`,
         margin + 2,
-        y,
+        y
       );
       y += lineHeight;
       pdf.text(
         `Total Transactions: ${filteredSalesData.length}`,
         margin + 2,
-        y,
+        y
       );
       y += lineHeight + 4;
 
@@ -321,7 +314,7 @@ const PromoterSales = () => {
         "Report generated from Sales Overview. Use the dashboard for real-time updates.",
         margin,
         y,
-        { maxWidth: pdfWidth - 2 * margin },
+        { maxWidth: pdfWidth - 2 * margin }
       );
 
       finalizeReport(pdf);
@@ -334,6 +327,7 @@ const PromoterSales = () => {
     }
   };
 
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="sales-container">
       <div className="sales-header">
@@ -347,6 +341,7 @@ const PromoterSales = () => {
           <button
             className="outlined-button sales-export-btn"
             onClick={exportReport}
+            disabled={loading || salesData.length === 0}
           >
             <Icon icon="mdi:tray-arrow-up" className="export-icon" />
             Export Report
@@ -355,14 +350,22 @@ const PromoterSales = () => {
       </div>
 
       <div className="sales-main-content">
+        {/* Event Banner */}
         <div className="sales-event-banner">
           <div className="sales-banner-left">
-            <h3>TechStart Summit 2026</h3>
-            <p className="small-body-text">June 16, 2026 &bull; Moscone</p>
+            <h3>{eventTitle}</h3>
+            <p className="small-body-text">
+              {eventDate} &bull; {eventVenue}
+            </p>
           </div>
           <div className="sales-banner-stats">
             <div className="sales-stat-item">
-              <h3 className="text-green-stat">$25,448</h3>
+              <h3 className="text-green-stat">
+                ${totalRevenue.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </h3>
               <span className="sales-stat-label smaller-body-text">
                 Total Revenue
               </span>
@@ -370,6 +373,7 @@ const PromoterSales = () => {
           </div>
         </div>
 
+        {/* Stat Cards */}
         <div className="sales-cards-container">
           {salesStats.map((stat, idx) => (
             <div className="sales-card" key={idx}>
@@ -391,6 +395,7 @@ const PromoterSales = () => {
           ))}
         </div>
 
+        {/* Table */}
         <div className="sales-table-container">
           <div className="sales-toolbar">
             <div className="sales-toolbar-left">
@@ -410,12 +415,16 @@ const PromoterSales = () => {
               <div className="sales-filter-dropdown" ref={filterDropdownRef}>
                 <button
                   className="sales-filter-dropdown-btn"
-                  onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                  onClick={() =>
+                    setIsFilterDropdownOpen(!isFilterDropdownOpen)
+                  }
                 >
                   <span className="truncate-text">{activeFilter}</span>
                   <Icon
                     icon="mdi:chevron-down"
-                    className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""}`}
+                    className={`dropdown-icon ${
+                      isFilterDropdownOpen ? "open" : ""
+                    }`}
                   />
                 </button>
 
@@ -424,7 +433,9 @@ const PromoterSales = () => {
                     {["All Sales", "Tickets", "Booths"].map((option) => (
                       <button
                         key={option}
-                        className={`sales-filter-dropdown-item small-body-text ${activeFilter === option ? "active" : ""}`}
+                        className={`sales-filter-dropdown-item small-body-text ${
+                          activeFilter === option ? "active" : ""
+                        }`}
                         onClick={() => {
                           handleFilterChange(option);
                           setIsFilterDropdownOpen(false);
@@ -438,14 +449,27 @@ const PromoterSales = () => {
               </div>
             </div>
           </div>
+
           <div className="sales-table-wrapper">
-            {paginatedData.length === 0 ? (
-              // Empty state outside table for mobile-friendly display
+            {loading ? (
               <div className="empty-state">
-                <Icon icon="mdi:magnify-close" width="48" />
-                <h4>No payments found</h4>
+                <Icon icon="mdi:loading" width="40" className="spin-icon" />
+                <p className="small-body-text">Loading sales data…</p>
+              </div>
+            ) : error ? (
+              <div className="empty-state">
+                <Icon icon="mdi:alert-circle-outline" width="48" />
+                <h4>Access Denied</h4>
+                <p className="small-body-text">{error}</p>
+              </div>
+            ) : paginatedData.length === 0 ? (
+              <div className="empty-state">
+                <Icon icon="mdi:receipt-text-outline" width="48" />
+                <h4>No transactions found</h4>
                 <p className="small-body-text">
-                  No payments match "<strong>{searchQuery}</strong>".
+                  {searchQuery
+                    ? `No transactions match "${searchQuery}".`
+                    : "No sales have been recorded for this event yet."}
                 </p>
               </div>
             ) : (
