@@ -78,8 +78,8 @@ const PromoterSales = ({ selectedEvent }) => {
           const itemLabel = isBooth
             ? r.boothCode || r.boothId || "Booth"
             : r.seatLabels?.length
-            ? r.seatLabels.join(", ")
-            : `${r.seatIds?.length || 1} seat(s)`;
+              ? r.seatLabels.join(", ")
+              : `${r.seatIds?.length || 1} seat(s)`;
 
           return {
             id: r._id?.toString().slice(-6).toUpperCase(),
@@ -104,8 +104,8 @@ const PromoterSales = ({ selectedEvent }) => {
               r.status === "confirmed"
                 ? "green"
                 : r.status === "pending"
-                ? "yellow"
-                : "red",
+                  ? "yellow"
+                  : "red",
           };
         });
 
@@ -207,10 +207,10 @@ const PromoterSales = ({ selectedEvent }) => {
   const eventTitle = selectedEvent?.title || "—";
   const eventDate = selectedEvent?.startDate
     ? new Date(selectedEvent.startDate).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
     : "—";
   const eventVenue = selectedEvent?.venue?.name || "—";
 
@@ -422,9 +422,8 @@ const PromoterSales = ({ selectedEvent }) => {
                   <span className="truncate-text">{activeFilter}</span>
                   <Icon
                     icon="mdi:chevron-down"
-                    className={`dropdown-icon ${
-                      isFilterDropdownOpen ? "open" : ""
-                    }`}
+                    className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""
+                      }`}
                   />
                 </button>
 
@@ -433,9 +432,8 @@ const PromoterSales = ({ selectedEvent }) => {
                     {["All Sales", "Tickets", "Booths"].map((option) => (
                       <button
                         key={option}
-                        className={`sales-filter-dropdown-item small-body-text ${
-                          activeFilter === option ? "active" : ""
-                        }`}
+                        className={`sales-filter-dropdown-item small-body-text ${activeFilter === option ? "active" : ""
+                          }`}
                         onClick={() => {
                           handleFilterChange(option);
                           setIsFilterDropdownOpen(false);
@@ -478,7 +476,7 @@ const PromoterSales = ({ selectedEvent }) => {
                   <tr>
                     <th>Order ID</th>
                     <th>Customer</th>
-                    <th>Type</th>
+                    <th>Ticket Type</th>
                     <th>Item</th>
                     <th>Amount</th>
                     <th>Date</th>
