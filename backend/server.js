@@ -26,6 +26,7 @@ const concernRoutes = require('./routes/concernRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 
 
 // express app
@@ -71,6 +72,7 @@ app.use('/api/concerns', concernRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/reservations', reservationRoutes)
 app.use('/api/analytics', analyticsRoutes)
+app.use('/api/orders', orderRoutes)
 
 
 // Global error handler

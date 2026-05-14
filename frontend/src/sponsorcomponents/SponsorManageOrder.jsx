@@ -4,20 +4,14 @@ import jsPDF from "jspdf";
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "../utils/pdfExport";
 import "./SponsorManageOrder.css";
 import SponsorViewOrder from "./SponsorModal/SponsorViewOrder";
+import orderService from "../services/orderService";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 
-const initialOrders = [
-  { id: "ORD-8902", customer: "Sarah Jenkins", time: "10:45 AM", items: "3 items", itemDesc: "2x Gourmet Burger, 1x Truffle Fri...", total: "$45.95", payment: "Paid", status: "Pending" },
-  { id: "ORD-8901", customer: "Michael Chen", time: "10:30 AM", items: "2 items", itemDesc: "1x Event T-Shirt, 3x Tech Sticker...", total: "$39.96", payment: "Paid", status: "Preparing" },
-  { id: "ORD-8900", customer: "Emma Watson", time: "10:15 AM", items: "2 items", itemDesc: "1x Cold Brew Coffee, 1x Caesar...", total: "$14.98", payment: "Paid", status: "Ready for Pickup" },
-  { id: "ORD-8899", customer: "David Rodriguez", time: "09:50 AM", items: "2 items", itemDesc: "2x Loaded Nachos, 2x Sparkling...", total: "$27.96", payment: "Paid", status: "Completed" },
-  { id: "ORD-8898", customer: "Jessica Lee", time: "09:30 AM", items: "1 item", itemDesc: "1x Branded Tote Bag", total: "$14.99", payment: "Unpaid", status: "Pending" },
-  { id: "ORD-8897", customer: "Chris Evans", time: "09:15 AM", items: "1 item", itemDesc: "1x Craft Lemonade", total: "$4.99", payment: "Paid", status: "Completed" },
-  { id: "ORD-8896", customer: "Natalie Portman", time: "09:00 AM", items: "2 items", itemDesc: "2x Cold Brew Coffee", total: "$11.98", payment: "Paid", status: "Ready for Pickup" },
-  { id: "ORD-8895", customer: "Tom Hanks", time: "08:45 AM", items: "1 item", itemDesc: "1x Ceramic Mug", total: "$14.99", payment: "Unpaid", status: "Pending" }
-];
-
-const SponsorManageOrder = ({ isCompleted }) => {
-  const [orders, setOrders] = useState(initialOrders);
+const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
+  const { user } = useAuthContext();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -34,6 +28,39 @@ const SponsorManageOrder = ({ isCompleted }) => {
 
   const itemsPerPage = 7;
 
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await orderService.getOrders(user?.token, { eventId, boothCode });
+      
+      // Transform backend data to match UI expectations
+      const formattedOrders = data.map(order => ({
+        id: order.orderId,
+        _id: order._id,
+        customer: `${order.customerId?.firstName} ${order.customerId?.lastName}`,
+        time: new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        items: `${order.items.reduce((sum, item) => sum + item.quantity, 0)} items`,
+        itemDesc: order.items.map(i => `${i.quantity}x ${i.name}`).join(", ").substring(0, 30) + "...",
+        total: `$${order.totalAmount.toFixed(2)}`,
+        payment: order.paymentStatus,
+        status: order.status,
+        fullItems: order.items // Keep full items for the modal
+      }));
+      
+      setOrders(formattedOrders);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.token && boothCode) {
+      fetchOrders();
+    }
+  }, [user, boothCode]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -44,11 +71,26 @@ const SponsorManageOrder = ({ isCompleted }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleOrderChange = (id, field, value) => {
-    setOrders(prev => prev.map(order => order.id === id ? { ...order, [field]: value } : order));
-    // Also update selected order in modal if it's currently open
-    if (selectedOrder && selectedOrder.id === id) {
-      setSelectedOrder(prev => ({ ...prev, [field]: value }));
+  const handleOrderChange = async (id, field, value) => {
+    try {
+      const orderToUpdate = orders.find(o => o.id === id);
+      if (!orderToUpdate) return;
+
+      const updateData = {};
+      if (field === 'status') updateData.status = value;
+      if (field === 'payment') updateData.paymentStatus = value;
+
+      await orderService.updateOrder(orderToUpdate._id, updateData, user.token);
+      
+      setOrders(prev => prev.map(order => order.id === id ? { ...order, [field]: value } : order));
+      
+      if (selectedOrder && selectedOrder.id === id) {
+        setSelectedOrder(prev => ({ ...prev, [field]: value }));
+      }
+      
+      showSuccessAlert("Updated!", `Order ${field} has been updated.`);
+    } catch (error) {
+      showErrorAlert("Update Failed", error.message);
     }
   };
 
@@ -106,19 +148,19 @@ const SponsorManageOrder = ({ isCompleted }) => {
         order.status,
       ]);
 
-      let currentY = 50; // below header
+      let currentY = 50;
 
       currentY = drawTable(
         pdf,
         currentY,
         headers,
         pdfData,
-        15, // margin
+        15,
         pdfWidth,
         pdfHeight,
-        15, // footer height
-        10, // row height
-        3,  // padding Y
+        15,
+        10,
+        3,
         logoData,
         REPORT_TITLE
       );
@@ -213,7 +255,14 @@ const SponsorManageOrder = ({ isCompleted }) => {
               </tr>
             </thead>
             <tbody>
-              {paginatedData.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
+                    <Icon icon="mdi:loading" className="csp-spin" width="32" />
+                    <p className="small-body-text">Loading orders...</p>
+                  </td>
+                </tr>
+              ) : paginatedData.length > 0 ? (
                 paginatedData.map((order) => (
                   <tr key={order.id} className={expandedRow === order.id ? "expanded" : ""}>
                     <td className="small-body-text id-td" data-label="ID">
@@ -251,9 +300,7 @@ const SponsorManageOrder = ({ isCompleted }) => {
                         >
                           <option value="Paid">Paid</option>
                           <option value="Unpaid">Unpaid</option>
-
                         </select>
-                        <span class="arrow">⌄</span>
                       </div>
                     </td>
                     <td data-label="STATUS">
@@ -282,7 +329,7 @@ const SponsorManageOrder = ({ isCompleted }) => {
                 ))
               ) : (
                 <tr>
-                  <td style={{ textAlign: 'center', }}>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '60px 0' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--color-black-tertiary)' }}>
                       <Icon icon="mdi:shopping-search" width="48" style={{ marginBottom: '16px' }} />
                       <p className="regular-body-text" style={{ marginTop: '0' }}>No orders found matching your search.</p>

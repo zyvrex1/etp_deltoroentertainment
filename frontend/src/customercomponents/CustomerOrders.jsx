@@ -1,55 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { QRCodeCanvas } from 'qrcode.react';
 import CustomerOrderQrModal from './Modal/CustomerOrderQrModal';
+import orderService from '../services/orderService';
+import { useAuthContext } from '../hooks/useAuthContext';
 import './CustomerOrders.css';
-
-
-const MOCK_ORDERS = [
-    {
-        id: "ORD-8902",
-        time: "03:15 AM",
-        date: "May 14, 2026",
-        status: "Ready for Pickup",
-        storeName: "Burger Stand",
-        boothInfo: "Booth - 1",
-        itemsCount: 3,
-        itemsDetail: "Burger Combo x2, Fries x1",
-        eventName: "Neon Dreams Tour",
-        total: 29.00,
-        purchasedAt: "2026-05-14T03:15:00"
-    },
-    {
-        id: "ORD-8901",
-        time: "02:45 AM",
-        date: "May 14, 2026",
-        status: "Preparing",
-        storeName: "Pizza Palace",
-        boothInfo: "Booth - 5",
-        itemsCount: 2,
-        itemsDetail: "Pepperoni Pizza x1, Coke x2",
-        eventName: "Neon Dreams Tour",
-        total: 18.50,
-        purchasedAt: "2026-05-14T02:45:00"
-    },
-    {
-        id: "ORD-8895",
-        time: "08:30 PM",
-        date: "May 13, 2026",
-        status: "Completed",
-        storeName: "Merch Hub",
-        boothInfo: "Booth - A12",
-        itemsCount: 1,
-        itemsDetail: "Official Tour T-Shirt x1",
-        eventName: "Neon Dreams Tour",
-        total: 35.00,
-        purchasedAt: "2026-05-13T20:30:00"
-    }
-];
 
 const CustomerOrders = () => {
     const navigate = useNavigate();
+    const { user } = useAuthContext();
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [sortFilter, setSortFilter] = useState("Recent");
@@ -57,14 +19,47 @@ const CustomerOrders = () => {
     const [qrModalShow, setQrModalShow] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
+    const fetchOrders = async () => {
+        if (!user?.token) return;
+        try {
+            setLoading(true);
+            const data = await orderService.getOrders(user.token, { customerId: user._id });
+            
+            const formattedOrders = data.map(order => ({
+                id: order.orderId,
+                _id: order._id,
+                time: new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                date: new Date(order.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
+                status: order.status,
+                paymentStatus: order.paymentStatus,
+                storeName: order.storeName || order.sponsorId?.companyName || "Store",
+                boothInfo: `Booth - ${order.boothCode}`,
+                itemsCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+                itemsDetail: order.items.map(i => `${i.name} x${i.quantity}`).join(", "),
+                eventName: order.eventId?.title || "Event",
+                total: order.totalAmount,
+                purchasedAt: order.createdAt
+            }));
+            
+            setOrders(formattedOrders);
+        } catch (error) {
+            console.error("Error fetching customer orders:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchOrders();
+    }, [user]);
+
     const handleEnlargeQr = (order) => {
         setSelectedOrder(order);
         setQrModalShow(true);
     };
 
     const filteredAndSortedOrders = useMemo(() => {
-
-        let result = [...MOCK_ORDERS];
+        let result = [...orders];
 
         // Search Filter
         if (searchQuery) {
@@ -90,7 +85,7 @@ const CustomerOrders = () => {
         }
 
         return result;
-    }, [searchQuery, statusFilter, sortFilter]);
+    }, [orders, searchQuery, statusFilter, sortFilter]);
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
@@ -109,8 +104,15 @@ const CustomerOrders = () => {
             case 'Ready for Pickup': return 'status-ready';
             case 'Preparing': return 'status-preparing';
             case 'Completed': return 'status-completed';
-            default: return 'status-pending';
+            case 'Pending': return 'status-pending';
+            case 'Paid': return 'payment-paid';
+            case 'Unpaid': return 'payment-unpaid';
+            default: return '';
         }
+    };
+
+    const getPaymentStatus = (status) => {
+        return status === 'Paid' ? 'Paid' : 'Unpaid';
     };
 
     return (
@@ -147,6 +149,7 @@ const CustomerOrders = () => {
                                 className="status-dropdown"
                             >
                                 <option value="All">All Status</option>
+                                <option value="Pending">Pending</option>
                                 <option value="Preparing">Preparing</option>
                                 <option value="Ready for Pickup">Ready for Pickup</option>
                                 <option value="Completed">Completed</option>
@@ -168,14 +171,24 @@ const CustomerOrders = () => {
                 </div>
 
                 <div className="orders-list">
-                    {paginatedOrders.length > 0 ? (
+                    {loading ? (
+                        <div className="loading-state" style={{ textAlign: 'center', padding: '60px' }}>
+                            <Icon icon="mdi:loading" className="csp-spin" width="48" />
+                            <p>Fetching your orders...</p>
+                        </div>
+                    ) : paginatedOrders.length > 0 ? (
                         paginatedOrders.map(order => (
                             <div className="order-card-new" key={order.id}>
                                 <div className="order-card-top">
                                     <h4 className="order-id-title">{order.id}</h4>
-                                    <span className={`order-status-badge smaller-body-text ${getStatusBadgeClass(order.status)}`}>
-                                        {order.status}
-                                    </span>
+                                    <div className="order-status-group">
+                                        <span className={`order-status-badge smaller-body-text ${getStatusBadgeClass(order.paymentStatus || 'Unpaid')}`}>
+                                            {order.paymentStatus || 'Unpaid'}
+                                        </span>
+                                        <span className={`order-status-badge smaller-body-text ${getStatusBadgeClass(order.status)}`}>
+                                            {order.status}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="order-card-body">
@@ -205,9 +218,7 @@ const CustomerOrders = () => {
                                     </div>
 
                                     <div className="order-qr-section" onClick={() => handleEnlargeQr(order)} style={{ cursor: 'pointer' }}>
-
                                         <div className="order-qr-wrapper">
-
                                             <QRCodeCanvas
                                                 value={order.id}
                                                 size={110}
@@ -215,7 +226,6 @@ const CustomerOrders = () => {
                                                 fgColor={"#000000"}
                                                 level={"M"}
                                             />
-
                                         </div>
                                     </div>
                                 </div>
@@ -225,7 +235,6 @@ const CustomerOrders = () => {
                                         <span className="total-value h4">${order.total.toFixed(2)}</span>
                                     </div>
                                 </div>
-
                             </div>
                         ))
                     ) : (
@@ -272,6 +281,5 @@ const CustomerOrders = () => {
         </div>
     );
 };
-
 
 export default CustomerOrders;

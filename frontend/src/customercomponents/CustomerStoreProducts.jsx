@@ -2,22 +2,77 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import merchandiseService from "../services/merchandiseService";
+import orderService from "../services/orderService";
 import { useAuthContext } from "../hooks/useAuthContext";
+import { useCustomerStoreCart } from "../context/CustomerStoreCartContext";
+import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../utils/sweetAlert";
 import "./CustomerStoreProducts.css";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+const CartModal = ({ isOpen, onClose, cartItems, totalAmount, onCheckout, onUpdateQty }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="cart-modal-overlay" onClick={onClose}>
+      <div className="cart-modal-content" onClick={e => e.stopPropagation()}>
+        <div className="cart-modal-header">
+          <h3>Your Order Summary</h3>
+          <Icon icon="mdi:close" className="close-btn" width="24" onClick={onClose} />
+        </div>
+        <div className="cart-modal-items">
+          {cartItems.map(item => (
+            <div key={item.id} className="cart-item">
+              <div className="item-info">
+                <h6>{item.name}</h6>
+                <p className="item-booth">{item.boothName}</p>
+                <div className="csp-qty-controls" style={{ width: '100px', marginTop: '8px' }}>
+                  <button className="csp-qty-btn" onClick={() => onUpdateQty(item.id, -1)}>-</button>
+                  <span className="csp-qty-value">{item.quantity}</span>
+                  <button className="csp-qty-btn" onClick={() => onUpdateQty(item.id, 1)}>+</button>
+                </div>
+              </div>
+              <div className="item-price-qty">
+                <span className="item-price">${(item.price * item.quantity).toFixed(2)}</span>
+                <p className="item-qty">{item.quantity} x ${item.price.toFixed(2)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="cart-modal-footer">
+          <div className="footer-total">
+            <span>Total Amount</span>
+            <span>${totalAmount.toFixed(2)}</span>
+          </div>
+          <button className="modal-checkout-btn" onClick={onCheckout}>
+            Confirm Order
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const CustomerStoreProducts = () => {
   const { user } = useAuthContext();
   const navigate = useNavigate();
   const location = useLocation();
+  const { 
+    addToCart, 
+    updateQuantity, 
+    getItemQuantity, 
+    cartItems, 
+    getTotalAmount, 
+    getTotalItems,
+    clearCart
+  } = useCustomerStoreCart();
 
-  const { eventId, eventName, sponsorId, boothName, sponsorName } = location.state || {
+  const { eventId, eventName, sponsorId, boothName, storeName } = location.state || {
     eventId: null,
     eventName: "Event",
     sponsorId: null,
     boothName: "Booth",
-    sponsorName: "Sponsor"
+    storeName: "Store"
   };
 
   const [products, setProducts] = useState([]);
@@ -25,6 +80,7 @@ const CustomerStoreProducts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All Categories");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef(null);
 
@@ -34,13 +90,8 @@ const CustomerStoreProducts = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Fetch all products for this event to be safe and filter on frontend if needed
-        // This matches the logic in CustomerStoreBooths for counting products
         const data = await merchandiseService.getMerchandises(user?.token, { eventId });
-        
-        // Filter by boothCode (passed as boothName in state)
         const filtered = data.filter(p => p.boothCode?.trim() === boothName?.trim());
-        
         setProducts(filtered);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -54,7 +105,6 @@ const CustomerStoreProducts = () => {
     }
   }, [user, eventId, boothName]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -88,6 +138,46 @@ const CustomerStoreProducts = () => {
     return `${BACKEND_URL}/uploads/${image}`;
   };
 
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) return;
+
+    const result = await showConfirmAlert(
+      "Place Order",
+      `Are you sure you want to place this order for $${getTotalAmount().toFixed(2)}?`,
+      "Yes, Order Now"
+    );
+
+    if (result.isConfirmed) {
+      try {
+        // Group items by sponsor/booth if needed, but for now we send all
+        // In a real multi-booth system, we might split orders
+        const orderData = {
+          items: cartItems.map(item => ({
+            productId: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          })),
+          sponsorId: cartItems[0].sponsorId, 
+          eventId: cartItems[0].eventId,
+          boothCode: cartItems[0].boothName,
+          storeName: storeName, // Use the store display name
+          totalAmount: getTotalAmount(),
+          paymentMethod: 'Credit Card'
+        };
+
+        await orderService.createOrder(orderData, user.token);
+        showSuccessAlert("Order Placed!", "Your order has been sent to the booth sponsor.");
+        clearCart();
+        setIsCartModalOpen(false);
+        navigate("/customer/my-orders");
+      } catch (error) {
+        showErrorAlert("Order Failed", error.message);
+      }
+    }
+  };
+
   return (
     <div className="csp-container">
       <div className="csp-back-link" onClick={() => navigate("/customer/store/booths", {
@@ -100,12 +190,12 @@ const CustomerStoreProducts = () => {
         <div className="csp-header-title">
           <Icon icon="mdi:shopping-outline" className="csp-title-icon" />
           <div>
-            <h1>{sponsorName}</h1>
+            <h1>{storeName}</h1>
             <p className="regular-body-text csp-title-desc">{boothName} • {eventName}</p>
           </div>
         </div>
         <p className="regular-body-text csp-subtitle">
-          Browse products and merchandise available at this booth.
+          Select multiple products and merchandise to place your order.
         </p>
       </div>
 
@@ -164,42 +254,61 @@ const CustomerStoreProducts = () => {
               <p>Loading products...</p>
             </div>
           ) : paginatedData.length > 0 ? (
-            paginatedData.map((product) => (
-              <div key={product._id || product.id} className="csp-card">
-                <div className="csp-card-img-wrap">
-                  <img 
-                    src={getProductImage(product.image)} 
-                    alt={product.name} 
-                    style={{width: '100%', height: '100%', objectFit: 'cover'}} 
-                    onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
-                  />
-                  <div className={`csp-category-badge button-label ${product.category.toLowerCase()}`}>{product.category}</div>
-                </div>
-                <div className="csp-card-content">
-                  <div className="csp-title-row">
-                    <h6 className="left-aligned">{product.name}</h6>
-                    <span className="csp-price">${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}</span>
+            paginatedData.map((product) => {
+              const qty = getItemQuantity(product._id || product.id);
+              return (
+                <div key={product._id || product.id} className="csp-card">
+                  <div className="csp-card-img-wrap">
+                    <img 
+                      src={getProductImage(product.image)} 
+                      alt={product.name} 
+                      style={{width: '100%', height: '100%', objectFit: 'cover'}} 
+                      onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
+                    />
+                    <div className={`csp-category-badge button-label ${product.category.toLowerCase()}`}>{product.category}</div>
                   </div>
-                  <p className="smaller-body-text csp-desc">{product.description}</p>
+                  <div className="csp-card-content">
+                    <div className="csp-title-row">
+                      <h6 className="left-aligned">{product.name}</h6>
+                      <span className="csp-price">${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}</span>
+                    </div>
+                    <p className="smaller-body-text csp-desc">{product.description}</p>
 
-                  <div className="csp-stock-row small-body-text">
-                    <span>
-                      <Icon icon="mdi:package-variant-closed" /> Stock: {product.stock}
-                    </span>
-                    <span className={`csp-stock-status ${product.stock <= 0 ? 'out-of-stock' : product.stock <= 10 ? 'low-stock' : 'high-stock'}`}>
-                      {product.stock <= 0 ? 'Out of Stock' : product.stock <= 10 ? 'Low Stock' : 'In Stock'}
-                    </span>
-                  </div>
+                    <div className="csp-stock-row small-body-text">
+                      <span>
+                        <Icon icon="mdi:package-variant-closed" /> Stock: {product.stock}
+                      </span>
+                      <span className={`csp-stock-status ${product.stock <= 0 ? 'out-of-stock' : product.stock <= 10 ? 'low-stock' : 'high-stock'}`}>
+                        {product.stock <= 0 ? 'Out of Stock' : product.stock <= 10 ? 'Low Stock' : 'In Stock'}
+                      </span>
+                    </div>
 
-                  <div className="csp-stock-progress">
-                    <div
-                      className={`csp-stock-bar ${product.stock <= 0 ? 'out-of-stock' : product.stock <= 10 ? 'low-stock' : 'high-stock'}`}
-                      style={{width: `${Math.min((product.stock / 100) * 100, 100)}%`}}
-                    ></div>
+                    <div className="csp-stock-progress">
+                      <div
+                        className={`csp-stock-bar ${product.stock <= 0 ? 'out-of-stock' : product.stock <= 10 ? 'low-stock' : 'high-stock'}`}
+                        style={{width: `${Math.min((product.stock / 100) * 100, 100)}%`}}
+                      ></div>
+                    </div>
+
+                    {qty > 0 ? (
+                      <div className="csp-qty-controls">
+                        <button className="csp-qty-btn" onClick={() => updateQuantity(product._id || product.id, -1)}>-</button>
+                        <span className="csp-qty-value">{qty} in cart</span>
+                        <button className="csp-qty-btn" onClick={() => updateQuantity(product._id || product.id, 1)} disabled={qty >= product.stock}>+</button>
+                      </div>
+                    ) : (
+                      <button 
+                        className="csp-add-btn" 
+                        disabled={product.stock <= 0}
+                        onClick={() => addToCart(product, { eventId, eventName, sponsorName: storeName, boothName })}
+                      >
+                        <Icon icon="mdi:cart-plus" /> Add to Order
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="csp-empty">
               <Icon icon="mdi:package-variant" width="48" />
@@ -230,6 +339,38 @@ const CustomerStoreProducts = () => {
           </div>
         )}
       </div>
+
+      {getTotalItems() > 0 && (
+        <div className="csp-cart-bar">
+          <div className="csp-cart-info">
+            <div className="csp-cart-count">
+              <Icon icon="mdi:shopping" width="24" />
+              <span className="count-badge">{getTotalItems()}</span>
+              <span>Items</span>
+            </div>
+            <div className="csp-cart-total">
+              Total: ${getTotalAmount().toFixed(2)}
+            </div>
+          </div>
+          <div className="csp-cart-actions">
+            <button className="view-cart-btn" onClick={() => setIsCartModalOpen(true)}>
+              View Details
+            </button>
+            <button className="checkout-btn" onClick={handleCheckout}>
+              Place Order <Icon icon="mdi:arrow-right" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <CartModal 
+        isOpen={isCartModalOpen} 
+        onClose={() => setIsCartModalOpen(false)}
+        cartItems={cartItems}
+        totalAmount={getTotalAmount()}
+        onCheckout={handleCheckout}
+        onUpdateQty={updateQuantity}
+      />
     </div>
   );
 };

@@ -80,7 +80,7 @@ const SponsorStore = () => {
             const formattedDate = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
             // Store Information fallback logic
-            const companyName = storeSettings.companyName || sponsorUser.companyName || `${sponsorUser.firstName || ''} ${sponsorUser.lastName || ''}`.trim() || "My Store";
+            const storeName = storeSettings.companyName || sponsorUser.companyName || `${sponsorUser.firstName || ''} ${sponsorUser.lastName || ''}`.trim() || "My Store";
             const industry = storeSettings.industry || sponsorUser.industry || "Sponsor";
 
             // Logo/Image logic
@@ -94,7 +94,7 @@ const SponsorStore = () => {
               _id: eventObj._id,
               boothCodeRaw: res.boothCode,
               boothNumber: `Booth ${res.boothCode || ''}`,
-              title: companyName, // Use store name as primary title
+              title: storeName, // Use store name as primary title
               eventTitle: eventObj.title || 'Unknown Event',
               industry: industry,
               date: formattedDate,
@@ -279,6 +279,7 @@ const SponsorStore = () => {
                           eventId: store._id || store.id,
                           eventName: store.eventTitle,
                           boothCode: store.boothCodeRaw,
+                          companyName: store.title,
                           isCompleted: store.status === "Completed"
                         }
                       });

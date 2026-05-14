@@ -6,6 +6,7 @@ import { EventsContextProvider } from './context/EventsContext.jsx';
 import { AuthContextProvider } from './context/AuthContext.jsx';
 import { NotificationsContextProvider } from './context/NotificationsContext.jsx';
 import { CustomerCartProvider } from './context/CustomerCartContext.jsx';
+import { CustomerStoreCartProvider } from './context/CustomerStoreCartContext.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -13,7 +14,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <NotificationsContextProvider>
         <EventsContextProvider>
           <CustomerCartProvider>
-            <App />
+            <CustomerStoreCartProvider>
+              <App />
+            </CustomerStoreCartProvider>
           </CustomerCartProvider>
         </EventsContextProvider>
       </NotificationsContextProvider>

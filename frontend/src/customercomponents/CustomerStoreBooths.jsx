@@ -42,7 +42,7 @@ const CustomerStoreBooths = () => {
             id: res._id,
             sponsorId: res.user?._id,
             boothNumber: res.boothCode || "N/A",
-            companyName: res.storeSettings?.companyName || res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
+            storeName: res.storeSettings?.companyName || res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
             industry: res.storeSettings?.industry || res.user?.industry || "Sponsor",
             products: boothProducts.length,
             logo: res.storeSettings?.logo ? (res.storeSettings.logo.startsWith('/') ? res.storeSettings.logo : `/uploads/${res.storeSettings.logo}`) : (res.user?.avatar ? (res.user.avatar.startsWith('/') ? res.user.avatar : `/uploads/${res.user.avatar}`) : '/assets/eventbg.jpg'),
@@ -64,7 +64,7 @@ const CustomerStoreBooths = () => {
   const itemsPerPage = 8;
 
   const filteredBooths = boothData.filter((booth) => {
-    return booth.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    return booth.storeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booth.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booth.boothNumber.toLowerCase().includes(searchQuery.toLowerCase());
   });
@@ -139,20 +139,20 @@ const CustomerStoreBooths = () => {
                     eventName,
                     sponsorId: booth.sponsorId,
                     boothName: booth.boothNumber,
-                    sponsorName: booth.companyName
+                    storeName: booth.storeName
                   }
                 })}
               >
                 <div className="csb-card-image-wrap">
                   <img 
                     src={booth.logo} 
-                    alt={booth.companyName} 
+                    alt={booth.storeName} 
                     onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
                   />
                   <div className="csb-booth-badge button-label">{booth.boothNumber}</div>
                 </div>
                 <div className="csb-card-details">
-                  <h5 className="csb-company-name">{booth.companyName}</h5>
+                  <h5 className="csb-company-name">{booth.storeName}</h5>
                   <div className="csb-card-info small-body-text">
                     <Icon icon="mdi:domain" />
                     <span>{booth.industry}</span>

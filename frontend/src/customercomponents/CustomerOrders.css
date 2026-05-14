@@ -164,24 +164,40 @@
 
 
                         &.status-ready {
-                            background-color: #D1FADF;
-                            color: #039855;
+                            background-color: var(--color-purple-quaternary);
+                            color: var(--color-purple-primary);
                         }
 
                         &.status-preparing {
-                            background-color: #FEF0C7;
-                            color: #DC6803;
+                            background-color: var(--color-blue-quaternary);
+                            color: var(--color-blue-primary);
                         }
 
                         &.status-completed {
-                            background-color: #F2F4F7;
-                            color: #344054;
+                            background-color: var(--color-green-quaternary);
+                            color: var(--color-green-primary);
                         }
 
                         &.status-pending {
-                            background-color: #FEE4E2;
-                            color: #D92D20;
+                            background-color: var(--color-yellow-quaternary);
+                            color: var(--color-yellow-primary);
                         }
+
+                        &.payment-paid {
+                            background-color: var(--color-green-quaternary);
+                            color: var(--color-green-primary);
+                        }
+
+                        &.payment-unpaid {
+                            background-color: #fee2e2;
+                            color: var(--color-red-primary);
+                        }
+                    }
+
+                    .order-status-group {
+                        display: flex;
+                        gap: 8px;
+                        align-items: center;
                     }
                 }
 

@@ -32,7 +32,7 @@ const formatCurrency = (val) => {
   }).format(val);
 };
 
-const SponsorProductAnalytics = ({ eventId }) => {
+const SponsorProductAnalytics = ({ eventId, boothCode }) => {
   const { user } = useAuthContext();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,10 @@ const SponsorProductAnalytics = ({ eventId }) => {
     if (!user) return;
     try {
       setLoading(true);
-      const filters = eventId ? { eventId } : {};
+      const filters = {};
+      if (eventId) filters.eventId = eventId;
+      if (boothCode) filters.boothCode = boothCode;
+      
       const data = await merchandiseService.getMerchandises(user.token, filters);
       setProducts(data);
     } catch (error) {
@@ -74,7 +77,7 @@ const SponsorProductAnalytics = ({ eventId }) => {
 
   useEffect(() => {
     fetchAnalyticsData();
-  }, [user, eventId]);
+  }, [user, eventId, boothCode]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);

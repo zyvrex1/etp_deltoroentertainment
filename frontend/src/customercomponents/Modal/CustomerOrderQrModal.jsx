@@ -40,6 +40,12 @@ const CustomerOrderQrModal = ({ show, onClose, orderData }) => {
                     <div className="coqr-footer-info">
                         <p className="coqr-caption small-body-text">Show this code at the booth to claim your order.</p>
                         <div className="coqr-status-display">
+                            <span className="label small-body-text">Payment:</span>
+                            <span className={`value small-body-text ${orderData?.paymentStatus?.toLowerCase() || 'unpaid'}`}>
+                                {orderData?.paymentStatus || 'Unpaid'}
+                            </span>
+                        </div>
+                        <div className="coqr-status-display">
                             <span className="label small-body-text">Status:</span>
                             <span className={`value small-body-text ${orderData?.status?.toLowerCase().replace(/\s+/g, '-')}`}>
                                 {orderData?.status}

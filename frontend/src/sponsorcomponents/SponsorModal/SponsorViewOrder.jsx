@@ -6,10 +6,7 @@ const SponsorViewOrder = ({ isOpen, onClose, order, onStatusChange, onPaymentCha
   if (!isOpen || !order) return null;
 
   const isUnpaid = order.payment === "Unpaid";
-
-  // Mocked items since order object only has itemDesc as string, but mockup shows individual items
-  // We'll parse or mock. Given order.itemDesc e.g. "2x Gourmet Burger, 1x Truffle Fries", let's split.
-  const itemsList = order.itemDesc ? order.itemDesc.split(',').map(item => item.trim()) : [];
+  const items = order.fullItems || [];
 
   return (
     <div className="svo-modal-overlay" onClick={onClose}>
@@ -72,23 +69,15 @@ const SponsorViewOrder = ({ isOpen, onClose, order, onStatusChange, onPaymentCha
           <div className="svo-items-section">
             <h4 className="svo-section-title">Order Items</h4>
             <div className="svo-items-list">
-              {itemsList.map((item, idx) => {
-                // simple regex to separate quantity and name (e.g. "2x Gourmet Burger")
-                const match = item.match(/^(?:\d+x\s*)?(.*?)(?:\s*\.\.\.)?$/);
-                const name = match ? match[1] : item;
-                const qtyMatch = item.match(/^(\d+)x/);
-                const qty = qtyMatch ? qtyMatch[1] : "1";
-                return (
-                  <div className="svo-item-row" key={idx}>
-                    <div className="svo-item-left">
-                      <span className="svo-item-qty">{qty}x</span>
-                      <span className="svo-item-name">{name}</span>
-                    </div>
-                    {/* Mocked individual price based on total just to show something */}
-                    <span className="svo-item-price">-</span> 
+              {items.map((item, idx) => (
+                <div className="svo-item-row" key={idx}>
+                  <div className="svo-item-left">
+                    <span className="svo-item-qty">{item.quantity}x</span>
+                    <span className="svo-item-name">{item.name}</span>
                   </div>
-                )
-              })}
+                  <span className="svo-item-price">${(item.price * item.quantity).toFixed(2)}</span> 
+                </div>
+              ))}
             </div>
             
             <div className="svo-totals">

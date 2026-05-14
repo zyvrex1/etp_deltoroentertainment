@@ -33,6 +33,7 @@ const SponsorStoreDashboard = () => {
             eventId: data.event?._id || data.event,
             eventName: data.event?.title || "Store Dashboard",
             boothCode: data.boothCode,
+            companyName: data.storeSettings?.companyName || data.user?.companyName || `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim(),
             isCompleted: new Date() > new Date(data.event?.endDate || data.event?.startDate)
           });
         } catch (error) {
@@ -46,7 +47,7 @@ const SponsorStoreDashboard = () => {
     fetchReservationDetails();
   }, [reservationId, user, resData.eventName]);
 
-  const { eventId, eventName, boothCode, isCompleted } = resData;
+  const { eventId, eventName, boothCode, isCompleted, companyName } = resData;
 
   return (
     <div className="ssd-container">
@@ -55,7 +56,7 @@ const SponsorStoreDashboard = () => {
       </div>
       
       <div className="ssd-header">
-        <h1>Store Dashboard {isCompleted && <span style={{ color: 'var(--color-black-tertiary)', fontSize: '0.6em', marginLeft: '10px' }}>(Closed)</span>}</h1>
+        <h1>{companyName || "Store Dashboard"} {isCompleted && <span style={{ color: 'var(--color-black-tertiary)', fontSize: '0.6em', marginLeft: '10px' }}>(Closed)</span>}</h1>
         <p className="regular-body-text">{eventName} {boothCode ? `- Booth ${boothCode}` : ''}</p>
       </div>
 
@@ -90,7 +91,7 @@ const SponsorStoreDashboard = () => {
 
       <div className="ssd-content">
         {activeTab === 'Products' && <SponsorManageProduct eventId={eventId} boothCode={boothCode} isCompleted={isCompleted} />}
-        {activeTab === 'Orders' && <SponsorManageOrder boothCode={boothCode} isCompleted={isCompleted} />}
+        {activeTab === 'Orders' && <SponsorManageOrder eventId={eventId} boothCode={boothCode} isCompleted={isCompleted} />}
         {activeTab === 'Analytics' && <SponsorProductAnalytics eventId={eventId} boothCode={boothCode} />}
         {activeTab === 'Settings' && <SponsorStoreSettings reservationId={reservationId} boothCode={boothCode} />}
       </div>
