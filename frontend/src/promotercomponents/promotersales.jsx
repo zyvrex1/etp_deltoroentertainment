@@ -474,10 +474,9 @@ const PromoterSales = ({ selectedEvent }) => {
               <table className="sales-table">
                 <thead>
                   <tr>
-                    <th>Order ID</th>
-                    <th>Customer</th>
-                    <th>Ticket Type</th>
-                    <th>Item</th>
+                    <th>Ticket ID</th>
+                    <th>Participant</th>
+                    <th>Type</th>
                     <th>Amount</th>
                     <th>Date</th>
                     <th>Status</th>
@@ -522,15 +521,15 @@ const PromoterSales = ({ selectedEvent }) => {
                         <span
                           className={`button-label pill-bg-${row.typeColor}`}
                         >
-                          {row.typePill}
+                          {row.typePill} |  {row.item}
                         </span>
                       </td>
-                      <td
+                      {/* <td
                         className="small-body-text item-col"
                         data-label="Item"
                       >
                         {row.item}
-                      </td>
+                      </td> */}
                       <td
                         className="ps-green-amount large-body-text"
                         data-label="Amount"

@@ -114,6 +114,10 @@
                     padding: 10px 16px;
                     border-radius: 8px;
                     background-color: var(--color-white-primary);
+
+                    .export-icon {
+                        font-size: 18px;
+                    }
                 }
 
                 .att-scan-btn {
@@ -469,6 +473,102 @@
 
         .action-btn:hover {
             color: var(--color-black-primary);
+        }
+        /* Multi-scan check-in time column */
+        .att-checkin-times {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 250px;
+        }
+
+        .att-time-entry {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .att-time-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 1px 7px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .badge-checkin {
+            background: var(--color-green-quaternary);
+            color: var(--color-green-primary);
+        }
+
+        .badge-exit {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .text-green { color: var(--color-green-primary); }
+        .text-orange { color: #e65100; }
+        .text-muted { color: var(--color-black-tertiary); }
+        .badge-auto-out {
+            background: #fce4ec;
+            color: #c62828;
+        }
+
+        .text-red { color: #c62828; }
+
+        .att-auto-out {
+            opacity: 0.9;
+            font-style: italic;
+        }
+
+        .status-exited {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .action-checkin-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: none;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s ease, transform 0.1s ease;
+        }
+
+        .action-checkin-btn:hover { opacity: 0.85; transform: scale(1.03); }
+        .action-checkin-btn:active { transform: scale(0.97); }
+        .action-label { font-size: 11px; white-space: nowrap; }
+
+        .action-enter {
+            background: var(--color-green-quaternary);
+            color: var(--color-green-primary);
+        }
+
+        .action-exit {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .att-max-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--color-green-quaternary);
+            color: var(--color-green-primary);
+            opacity: 0.8;
         }
     }
 

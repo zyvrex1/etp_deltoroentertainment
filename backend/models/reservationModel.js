@@ -78,7 +78,14 @@ const reservationSchema = new mongoose.Schema({
     checkedInAt: {
         type: Date,
         default: null
-    }
+    },
+    // Multi-scan tracking: up to 3 events (check-in → exit → check-in 2)
+    checkIns: [
+        {
+            time: { type: Date },
+            type: { type: String, enum: ['checkin', 'exit'] }
+        }
+    ]
 }, { timestamps: true });
 
 // Auto-generate qrData before saving
