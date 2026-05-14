@@ -81,167 +81,167 @@ const PromoterEventMonitoring = () => {
     return (
         <div className="pmon-container">
             {!selectedEvent ? (
-                    <div className="pmon-event-selection-container">
-                        <div className="pmon-header">
-                            <div>
-                                <h1>Event Monitoring</h1>
-                                <p className="large-body-text pem-title-desc">
-                                    Track People and Sales
-                                </p>
-                            </div>
+                <div className="pmon-event-selection-container">
+                    <div className="pmon-header">
+                        <div>
+                            <h1>Event Monitoring</h1>
+                            <p className="large-body-text pem-title-desc">
+                                Track People and Sales
+                            </p>
                         </div>
-                        <div className="pmon-content-first-page">
-                            <div className="pmon-toolbar">
-                                <div className="pmon-toolbar-left">
-                                    <div className="pmon-search">
-                                        <Icon icon="mdi:magnify" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search events..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="small-body-text pem-search-input"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="pmon-toolbar-right">
-                                    <div className="pmon-filter-dropdown" ref={eventDropdownRef}>
-                                        <button
-                                            className="pmon-filter-dropdown-btn small-body-text"
-                                            onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
-                                        >
-                                            <span className="truncate-text">{sortFilter}</span>
-                                            <Icon
-                                                icon="mdi:chevron-down"
-                                                className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
-                                            />
-                                        </button>
-
-                                        {isEventDropdownOpen && (
-                                            <div className="pmon-filter-dropdown-menu">
-                                                {["Recently Added", "A-Z", "Z-A"].map((option) => (
-                                                    <button
-                                                        key={option}
-                                                        className={`pmon-filter-dropdown-item small-body-text ${sortFilter === option ? "active" : ""
-                                                            }`}
-                                                        onClick={() => {
-                                                            setSortFilter(option);
-                                                            setIsEventDropdownOpen(false);
-                                                        }}
-                                                    >
-                                                        {option}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
+                    </div>
+                    <div className="pmon-content-first-page">
+                        <div className="pmon-toolbar">
+                            <div className="pmon-toolbar-left">
+                                <div className="pmon-search">
+                                    <Icon icon="mdi:magnify" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search events..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="small-body-text pem-search-input"
+                                    />
                                 </div>
                             </div>
 
-                            {loading ? (
-                                <div className="pmon-events-grid">
-                                    {[...Array(itemsPerPage)].map((_, i) => (
-                                        <div key={i} className="pmon-event-card skeleton-card">
-                                            <div className="pmon-card-image-wrap">
-                                                <div className="skeleton" style={{ width: '100%', height: '100%' }} />
-                                            </div>
-                                            <div className="pmon-card-details">
-                                                <div className="pmon-card-info" style={{ width: '100%' }}>
-                                                    <div className="skeleton skeleton-text title" />
-                                                </div>
-                                                <div className="pmon-card-info">
-                                                    <div className="skeleton skeleton-badge" />
-                                                </div>
-                                                <div className="pmon-card-info">
-                                                    <div className="skeleton skeleton-text short" />
-                                                </div>
-                                                <div className="pmon-card-info">
-                                                    <div className="skeleton skeleton-text short" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="pmon-events-grid">
-                                    {paginatedData.length > 0 ? (
-                                        paginatedData.map((event) => {
-                                            const eventDate = new Date(event.startDate).toLocaleDateString("en-US", {
-                                                month: "short",
-                                                day: "numeric",
-                                                year: "numeric"
-                                            });
-                                            const eventLocation = event.venue 
-                                                ? `${event.venue.name}, ${event.venue.city}` 
-                                                : "TBA";
-                                            const imageUrl = event.image 
-                                                ? `${import.meta.env.VITE_BACKEND_URL || ""}/uploads/${event.image}` 
-                                                : "/assets/eventbg.jpg";
+                            <div className="pmon-toolbar-right">
+                                <div className="pmon-filter-dropdown" ref={eventDropdownRef}>
+                                    <button
+                                        className="pmon-filter-dropdown-btn small-body-text"
+                                        onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
+                                    >
+                                        <span className="truncate-text">{sortFilter}</span>
+                                        <Icon
+                                            icon="mdi:chevron-down"
+                                            className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
+                                        />
+                                    </button>
 
-                                            return (
-                                                <div
-                                                    key={event._id}
-                                                    className="pmon-event-card"
-                                                    onClick={() => setSelectedEvent(event)}
+                                    {isEventDropdownOpen && (
+                                        <div className="pmon-filter-dropdown-menu">
+                                            {["Recently Added", "A-Z", "Z-A"].map((option) => (
+                                                <button
+                                                    key={option}
+                                                    className={`pmon-filter-dropdown-item small-body-text ${sortFilter === option ? "active" : ""
+                                                        }`}
+                                                    onClick={() => {
+                                                        setSortFilter(option);
+                                                        setIsEventDropdownOpen(false);
+                                                    }}
                                                 >
-                                                    <div className="pmon-card-image-wrap">
-                                                        <img src={imageUrl} alt={event.title} />
-                                                    </div>
-                                                    <div className="pmon-card-details">
-                                                        <div className="pmon-card-info">
-                                                            <h3>{event.title}</h3>
-                                                        </div>
-                                                        <div className="pmon-card-info">
-                                                            <span>{event.category || "No category"}</span>
-                                                        </div>
-                                                        <div className="pmon-card-info">
-                                                            <Icon icon="mdi:calendar" />
-                                                            <span className="event-dates">{eventDate}</span>
-                                                        </div>
-                                                        <div className="pmon-card-info">
-                                                            <Icon icon="mdi:map-marker" />
-                                                            <span>{eventLocation}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="pmon-empty-state">
-                                            <Icon icon="mdi:magnify-close" width="48" />
-                                            <h4>No events found</h4>
-                                            <p className="small-body-text">
-                                                No events match "<strong>{searchQuery}</strong>".
-                                            </p>
+                                                    {option}
+                                                </button>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
-                            )}
-
-                            {totalPages > 1 && (
-                                <div className="pagination">
-                                    <button
-                                        className="pagination-btn"
-                                        onClick={() => handlePageChange(currentPage - 1)}
-                                        disabled={currentPage === 1}
-                                    >
-                                        Previous
-                                    </button>
-                                    <span className="pagination-info">
-                                        Page {currentPage} of {totalPages}
-                                    </span>
-                                    <button
-                                        className="pagination-btn"
-                                        onClick={() => handlePageChange(currentPage + 1)}
-                                        disabled={currentPage === totalPages}
-                                    >
-                                        Next
-                                    </button>
-                                </div>
-                            )}
+                            </div>
                         </div>
+
+                        {loading ? (
+                            <div className="pmon-events-grid">
+                                {[...Array(itemsPerPage)].map((_, i) => (
+                                    <div key={i} className="pmon-event-card skeleton-card">
+                                        <div className="pmon-card-image-wrap">
+                                            <div className="skeleton" style={{ width: '100%', height: '100%' }} />
+                                        </div>
+                                        <div className="pmon-card-details">
+                                            <div className="pmon-card-info" style={{ width: '100%' }}>
+                                                <div className="skeleton skeleton-text title" />
+                                            </div>
+                                            <div className="pmon-card-info">
+                                                <div className="skeleton skeleton-badge" />
+                                            </div>
+                                            <div className="pmon-card-info">
+                                                <div className="skeleton skeleton-text short" />
+                                            </div>
+                                            <div className="pmon-card-info">
+                                                <div className="skeleton skeleton-text short" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="pmon-events-grid">
+                                {paginatedData.length > 0 ? (
+                                    paginatedData.map((event) => {
+                                        const eventDate = new Date(event.startDate).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                            year: "numeric"
+                                        });
+                                        const eventLocation = event.venue
+                                            ? `${event.venue.name}, ${event.venue.city}`
+                                            : "TBA";
+                                        const imageUrl = event.image
+                                            ? `${import.meta.env.VITE_BACKEND_URL || ""}/uploads/${event.image}`
+                                            : "/assets/eventbg.jpg";
+
+                                        return (
+                                            <div
+                                                key={event._id}
+                                                className="pmon-event-card"
+                                                onClick={() => setSelectedEvent(event)}
+                                            >
+                                                <div className="pmon-card-image-wrap">
+                                                    <img src={imageUrl} alt={event.title} />
+                                                </div>
+                                                <div className="pmon-card-details">
+                                                    <div className="pmon-card-info">
+                                                        <h3>{event.title}</h3>
+                                                    </div>
+                                                    <div className="pmon-card-info">
+                                                        <span>{event.category || "No category"}</span>
+                                                    </div>
+                                                    <div className="pmon-card-info">
+                                                        <Icon icon="mdi:calendar" />
+                                                        <span className="event-dates">{eventDate}</span>
+                                                    </div>
+                                                    <div className="pmon-card-info">
+                                                        <Icon icon="mdi:map-marker" />
+                                                        <span>{eventLocation}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="pmon-empty-state">
+                                        <Icon icon="mdi:magnify-close" width="48" />
+                                        <h4>No events found</h4>
+                                        <p className="small-body-text">
+                                            No events match "<strong>{searchQuery}</strong>".
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {totalPages > 1 && (
+                            <div className="pagination">
+                                <button
+                                    className="pagination-btn"
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                >
+                                    Previous
+                                </button>
+                                <span className="pagination-info">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    className="pagination-btn"
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
                     </div>
+                </div>
             ) : (
                 <div className="pmon-management-view">
                     <div className="pmon-header">
@@ -261,7 +261,7 @@ const PromoterEventMonitoring = () => {
                             Attendees
                         </button>
                         <button className={`pmon-tab large-body-text ${activeTab === "sponsors" ? "active" : ""}`} onClick={() => setActiveTab("sponsors")}>
-                            Sponsors & Exhibitors
+                            Sponsors
                         </button>
                     </div>
 

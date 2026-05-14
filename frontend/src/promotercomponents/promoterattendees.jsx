@@ -16,10 +16,6 @@ import "./promoterattendees.css";
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
-/* ─────────────────────────────────────────────────────────────────────────── */
-/*  Helpers                                                                    */
-/* ─────────────────────────────────────────────────────────────────────────── */
-
 const getInitials = (name = "") =>
   name
     .split(" ")
@@ -45,47 +41,72 @@ const formatDateTime = (dateStr) => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
   });
 };
 
-/* Map a raw reservation document → attendee table row */
 const mapReservation = (r) => {
-  const isBooth = r.type === "booth";
-  const customerName = r.user?.companyName
-    ? r.user.companyName
-    : `${r.user?.firstName || ""} ${r.user?.lastName || ""}`.trim() || "Unknown";
+  const customerName = `${r.user?.firstName || ""} ${r.user?.lastName || ""}`.trim() || "Unknown";
 
-  const itemLabel = isBooth
-    ? r.boothCode || r.boothId || "Booth"
-    : r.seatLabels?.length
-      ? r.seatLabels.join(", ")
-      : r.seatIds?.length
-        ? `${r.seatIds.length} seat(s)`
-        : "Ticket";
+  const itemLabel = r.seatLabels?.length
+    ? r.seatLabels.join(", ")
+    : r.seatIds?.length
+      ? `${r.seatIds.length} seat(s)`
+      : "Ticket";
 
-  // Determine which price category name to display
-  const categoryName = r.categoryName || (isBooth ? "Booth" : "Ticket");
+  const categoryName = r.categoryName || "Ticket";
+
+  // Normalise checkIns array (may be absent on legacy records)
+  const checkIns = Array.isArray(r.checkIns) ? r.checkIns : [];
+
+  // Derive state from checkIns length
+  const scanCount = checkIns.length;
+  // 6-event cycle: In1 -> Out1 -> In2 -> Out2 -> In3 -> Out3
+  const ACTION_LABELS = ["Check In", "Exit", "Check In 2", "Exit 2", "Check In 3", "Exit 3"];
+  const nextAction = scanCount < 6 ? ACTION_LABELS[scanCount] : null;
+
+  // Status label shown in the Status pill
+  let status, statusType;
+  if (scanCount === 0) { status = "Registered"; statusType = "pending"; }
+  else if (scanCount % 2 === 1) {
+    const num = Math.ceil(scanCount / 2);
+    status = num === 1 ? "Checked In" : `Checked In (${num})`;
+    statusType = "checked";
+  } else {
+    const num = scanCount / 2;
+    status = num === 1 ? "Exited" : `Exited (${num})`;
+    statusType = "exited";
+  }
+
+  const fmt = (entry) => entry?.time ? formatDateTime(entry.time) : null;
 
   return {
     id: r._id,
     initials: getInitials(customerName),
     name: customerName,
     email: r.user?.email || "—",
-    typePill: isBooth ? "Booth" : "Ticket",
-    typeColor: isBooth ? "purple" : "green",
+    typePill: categoryName,
+    typeColor: "green",
     categoryName,
     item: itemLabel,
     purchaseDate: formatDate(r.createdAt),
+    // Legacy compat
     checkedIn: r.checkedIn || false,
     checkedInAt: r.checkedInAt ? formatDateTime(r.checkedInAt) : "—",
-    status: r.checkedIn ? "Checked In" : "Registered",
-    statusType: r.checkedIn ? "checked" : "pending",
+    // Multi-scan
+    checkIns,
+    scanCount,
+    nextAction,
+    checkIn1: fmt(checkIns[0]),
+    exitTime1: fmt(checkIns[1]),
+    checkIn2: fmt(checkIns[2]),
+    exitTime2: fmt(checkIns[3]),
+    checkIn3: fmt(checkIns[4]),
+    exitTime3: fmt(checkIns[5]),
+    status,
+    statusType,
   };
 };
-
-/* ─────────────────────────────────────────────────────────────────────────── */
-/*  Component                                                                  */
-/* ─────────────────────────────────────────────────────────────────────────── */
 
 const PromoterAttendees = ({ selectedEvent }) => {
   const { user } = useAuthContext();
@@ -103,7 +124,6 @@ const PromoterAttendees = ({ selectedEvent }) => {
   const itemsPerPage = 5;
   const filterDropdownRef = useRef(null);
 
-  /* ── Fetch attendees from the sales endpoint ── */
   const fetchAttendees = useCallback(async () => {
     if (!selectedEvent?._id || !user?.token) return;
 
@@ -129,25 +149,21 @@ const PromoterAttendees = ({ selectedEvent }) => {
 
       const { reservations, event: eventData } = await res.json();
 
-      // Build a quick priceName lookup from the event's priceLevels
       const priceMap = {};
       (eventData?.priceLevels || []).forEach((pl) => {
         priceMap[pl._id?.toString()] = pl.priceName;
       });
 
-      const rows = (reservations || []).map((r) => {
-        // Resolve the ticket category name from seatLabels/seatIds/priceLevelId
-        let categoryName = null;
-        if (r.type !== "booth") {
-          // For general admission, look up the price level from the items' categoryId
-          // We can try to use a priceLevelId from the reservation if present
+      const rows = (reservations || [])
+        .filter((r) => r.type !== "booth")
+        .map((r) => {
+          let categoryName = null;
           const plId = r.priceLevelId?.toString();
           if (plId && priceMap[plId]) {
             categoryName = priceMap[plId];
           }
-        }
-        return mapReservation({ ...r, categoryName });
-      });
+          return mapReservation({ ...r, categoryName });
+        });
 
       setAttendees(rows);
     } catch (err) {
@@ -163,7 +179,6 @@ const PromoterAttendees = ({ selectedEvent }) => {
     fetchAttendees();
   }, [fetchAttendees]);
 
-  /* ── Close dropdown on outside click ── */
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -177,32 +192,29 @@ const PromoterAttendees = ({ selectedEvent }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isFilterDropdownOpen]);
 
-  /* ── Derived counts ── */
   const counts = {
     all: attendees.length,
-    checked: attendees.filter((a) => a.checkedIn).length,
-    pending: attendees.filter((a) => !a.checkedIn).length,
+    checked: attendees.filter((a) => a.scanCount >= 1).length,
+    pending: attendees.filter((a) => a.scanCount === 0).length,
   };
 
-  /* ── Ticket-category stats cards ── */
   const categoryStats = (() => {
     const map = {};
     attendees.forEach((a) => {
       const key = a.categoryName || a.typePill;
       if (!map[key]) map[key] = { name: key, total: 0, checked: 0 };
       map[key].total += 1;
-      if (a.checkedIn) map[key].checked += 1;
+      if (a.scanCount >= 1) map[key].checked += 1;
     });
     return Object.values(map);
   })();
 
-  /* ── Filtering & search ── */
   const filteredData = attendees.filter((row) => {
     const q = searchQuery.toLowerCase();
     const matchesFilter =
       activeFilter === "All" ||
-      (activeFilter === "Checked In" && row.checkedIn) ||
-      (activeFilter === "Registered" && !row.checkedIn);
+      (activeFilter === "Checked In" && row.scanCount >= 1) ||
+      (activeFilter === "Registered" && row.scanCount === 0);
     if (!matchesFilter) return false;
     if (!q) return true;
     return (
@@ -213,7 +225,6 @@ const PromoterAttendees = ({ selectedEvent }) => {
     );
   });
 
-  /* ── Pagination ── */
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
@@ -230,7 +241,6 @@ const PromoterAttendees = ({ selectedEvent }) => {
   const toggleRow = (index) =>
     setExpandedRow(expandedRow === index ? null : index);
 
-  /* ── Event display helpers ── */
   const eventTitle = selectedEvent?.title || "—";
   const eventDate = selectedEvent?.startDate
     ? new Date(selectedEvent.startDate).toLocaleDateString("en-US", {
@@ -241,7 +251,6 @@ const PromoterAttendees = ({ selectedEvent }) => {
     : "—";
   const eventVenue = selectedEvent?.venue?.name || "—";
 
-  /* ── PDF Export ── */
   const exportList = async () => {
     const loadingToast = showExportToast();
     const REPORT_TITLE = "Attendee List";
@@ -334,23 +343,44 @@ const PromoterAttendees = ({ selectedEvent }) => {
     }
   };
 
-  /* ── QR Check-in Logic ── */
+  const handleManualCheckIn = async (reservationId) => {
+    if (!reservationId || !user?.token) return;
+
+    const row = attendees.find((a) => a.id === reservationId);
+    if (!row) return;
+
+    const actionLabel = row.nextAction || "Action";
+
+    const confirm = await Swal.fire({
+      title: `Confirm ${actionLabel}`,
+      text: `Manually record "${actionLabel}" for ${row.name}?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: `Yes, ${actionLabel}`,
+      confirmButtonColor: "var(--color-red-primary)",
+    });
+    if (!confirm.isConfirmed) return;
+
+    await performCheckIn(reservationId);
+  };
+
   const handleScanSuccess = async (reservationId) => {
     setIsScannerOpen(false);
     if (!reservationId || !user?.token) return;
+    await performCheckIn(reservationId);
+  };
 
+  const performCheckIn = async (reservationId) => {
     try {
       Swal.fire({
-        title: "Processing Check-in...",
+        title: "Processing...",
         didOpen: () => Swal.showLoading(),
         allowOutsideClick: false,
       });
 
       const res = await fetch(`${BASE_URL}/api/reservations/${reservationId}/checkin`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
+        headers: { Authorization: `Bearer ${user.token}` },
       });
 
       const data = await res.json();
@@ -359,38 +389,41 @@ const PromoterAttendees = ({ selectedEvent }) => {
         throw new Error(data.error || "Check-in failed");
       }
 
-      if (data.alreadyCheckedIn) {
+      if (data.maxReached) {
         Swal.fire({
           icon: "info",
-          title: "Already Checked In",
-          text: `${data.reservation?.user?.firstName || "Attendee"} is already checked in.`,
+          title: "Max Check-ins Reached",
+          text: "This ticket has already completed all 3 check-in/exit events.",
           confirmButtonColor: "var(--color-red-primary)",
         });
-      } else {
-        Swal.fire({
-          icon: "success",
-          title: "Check-in Successful!",
-          text: `Welcome, ${data.reservation?.user?.firstName || "Attendee"}!`,
-          timer: 2000,
-          showConfirmButton: false,
-        });
-        // Refresh the list to show the new status
-        fetchAttendees();
+        return;
       }
+
+      const actionType = data.actionType;
+      const scanNumber = data.scanNumber;
+      const firstName = data.reservation?.user?.firstName || "Attendee";
+
+      const messages = {
+        checkin: scanNumber === 1
+          ? { icon: "success", title: "Check-in Successful!", text: `Welcome, ${firstName}!` }
+          : { icon: "success", title: "Check-in 2 Recorded!", text: `${firstName} has re-entered the event.` },
+        exit: { icon: "info", title: "Exit Recorded", text: `${firstName} has exited the event.` },
+      };
+
+      const msg = messages[actionType] || { icon: "success", title: "Done", text: data.message };
+
+      Swal.fire({ ...msg, timer: 2500, showConfirmButton: false });
+      fetchAttendees();
     } catch (err) {
       console.error("Check-in error:", err);
       Swal.fire({
         icon: "error",
-        title: "Check-in Failed",
+        title: "Failed",
         text: err.message,
         confirmButtonColor: "var(--color-red-primary)",
       });
     }
   };
-
-  /* ─────────────────────────────────────────────────────────────────────── */
-  /*  Render                                                                  */
-  /* ─────────────────────────────────────────────────────────────────────── */
 
   return (
     <div className="att-container">
@@ -422,7 +455,6 @@ const PromoterAttendees = ({ selectedEvent }) => {
       </div>
 
       <div className="att-main-content">
-        {/* ── Event Banner ── */}
         <div className="att-event-banner">
           <div className="att-banner-left">
             <h3>{eventTitle}</h3>
@@ -450,7 +482,6 @@ const PromoterAttendees = ({ selectedEvent }) => {
           </div>
         </div>
 
-        {/* ── Category Stats Cards ── */}
         {!loading && !error && categoryStats.length > 0 && (
           <div className="att-cards-container">
             {categoryStats.map((stat, idx) => (
@@ -546,10 +577,11 @@ const PromoterAttendees = ({ selectedEvent }) => {
                 <thead>
                   <tr>
                     <th>Attendee</th>
-                    <th>Ticket Type</th>
+                    <th>Type</th>
                     <th>Purchase Date</th>
                     <th>Status</th>
-                    <th>Check-in Time</th>
+                    <th>Check-in Times</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -583,20 +615,15 @@ const PromoterAttendees = ({ selectedEvent }) => {
                         </div>
                       </td>
 
-                      {/* Ticket / Booth pill */}
-                      {/* Ticket Type & Item */}
+
                       <td className="type-cell" data-label="Ticket Type">
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                           <span className={`type-pill pill-bg-${row.typeColor}`}>
                             {row.typePill} | {row.item}
                           </span>
-                          {/* <span className="small-body-text item-col">
-                            | {row.item}
-                          </span> */}
                         </div>
                       </td>
 
-                      {/* Purchase Date */}
                       <td
                         data-label="Purchase Date"
                         className="small-body-text date-col"
@@ -604,7 +631,7 @@ const PromoterAttendees = ({ selectedEvent }) => {
                         {row.purchaseDate}
                       </td>
 
-                      {/* Status */}
+
                       <td className="status-cell" data-label="Status">
                         <span
                           className={`status-pill status-${row.statusType}`}
@@ -613,26 +640,106 @@ const PromoterAttendees = ({ selectedEvent }) => {
                         </span>
                       </td>
 
-                      {/* Check-in Time */}
+
                       <td
-                        data-label="Check-in Time"
+                        data-label="Check-in Times"
                         className="small-body-text"
                       >
-                        <div className="att-time-col-wrapper">
-                          {row.checkedIn && (
-                            <Icon
-                              icon="mdi:clock-outline"
-                              className="time-icon text-green"
-                            />
+                        {(() => {
+                          const eventEnd = selectedEvent?.endDate
+                            ? new Date(selectedEvent.endDate)
+                            : null;
+                          const eventEnded = eventEnd && new Date() > eventEnd;
+                          const isCurrentlyInside = row.scanCount > 0 && row.scanCount % 2 === 1;
+                          const autoOutStr = eventEnded && isCurrentlyInside
+                            ? formatDateTime(eventEnd)
+                            : null;
+                          return (
+                            <div className="att-checkin-times">
+                              {row.checkIn1 && (
+                                <div className="att-time-entry">
+                                  <span className="att-time-badge badge-checkin">In 1</span>
+                                  <Icon icon="mdi:clock-outline" className="time-icon text-green" />
+                                  <span className="text-green">{row.checkIn1}</span>
+                                </div>
+                              )}
+                              {row.exitTime1 && (
+                                <div className="att-time-entry">
+                                  <span className="att-time-badge badge-exit">Out 1</span>
+                                  <Icon icon="mdi:clock-outline" className="time-icon text-orange" />
+                                  <span className="text-orange">{row.exitTime1}</span>
+                                </div>
+                              )}
+                              {row.checkIn2 && (
+                                <div className="att-time-entry">
+                                  <span className="att-time-badge badge-checkin">In 2</span>
+                                  <Icon icon="mdi:clock-outline" className="time-icon text-green" />
+                                  <span className="text-green">{row.checkIn2}</span>
+                                </div>
+                              )}
+                              {row.exitTime2 && (
+                                <div className="att-time-entry">
+                                  <span className="att-time-badge badge-exit">Out 2</span>
+                                  <Icon icon="mdi:clock-outline" className="time-icon text-orange" />
+                                  <span className="text-orange">{row.exitTime2}</span>
+                                </div>
+                              )}
+                              {row.checkIn3 && (
+                                <div className="att-time-entry">
+                                  <span className="att-time-badge badge-checkin">In 3</span>
+                                  <Icon icon="mdi:clock-outline" className="time-icon text-green" />
+                                  <span className="text-green">{row.checkIn3}</span>
+                                </div>
+                              )}
+                              {row.exitTime3 && (
+                                <div className="att-time-entry">
+                                  <span className="att-time-badge badge-exit">Out 3</span>
+                                  <Icon icon="mdi:clock-outline" className="time-icon text-orange" />
+                                  <span className="text-orange">{row.exitTime3}</span>
+                                </div>
+                              )}
+                              {autoOutStr && (
+                                <div className="att-time-entry att-auto-out">
+                                  <span className="att-time-badge badge-auto-out">Auto Out</span>
+                                  <Icon icon="mdi:clock-alert-outline" className="time-icon text-red" />
+                                  <span className="text-red">{autoOutStr}</span>
+                                </div>
+                              )}
+                              {row.scanCount === 0 && !autoOutStr && (
+                                <span className="text-muted">—</span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
+
+                      <td data-label="Actions">
+                        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                          {row.nextAction ? (
+                            <button
+                              className={`action-btn action-checkin-btn ${
+                                row.nextAction.startsWith("Exit") ? "action-exit" : "action-enter"
+                              }`}
+                              title={`Manual: ${row.nextAction}`}
+                              onClick={() => handleManualCheckIn(row.id)}
+                            >
+                              <Icon
+                                icon={
+                                  row.nextAction.startsWith("Exit")
+                                    ? "mdi:location-exit"
+                                    : "mdi:qrcode-scan"
+                                }
+                              />
+                              <span className="action-label">{row.nextAction}</span>
+                            </button>
+                          ) : (
+                             <span className="att-max-badge" title="All 6 check-in events recorded">
+                              <Icon icon="mdi:check-all" /> Done
+                            </span>
                           )}
-                          <span
-                            className={row.checkedIn ? "text-green" : ""}
-                          >
-                            {" "}
-                            {row.checkedInAt}
-                          </span>
                         </div>
                       </td>
+
                     </tr>
                   ))}
                 </tbody>
