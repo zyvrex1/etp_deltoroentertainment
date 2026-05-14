@@ -49,20 +49,22 @@ const SponsorStore = () => {
         const formattedEvents = reservationsData
           .filter(res => res.event && res.event.title) // Ensure event exists and has a title
           .map(res => {
-            const event = res.event || {};
+            const eventObj = res.event || {};
+            const storeSettings = res.storeSettings || {};
+            const sponsorUser = res.user || {};
 
             let status = "Upcoming";
-            const startDate = event.startDate ? new Date(event.startDate) : new Date();
-            const endDate = (event.endDate || event.startDate) ? new Date(event.endDate || event.startDate) : new Date();
+            const startDate = eventObj.startDate ? new Date(eventObj.startDate) : new Date();
+            const endDate = (eventObj.endDate || eventObj.startDate) ? new Date(eventObj.endDate || eventObj.startDate) : new Date();
 
             // Incorporate startTime and endTime if available (format: HH:mm)
-            if (event.startTime) {
-              const [sHours, sMinutes] = event.startTime.split(':').map(Number);
+            if (eventObj.startTime) {
+              const [sHours, sMinutes] = eventObj.startTime.split(':').map(Number);
               startDate.setHours(sHours, sMinutes, 0, 0);
             }
 
-            if (event.endTime) {
-              const [eHours, eMinutes] = event.endTime.split(':').map(Number);
+            if (eventObj.endTime) {
+              const [eHours, eMinutes] = eventObj.endTime.split(':').map(Number);
               endDate.setHours(eHours, eMinutes, 0, 0);
             }
 
@@ -73,23 +75,30 @@ const SponsorStore = () => {
               status = "Live";
             }
 
-            const count = merchData.filter(m => (m.eventId?._id === event._id || m.eventId === event._id) && m.boothCode === res.boothCode).length;
+            const count = merchData.filter(m => (m.eventId?._id === eventObj._id || m.eventId === eventObj._id) && m.boothCode === res.boothCode).length;
 
             const formattedDate = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-            let imageUrl = event.image || '/assets/eventbg.jpg';
-            if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/assets/')) {
+            // Store Information fallback logic
+            const companyName = storeSettings.companyName || sponsorUser.companyName || `${sponsorUser.firstName || ''} ${sponsorUser.lastName || ''}`.trim() || "My Store";
+            const industry = storeSettings.industry || sponsorUser.industry || "Sponsor";
+
+            // Logo/Image logic
+            let imageUrl = storeSettings.logo ? storeSettings.logo : (eventObj.image || '/assets/eventbg.jpg');
+            if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/assets/') && !imageUrl.startsWith('blob:') && !imageUrl.startsWith('data:')) {
               imageUrl = `${BACKEND_URL}/uploads/${imageUrl.replace('/uploads/', '')}`;
             }
 
             return {
               id: res._id,
-              _id: event._id,
+              _id: eventObj._id,
               boothCodeRaw: res.boothCode,
               boothNumber: `Booth ${res.boothCode || ''}`,
-              title: event.title || 'Unknown Event',
+              title: companyName, // Use store name as primary title
+              eventTitle: eventObj.title || 'Unknown Event',
+              industry: industry,
               date: formattedDate,
-              location: event.venue?.name || 'TBA',
+              location: eventObj.venue?.name || 'TBA',
               products: count,
               activeOrders: 0,
               status: status,
@@ -122,6 +131,8 @@ const SponsorStore = () => {
 
   const filteredEvents = eventData.filter((event) => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.eventTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.location.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "All" || event.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -145,7 +156,7 @@ const SponsorStore = () => {
           <h1>My Stores</h1>
         </div>
         <p className="regular-body-text store-title-desc">
-          Select an event to manage your booth's inventory, track orders, and view sales analytics.
+          Manage your booth inventory, track orders, and view sales analytics for your active stores.
         </p>
       </div>
 
@@ -156,7 +167,7 @@ const SponsorStore = () => {
               <Icon icon="mdi:magnify" />
               <input
                 type="text"
-                placeholder="Search events..."
+                placeholder="Search stores..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -220,55 +231,60 @@ const SponsorStore = () => {
               </div>
             ))
           ) : paginatedData.length > 0 ? (
-            paginatedData.map((event) => (
-              <div key={event.id} className="store-event-card">
+            paginatedData.map((store) => (
+              <div key={store.id} className="store-event-card">
                 <div className="store-card-image-wrap">
-                  <img src={event.image} alt={event.title}
+                  <img src={store.image} alt={store.title}
                     onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
                   />
-                  <div className={`store-booth-badge button-label ${getStatusClass(event.status)}`}>
-                    {event.status}
+                  <div className={`store-booth-badge button-label ${getStatusClass(store.status)}`}>
+                    {store.status}
                   </div>
                 </div>
                 <div className="store-card-details">
-                  <h5 className="store-event-title">{event.title}</h5>
+                  <h5 className="store-name-title">{store.title}</h5>
+                  <div className="store-card-info small-body-text" style={{ color: 'var(--color-primary)', fontWeight: '600', marginBottom: '8px' }}>
+                    <Icon icon="mdi:domain" />
+                    <span>{store.industry}</span>
+                  </div>
                   <div className="store-card-info small-body-text">
                     <Icon icon="mdi:calendar-blank-outline" />
-                    <span>{event.date}</span>
+                    <span>{store.eventTitle} • {store.date}</span>
                   </div>
                   <div className="store-card-info small-body-text">
                     <Icon icon="mdi:map-marker-outline" />
-                    <span>{event.location}</span>
+                    <span>{store.location}</span>
                   </div>
                   <div className="store-card-info small-body-text">
-                    {event.boothNumber}
+                    <Icon icon="mdi:storefront-outline" />
+                    <span>{store.boothNumber}</span>
                   </div>
 
                   <div className="store-stats-row">
                     <div className="store-stat-item">
                       <span className="smaller-body-text stat-label">Products</span>
-                      <span className="large-body-text stat-value">{event.products}</span>
+                      <span className="large-body-text stat-value">{store.products}</span>
                     </div>
                     <div className="store-stat-item">
                       <span className="smaller-body-text stat-label">Active Orders</span>
-                      <span className="large-body-text stat-value">{event.activeOrders}</span>
+                      <span className="large-body-text stat-value">{store.activeOrders}</span>
                     </div>
                   </div>
 
                   <button
-                    className={`primary-button store-manage-btn ${event.status === "Completed" ? "see-reports-btn" : ""}`}
+                    className={`primary-button store-manage-btn ${store.status === "Completed" ? "see-reports-btn" : ""}`}
                     onClick={() => {
-                      navigate(`/sponsor/store/dashboard/${event.id}`, {
+                      navigate(`/sponsor/store/dashboard/${store.id}`, {
                         state: {
-                          eventId: event._id || event.id,
-                          eventName: event.title,
-                          boothCode: event.boothCodeRaw,
-                          isCompleted: event.status === "Completed"
+                          eventId: store._id || store.id,
+                          eventName: store.eventTitle,
+                          boothCode: store.boothCodeRaw,
+                          isCompleted: store.status === "Completed"
                         }
                       });
                     }}
                   >
-                    {event.status === "Completed" ? "See Reports" : "Manage Store"}
+                    {store.status === "Completed" ? "See Reports" : "Manage Store"}
                     <Icon icon="mdi:arrow-right" />
                   </button>
                 </div>
@@ -288,17 +304,17 @@ const SponsorStore = () => {
         {totalPages > 1 && (
           <div className="pagination">
             <button
-              className="pagination-btn"
+              className="pagination-btn small-body-text"
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
             >
               Previous
             </button>
-            <span className="pagination-info">
+            <span className="pagination-info small-body-text">
               Page {currentPage} of {totalPages}
             </span>
             <button
-              className="pagination-btn"
+              className="pagination-btn small-body-text"
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
