@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import reservationService from "../services/reservationService";
+import merchandiseService from "../services/merchandiseService";
 import "./CustomerStoreBooths.css";
 
 
@@ -27,22 +28,31 @@ const CustomerStoreBooths = () => {
       if (!eventId || !user?.token) return;
       try {
         setLoading(true);
-        const reservations = await reservationService.getEventBooths(eventId, user.token);
         
-        const mappedBooths = reservations.map(res => ({
-          id: res._id,
-          sponsorId: res.user?._id,
-          boothNumber: res.boothCode || "N/A",
-          companyName: res.storeSettings?.companyName || res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
-          industry: res.storeSettings?.industry || res.user?.industry || "Sponsor",
-          products: 0, // We could fetch product count if needed
-          logo: res.storeSettings?.logo ? (res.storeSettings.logo.startsWith('/') ? res.storeSettings.logo : `/uploads/${res.storeSettings.logo}`) : (res.user?.avatar ? (res.user.avatar.startsWith('/') ? res.user.avatar : `/uploads/${res.user.avatar}`) : '/assets/eventbg.jpg'),
-          description: res.storeSettings?.description || "there is no description"
-        }));
+        // Fetch booths and products in parallel
+        const [reservations, products] = await Promise.all([
+          reservationService.getEventBooths(eventId, user.token),
+          merchandiseService.getMerchandises(user.token, { eventId })
+        ]);
+        
+        const mappedBooths = reservations.map(res => {
+          const boothProducts = products.filter(p => p.boothCode?.trim() === res.boothCode?.trim());
+          
+          return {
+            id: res._id,
+            sponsorId: res.user?._id,
+            boothNumber: res.boothCode || "N/A",
+            companyName: res.storeSettings?.companyName || res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
+            industry: res.storeSettings?.industry || res.user?.industry || "Sponsor",
+            products: boothProducts.length,
+            logo: res.storeSettings?.logo ? (res.storeSettings.logo.startsWith('/') ? res.storeSettings.logo : `/uploads/${res.storeSettings.logo}`) : (res.user?.avatar ? (res.user.avatar.startsWith('/') ? res.user.avatar : `/uploads/${res.user.avatar}`) : '/assets/eventbg.jpg'),
+            description: res.storeSettings?.description || "there is no description"
+          };
+        });
         
         setBoothData(mappedBooths);
       } catch (error) {
-        console.error("Error fetching booths:", error);
+        console.error("Error fetching booths and products:", error);
       } finally {
         setLoading(false);
       }

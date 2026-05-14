@@ -34,11 +34,14 @@ const CustomerStoreProducts = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const filters = {};
-        if (eventId) filters.eventId = eventId;
-        if (sponsorId) filters.sponsorId = sponsorId;
-        const data = await merchandiseService.getMerchandises(user?.token, filters);
-        setProducts(data);
+        // Fetch all products for this event to be safe and filter on frontend if needed
+        // This matches the logic in CustomerStoreBooths for counting products
+        const data = await merchandiseService.getMerchandises(user?.token, { eventId });
+        
+        // Filter by boothCode (passed as boothName in state)
+        const filtered = data.filter(p => p.boothCode?.trim() === boothName?.trim());
+        
+        setProducts(filtered);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -46,8 +49,10 @@ const CustomerStoreProducts = () => {
       }
     };
 
-    fetchProducts();
-  }, [user, eventId, sponsorId]);
+    if (eventId) {
+      fetchProducts();
+    }
+  }, [user, eventId, boothName]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
