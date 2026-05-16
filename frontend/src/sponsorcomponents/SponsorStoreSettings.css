@@ -104,6 +104,14 @@
                 border-color: var(--color-red-primary);
                 background: white;
             }
+
+            &:disabled {
+                cursor: not-allowed;
+                background: var(--color-bg-light);
+                color: var(--color-black-tertiary);
+                border-color: var(--color-black-quaternary);
+                opacity: 0.7;
+            }
         }
     }
 

@@ -299,12 +299,11 @@ const updateStoreSettings = async (req, res) => {
             return res.status(404).json({ error: "Reservation not found" });
         }
 
-        // Security check: allow owner or exhibitors
+        // Security check: only allow owner or admin to update store settings
         const isOwner = reservation.user.toString() === req.user._id.toString();
-        const isExhibitor = reservation.exhibitors && reservation.exhibitors.some(e => e.toString() === req.user._id.toString());
 
-        if (req.user.role !== 'admin' && !isOwner && !isExhibitor) {
-            return res.status(403).json({ error: "Unauthorized" });
+        if (req.user.role !== 'admin' && !isOwner) {
+            return res.status(403).json({ error: "Only the booth owner can update store settings" });
         }
 
         if (!reservation.storeSettings) {
@@ -332,7 +331,7 @@ const updateStoreSettings = async (req, res) => {
     }
 };
 
-// Fetch all reservations (tickets + booths) for an event — promoter must be assigned
+// Fetch all reservations (tickets + booths) for an event â promoter must be assigned
 const getEventSalesForPromoter = async (req, res) => {
     const { eventId } = req.params;
 
@@ -369,7 +368,7 @@ const getEventSalesForPromoter = async (req, res) => {
     }
 };
 
-// Scan a QR code / manual button � cycles through 6 states:
+// Scan a QR code / manual button  cycles through 6 states:
 //   Scan 1 (idx 0) ? Check In 1   (type: 'checkin')
 //   Scan 2 (idx 1) ? Exit 1        (type: 'exit')
 //   Scan 3 (idx 2) ? Check In 2   (type: 'checkin')
@@ -434,7 +433,7 @@ const checkInReservation = async (req, res) => {
         // Keep legacy fields in sync: checkedIn = true when currently inside (checkin)
         reservation.checkedIn = nextType === 'checkin';
         if (scanCount === 0) {
-            // First check-in � set checkedInAt for backward compatibility
+            // First check-in  set checkedInAt for backward compatibility
             reservation.checkedInAt = reservation.checkIns[0].time;
         }
 

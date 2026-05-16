@@ -15,6 +15,7 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
         logo: null
     });
     const [previewUrl, setPreviewUrl] = useState(null);
+    const [isReadOnly, setIsReadOnly] = useState(false);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -36,6 +37,12 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                 } else if (reservation.user?.avatar) {
                     setPreviewUrl(reservation.user.avatar.startsWith('/') ? reservation.user.avatar : `/uploads/${reservation.user.avatar}`);
                 }
+
+                // Determine if user is only an exhibitor (not the owner and not an admin)
+                const ownerId = reservation.user?._id || reservation.user;
+                const isOwner = ownerId === user?.id || ownerId === user?._id;
+                const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+                setIsReadOnly(!isOwner && !isAdmin);
             } catch (error) {
                 console.error("Error fetching reservation settings:", error);
             }
@@ -100,7 +107,11 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
 
             <div className="sss-section-header">
                 <h3>Store Profile Settings</h3>
-                <p className="small-body-text">Manage how your store appears to customers on the platform.</p>
+                <p className="small-body-text">
+                    {isReadOnly 
+                        ? "View how your store appears to customers. Only the booth owner can edit these settings." 
+                        : "Manage how your store appears to customers on the platform."}
+                </p>
             </div>
 
             <div className="sss-main-layout">
@@ -121,6 +132,7 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                                     placeholder="Enter store/company name"
                                     required
                                     className="small-body-text"
+                                    disabled={isReadOnly}
                                 />
                             </div>
 
@@ -133,6 +145,7 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                                     onChange={handleInputChange}
                                     placeholder="e.g. Food & Beverage, Tech, Art"
                                     className="small-body-text"
+                                    disabled={isReadOnly}
                                 />
                             </div>
 
@@ -145,6 +158,7 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                                     placeholder="Tell customers about your store..."
                                     rows="4"
                                     className="small-body-text"
+                                    disabled={isReadOnly}
                                 />
                             </div>
                         </div>
@@ -162,24 +176,30 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                                     )}
                                 </div>
                                 <div className="sss-logo-actions">
-                                    <label htmlFor="logo-upload" className="outlined-button sss-upload-btn">
-                                        <Icon icon="mdi:cloud-upload-outline" /> Change Logo
-                                    </label>
-                                    <input 
-                                        id="logo-upload" 
-                                        type="file" 
-                                        accept="image/*" 
-                                        onChange={handleFileChange} 
-                                        hidden 
-                                    />
+                                    {!isReadOnly && (
+                                        <>
+                                            <label htmlFor="logo-upload" className="outlined-button sss-upload-btn">
+                                                <Icon icon="mdi:cloud-upload-outline" /> Change Logo
+                                            </label>
+                                            <input 
+                                                id="logo-upload" 
+                                                type="file" 
+                                                accept="image/*" 
+                                                onChange={handleFileChange} 
+                                                hidden 
+                                            />
+                                        </>
+                                    )}
                                     <p className="smaller-body-text">Recommended: Square image, min 200x200px</p>
                                 </div>
                             </div>
                         </div>
 
-                        <button type="submit" className="primary-button sss-save-button" disabled={isLoading}>
-                            {isLoading ? 'Saving...' : 'Save Profile Settings'}
-                        </button>
+                        {!isReadOnly && (
+                            <button type="submit" className="primary-button sss-save-button" disabled={isLoading}>
+                                {isLoading ? 'Saving...' : 'Save Profile Settings'}
+                            </button>
+                        )}
                     </form>
 
                     {/* Restored Payment Flow */}
