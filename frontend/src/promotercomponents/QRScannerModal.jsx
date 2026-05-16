@@ -3,35 +3,29 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 import { Icon } from "@iconify/react";
 import "./QRScannerModal.css";
 
-const QRScannerModal = ({ show, onClose, onScanSuccess }) => {
+const QRScannerModal = ({ show, onClose, onScanSuccess, title = "Scan Ticket" }) => {
   useEffect(() => {
     if (!show) return;
 
     const scanner = new Html5QrcodeScanner(
       "qr-reader",
-      { 
-        fps: 10, 
+      {
+        fps: 10,
         qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0
+        aspectRatio: 1.0,
       },
-      /* verbose= */ false
+      false
     );
 
-    const onScanResult = (decodedText, decodedResult) => {
-      // Successfully scanned a code
-      console.log(`Scan Result: ${decodedText}`);
+    const onScanResult = (decodedText) => {
       onScanSuccess(decodedText);
-      scanner.clear(); // Stop scanning
+      scanner.clear();
     };
 
-    const onScanError = (errorMessage) => {
-      // This is called for every frame where no QR code is found
-      // We usually don't want to log this to avoid console spam
-    };
+    const onScanError = () => {};
 
     scanner.render(onScanResult, onScanError);
 
-    // Cleanup on unmount or when modal closes
     return () => {
       scanner.clear().catch((error) => {
         console.error("Failed to clear html5QrcodeScanner", error);
@@ -47,7 +41,7 @@ const QRScannerModal = ({ show, onClose, onScanSuccess }) => {
         <div className="qrs-modal-header">
           <div className="qrs-header-title">
             <Icon icon="mdi:qrcode-scan" width="24" />
-            <h3>Scan Attendee Ticket</h3>
+            <h3>{title}</h3>
           </div>
           <button className="qrs-close-btn" onClick={onClose}>
             <Icon icon="mdi:close" width="24" />

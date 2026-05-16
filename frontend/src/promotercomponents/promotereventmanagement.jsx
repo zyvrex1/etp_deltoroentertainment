@@ -325,7 +325,7 @@ const PromoterEventManagement = () => {
             {activeTab === "ticket-setup" && <PromoterAccessManagement selectedEvent={selectedEvent} />}
             {activeTab === "booth-layout" && <PromoterBoothLayout selectedEvent={selectedEvent} />}
             {activeTab === "ticket-layout" && <PromoterTicketLayout selectedEvent={selectedEvent} />}
-            {activeTab === "scan" && <PromoterScan />}
+            {activeTab === "scan" && <PromoterScan selectedEvent={selectedEvent} />}
           </div>
         </div>
       )}
