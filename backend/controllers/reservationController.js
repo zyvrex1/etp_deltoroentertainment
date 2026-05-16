@@ -345,12 +345,13 @@ const getEventSalesForPromoter = async (req, res) => {
             return res.status(404).json({ error: 'Event not found' });
         }
 
-        // Authorization: promoter must be the creator OR in the assignedPromoters list
+        // Authorization: creator OR assigned promoter OR admin/superadmin
         const userId = req.user._id.toString();
+        const hasHighLevelAccess = ['admin', 'superadmin'].includes(req.user.role);
         const isCreator = event.createdBy?.toString() === userId;
         const isAssigned = (event.assignedPromoters || []).some(id => id.toString() === userId);
 
-        if (!isCreator && !isAssigned) {
+        if (!hasHighLevelAccess && !isCreator && !isAssigned) {
             return res.status(403).json({ error: 'You are not assigned to this event.' });
         }
 
@@ -396,15 +397,15 @@ const checkInReservation = async (req, res) => {
             return res.status(404).json({ error: 'Associated event not found' });
         }
 
-        // Authorization: only assigned promoters or admin
+        // Authorization: only assigned promoters or admin/superadmin
         const userId = req.user._id.toString();
-        const isAdmin = req.user.role === 'admin';
+        const hasHighLevelAccess = ['admin', 'superadmin'].includes(req.user.role);
         const isCreator = reservation.event.createdBy?.toString() === userId;
         const isAssigned = (reservation.event.assignedPromoters || []).some(
             pid => pid.toString() === userId
         );
 
-        if (!isAdmin && !isCreator && !isAssigned) {
+        if (!hasHighLevelAccess && !isCreator && !isAssigned) {
             return res.status(403).json({ error: 'You are not assigned to this event.' });
         }
 

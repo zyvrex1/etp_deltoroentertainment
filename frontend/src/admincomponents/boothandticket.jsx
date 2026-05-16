@@ -121,7 +121,7 @@ const BoothandTicket = () => {
                 />
               )}
 
-              {activeTab === "live-scanning" && <LiveScanning />}
+              {activeTab === "live-scanning" && <LiveScanning selectedEvent={selectedEvent} />}
             </div>
           </div>
         </>
