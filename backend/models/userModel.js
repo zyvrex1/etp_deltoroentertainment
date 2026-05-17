@@ -67,6 +67,10 @@ const userSchema = new Schema({
     type: Date
   },
 
+  lastActive: {
+    type: Date
+  },
+
   avatar: {
     type: String,
     default: '',

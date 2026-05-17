@@ -252,11 +252,11 @@ const getEvents = async (req, res) => {
     let events = await eventsQuery.populate([
       {
         path: "createdBy",
-        select: "firstName lastName role email avatar companyName",
+        select: "firstName lastName role email avatar companyName lastActive",
       },
       {
         path: "assignedPromoters",
-        select: "firstName lastName email avatar",
+        select: "firstName lastName email avatar lastActive",
       },
     ]);
 

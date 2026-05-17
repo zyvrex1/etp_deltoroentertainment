@@ -18,6 +18,9 @@ const requireAuth = async (req, res, next) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
+    // Update lastActive asynchronously so we don't block the request
+    User.updateOne({ _id }, { lastActive: new Date() }).catch(err => console.error("Failed to update lastActive", err));
+
     next();
 
   } catch (error) {
