@@ -435,6 +435,11 @@
     color: #166534;
   }
 
+  .ps-pill-offline {
+    background-color: #f1f5f9;
+    color: #64748b;
+  }
+
   /* Responsive Design */
   @media (max-width: 1024px) {
     padding: 12px;

@@ -427,6 +427,30 @@
             color: var(--color-purple-primary);
         }
 
+        .type-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .pill-bg-green {
+            background: var(--color-green-quaternary);
+            color: var(--color-green-primary);
+        }
+
+        .pill-bg-purple {
+            background: var(--color-purple-quaternary);
+            color: var(--color-purple-primary);
+        }
+
+        .pill-bg-red {
+            background: var(--color-red-quaternary);
+            color: var(--color-red-primary);
+        }
+
         .sc-manual-right {
             display: flex;
             align-items: center;

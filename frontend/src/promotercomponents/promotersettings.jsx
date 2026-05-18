@@ -61,56 +61,8 @@ const PromoterSettings = () => {
     }
   ]);
 
-  const teamMembers = [
-    {
-      id: 1,
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      status: "Active",
-      event: "TechStart Summit 2024",
-    },
-    {
-      id: 2,
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      status: "Active",
-      event: "TechStart Summit 2024",
-    },
-    {
-      id: 3,
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      status: "Active",
-      event: "TechStart Summit 2024",
-    },
-    {
-      id: 4,
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      status: "Active",
-      event: "TechStart Summit 2024",
-    },
-    {
-      id: 5,
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      status: "Active",
-      event: "TechStart Summit 2024",
-    },
-    {
-      id: 6,
-      initials: "SJ",
-      name: "Sarah Jenkins",
-      email: "sarah@example.com",
-      status: "Active",
-      event: "TechStart Summit 2024",
-    }
-  ];
+  const [teamMembers, setTeamMembers] = useState([]);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -155,8 +107,67 @@ const PromoterSettings = () => {
       }
     };
 
+    const fetchTeamMembers = async () => {
+      if (!user?.token) return;
+      try {
+        const response = await fetch(`${backendUrl}/api/events`, {
+          headers: { 'Authorization': `Bearer ${user.token}` }
+        });
+        const events = await response.json();
+        
+        if (!Array.isArray(events)) return;
+
+        let members = [];
+        
+        const isOnline = (lastActive) => {
+          if (!lastActive) return false;
+          const activeDate = new Date(lastActive);
+          const now = new Date();
+          // Consider online if active within the last 5 minutes (300000 ms)
+          return (now - activeDate) < 5 * 60 * 1000;
+        };
+
+        events.forEach(event => {
+          const eventTitle = event.title || "Unknown Event";
+          
+          if (event.createdBy && event.createdBy._id !== user._id) {
+            const onlineStatus = isOnline(event.createdBy.lastActive) ? "Active" : "Offline";
+            members.push({
+              id: `${event.createdBy._id}-${event._id}-creator`,
+              initials: `${event.createdBy.firstName?.[0] || ""}${event.createdBy.lastName?.[0] || ""}`.toUpperCase(),
+              name: `${event.createdBy.firstName || ""} ${event.createdBy.lastName || ""}`.trim(),
+              email: event.createdBy.email || "",
+              status: onlineStatus,
+              event: eventTitle,
+            });
+          }
+          
+          if (event.assignedPromoters && Array.isArray(event.assignedPromoters)) {
+            event.assignedPromoters.forEach(p => {
+              if (p._id !== user._id) {
+                const onlineStatus = isOnline(p.lastActive) ? "Active" : "Offline";
+                members.push({
+                  id: `${p._id}-${event._id}-promoter`,
+                  initials: `${p.firstName?.[0] || ""}${p.lastName?.[0] || ""}`.toUpperCase(),
+                  name: `${p.firstName || ""} ${p.lastName || ""}`.trim(),
+                  email: p.email || "",
+                  status: onlineStatus,
+                  event: eventTitle,
+                });
+              }
+            });
+          }
+        });
+        
+        setTeamMembers(members);
+      } catch (error) {
+        console.error("Error fetching team members:", error);
+      }
+    };
+
     fetchProfile();
-  }, [user]);
+    fetchTeamMembers();
+  }, [user, backendUrl]);
 
   const getPasswordCriteria = (password) => {
     return [
@@ -188,14 +199,14 @@ const PromoterSettings = () => {
         if (profile.companyName) formData.append("companyName", profile.companyName);
         if (profile.industry) formData.append("industry", profile.industry);
         formData.append("notifications", JSON.stringify(profile.notifications));
-        
+
         if (avatarFile) {
           formData.append("avatar", avatarFile);
         }
 
         const response = await authService.updateProfile(formData, user.token);
         const updatedData = response.data.user || response.data;
-        
+
         // Update user context and local storage
         const updatedUser = { ...user, ...updatedData };
         localStorage.setItem("user", JSON.stringify(updatedUser));
@@ -265,7 +276,7 @@ const PromoterSettings = () => {
       if (file.size > 2 * 1024 * 1024) { // 2MB Limit
         return showErrorAlert("File Too Large", "Please upload an image smaller than 2MB.");
       }
-      
+
       setAvatarFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -274,7 +285,7 @@ const PromoterSettings = () => {
       reader.readAsDataURL(file);
     }
   };
-  
+
   const handleNotificationToggle = (field) => {
     setProfile(prev => ({
       ...prev,
@@ -469,14 +480,14 @@ const PromoterSettings = () => {
                   <Icon icon={showNewPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"} width="20" />
                 </button>
               </div>
-              
+
               {/* Password Strength Indicators */}
               <div className="ps-password-criteria">
                 {getPasswordCriteria(passwords.new).map((crit, idx) => (
                   <div key={idx} className={`ps-criteria-item ${crit.met ? "met" : ""}`}>
-                    <Icon 
-                      icon={crit.met ? "mdi:check-circle" : "mdi:circle-outline"} 
-                      width="14" 
+                    <Icon
+                      icon={crit.met ? "mdi:check-circle" : "mdi:circle-outline"}
+                      width="14"
                     />
                     <span className="smaller-body-text">{crit.label}</span>
                   </div>
@@ -566,7 +577,7 @@ const PromoterSettings = () => {
                     </div>
                   </div>
                   <div className="ps-team-item-right">
-                    <span className="button-label ps-pill-active">{member.status}</span>
+                    <span className={`button-label ${member.status === 'Active' ? 'ps-pill-active' : 'ps-pill-offline'}`}>{member.status}</span>
                     <span className="ps-team-event small-body-text">{member.event}</span>
                   </div>
                 </div>
