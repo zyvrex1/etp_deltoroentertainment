@@ -124,10 +124,22 @@ const CustomerStoreBooths = () => {
 
         <div className="csb-grid">
           {loading ? (
-            <div className="cs-loading-state">
-              <Icon icon="mdi:loading" className="spin" width="48" />
-              <p>Loading stores...</p>
-            </div>
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="csb-card" style={{ cursor: "default" }}>
+                <div className="csb-card-image-wrap">
+                  <div className="skeleton-image skeleton" style={{ height: "180px", borderRadius: "12px 12px 0 0" }} />
+                </div>
+                <div className="csb-card-details">
+                  <div className="skeleton-text title skeleton" />
+                  <div className="skeleton-text skeleton" style={{ width: "40%" }} />
+                  <div className="skeleton-text skeleton" style={{ width: "90%", height: "30px", margin: "10px 0" }} />
+                  <div className="csb-stats-row" style={{ marginTop: "15px" }}>
+                    <div className="skeleton-text short skeleton" />
+                  </div>
+                  <div className="skeleton-button skeleton" style={{ marginTop: "15px" }} />
+                </div>
+              </div>
+            ))
           ) : paginatedData.length > 0 ? (
             paginatedData.map((booth) => (
               <div

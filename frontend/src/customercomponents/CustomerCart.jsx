@@ -16,6 +16,15 @@ export default function CustomerCart() {
     const { user } = useAuthContext();
     const [selectedItems, setSelectedItems] = useState([]);
 
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 600);
+        return () => clearTimeout(timer);
+    }, []);
+
     const isCartEmpty = cartItems.length === 0;
     const countSelected = selectedItems.length;
 
@@ -107,19 +116,47 @@ export default function CustomerCart() {
                     </button>
                     <div>
                         <h2 className="cart-page-title">Your Cart</h2>
-                        {!isCartEmpty && (
+                        {!isCartEmpty && !loading && (
                             <p className="small-body-text text-muted m-0">{cartItems.length} tickets • {countSelected} selected for checkout</p>
                         )}
                     </div>
                 </div>
-                {!isCartEmpty && (
+                {!isCartEmpty && !loading && (
                     <button className="text-button" onClick={clearCart} style={{ color: 'var(--color-red-primary)', cursor: 'pointer', background: 'none', border: 'none' }}>
                         Clear All
                     </button>
                 )}
             </div>
 
-            {isCartEmpty ? (
+            {loading ? (
+                <div className="cart-content-layout">
+                    <div className="cart-event-card">
+                        <div className="event-card-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div className="skeleton-image skeleton" style={{ width: '40px', height: '40px', borderRadius: '4px' }} />
+                                <div className="skeleton-text title skeleton" style={{ width: '150px', marginBottom: 0 }} />
+                            </div>
+                            <div className="skeleton-badge skeleton" style={{ width: '50px' }} />
+                        </div>
+                        <div className="ticket-list">
+                            {Array.from({ length: 2 }).map((_, idx) => (
+                                <div className="ticket-item" key={idx} style={{ borderBottom: idx === 0 ? '1px solid var(--color-black-quaternary)' : 'none' }}>
+                                    <div className="skeleton skeleton-circle" style={{ width: '20px', height: '20px', marginRight: '1rem' }} />
+                                    <div className="ticket-main">
+                                        <div className="ticket-info">
+                                            <div className="skeleton-text title skeleton" style={{ width: '120px' }} />
+                                            <div className="skeleton-text skeleton" style={{ width: '80px' }} />
+                                        </div>
+                                        <div className="ticket-price-right">
+                                            <div className="skeleton-text title skeleton" style={{ width: '60px', marginBottom: 0 }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : isCartEmpty ? (
                 <div className="empty-cart-state">
                     <Icon icon="mdi:cart-outline" width="60" className="empty-cart-icon" />
                     <h3>Your cart is empty</h3>

@@ -216,10 +216,24 @@ const CustomerStoreProducts = () => {
 
         <div className="csp-grid">
           {loading ? (
-            <div className="csp-loading">
-              <Icon icon="mdi:loading" className="csp-spin" width="48" />
-              <p>Loading products...</p>
-            </div>
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="csp-card">
+                <div className="csp-card-img-wrap">
+                  <div className="skeleton-image skeleton" style={{ height: "180px", borderRadius: "12px 12px 0 0" }} />
+                </div>
+                <div className="csp-card-content">
+                  <div className="csp-title-row">
+                    <div className="skeleton-text title skeleton" style={{ width: "60%" }} />
+                    <div className="skeleton-text skeleton" style={{ width: "25%" }} />
+                  </div>
+                  <div className="skeleton-text skeleton" style={{ width: "90%", height: "30px", margin: "10px 0" }} />
+                  <div className="csp-stock-row" style={{ marginTop: "15px" }}>
+                    <div className="skeleton-text short skeleton" />
+                  </div>
+                  <div className="skeleton-button skeleton" style={{ marginTop: "15px" }} />
+                </div>
+              </div>
+            ))
           ) : paginatedData.length > 0 ? (
             paginatedData.map((product) => {
               const qty = getItemQuantity(product._id || product.id);

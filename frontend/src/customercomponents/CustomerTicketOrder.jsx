@@ -131,9 +131,9 @@ const CustomerTicketOrder = () => {
                     </div>
                 </div>
 
-                <div className="ticket-order-list">
-                    {paginatedTickets.length > 0 ? (
-                        paginatedTickets.map(ticket => (
+                {paginatedTickets.length > 0 ? (
+                    <div className="ticket-order-list">
+                        {paginatedTickets.map(ticket => (
                             <div className="ticket-card-new" key={ticket.id}>
                                 <div className="ticket-card-top">
                                     <h4 className="ticket-event-title">{ticket.title}</h4>
@@ -179,14 +179,14 @@ const CustomerTicketOrder = () => {
                                     </button>
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <div className="empty-state">
-                            <Icon icon="mdi:ticket-outline" width="48" />
-                            <p>No tickets found. Start by browsing events!</p>
-                        </div>
-                    )}
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="empty-state">
+                        <Icon icon="mdi:ticket-outline" width="48" />
+                        <p>No tickets found. Start by browsing events!</p>
+                    </div>
+                )}
 
                 {totalPages > 1 && (
                     <div className="pagination">

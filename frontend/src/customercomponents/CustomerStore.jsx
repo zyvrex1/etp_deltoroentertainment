@@ -193,10 +193,22 @@ const CustomerStore = () => {
 
         <div className="cs-events-grid">
           {loading ? (
-            <div className="cs-loading-state">
-              <Icon icon="mdi:loading" className="spin" width="48" />
-              <p>Loading your events...</p>
-            </div>
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="cs-event-card">
+                <div className="cs-card-image-wrap">
+                  <div className="skeleton-image skeleton" style={{ height: "180px", borderRadius: "12px 12px 0 0" }} />
+                </div>
+                <div className="cs-card-details">
+                  <div className="skeleton-text title skeleton" />
+                  <div className="skeleton-text skeleton" style={{ width: "50%" }} />
+                  <div className="skeleton-text skeleton" style={{ width: "70%" }} />
+                  <div className="cs-stats-row" style={{ marginTop: "15px" }}>
+                    <div className="skeleton-text short skeleton" />
+                  </div>
+                  <div className="skeleton-button skeleton" style={{ marginTop: "15px" }} />
+                </div>
+              </div>
+            ))
           ) : paginatedData.length > 0 ? (
             paginatedData.map((event) => (
               <div key={event.id} className="cs-event-card">
