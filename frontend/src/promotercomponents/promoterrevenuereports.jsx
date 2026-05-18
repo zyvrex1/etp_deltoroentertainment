@@ -54,7 +54,15 @@ const PromoterRevenueReports = () => {
             try {
                 // 1. Fetch events
                 const fetchedEvents = await eventsService.getEvents(user.token);
-                const validEvents = fetchedEvents || [];
+                
+                // Filter events based on assigned and owned by the promoter
+                const userId = user._id || user.id;
+                const validEvents = (fetchedEvents || []).filter(e => {
+                    const isOwner = e.createdBy && (e.createdBy._id === userId || e.createdBy === userId);
+                    const isAssigned = e.assignedPromoters && e.assignedPromoters.some(p => p._id === userId || p === userId);
+                    return isOwner || isAssigned;
+                });
+
                 setEvents(validEvents);
 
                 // 2. Fetch sales for all events concurrently
