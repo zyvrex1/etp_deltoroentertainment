@@ -367,6 +367,7 @@
               align-items: center;
               justify-content: center;
               cursor: pointer;
+              
 
               &:hover {
                 opacity: 0.9;
@@ -523,7 +524,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 2000;
+  z-index: 1050;
   backdrop-filter: blur(4px);
 }
 
@@ -569,6 +570,45 @@
         .item-price { font-weight: 600; color: var(--color-red-primary); }
         .item-qty { font-size: 12px; color: var(--color-black-tertiary); }
       }
+
+
+        .csp-qty-controls {
+            display: flex;
+            width: fit-content;
+            gap: 16px;
+            margin-top: 8px;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--color-bg-light);
+            border-radius: 8px;
+            padding: 4px;
+            border: 1px solid var(--color-red-primary);
+
+            .csp-qty-btn {
+              width: 32px;
+              height: 32px;
+              flex-shrink: 0;
+              border-radius: 6px;
+              background: var(--color-red-primary);
+              color: white;
+              border: none;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              cursor: pointer;
+              
+              &:hover {
+                opacity: 0.9;
+              }
+            }
+
+            .csp-qty-value {
+              font-weight: 600;
+              color: var(--color-bg-dark);
+              min-width: 20px;
+              text-align: center;
+            }
+          }
     }
   }
 
@@ -602,6 +642,10 @@
 @media (max-width: 1024px) {
   .csp-container .csp-content-card .csp-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .cart-modal-content .cart-item .csp-qty-controls {
+    gap: 14px;
   }
 }
 
@@ -660,6 +704,10 @@
       }
     }
   }
+
+  .cart-modal-content .cart-item .csp-qty-controls {
+    gap: 12px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -685,5 +733,13 @@
     .csp-title-row {
       flex-direction: row;
     }
+  }
+
+  .cart-modal-content .cart-item .csp-qty-controls {
+    gap: 10px;
+  }
+  .cart-modal-content .cart-item .csp-qty-controls .csp-qty-btn {
+    width: 28px;
+    height: 28px;
   }
 }

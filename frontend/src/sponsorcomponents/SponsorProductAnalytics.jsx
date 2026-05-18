@@ -4,24 +4,10 @@ import jsPDF from "jspdf";
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "../utils/pdfExport";
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, Legend } from 'recharts';
 import merchandiseService from "../services/merchandiseService";
+import orderService from "../services/orderService";
 import { useAuthContext } from "../hooks/useAuthContext";
 import "./SponsorProductAnalytics.css";
 
-const revenueData = [
-  { day: 'Day 1', total: 400 },
-  { day: 'Day 2', total: 600 },
-  { day: 'Day 3', total: 750 },
-  { day: 'Day 4', total: 500 },
-  { day: 'Day 5', total: 900 },
-  { day: 'Day 6', total: 1100 },
-  { day: 'Day 7', total: 850 },
-];
-
-const pieData = [
-  { name: 'Drinks', value: 84 },
-  { name: 'Food', value: 145 },
-  { name: 'Merch', value: 62 },
-];
 const PIE_COLORS = ['#c62828', '#ffdd66', '#0059ff'];
 
 // Helper to format currency
@@ -35,13 +21,34 @@ const formatCurrency = (val) => {
 const SponsorProductAnalytics = ({ eventId, boothCode }) => {
   const { user } = useAuthContext();
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  const [analyticsStats, setAnalyticsStats] = useState({
+    totalRevenue: 0,
+    totalOrders: 0,
+    avgOrderValue: 0,
+    ordersToday: 0,
+    revenueDelta: 0,
+    ordersDelta: 0,
+    avgValueDelta: 0,
+    todayOrdersDelta: 0
+  });
+  const [chartData, setChartData] = useState([{ day: 'No Data', total: 0 }]);
+  const [pieChartData, setPieChartData] = useState([]);
+  const [productSales, setProductSales] = useState({});
+
+  const formatDelta = (value) => {
+    if (value === 0) return "0.0%";
+    const sign = value > 0 ? '+' : '';
+    return `${sign}${value.toFixed(1)}%`;
+  };
+
   const stats = [
-    { label: "Total Revenue", value: "$4,250.00", icon: "mdi:currency-usd", color: "green", delta: "+12.5%", isUp: true },
-    { label: "Total Orders", value: "156", icon: "mdi:shopping-outline", color: "blue", delta: "+8.2%", isUp: true },
-    { label: "Average Order Value", value: "$27.24", icon: "mdi:chart-bar", color: "purple", delta: "-2.4%", isUp: false },
-    { label: "Orders Today", value: "24", icon: "mdi:calendar-today", color: "orange", extra: "Today" }
+    { label: "Total Revenue", value: formatCurrency(analyticsStats.totalRevenue), icon: "mdi:currency-usd", color: "green", delta: formatDelta(analyticsStats.revenueDelta), isUp: analyticsStats.revenueDelta >= 0 },
+    { label: "Total Orders", value: analyticsStats.totalOrders.toString(), icon: "mdi:shopping-outline", color: "blue", delta: formatDelta(analyticsStats.ordersDelta), isUp: analyticsStats.ordersDelta >= 0 },
+    { label: "Average Order Value", value: formatCurrency(analyticsStats.avgOrderValue), icon: "mdi:chart-bar", color: "purple", delta: formatDelta(analyticsStats.avgValueDelta), isUp: analyticsStats.avgValueDelta >= 0 },
+    { label: "Orders Today", value: analyticsStats.ordersToday.toString(), icon: "mdi:calendar-today", color: "orange", delta: formatDelta(analyticsStats.todayOrdersDelta), isUp: analyticsStats.todayOrdersDelta >= 0 }
   ];
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -66,12 +73,115 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
       if (eventId) filters.eventId = eventId;
       if (boothCode) filters.boothCode = boothCode;
       
-      const data = await merchandiseService.getMerchandises(user.token, filters);
-      setProducts(data);
+      const [merchData, ordersData] = await Promise.all([
+        merchandiseService.getMerchandises(user.token, filters),
+        orderService.getOrders(user.token, filters)
+      ]);
+      
+      setProducts(merchData);
+      setOrders(ordersData);
+      processAnalytics(merchData, ordersData);
     } catch (error) {
       console.error("Error fetching analytics data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const processAnalytics = (merch, ordersData) => {
+    let currentTotalRevenue = 0;
+    let pastTotalRevenue = 0;
+    let currentTotalOrders = ordersData.length;
+    let pastTotalOrders = 0;
+    
+    let todayOrdersCount = 0;
+    let yesterdayOrdersCount = 0;
+    
+    const todayStr = new Date().toDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toDateString();
+    
+    const salesMap = {};
+    const categoryMap = { Drinks: 0, Food: 0, Merch: 0 };
+    const dailyRevMap = {};
+
+    ordersData.forEach(order => {
+      const orderTotal = order.totalAmount || 0;
+      currentTotalRevenue += orderTotal;
+      
+      const orderDate = new Date(order.createdAt || new Date());
+      const orderDateStr = orderDate.toDateString();
+      
+      if (orderDateStr === todayStr) {
+        todayOrdersCount++;
+      } else {
+        pastTotalRevenue += orderTotal;
+        pastTotalOrders++;
+        
+        if (orderDateStr === yesterdayStr) {
+          yesterdayOrdersCount++;
+        }
+      }
+      
+      const dayKey = orderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      dailyRevMap[dayKey] = (dailyRevMap[dayKey] || 0) + orderTotal;
+
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          const qty = item.quantity || 1;
+          const productId = item.productId || item.product;
+          
+          salesMap[productId] = (salesMap[productId] || 0) + qty;
+          
+          const matchedProduct = merch.find(m => m._id === productId || m.id === productId);
+          if (matchedProduct) {
+            const cat = matchedProduct.category;
+            if (categoryMap[cat] !== undefined) {
+               categoryMap[cat] += qty;
+            } else {
+               categoryMap[cat] = qty;
+            }
+          }
+        });
+      }
+    });
+
+    const currentAvgValue = currentTotalOrders > 0 ? currentTotalRevenue / currentTotalOrders : 0;
+    const pastAvgValue = pastTotalOrders > 0 ? pastTotalRevenue / pastTotalOrders : 0;
+
+    const calculateDelta = (current, past) => {
+      if (past === 0) return current > 0 ? 100 : 0;
+      return ((current - past) / past) * 100;
+    };
+
+    setAnalyticsStats({
+      totalRevenue: currentTotalRevenue,
+      totalOrders: currentTotalOrders,
+      avgOrderValue: currentAvgValue,
+      ordersToday: todayOrdersCount,
+      revenueDelta: calculateDelta(currentTotalRevenue, pastTotalRevenue),
+      ordersDelta: calculateDelta(currentTotalOrders, pastTotalOrders),
+      avgValueDelta: calculateDelta(currentAvgValue, pastAvgValue),
+      todayOrdersDelta: calculateDelta(todayOrdersCount, yesterdayOrdersCount)
+    });
+
+    setProductSales(salesMap);
+
+    const sortedDays = Object.keys(dailyRevMap).sort((a,b) => new Date(a) - new Date(b));
+    const newChartData = sortedDays.map(day => ({
+       day,
+       total: dailyRevMap[day]
+    }));
+    if (newChartData.length > 0) setChartData(newChartData);
+
+    const newPieData = Object.entries(categoryMap)
+      .filter(([_, val]) => val > 0)
+      .map(([name, value]) => ({ name, value }));
+    if (newPieData.length > 0) {
+        setPieChartData(newPieData);
+    } else {
+        setPieChartData([{ name: 'No Data', value: 1 }]);
     }
   };
 
@@ -129,7 +239,7 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
         item.category,
         item.stock.toString(),
         formatCurrency(item.price),
-        "0", // Static sales for now
+        (productSales[item._id] || 0).toString(),
         item.stock > 0 ? "Active" : "Out of Stock",
       ]);
 
@@ -201,7 +311,7 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
           <h4 className="left-aligned">Sales Overview</h4>
           <div className="spa-chart-placeholder">
             <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
-              <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 {!isMobile && (
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
                 )}
@@ -237,7 +347,7 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
             <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
               <PieChart>
                 <Pie
-                  data={pieData}
+                  data={pieChartData}
                   cx="50%"
                   cy="50%"
                   innerRadius={isMobile ? 50 : 70}
@@ -245,7 +355,7 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {pieData.map((entry, index) => (
+                  {pieChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                   ))}
                 </Pie>
@@ -357,7 +467,7 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
                     </td>
                     <td className="small-body-text"data-label="AVAILABLESTOCK">{item.stock}</td>
                     <td className="small-body-text" data-label="PRICE">{formatCurrency(item.price)}</td>
-                    <td className="small-body-text" data-label="SALES">0</td>
+                    <td className="small-body-text" data-label="SALES">{productSales[item._id] || 0}</td>
                     <td data-label="STATUS">
                       <span className={`spa-status-badge button-label ${item.stock > 0 ? 'active' : 'inactive'}`}>
                         {item.stock > 0 ? 'Active' : 'Out of Stock'}

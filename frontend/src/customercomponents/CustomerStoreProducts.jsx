@@ -26,7 +26,7 @@ const CartModal = ({ isOpen, onClose, cartItems, totalAmount, onCheckout, onUpda
               <div className="item-info">
                 <h6>{item.name}</h6>
                 <p className="item-booth">{item.boothName}</p>
-                <div className="csp-qty-controls" style={{ width: '100px', marginTop: '8px' }}>
+                <div className="csp-qty-controls">
                   <button className="csp-qty-btn" onClick={() => onUpdateQty(item.id, -1)}>-</button>
                   <span className="csp-qty-value">{item.quantity}</span>
                   <button className="csp-qty-btn" onClick={() => onUpdateQty(item.id, 1)}>+</button>
@@ -39,13 +39,14 @@ const CartModal = ({ isOpen, onClose, cartItems, totalAmount, onCheckout, onUpda
             </div>
           ))}
         </div>
+
         <div className="cart-modal-footer">
           <div className="footer-total">
             <span>Total Amount</span>
             <span>${totalAmount.toFixed(2)}</span>
           </div>
           <button className="modal-checkout-btn" onClick={onCheckout}>
-            Confirm Order
+            Proceed to Checkout
           </button>
         </div>
       </div>
@@ -138,44 +139,10 @@ const CustomerStoreProducts = () => {
     return `${BACKEND_URL}/uploads/${image}`;
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (cartItems.length === 0) return;
-
-    const result = await showConfirmAlert(
-      "Place Order",
-      `Are you sure you want to place this order for $${getTotalAmount().toFixed(2)}?`,
-      "Yes, Order Now"
-    );
-
-    if (result.isConfirmed) {
-      try {
-        // Group items by sponsor/booth if needed, but for now we send all
-        // In a real multi-booth system, we might split orders
-        const orderData = {
-          items: cartItems.map(item => ({
-            productId: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            image: item.image
-          })),
-          sponsorId: cartItems[0].sponsorId, 
-          eventId: cartItems[0].eventId,
-          boothCode: cartItems[0].boothName,
-          storeName: storeName, // Use the store display name
-          totalAmount: getTotalAmount(),
-          paymentMethod: 'Credit Card'
-        };
-
-        await orderService.createOrder(orderData, user.token);
-        showSuccessAlert("Order Placed!", "Your order has been sent to the booth sponsor.");
-        clearCart();
-        setIsCartModalOpen(false);
-        navigate("/customer/my-orders");
-      } catch (error) {
-        showErrorAlert("Order Failed", error.message);
-      }
-    }
+    setIsCartModalOpen(false);
+    navigate("/customer/store/checkout", { state: { storeName, boothName } });
   };
 
   return (
