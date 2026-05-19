@@ -181,19 +181,27 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
 
   return (
     <div className="smp-container">
-      <div className="smp-stats-grid">
-        {stats.map((stat, idx) => (
-          <div key={idx} className="smp-stat-card">
-            <div className={`smp-stat-icon-wrap ${stat.color}`}>
-              <Icon icon={stat.icon} />
+      {loading ? (
+        <div className="smp-stats-grid">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="smp-stat-card skeleton" style={{ minHeight: '100px' }}></div>
+          ))}
+        </div>
+      ) : (
+        <div className="smp-stats-grid">
+          {stats.map((stat, idx) => (
+            <div key={idx} className="smp-stat-card">
+              <div className={`smp-stat-icon-wrap ${stat.color}`}>
+                <Icon icon={stat.icon} />
+              </div>
+              <div className="smp-stat-text-wrap">
+                <span className="smaller-body-text">{stat.label}</span>
+                <h3>{stat.value}</h3>
+              </div>
             </div>
-            <div className="smp-stat-text-wrap">
-              <span className="smaller-body-text">{stat.label}</span>
-              <h3>{stat.value}</h3>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <div className="smp-header-section">
         <div className="smp-header-left">
@@ -260,10 +268,9 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
 
       <div className="smp-grid">
         {loading ? (
-          <div className="smp-loading">
-            <Icon icon="mdi:loading" className="smp-spin" width="48" />
-            <p>Loading inventory...</p>
-          </div>
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="smp-card skeleton" style={{ minHeight: '340px' }}></div>
+          ))
         ) : paginatedData.length > 0 ? (
           paginatedData.map((product) => (
             <div key={product._id} className="smp-card">

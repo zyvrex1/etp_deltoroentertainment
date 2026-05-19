@@ -282,97 +282,110 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
         
       </div>
 
-      <div className="spa-stats-grid">
-        {stats.map((stat, idx) => (
-          <div key={idx} className="spa-stat-card">
-            <div className="spa-stat-top">
-              <span className={`spa-stat-icon ${stat.color}`}>
-                <Icon icon={stat.icon} />
-              </span>
-              {stat.delta && (
-                <span className={`spa-stat-delta ${stat.isUp ? 'up' : 'down'}`}>
-                  <Icon icon={stat.isUp ? "mdi:trending-up" : "mdi:trending-down"} /> {stat.delta}
+      {loading ? (
+        <div className="spa-stats-grid">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="spa-stat-card skeleton" style={{ minHeight: '130px' }}></div>
+          ))}
+        </div>
+      ) : (
+        <div className="spa-stats-grid">
+          {stats.map((stat, idx) => (
+            <div key={idx} className="spa-stat-card">
+              <div className="spa-stat-top">
+                <span className={`spa-stat-icon ${stat.color}`}>
+                  <Icon icon={stat.icon} />
                 </span>
-              )}
-              {stat.extra && (
-                <span className="spa-stat-extra">{stat.extra}</span>
-              )}
-            </div>
-            <div className="spa-stat-bottom">
-              <p className="smaller-body-text spa-stat-label">{stat.label}</p>
-              <h3>{stat.value}</h3>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="spa-charts-grid">
-        <div className="spa-chart-card">
-          <h4 className="left-aligned">Sales Overview</h4>
-          <div className="spa-chart-placeholder">
-            <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                {!isMobile && (
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                {stat.delta && (
+                  <span className={`spa-stat-delta ${stat.isUp ? 'up' : 'down'}`}>
+                    <Icon icon={stat.isUp ? "mdi:trending-up" : "mdi:trending-down"} /> {stat.delta}
+                  </span>
                 )}
-                <XAxis
-                  dataKey="day"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--color-black-tertiary)' }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--color-black-tertiary)' }}
-                  tickFormatter={(val) => `$${val}`}
-                />
-                <RechartsTooltip formatter={(value) => `$${value}`} />
-                <Area
-                  type="monotone"
-                  dataKey="total"
-                  stroke="var(--color-red-primary)"
-                  strokeWidth={3}
-                  fillOpacity={0.1}
-                  fill="var(--color-red-primary)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+                {stat.extra && (
+                  <span className="spa-stat-extra">{stat.extra}</span>
+                )}
+              </div>
+              <div className="spa-stat-bottom">
+                <p className="smaller-body-text spa-stat-label">{stat.label}</p>
+                <h3>{stat.value}</h3>
+              </div>
+            </div>
+          ))}
         </div>
+      )}
 
-        <div className="spa-chart-card">
-          <h4 className="left-aligned">Top Selling Products</h4>
-          <div className="spa-chart-placeholder">
-            <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
-              <PieChart>
-                <Pie
-                  data={pieChartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={isMobile ? 50 : 70}
-                  outerRadius={isMobile ? 70 : 100}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {pieChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip />
-              </PieChart>
-            </ResponsiveContainer>
+      {loading ? (
+        <div className="spa-charts-grid">
+          <div className="spa-chart-card skeleton" style={{ minHeight: '350px' }}></div>
+          <div className="spa-chart-card skeleton" style={{ minHeight: '350px' }}></div>
+        </div>
+      ) : (
+        <div className="spa-charts-grid">
+          <div className="spa-chart-card">
+            <h4 className="left-aligned">Sales Overview</h4>
+            <div className="spa-chart-placeholder">
+              <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  {!isMobile && (
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                  )}
+                  <XAxis
+                    dataKey="day"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--color-black-tertiary)' }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--color-black-tertiary)' }}
+                    tickFormatter={(val) => `$${val}`}
+                  />
+                  <RechartsTooltip formatter={(value) => `$${value}`} />
+                  <Area
+                    type="monotone"
+                    dataKey="total"
+                    stroke="var(--color-red-primary)"
+                    strokeWidth={3}
+                    fillOpacity={0.1}
+                    fill="var(--color-red-primary)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
 
-            <div className="spa-chart-legend multi">
-              <span className="spa-legend-item"><span className="dot red"></span>Drinks</span>
-              <span className="spa-legend-item"><span className="dot blue"></span>Merch</span>
-              <span className="spa-legend-item"><span className="dot yellow"></span>Food</span>
+          <div className="spa-chart-card">
+            <h4 className="left-aligned">Top Selling Products</h4>
+            <div className="spa-chart-placeholder">
+              <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={isMobile ? 50 : 70}
+                    outerRadius={isMobile ? 70 : 100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {pieChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <div className="spa-chart-legend multi">
+                <span className="spa-legend-item"><span className="dot red"></span>Drinks</span>
+                <span className="spa-legend-item"><span className="dot blue"></span>Merch</span>
+                <span className="spa-legend-item"><span className="dot yellow"></span>Food</span>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Removed small inventory tracking table layout here. Expanded at bottom */}
-      </div>
+      )}
 
       <div className="spa-inventory-section">
         <h3 className="left-aligned spa-section-title">Products Inventory Tracking</h3>
@@ -445,12 +458,16 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px 0' }}>
-                     <Icon icon="mdi:loading" className="smp-spin" width="48" />
-                     <p>Loading inventory data...</p>
-                  </td>
-                </tr>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton skeleton-text title" style={{ margin: 0, width: '80%' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ margin: 0 }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '40%' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '50%' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '40%' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '60%' }}></div></td>
+                  </tr>
+                ))
               ) : paginatedData.length > 0 ? (
                 paginatedData.map((item) => (
                   <tr key={item._id} className={expandedRow === item._id ? "expanded" : ""}>

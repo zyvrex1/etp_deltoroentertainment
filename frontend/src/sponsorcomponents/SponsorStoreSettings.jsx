@@ -16,6 +16,7 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
     });
     const [previewUrl, setPreviewUrl] = useState(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
+    const [isFetching, setIsFetching] = useState(true);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -45,6 +46,8 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                 setIsReadOnly(!isOwner && !isAdmin);
             } catch (error) {
                 console.error("Error fetching reservation settings:", error);
+            } finally {
+                setIsFetching(false);
             }
         };
 
@@ -122,45 +125,64 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                         <p className="smaller-body-text sss-desc">Basic details about your store.</p>
 
                         <div className="sss-form-grid">
-                            <div className="sss-form-group">
-                                <label className="small-body-text">Store Name</label>
-                                <input 
-                                    type="text" 
-                                    name="companyName"
-                                    value={formData.companyName}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter store/company name"
-                                    required
-                                    className="small-body-text"
-                                    disabled={isReadOnly}
-                                />
-                            </div>
+                            {isFetching ? (
+                                <>
+                                    <div className="sss-form-group">
+                                        <div className="skeleton skeleton-text" style={{ width: '40%' }}></div>
+                                        <div className="skeleton" style={{ height: '40px', borderRadius: '8px' }}></div>
+                                    </div>
+                                    <div className="sss-form-group">
+                                        <div className="skeleton skeleton-text" style={{ width: '50%' }}></div>
+                                        <div className="skeleton" style={{ height: '40px', borderRadius: '8px' }}></div>
+                                    </div>
+                                    <div className="sss-form-group full-width">
+                                        <div className="skeleton skeleton-text" style={{ width: '30%' }}></div>
+                                        <div className="skeleton" style={{ height: '100px', borderRadius: '8px' }}></div>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="sss-form-group">
+                                        <label className="small-body-text">Store Name</label>
+                                        <input 
+                                            type="text" 
+                                            name="companyName"
+                                            value={formData.companyName}
+                                            onChange={handleInputChange}
+                                            placeholder="Enter store/company name"
+                                            required
+                                            className="small-body-text"
+                                            disabled={isReadOnly}
+                                        />
+                                    </div>
 
-                            <div className="sss-form-group">
-                                <label className="small-body-text">Industry / Category</label>
-                                <input 
-                                    type="text" 
-                                    name="industry"
-                                    value={formData.industry}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g. Food & Beverage, Tech, Art"
-                                    className="small-body-text"
-                                    disabled={isReadOnly}
-                                />
-                            </div>
+                                    <div className="sss-form-group">
+                                        <label className="small-body-text">Industry / Category</label>
+                                        <input 
+                                            type="text" 
+                                            name="industry"
+                                            value={formData.industry}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. Food & Beverage, Tech, Art"
+                                            className="small-body-text"
+                                            disabled={isReadOnly}
+                                        />
+                                    </div>
 
-                            <div className="sss-form-group full-width">
-                                <label className="small-body-text">Store Description / Bio</label>
-                                <textarea 
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleInputChange}
-                                    placeholder="Tell customers about your store..."
-                                    rows="4"
-                                    className="small-body-text"
-                                    disabled={isReadOnly}
-                                />
-                            </div>
+                                    <div className="sss-form-group full-width">
+                                        <label className="small-body-text">Store Description / Bio</label>
+                                        <textarea 
+                                            name="description"
+                                            value={formData.description}
+                                            onChange={handleInputChange}
+                                            placeholder="Tell customers about your store..."
+                                            rows="4"
+                                            className="small-body-text"
+                                            disabled={isReadOnly}
+                                        />
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="sss-logo-section">
@@ -247,37 +269,41 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                 </div>
                 
                 <div className="sss-preview-container">
-                    <div className="csb-card sss-mock-card">
-                        <div className="csb-card-image-wrap">
-                            <img 
-                                src={previewUrl || '/assets/eventbg.jpg'} 
-                                alt="Preview" 
-                                onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
-                            />
-                            <div className="csb-booth-badge button-label">{boothCode || 'N/A'}</div>
-                        </div>
-                        <div className="csb-card-details">
-                            <h5 className="csb-company-name">{formData.companyName || 'Your Store Name'}</h5>
-                            <div className="csb-card-info small-body-text">
-                                <Icon icon="mdi:domain" />
-                                <span>{formData.industry || 'Category'}</span>
+                    {isFetching ? (
+                        <div className="csb-card sss-mock-card skeleton" style={{ minHeight: '350px' }}></div>
+                    ) : (
+                        <div className="csb-card sss-mock-card">
+                            <div className="csb-card-image-wrap">
+                                <img 
+                                    src={previewUrl || '/assets/eventbg.jpg'} 
+                                    alt="Preview" 
+                                    onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
+                                />
+                                <div className="csb-booth-badge button-label">{boothCode || 'N/A'}</div>
                             </div>
-                            <p className="csb-card-desc smaller-body-text">
-                                {formData.description || 'there is no description'}
-                            </p>
-
-                            <div className="csb-stats-row">
-                                <div className="csb-stat-item">
-                                    <span className="smaller-body-text stat-label">Products</span>
-                                    <span className="large-body-text stat-value">0</span>
+                            <div className="csb-card-details">
+                                <h5 className="csb-company-name">{formData.companyName || 'Your Store Name'}</h5>
+                                <div className="csb-card-info small-body-text">
+                                    <Icon icon="mdi:domain" />
+                                    <span>{formData.industry || 'Category'}</span>
                                 </div>
-                            </div>
+                                <p className="csb-card-desc smaller-body-text">
+                                    {formData.description || 'there is no description'}
+                                </p>
 
-                            <button className="primary-button csb-visit-btn" disabled>
-                                Visit Store <Icon icon="mdi:arrow-right" />
-                            </button>
+                                <div className="csb-stats-row">
+                                    <div className="csb-stat-item">
+                                        <span className="smaller-body-text stat-label">Products</span>
+                                        <span className="large-body-text stat-value">0</span>
+                                    </div>
+                                </div>
+
+                                <button className="primary-button csb-visit-btn" disabled>
+                                    Visit Store <Icon icon="mdi:arrow-right" />
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
                 
                 <p className="smaller-body-text sidebar-desc notice-footer">

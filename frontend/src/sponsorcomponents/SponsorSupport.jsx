@@ -556,10 +556,9 @@ export default function SponsorSupport() {
 
                 <div className="tickets-list">
                     {loading ? (
-                        <div className="loading-state">
-                            <Icon icon="mdi:loading" className="spin" />
-                            <p>Loading concerns...</p>
-                        </div>
+                        Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="ticket-card skeleton" style={{ minHeight: '140px', border: 'none', marginBottom: '16px' }}></div>
+                        ))
                     ) : filteredTickets.length === 0 ? (
                         <div className="empty-state">
                             <Icon icon="mdi:comment-alert-outline" width="48" />

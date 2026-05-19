@@ -256,12 +256,16 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
-                    <Icon icon="mdi:loading" className="csp-spin" width="32" />
-                    <p className="small-body-text">Loading orders...</p>
-                  </td>
-                </tr>
+                Array.from({ length: 7 }).map((_, i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton skeleton-text title" style={{ margin: 0, width: '80%' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '70%' }}></div></td>
+                    <td><div className="skeleton skeleton-text title" style={{ margin: 0, width: '40%' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '60%' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '50%' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '40%' }}></div></td>
+                  </tr>
+                ))
               ) : paginatedData.length > 0 ? (
                 paginatedData.map((order) => (
                   <tr key={order.id} className={expandedRow === order.id ? "expanded" : ""}>

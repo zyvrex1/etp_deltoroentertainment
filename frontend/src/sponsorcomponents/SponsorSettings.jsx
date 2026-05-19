@@ -244,7 +244,29 @@ export default function SponsorSettings() {
                     <div className="ss-card">
                         <h4 className="ss-card-title">Personal Information</h4>
 
-                        <div className="ss-avatar-section">
+                        {loading ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div className="skeleton" style={{ width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto' }}></div>
+                                <div className="ss-form-row">
+                                    <div className="ss-form-group" style={{width: '100%'}}><div className="skeleton skeleton-text" style={{width:'30%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                    <div className="ss-form-group" style={{width: '100%'}}><div className="skeleton skeleton-text" style={{width:'40%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                </div>
+                                <div className="ss-form-group"><div className="skeleton skeleton-text" style={{width:'25%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                <div className="ss-form-group"><div className="skeleton skeleton-text" style={{width:'35%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                <div className="ss-form-row">
+                                    <div className="ss-form-group" style={{width: '100%'}}><div className="skeleton skeleton-text" style={{width:'45%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                    <div className="ss-form-group" style={{width: '100%'}}><div className="skeleton skeleton-text" style={{width:'35%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                </div>
+                                <div className="ss-form-group"><div className="skeleton skeleton-text" style={{width:'20%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                <div className="ss-form-row">
+                                    <div className="ss-form-group" style={{width: '100%'}}><div className="skeleton skeleton-text" style={{width:'25%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                    <div className="ss-form-group" style={{width: '100%'}}><div className="skeleton skeleton-text" style={{width:'35%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                </div>
+                                <div className="skeleton" style={{width: '120px', height: '40px', borderRadius:'8px', marginTop: '10px'}}></div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="ss-avatar-section">
                             <div className="ss-avatar-circle">
                                 {profile.avatar ? (
                                     <img src={profile.avatar} alt="Profile" className="ss-avatar-image" />
@@ -385,13 +407,24 @@ export default function SponsorSettings() {
                         <button type="button" className="ss-save-btn primary-button" onClick={handleSaveProfile}>
                             Save Changes
                         </button>
+                            </>
+                        )}
                     </div>
 
                     {/* PASSWORD CARD */}
                     <div className="ss-card">
                         <h4 className="ss-card-title">Password</h4>
 
-                        <div className="ss-form-group">
+                        {loading ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div className="ss-form-group"><div className="skeleton skeleton-text" style={{width:'40%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                <div className="ss-form-group"><div className="skeleton skeleton-text" style={{width:'35%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                <div className="ss-form-group"><div className="skeleton skeleton-text" style={{width:'45%'}}></div><div className="skeleton" style={{height:'40px', borderRadius:'6px'}}></div></div>
+                                <div className="skeleton" style={{width: '140px', height: '40px', borderRadius:'8px', marginTop: '10px'}}></div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="ss-form-group">
                             <label className="ss-label">Current Password</label>
                             <div className="ss-input-wrapper">
                                 <input
@@ -464,6 +497,8 @@ export default function SponsorSettings() {
                         <button type="button" className="ss-save-btn ss-dark-btn" onClick={handleUpdatePassword}>
                             Update Password
                         </button>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -479,7 +514,12 @@ export default function SponsorSettings() {
                         </div>
 
                         <div className="ss-payment-list">
-                            {paymentMethods.map((method) => (
+                            {loading ? (
+                                Array.from({ length: 2 }).map((_, i) => (
+                                    <div key={i} className="ss-payment-item skeleton" style={{ minHeight: '80px', border: 'none', marginBottom: '12px' }}></div>
+                                ))
+                            ) : (
+                                paymentMethods.map((method) => (
                                 <div key={method.id} className="ss-payment-item">
                                     <div className="ss-payment-icon">
                                         <Icon icon={method.icon} width="24" />
@@ -496,7 +536,8 @@ export default function SponsorSettings() {
                                         <button className="ss-icon-btn"><Icon icon="mdi:trash-can-outline" width="20" color="#666" /></button>
                                     </div>
                                 </div>
-                            ))}
+                                ))
+                            )}
                         </div>
 
                         <div className="ss-secure-storage-msg smaller-body-text">
@@ -514,7 +555,13 @@ export default function SponsorSettings() {
                     <div className="ss-card">
                         <h4 className="ss-card-title">Notification Preferences</h4>
                         <div className="ss-notifications-list">
-                            <div className="ss-notification-item">
+                            {loading ? (
+                                Array.from({ length: 4 }).map((_, i) => (
+                                    <div key={i} className="ss-notification-item skeleton" style={{ minHeight: '60px', border: 'none', marginBottom: '12px' }}></div>
+                                ))
+                            ) : (
+                                <>
+                                    <div className="ss-notification-item">
                                 <div className="ss-notification-info">
                                     <span className="ss-notification-label">Reservations & Payments</span>
                                     <span className="ss-notification-desc">Get notified about your booth reservations and payment status</span>
@@ -569,7 +616,9 @@ export default function SponsorSettings() {
                                     />
                                     <span className="ss-slider"></span>
                                 </label>
-                            </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <button
