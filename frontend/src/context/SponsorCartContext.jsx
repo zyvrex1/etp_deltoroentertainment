@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { updateCart as updateCartAPI } from '../services/userService';
+import eventsService from '../services/eventsService';
 
 export const SponsorCartContext = createContext();
 
@@ -12,6 +13,8 @@ export const SponsorCartProvider = ({ children }) => {
     const { user, dispatch } = useAuthContext();
     const [cartItems, setCartItems] = useState([]);
     const [isInitialized, setIsInitialized] = useState(false);
+
+    const hasHealedRef = useRef(false);
 
     // Load cart from user object or localStorage on mount or when user changes
     useEffect(() => {
@@ -44,8 +47,52 @@ export const SponsorCartProvider = ({ children }) => {
         } else if (!user) {
             setCartItems([]);
             setIsInitialized(false);
+            hasHealedRef.current = false;
         }
     }, [user, isInitialized]);
+
+    // Self-healing: if any cart item is missing essential event details, fetch them from DB
+    useEffect(() => {
+        if (isInitialized && user && cartItems.length > 0 && !hasHealedRef.current) {
+            const hasCorruptedItems = cartItems.some(item => 
+                item.event && (!item.event.startDate || !item.event.venue)
+            );
+
+            if (hasCorruptedItems) {
+                hasHealedRef.current = true;
+                const healCart = async () => {
+                    try {
+                        const healedItems = await Promise.all(cartItems.map(async (item) => {
+                            if (item.event && (!item.event.startDate || !item.event.venue)) {
+                                const eventId = item.event._id || item.event.id;
+                                try {
+                                    const fullEvent = await eventsService.getEvent(eventId, user.token);
+                                    if (fullEvent) {
+                                        return {
+                                            ...item,
+                                            event: {
+                                                ...item.event,
+                                                ...fullEvent
+                                            }
+                                        };
+                                    }
+                                } catch (err) {
+                                    console.error(`Error healing event ${eventId} in cart:`, err);
+                                }
+                            }
+                            return item;
+                        }));
+                        setCartItems(healedItems);
+                    } catch (e) {
+                        console.error("Failed to heal cart items:", e);
+                    }
+                };
+                healCart();
+            } else {
+                hasHealedRef.current = true;
+            }
+        }
+    }, [isInitialized, user, cartItems]);
 
     // Save cart to localStorage AND backend whenever it changes
     useEffect(() => {
@@ -58,8 +105,12 @@ export const SponsorCartProvider = ({ children }) => {
                     _id: item.event._id,
                     title: item.event.title,
                     date: item.event.date,
+                    startDate: item.event.startDate,
+                    endDate: item.event.endDate,
                     banner: item.event.banner,
-                    location: item.event.location
+                    image: item.event.image,
+                    location: item.event.location,
+                    venue: item.event.venue
                 } : null,
                 booth: item.booth ? {
                     _id: item.booth._id,

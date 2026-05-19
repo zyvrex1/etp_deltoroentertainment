@@ -12,6 +12,14 @@ export default function SponsorCart() {
     const { cartItems, removeFromCart, removeMultipleFromCart, clearCart } = useSponsorCartContext();
 
     const [selectedItems, setSelectedItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 800);
+        return () => clearTimeout(timer);
+    }, []);
 
     const isCartEmpty = cartItems.length === 0;
     const countSelected = selectedItems.length;
@@ -107,14 +115,53 @@ export default function SponsorCart() {
                     </button>
                     <div>
                         <h2 className="cart-page-title">Your Cart</h2>
-                        {!isCartEmpty && (
+                        {loading ? (
+                            <div className="skeleton skeleton-text" style={{ width: '150px', height: '14px', marginTop: '4px', marginBottom: 0 }}></div>
+                        ) : !isCartEmpty && (
                             <p className="small-body-text text-muted m-0">{cartItems.length} booths • {countSelected} selected for checkout</p>
                         )}
                     </div>
                 </div>
             </div>
 
-            {isCartEmpty ? (
+            {loading ? (
+                <div className="cart-content-layout">
+                    {[...Array(2)].map((_, groupIdx) => (
+                        <div className="cart-event-card" key={groupIdx}>
+                            <div className="event-card-header">
+                                <div className="skeleton skeleton-text title" style={{ width: '200px', height: '20px', margin: 0 }}></div>
+                                <div className="skeleton skeleton-badge" style={{ width: '60px', height: '24px', borderRadius: '20px' }}></div>
+                            </div>
+                            <div className="ticket-list">
+                                {[...Array(groupIdx === 0 ? 2 : 1)].map((_, itemIdx) => (
+                                    <div className="ticket-item" key={itemIdx}>
+                                        <div className="custom-checkbox">
+                                            <div className="skeleton skeleton-circle" style={{ width: '24px', height: '24px' }}></div>
+                                        </div>
+                                        <div className="ticket-main">
+                                            <div className="skeleton skeleton-image" style={{ width: '60px', height: '60px', borderRadius: '8px' }}></div>
+                                            <div className="ticket-info">
+                                                <div className="ticket-type-info">
+                                                    <div className="skeleton skeleton-text title" style={{ width: '60%', height: '18px', marginBottom: '8px' }}></div>
+                                                    <div className="skeleton skeleton-text" style={{ width: '40%', height: '14px', margin: 0 }}></div>
+                                                </div>
+                                                <div className="ticket-meta">
+                                                    <div className="skeleton skeleton-text" style={{ width: '100px', height: '14px', margin: 0 }}></div>
+                                                    <div className="skeleton skeleton-text" style={{ width: '80px', height: '14px', margin: 0 }}></div>
+                                                </div>
+                                            </div>
+                                            <div className="ticket-price-right">
+                                                <div className="skeleton skeleton-text" style={{ width: '60px', height: '18px', margin: 0 }}></div>
+                                                <div className="skeleton skeleton-circle" style={{ width: '36px', height: '36px' }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : isCartEmpty ? (
                 <div className="empty-cart-state">
                     <Icon icon="mdi:cart-outline" width="60" className="empty-cart-icon" />
                     <h3>Your cart is empty</h3>
@@ -151,7 +198,7 @@ export default function SponsorCart() {
                                             </label>
                                             <div className="ticket-main">
                                                 <img 
-                                                    src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"} 
+                                                    src={(event.image || event.banner) ? `${BACKEND_URL}/uploads/${event.image || event.banner}` : "/assets/eventbg.jpg"} 
                                                     alt={event.title} 
                                                     className="ticket-image" 
                                                     onError={(e) => { e.target.src = "/assets/eventbg.jpg" }} 
@@ -160,17 +207,17 @@ export default function SponsorCart() {
                                                     <div className="ticket-type-info">
                                                         <h5>{item.category?.priceName || 'Sponsorship Booth'} ({item.booth?.label || item.booth?.code})</h5>
                                                         <p>
-                                                            <Icon icon="mdi:map-marker-outline" width="16" /> {event.venue?.name}, {event.venue?.city}
+                                                            <Icon icon="mdi:map-marker-outline" width="16" /> {event.venue ? `${event.venue.name}, ${event.venue.city}` : (event.location || 'Location Unavailable')}
                                                         </p>
                                                     </div>
                                                     <div className="ticket-meta">
                                                         <div className="ticket-meta-item">
                                                             <Icon icon="mdi:calendar-blank-outline" width="16" />
-                                                            <span>{new Date(event.startDate).toLocaleDateString()}</span>
+                                                            <span>{(event.startDate || event.date) ? new Date(event.startDate || event.date).toLocaleDateString() : 'Date Unavailable'}</span>
                                                         </div>
                                                         <div className="ticket-meta-item">
                                                             <Icon icon="mdi:clock-outline" width="16" />
-                                                            <span>{new Date(event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            <span>{(event.startDate || event.date) ? new Date(event.startDate || event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Time Unavailable'}</span>
                                                         </div>
                                                     </div>
                                                 </div>

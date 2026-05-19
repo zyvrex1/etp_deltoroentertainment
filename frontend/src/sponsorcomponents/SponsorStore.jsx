@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import merchandiseService from "../services/merchandiseService";
 import reservationService from "../services/reservationService";
+import orderService from "../services/orderService";
 import { useAuthContext } from "../hooks/useAuthContext";
 import "./SponsorStore.css";
 
@@ -37,9 +38,10 @@ const SponsorStore = () => {
       try {
         setLoading(true);
 
-        const [merchData, reservationsData] = await Promise.all([
+        const [merchData, reservationsData, ordersData] = await Promise.all([
           merchandiseService.getMerchandises(user.token),
-          reservationService.getMyReservations(user.token)
+          reservationService.getMyReservations(user.token),
+          orderService.getOrders(user.token)
         ]);
 
         setMerchandise(merchData);
@@ -77,6 +79,14 @@ const SponsorStore = () => {
 
             const count = merchData.filter(m => (m.eventId?._id === eventObj._id || m.eventId === eventObj._id) && m.boothCode === res.boothCode).length;
 
+            const activeOrdersCount = ordersData.filter(order => {
+              const orderEventId = order.eventId?._id || order.eventId;
+              return orderEventId === eventObj._id && 
+                     order.boothCode === res.boothCode &&
+                     order.status !== 'Completed' &&
+                     order.status !== 'Cancelled';
+            }).length;
+
             const formattedDate = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
             // Store Information fallback logic
@@ -100,7 +110,7 @@ const SponsorStore = () => {
               date: formattedDate,
               location: eventObj.venue?.name || 'TBA',
               products: count,
-              activeOrders: 0,
+              activeOrders: activeOrdersCount,
               status: status,
               image: imageUrl
             };
