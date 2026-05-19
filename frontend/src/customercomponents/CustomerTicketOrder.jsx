@@ -11,12 +11,20 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 const CustomerTicketOrder = () => {
     const { purchaseHistory } = useCustomerCart();
 
+    const [loading, setLoading] = useState(true);
     const [qrModalShow, setQrModalShow] = useState(false);
     const [refundModalShow, setRefundModalShow] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [sortFilter, setSortFilter] = useState("Recently Buy");
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 800);
+        return () => clearTimeout(timer);
+    }, []);
 
     const handleEnlargeQr = (ticket) => {
         setSelectedTicket(ticket);
@@ -131,7 +139,30 @@ const CustomerTicketOrder = () => {
                     </div>
                 </div>
 
-                {paginatedTickets.length > 0 ? (
+                {loading ? (
+                    <div className="ticket-order-list">
+                        {[1, 2, 3, 4].map((n) => (
+                            <div className="ticket-card-new skeleton" key={n}>
+                                <div className="ticket-card-top">
+                                    <div className="skeleton-box ticket-skeleton-title" />
+                                    <div className="skeleton-box ticket-skeleton-badge" />
+                                </div>
+                                <div className="ticket-card-body">
+                                    <div className="skeleton-box ticket-skeleton-img" />
+                                    <div className="ticket-details">
+                                        <div className="skeleton-box ticket-skeleton-text-lg" />
+                                        <div className="skeleton-box ticket-skeleton-text-sm" />
+                                        <div className="skeleton-box ticket-skeleton-text-sm" style={{ width: '55%' }} />
+                                    </div>
+                                    <div className="skeleton-box ticket-skeleton-qr" />
+                                </div>
+                                <div className="ticket-card-footer">
+                                    <div className="skeleton-box ticket-skeleton-btn" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : paginatedTickets.length > 0 ? (
                     <div className="ticket-order-list">
                         {paginatedTickets.map(ticket => (
                             <div className="ticket-card-new" key={ticket.id}>
@@ -188,7 +219,7 @@ const CustomerTicketOrder = () => {
                     </div>
                 )}
 
-                {totalPages > 1 && (
+                {totalPages > 1 && !loading && (
                     <div className="pagination">
                         <button
                             className="pagination-btn"

@@ -172,10 +172,40 @@ const CustomerOrders = () => {
 
                 <div className="orders-list">
                     {loading ? (
-                        <div className="loading-state" style={{ textAlign: 'center', padding: '60px' }}>
-                            <Icon icon="mdi:loading" className="csp-spin" width="48" />
-                            <p>Fetching your orders...</p>
-                        </div>
+                        <>
+                            {[1, 2].map((n) => (
+                                <div className="order-card-new skeleton" key={n}>
+                                    <div className="order-card-top">
+                                        <div className="skeleton-box order-skeleton-id" />
+                                        <div className="order-status-group">
+                                            <div className="skeleton-box order-skeleton-badge" />
+                                            <div className="skeleton-box order-skeleton-badge" />
+                                        </div>
+                                    </div>
+                                    <div className="order-card-body">
+                                        <div className="skeleton-box order-skeleton-img" />
+                                        <div className="order-details">
+                                            <div className="order-info-main">
+                                                <div className="skeleton-box order-skeleton-store" />
+                                                <div className="skeleton-box order-skeleton-info" />
+                                                <div className="skeleton-box order-skeleton-info" style={{ width: '45%' }} />
+                                            </div>
+                                            <div className="order-items-summary">
+                                                <div className="skeleton-box order-skeleton-items" />
+                                                <div className="skeleton-box order-skeleton-event" />
+                                            </div>
+                                        </div>
+                                        <div className="skeleton-box order-skeleton-qr" />
+                                    </div>
+                                    <div className="order-card-footer">
+                                        <div className="order-total-display">
+                                            <div className="skeleton-box order-skeleton-total-lbl" />
+                                            <div className="skeleton-box order-skeleton-total-val" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </>
                     ) : paginatedOrders.length > 0 ? (
                         paginatedOrders.map(order => (
                             <div className="order-card-new" key={order.id}>

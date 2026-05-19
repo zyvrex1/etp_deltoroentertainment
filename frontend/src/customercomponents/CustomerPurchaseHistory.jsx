@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useCustomerCart } from '../context/CustomerCartContext';
 import { useAuthContext } from '../hooks/useAuthContext';
@@ -7,10 +7,13 @@ import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../utils/pdfExport';
 import './CustomerPurchaseHistory.css';
 import CustomerHistoryViewReceipt from './Modal/CustomerHistoryViewReceipt';
+import orderService from '../services/orderService';
 
 export default function CustomerPurchaseHistory() {
     const { purchaseHistory } = useCustomerCart();
     const { user } = useAuthContext();
+    const [loading, setLoading] = useState(true);
+    const [orders, setOrders] = useState([]);
     const [activeTab, setActiveTab] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
@@ -24,17 +27,38 @@ export default function CustomerPurchaseHistory() {
     }));
     const itemsPerPage = 5;
 
+    useEffect(() => {
+        let isMounted = true;
+        const fetchData = async () => {
+            try {
+                if (user?.token) {
+                    const data = await orderService.getOrders(user.token, { customerId: user._id });
+                    if (isMounted) setOrders(data);
+                }
+            } catch (error) {
+                console.error("Error fetching orders in purchase history:", error);
+            } finally {
+                setTimeout(() => {
+                    if (isMounted) setLoading(false);
+                }, 800);
+            }
+        };
+        fetchData();
+        return () => { isMounted = false; };
+    }, [user]);
+
     const tabs = [
         { id: 'all', label: 'All Purchases' },
         { id: 'ticket', label: 'Tickets' },
-        { id: 'merchandise', label: 'Merchandise' },
-        { id: 'food', label: 'Food & Drinks' },
+        { id: 'product', label: 'Products' },
         { id: 'refunds', label: 'Refunds' }
     ];
 
-    // Group real purchases into orders
+    // Group real purchases and store orders into transaction cards
     const purchases = useMemo(() => {
         const groups = {};
+
+        // 1. Process seated tickets & booths
         purchaseHistory.forEach(item => {
             const date = item.purchaseDate;
             const eventTitle = item.event?.title || "Unknown Event";
@@ -60,12 +84,46 @@ export default function CustomerPurchaseHistory() {
             });
             groups[date].totalAmount += ((item.facePrice || 0) + (item.serviceFee || 0));
         });
+
+        // 2. Process store product orders
+        orders.forEach(order => {
+            const date = order.createdAt;
+            const title = order.storeName || order.sponsorId?.companyName || "Store";
+            
+            let orderType = 'product';
+
+            const orderItemsMapped = order.items.map(item => {
+                const itemCategory = item.productId?.category || 'Product';
+                return {
+                    name: `${item.quantity}x ${item.name} (${itemCategory})`,
+                    price: `$${(item.price * item.quantity).toFixed(2)}`,
+                    productCategory: itemCategory,
+                    singlePrice: item.price,
+                    quantity: item.quantity
+                };
+            });
+
+            groups[order._id] = {
+                id: order._id,
+                type: orderType,
+                title: title,
+                status: order.status || 'Confirmed',
+                statusClass: order.status === 'Completed' ? 'status-confirmed' : 'status-preparing',
+                orderNum: order.orderId || `ORD-${order._id.toUpperCase().slice(0, 8)}`,
+                date: date ? new Date(date).toLocaleDateString() : 'N/A',
+                totalAmount: order.totalAmount,
+                paymentMethod: order.paymentMethod || 'Credit Card',
+                poNumber: order.poNumber || '',
+                items: orderItemsMapped,
+                purchasedAt: date
+            };
+        });
         
         return Object.values(groups).map(g => ({
             ...g,
             total: `$${g.totalAmount.toFixed(2)}`
         })).sort((a, b) => new Date(b.purchasedAt) - new Date(a.purchasedAt));
-    }, [purchaseHistory]);
+    }, [purchaseHistory, orders]);
 
     const filteredPurchases = purchases.filter(p => {
         const matchesTab = activeTab === 'all' || p.type === activeTab;
@@ -105,22 +163,32 @@ export default function CustomerPurchaseHistory() {
         setCurrentPage(1); // Reset page on tab change
     };
 
-    const getIconForType = (type) => {
-        switch (type) {
-            case 'ticket': return 'mdi:ticket-confirmation-outline';
-            case 'merchandise': return 'mdi:shopping-outline';
-            case 'food': return 'mdi:food-outline';
-            default: return 'mdi:receipt-text-outline';
+    const getIconForType = (type, items = []) => {
+        if (type === 'ticket') return 'mdi:ticket-confirmation-outline';
+        if (type === 'product') {
+            const hasFood = items.some(item => 
+                item.productCategory === 'Food' || 
+                item.productCategory === 'Drinks' || 
+                item.name.toLowerCase().includes('food') || 
+                item.name.toLowerCase().includes('drink')
+            );
+            return hasFood ? 'mdi:food-outline' : 'mdi:shopping-outline';
         }
+        return 'mdi:receipt-text-outline';
     };
 
-    const getIconColorForType = (type) => {
-        switch (type) {
-            case 'ticket': return 'var(--color-red-primary)';
-            case 'merchandise': return 'var(--color-blue-primary)';
-            case 'food': return 'var(--color-yellow-primary)';
-            default: return 'var(--color-black-secondary)';
+    const getIconColorForType = (type, items = []) => {
+        if (type === 'ticket') return 'var(--color-red-primary)';
+        if (type === 'product') {
+            const hasFood = items.some(item => 
+                item.productCategory === 'Food' || 
+                item.productCategory === 'Drinks' || 
+                item.name.toLowerCase().includes('food') || 
+                item.name.toLowerCase().includes('drink')
+            );
+            return hasFood ? 'var(--color-yellow-primary)' : 'var(--color-blue-primary)';
         }
+        return 'var(--color-black-secondary)';
     };
 
     const handleViewReceipt = (purchase) => {
@@ -135,13 +203,19 @@ export default function CustomerPurchaseHistory() {
             paymentMethod: purchase.paymentMethod,
             poNumber: purchase.poNumber,
             status: 'Paid',
-            items: purchase.items.map(item => ({
-                item: item.name.replace(/^\d+x\s*/, ''),
-                type: purchase.type === 'ticket' ? 'Ticket' : purchase.type === 'merchandise' ? 'Merch' : 'Food/Drink',
-                qty: parseInt(item.name.match(/^\d+/)?.[0] || 1, 10),
-                price: item.price,
-                total: item.price
-            })),
+            items: purchase.items.map(item => {
+                const type = item.productCategory || (purchase.type === 'ticket' ? 'Ticket' : purchase.type === 'merchandise' ? 'Merch' : 'Food/Drink');
+                const qty = item.quantity || parseInt(item.name.match(/^\d+/)?.[0] || 1, 10);
+                const price = item.singlePrice ? `$${item.singlePrice.toFixed(2)}` : item.price;
+                const total = item.price;
+                return {
+                    item: item.name.replace(/^\d+x\s*/, '').replace(/\s*\([^)]*\)\s*$/, ''),
+                    type,
+                    qty,
+                    price,
+                    total
+                };
+            }),
             subtotal: purchase.total,
             serviceFee: '$0.00',
             tax: '$0.00',
@@ -239,14 +313,48 @@ export default function CustomerPurchaseHistory() {
             </div>
 
             <div className="history-list-container">
-                {paginatedPurchases.length > 0 ? (
+                {loading ? (
+                    <>
+                        {[1, 2, 3].map((n) => (
+                            <div key={n} className="history-card skeleton">
+                                <div className="history-card-header flex-between">
+                                    <div className="history-info-left">
+                                        <div className="skeleton-box history-skeleton-icon" />
+                                        <div className="history-details" style={{ width: '220px' }}>
+                                            <div className="history-title-row">
+                                                <div className="skeleton-box history-skeleton-title" />
+                                                <div className="skeleton-box history-skeleton-badge" />
+                                            </div>
+                                            <div className="skeleton-box history-skeleton-subtitle" />
+                                        </div>
+                                    </div>
+                                    <div className="history-info-right text-right" style={{ width: '120px' }}>
+                                        <div className="skeleton-box history-skeleton-price" />
+                                        <div className="skeleton-box history-skeleton-payment" />
+                                    </div>
+                                </div>
+                                <hr className="history-divider" />
+                                <div className="history-items-list">
+                                    <div className="history-sub-item flex-between">
+                                        <div className="skeleton-box history-skeleton-subitem-title" />
+                                        <div className="skeleton-box history-skeleton-subitem-price" />
+                                    </div>
+                                </div>
+                                <hr className="history-divider" />
+                                <div className="history-actions flex-end">
+                                    <div className="skeleton-box history-skeleton-btn" />
+                                </div>
+                            </div>
+                        ))}
+                    </>
+                ) : paginatedPurchases.length > 0 ? (
                     <>
                         {paginatedPurchases.map((purchase) => (
                             <div key={purchase.id} className="history-card">
                                 <div className="history-card-header flex-between">
                                     <div className="history-info-left">
                                         <div className="history-icon-box">
-                                            <Icon icon={getIconForType(purchase.type)} width="24" color={getIconColorForType(purchase.type)} />
+                                            <Icon icon={getIconForType(purchase.type, purchase.items)} width="24" color={getIconColorForType(purchase.type, purchase.items)} />
                                         </div>
                                         <div className="history-details">
                                             <div className="history-title-row">

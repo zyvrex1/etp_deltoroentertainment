@@ -517,3 +517,105 @@
     }
   }
 }
+
+/* Skeleton Loading Screen */
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.skeleton-box {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite linear;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.settings-skeleton-title {
+    width: 180px;
+    height: 38px;
+}
+
+.settings-skeleton-card-title {
+    width: 180px;
+    height: 24px;
+    margin-bottom: 24px;
+}
+
+.settings-skeleton-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+}
+
+.settings-skeleton-label {
+    width: 90px;
+    height: 16px;
+    margin-bottom: 4px;
+}
+
+.settings-skeleton-input {
+    width: 100%;
+    height: 40px;
+    border-radius: 6px;
+}
+
+.settings-skeleton-btn {
+    width: 100%;
+    height: 44px;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.settings-skeleton-badge-btn {
+    width: 110px;
+    height: 38px;
+    border-radius: 6px;
+}
+
+.settings-skeleton-payment-icon {
+    width: 40px;
+    height: 30px;
+    border-radius: 4px;
+    margin-right: 16px;
+}
+
+.settings-skeleton-payment-title {
+    width: 150px;
+    height: 16px;
+    margin-bottom: 6px;
+}
+
+.settings-skeleton-payment-desc {
+    width: 100px;
+    height: 12px;
+}
+
+.settings-skeleton-storage-msg {
+    width: 100%;
+    height: 44px;
+    border-radius: 6px;
+    margin-bottom: 24px;
+}
+
+.settings-skeleton-notify-title {
+    width: 120px;
+    height: 16px;
+    margin-bottom: 6px;
+}
+
+.settings-skeleton-notify-desc {
+    width: 250px;
+    height: 12px;
+}
+
+.settings-skeleton-toggle {
+    width: 40px;
+    height: 20px;
+    border-radius: 20px;
+}

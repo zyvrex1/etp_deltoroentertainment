@@ -200,6 +200,113 @@ export default function CustomerSettings() {
         }));
     };
 
+    if (loading) {
+        return (
+            <div className="cs-settings-container">
+                <div className="cs-header">
+                    <div className="cs-header-left">
+                        <div className="skeleton-box settings-skeleton-title" />
+                    </div>
+                </div>
+
+                <div className="cs-main-grid">
+                    {/* LEFT COLUMN */}
+                    <div className="cs-column">
+                        {/* PERSONAL INFORMATION CARD */}
+                        <div className="cs-card">
+                            <div className="skeleton-box settings-skeleton-card-title" />
+
+                            <div className="cs-avatar-section">
+                                <div className="skeleton-box settings-skeleton-avatar" />
+                            </div>
+
+                            <div className="cs-form-row">
+                                <div className="cs-form-group">
+                                    <div className="skeleton-box settings-skeleton-label" />
+                                    <div className="skeleton-box settings-skeleton-input" />
+                                </div>
+                                <div className="cs-form-group">
+                                    <div className="skeleton-box settings-skeleton-label" />
+                                    <div className="skeleton-box settings-skeleton-input" />
+                                </div>
+                            </div>
+
+                            <div className="cs-form-group">
+                                <div className="skeleton-box settings-skeleton-label" />
+                                <div className="skeleton-box settings-skeleton-input" />
+                            </div>
+
+                            <div className="cs-form-group">
+                                <div className="skeleton-box settings-skeleton-label" />
+                                <div className="skeleton-box settings-skeleton-input" />
+                            </div>
+
+                            <div className="skeleton-box settings-skeleton-btn" />
+                        </div>
+
+                        {/* PASSWORD CARD */}
+                        <div className="cs-card">
+                            <div className="skeleton-box settings-skeleton-card-title" />
+
+                            <div className="cs-form-group">
+                                <div className="skeleton-box settings-skeleton-label" />
+                                <div className="skeleton-box settings-skeleton-input" />
+                            </div>
+
+                            <div className="cs-form-group">
+                                <div className="skeleton-box settings-skeleton-label" />
+                                <div className="skeleton-box settings-skeleton-input" />
+                            </div>
+
+                            <div className="skeleton-box settings-skeleton-btn" />
+                        </div>
+                    </div>
+
+                    {/* RIGHT COLUMN */}
+                    <div className="cs-column">
+                        {/* PAYMENT METHODS CARD */}
+                        <div className="cs-card">
+                            <div className="cs-card-header-flex">
+                                <div className="skeleton-box settings-skeleton-card-title" style={{ width: '40%', marginBottom: 0 }} />
+                                <div className="skeleton-box settings-skeleton-badge-btn" />
+                            </div>
+
+                            <div className="cs-payment-list">
+                                {[1, 2].map((n) => (
+                                    <div key={n} className="cs-payment-item skeleton-card">
+                                        <div className="skeleton-box settings-skeleton-payment-icon" />
+                                        <div className="cs-payment-info">
+                                            <div className="skeleton-box settings-skeleton-payment-title" />
+                                            <div className="skeleton-box settings-skeleton-payment-desc" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="skeleton-box settings-skeleton-storage-msg" />
+                        </div>
+
+                        {/* NOTIFICATIONS CARD */}
+                        <div className="cs-card">
+                            <div className="skeleton-box settings-skeleton-card-title" />
+                            <div className="cs-notifications-list">
+                                {[1, 2, 3].map((n) => (
+                                    <div key={n} className="cs-notification-item">
+                                        <div className="cs-notification-info">
+                                            <div className="skeleton-box settings-skeleton-notify-title" />
+                                            <div className="skeleton-box settings-skeleton-notify-desc" />
+                                        </div>
+                                        <div className="skeleton-box settings-skeleton-toggle" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="cs-settings-container">
             <div className="cs-header">

@@ -509,3 +509,78 @@
         }
     }
 }
+
+/* Skeleton Loading Screen */
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.skeleton-box {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite linear;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.order-skeleton-id {
+    width: 150px;
+    height: 22px;
+}
+
+.order-skeleton-badge {
+    width: 70px;
+    height: 24px;
+    border-radius: 8px;
+}
+
+.order-skeleton-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+}
+
+.order-skeleton-store {
+    width: 180px;
+    height: 20px;
+    margin-bottom: 8px;
+}
+
+.order-skeleton-info {
+    width: 140px;
+    height: 14px;
+    margin-bottom: 6px;
+}
+
+.order-skeleton-items {
+    width: 85%;
+    height: 16px;
+    margin-bottom: 6px;
+}
+
+.order-skeleton-event {
+    width: 50%;
+    height: 14px;
+}
+
+.order-skeleton-qr {
+    width: 126px;
+    height: 126px;
+    border-radius: 10px;
+}
+
+.order-skeleton-total-lbl {
+    width: 80px;
+    height: 12px;
+    margin-bottom: 4px;
+}
+
+.order-skeleton-total-val {
+    width: 100px;
+    height: 24px;
+}

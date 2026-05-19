@@ -259,10 +259,28 @@ export default function CustomerSupport() {
 
                 <div className="tickets-list">
                     {loading ? (
-                        <div className="loading-state">
-                            <Icon icon="mdi:loading" className="spin" />
-                            <p>Loading concerns...</p>
-                        </div>
+                        <>
+                            {[1, 2, 3].map((n) => (
+                                <div key={n} className="ticket-card skeleton" style={{ width: '100%' }}>
+                                    <div className="ticket-header">
+                                        <div className="skeleton-box support-skeleton-id" />
+                                        <div className="badges">
+                                            <div className="skeleton-box support-skeleton-badge" />
+                                            <div className="skeleton-box support-skeleton-badge" />
+                                        </div>
+                                    </div>
+                                    <div className="skeleton-box support-skeleton-title" />
+                                    <div className="ticket-footer">
+                                        <div className="ticket-meta">
+                                            <div className="skeleton-box support-skeleton-meta" />
+                                            <div className="skeleton-box support-skeleton-meta" style={{ width: '80px' }} />
+                                            <div className="skeleton-box support-skeleton-meta" style={{ width: '90px' }} />
+                                        </div>
+                                        <div className="skeleton-box support-skeleton-btn" />
+                                    </div>
+                                </div>
+                            ))}
+                        </>
                     ) : filteredTickets.length === 0 ? (
                         <div className="empty-state">
                             <Icon icon="mdi:comment-alert-outline" width="48" />

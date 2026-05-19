@@ -57,6 +57,7 @@ const getOrders = async (req, res) => {
             .populate('customerId', 'firstName lastName email')
             .populate('sponsorId', 'companyName')
             .populate('eventId', 'title')
+            .populate('items.productId')
             .sort({ createdAt: -1 });
         res.status(200).json(orders);
     } catch (error) {
