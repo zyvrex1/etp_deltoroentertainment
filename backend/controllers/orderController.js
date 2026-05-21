@@ -1,5 +1,6 @@
 const Order = require("../models/orderModel");
 const Merchandise = require("../models/merchandiseModel");
+const Sponsor = require("../models/sponsorModel");
 const mongoose = require("mongoose");
 
 // Create Order
@@ -35,10 +36,11 @@ const createOrder = async (req, res) => {
             });
         }
 
-        // Notify the customer
+        // Notify the customer and sponsor
         try {
             const notificationController = require("./notificationController");
             const socket = require("../socket");
+            
             const notification = await notificationController.createNotification({
                 title: `Order Placed Successfully`,
                 content: `Your order ${orderId} has been placed.`,
@@ -49,6 +51,21 @@ const createOrder = async (req, res) => {
                 createdBy: customerId
             });
             socket.emitUpdate('newNotification', notification);
+
+            const sponsorInfo = await Sponsor.findById(sponsorId);
+            if (sponsorInfo && sponsorInfo.userId) {
+                const productsList = items.map(item => `${item.quantity}x ${item.name || 'Product'}`).join(', ');
+                const sponsorNotification = await notificationController.createNotification({
+                    title: `New Order Received`,
+                    content: `A new order ${orderId} has been placed at ${storeName} for: ${productsList}.`,
+                    type: 'payment',
+                    path: '/sponsor/orders',
+                    unread: true,
+                    userId: sponsorInfo.userId,
+                    createdBy: customerId
+                });
+                socket.emitUpdate('newNotification', sponsorNotification);
+            }
         } catch (notifErr) {
             console.error("Order notification error:", notifErr);
         }

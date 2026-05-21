@@ -173,7 +173,7 @@ const CustomerStoreBooths = () => {
 
                   <div className="csb-stats-row">
                     <div className="csb-stat-item">
-                      <span className="smaller-body-text stat-label">Products</span>
+                      <span className="smaller-body-text stat-label">Available Products</span>
                       <span className="large-body-text stat-value">{booth.products}</span>
                     </div>
                   </div>
