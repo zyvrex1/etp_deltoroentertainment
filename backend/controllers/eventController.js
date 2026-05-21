@@ -644,6 +644,18 @@ const createEvent = async (req, res) => {
         targetRole: "sponsor",
       });
       emitUpdate("newNotification", notification);
+
+      // Notify customers of a new approved (live) event
+      const customerNotification = await notificationController.createNotification({
+        title: `New Event: ${title}`,
+        content: `A new event has been posted. Check it out!`,
+        type: "event",
+        path: "/customer/browse-events",
+        unread: true,
+        createdBy: userId,
+        targetRole: "customer",
+      });
+      emitUpdate("newNotification", customerNotification);
     }
 
     emitUpdate("dashboardUpdate");
@@ -1465,6 +1477,18 @@ const buySeats = async (req, res) => {
         targetRole: "admin",
       });
       emitUpdate("newNotification", notification);
+
+      // Notify customer
+      const customerNotification = await notificationController.createNotification({
+        title: `Seat Purchase Successful`,
+        content: `You have successfully purchased ${seatIds.length} seat(s) for "${event.title}"`,
+        type: "reservation",
+        path: "/customer/my-ticketsorder",
+        unread: true,
+        userId: req.user._id,
+        createdBy: req.user._id,
+      });
+      emitUpdate("newNotification", customerNotification);
     } catch (notifErr) {
       console.error("Seat purchase notification error:", notifErr);
     }

@@ -68,6 +68,18 @@ const createAnnouncement = async (req, res) => {
     });
     socket.emitUpdate('newNotification', sponsorNotification);
 
+    // 4. Notification for Customers
+    const customerNotification = await notificationController.createNotification({
+      title: `Platform Update: New Announcement - ${title}`,
+      content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+      type: 'announcement',
+      path: '/customer',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'customer'
+    });
+    socket.emitUpdate('newNotification', customerNotification);
+
     res.status(201).json(announcement);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -134,6 +146,18 @@ const updateAnnouncement = async (req, res) => {
     });
     socket.emitUpdate('newNotification', sponsorNotification);
 
+    // 4. Notification for Customers
+    const customerNotification = await notificationController.createNotification({
+      title: `Platform Update: Announcement Modified - ${updatedAnnouncement.title}`,
+      content: updatedAnnouncement.content.substring(0, 50) + (updatedAnnouncement.content.length > 50 ? '...' : ''),
+      type: 'announcement',
+      path: '/customer',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'customer'
+    });
+    socket.emitUpdate('newNotification', customerNotification);
+
     res.status(200).json(updatedAnnouncement);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -195,6 +219,18 @@ const deleteAnnouncement = async (req, res) => {
       targetRole: 'sponsor'
     });
     socket.emitUpdate('newNotification', sponsorNotification);
+
+    // 4. Notification for Customers
+    const customerNotification = await notificationController.createNotification({
+      title: `Platform Update: Announcement Removed - ${deletedAnnouncement.title}`,
+      content: `An announcement was removed.`,
+      type: 'announcement',
+      path: '/customer',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'customer'
+    });
+    socket.emitUpdate('newNotification', customerNotification);
 
     res.status(200).json({ message: "Announcement deleted successfully" });
   } catch (error) {

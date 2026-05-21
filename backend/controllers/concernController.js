@@ -256,7 +256,11 @@ const addMessage = async (req, res) => {
     const notificationController = require('./notificationController');
     const recipientId = (user.role === 'admin' || user.role === 'superadmin') ? concern.sponsorId : (concern.assignedTo || null);
     const targetRole = (user.role === 'admin' || user.role === 'superadmin') ? null : (concern.assignedTo ? null : 'admin');
-    const path = (user.role === 'admin' || user.role === 'superadmin') ? '/sponsor/support' : '/admin/support';
+    
+    let path = '/admin/support';
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      path = concern.userRole === 'customer' ? '/customer/support' : '/sponsor/support';
+    }
 
     const notification = await notificationController.createNotification({
       title: `New message for ticket: ${concern.subject}`,

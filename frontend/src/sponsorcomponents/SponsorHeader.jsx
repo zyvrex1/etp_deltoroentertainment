@@ -66,8 +66,8 @@ export default function SponsorHeader() {
                         'Authorization': `Bearer ${authUser.token}`
                     }
                 });
-                // Filter out notifications created by the current user
-                const filteredNotifs = response.data.filter(n => !n.createdBy || String(n.createdBy) !== String(authUser._id));
+                // Filter out notifications created by the current user, unless explicitly targeted at them
+                const filteredNotifs = response.data.filter(n => !n.createdBy || String(n.createdBy) !== String(authUser._id) || (n.userId && String(n.userId) === String(authUser._id)));
                 dispatch({ type: 'SET_NOTIFICATIONS', payload: filteredNotifs });
             } catch (error) {
                 console.error('Error fetching notifications:', error);

@@ -38,7 +38,7 @@ export const NotificationsContextProvider = ({ children }) => {
   const { user } = useAuthContext();
 
   useEffect(() => {
-    if (!user || (user.role !== 'admin' && user.role !== 'superadmin' && user.role !== 'promoter' && user.role !== 'sponsor')) {
+    if (!user || (user.role !== 'admin' && user.role !== 'superadmin' && user.role !== 'promoter' && user.role !== 'sponsor' && user.role !== 'customer')) {
         return;
     }
 

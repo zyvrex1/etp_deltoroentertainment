@@ -1,0 +1,147 @@
+/* Customer Notification Dropdown - Matching Admin Styles */
+.notif-dropdown {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    width: 360px;
+    background: var(--color-white-primary);
+    border-radius: 12px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.15);
+    border: 1px solid var(--color-black-quaternary);
+    z-index: 120;
+    overflow: hidden;
+    color: var(--color-black-primary);
+}
+
+.notif-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-black-quaternary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notif-header .notif-title {
+    color: var(--color-bg-dark);
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.notif-mark-read {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--color-red-primary);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.notif-mark-read span {
+    text-decoration: underline;
+}
+
+.notif-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notif-item {
+    padding: 16px 20px;
+    display: flex;
+    gap: 16px;
+    border-bottom: 1px solid var(--color-black-quaternary);
+    transition: background 0.2s;
+    cursor: pointer;
+    position: relative;
+    text-align: left;
+}
+
+.notif-item:hover {
+    background: var(--color-bg-light);
+}
+
+.notif-item.unread .notif-status-dot {
+    position: absolute;
+    left: 8px;
+    top: 24px;
+    width: 6px;
+    height: 6px;
+    background: var(--color-red-primary);
+    border-radius: 50%;
+}
+
+.notif-icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 20px;
+}
+
+/* Icon Colors matching Admin */
+.notif-icon-box.concern { background: var(--color-yellow-quaternary); color: var(--color-yellow-primary); }
+.notif-icon-box.event { background: var(--color-red-quaternary); color: var(--color-red-primary); }
+.notif-icon-box.payment { background: var(--color-purple-quaternary); color: var(--color-purple-primary); }
+.notif-icon-box.reservation { background: var(--color-purple-quaternary); color: var(--color-purple-primary); }
+.notif-icon-box.user { background: var(--color-blue-quaternary); color: var(--color-blue-primary); }
+.notif-icon-box.update,
+.notif-icon-box.announcement,
+.notif-icon-box.policy { background: var(--color-bg-dark); color: white; }
+
+.notif-content {
+    flex: 1;
+}
+
+.notif-text {
+    font-size: 13.5px;
+    color: var(--color-bg-dark);
+    margin: 0 0 4px 0;
+    line-height: 1.4;
+}
+
+.notif-text strong {
+    font-weight: 600;
+}
+
+.notif-date {
+    color: var(--color-black-tertiary);
+    font-size: 12px;
+}
+
+.view-all-notif-btn {
+    width: 100%;
+    background: var(--color-bg-light);
+    border: none;
+    padding: 14px;
+    color: var(--color-red-primary);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.2s;
+}
+
+.view-all-notif-btn:hover {
+    background: #e2e8f0;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+    .notif-dropdown {
+        position: fixed !important;
+        top: 60px !important;
+        left: 10px !important;
+        right: 10px !important;
+        width: calc(100% - 20px) !important;
+        max-width: none !important;
+        z-index: 1001;
+    }
+}

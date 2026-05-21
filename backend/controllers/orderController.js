@@ -35,6 +35,24 @@ const createOrder = async (req, res) => {
             });
         }
 
+        // Notify the customer
+        try {
+            const notificationController = require("./notificationController");
+            const socket = require("../socket");
+            const notification = await notificationController.createNotification({
+                title: `Order Placed Successfully`,
+                content: `Your order ${orderId} has been placed.`,
+                type: 'payment',
+                path: '/customer/my-orders',
+                unread: true,
+                userId: customerId,
+                createdBy: customerId
+            });
+            socket.emitUpdate('newNotification', notification);
+        } catch (notifErr) {
+            console.error("Order notification error:", notifErr);
+        }
+
         res.status(201).json(order);
     } catch (error) {
         res.status(400).json({ error: error.message });

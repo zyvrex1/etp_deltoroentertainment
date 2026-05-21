@@ -92,6 +92,18 @@ const createPolicy = async (req, res) => {
     });
     socket.emitUpdate('newNotification', sponsorNotification);
 
+    // 4. Notification for Customers
+    const customerNotification = await notificationController.createNotification({
+      title: `New Policy: ${title}`,
+      content: `A new platform policy has been added. Please review it.`,
+      type: 'policy',
+      path: '/customer',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'customer'
+    });
+    socket.emitUpdate('newNotification', customerNotification);
+
     res.status(201).json(policy);
   } catch (error) {
     // Handle validation errors separately
@@ -161,6 +173,18 @@ const updatePolicy = async (req, res) => {
       targetRole: 'sponsor'
     });
     socket.emitUpdate('newNotification', sponsorNotification);
+
+    // 4. Notification for Customers
+    const customerNotification = await notificationController.createNotification({
+      title: `Policy Updated: ${title}`,
+      content: `The platform policy "${title}" has been updated.`,
+      type: 'policy',
+      path: '/customer',
+      unread: true,
+      createdBy: req.user._id,
+      targetRole: 'customer'
+    });
+    socket.emitUpdate('newNotification', customerNotification);
 
     res.status(200).json(updatedPolicy);
   } catch (error) {
