@@ -36,7 +36,7 @@ const CustomerStoreBooths = () => {
         ]);
         
         const mappedBooths = reservations.map(res => {
-          const boothProducts = products.filter(p => p.boothCode?.trim() === res.boothCode?.trim());
+          const boothProducts = products.filter(p => p.boothCode?.trim() === res.boothCode?.trim() && p.stock > 0 && p.status !== 'Hidden');
           
           return {
             id: res._id,
