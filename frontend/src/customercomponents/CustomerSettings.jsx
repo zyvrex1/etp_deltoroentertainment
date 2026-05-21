@@ -52,11 +52,14 @@ export default function CustomerSettings() {
         }
     ];
 
-    // Mock notifications for demonstration
+    // Sync with User model notifications
     const [notifications, setNotifications] = useState({
-        orderUpdates: true,
+        email: true,
+        sms: false,
+        userUpdates: true,
         paymentReminders: true,
-        marketing: false
+        announcements: true,
+        supportMessages: true
     });
 
     useEffect(() => {
@@ -83,6 +86,16 @@ export default function CustomerSettings() {
                     phone: formattedPhone,
                     avatar: data.avatar || ""
                 });
+                if (data.notifications) {
+                    setNotifications({
+                        email: data.notifications.email !== false,
+                        sms: data.notifications.sms === true,
+                        userUpdates: data.notifications.userUpdates !== false,
+                        paymentReminders: data.notifications.paymentReminders !== false,
+                        announcements: data.notifications.announcements !== false,
+                        supportMessages: data.notifications.supportMessages !== false
+                    });
+                }
             } catch (error) {
                 console.error("Error fetching profile:", error);
             } finally {
@@ -136,6 +149,7 @@ export default function CustomerSettings() {
                 formData.append("lastName", profile.lastName);
                 formData.append("email", profile.email);
                 formData.append("phone", profile.phone);
+                formData.append("notifications", JSON.stringify(notifications));
                 
                 if (avatarFile) {
                     formData.append("avatar", avatarFile);
@@ -546,27 +560,13 @@ export default function CustomerSettings() {
                         <div className="cs-notifications-list">
                             <div className="cs-notification-item">
                                 <div className="cs-notification-info">
-                                    <span className="cs-notification-label">Order Updates</span>
-                                    <span className="cs-notification-desc">Receive updates about your ticket orders and upcoming events</span>
+                                    <span className="cs-notification-label">Reservation & Payments</span>
+                                    <span className="cs-notification-desc">Receive updates about your ticket orders, reservations and payments</span>
                                 </div>
                                 <label className="cs-toggle-switch">
                                     <input 
                                         type="checkbox" 
-                                        checked={notifications.orderUpdates} 
-                                        onChange={() => handleNotificationChange('orderUpdates')}
-                                    />
-                                    <span className="cs-slider"></span>
-                                </label>
-                            </div>
-                            <div className="cs-notification-item">
-                                <div className="cs-notification-info">
-                                    <span className="cs-notification-label">Payment Reminders</span>
-                                    <span className="cs-notification-desc">Get notified about upcoming payments and invoices</span>
-                                </div>
-                                <label className="cs-toggle-switch">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={notifications.paymentReminders}
+                                        checked={notifications.paymentReminders} 
                                         onChange={() => handleNotificationChange('paymentReminders')}
                                     />
                                     <span className="cs-slider"></span>
@@ -574,14 +574,42 @@ export default function CustomerSettings() {
                             </div>
                             <div className="cs-notification-item">
                                 <div className="cs-notification-info">
-                                    <span className="cs-notification-label">Marketing Communications</span>
-                                    <span className="cs-notification-desc">Receive news about new events and promotions</span>
+                                    <span className="cs-notification-label">Concerns</span>
+                                    <span className="cs-notification-desc">Get notified about responses and updates regarding your submitted concerns</span>
                                 </div>
                                 <label className="cs-toggle-switch">
                                     <input 
                                         type="checkbox" 
-                                        checked={notifications.marketing}
-                                        onChange={() => handleNotificationChange('marketing')}
+                                        checked={notifications.supportMessages}
+                                        onChange={() => handleNotificationChange('supportMessages')}
+                                    />
+                                    <span className="cs-slider"></span>
+                                </label>
+                            </div>
+                            <div className="cs-notification-item">
+                                <div className="cs-notification-info">
+                                    <span className="cs-notification-label">Event Updates</span>
+                                    <span className="cs-notification-desc">Receive news about new events and updates to existing ones</span>
+                                </div>
+                                <label className="cs-toggle-switch">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={notifications.userUpdates}
+                                        onChange={() => handleNotificationChange('userUpdates')}
+                                    />
+                                    <span className="cs-slider"></span>
+                                </label>
+                            </div>
+                            <div className="cs-notification-item">
+                                <div className="cs-notification-info">
+                                    <span className="cs-notification-label">Platform Updates</span>
+                                    <span className="cs-notification-desc">Stay informed about platform policies and system announcements</span>
+                                </div>
+                                <label className="cs-toggle-switch">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={notifications.announcements}
+                                        onChange={() => handleNotificationChange('announcements')}
                                     />
                                     <span className="cs-slider"></span>
                                 </label>
