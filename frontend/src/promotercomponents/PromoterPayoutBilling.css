@@ -145,64 +145,76 @@
                             background-color: var(--color-red-quaternary);
                         }
 
-                        .ppb-payment-header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
+                    .ppb-payment-option {
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                        border: 1px solid #e5e7eb;
+                        border-radius: 12px;
+                        padding: 16px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
 
-                            .ppb-radio-group {
-                                display: flex;
-                                align-items: center;
-                                gap: 12px;
-
-                                .ppb-radio {
-                                    width: 20px;
-                                    height: 20px;
-                                    accent-color: var(--color-red-primary);
-                                    cursor: pointer;
-                                    margin-top: 4px;
-                                }
-
-                                .ppb-d-flex {
-                                    display: flex;
-                                }
-
-                                h5 {
-                                    color: var(--color-black-primary);
-                                }
-
-                                .ppb-text-secondary {
-                                    color: var(--color-black-secondary);
-                                }
-                            }
-
-                            .ppb-card-badges {
-                                display: flex;
-                                gap: 8px;
-
-                                .ppb-badge {
-                                    padding: 4px 8px;
-                                    border-radius: 4px;
-                                    font-weight: 600;
-                                    font-size: 10px;
-
-                                    &.blue {
-                                        background-color: var(--color-bg-dark);
-                                        color: white;
-                                    }
-
-                                    &.orange {
-                                        background-color: var(--color-red-primary);
-                                        color: white;
-                                    }
-
-                                    &.light-blue {
-                                        background-color: var(--color-blue-primary);
-                                        color: white;
-                                    }
-                                }
-                            }
+                        &.selected {
+                            border-color: var(--color-red-primary);
+                            background-color: var(--color-red-quaternary);
                         }
+
+                        .ppb-radio-wrapper {
+                            display: flex;
+                            align-items: center;
+                        }
+
+                        .ppb-radio {
+                            width: 20px;
+                            height: 20px;
+                            accent-color: var(--color-red-primary);
+                            cursor: pointer;
+                        }
+
+                        .ppb-payment-item-inner {
+                            display: flex;
+                            align-items: center;
+                            flex: 1;
+                            gap: 16px;
+                            text-align: left;
+                        }
+
+                        .ppb-payment-icon {
+                            width: 32px;
+                            height: 32px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: var(--color-red-primary);
+                            font-size: 24px;
+                        }
+
+                        .ppb-payment-info {
+                            flex: 1;
+                        }
+
+                        .ppb-payment-name {
+                            color: var(--color-black-primary);
+                            margin: 0 0 4px 0;
+                            font-size: 16px;
+                            font-weight: 600;
+                        }
+
+                        .ppb-payment-num {
+                            color: var(--color-black-secondary);
+                            font-size: 14px;
+                        }
+
+                        .ppb-default-pill {
+                            background-color: var(--color-green-quaternary);
+                            color: var(--color-green-primary);
+                            font-size: 10px;
+                            padding: 4px 8px;
+                            border-radius: 4px;
+                            font-weight: 600;
+                        }
+                    }
 
                         .ppb-payment-body {
                             padding-top: 16px;

@@ -42,24 +42,7 @@ const PromoterSettings = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [paymentMethods, setPaymentMethods] = useState([
-    {
-      id: 1,
-      type: "Visa",
-      last4: "4242",
-      expires: "12/25",
-      isDefault: true,
-      icon: "mdi:credit-card"
-    },
-    {
-      id: 2,
-      type: "Mastercard",
-      last4: "8888",
-      expires: "08/26",
-      isDefault: false,
-      icon: "mdi:credit-card"
-    }
-  ]);
+  const [paymentMethods, setPaymentMethods] = useState(user?.paymentMethods || []);
 
   const [teamMembers, setTeamMembers] = useState([]);
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -100,6 +83,9 @@ const PromoterSettings = () => {
             supportMessages: profileData.notifications?.supportMessages !== false
           }
         });
+        if (profileData.paymentMethods) {
+          setPaymentMethods(profileData.paymentMethods);
+        }
       } catch (error) {
         console.error("Error fetching profile:", error);
       } finally {
@@ -114,11 +100,11 @@ const PromoterSettings = () => {
           headers: { 'Authorization': `Bearer ${user.token}` }
         });
         const events = await response.json();
-        
+
         if (!Array.isArray(events)) return;
 
         let members = [];
-        
+
         const isOnline = (lastActive) => {
           if (!lastActive) return false;
           const activeDate = new Date(lastActive);
@@ -129,7 +115,7 @@ const PromoterSettings = () => {
 
         events.forEach(event => {
           const eventTitle = event.title || "Unknown Event";
-          
+
           if (event.createdBy && event.createdBy._id !== user._id) {
             const onlineStatus = isOnline(event.createdBy.lastActive) ? "Active" : "Offline";
             members.push({
@@ -141,7 +127,7 @@ const PromoterSettings = () => {
               event: eventTitle,
             });
           }
-          
+
           if (event.assignedPromoters && Array.isArray(event.assignedPromoters)) {
             event.assignedPromoters.forEach(p => {
               if (p._id !== user._id) {
@@ -158,7 +144,7 @@ const PromoterSettings = () => {
             });
           }
         });
-        
+
         setTeamMembers(members);
       } catch (error) {
         console.error("Error fetching team members:", error);
@@ -296,8 +282,61 @@ const PromoterSettings = () => {
     }));
   };
 
-  const handleSavePaymentSettings = async () => {
-    await showSuccessAlert("Payment Settings Saved", "Your payment preferences have been updated.");
+  const handleSavePaymentSettings = async (updatedMethods = paymentMethods) => {
+    if (!user?.token) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("paymentMethods", JSON.stringify(updatedMethods));
+
+      const response = await authService.updateProfile(formData, user.token);
+      const updatedUser = { ...user, ...response.data };
+
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      dispatch({ type: "LOGIN", payload: updatedUser });
+      setPaymentMethods(response.data.paymentMethods || []);
+
+      await showSuccessAlert("Payment Settings Saved", "Your payment cards have been updated.");
+    } catch (error) {
+      console.error("Save Error:", error);
+      showErrorAlert("Update Failed", error.response?.data?.error || error.message || "Failed to save payment methods.");
+    }
+  };
+
+  const handleAddPaymentMethod = (newMethod) => {
+    const updated = [...paymentMethods, { ...newMethod, id: Date.now() }];
+    // Ensure only one default exists
+    if (newMethod.isDefault) {
+      updated.forEach(m => {
+        if (m.id !== updated[updated.length - 1].id) m.isDefault = false;
+      });
+    }
+    setPaymentMethods(updated);
+    handleSavePaymentSettings(updated);
+  };
+
+  const handleRemovePaymentMethod = async (id) => {
+    const result = await showConfirmAlert(
+      "Remove Card?",
+      "Are you sure you want to remove this payment method?",
+      "Yes, Remove",
+      "Cancel"
+    );
+
+    if (result.isConfirmed) {
+      const updated = paymentMethods.filter(m => (m.id || m._id) !== id);
+      setPaymentMethods(updated);
+      handleSavePaymentSettings(updated);
+    }
+  };
+
+  const handleSetDefaultMethod = (id) => {
+    const updated = paymentMethods.map(m => ({
+      ...m,
+      isDefault: (m.id || m._id) === id
+    }));
+    setPaymentMethods(updated);
+    handleSavePaymentSettings(updated);
   };
 
   if (loading) {
@@ -532,34 +571,46 @@ const PromoterSettings = () => {
             </div>
 
             <div className="ps-payment-list">
-              {paymentMethods.map((method) => (
-                <div key={method.id} className="ps-payment-item">
-                  <div className="ps-payment-icon">
-                    <Icon icon={method.icon} width="24" />
-                  </div>
-                  <div className="ps-payment-info">
-                    <div className="ps-payment-title-row">
-                      <span className="ps-payment-type">{method.type} &bull;&bull;&bull;&bull; {method.last4}</span>
-                      {method.isDefault && <span className="button-label ps-pill-default">Default</span>}
-                    </div>
-                    <span className="ps-payment-expires">Expires {method.expires}</span>
-                  </div>
-                  <div className="ps-payment-actions">
-                    {!method.isDefault && <span className="ps-set-default-text smaller-body-text">Set as Default</span>}
-                    <button className="ps-icon-btn"><Icon icon="mdi:trash-can-outline" width="20" color="#666" /></button>
-                  </div>
+              {paymentMethods.length === 0 ? (
+                <div className="ps-empty-payment text-center py-4">
+                  <p className="smaller-body-text text-secondary">No payment methods added yet.</p>
                 </div>
-              ))}
+              ) : (
+                paymentMethods.map((method) => (
+                  <div key={method.id || method._id} className="ps-payment-item">
+                    <div className="ps-payment-icon">
+                      <Icon icon={method.icon || "mdi:credit-card"} width="24" />
+                    </div>
+                    <div className="ps-payment-info">
+                      <div className="ps-payment-title-row">
+                        <span className="ps-payment-type">{method.type} &bull;&bull;&bull;&bull; {method.last4}</span>
+                        {method.isDefault && <span className="button-label ps-pill-default">Default</span>}
+                      </div>
+                      <span className="ps-payment-expires">Expires {method.expires}</span>
+                    </div>
+                    <div className="ps-payment-actions">
+                      {!method.isDefault && (
+                        <button
+                          className="ps-set-default-btn p-0 border-0 bg-transparent"
+                          onClick={() => handleSetDefaultMethod(method.id || method._id)}
+                        >
+                          <span className="ps-set-default-text smaller-body-text">Set as Default</span>
+                        </button>
+                      )}
+                      <button
+                        className="ps-icon-btn"
+                        onClick={() => handleRemovePaymentMethod(method.id || method._id)}
+                      >
+                        <Icon icon="mdi:trash-can-outline" width="20" color="#666" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className="ps-secure-storage-msg smaller-body-text">
               <strong>Secure Storage:</strong> Your payment information is encrypted and stored securely. We never store your full card number or CVV.
-            </div>
-
-            <div className="ps-payment-footer">
-              <button className="ps-save-changes-black-btn button" onClick={handleSavePaymentSettings}>
-                <Icon icon="mdi:content-save" width="18" /> Save Changes
-              </button>
             </div>
           </div>
 
@@ -669,6 +720,7 @@ const PromoterSettings = () => {
       <PromoterPayoutMethodModal
         isOpen={isPayoutModalOpen}
         onClose={() => setIsPayoutModalOpen(false)}
+        onAdd={handleAddPaymentMethod}
       />
     </div>
   );

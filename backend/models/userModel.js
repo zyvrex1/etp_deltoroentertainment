@@ -79,7 +79,16 @@ const userSchema = new Schema({
   cart: {
     type: Array,
     default: []
-  }
+  },
+  
+  paymentMethods: [{
+    type: { type: String },
+    last4: { type: String },
+    expires: { type: String },
+    isDefault: { type: Boolean, default: false },
+    icon: { type: String },
+    methodType: { type: String, enum: ['card', 'bank'], default: 'card' }
+  }]
 
 }, { timestamps: true })
 

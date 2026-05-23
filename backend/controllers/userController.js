@@ -43,6 +43,8 @@ const getUserById = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
+    console.log("--- UPDATE PROFILE DEBUG ---");
+    console.log("Body:", req.body);
     const { firstName, lastName, email, phone, companyName, industry, description, streetAddress, city, zipCode } = req.body;
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -73,6 +75,18 @@ const updateProfile = async (req, res) => {
         };
       } catch (err) {
         console.error("Error updating notifications:", err);
+      }
+    }
+
+    // Update paymentMethods if provided
+    if (req.body.paymentMethods) {
+      try {
+        const pMethods = typeof req.body.paymentMethods === 'string'
+          ? JSON.parse(req.body.paymentMethods)
+          : req.body.paymentMethods;
+        user.paymentMethods = pMethods;
+      } catch (err) {
+        console.error("Error updating paymentMethods:", err);
       }
     }
 

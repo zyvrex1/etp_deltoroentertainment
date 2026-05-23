@@ -3,19 +3,79 @@ import { Icon } from '@iconify/react';
 import { showConfirmAlert, showSuccessAlert } from '../../utils/sweetAlert';
 import './PromoterPayoutMethodModal.css';
 
-const PromoterPayoutMethodModal = ({ isOpen, onClose }) => {
+const PromoterPayoutMethodModal = ({ isOpen, onClose, onAdd }) => {
     const [selectedMethod, setSelectedMethod] = useState('credit_card');
+    const [isDefault, setIsDefault] = useState(false);
+
+    // Form States
+    const [formData, setFormData] = useState({
+        cardHolder: '',
+        cardNumber: '',
+        expiry: '',
+        cvv: '',
+        accountHolder: '',
+        accountNumber: '',
+        routingNumber: '',
+        paypalEmail: ''
+    });
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleAddMethod = async () => {
-        let methodName = selectedMethod === 'credit_card' ? 'Card' : selectedMethod === 'bank_transfer' ? 'Bank Transfer' : 'PayPal';
+        let newMethod = {
+            isDefault,
+            methodType: selectedMethod === 'credit_card' ? 'card' : 'bank'
+        };
+
+        if (selectedMethod === 'credit_card') {
+            if (!formData.cardNumber || !formData.expiry) {
+                return alert("Please fill in card details");
+            }
+            newMethod.type = 'Visa'; // Dummy detection
+            newMethod.last4 = formData.cardNumber.replace(/\s/g, '').slice(-4);
+            newMethod.expires = formData.expiry;
+            newMethod.icon = 'mdi:credit-card';
+        } else if (selectedMethod === 'bank_transfer') {
+            if (!formData.accountNumber) {
+                return alert("Please fill in account details");
+            }
+            newMethod.type = 'Bank Account';
+            newMethod.last4 = formData.accountNumber.slice(-4);
+            newMethod.expires = 'N/A';
+            newMethod.icon = 'mdi:bank';
+        } else {
+            if (!formData.paypalEmail) {
+                return alert("Please fill in PayPal email");
+            }
+            newMethod.type = 'PayPal';
+            newMethod.last4 = formData.paypalEmail.split('@')[0].slice(-4);
+            newMethod.expires = 'N/A';
+            newMethod.icon = 'logos:paypal';
+        }
+
         const result = await showConfirmAlert(
-            `Add ${methodName}?`,
-            `Are you sure you want to add this ${methodName} payout method?`,
+            `Add ${newMethod.type}?`,
+            `Are you sure you want to add this ${newMethod.type} payout method?`,
             "Yes, Add It"
         );
+
         if (result.isConfirmed) {
-            await showSuccessAlert("Success", `${methodName} has been added successfully.`);
+            onAdd(newMethod);
             onClose();
+            // Reset form
+            setFormData({
+                cardHolder: '',
+                cardNumber: '',
+                expiry: '',
+                cvv: '',
+                accountHolder: '',
+                accountNumber: '',
+                routingNumber: '',
+                paypalEmail: ''
+            });
         }
     };
 
@@ -83,7 +143,14 @@ const PromoterPayoutMethodModal = ({ isOpen, onClose }) => {
                         <>
                             <div className="ppmm-input-group">
                                 <label className="regular-body-text font-medium text-black">Card Holder Name</label>
-                                <input type="text" className="ppmm-input regular-body-text" placeholder="Enter name here" />
+                                <input
+                                    type="text"
+                                    name="cardHolder"
+                                    className="ppmm-input regular-body-text"
+                                    placeholder="Enter name here"
+                                    value={formData.cardHolder}
+                                    onChange={handleInputChange}
+                                />
                             </div>
                             <div className="ppmm-input-group">
                                 <label className="regular-body-text font-medium text-black">Card Number</label>
@@ -94,23 +161,40 @@ const PromoterPayoutMethodModal = ({ isOpen, onClose }) => {
                                     autoComplete="cc-number"
                                     maxLength="19"
                                     placeholder="1234 5678 9012 3456"
+                                    value={formData.cardNumber}
                                     onChange={(e) => {
                                         const value = e.target.value
                                             .replace(/\D/g, "")
                                             .replace(/(.{4})/g, "$1 ")
                                             .trim();
-                                        e.target.value = value;
-                                    }} className="ppmm-input regular-body-text" />
+                                        setFormData(prev => ({ ...prev, cardNumber: value }));
+                                    }}
+                                    className="ppmm-input regular-body-text"
+                                />
                             </div>
                             <div className="ppmm-row">
                                 <div className="ppmm-input-group flex-1">
                                     <label className="regular-body-text font-medium text-black">Expiration Date</label>
-                                    <input type="text" className="ppmm-input regular-body-text" placeholder="MM/YY" />
+                                    <input
+                                        type="text"
+                                        name="expiry"
+                                        className="ppmm-input regular-body-text"
+                                        placeholder="MM/YY"
+                                        value={formData.expiry}
+                                        onChange={handleInputChange}
+                                    />
                                 </div>
                                 <div className="ppmm-input-group flex-1">
                                     <label className="regular-body-text font-medium text-black">CVV</label>
                                     <div className="ppmm-input-icon-wrapper">
-                                        <input type="text" className="ppmm-input regular-body-text pr-icon" placeholder="•••" />
+                                        <input
+                                            type="text"
+                                            name="cvv"
+                                            className="ppmm-input regular-body-text pr-icon"
+                                            placeholder="•••"
+                                            value={formData.cvv}
+                                            onChange={handleInputChange}
+                                        />
                                         <Icon icon="mdi:shield-check-outline" className="ppmm-input-icon text-secondary" width="20" />
                                     </div>
                                 </div>
@@ -122,15 +206,36 @@ const PromoterPayoutMethodModal = ({ isOpen, onClose }) => {
                         <>
                             <div className="ppmm-input-group">
                                 <label className="regular-body-text font-medium text-black">Account Holder Name</label>
-                                <input type="text" className="ppmm-input regular-body-text" placeholder="Enter name here" />
+                                <input
+                                    type="text"
+                                    name="accountHolder"
+                                    className="ppmm-input regular-body-text"
+                                    placeholder="Enter name here"
+                                    value={formData.accountHolder}
+                                    onChange={handleInputChange}
+                                />
                             </div>
                             <div className="ppmm-input-group">
                                 <label className="regular-body-text font-medium text-black">Account Number</label>
-                                <input type="text" className="ppmm-input regular-body-text" placeholder="Enter account number" />
+                                <input
+                                    type="text"
+                                    name="accountNumber"
+                                    className="ppmm-input regular-body-text"
+                                    placeholder="Enter account number"
+                                    value={formData.accountNumber}
+                                    onChange={handleInputChange}
+                                />
                             </div>
                             <div className="ppmm-input-group">
                                 <label className="regular-body-text font-medium text-black">Routing Number</label>
-                                <input type="text" className="ppmm-input regular-body-text" placeholder="Enter routing number" />
+                                <input
+                                    type="text"
+                                    name="routingNumber"
+                                    className="ppmm-input regular-body-text"
+                                    placeholder="Enter routing number"
+                                    value={formData.routingNumber}
+                                    onChange={handleInputChange}
+                                />
                             </div>
                         </>
                     )}
@@ -139,13 +244,25 @@ const PromoterPayoutMethodModal = ({ isOpen, onClose }) => {
                         <>
                             <div className="ppmm-input-group">
                                 <label className="regular-body-text font-medium text-black">PayPal Email</label>
-                                <input type="email" className="ppmm-input regular-body-text" placeholder="Enter PayPal email address" />
+                                <input
+                                    type="email"
+                                    name="paypalEmail"
+                                    className="ppmm-input regular-body-text"
+                                    placeholder="Enter PayPal email address"
+                                    value={formData.paypalEmail}
+                                    onChange={handleInputChange}
+                                />
                             </div>
                         </>
                     )}
 
                     <label className="ppmm-checkbox-container mt-12">
-                        <input type="checkbox" className="ppmm-checkbox" />
+                        <input
+                            type="checkbox"
+                            className="ppmm-checkbox"
+                            checked={isDefault}
+                            onChange={(e) => setIsDefault(e.target.checked)}
+                        />
                         <span className="regular-body-text text-black">Set as default payout method</span>
                     </label>
                 </div>

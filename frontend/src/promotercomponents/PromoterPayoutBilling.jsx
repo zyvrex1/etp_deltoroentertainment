@@ -1,24 +1,71 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
-import { showConfirmAlert, showSuccessAlert } from '../utils/sweetAlert';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 import './PromoterPayoutBilling.css';
+import { useAuthContext } from '../hooks/useAuthContext';
+import payoutService from '../services/payoutService';
 
 const PromoterPayoutBilling = () => {
     const navigate = useNavigate();
-    const [paymentMethod, setPaymentMethod] = useState('saved');
+    const location = useLocation();
+    const { user } = useAuthContext();
+    const [paymentMethod, setPaymentMethod] = useState(() => {
+        const defaultMethod = user?.paymentMethods?.find(m => m.isDefault);
+        return defaultMethod ? defaultMethod._id : (user?.paymentMethods?.length > 0 ? user.paymentMethods[0]._id : 'card');
+    });
+    const [submitting, setSubmitting] = useState(false);
+
+    const withdrawAmount = location.state?.amount || 0;
+    const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 
     const handleWithdraw = async () => {
+        if (withdrawAmount <= 0) {
+            showErrorAlert("Invalid Amount", "You cannot withdraw $0.00");
+            return;
+        }
+
         const result = await showConfirmAlert(
             "Confirm Withdrawal",
-            "Are you sure you want to proceed with the withdrawal of $15,240.00?",
+            `Are you sure you want to proceed with the withdrawal of $${withdrawAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}?`,
             "Yes, Withdraw Now"
         );
+
         if (result.isConfirmed) {
-            await showSuccessAlert("Withdrawal Successful", "Your transaction has been processed.");
-            navigate('/promoter/promoter-payouts');
+            setSubmitting(true);
+            try {
+                // Get method details
+                let methodType = 'Credit Card';
+                let methodDetails = {};
+
+                const savedMethod = user.paymentMethods?.find(m => m._id === paymentMethod);
+                if (savedMethod) {
+                    methodType = savedMethod.type || 'Card';
+                    methodDetails = { last4: savedMethod.last4 };
+                } else if (paymentMethod === 'card') {
+                    methodType = 'Credit Card';
+                    // In a real app, collect card details here or use stripe token
+                } else {
+                    methodType = 'Invoice / Bank Transfer';
+                }
+
+                await payoutService.createPayout({
+                    amount: withdrawAmount,
+                    method: methodType,
+                    methodDetails: methodDetails,
+                }, user.token);
+
+                await showSuccessAlert("Withdrawal Successful", "Your transaction has been processed.");
+                navigate('/promoter/promoter-payouts');
+            } catch (err) {
+                console.error("WITHDRAWAL ERROR:", err);
+                showErrorAlert("Withdrawal Failed", err.message || "Failed to process withdrawal.");
+            } finally {
+                setSubmitting(false);
+            }
         }
     };
+
 
     return (
         <div className="ppb-page-wrapper">
@@ -60,54 +107,69 @@ const PromoterPayoutBilling = () => {
                 <div className="ppb-content-left">
                     <div className="ppb-card">
                         <div className="ppb-card-body">
-                            <h4 className="mb-4">Payout Method</h4>
+                            <div className="d-flex justify-content-between align-items-center mb-4">
+                                <h4 className="m-0">Payout Method</h4>
 
-                            {/* Saved Payment Option */}
-                            <div
-                                className={`ppb-payment-option mb-3 ${paymentMethod === 'saved' ? 'selected' : ''}`}
-                                onClick={() => setPaymentMethod('saved')}
-                            >
-                                <div className="ppb-payment-header">
-                                    <div className="ppb-radio-group">
-                                        <input
-                                            type="radio"
-                                            checked={paymentMethod === 'saved'}
-                                            readOnly
-                                            className="ppb-radio"
-                                        />
-                                        <div>
-                                            <div className="ppb-d-flex align-items-center mb-1">
-                                                <Icon icon="mdi:credit-card" className="mr-2" style={{ fontSize: '1.2rem' }} />
-                                                <h5 className="h6 m-0">Visa •••• 4242</h5>
+                            </div>
+
+                            {user?.paymentMethods && user.paymentMethods.length > 0 ? (
+                                user.paymentMethods.map((method) => (
+                                    <div
+                                        key={method._id || method.id}
+                                        className={`ppb-payment-option mb-4 ${paymentMethod === (method._id || method.id) ? 'selected' : ''}`}
+                                        onClick={() => setPaymentMethod(method._id || method.id)}
+                                    >
+                                        <div className="ppb-radio-wrapper">
+                                            <input
+                                                type="radio"
+                                                checked={paymentMethod === (method._id || method.id)}
+                                                readOnly
+                                                className="ppb-radio"
+                                            />
+                                        </div>
+                                        <div className="ppb-payment-item-inner">
+                                            <div className="ppb-payment-icon">
+                                                <Icon icon={method.icon || "mdi:credit-card"} />
                                             </div>
-                                            <span className="smaller-body-text ppb-text-secondary block">Expires 12/25 &bull; Default</span>
+                                            <div className="ppb-payment-info">
+                                                <h5 className="ppb-payment-name">{method.type}</h5>
+                                                <span className="smaller-body-text ppb-payment-num">
+                                                    •••• {method.last4}
+                                                </span>
+                                            </div>
+                                            {method.isDefault && <span className="button-label ppb-default-pill">Default</span>}
                                         </div>
                                     </div>
-                                    <div className="ppb-card-badges">
-                                        <span className="ppb-badge button-label blue">VISA</span>
-                                    </div>
-                                </div>
-                            </div>
+                                ))
+                            ) : (
+                                <p className="smaller-body-text text-secondary text-center py-4">
+                                    No payment methods added yet. Add one in <Link to="/promoter/settings" style={{ color: 'var(--color-blue)', textDecoration: 'underline' }}>Settings</Link>.
+                                </p>
+                            )}
 
                             {/* Credit Card Option */}
                             <div
-                                className={`ppb-payment-option ${paymentMethod === 'card' ? 'selected' : ''}`}
+                                className={`ppb-payment-option mt-4 ${paymentMethod === 'card' ? 'selected' : ''}`}
                                 onClick={() => setPaymentMethod('card')}
+                                style={{ flexDirection: 'column', alignItems: 'stretch' }}
                             >
-                                <div className="ppb-payment-header">
-                                    <div className="ppb-radio-group">
+                                <div className="d-flex align-items-center gap-3">
+                                    <div className="ppb-radio-wrapper">
                                         <input
                                             type="radio"
                                             checked={paymentMethod === 'card'}
                                             readOnly
                                             className="ppb-radio"
                                         />
-                                        <h5>Credit Card</h5>
                                     </div>
-                                    <div className="ppb-card-badges">
-                                        <span className="ppb-badge button-label blue">VISA</span>
-                                        <span className="ppb-badge button-label orange">MC</span>
-                                        <span className="ppb-badge button-label light-blue">AMEX</span>
+                                    <div className="ppb-payment-item-inner">
+                                        <div className="ppb-payment-icon">
+                                            <Icon icon="mdi:credit-card-outline" />
+                                        </div>
+                                        <div className="ppb-payment-info">
+                                            <h5 className="ppb-payment-name">Credit Card</h5>
+                                            <span className="smaller-body-text ppb-payment-num">Pay with a new card</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -137,29 +199,28 @@ const PromoterPayoutBilling = () => {
 
                             {/* Invoice Option */}
                             <div
-                                className={`ppb-payment-option mt-3 ${paymentMethod === 'invoice' ? 'selected' : ''}`}
+                                className={`ppb-payment-option mt-4 ${paymentMethod === 'invoice' ? 'selected' : ''}`}
                                 onClick={() => setPaymentMethod('invoice')}
+                                style={{ flexDirection: 'column', alignItems: 'stretch' }}
                             >
-                                <div className="ppb-payment-header">
-                                    <div className="ppb-radio-group">
+                                <div className="d-flex align-items-center gap-3">
+                                    <div className="ppb-radio-wrapper">
                                         <input
                                             type="radio"
                                             checked={paymentMethod === 'invoice'}
                                             readOnly
                                             className="ppb-radio"
                                         />
-                                        <div>
-                                            <div className="ppb-d-flex align-items-center mb-1">
-                                                <Icon icon="mdi:domain" className="mr-2" style={{ fontSize: '1.2rem' }} />
-                                                <h5 className="h6 m-0">Invoice / Bank Transfer</h5>
-                                            </div>
-                                            <span className="smaller-body-text ppb-text-secondary block">Net 30 payment terms available for qualified businesses</span>
+                                    </div>
+                                    <div className="ppb-payment-item-inner">
+                                        <div className="ppb-payment-icon">
+                                            <Icon icon="mdi:file-document-outline" />
+                                        </div>
+                                        <div className="ppb-payment-info">
+                                            <h5 className="ppb-payment-name">Invoice / Bank Transfer</h5>
+                                            <span className="smaller-body-text ppb-payment-num">Pay via bank transfer</span>
                                         </div>
                                     </div>
-
-                                    {paymentMethod !== 'invoice' && (
-                                        <Icon icon="mdi:information-outline" className="text-red" style={{ fontSize: '1.2rem' }} />
-                                    )}
                                 </div>
 
                                 {paymentMethod === 'invoice' && (
@@ -194,14 +255,14 @@ const PromoterPayoutBilling = () => {
 
                             <div className="mb-4">
                                 <span className="smaller-body-text ppb-text-secondary block mb-1">Date</span>
-                                <h5 className="m-0">Oct 15, 2024</h5>
+                                <h5 className="m-0">{todayStr}</h5>
                             </div>
 
                             <hr className="ppb-divider my-3" />
 
                             <div className="ppb-price-row mb-2">
                                 <span className="small-body-text ppb-text-secondary">Subtotal</span>
-                                <span className="small-body-text ppb-text-secondary">$15,240.00</span>
+                                <span className="small-body-text ppb-text-secondary">${withdrawAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
 
                             <div className="ppb-price-row mb-2">
@@ -218,12 +279,17 @@ const PromoterPayoutBilling = () => {
 
                             <div className="ppb-price-row">
                                 <h6 className="m-0">Total</h6>
-                                <h5 className="ppb-text-red m-0">$15,240.00</h5>
+                                <h5 className="ppb-text-red m-0">${withdrawAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h5>
                             </div>
 
-                            <button className="primary-button ppb-pay-btn w-100" onClick={handleWithdraw}>
-                                Withdraw $15,240.00
+                            <button
+                                className="primary-button ppb-pay-btn w-100"
+                                onClick={handleWithdraw}
+                                disabled={submitting}
+                            >
+                                {submitting ? "Processing..." : `Withdraw $${withdrawAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             </button>
+
                             <p className="text-center smaller-body-text ppb-text-secondary m-0 mt-4 ppb-secure-text">
                                 Transactions are secure and encrypted.
                             </p>

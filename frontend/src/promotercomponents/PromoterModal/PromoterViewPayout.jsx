@@ -49,7 +49,9 @@ const PromoterViewPayout = ({ isOpen, onClose, payout, onDownloadInvoice }) => {
 
                     <div className="pvp-modal-row">
                         <span className="regular-body-text font-medium text-secondary">Amount Requested</span>
-                        <span className="regular-body-text text-black font-medium">{payout.amount}</span>
+                        <span className="regular-body-text text-black font-medium">
+                            ${(payout.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
                     </div>
                     <div className="pvp-modal-row">
                         <span className="regular-body-text font-medium text-secondary">Processing Fee</span>
@@ -57,7 +59,9 @@ const PromoterViewPayout = ({ isOpen, onClose, payout, onDownloadInvoice }) => {
                     </div>
                     <div className="pvp-modal-row pvp-modal-total">
                         <span className="large-body-text text-black font-medium">Total Amount</span>
-                        <span className="large-body-text text-black font-medium pvp-amount-text">{payout.amount}</span>
+                        <span className="large-body-text text-black font-medium pvp-amount-text">
+                            ${(payout.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
                     </div>
 
                     {(payout.status === 'Reject' || payout.status === 'Paid') && (

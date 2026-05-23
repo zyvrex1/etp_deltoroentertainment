@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Icon } from "@iconify/react";
 import "./promoterpayouts.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   showSuccessAlert,
 } from "../utils/sweetAlert";
@@ -18,18 +18,32 @@ import {
 } from "../utils/pdfExport";
 import PromoterViewPayout from "./PromoterModal/PromoterViewPayout.jsx";
 
+import { useAuthContext } from "../hooks/useAuthContext";
+import eventsService from "../services/eventsService";
+import payoutService from "../services/payoutService";
+
 const PromoterPayouts = () => {
+
+  const { user } = useAuthContext();
   const navigate = useNavigate();
 
   // New filter states
   const [dateRange, setDateRange] = useState({ preset: "last28" });
   const [sortFilter, setSortFilter] = useState("Recently Added");
   const [statusFilter, setStatusFilter] = useState("All Status");
+  const [processFilter, setProcessFilter] = useState("All Events");
 
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [isProcessDropdownOpen, setIsProcessDropdownOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
+
+  const [events, setEvents] = useState([]);
+  const [salesData, setSalesData] = useState([]);
+  const [payouts, setPayouts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const toggleRow = (index) => {
     setExpandedRow(expandedRow === index ? null : index);
@@ -37,6 +51,7 @@ const PromoterPayouts = () => {
 
   const sortDropdownRef = useRef(null);
   const statusDropdownRef = useRef(null);
+  const processDropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -52,86 +67,148 @@ const PromoterPayouts = () => {
       ) {
         setIsStatusDropdownOpen(false);
       }
+      if (
+        processDropdownRef.current &&
+        !processDropdownRef.current.contains(event.target)
+      ) {
+        setIsProcessDropdownOpen(false);
+      }
     };
 
-    if (isSortDropdownOpen || isStatusDropdownOpen) {
+    if (isSortDropdownOpen || isStatusDropdownOpen || isProcessDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isSortDropdownOpen, isStatusDropdownOpen]);
+  }, [isSortDropdownOpen, isStatusDropdownOpen, isProcessDropdownOpen]);
 
-  const [loading, setLoading] = useState(true);
 
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+  // Fetch Events and Sales (Logic from Revenue Reports)
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      if (!user?.token) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedEvents = await eventsService.getEvents(user.token);
+        const userId = user._id || user.id;
+        const validEvents = (fetchedEvents || []).filter(e => {
+          const isOwner = e.createdBy && (e.createdBy._id === userId || e.createdBy === userId);
+          const isAssigned = e.assignedPromoters && e.assignedPromoters.some(p => p._id === userId || p === userId);
+          return isOwner || isAssigned;
+        });
+
+        setEvents(validEvents);
+
+        const salesPromises = validEvents.map(async (event) => {
+          const res = await fetch(`${BASE_URL}/api/reservations/event/${event._id}/sales`, {
+            headers: { Authorization: `Bearer ${user.token}` }
+          });
+          if (!res.ok) return [];
+          const { reservations } = await res.json();
+          return (reservations || []).map(r => ({
+            ...r,
+            eventId: event._id,
+            eventTitle: event.title,
+            date: new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+            amountStr: `$${(r.amount?.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+            method: r.paymentMethod === 'card' ? 'Credit Card' : 'Invoice/Bank Transfer',
+            reference: r._id.toString().toUpperCase().slice(-10)
+          }));
+        });
+
+        const allSalesArrays = await Promise.all(salesPromises);
+        setSalesData(allSalesArrays.flat());
+
+        // Fetch Payouts
+        const fetchedPayouts = await payoutService.getPayouts(user.token);
+        setPayouts((fetchedPayouts || []).map(p => ({
+          ...p,
+          date: new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+          amountStr: `$${(p.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          reference: p.reference || p._id.toString().toUpperCase().slice(-10)
+        })));
+
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError("Failed to load payout data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user]);
+
+  // Process filtering logic
+  const filteredByProcess = useMemo(() => {
+    if (processFilter === "All Events") return salesData;
+    if (processFilter === "Tickets") return salesData.filter(s => s.type !== 'booth');
+    if (processFilter === "Booths") return salesData.filter(s => s.type === 'booth');
+    // Check if it's an event ID
+    return salesData.filter(s => s.eventId === processFilter);
+  }, [salesData, processFilter]);
+
+  const filteredPayouts = useMemo(() => {
+    return payouts.filter((item) => {
+      // For payouts, process filter might filter by event if we stored which events it covers
+      // but usually withdrawals are global across all promoter's earnings.
+      // If we implement event-specific payouts, we'd use item.eventIds
+      if (processFilter !== "All Events") {
+        if (processFilter === "Tickets" || processFilter === "Booths") return true; // keep all for now
+        if (item.eventIds && !item.eventIds.includes(processFilter)) return false;
+      }
+
+      if (statusFilter === "All Status") return true;
+      const itemStatus = item.status === 'paid' ? 'Paid' : item.status === 'pending' ? 'Pending' : 'Reject';
+      return itemStatus === statusFilter;
+    });
+  }, [payouts, statusFilter, processFilter]);
+
+  const sortedAndFilteredPayouts = useMemo(() => {
+    return [...filteredPayouts].sort((a, b) => {
+      if (sortFilter === "Ascending") {
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      } else if (sortFilter === "Descending") {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      return new Date(b.createdAt) - new Date(a.createdAt); // Recently Added
+    });
+  }, [filteredPayouts, sortFilter]);
+
+  // Calculate totals based on filtered by process
+  const stats = useMemo(() => {
+    const totalRev = filteredByProcess.reduce((acc, s) => acc + (s.amount?.total || 0), 0);
+    const totalPaid = payouts.filter(p => p.status === 'paid').reduce((acc, p) => acc + (p.amount || 0), 0);
+    const totalPending = payouts.filter(p => p.status === 'pending').reduce((acc, p) => acc + (p.amount || 0), 0);
+    
+    return {
+      totalRevenue: totalRev,
+      currentBalance: Math.max(0, totalRev - totalPaid - totalPending),
+    };
+  }, [filteredByProcess, payouts]);
+
+  const estimatedArrivalDate = useMemo(() => {
+    const today = new Date();
+    const arrival = new Date(today);
+    let businessDaysAdded = 0;
+    while (businessDaysAdded < 3) {
+      arrival.setDate(arrival.getDate() + 1);
+      if (arrival.getDay() !== 0 && arrival.getDay() !== 6) {
+        businessDaysAdded++;
+      }
+    }
+    return arrival.toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    });
   }, []);
 
-  const handleWithdraw = () => {
-    navigate("/promoter/promoter-payout-billing");
-  };
-
-  const initialPayoutHistory = [
-    {
-      date: "Jan 01, 2026",
-      amount: "$12,450.00",
-      method: "Bank Transfer •••• 4242",
-      status: "Paid",
-      reference: "WTD-8472910"
-    },
-    {
-      date: "Sep 15, 2025",
-      amount: "$8,200.00",
-      method: "Bank Transfer •••• 4242",
-      status: "Paid",
-      reference: "WTD-3928174"
-    },
-    {
-      date: "Aug 30, 2025",
-      amount: "$5,150.00",
-      method: "Bank Transfer •••• 4242",
-      status: "Paid",
-      reference: "WTD-5610293"
-    },
-    {
-      date: "Jul 12, 2025",
-      amount: "$2,300.00",
-      method: "Bank Transfer •••• 4242",
-      status: "Pending",
-      reference: "WTD-2233445"
-    },
-    {
-      date: "Jun 05, 2025",
-      amount: "$4,100.00",
-      method: "Bank Transfer •••• 4242",
-      status: "Reject",
-      reference: "WTD-9988776"
-    },
-    {
-      date: "May 20, 2025",
-      amount: "$1,500.00",
-      method: "Bank Transfer •••• 4242",
-      status: "Pending",
-      reference: "WTD-1122334"
-    }
-  ];
-
-  const filteredPayouts = initialPayoutHistory.filter((item) => {
-    if (statusFilter === "All Status") return true;
-    return item.status === statusFilter;
-  });
-
-  const sortedAndFilteredPayouts = [...filteredPayouts].sort((a, b) => {
-    if (sortFilter === "Ascending") {
-      return new Date(a.date) - new Date(b.date);
-    } else if (sortFilter === "Descending") {
-      return new Date(b.date) - new Date(a.date);
-    }
-    return 0; // Recently Added
-  });
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -182,12 +259,10 @@ const PromoterPayouts = () => {
       pdf.setFontSize(10);
       pdf.setTextColor(50, 50, 50);
       pdf.setFont("helvetica", "normal");
-      
+
       const sumAmounts = (data) =>
         data.reduce((total, row) => {
-          const numeric =
-            parseFloat(String(row.amount).replace(/[^0-9.-]+/g, "")) || 0;
-          return total + numeric;
+          return total + (row.amount?.total || 0);
         }, 0);
 
       const totalAmount = sumAmounts(sortedAndFilteredPayouts);
@@ -214,7 +289,7 @@ const PromoterPayouts = () => {
       ];
       const rows = sortedAndFilteredPayouts.map((row) => [
         row.date,
-        row.amount,
+        row.amountStr,
         row.method,
         row.status,
         row.reference,
@@ -282,7 +357,7 @@ const PromoterPayouts = () => {
       doc.text("Description", margin, y);
       doc.text("Amount", pdfWidth - margin - 30, y);
       y += 4;
-      
+
       doc.setDrawColor(200, 200, 200);
       doc.line(margin, y, pdfWidth - margin, y);
       y += 8;
@@ -290,7 +365,7 @@ const PromoterPayouts = () => {
       doc.setTextColor(50, 50, 50);
       doc.setFont("helvetica", "normal");
       doc.text("Event Ticket Sales Payout", margin, y);
-      doc.text(`${payout.amount}`, pdfWidth - margin - 30, y);
+      doc.text(`${payout.amountStr}`, pdfWidth - margin - 30, y);
       y += 8;
 
       doc.line(margin, y, pdfWidth - margin, y);
@@ -299,7 +374,7 @@ const PromoterPayouts = () => {
       doc.setFont("helvetica", "bold");
       doc.setTextColor(30, 60, 114);
       doc.text("Total Paid", margin, y);
-      doc.text(`${payout.amount}`, pdfWidth - margin - 30, y);
+      doc.text(`${payout.amountStr}`, pdfWidth - margin - 30, y);
       y += 15;
 
       doc.setFont("helvetica", "normal");
@@ -329,27 +404,31 @@ const PromoterPayouts = () => {
 
       <div className="pay-top-cards">
         {loading ? (
-             [...Array(2)].map((_, i) => (
-                <div key={i} className="pay-top-card skeleton-card">
-                    <div className="skeleton skeleton-text short" />
-                    <div className="skeleton skeleton-text title" style={{ height: '32px' }} />
-                    <div className="skeleton skeleton-text short" style={{ width: '60%' }} />
-                </div>
-             ))
+          [...Array(2)].map((_, i) => (
+            <div key={i} className="pay-top-card skeleton-card">
+              <div className="skeleton skeleton-text short" />
+              <div className="skeleton skeleton-text title" style={{ height: '32px' }} />
+              <div className="skeleton skeleton-text short" style={{ width: '60%' }} />
+            </div>
+          ))
         ) : (
-            <>
-                <div className="pay-top-card">
-                   <span className="pay-top-label">Total Revenue</span>
-                   <h2 className="pay-top-amount">$103,550</h2>
-                   <span className="pay-top-subtext pay-green-text">
-                     <Icon icon="mdi:trending-up" /> +12.5% from last month
-                   </span>
-                 </div>
-                 <div className="pay-top-card">
-                   <span className="pay-top-label">Current Balance</span>
-                   <h2 className="pay-top-amount">$13,550</h2>
-                 </div>
-            </>
+          <>
+            <div className="pay-top-card">
+              <span className="pay-top-label">
+                Total Revenue {processFilter !== "All Events" ? `- ${processFilter === "Tickets" ? "Tickets" : processFilter === "Booths" ? "Booths" : events.find(e => e._id === processFilter)?.title}` : ""}
+              </span>
+              <h2 className="pay-top-amount">${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h2>
+              <span className="pay-top-subtext pay-green-text">
+                <Icon icon="mdi:trending-up" /> Live data from system
+              </span>
+            </div>
+            <div className="pay-top-card">
+              <span className="pay-top-label">
+                Current Balance {processFilter !== "All Events" ? `- ${processFilter === "Tickets" ? "Tickets" : processFilter === "Booths" ? "Booths" : events.find(e => e._id === processFilter)?.title}` : ""}
+              </span>
+              <h2 className="pay-top-amount">${stats.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h2>
+            </div>
+          </>
         )}
       </div>
 
@@ -359,11 +438,59 @@ const PromoterPayouts = () => {
             <div className="pay-card-header pay-history-header">
               <h4>Payout History</h4>
               <div className="pay-history-filters">
-                <DateRangePicker
+                <div className="pay-custom-dropdown" ref={processDropdownRef}>
+                  <button
+                    className="pay-custom-dropdown-btn small-body-text"
+                    onClick={() =>
+                      setIsProcessDropdownOpen(!isProcessDropdownOpen)
+                    }
+                  >
+                    <span className="truncate-text">
+                      {processFilter === "All Events" ? "All Events" :
+                        events.find(e => e._id === processFilter)?.title || "Select Process"}
+                    </span>
+                    <Icon
+                      icon="mdi:chevron-down"
+                      className={`dropdown-icon ${isProcessDropdownOpen ? "open" : ""}`}
+                    />
+                  </button>
+                  {isProcessDropdownOpen && (
+                    <div className="pay-custom-dropdown-menu">
+                      <button
+                        className={`pay-custom-dropdown-item small-body-text ${processFilter === "All Events" ? "active" : ""}`}
+                        onClick={() => {
+                          setProcessFilter("All Events");
+                          setIsProcessDropdownOpen(false);
+                        }}
+                      >
+                        All Events
+                      </button>
+                      {events.map((e) => {
+                        const userId = user._id || user.id;
+                        const isOwner = e.createdBy && (e.createdBy._id === userId || e.createdBy === userId);
+                        return (
+                          <button
+                            key={e._id}
+                            className={`pay-custom-dropdown-item small-body-text ${processFilter === e._id ? "active" : ""}`}
+                            onClick={() => {
+                              setProcessFilter(e._id);
+                              setIsProcessDropdownOpen(false);
+                            }}
+                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                          >
+                            <span>{e.title}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* <DateRangePicker
                   value={dateRange}
                   onChange={setDateRange}
                   buttonClassName="payout-date-picker-btn"
-                />
+                /> */}
                 <div className="pay-custom-dropdown" ref={statusDropdownRef}>
                   <button
                     className="pay-custom-dropdown-btn small-body-text"
@@ -451,7 +578,7 @@ const PromoterPayouts = () => {
                   </thead>
                   <tbody>
                     {paginatedData.map((item, index) => (
-                      <tr 
+                      <tr
                         key={index}
                         className={expandedRow === index ? "expanded" : ""}
                       >
@@ -471,12 +598,12 @@ const PromoterPayouts = () => {
                           <span className="pay-date-text">{item.date}</span>
                         </td>
                         <td className="large-body-text pay-amount-text" data-label="Amount">
-                          {item.amount}
+                          {item.amountStr}
                         </td>
                         <td className="small-body-text" data-label="Method">{item.method}</td>
                         <td data-label="Status" className="pay-status-cell">
-                          <span className={`button-label pay-status-pill ${item.status === 'Paid' ? 'pill-bg-green' : item.status === 'Reject' ? 'pill-bg-red' : 'pill-bg-orange'}`}>
-                            {item.status}
+                          <span className={`button-label pay-status-pill ${item.status === 'paid' ? 'pill-bg-green' : item.status === 'pending' ? 'pill-bg-orange' : 'pill-bg-red'}`}>
+                            {item.status === 'paid' ? 'Paid' : item.status === 'pending' ? 'Pending' : 'Reject'}
                           </span>
                         </td>
                         <td data-label="Actions">
@@ -534,31 +661,31 @@ const PromoterPayouts = () => {
         <div className="pay-right-col">
           <div className="pay-card pay-next-box">
             {loading ? (
-                <>
-                    <div className="skeleton skeleton-text short" />
-                    <div className="skeleton skeleton-text title" style={{ height: '32px' }} />
-                    <div className="skeleton skeleton-text short" style={{ margin: '12px 0' }} />
-                    <div className="skeleton skeleton-rect" style={{ height: '44px', marginTop: '12px' }} />
-                </>
+              <>
+                <div className="skeleton skeleton-text short" />
+                <div className="skeleton skeleton-text title" style={{ height: '32px' }} />
+                <div className="skeleton skeleton-text short" style={{ margin: '12px 0' }} />
+                <div className="skeleton skeleton-rect" style={{ height: '44px', marginTop: '12px' }} />
+              </>
             ) : (
-                <>
-                    <p className="small-body-text pay-next-label">Next Payout</p>
-                    <h2 className="pay-next-amount">$15,240.00</h2>
+              <>
+                <p className="small-body-text pay-next-label">Estimated Payout</p>
+                <h2 className="pay-next-amount">${stats.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
 
-                    <div className="pay-est-arrival">
-                    <Icon icon="mdi:bank-transfer" />
-                    <span className="small-body-text pp-date">
-                        Est. arrival: Oct 15, 2024
-                    </span>
-                    </div>
+                <div className="pay-est-arrival">
+                  <Icon icon="mdi:bank-transfer" />
+                  <span className="small-body-text pp-date">
+                    Est. arrival: {estimatedArrivalDate}
+                  </span>
+                </div>
 
-                    <button
-                    className="primary-button pay-withdraw-btn"
-                    onClick={handleWithdraw}
-                    >
-                    Withdraw Now
-                    </button>
-                </>
+                <button
+                  className="primary-button pay-withdraw-btn"
+                  onClick={() => navigate("/promoter/promoter-payout-billing", { state: { amount: stats.currentBalance } })}
+                >
+                  Withdraw Now
+                </button>
+              </>
             )}
           </div>
 
@@ -566,49 +693,38 @@ const PromoterPayouts = () => {
             <h4>Payout Methods</h4>
 
             {loading ? (
-                [...Array(2)].map((_, i) => (
-                    <div key={i} className="pay-method-item" style={{ border: 'none' }}>
-                        <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px', marginRight: '12px' }} />
-                        <div className="pay-method-info" style={{ width: '100%' }}>
-                            <div className="skeleton skeleton-text title" style={{ width: '60%' }} />
-                            <div className="skeleton skeleton-text short" />
-                        </div>
-                    </div>
-                ))
+              [...Array(2)].map((_, i) => (
+                <div key={i} className="pay-method-item" style={{ border: 'none' }}>
+                  <div className="skeleton skeleton-circle" style={{ width: '40px', height: '40px', marginRight: '12px' }} />
+                  <div className="pay-method-info" style={{ width: '100%' }}>
+                    <div className="skeleton skeleton-text title" style={{ width: '60%' }} />
+                    <div className="skeleton skeleton-text short" />
+                  </div>
+                </div>
+              ))
+            ) : (user.paymentMethods && user.paymentMethods.length > 0) ? (
+              user.paymentMethods.map((method, idx) => (
+                <div key={method._id || idx} className="pay-method-item">
+                  <div className="pay-method-icon">
+                    <Icon icon={method.icon || "mdi:credit-card"} />
+                  </div>
+                  <div className="pay-method-info">
+                    <h5 className="pay-method-name">{method.type}</h5>
+                    <span className="smaller-body-text pay-method-num">
+                      •••• {method.last4}
+                    </span>
+                  </div>
+                  {method.isDefault && <span className="button-label pay-default-pill">Default</span>}
+                </div>
+              ))
             ) : (
-                <>
-                    <div className="pay-method-item">
-                    <div className="pay-method-icon">
-                        <Icon icon="mdi:domain" />
-                    </div>
-                    <div className="pay-method-info">
-                        <h5 className="pay-method-name">Freedom Bank</h5>
-                        <span className="smaller-body-text pay-method-num">
-                        •••• 4242
-                        </span>
-                    </div>
-                    <span className="button-label pay-default-pill">Default</span>
-                    </div>
-
-                    <div className="pay-method-item">
-                    <div className="pay-method-icon">
-                        <Icon icon="mdi:domain" />
-                    </div>
-                    <div className="pay-method-info">
-                        <h5 className="pay-method-name">Invoice Record</h5>
-                        <span className="smaller-body-text pay-method-num">
-                        ••••
-                        </span>
-                    </div>
-                    <span className="button-label pay-set-default">Set as Default</span>
-                    </div>
-                </>
+                <p className="smaller-body-text text-secondary text-center py-3">No payment methods added yet. Add one in <Link to="/promoter/settings" style={{ color: 'var(--color-blue)', textDecoration: 'underline' }}>Settings</Link>.</p>
             )}
           </div>
         </div>
       </div>
 
-      <PromoterViewPayout 
+      <PromoterViewPayout
         isOpen={!!selectedPayout}
         onClose={() => setSelectedPayout(null)}
         payout={selectedPayout}
