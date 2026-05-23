@@ -69,12 +69,12 @@ const CustomerBrowseEvent = () => {
         }
     };
 
-    const handleEventClick = (eventId) => {
-        navigate(`/customer/event-details/${eventId}`);
+    const handleEventClick = (eventObj) => {
+        navigate(`/customer/event-details/${eventObj._id}`, { state: { event: eventObj } });
     };
 
-    const handleGetTickets = (eventId) => {
-        navigate(`/customer/seats/${eventId}`);
+    const handleGetTickets = (eventObj) => {
+        navigate(`/customer/seats/${eventObj._id}`, { state: { event: eventObj } });
     };
 
     const formatEventDate = (startDate, endDate) => {
@@ -187,7 +187,7 @@ const CustomerBrowseEvent = () => {
                         ))
                     ) : paginatedEvents.length > 0 ? (
                         paginatedEvents.map((event) => (
-                            <div key={event._id} className="cbe-event-card" onClick={() => handleEventClick(event._id)}>
+                            <div key={event._id} className="cbe-event-card" onClick={() => handleEventClick(event)}>
                                 <div className="cbe-card-image-wrap">
                                     <img
                                         src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : '/assets/eventbg.jpg'}
@@ -228,7 +228,7 @@ const CustomerBrowseEvent = () => {
                                         className="primary-button cbe-view-btn"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleGetTickets(event._id);
+                                            handleGetTickets(event);
                                         }}
                                     >
                                         Get Tickets <Icon icon="mdi:arrow-right" />

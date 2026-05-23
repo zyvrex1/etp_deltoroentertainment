@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import './CustomerEventDetails.css';
@@ -9,12 +9,15 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
  
 const CustomerEventDetails = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { id } = useParams();
     const { user } = useAuthContext();
     const [activeTab, setActiveTab] = useState('Overview');
     const [event, setEvent] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [heroImage, setHeroImage] = useState('/assets/eventbg.jpg');
+
+    const stateEvent = location.state?.event;
 
     const tabs = ['Overview', 'Pricing'];
 
@@ -46,7 +49,7 @@ const CustomerEventDetails = () => {
     }, [id, user?.token, BACKEND_URL]);
 
     const handleBuyTickets = () => {
-        navigate(`/customer/seats/${id}`);
+        navigate(`/customer/seats/${id}`, { state: { event } });
     };
 
     const handleBack = () => {
@@ -119,16 +122,58 @@ const CustomerEventDetails = () => {
         return { totalCount, availableCount, ticketsSold, plStats };
     }, [event]);
 
+    const displayEvent = event || stateEvent;
+
     if (isLoading) {
         return (
             <div className="sed-page-wrapper">
                 <div className="sed-top-header">
                     <div className="sed-header-left">
-                        <div className="skeleton" style={{width: '40px', height: '40px', borderRadius: '50%'}}></div>
-                        <div className="skeleton skeleton-text title" style={{width: '300px', margin: '0 0 0 20px'}}></div>
+                        <button className="sed-back-btn" onClick={handleBack}>
+                            <Icon icon="mdi:arrow-left" width="24" />
+                        </button>
+                        {displayEvent ? (
+                            <h1>{displayEvent.title}</h1>
+                        ) : (
+                            <div className="skeleton skeleton-text title" style={{width: '300px', margin: '0 0 0 20px'}}></div>
+                        )}
                     </div>
                 </div>
-                <div className="sed-hero-banner skeleton" style={{background: '#eee'}}></div>
+
+                <div 
+                    className={displayEvent ? "sed-hero-banner" : "sed-hero-banner skeleton"} 
+                    style={displayEvent && stateEvent?.image ? { backgroundImage: `url(${BACKEND_URL}/uploads/${stateEvent.image})` } : { background: '#eee' }}
+                >
+                    {displayEvent && (
+                        <>
+                            <div className="sed-hero-overlay"></div>
+                            <div className="sed-hero-content">
+                                <span className="sed-open-pill button-label">
+                                    {displayEvent.category?.toUpperCase() || "EVENT"}
+                                </span>
+                                <h1 className="sed-hero-title">{displayEvent.title}</h1>
+
+                                <div className="sed-hero-info">
+                                    <div className="sed-hero-info-item">
+                                        <Icon icon="mdi:calendar" />
+                                        <span className="regular-body-text">
+                                            {new Date(displayEvent.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </span>
+                                    </div>
+                                    <div className="sed-hero-info-item">
+                                        <Icon icon="mdi:map-marker" />
+                                        <span className="regular-body-text">{displayEvent.venue?.name || "TBA"}, {displayEvent.venue?.city || ""}, {displayEvent.venue?.state || ""}</span>
+                                    </div>
+                                    <div className="sed-hero-info-item">
+                                        <Icon icon="mdi:clock-outline" />
+                                        <span className="regular-body-text">{displayEvent.startTime || "TBA"} - {displayEvent.endTime || "TBA"}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+
                 <div className="sed-main-container">
                     <div className="sed-content-left">
                         <div className="sed-tabs" style={{gap: '20px'}}>

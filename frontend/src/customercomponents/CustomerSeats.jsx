@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Stage, Layer, Rect, Circle, Text, Group, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import { Icon } from '@iconify/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { useCustomerCart } from '../context/CustomerCartContext';
 import eventsService from '../services/eventsService';
@@ -18,8 +18,11 @@ const BackgroundImage = ({ imageUrl, opacity, width, height }) => {
 const CustomerSeats = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuthContext();
     const { addToCart } = useCustomerCart();
+
+    const stateEvent = location.state?.event;
 
     // State
     const [event, setEvent] = useState(null);
@@ -162,7 +165,139 @@ const CustomerSeats = () => {
         return cat?.color || "#666666";
     };
 
-    if (isLoading) return <div className="cs-page-wrapper">Loading event layout...</div>;
+    const displayEvent = event || stateEvent;
+
+    if (isLoading) {
+        return (
+            <div className="cs-page-wrapper">
+                <div className="cs-header-card">
+                    <div className="cs-header-left">
+                        <button className="cs-back-btn" disabled>
+                            <Icon icon="mdi:arrow-left" width="24" />
+                        </button>
+                        <div>
+                            {displayEvent ? (
+                                <>
+                                    <h2 className="text-black mb-1">{displayEvent.title}</h2>
+                                    <span className="small-body-text text-secondary">
+                                        {new Date(displayEvent.startDate).toLocaleDateString()} • {displayEvent.startTime || "TBA"} • {displayEvent.venue?.name || "TBA"}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="cs-skeleton-box mb-1" style={{ width: '250px', height: '32px' }}></div>
+                                    <div className="cs-skeleton-box" style={{ width: '300px', height: '16px' }}></div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    <div className="cs-header-right">
+                        <span className="small-body-text text-secondary">Tickets Selected</span>
+                        <h2 className="text-red m-0">{selectedSeats.length}</h2>
+                    </div>
+                </div>
+
+                <div className="cs-main-container">
+                    <div className="cs-content-left">
+                        <div className="cs-seats-instructions mb-4">
+                            <div className="cs-skeleton-box mb-2" style={{ width: '200px', height: '24px' }}></div>
+                            <div className="cs-skeleton-box m-0" style={{ width: '350px', height: '16px' }}></div>
+                        </div>
+
+                        <div className="cs-map-canvas-container" style={{ position: 'relative' }}>
+                            <div className="cs-zoom-controls">
+                                <button disabled title="Zoom In">
+                                    <Icon icon="mdi:magnify-plus-outline" />
+                                </button>
+                                <button disabled title="Zoom Out">
+                                    <Icon icon="mdi:magnify-minus-outline" />
+                                </button>
+                                <button disabled title="Reset View">
+                                    <Icon icon="mdi:fit-to-screen-outline" />
+                                </button>
+                            </div>
+                            
+                            <div className="cs-skeleton-box" style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}></div>
+                        </div>
+
+                        <div className="cs-seat-legend">
+                            <div className="cs-legend-item">
+                                <span className="cs-legend-dot" style={{ backgroundColor: '#E2E8F0' }}></span>
+                                <div className="cs-skeleton-box" style={{ width: '60px', height: '16px' }}></div>
+                            </div>
+                            <div className="cs-legend-item">
+                                <span className="cs-legend-dot" style={{ backgroundColor: '#E2E8F0' }}></span>
+                                <div className="cs-skeleton-box" style={{ width: '100px', height: '16px' }}></div>
+                            </div>
+                            <div className="cs-legend-item">
+                                <span className="cs-legend-dot" style={{ backgroundColor: '#E2E8F0' }}></span>
+                                <div className="cs-skeleton-box" style={{ width: '60px', height: '16px' }}></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="cs-content-right">
+                        <div className="cs-order-summary-card">
+                            <h4 className="mb-4 text-black">Order Summary</h4>
+
+                            <div className="cs-selected-list mb-4">
+                                {selectedSeats.length === 0 ? (
+                                    <p className="small-body-text text-secondary mb-3">No seats selected</p>
+                                ) : (
+                                    selectedSeats.map((seat, index) => (
+                                        <div key={index} className="cs-summary-row mb-2">
+                                            <div style={{ textAlign: 'left' }}>
+                                                <span className="small-body-text text-black d-block">{seat.label}</span>
+                                                <span className="smaller-body-text text-secondary">{seat.categoryName}</span>
+                                            </div>
+                                            <span className="small-body-text text-black">${seat.price.toFixed(2)}</span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <hr className="cs-divider mb-3" />
+
+                            <div className="cs-summary-row mb-2">
+                                <span className="small-body-text text-secondary">Subtotal</span>
+                                <span className="small-body-text text-black">${subtotal.toFixed(2)}</span>
+                            </div>
+                            <div className="cs-summary-row mb-3">
+                                <span className="small-body-text text-secondary">Service Fees</span>
+                                <span className="small-body-text text-black">${serviceFees.toFixed(2)}</span>
+                            </div>
+
+                            <hr className="cs-divider mb-3" />
+
+                            <div className="cs-summary-row mb-4">
+                                <h4 className="m-0 text-black">Total</h4>
+                                <h4 className="text-red m-0">${total.toFixed(2)}</h4>
+                            </div>
+
+                            <button
+                                className="primary-button cs-submit-btn w-100 mb-3"
+                                disabled={selectedSeats.length === 0}
+                                onClick={handleAddToCart}
+                            >
+                                Add {selectedSeats.length} Tickets to Cart
+                            </button>
+
+                            <button
+                                className="outlined-button cs-continue-btn w-100 mb-3"
+                                onClick={handleContinueBrowsing}
+                            >
+                                Continue Browsing events
+                            </button>
+
+                            <p className="smaller-body-text text-secondary text-center m-0">
+                                Seats will be held for 10 minutes once added to cart
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (!event) {
         return (
