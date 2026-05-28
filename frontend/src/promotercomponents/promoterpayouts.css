@@ -19,6 +19,63 @@
       text-align: left;
     }
 
+    .header-dropdown {
+      min-width: 250px;
+      position: relative;
+      z-index: 100;
+      /* Ensure it's above cards */
+
+      .pay-custom-dropdown-btn {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--color-white-primary);
+        border: 1px solid var(--color-black-tertiary);
+        border-radius: 8px;
+        padding: 0 16px;
+        height: 48px;
+        color: var(--color-black-secondary);
+        cursor: pointer;
+        font-weight: 500;
+
+        .truncate-text {
+          max-width: 180px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+
+      .pay-custom-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        left: auto;
+        /* Align to right since it's in the corner */
+        width: 320px;
+        background-color: var(--color-white-primary);
+        border: 1px solid var(--color-black-tertiary);
+        border-radius: 12px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 4px;
+
+        .pay-custom-dropdown-item {
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin: 2px;
+
+          &:hover {
+            background-color: var(--color-bg-light);
+          }
+        }
+      }
+    }
+
     .pay-header-controls {
       display: flex;
       gap: 12px;
@@ -217,6 +274,7 @@
               .dropdown-icon {
                 font-size: 18px;
                 transition: transform 0.2s ease;
+
                 &.open {
                   transform: rotate(180deg);
                 }
@@ -336,18 +394,18 @@
         }
 
         .pill-bg-green {
-            background: var(--color-green-quaternary);
-            color: var(--color-green-primary);
+          background: var(--color-green-quaternary);
+          color: var(--color-green-primary);
         }
 
         .pill-bg-red {
-            background: var(--color-red-quaternary);
-            color: var(--color-red-primary);
+          background: var(--color-red-quaternary);
+          color: var(--color-red-primary);
         }
 
         .pill-bg-orange {
-            background: #fff0e6;
-            color: #cc6600;
+          background: #fff0e6;
+          color: #cc6600;
         }
 
         .pay-actions {
@@ -419,6 +477,7 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+
       h4 {
         color: var(--color-black-primary);
         text-align: left;
@@ -473,9 +532,9 @@
     }
   }
 
-   .mobile-expand-icon {
-            display: none;
-            }
+  .mobile-expand-icon {
+    display: none;
+  }
 }
 
 /* RESPONSIVE */
@@ -700,62 +759,61 @@
 }
 
 .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    text-align: center;
-    color: var(--color-black-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-black-secondary);
 }
 
 .empty-state svg {
-    color: var(--color-black-tertiary);
-    margin-bottom: 16px;
+  color: var(--color-black-tertiary);
+  margin-bottom: 16px;
 }
 
 .empty-state h4 {
-    color: var(--color-black-primary);
-    margin-bottom: 8px;
+  color: var(--color-black-primary);
+  margin-bottom: 8px;
 }
 
 .pagination {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    justify-content: center;
-    margin-top: 24px;
-    flex-wrap: wrap;
-    max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .pagination-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 40px;
-    border: 1px solid var(--color-black-quaternary);
-    border-radius: 6px;
-    background: white;
-    color: var(--color-black-primary);
-    cursor: pointer;
-    padding: 0 16px;
-    font-weight: 500;
-    transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border: 1px solid var(--color-black-quaternary);
+  border-radius: 6px;
+  background: white;
+  color: var(--color-black-primary);
+  cursor: pointer;
+  padding: 0 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .pagination-btn:hover:not(:disabled) {
-    border-color: var(--color-black-tertiary);
-    color: var(--color-black-primary);
+  border-color: var(--color-black-tertiary);
+  color: var(--color-black-primary);
 }
 
 .pagination-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .pagination-info {
-    font-size: 14px;
-    color: var(--color-black-secondary);
+  font-size: 14px;
+  color: var(--color-black-secondary);
 }
-

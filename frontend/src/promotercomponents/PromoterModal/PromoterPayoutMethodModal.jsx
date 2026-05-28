@@ -36,6 +36,8 @@ const PromoterPayoutMethodModal = ({ isOpen, onClose, onAdd }) => {
             }
             newMethod.type = 'Visa'; // Dummy detection
             newMethod.last4 = formData.cardNumber.replace(/\s/g, '').slice(-4);
+            newMethod.cardHolder = formData.cardHolder;
+            newMethod.cardNumber = formData.cardNumber;
             newMethod.expires = formData.expiry;
             newMethod.icon = 'mdi:credit-card';
         } else if (selectedMethod === 'bank_transfer') {
@@ -44,6 +46,9 @@ const PromoterPayoutMethodModal = ({ isOpen, onClose, onAdd }) => {
             }
             newMethod.type = 'Bank Account';
             newMethod.last4 = formData.accountNumber.slice(-4);
+            newMethod.accountHolder = formData.accountHolder;
+            newMethod.accountNumber = formData.accountNumber;
+            newMethod.routingNumber = formData.routingNumber;
             newMethod.expires = 'N/A';
             newMethod.icon = 'mdi:bank';
         } else {
@@ -52,6 +57,7 @@ const PromoterPayoutMethodModal = ({ isOpen, onClose, onAdd }) => {
             }
             newMethod.type = 'PayPal';
             newMethod.last4 = formData.paypalEmail.split('@')[0].slice(-4);
+            newMethod.paypalEmail = formData.paypalEmail;
             newMethod.expires = 'N/A';
             newMethod.icon = 'logos:paypal';
         }

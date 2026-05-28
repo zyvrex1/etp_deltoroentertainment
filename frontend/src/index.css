@@ -415,6 +415,11 @@ li {
   border: 1px solid var(--color-red-primary) !important;
 }
 
+/* Ensure SweetAlert2 is always on top of modals and headers */
+.swal2-container {
+  z-index: 3000 !important;
+}
+
 .swal2-popup.swal2-toast-custom {
   display: flex !important;
   align-items: center !important;

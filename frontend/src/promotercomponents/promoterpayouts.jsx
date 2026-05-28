@@ -155,19 +155,13 @@ const PromoterPayouts = () => {
 
   const filteredPayouts = useMemo(() => {
     return payouts.filter((item) => {
-      // For payouts, process filter might filter by event if we stored which events it covers
-      // but usually withdrawals are global across all promoter's earnings.
-      // If we implement event-specific payouts, we'd use item.eventIds
-      if (processFilter !== "All Events") {
-        if (processFilter === "Tickets" || processFilter === "Booths") return true; // keep all for now
-        if (item.eventIds && !item.eventIds.includes(processFilter)) return false;
-      }
+      // The history table should not be affected by the event filter in the header
 
       if (statusFilter === "All Status") return true;
       const itemStatus = item.status === 'paid' ? 'Paid' : item.status === 'pending' ? 'Pending' : 'Reject';
       return itemStatus === statusFilter;
     });
-  }, [payouts, statusFilter, processFilter]);
+  }, [payouts, statusFilter]);
 
   const sortedAndFilteredPayouts = useMemo(() => {
     return [...filteredPayouts].sort((a, b) => {
@@ -182,15 +176,50 @@ const PromoterPayouts = () => {
 
   // Calculate totals based on filtered by process
   const stats = useMemo(() => {
-    const totalRev = filteredByProcess.reduce((acc, s) => acc + (s.amount?.total || 0), 0);
-    const totalPaid = payouts.filter(p => p.status === 'paid').reduce((acc, p) => acc + (p.amount || 0), 0);
-    const totalPending = payouts.filter(p => p.status === 'pending').reduce((acc, p) => acc + (p.amount || 0), 0);
-    
+    let totalRev = 0;
+    let totalPaid = 0;
+    let totalPending = 0;
+
+    if (processFilter === "All Events") {
+      totalRev = salesData.reduce((acc, s) => acc + (s.amount?.total || 0), 0);
+      totalPaid = payouts.filter(p => p.status === 'paid').reduce((acc, p) => acc + (p.amount || 0), 0);
+      totalPending = payouts.filter(p => p.status === 'pending').reduce((acc, p) => acc + (p.amount || 0), 0);
+    } else if (processFilter === "Tickets" || processFilter === "Booths") {
+      const filteredSales = salesData.filter(s => processFilter === "Tickets" ? s.type !== 'booth' : s.type === 'booth');
+      totalRev = filteredSales.reduce((acc, s) => acc + (s.amount?.total || 0), 0);
+      // For type filters, we don't have specific payouts, so we use global for now or just revenue
+      // The user specifically asked for "each event", so type filters are secondary here.
+      totalPaid = payouts.filter(p => p.status === 'paid').reduce((acc, p) => acc + (p.amount || 0), 0);
+      totalPending = payouts.filter(p => p.status === 'pending').reduce((acc, p) => acc + (p.amount || 0), 0);
+    } else {
+      // Specific Event ID
+      totalRev = salesData.filter(s => s.eventId === processFilter).reduce((acc, s) => acc + (s.amount?.total || 0), 0);
+      const eventPayouts = payouts.filter(p => p.eventIds && p.eventIds.includes(processFilter));
+      totalPaid = eventPayouts.filter(p => p.status === 'paid').reduce((acc, p) => acc + (p.amount || 0), 0);
+      totalPending = eventPayouts.filter(p => p.status === 'pending').reduce((acc, p) => acc + (p.amount || 0), 0);
+    }
+
     return {
       totalRevenue: totalRev,
       currentBalance: Math.max(0, totalRev - totalPaid - totalPending),
     };
-  }, [filteredByProcess, payouts]);
+  }, [salesData, payouts, processFilter]);
+
+  // Pre-calculate stats for each event for the dropdown
+  const allEventsStats = useMemo(() => {
+    return events.reduce((acc, event) => {
+      const totalRev = salesData.filter(s => s.eventId === event._id).reduce((sum, s) => sum + (s.amount?.total || 0), 0);
+      const eventPayouts = payouts.filter(p => p.eventIds && p.eventIds.includes(event._id));
+      const totalPaid = eventPayouts.filter(p => p.status === 'paid').reduce((sum, p) => sum + (p.amount || 0), 0);
+      const totalPending = eventPayouts.filter(p => p.status === 'pending').reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      acc[event._id] = {
+        totalRevenue: totalRev,
+        currentBalance: Math.max(0, totalRev - totalPaid - totalPending)
+      };
+      return acc;
+    }, {});
+  }, [events, salesData, payouts]);
 
   const estimatedArrivalDate = useMemo(() => {
     const today = new Date();
@@ -344,12 +373,36 @@ const PromoterPayouts = () => {
 
       doc.setFontSize(12);
       doc.setTextColor(100, 100, 100);
-      doc.text(`Date: ${payout.date}`, margin, y);
+      doc.text(`Date Requested: ${payout.date}`, margin, y);
       y += 8;
       doc.text(`Status: ${payout.status}`, margin, y);
       y += 8;
       doc.text(`Reference: ${payout.reference || `WTD-${Math.floor(Math.random() * 10000000)}`}`, margin, y);
-      y += 15;
+      y += 8;
+
+      const methodText = payout.method || "Not Specified";
+      doc.text(`Payout Method: ${methodText}`, margin, y);
+      y += 6;
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont("helvetica", "normal");
+
+      if (payout.methodDetails) {
+        Object.entries(payout.methodDetails).forEach(([key, value]) => {
+          if (value && key !== 'last4') { // Skip last4 if other details are present, or show it if it's the only one
+            const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            doc.text(`${formattedKey}: ${value}`, margin + 5, y);
+            y += 5;
+          }
+        });
+        // Fallback for old payouts with only last4
+        if (Object.keys(payout.methodDetails).length === 1 && payout.methodDetails.last4) {
+          doc.text(`Details: ${payout.methodDetails.last4}`, margin + 5, y);
+          y += 5;
+        }
+      }
+      y += 5;
 
       doc.setFontSize(12);
       doc.setTextColor(30, 60, 114);
@@ -364,8 +417,37 @@ const PromoterPayouts = () => {
 
       doc.setTextColor(50, 50, 50);
       doc.setFont("helvetica", "normal");
-      doc.text("Event Ticket Sales Payout", margin, y);
-      doc.text(`${payout.amountStr}`, pdfWidth - margin - 30, y);
+
+      // Calculate split ratio based on historical salesData
+      const relevantSales = (payout.eventIds && payout.eventIds.length > 0)
+        ? salesData.filter(s => payout.eventIds.includes(s.eventId))
+        : salesData;
+
+      const totalTicketSales = relevantSales.filter(s => s.type !== 'booth').reduce((sum, s) => sum + (s.amount?.total || 0), 0);
+      const totalBoothSales = relevantSales.filter(s => s.type === 'booth').reduce((sum, s) => sum + (s.amount?.total || 0), 0);
+      const totalSales = totalTicketSales + totalBoothSales;
+
+      let ticketRatio = 1;
+      let boothRatio = 0;
+
+      if (totalSales > 0) {
+        ticketRatio = totalTicketSales / totalSales;
+        boothRatio = totalBoothSales / totalSales;
+      }
+
+      const payoutTicketAmount = (payout.amount || 0) * ticketRatio;
+      const payoutBoothAmount = (payout.amount || 0) * boothRatio;
+
+      const formatCurrency = (val) => `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      // Ticket Sales
+      doc.text("Ticket Sales:", margin, y);
+      doc.text(formatCurrency(payoutTicketAmount), pdfWidth - margin - 30, y);
+      y += 8;
+
+      // Booth Sales
+      doc.text("Booth Sales:", margin, y);
+      doc.text(formatCurrency(payoutBoothAmount), pdfWidth - margin - 30, y);
       y += 8;
 
       doc.line(margin, y, pdfWidth - margin, y);
@@ -373,7 +455,7 @@ const PromoterPayouts = () => {
 
       doc.setFont("helvetica", "bold");
       doc.setTextColor(30, 60, 114);
-      doc.text("Total Paid", margin, y);
+      doc.text("Total:", margin, y);
       doc.text(`${payout.amountStr}`, pdfWidth - margin - 30, y);
       y += 15;
 
@@ -399,6 +481,57 @@ const PromoterPayouts = () => {
       <div className="pay-header">
         <div className="pay-header-left">
           <h1 className="pay-title">Payouts</h1>
+        </div>
+
+        <div className="pay-custom-dropdown header-dropdown" ref={processDropdownRef}>
+          <button
+            className="pay-custom-dropdown-btn small-body-text"
+            onClick={() =>
+              setIsProcessDropdownOpen(!isProcessDropdownOpen)
+            }
+          >
+            <span className="truncate-text">
+              {processFilter === "All Events" ? "All Events" :
+                events.find(e => e._id === processFilter)?.title || "Select Process"}
+            </span>
+            <Icon
+              icon="mdi:chevron-down"
+              className={`dropdown-icon ${isProcessDropdownOpen ? "open" : ""}`}
+            />
+          </button>
+          {isProcessDropdownOpen && (
+            <div className="pay-custom-dropdown-menu">
+              <button
+                className={`pay-custom-dropdown-item small-body-text ${processFilter === "All Events" ? "active" : ""}`}
+                onClick={() => {
+                  setProcessFilter("All Events");
+                  setIsProcessDropdownOpen(false);
+                }}
+              >
+                All Events
+              </button>
+              {events.map((e) => {
+                const eventStat = allEventsStats[e._id] || { totalRevenue: 0, currentBalance: 0 };
+                return (
+                  <button
+                    key={e._id}
+                    className={`pay-custom-dropdown-item small-body-text ${processFilter === e._id ? "active" : ""}`}
+                    onClick={() => {
+                      setProcessFilter(e._id);
+                      setIsProcessDropdownOpen(false);
+                    }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '10px 15px' }}
+                  >
+                    <span style={{ fontWeight: '600', marginBottom: '2px' }}>{e.title}</span>
+                    <div style={{ display: 'flex', gap: '10px', opacity: '0.7', fontSize: '11px' }}>
+                      <span>Rev: ${eventStat.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span>Bal: ${eventStat.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -438,53 +571,7 @@ const PromoterPayouts = () => {
             <div className="pay-card-header pay-history-header">
               <h4>Payout History</h4>
               <div className="pay-history-filters">
-                <div className="pay-custom-dropdown" ref={processDropdownRef}>
-                  <button
-                    className="pay-custom-dropdown-btn small-body-text"
-                    onClick={() =>
-                      setIsProcessDropdownOpen(!isProcessDropdownOpen)
-                    }
-                  >
-                    <span className="truncate-text">
-                      {processFilter === "All Events" ? "All Events" :
-                        events.find(e => e._id === processFilter)?.title || "Select Process"}
-                    </span>
-                    <Icon
-                      icon="mdi:chevron-down"
-                      className={`dropdown-icon ${isProcessDropdownOpen ? "open" : ""}`}
-                    />
-                  </button>
-                  {isProcessDropdownOpen && (
-                    <div className="pay-custom-dropdown-menu">
-                      <button
-                        className={`pay-custom-dropdown-item small-body-text ${processFilter === "All Events" ? "active" : ""}`}
-                        onClick={() => {
-                          setProcessFilter("All Events");
-                          setIsProcessDropdownOpen(false);
-                        }}
-                      >
-                        All Events
-                      </button>
-                      {events.map((e) => {
-                        const userId = user._id || user.id;
-                        const isOwner = e.createdBy && (e.createdBy._id === userId || e.createdBy === userId);
-                        return (
-                          <button
-                            key={e._id}
-                            className={`pay-custom-dropdown-item small-body-text ${processFilter === e._id ? "active" : ""}`}
-                            onClick={() => {
-                              setProcessFilter(e._id);
-                              setIsProcessDropdownOpen(false);
-                            }}
-                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                          >
-                            <span>{e.title}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+
 
                 {/* <DateRangePicker
                   value={dateRange}
@@ -681,7 +768,12 @@ const PromoterPayouts = () => {
 
                 <button
                   className="primary-button pay-withdraw-btn"
-                  onClick={() => navigate("/promoter/promoter-payout-billing", { state: { amount: stats.currentBalance } })}
+                  onClick={() => navigate("/promoter/promoter-payout-billing", {
+                    state: {
+                      amount: stats.currentBalance,
+                      eventId: (processFilter !== "All Events" && processFilter !== "Tickets" && processFilter !== "Booths") ? processFilter : null
+                    }
+                  })}
                 >
                   Withdraw Now
                 </button>
@@ -689,7 +781,7 @@ const PromoterPayouts = () => {
             )}
           </div>
 
-          <div className="pay-card pay-methods-box">
+          {/* <div className="pay-card pay-methods-box">
             <h4>Payout Methods</h4>
 
             {loading ? (
@@ -718,9 +810,9 @@ const PromoterPayouts = () => {
                 </div>
               ))
             ) : (
-                <p className="smaller-body-text text-secondary text-center py-3">No payment methods added yet. Add one in <Link to="/promoter/settings" style={{ color: 'var(--color-blue)', textDecoration: 'underline' }}>Settings</Link>.</p>
+              <p className="smaller-body-text text-secondary text-center py-3">No payout methods added yet. Add one in <Link to="/promoter/settings" style={{ color: 'var(--color-blue)', textDecoration: 'underline' }}>Settings</Link>.</p>
             )}
-          </div>
+          </div> */}
         </div>
       </div>
 

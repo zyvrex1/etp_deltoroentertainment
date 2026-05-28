@@ -133,7 +133,7 @@
                         color: var(--color-black-primary);
                     }
 
-                    .ppb-payment-option {
+                    .ppb-payout-option {
                         border: 1px solid #e5e7eb;
                         border-radius: 12px;
                         padding: 16px;
@@ -145,7 +145,7 @@
                             background-color: var(--color-red-quaternary);
                         }
 
-                    .ppb-payment-option {
+                    .ppb-payout-option {
                         display: flex;
                         align-items: center;
                         gap: 16px;
@@ -172,7 +172,7 @@
                             cursor: pointer;
                         }
 
-                        .ppb-payment-item-inner {
+                        .ppb-payout-item-inner {
                             display: flex;
                             align-items: center;
                             flex: 1;
@@ -180,7 +180,7 @@
                             text-align: left;
                         }
 
-                        .ppb-payment-icon {
+                        .ppb-payout-icon {
                             width: 32px;
                             height: 32px;
                             display: flex;
@@ -190,18 +190,18 @@
                             font-size: 24px;
                         }
 
-                        .ppb-payment-info {
+                        .ppb-payout-info {
                             flex: 1;
                         }
 
-                        .ppb-payment-name {
+                        .ppb-payout-name {
                             color: var(--color-black-primary);
                             margin: 0 0 4px 0;
                             font-size: 16px;
                             font-weight: 600;
                         }
 
-                        .ppb-payment-num {
+                        .ppb-payout-num {
                             color: var(--color-black-secondary);
                             font-size: 14px;
                         }
@@ -216,7 +216,7 @@
                         }
                     }
 
-                        .ppb-payment-body {
+                        .ppb-payout-body {
                             padding-top: 16px;
                             border-top: 1px solid #e5e7eb;
                             margin-top: 16px;
@@ -407,7 +407,7 @@ margin-bottom: 12px;
         .ppb-main-container {
             padding: 0 16px 16px;
 
-            .ppb-payment-body .ppb-form-grid {
+            .ppb-payout-body .ppb-form-grid {
                 grid-template-columns: 1fr;
             }
         }

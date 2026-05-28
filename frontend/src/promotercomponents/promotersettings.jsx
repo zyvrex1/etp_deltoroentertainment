@@ -42,7 +42,17 @@ const PromoterSettings = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [paymentMethods, setPaymentMethods] = useState(user?.paymentMethods || []);
+  const [payoutMethods, setPayoutMethods] = useState(user?.paymentMethods || []);
+  const [visibleMethods, setVisibleMethods] = useState(new Set());
+
+  const toggleMethodVisibility = (id) => {
+    setVisibleMethods(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const [teamMembers, setTeamMembers] = useState([]);
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -84,7 +94,7 @@ const PromoterSettings = () => {
           }
         });
         if (profileData.paymentMethods) {
-          setPaymentMethods(profileData.paymentMethods);
+          setPayoutMethods(profileData.paymentMethods);
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -282,7 +292,7 @@ const PromoterSettings = () => {
     }));
   };
 
-  const handleSavePaymentSettings = async (updatedMethods = paymentMethods) => {
+  const handleSavePayoutSettings = async (updatedMethods = payoutMethods) => {
     if (!user?.token) return;
 
     try {
@@ -294,49 +304,57 @@ const PromoterSettings = () => {
 
       localStorage.setItem("user", JSON.stringify(updatedUser));
       dispatch({ type: "LOGIN", payload: updatedUser });
-      setPaymentMethods(response.data.paymentMethods || []);
+      setPayoutMethods(response.data.paymentMethods || []);
 
-      await showSuccessAlert("Payment Settings Saved", "Your payment cards have been updated.");
+      await showSuccessAlert("Payout Settings Saved", "Your payout methods have been updated.");
     } catch (error) {
       console.error("Save Error:", error);
-      showErrorAlert("Update Failed", error.response?.data?.error || error.message || "Failed to save payment methods.");
+      showErrorAlert("Update Failed", error.response?.data?.error || error.message || "Failed to save payout methods.");
     }
   };
 
-  const handleAddPaymentMethod = (newMethod) => {
-    const updated = [...paymentMethods, { ...newMethod, id: Date.now() }];
+  const handleAddPayoutMethod = (newMethod) => {
+    const updated = [...payoutMethods, { ...newMethod, id: Date.now() }];
     // Ensure only one default exists
     if (newMethod.isDefault) {
       updated.forEach(m => {
         if (m.id !== updated[updated.length - 1].id) m.isDefault = false;
       });
     }
-    setPaymentMethods(updated);
-    handleSavePaymentSettings(updated);
+    setPayoutMethods(updated);
+    handleSavePayoutSettings(updated);
   };
 
-  const handleRemovePaymentMethod = async (id) => {
+  const handleRemovePayoutMethod = async (id) => {
     const result = await showConfirmAlert(
-      "Remove Card?",
-      "Are you sure you want to remove this payment method?",
+      "Remove Method?",
+      "Are you sure you want to remove this payout method?",
       "Yes, Remove",
       "Cancel"
     );
 
     if (result.isConfirmed) {
-      const updated = paymentMethods.filter(m => (m.id || m._id) !== id);
-      setPaymentMethods(updated);
-      handleSavePaymentSettings(updated);
+      const updated = payoutMethods.filter(m => (m.id || m._id) !== id);
+      setPayoutMethods(updated);
+      handleSavePayoutSettings(updated);
     }
   };
 
   const handleSetDefaultMethod = (id) => {
-    const updated = paymentMethods.map(m => ({
-      ...m,
-      isDefault: (m.id || m._id) === id
-    }));
-    setPaymentMethods(updated);
-    handleSavePaymentSettings(updated);
+    // Find the current method to see its state
+    const currentMethod = payoutMethods.find(m => (m.id || m._id) === id);
+    const wasDefault = currentMethod?.isDefault;
+
+    const updated = payoutMethods.map(m => {
+      const isTarget = (m.id || m._id) === id;
+      if (isTarget) {
+        return { ...m, isDefault: !wasDefault };
+      }
+      return { ...m, isDefault: false }; // Only one default allowed
+    });
+
+    setPayoutMethods(updated);
+    handleSavePayoutSettings(updated);
   };
 
   if (loading) {
@@ -564,42 +582,57 @@ const PromoterSettings = () => {
           {/* PAYMENT METHODS CARD */}
           <div className="ps-card">
             <div className="ps-card-header-flex">
-              <h4 className="ps-card-title m-0">Payment Methods</h4>
+              <h4 className="ps-card-title m-0">Payout Methods</h4>
               <button className="ps-add-card-btn primary-button" onClick={() => setIsPayoutModalOpen(true)}>
-                <Icon icon="mdi:plus" /> Add Card
+                <Icon icon="mdi:plus" /> Add Method
               </button>
             </div>
 
-            <div className="ps-payment-list">
-              {paymentMethods.length === 0 ? (
+            <div className="ps-payout-list">
+              {payoutMethods.length === 0 ? (
                 <div className="ps-empty-payment text-center py-4">
-                  <p className="smaller-body-text text-secondary">No payment methods added yet.</p>
+                  <p className="smaller-body-text text-secondary">No payout methods added yet.</p>
                 </div>
               ) : (
-                paymentMethods.map((method) => (
-                  <div key={method.id || method._id} className="ps-payment-item">
-                    <div className="ps-payment-icon">
+                payoutMethods.map((method) => (
+                  <div key={method.id || method._id} className="ps-payout-item">
+                    <div className="ps-payout-icon">
                       <Icon icon={method.icon || "mdi:credit-card"} width="24" />
                     </div>
-                    <div className="ps-payment-info">
-                      <div className="ps-payment-title-row">
-                        <span className="ps-payment-type">{method.type} &bull;&bull;&bull;&bull; {method.last4}</span>
-                        {method.isDefault && <span className="button-label ps-pill-default">Default</span>}
+                    <div className="ps-payout-info">
+                      <div className="ps-payout-title-row">
+                        <span className="ps-payout-type">{method.type}</span>
                       </div>
-                      <span className="ps-payment-expires">Expires {method.expires}</span>
+                      <span className="ps-payout-detail regular-body-text text-black d-block">
+                        {visibleMethods.has(method.id || method._id)
+                          ? (method.cardNumber || method.accountNumber || method.paypalEmail || method.last4)
+                          : '•••• •••• ••••'}
+                      </span>
+                      <span className="ps-payout-expires d-block mt-1">Expires: {method.expires}</span>
                     </div>
-                    <div className="ps-payment-actions">
-                      {!method.isDefault && (
-                        <button
-                          className="ps-set-default-btn p-0 border-0 bg-transparent"
-                          onClick={() => handleSetDefaultMethod(method.id || method._id)}
-                        >
-                          <span className="ps-set-default-text smaller-body-text">Set as Default</span>
-                        </button>
-                      )}
+                    <div className="ps-payout-actions">
+                      <button
+                        className="ps-set-default-btn p-0 border-0 bg-transparent"
+                        onClick={() => handleSetDefaultMethod(method.id || method._id)}
+                      >
+                        <span className={`smaller-body-text ${method.isDefault ? 'button-label ps-pill-default px-2 py-1' : 'ps-set-default-text'}`}>
+                          {method.isDefault ? "Default" : "Set as Default"}
+                        </span>
+                      </button>
                       <button
                         className="ps-icon-btn"
-                        onClick={() => handleRemovePaymentMethod(method.id || method._id)}
+                        onClick={() => toggleMethodVisibility(method.id || method._id)}
+                        title={visibleMethods.has(method.id || method._id) ? "Hide Details" : "Show Details"}
+                      >
+                        <Icon
+                          icon={visibleMethods.has(method.id || method._id) ? "mdi:eye-off-outline" : "mdi:eye-outline"}
+                          width="20"
+                          color="#666"
+                        />
+                      </button>
+                      <button
+                        className="ps-icon-btn"
+                        onClick={() => handleRemovePayoutMethod(method.id || method._id)}
                       >
                         <Icon icon="mdi:trash-can-outline" width="20" color="#666" />
                       </button>
@@ -610,7 +643,7 @@ const PromoterSettings = () => {
             </div>
 
             <div className="ps-secure-storage-msg smaller-body-text">
-              <strong>Secure Storage:</strong> Your payment information is encrypted and stored securely. We never store your full card number or CVV.
+              <strong>Secure Storage:</strong> Your payout information is encrypted and stored securely. We never store your full card number or CVV.
             </div>
           </div>
 
@@ -676,7 +709,7 @@ const PromoterSettings = () => {
 
             <div className="ps-notif-item">
               <div className="ps-notif-info">
-                <span className="ps-notif-label">Payment & Payout Alerts</span>
+                <span className="ps-notif-label">Payout Alerts</span>
                 <p className="smaller-body-text text-muted">Updates on revenue and payouts</p>
               </div>
               <label className="ps-toggle">
@@ -720,7 +753,7 @@ const PromoterSettings = () => {
       <PromoterPayoutMethodModal
         isOpen={isPayoutModalOpen}
         onClose={() => setIsPayoutModalOpen(false)}
-        onAdd={handleAddPaymentMethod}
+        onAdd={handleAddPayoutMethod}
       />
     </div>
   );

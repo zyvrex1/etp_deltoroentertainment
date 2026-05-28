@@ -124,6 +124,7 @@ const loginUser = async (req, res) => {
       twoFactor: user.twoFactor,
       notifications: user.notifications,
       cart: user.cart || [],
+      paymentMethods: user.paymentMethods || [],
       token
     });
 
@@ -151,7 +152,8 @@ const getProfile = async (req, res) => {
       avatar: user.avatar,
       notifications: user.notifications,
       twoFactor: user.twoFactor,
-      cart: user.cart || []
+      cart: user.cart || [],
+      paymentMethods: user.paymentMethods || []
     }
 
     // Attach promoter-specific data if needed
@@ -261,7 +263,8 @@ const updateProfile = async (req, res) => {
         avatar: user.avatar,
         role: user.role,
         twoFactor: user.twoFactor,
-        notifications: user.notifications
+        notifications: user.notifications,
+        paymentMethods: user.paymentMethods || []
       }
     })
   } catch (err) {

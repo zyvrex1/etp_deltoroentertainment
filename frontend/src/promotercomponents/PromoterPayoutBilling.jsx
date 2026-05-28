@@ -10,13 +10,14 @@ const PromoterPayoutBilling = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuthContext();
-    const [paymentMethod, setPaymentMethod] = useState(() => {
+    const [payoutMethod, setPayoutMethod] = useState(() => {
         const defaultMethod = user?.paymentMethods?.find(m => m.isDefault);
-        return defaultMethod ? defaultMethod._id : (user?.paymentMethods?.length > 0 ? user.paymentMethods[0]._id : 'card');
+        return defaultMethod ? (defaultMethod._id || defaultMethod.id) : '';
     });
     const [submitting, setSubmitting] = useState(false);
 
     const withdrawAmount = location.state?.amount || 0;
+    const selectedEventId = location.state?.eventId || null;
     const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 
     const handleWithdraw = async () => {
@@ -38,21 +39,21 @@ const PromoterPayoutBilling = () => {
                 let methodType = 'Credit Card';
                 let methodDetails = {};
 
-                const savedMethod = user.paymentMethods?.find(m => m._id === paymentMethod);
+                const savedMethod = user.paymentMethods?.find(m => (m._id || m.id) === payoutMethod);
                 if (savedMethod) {
                     methodType = savedMethod.type || 'Card';
-                    methodDetails = { last4: savedMethod.last4 };
-                } else if (paymentMethod === 'card') {
-                    methodType = 'Credit Card';
-                    // In a real app, collect card details here or use stripe token
+                    // Spread all details from saved method (excluding system fields if any)
+                    const { _id, id, type, isDefault, icon, methodType: mt, createdAt, updatedAt, __v, ...details } = savedMethod;
+                    methodDetails = details;
                 } else {
-                    methodType = 'Invoice / Bank Transfer';
+                    throw new Error("Please select a valid payout method.");
                 }
 
                 await payoutService.createPayout({
                     amount: withdrawAmount,
                     method: methodType,
                     methodDetails: methodDetails,
+                    eventIds: selectedEventId ? [selectedEventId] : []
                 }, user.token);
 
                 await showSuccessAlert("Withdrawal Successful", "Your transaction has been processed.");
@@ -116,25 +117,29 @@ const PromoterPayoutBilling = () => {
                                 user.paymentMethods.map((method) => (
                                     <div
                                         key={method._id || method.id}
-                                        className={`ppb-payment-option mb-4 ${paymentMethod === (method._id || method.id) ? 'selected' : ''}`}
-                                        onClick={() => setPaymentMethod(method._id || method.id)}
+                                        className={`ppb-payout-option mb-4 ${payoutMethod === (method._id || method.id) ? 'selected' : ''}`}
+                                        onClick={() => setPayoutMethod(method._id || method.id)}
                                     >
                                         <div className="ppb-radio-wrapper">
                                             <input
                                                 type="radio"
-                                                checked={paymentMethod === (method._id || method.id)}
+                                                checked={payoutMethod === (method._id || method.id)}
                                                 readOnly
                                                 className="ppb-radio"
                                             />
                                         </div>
-                                        <div className="ppb-payment-item-inner">
-                                            <div className="ppb-payment-icon">
+                                        <div className="ppb-payout-item-inner">
+                                            <div className="ppb-payout-icon">
                                                 <Icon icon={method.icon || "mdi:credit-card"} />
                                             </div>
-                                            <div className="ppb-payment-info">
-                                                <h5 className="ppb-payment-name">{method.type}</h5>
-                                                <span className="smaller-body-text ppb-payment-num">
-                                                    •••• {method.last4}
+                                            <div className="ppb-payout-info">
+                                                <h5 className="ppb-payout-name">{method.type}</h5>
+                                                <span className="smaller-body-text ppb-payout-num">
+                                                    {method.type === 'PayPal' ? (
+                                                        method.paypalEmail
+                                                    ) : (
+                                                        <>{method.cardNumber || method.accountNumber || '****'}</>
+                                                    )}
                                                 </span>
                                             </div>
                                             {method.isDefault && <span className="button-label ppb-default-pill">Default</span>}
@@ -143,107 +148,9 @@ const PromoterPayoutBilling = () => {
                                 ))
                             ) : (
                                 <p className="smaller-body-text text-secondary text-center py-4">
-                                    No payment methods added yet. Add one in <Link to="/promoter/settings" style={{ color: 'var(--color-blue)', textDecoration: 'underline' }}>Settings</Link>.
+                                    No payout methods added yet. Add one in <Link to="/promoter/settings" style={{ color: 'var(--color-blue)', textDecoration: 'underline' }}>Settings</Link>.
                                 </p>
                             )}
-
-                            {/* Credit Card Option */}
-                            <div
-                                className={`ppb-payment-option mt-4 ${paymentMethod === 'card' ? 'selected' : ''}`}
-                                onClick={() => setPaymentMethod('card')}
-                                style={{ flexDirection: 'column', alignItems: 'stretch' }}
-                            >
-                                <div className="d-flex align-items-center gap-3">
-                                    <div className="ppb-radio-wrapper">
-                                        <input
-                                            type="radio"
-                                            checked={paymentMethod === 'card'}
-                                            readOnly
-                                            className="ppb-radio"
-                                        />
-                                    </div>
-                                    <div className="ppb-payment-item-inner">
-                                        <div className="ppb-payment-icon">
-                                            <Icon icon="mdi:credit-card-outline" />
-                                        </div>
-                                        <div className="ppb-payment-info">
-                                            <h5 className="ppb-payment-name">Credit Card</h5>
-                                            <span className="smaller-body-text ppb-payment-num">Pay with a new card</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {paymentMethod === 'card' && (
-                                    <div className="ppb-payment-body mt-3">
-                                        <div className="ppb-form-group mb-3">
-                                            <label>Card Number</label>
-                                            <div className="ppb-input-icon-wrapper">
-                                                <Icon icon="mdi:credit-card-outline" className="ppb-input-icon ppb-text-secondary" />
-                                                <input type="text" placeholder="0000 0000 0000 0000" className="ppb-input with-icon" />
-                                            </div>
-                                        </div>
-
-                                        <div className="ppb-form-grid">
-                                            <div className="ppb-form-group">
-                                                <label>Expiration</label>
-                                                <input type="text" placeholder="MM/YY" className="ppb-input" />
-                                            </div>
-                                            <div className="ppb-form-group">
-                                                <label>CVC</label>
-                                                <input type="text" placeholder="123" className="ppb-input" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Invoice Option */}
-                            <div
-                                className={`ppb-payment-option mt-4 ${paymentMethod === 'invoice' ? 'selected' : ''}`}
-                                onClick={() => setPaymentMethod('invoice')}
-                                style={{ flexDirection: 'column', alignItems: 'stretch' }}
-                            >
-                                <div className="d-flex align-items-center gap-3">
-                                    <div className="ppb-radio-wrapper">
-                                        <input
-                                            type="radio"
-                                            checked={paymentMethod === 'invoice'}
-                                            readOnly
-                                            className="ppb-radio"
-                                        />
-                                    </div>
-                                    <div className="ppb-payment-item-inner">
-                                        <div className="ppb-payment-icon">
-                                            <Icon icon="mdi:file-document-outline" />
-                                        </div>
-                                        <div className="ppb-payment-info">
-                                            <h5 className="ppb-payment-name">Invoice / Bank Transfer</h5>
-                                            <span className="smaller-body-text ppb-payment-num">Pay via bank transfer</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {paymentMethod === 'invoice' && (
-                                    <div className="ppb-payment-body mt-3">
-                                        <div className="ppb-info-alert mb-3">
-                                            <Icon icon="mdi:information-outline" className="ppb-info-icon" />
-                                            <span className="smaller-body-text">
-                                                <strong>How it works:</strong> After submitting this form, we'll send an invoice to your company email within 1 business day. Payment is due within 30 days of invoice date.
-                                            </span>
-                                        </div>
-
-                                        <div className="ppb-form-group mb-3">
-                                            <label>Purchase Order Number (Optional)</label>
-                                            <input type="text" placeholder="PO-2026-001" className="ppb-input" />
-                                        </div>
-
-                                        <div className="ppb-form-group">
-                                            <label>Accounts Payable Email</label>
-                                            <input type="email" placeholder="sample@company.com" className="ppb-input" />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </div>
                 </div>

@@ -87,7 +87,14 @@ const userSchema = new Schema({
     expires: { type: String },
     isDefault: { type: Boolean, default: false },
     icon: { type: String },
-    methodType: { type: String, enum: ['card', 'bank'], default: 'card' }
+    methodType: { type: String },
+    // Full details stored as additional fields
+    cardNumber: { type: String },
+    cardHolder: { type: String },
+    accountNumber: { type: String },
+    accountHolder: { type: String },
+    routingNumber: { type: String },
+    paypalEmail: { type: String }
   }]
 
 }, { timestamps: true })
