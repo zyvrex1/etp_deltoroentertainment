@@ -7,12 +7,19 @@ import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.j
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useEventsContext } from "../hooks/useEventsContext";
 import eventsService from "../services/eventsService";
+import reservationService from "../services/reservationService";
+import sponsorService from "../services/sponsorService";
+import orderService from "../services/orderService";
 
 export default function PromoterDashboard() {
   const { user } = useAuthContext();
   const { events, dispatch } = useEventsContext();
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  
+  const [topSponsorsData, setTopSponsorsData] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [expandedSponsorRow, setExpandedSponsorRow] = useState(null);
   const navigate = useNavigate();
@@ -31,21 +38,107 @@ export default function PromoterDashboard() {
   }, []);
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchDashboardData = async () => {
       if (!user) return;
       try {
-        const data = await eventsService.getEvents(user.token);
+        setLoading(true);
+        // 1. Fetch all events for the promoter
+        const fetchedEvents = await eventsService.getEvents(user.token);
         if (dispatch) {
-          dispatch({ type: "SET_EVENTS", payload: data });
+          dispatch({ type: "SET_EVENTS", payload: fetchedEvents });
         }
+
+        const approvedEvts = fetchedEvents.filter(e => e.status === "approved" || e.status === "live");
+        
+        // 2. Fetch sales (reservations) for all approved events in parallel
+        const salesPromises = approvedEvts.map(e => 
+          reservationService.getEventSales(e._id, user.token)
+            .catch(err => {
+              console.error(`Error fetching sales for event ${e._id}:`, err);
+              return { reservations: [] };
+            })
+        );
+        const salesResults = await Promise.all(salesPromises);
+
+        // 3. Aggregate all active reservations across all approved events
+        const allReservations = [];
+        salesResults.forEach(res => {
+          if (res && Array.isArray(res.reservations)) {
+            allReservations.push(...res.reservations);
+          }
+        });
+
+        // Filter active (non-cancelled) reservations
+        const activeReservations = allReservations.filter(r => r.status !== 'cancelled');
+
+        // --- Calculate Top Sponsors ---
+        const sponsorMap = {};
+        activeReservations.forEach(res => {
+          if (res.type !== 'booth' || !res.user) return;
+          const sponsorId = String(res.user._id || res.user);
+          if (!sponsorMap[sponsorId]) {
+            sponsorMap[sponsorId] = {
+              sponsor: res.user.companyName || `${res.user.firstName} ${res.user.lastName}`,
+              event: res.event?.title || 'Multiple Events',
+              boothCount: 0,
+              totalAmount: 0
+            };
+          }
+          sponsorMap[sponsorId].boothCount += 1;
+          sponsorMap[sponsorId].totalAmount += (res.amount?.total || 0);
+        });
+
+        const sortedSponsors = Object.values(sponsorMap)
+          .sort((a, b) => b.boothCount - a.boothCount)
+          .slice(0, 5)
+          .map((s, index) => {
+            let tier = "Silver";
+            if (s.boothCount >= 3) tier = "Platinum";
+            else if (s.boothCount === 2) tier = "Gold";
+            return {
+              sponsor: s.sponsor,
+              tier,
+              event: s.event,
+              amount: `$${s.totalAmount.toLocaleString()}`
+            };
+          });
+        setTopSponsorsData(sortedSponsors);
+
+        // --- Calculate Recent Transactions ---
+        const txs = activeReservations
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .slice(0, 10)
+          .map(r => ({
+            customer: r.user?.companyName || (r.user ? `${r.user.firstName} ${r.user.lastName}` : r.billingAddress?.companyName || 'Guest'),
+            amount: `$${(r.amount?.total || 0).toLocaleString()}`,
+            type: r.type || 'ticket',
+            event: r.event?.title || 'Unknown Event',
+            status: r.status || 'completed'
+          }));
+        setTransactions(txs);
+
+        // --- Calculate Revenue Overview (Grouped by Month) ---
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const currentYear = new Date().getFullYear();
+        const monthlyRevenue = months.map((month, i) => {
+          const total = activeReservations
+            .filter(r => {
+              const d = new Date(r.createdAt);
+              return d.getMonth() === i && d.getFullYear() === currentYear;
+            })
+            .reduce((sum, r) => sum + (r.amount?.total || 0), 0);
+          return { month, total };
+        });
+        setRevenueData(monthlyRevenue);
+
       } catch (err) {
-        console.error("Error fetching events:", err);
+        console.error("Error in promoter dashboard useEffect:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEvents();
+    fetchDashboardData();
   }, [user, dispatch]);
 
   const approvedEvents = events 
@@ -83,7 +176,7 @@ export default function PromoterDashboard() {
         amount: `$ ${totalRevenue.toLocaleString()}`,
         statusLabel: evt.status === "completed" ? "Completed" : "Active",
         statusColor: evt.status === "completed" ? "gray" : "green",
-        soldText: `${totalSold} / ${totalCapacity} tickets sold`,
+        soldText: `${totalSold} / ${totalCapacity} Seats sold`,
         progress: progress,
         subStats: [
           `${evt.ticketsSold || totalSold} checked in`, 
@@ -93,46 +186,126 @@ export default function PromoterDashboard() {
       };
     });
 
-  const stats = [
+  const allEvents = events || [];
+  const totalRevenue = allEvents.reduce((sum, e) => sum + (e.seatRevenue || 0) + (e.boothRevenue || 0), 0);
+  
+  const seatsSold = allEvents.reduce((sum, e) => {
+    let soldCount = 0;
+    let layout = e.layoutData;
+    if (typeof layout === 'string') {
+      try { layout = JSON.parse(layout); } catch (err) { layout = null; }
+    }
+
+    if (layout && Array.isArray(layout.items)) {
+      layout.items.forEach(item => {
+        if (item.type === 'seat' && item.status === 'sold') {
+          soldCount++;
+        }
+      });
+    } else if (e.seatMap && e.seatMap.sections) {
+      e.seatMap.sections.forEach(sec => {
+        if (sec.seats) {
+          soldCount += sec.seats.filter(s => s.status === "sold").length;
+        }
+      });
+    }
+    return sum + soldCount;
+  }, 0);
+
+  const boothsSold = allEvents.reduce((sum, e) => {
+    let soldCount = 0;
+    let layout = e.layoutData;
+    if (typeof layout === 'string') {
+      try { layout = JSON.parse(layout); } catch (err) { layout = null; }
+    }
+
+    if (layout && Array.isArray(layout.items)) {
+        layout.items.forEach(item => {
+          if ((item.type === 'booth' || item.isBooth) && item.status === 'sold') {
+            soldCount++;
+          }
+        });
+      } else if (e.booths && Array.isArray(e.booths)) {
+      soldCount += e.booths.filter(b => b.status === "sold").length;
+    } else {
+      soldCount += e.boothsSold || 0;
+    }
+    return sum + soldCount;
+  }, 0);
+
+  const totalEventsCount = allEvents.length;
+  const activeEventsCount = allEvents.filter(e => e.status === "approved" || e.status === "live").length;
+  const pendingEventsCount = allEvents.filter(e => e.status === "pending").length;
+  const rejectedEventsCount = allEvents.filter(e => e.status === "rejected").length;
+
+  const row1Stats = [
     {
       label: "Total Revenue",
-      value: `$${approvedEvents.reduce((sum, e) => sum + (e.seatRevenue || 0) + (e.boothRevenue || 0), 0).toLocaleString()}`,
+      value: `$${totalRevenue.toLocaleString()}`,
       delta: "+12.5%",
       icon: "mdi:currency-usd",
       color: "green",
     },
     {
-      label: "Tickets Sold",
-      value: approvedEvents.reduce((sum, e) => sum + (e.ticketsSold || 0), 0).toLocaleString(),
+      label: "Potential Payout",
+      value: `$${(totalRevenue * 0.85).toLocaleString()}`,
+      delta: "Estimated",
+      icon: "mdi:chart-line",
+      color: "purple",
+      isNeutral: true,
+    },
+    {
+      label: "Seats Sold",
+      value: seatsSold.toLocaleString(),
       delta: "+8.2%",
       icon: "mdi:ticket-confirmation-outline",
       color: "blue",
     },
     {
-      label: "Active Events",
-      value: approvedEvents.filter(e => e.status === "approved").length.toString(),
-      delta: `+${approvedEvents.filter(e => e.status === "approved").length}`,
-      icon: "mdi:calendar-month-outline",
-      color: "red",
+      label: "Booth Sold",
+      value: boothsSold.toLocaleString(),
+      delta: "+5.0%",
+      icon: "mdi:storefront-outline",
+      color: "orange",
+    },
+  ];
+
+  const row2Stats = [
+    {
+      label: "Total Events",
+      value: totalEventsCount.toString(),
+      delta: "All assigned",
+      icon: "mdi:calendar-multiple",
+      color: "blue",
+      isNeutral: true,
     },
     {
-      label: "Upcoming Payout",
-      value: "$15,240",
-      delta: "Due in 2 days",
-      icon: "mdi:chart-line",
-      color: "purple",
+      label: "Active Events",
+      value: activeEventsCount.toString(),
+      delta: "Live or approved",
+      icon: "mdi:calendar-check-outline",
+      color: "green",
+      isNeutral: true,
+    },
+    {
+      label: "Pending Events",
+      value: pendingEventsCount.toString(),
+      delta: "Awaiting admin",
+      icon: "mdi:calendar-clock-outline",
+      color: "yellow",
+      isNeutral: true,
+    },
+    {
+      label: "Rejected Events",
+      value: rejectedEventsCount.toString(),
+      delta: "Rejected",
+      icon: "mdi:calendar-remove-outline",
+      color: "red",
       isNeutral: true,
     },
   ];
 
-  const topSponsorsData = [
-    { sponsor: "TechCorp Inc.", tier: "Platinum", event: "TechStart Summit 2024", amount: "$ 15,000" },
-    { sponsor: "StreamTech", tier: "Platinum", event: "Creator Economy Expo", amount: "$ 12,000" },
-    { sponsor: "Innovate Labs", tier: "Gold", event: "TechStart Summit 2024", amount: "$ 10,000" },
-    { sponsor: "Creator Tools", tier: "Gold", event: "Creator Economy Expo", amount: "$ 8,000" },
-    { sponsor: "Cloud Systems", tier: "Silver", event: "TechStart Summit 2024", amount: "$ 5,000" },
-  ];
-
+  // Duplicate declaration removed
   const quickActions = [
     {
       title: "Create New Event",
@@ -154,137 +327,66 @@ export default function PromoterDashboard() {
     },
   ];
 
-  const revenueData = [
-    { month: 'Oct 01', total: 100000 },
-    { month: 'Oct 03', total: 110000 },
-    { month: 'Oct 05', total: 115000 },
-    { month: 'Oct 07', total: 125000 },
-    { month: 'Oct 09', total: 128000 },
-    { month: 'Oct 11', total: 135000 },
-    { month: 'Oct 14', total: 138580 },
-  ];
+
 
   const ticketSalesData = approvedEvents.map(e => {
-    let sold = 0;
-    let total = 0;
-    if (e.eventType === "General Admission") {
-      sold = e.priceLevels.reduce((sum, p) => sum + (p.quantitySold || 0), 0);
-      total = e.priceLevels.reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
-    } else {
-      if (e.seatMap && e.seatMap.sections) {
-        e.seatMap.sections.forEach(sec => {
-          if (sec.seats) {
-            total += sec.seats.length;
-            sold += sec.seats.filter(s => s.status === "sold").length;
-          }
-        });
-      }
+    let totalSeats = 0;
+    let totalBooths = 0;
+    let seatsSold = 0;
+    let boothsSold = 0;
+
+    let layout = e.layoutData;
+    if (typeof layout === 'string') {
+        try { layout = JSON.parse(layout); } catch (err) { layout = null; }
     }
+
+    if (layout && Array.isArray(layout.items)) {
+        layout.items.forEach(item => {
+            const isSeat = item.type === 'seat' || item.isSeat || (!item.isBooth && !item.isElement && !item.isBackground && item.type !== 'booth');
+            const isBooth = item.type === 'booth' || item.isBooth;
+            
+            if (isSeat) {
+                totalSeats++;
+                if (item.status === 'sold') seatsSold++;
+            } else if (isBooth) {
+                totalBooths++;
+                if (item.status === 'sold') boothsSold++;
+            }
+        });
+    } else {
+        if (e.seatMap && e.seatMap.sections) {
+            e.seatMap.sections.forEach(sec => {
+                if (sec.seats) {
+                    totalSeats += sec.seats.length;
+                    seatsSold += sec.seats.filter(s => s.status === 'sold').length;
+                }
+            });
+        }
+        if (e.booths && Array.isArray(e.booths)) {
+            totalBooths += e.booths.length;
+            boothsSold += e.booths.filter(b => b.status === "sold").length;
+        }
+    }
+
+    if (e.eventType === "General Admission") {
+        const gaSeatsSold = (e.priceLevels || []).reduce((sum, p) => sum + (p.quantitySold || 0), 0);
+        const gaSeatsTotal = (e.priceLevels || []).reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
+        if (gaSeatsTotal > 0) {
+            seatsSold = gaSeatsSold;
+            totalSeats = gaSeatsTotal;
+        }
+    }
+
     return {
-      name: e.title.substring(0, 10),
-      sold: sold,
-      remaining: Math.max(0, total - sold)
+      name: e.title.length > 10 ? e.title.substring(0, 10) + '...' : e.title,
+      seatsSold: seatsSold,
+      seatsAvailable: Math.max(0, totalSeats - seatsSold),
+      boothsSold: boothsSold,
+      boothsAvailable: Math.max(0, totalBooths - boothsSold)
     };
   });
 
-  const transactions = [
-    {
-      customer: "Sarah Jenkins",
-      email: "sarah@example.com",
-      event: "TechStart Summit 2024",
-      type: "ticket",
-      amount: "$299",
-      status: "completed",
-    },
-    {
-      customer: "TechCorp Inc.",
-      email: "john@techcorp.com",
-      event: "TechStart Summit 2024",
-      type: "booth",
-      amount: "$15,000",
-      status: "completed",
-    },
-    {
-      customer: "Michael Chen",
-      email: "m.chen@tech.co",
-      event: "TechStart Summit 2024",
-      type: "ticket",
-      amount: "$149",
-      status: "completed",
-    },
-    {
-      customer: "David Miller",
-      email: "david@miller.io",
-      event: "TechStart Summit 2024",
-      type: "ticket",
-      amount: "$149",
-      status: "pending",
-    },
-    {
-      customer: "Alex Johnson",
-      email: "alex@creator.tv",
-      event: "Creator Economy Expo",
-      type: "ticket",
-      amount: "$149",
-      status: "completed",
-    },
-    {
-      customer: "Alex Johnson",
-      email: "alex@creator.tv",
-      event: "Creator Economy Expo",
-      type: "ticket",
-      amount: "$149",
-      status: "completed",
-    },
-    {
-      customer: "Alex Johnson",
-      email: "alex@creator.tv",
-      event: "Creator Economy Expo",
-      type: "ticket",
-      amount: "$149",
-      status: "completed",
-    },
-    {
-      customer: "Alex Johnson",
-      email: "alex@creator.tv",
-      event: "Creator Economy Expo",
-      type: "ticket",
-      amount: "$149",
-      status: "completed",
-    },
-    {
-      customer: "Alex Johnson",
-      email: "alex@creator.tv",
-      event: "Creator Economy Expo",
-      type: "ticket",
-      amount: "$149",
-      status: "completed",
-    },
-    {
-      customer: "Alex Johnson",
-      email: "alex@creator.tv",
-      event: "Creator Economy Expo",
-      type: "ticket",
-      amount: "$149",
-      status: "completed",
-    },
-    {
-      customer: "Alex Johnson",
-      email: "alex@creator.tv",
-      event: "Creator Economy Expo",
-      type: "ticket",
-      amount: "$149",
-      status: "completed",
-    },
-    {
-      customer: "Alex Johnson",
-      email: "alex@creator.tv",
-      event: "Creator Economy Expo",
-      type: "ticket",
-      amount: "$149",
-      status: "completed",
-    },
-  ];
+
 
   if (loading) {
     return (
@@ -300,9 +402,24 @@ export default function PromoterDashboard() {
         </div>
 
         <div className="stats-grid-wrapper">
+          <div className="stats-grid" style={{ marginBottom: '16px' }}>
+            {[...Array(4)].map((_, i) => (
+              <div key={`row1-${i}`} className="dashboard-stat-card skeleton-card">
+                <div className="upper-stats">
+                  <div className="skeleton skeleton-circle" style={{ width: '24px', height: '24px' }} />
+                  <div className="skeleton skeleton-text" style={{ width: '40px', marginBottom: 0 }} />
+                </div>
+                <div className="bottom-stats" style={{ marginTop: '12px' }}>
+                  <div className="skeleton skeleton-text short" />
+                  <div className="skeleton skeleton-text title" style={{ width: '100px' }} />
+                  <div className="skeleton skeleton-text short" />
+                </div>
+              </div>
+            ))}
+          </div>
           <div className="stats-grid">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="dashboard-stat-card skeleton-card">
+              <div key={`row2-${i}`} className="dashboard-stat-card skeleton-card">
                 <div className="upper-stats">
                   <div className="skeleton skeleton-circle" style={{ width: '24px', height: '24px' }} />
                   <div className="skeleton skeleton-text" style={{ width: '40px', marginBottom: 0 }} />
@@ -383,8 +500,25 @@ export default function PromoterDashboard() {
       </div>
 
       <div className="stats-grid-wrapper">
+        <div className="stats-grid" style={{ marginBottom: '16px' }}>
+          {row1Stats.map((s) => (
+            <div key={s.label} className="dashboard-stat-card">
+              <div className="upper-stats">
+                <span className={`icon ${s.color}`}><Icon icon={s.icon} width="24" /></span>
+                <span className={s.isNeutral ? "trend hidden" : "trend up"} style={s.isNeutral ? { display: 'none' } : undefined}>
+                  <Icon icon="mdi:trending-up" /> {s.delta}
+                </span>
+              </div>
+              <div className="bottom-stats">
+                <p className="regular-body-text">{s.label}</p>
+                <h3 className="left-aligned">{s.value}</h3>
+                <p className="smaller-body-text ">{s.isNeutral ? s.delta : 'vs last month'}</p>
+              </div>
+            </div>
+          ))}
+        </div>
         <div className="stats-grid">
-          {stats.map((s) => (
+          {row2Stats.map((s) => (
             <div key={s.label} className="dashboard-stat-card">
               <div className="upper-stats">
                 <span className={`icon ${s.color}`}><Icon icon={s.icon} width="24" /></span>
@@ -434,13 +568,21 @@ export default function PromoterDashboard() {
                       tick={{ fontSize: isMobile ? 9 : 11 }}
                     />
                     <RechartsTooltip />
-                    <Bar dataKey="sold" stackId="a" fill="#0059ff" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="remaining" stackId="a" fill="#e6e6e6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="boothsAvailable" stackId="booths" name="Booths Available" fill="#ffe0cc" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="boothsSold" stackId="booths" name="Booths Sold" fill="#ff6b00" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="seatsAvailable" stackId="tickets" name="Seats Available" fill="#e6e6e6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="seatsSold" stackId="tickets" name="Seats Sold" fill="#0059ff" radius={[0, 0, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-                <div className="pd-chart-legend">
-                  <span className="legend-item"><span className="dot blue"></span>Tickets Sold</span>
-                  <span className="legend-item"><span className="dot gray"></span>Total Capacity</span>
+                <div className="pd-chart-legend" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <span className="legend-item"><span className="dot blue"></span>Seats Sold</span>
+                    <span className="legend-item"><span className="dot gray"></span>Seats Available</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <span className="legend-item"><span className="dot orange"></span>Booths Sold</span>
+                    <span className="legend-item"><span className="dot" style={{ backgroundColor: '#ffe0cc' }}></span>Booths Available</span>
+                  </div>
                 </div>
               </div>
             </div>
