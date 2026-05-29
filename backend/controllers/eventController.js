@@ -1478,6 +1478,31 @@ const buySeats = async (req, res) => {
       });
       emitUpdate("newNotification", notification);
 
+      // Notify Assigned Promoters and Creator
+      const promotersToNotify = new Set();
+      if (event.createdBy) promotersToNotify.add(event.createdBy.toString());
+      if (Array.isArray(event.assignedPromoters)) {
+        event.assignedPromoters.forEach(p => promotersToNotify.add(p.toString()));
+      }
+
+      for (const promoterId of promotersToNotify) {
+        if (promoterId === req.user._id.toString()) continue;
+        try {
+          const promoterNotification = await notificationController.createNotification({
+            title: `New Seat Purchase`,
+            content: `${buyerName} purchased ${seatIds.length} seat(s) for "${event.title}"`,
+            type: "reservation",
+            path: "/promoter/promoter-eventmanagement",
+            unread: true,
+            userId: promoterId,
+            createdBy: req.user._id,
+          });
+          emitUpdate("newNotification", promoterNotification);
+        } catch (pNotifErr) {
+          console.error("Promoter seat purchase notification error:", pNotifErr);
+        }
+      }
+
       // Notify customer
       const customerNotification = await notificationController.createNotification({
         title: `Seat Purchase Successful`,
@@ -1660,6 +1685,31 @@ const reserveBooth = async (req, res) => {
       targetRole: "admin",
     });
     emitUpdate("newNotification", notification);
+
+    // Notify Assigned Promoters and Creator
+    const promotersToNotify = new Set();
+    if (event.createdBy) promotersToNotify.add(event.createdBy.toString());
+    if (Array.isArray(event.assignedPromoters)) {
+      event.assignedPromoters.forEach(p => promotersToNotify.add(p.toString()));
+    }
+
+    for (const promoterId of promotersToNotify) {
+      if (promoterId === req.user._id.toString()) continue;
+      try {
+        const promoterNotification = await notificationController.createNotification({
+          title: `New Booth Reservation`,
+          content: `${sponsorName} reserved booth ${booth.label || booth.code} for event "${event.title}"`,
+          type: "reservation",
+          path: "/promoter/promoter-eventmanagement",
+          unread: true,
+          userId: promoterId,
+          createdBy: req.user._id,
+        });
+        emitUpdate("newNotification", promoterNotification);
+      } catch (pNotifErr) {
+        console.error("Promoter booth reservation notification error:", pNotifErr);
+      }
+    }
 
     // 5. Notification for the Sponsor (Success)
     const sponsorNotification = await notificationController.createNotification({
