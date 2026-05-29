@@ -491,7 +491,7 @@ const TicketDesigner = ({ selectedEvent }) => {
                       <span className="cat-name" style={{ fontWeight: selectedCategoryId === cat._id ? 'bold' : 'normal' }}>
                         {cat.priceName}
                       </span>
-                      <span className="price">${cat.facePrice?.toFixed(2)}</span>
+                      <span className="price" style={{color: "var(--color-black-primary)"}}> ${cat.facePrice?.toFixed(2)}</span>
                     </div>
                   </div>
                 ))
