@@ -2,20 +2,8 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import './PromoterViewPayout.css';
 
-const PromoterViewPayout = ({ isOpen, onClose, payout, onDownloadInvoice }) => {
+const PromoterViewPayout = ({ isOpen, onClose, payout, pdfUrl, onDownloadInvoice }) => {
     if (!isOpen || !payout) return null;
-
-    const renderStatusPill = (status) => {
-        let pillClass = 'pvp-pill-bg-orange';
-        if (status === 'Paid') pillClass = 'button-label pvp-pill-bg-green';
-        if (status === 'Reject') pillClass = 'button-label pvp-pill-bg-red';
-        
-        return (
-            <span className={`button-label pvp-status-pill ${pillClass}`}>
-                {status}
-            </span>
-        );
-    };
 
     return (
         <div className="pvp-modal-overlay" onClick={onClose}>
@@ -27,56 +15,21 @@ const PromoterViewPayout = ({ isOpen, onClose, payout, onDownloadInvoice }) => {
                     </button>
                 </div>
 
-                <div className="pvp-modal-body">
-                    <div className="pvp-modal-row">
-                        <span className="regular-body-text font-medium text-secondary">Status</span>
-                        {renderStatusPill(payout.status)}
-                    </div>
-                    <div className="pvp-modal-row">
-                        <span className="regular-body-text font-medium text-secondary">Date Requested</span>
-                        <span className="regular-body-text text-black font-medium">{payout.date}</span>
-                    </div>
-                    <div className="pvp-modal-row">
-                        <span className="regular-body-text font-medium text-secondary">Withdrawal Method</span>
-                        <span className="regular-body-text text-black font-medium">{payout.method}</span>
-                    </div>
-                    <div className="pvp-modal-row">
-                        <span className="regular-body-text font-medium text-secondary">Reference Number</span>
-                        <span className="regular-body-text text-black font-medium">{payout.reference}</span>
-                    </div>
-
-                    <div className="pvp-modal-divider"></div>
-
-                    <div className="pvp-modal-row">
-                        <span className="regular-body-text font-medium text-secondary">Amount Requested</span>
-                        <span className="regular-body-text text-black font-medium">
-                            ${(payout.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                    </div>
-                    <div className="pvp-modal-row">
-                        <span className="regular-body-text font-medium text-secondary">Processing Fee</span>
-                        <span className="regular-body-text text-black font-medium">-$0.00</span>
-                    </div>
-                    <div className="pvp-modal-row pvp-modal-total">
-                        <span className="large-body-text text-black font-medium">Total Amount</span>
-                        <span className="large-body-text text-black font-medium pvp-amount-text">
-                            ${(payout.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                    </div>
-
-                    {(payout.status === 'Reject' || payout.status === 'Paid') && (
-                        <>
-                            <div className="pvp-modal-divider"></div>
-                            <div className="pvp-modal-column">
-                                <span className="regular-body-text font-medium text-secondary pvp-comment-label">Admin's Comment</span>
-                                <div className="pvp-comment-box regular-body-text text-black">
-                                    {payout.comment || (payout.status === 'Reject' ? "Your payout has been rejected due to invalid bank details. Please update your payout method." : "Your payout has been successfully processed.")}
-                                </div>
-                            </div>
-                        </>
+                <div className="pvp-modal-body pvp-pdf-body">
+                    {pdfUrl ? (
+                        <embed 
+                            src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                            type="application/pdf"
+                            className="pvp-pdf-iframe"
+                        />
+                    ) : (
+                        <div className="pvp-loading-container">
+                            <div className="pvp-skeleton skeleton-rect"></div>
+                            <span className="small-body-text text-secondary mt-2">Generating preview...</span>
+                        </div>
                     )}
                 </div>
-                
+
                 <div className="pvp-modal-footer">
                     <button className="primary-button pvp-download-btn" onClick={() => onDownloadInvoice(payout)}>
                         <Icon icon="mdi:tray-arrow-down" width="20" />
