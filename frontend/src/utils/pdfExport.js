@@ -9,7 +9,12 @@ export async function loadLogo() {
     const paths = ['/logo/Logo1.png', '/logo/eTicketsProLogo.jpg', '/logo/eTicketsProLogo.png'];
     for (const path of paths) {
         try {
-            const res = await fetch(path);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            
+            const res = await fetch(path, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            
             if (res.ok) {
                 const blob = await res.blob();
                 return await new Promise((resolve) => {
@@ -23,8 +28,10 @@ export async function loadLogo() {
                                 height: img.height
                             });
                         };
+                        img.onerror = () => resolve(null);
                         img.src = reader.result;
                     };
+                    reader.onerror = () => resolve(null);
                     reader.readAsDataURL(blob);
                 });
             }

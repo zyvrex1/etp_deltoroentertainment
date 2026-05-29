@@ -21,6 +21,7 @@ import PromoterViewPayout from "./PromoterModal/PromoterViewPayout.jsx";
 import { useAuthContext } from "../hooks/useAuthContext";
 import eventsService from "../services/eventsService";
 import payoutService from "../services/payoutService";
+import api from "../services/api";
 
 const PromoterPayouts = () => {
 
@@ -37,6 +38,7 @@ const PromoterPayouts = () => {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [isProcessDropdownOpen, setIsProcessDropdownOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState(null);
+  const [payoutPdfUrl, setPayoutPdfUrl] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
 
   const [events, setEvents] = useState([]);
@@ -105,20 +107,24 @@ const PromoterPayouts = () => {
         setEvents(validEvents);
 
         const salesPromises = validEvents.map(async (event) => {
-          const res = await fetch(`${BASE_URL}/api/reservations/event/${event._id}/sales`, {
-            headers: { Authorization: `Bearer ${user.token}` }
-          });
-          if (!res.ok) return [];
-          const { reservations } = await res.json();
-          return (reservations || []).map(r => ({
-            ...r,
-            eventId: event._id,
-            eventTitle: event.title,
-            date: new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-            amountStr: `$${(r.amount?.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-            method: r.paymentMethod === 'card' ? 'Credit Card' : 'Invoice/Bank Transfer',
-            reference: r._id.toString().toUpperCase().slice(-10)
-          }));
+          try {
+            const res = await api.get(`/reservations/event/${event._id}/sales`, {
+              headers: { Authorization: `Bearer ${user.token}` }
+            });
+            const { reservations } = res.data;
+            return (reservations || []).map(r => ({
+              ...r,
+              eventId: event._id,
+              eventTitle: event.title,
+              date: new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+              amountStr: `$${(r.amount?.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+              method: r.paymentMethod === 'card' ? 'Credit Card' : 'Invoice/Bank Transfer',
+              reference: r._id.toString().toUpperCase().slice(-10)
+            }));
+          } catch (err) {
+            console.error(`Error fetching sales for event ${event._id}:`, err);
+            return [];
+          }
         });
 
         const allSalesArrays = await Promise.all(salesPromises);
@@ -135,7 +141,11 @@ const PromoterPayouts = () => {
 
       } catch (err) {
         console.error("Error fetching data:", err);
-        setError("Failed to load payout data.");
+        if (err.message.includes('401') || err.message.toLowerCase().includes('unauthorized')) {
+          setError("Your session has expired. Please log in again.");
+        } else {
+          setError("Failed to load payout data.");
+        }
       } finally {
         setLoading(false);
       }
@@ -259,8 +269,10 @@ const PromoterPayouts = () => {
     setCurrentPage(1);
   }, [statusFilter, sortFilter]);
 
-  const handleViewDetails = (payout) => {
+  const handleViewDetails = async (payout) => {
     setSelectedPayout(payout);
+    const pdfDataUrl = await generateInvoicePDF(payout, false);
+    setPayoutPdfUrl(pdfDataUrl);
   };
 
   const exportReport = async () => {
@@ -291,7 +303,7 @@ const PromoterPayouts = () => {
 
       const sumAmounts = (data) =>
         data.reduce((total, row) => {
-          return total + (row.amount?.total || 0);
+          return total + (row.amount || 0);
         }, 0);
 
       const totalAmount = sumAmounts(sortedAndFilteredPayouts);
@@ -359,8 +371,8 @@ const PromoterPayouts = () => {
     }
   };
 
-  const handleDownloadInvoice = async (payout) => {
-    const loadingToast = showExportToast();
+  const generateInvoicePDF = async (payout, shouldSave = true) => {
+    const loadingToast = shouldSave ? showExportToast() : null;
     const INVOICE_TITLE = "Payout Invoice Receipt";
     try {
       const logoData = await loadLogo();
@@ -407,7 +419,18 @@ const PromoterPayouts = () => {
       doc.setFontSize(12);
       doc.setTextColor(30, 60, 114);
       doc.setFont("helvetica", "bold");
-      doc.text("Description", margin, y);
+
+      const hasSpecificEvents = payout.eventIds && payout.eventIds.length > 0;
+      const targetEventIds = hasSpecificEvents
+        ? payout.eventIds
+        : [...new Set(salesData.map(s => s.eventId))];
+
+      // Determine Header Text
+      const headerText = (hasSpecificEvents && payout.eventIds.length === 1)
+        ? events.find(e => e._id === payout.eventIds[0])?.title || "Event Name"
+        : (hasSpecificEvents ? "Event Name" : "All Events");
+
+      doc.text(headerText, margin, y);
       doc.text("Amount", pdfWidth - margin - 30, y);
       y += 4;
 
@@ -418,38 +441,59 @@ const PromoterPayouts = () => {
       doc.setTextColor(50, 50, 50);
       doc.setFont("helvetica", "normal");
 
-      // Calculate split ratio based on historical salesData
-      const relevantSales = (payout.eventIds && payout.eventIds.length > 0)
-        ? salesData.filter(s => payout.eventIds.includes(s.eventId))
-        : salesData;
-
-      const totalTicketSales = relevantSales.filter(s => s.type !== 'booth').reduce((sum, s) => sum + (s.amount?.total || 0), 0);
-      const totalBoothSales = relevantSales.filter(s => s.type === 'booth').reduce((sum, s) => sum + (s.amount?.total || 0), 0);
-      const totalSales = totalTicketSales + totalBoothSales;
-
-      let ticketRatio = 1;
-      let boothRatio = 0;
-
-      if (totalSales > 0) {
-        ticketRatio = totalTicketSales / totalSales;
-        boothRatio = totalBoothSales / totalSales;
-      }
-
-      const payoutTicketAmount = (payout.amount || 0) * ticketRatio;
-      const payoutBoothAmount = (payout.amount || 0) * boothRatio;
+      // Calculate total revenue across all relevant events to determine proportional shares
+      const totalRevenueAll = salesData
+        .filter(s => targetEventIds.includes(s.eventId))
+        .reduce((sum, s) => sum + (s.amount?.total || 0), 0);
 
       const formatCurrency = (val) => `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-      // Ticket Sales
-      doc.text("Ticket Sales:", margin, y);
-      doc.text(formatCurrency(payoutTicketAmount), pdfWidth - margin - 30, y);
-      y += 8;
+      // Iterate through each event and draw its section
+      targetEventIds.forEach((eventId, index) => {
+        const event = events.find(e => e._id === eventId);
+        const eventTitle = event ? event.title : "Unknown Event";
+        
+        const eventSales = salesData.filter(s => s.eventId === eventId);
+        const eventTicketRev = eventSales.filter(s => s.type !== 'booth').reduce((sum, s) => sum + (s.amount?.total || 0), 0);
+        const eventBoothRev = eventSales.filter(s => s.type === 'booth').reduce((sum, s) => sum + (s.amount?.total || 0), 0);
+        const eventTotalRev = eventTicketRev + eventBoothRev;
 
-      // Booth Sales
-      doc.text("Booth Sales:", margin, y);
-      doc.text(formatCurrency(payoutBoothAmount), pdfWidth - margin - 30, y);
-      y += 8;
+        if (eventTotalRev > 0) {
+          const eventPayoutShare = totalRevenueAll > 0 ? (eventTotalRev / totalRevenueAll) * (payout.amount || 0) : 0;
+          const ticketShare = (eventTicketRev / eventTotalRev) * eventPayoutShare;
+          const boothShare = (eventBoothRev / eventTotalRev) * eventPayoutShare;
 
+          // If multiple events or "All Events", we need to show the event title as a sub-header
+          if (targetEventIds.length > 1 || !hasSpecificEvents) {
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(30, 60, 114);
+            doc.text(eventTitle, margin, y);
+            y += 8;
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(50, 50, 50);
+          }
+
+          if (ticketShare > 0) {
+            doc.text("Ticket Sales", (targetEventIds.length > 1 || !hasSpecificEvents) ? margin + 5 : margin, y);
+            doc.text(formatCurrency(ticketShare), pdfWidth - margin - 30, y);
+            y += 8;
+          }
+          
+          if (boothShare > 0) {
+            doc.text("Booth Sales", (targetEventIds.length > 1 || !hasSpecificEvents) ? margin + 5 : margin, y);
+            doc.text(formatCurrency(boothShare), pdfWidth - margin - 30, y);
+            y += 8;
+          }
+          
+          if (targetEventIds.length > 1 || !hasSpecificEvents) {
+            doc.setDrawColor(230, 230, 230);
+            doc.line(margin, y, pdfWidth - margin, y);
+            y += 8; // Extra space after line
+          }
+        }
+      });
+
+      doc.setDrawColor(200, 200, 200);
       doc.line(margin, y, pdfWidth - margin, y);
       y += 8;
 
@@ -465,15 +509,25 @@ const PromoterPayouts = () => {
       doc.text("Thank you for using our platform.", margin, y);
 
       finalizeReport(doc);
-      doc.save(
-        `Payout_Invoice_${payout.date.replace(/, /g, "_").replace(/ /g, "_")}.pdf`,
-      );
+
+      if (shouldSave) {
+        doc.save(
+          `Payout_Invoice_${payout.date.replace(/, /g, "_").replace(/ /g, "_")}.pdf`,
+        );
+      } else {
+        const blob = doc.output('blob');
+        return URL.createObjectURL(blob);
+      }
     } catch (error) {
       console.error("Error generating invoice PDF:", error);
-      alert("Failed to generate PDF. Please try again.");
+      if (shouldSave) alert("Failed to generate PDF. Please try again.");
     } finally {
-      removeExportToast(loadingToast);
+      if (loadingToast) removeExportToast(loadingToast);
     }
+  };
+
+  const handleDownloadInvoice = async (payout) => {
+    await generateInvoicePDF(payout, true);
   };
 
   return (
@@ -818,8 +872,13 @@ const PromoterPayouts = () => {
 
       <PromoterViewPayout
         isOpen={!!selectedPayout}
-        onClose={() => setSelectedPayout(null)}
+        onClose={() => {
+          if (payoutPdfUrl) URL.revokeObjectURL(payoutPdfUrl);
+          setSelectedPayout(null);
+          setPayoutPdfUrl(null);
+        }}
         payout={selectedPayout}
+        pdfUrl={payoutPdfUrl}
         onDownloadInvoice={handleDownloadInvoice}
       />
     </div>
