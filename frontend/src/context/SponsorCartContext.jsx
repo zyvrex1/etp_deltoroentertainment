@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { useAuthContext } from '../hooks/useAuthContext';
 import { updateCart as updateCartAPI } from '../services/userService';
 import eventsService from '../services/eventsService';
+import io from 'socket.io-client';
 
 export const SponsorCartContext = createContext();
 
@@ -9,47 +10,114 @@ export const useSponsorCartContext = () => {
     return useContext(SponsorCartContext);
 };
 
+// Helper to strip heavy data and circular references before saving
+const getLeanCartItems = (items) => items.map(item => ({
+    ...item,
+    event: item.event ? {
+        _id: item.event._id,
+        title: item.event.title,
+        date: item.event.date,
+        startDate: item.event.startDate,
+        endDate: item.event.endDate,
+        banner: item.event.banner,
+        image: item.event.image,
+        location: item.event.location,
+        venue: item.event.venue
+    } : null,
+    booth: item.booth ? {
+        _id: item.booth._id,
+        id: item.booth.id,
+        label: item.booth.label,
+        price: item.booth.price,
+        type: item.booth.type
+    } : null
+}));
+
 export const SponsorCartProvider = ({ children }) => {
     const { user, dispatch } = useAuthContext();
     const [cartItems, setCartItems] = useState([]);
     const [isInitialized, setIsInitialized] = useState(false);
-
     const hasHealedRef = useRef(false);
+
+    // Explicitly save to storage and backend
+    const saveCart = (newItems, currentUser = user) => {
+        const leanItems = getLeanCartItems(newItems);
+        
+        // Always save to guestCart
+        try {
+            localStorage.setItem('guestCart', JSON.stringify(leanItems));
+        } catch (e) {
+            console.error("Error saving guest cart", e);
+        }
+
+        if (currentUser) {
+            try {
+                localStorage.setItem(`sponsorCart_${currentUser.email}`, JSON.stringify(leanItems));
+            } catch (e) {
+                console.error("Error saving user cart locally", e);
+            }
+            
+            updateCartAPI(leanItems, currentUser.token).then(() => {
+                const updatedUser = { ...currentUser, cart: leanItems };
+                try {
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                } catch(e) {}
+            }).catch(err => {
+                console.error("Failed to sync cart with backend", err);
+            });
+        }
+    };
 
     // Load cart from user object or localStorage on mount or when user changes
     useEffect(() => {
-        if (user && !isInitialized) {
+        if (user) {
             // Check if user has cart items in their profile (from DB)
-            if (user.cart && Array.isArray(user.cart) && user.cart.length > 0) {
-                setCartItems(user.cart);
-            } else {
-                // Fallback to localStorage if DB cart is empty
-                const savedCart = localStorage.getItem(`sponsorCart_${user.email}`);
-                if (savedCart) {
-                    try {
-                        const parsedCart = JSON.parse(savedCart);
-                        setCartItems(parsedCart);
-                        
-                        // Sync localStorage cart to DB if DB was empty
-                        if (parsedCart.length > 0) {
-                            updateCartAPI(parsedCart, user.token).catch(err => 
-                                console.error("Error syncing local cart to DB:", err)
-                            );
-                        }
-                    } catch (e) {
-                        console.error("Error parsing cart from local storage", e);
-                    }
-                } else {
-                    setCartItems([]);
-                }
+            const dbItems = (user.cart && Array.isArray(user.cart)) ? user.cart : [];
+            
+            // Fallback to localStorage if we need to merge guest cart
+            const savedCart = localStorage.getItem(`sponsorCart_${user.email}`);
+            const guestCart = localStorage.getItem('guestCart');
+            
+            let localItems = [];
+            if (savedCart) {
+                try { localItems = JSON.parse(savedCart); } catch(e) {}
+            } else if (guestCart) {
+                try { localItems = JSON.parse(guestCart); } catch(e) {}
             }
-            setIsInitialized(true);
-        } else if (!user) {
-            setCartItems([]);
-            setIsInitialized(false);
-            hasHealedRef.current = false;
+
+            // Merge DB cart and Local cart based on booth ID
+            const mergedItems = [...dbItems];
+            let didMerge = false;
+            localItems.forEach(localItem => {
+                const localId = String(localItem.booth?._id || localItem.booth?.id);
+                if (!mergedItems.some(dbItem => String(dbItem.booth?._id || dbItem.booth?.id) === localId)) {
+                    mergedItems.push(localItem);
+                    didMerge = true;
+                }
+            });
+
+            setCartItems(mergedItems);
+            
+            // Sync merged cart to DB ONLY if we added guest items that weren't in the DB
+            // OR if DB is empty but we found items locally.
+            // This prevents a brand new logged-in window from sending [] back to the DB and wiping other windows.
+            if (didMerge || (dbItems.length === 0 && mergedItems.length > 0)) {
+                saveCart(mergedItems, user);
+            }
+        } else {
+            // User is a guest or just logged out
+            const guestCart = localStorage.getItem('guestCart');
+            let parsedCart = [];
+            if (guestCart) {
+                try {
+                    parsedCart = JSON.parse(guestCart) || [];
+                } catch(e) {}
+            }
+            setCartItems(parsedCart);
         }
-    }, [user, isInitialized]);
+        setIsInitialized(true);
+        hasHealedRef.current = false;
+    }, [user]);
 
     // Self-healing: if any cart item is missing essential event details, fetch them from DB
     useEffect(() => {
@@ -94,66 +162,63 @@ export const SponsorCartProvider = ({ children }) => {
         }
     }, [isInitialized, user, cartItems]);
 
-    // Save cart to localStorage AND backend whenever it changes
+    // Listen for cross-window storage changes to sync cart in real-time (for same browser)
     useEffect(() => {
-        if (user && isInitialized) {
-            // Create a lean version of cart items for localStorage to save space
-            const leanCartItems = cartItems.map(item => ({
-                ...item,
-                // Only keep essential fields from potentially large objects
-                event: item.event ? {
-                    _id: item.event._id,
-                    title: item.event.title,
-                    date: item.event.date,
-                    startDate: item.event.startDate,
-                    endDate: item.event.endDate,
-                    banner: item.event.banner,
-                    image: item.event.image,
-                    location: item.event.location,
-                    venue: item.event.venue
-                } : null,
-                booth: item.booth ? {
-                    _id: item.booth._id,
-                    id: item.booth.id,
-                    label: item.booth.label,
-                    price: item.booth.price,
-                    type: item.booth.type
-                } : null
-            }));
+        const handleStorageChange = (e) => {
+            const relevantKeys = [];
+            
+            if (user && user.email) {
+                relevantKeys.push(`sponsorCart_${user.email}`);
+            } else {
+                relevantKeys.push('guestCart');
+            }
 
-            // Save to localStorage with error handling
-            try {
-                localStorage.setItem(`sponsorCart_${user.email}`, JSON.stringify(leanCartItems));
-            } catch (e) {
-                if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-                    console.error("Local storage quota exceeded! Could not save cart locally.");
-                    // Optional: You could clear other non-essential localStorage items here
-                } else {
-                    console.error("Error saving cart to local storage:", e);
+            if (relevantKeys.includes(e.key)) {
+                try {
+                    const newValue = e.newValue ? JSON.parse(e.newValue) : [];
+                    setCartItems(prev => {
+                        const prevIds = prev.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
+                        const newIds = newValue.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
+                        if (prevIds !== newIds || prev.length !== newValue.length) {
+                            return newValue;
+                        }
+                        return prev;
+                    });
+                } catch (err) {
+                    console.error("Error parsing cross-window cart update", err);
                 }
             }
-            
-            // Sync with backend
-            const syncWithBackend = async () => {
-                try {
-                    await updateCartAPI(cartItems, user.token);
-                    
-                    // Also update the user object in AuthContext so it's consistent
-                    const updatedUser = { ...user, cart: cartItems };
-                    try {
-                        localStorage.setItem('user', JSON.stringify(updatedUser));
-                    } catch (storageErr) {
-                        // If user object is too big, at least the cart is synced to DB
-                        console.warn("Could not save updated user to localStorage (quota exceeded)");
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, [user]);
+
+    // Listen to WebSocket for cross-device/browser sync
+    useEffect(() => {
+        if (!user) return;
+        
+        const socket = io(import.meta.env.VITE_BACKEND_URL, {
+            withCredentials: true,
+            transports: ['websocket', 'polling']
+        });
+
+        socket.on('cartUpdate', (data) => {
+            if (data.userId && String(data.userId) === String(user._id)) {
+                setCartItems(prev => {
+                    const newValue = data.cart || [];
+                    const prevIds = prev.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
+                    const newIds = newValue.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
+                    if (prevIds !== newIds || prev.length !== newValue.length) {
+                        return newValue;
                     }
-                } catch (error) {
-                    console.error("Failed to sync cart with backend", error);
-                }
-            };
-            
-            syncWithBackend();
-        }
-    }, [cartItems, user, isInitialized]);
+                    return prev;
+                });
+            }
+        });
+
+        return () => socket.disconnect();
+    }, [user]);
 
     const addToCart = (item) => {
         if (!item || !item.booth) return;
@@ -170,7 +235,9 @@ export const SponsorCartProvider = ({ children }) => {
                 ...item,
                 cartId: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9)
             };
-            return [...prevItems, cartItem];
+            const newCart = [...prevItems, cartItem];
+            saveCart(newCart);
+            return newCart;
         });
     };
 
@@ -190,24 +257,31 @@ export const SponsorCartProvider = ({ children }) => {
                 }));
             
             if (newItems.length === 0) return prevItems;
-            return [...prevItems, ...newItems];
+            const newCart = [...prevItems, ...newItems];
+            saveCart(newCart);
+            return newCart;
         });
     };
 
     const removeFromCart = (cartId) => {
-        setCartItems((prevItems) => prevItems.filter(item => item.cartId !== cartId));
+        setCartItems((prevItems) => {
+            const newCart = prevItems.filter(item => item.cartId !== cartId);
+            saveCart(newCart);
+            return newCart;
+        });
     };
 
     const removeMultipleFromCart = (cartIds) => {
-        setCartItems((prevItems) => prevItems.filter(item => !cartIds.includes(item.cartId)));
+        setCartItems((prevItems) => {
+            const newCart = prevItems.filter(item => !cartIds.includes(item.cartId));
+            saveCart(newCart);
+            return newCart;
+        });
     };
 
     const clearCart = () => {
         setCartItems([]);
-        if (user) {
-            localStorage.removeItem(`sponsorCart_${user.email}`);
-            updateCartAPI([], user.token).catch(err => console.error("Error clearing DB cart:", err));
-        }
+        saveCart([]);
     };
 
     return (
@@ -216,4 +290,5 @@ export const SponsorCartProvider = ({ children }) => {
         </SponsorCartContext.Provider>
     );
 };
+
 

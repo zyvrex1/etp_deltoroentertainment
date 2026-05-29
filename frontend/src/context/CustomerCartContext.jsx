@@ -45,49 +45,52 @@ export const CustomerCartProvider = ({ children }) => {
 
     // --- Sync Cart with Backend ---
     const hasInitialSynced = useRef(false);
+    const { dispatch } = useAuthContext();
+
+    // Explicit save helper
+    const saveCustomerCart = (newItems, currentUser = user) => {
+        localStorage.setItem('customerCart', JSON.stringify(newItems));
+        
+        if (currentUser && currentUser.token) {
+            userService.updateCart(newItems, currentUser.token).then(updatedCart => {
+                const updatedUser = { ...currentUser, cart: updatedCart };
+                dispatch({ type: 'LOGIN', payload: updatedUser });
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+            }).catch(error => {
+                console.error("Failed to sync cart to backend:", error);
+            });
+        }
+    };
 
     useEffect(() => {
         if (user && user.token && !hasInitialSynced.current) {
             // If user just logged in, they might have cart data in their profile
+            let didMerge = false;
+            let finalCart = [...cartItems];
+
             if (user.cart && user.cart.length > 0) {
-                setCartItems(prev => {
-                    // Merge local cart with remote cart, avoiding duplicates by seat.id
-                    const localIds = new Set(prev.filter(item => item?.seat?.id).map(item => item.seat.id));
-                    const remoteItems = user.cart.filter(item => item?.seat?.id && !localIds.has(item.seat.id));
-                    
-                    if (remoteItems.length > 0) {
-                        return [...prev, ...remoteItems];
-                    }
-                    return prev;
-                });
+                const localIds = new Set(finalCart.filter(item => item?.seat?.id).map(item => item.seat.id));
+                const remoteItems = user.cart.filter(item => item?.seat?.id && !localIds.has(item.seat.id));
+                
+                if (remoteItems.length > 0) {
+                    finalCart = [...finalCart, ...remoteItems];
+                    didMerge = true;
+                }
             }
+            
+            if (didMerge) {
+                setCartItems(finalCart);
+            }
+            
+            // Only sync to backend if we had local items that weren't in the DB, 
+            // OR if we merged items. This prevents sending [] to the DB on mount!
+            if (didMerge || (user.cart?.length === 0 && finalCart.length > 0)) {
+                saveCustomerCart(finalCart, user);
+            }
+
             hasInitialSynced.current = true;
         }
     }, [user]);
-
-
-    // Save cart to localStorage and Backend whenever it changes
-    const { dispatch } = useAuthContext();
-    
-    useEffect(() => {
-        localStorage.setItem('customerCart', JSON.stringify(cartItems));
-        
-        const syncCart = async () => {
-            if (user && user.token) {
-                try {
-                    const updatedCart = await userService.updateCart(cartItems, user.token);
-                    
-                    // Update user in AuthContext and LocalStorage to keep cart synced
-                    const updatedUser = { ...user, cart: updatedCart };
-                    dispatch({ type: 'LOGIN', payload: updatedUser });
-                    localStorage.setItem('user', JSON.stringify(updatedUser));
-                } catch (error) {
-                    console.error("Failed to sync cart to backend:", error);
-                }
-            }
-        };
-        syncCart();
-    }, [cartItems, user?.token, dispatch]); // Only trigger when items change or token changes
 
 
     // --- Sync Purchase History with Backend ---
@@ -181,11 +184,19 @@ export const CustomerCartProvider = ({ children }) => {
             serviceFee: 10
         }));
 
-        setCartItems(prev => [...prev, ...newItems]);
+        setCartItems(prev => {
+            const newCart = [...prev, ...newItems];
+            saveCustomerCart(newCart);
+            return newCart;
+        });
     };
 
     const removeFromCart = (cartId) => {
-        setCartItems(prev => prev.filter(item => item.cartId !== cartId));
+        setCartItems(prev => {
+            const newCart = prev.filter(item => item.cartId !== cartId);
+            saveCustomerCart(newCart);
+            return newCart;
+        });
     };
 
     const completePurchase = (cartIds, paymentMethod = 'Credit Card', poNumber = '') => {
@@ -199,7 +210,11 @@ export const CustomerCartProvider = ({ children }) => {
         }));
 
         setPurchaseHistory(prev => [...purchasedItems, ...prev]);
-        setCartItems(prev => prev.filter(item => !cartIds.includes(item.cartId)));
+        setCartItems(prev => {
+            const newCart = prev.filter(item => !cartIds.includes(item.cartId));
+            saveCustomerCart(newCart);
+            return newCart;
+        });
         
         // Refetch from backend to ensure everything is synced
         setTimeout(() => fetchHistory(), 1000);
@@ -207,6 +222,7 @@ export const CustomerCartProvider = ({ children }) => {
 
     const clearCart = () => {
         setCartItems([]);
+        saveCustomerCart([]);
     };
 
     const value = {
