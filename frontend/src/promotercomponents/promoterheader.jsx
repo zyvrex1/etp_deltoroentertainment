@@ -35,6 +35,14 @@ const PromoterHeader = ({ mobileExpanded, setMobileExpanded }) => {
     policy: "mdi:file-document-outline"
   };
 
+  const getIcon = (notif) => {
+    const title = notif.title?.toLowerCase() || '';
+    if (title.includes('refund')) return "mdi:cash-refund";
+    if (title.includes('cancel')) return "mdi:cancel";
+    if (title.includes('reject')) return "mdi:close-circle-outline";
+    if (title.includes('confirmed')) return "mdi:check-circle-outline";
+    return iconMap[notif.type] || "mdi:bell-outline";
+  };
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -181,8 +189,13 @@ const PromoterHeader = ({ mobileExpanded, setMobileExpanded }) => {
                       onClick={() => handleNotifClick(notif)}
                     >
                       <div className="notif-status-dot"></div>
-                      <div className={`notif-icon-box ${notif.type}`}>
-                        <Icon icon={iconMap[notif.type] || "mdi:bell-outline"} />
+                      <div className={`notif-icon-box ${notif.type} ${
+                        notif.title?.toLowerCase().includes('refund') ? 'refund' :
+                        notif.title?.toLowerCase().includes('cancel') ? 'cancel' :
+                        notif.title?.toLowerCase().includes('reject') ? 'reject' :
+                        notif.title?.toLowerCase().includes('confirmed') ? 'confirmed' : ''
+                      }`}>
+                        <Icon icon={getIcon(notif)} />
                       </div>
                       <div className="notif-content">
                         <p className="notif-text">

@@ -470,9 +470,74 @@ const updateReservationStatus = async (req, res) => {
             return res.status(404).json({ error: "Reservation not found" });
         }
 
-       const oldStatus = reservation.status;
+      const oldStatus = reservation.status;
         reservation.status = status;
         await reservation.save();
+
+        // Notify user when payment is confirmed
+        if (status === 'confirmed' && oldStatus !== 'confirmed') {
+            try {
+                const notificationController = require('./notificationController');
+                const { emitUpdate: emitNotif } = require('../socket');
+
+                const confirmedEvent = await Event.findById(reservation.event).select('title');
+                const reservationInfo = reservation.boothCode
+                    ? `booth "${reservation.boothCode}"`
+                    : reservation.seatLabels?.length > 0
+                        ? `seat(s) "${reservation.seatLabels.join(', ')}"`
+                        : 'your reservation';
+
+                // Notify the buyer (sponsor/customer)
+                const buyerNotif = await notificationController.createNotification({
+                    title: 'Payment Confirmed',
+                    content: `Your payment for ${reservationInfo} in "${confirmedEvent?.title || 'the event'}" has been confirmed.`,
+                    type: 'payment',
+                    path: reservation.type === 'booth' ? '/sponsor/sponsor-my-booths' : '/customer/my-ticketsorder',
+                    unread: true,
+                    userId: reservation.user,
+                    createdBy: req.user._id
+                });
+                emitNotif('newNotification', buyerNotif);
+
+                // Notify promoters of the event
+                const eventForPromoter = await Event.findById(reservation.event)
+                    .populate('assignedPromoters', '_id')
+                    .populate('createdBy', '_id role');
+
+                if (eventForPromoter) {
+                    const buyerUser = await User.findById(reservation.user).select('firstName lastName companyName');
+                    const buyerName = buyerUser
+                        ? (buyerUser.companyName || `${buyerUser.firstName} ${buyerUser.lastName}`)
+                        : 'A user';
+
+                    const promotersToNotify = new Set();
+                    if (eventForPromoter.createdBy?.role === 'promoter') {
+                        promotersToNotify.add(eventForPromoter.createdBy._id.toString());
+                    }
+                    if (Array.isArray(eventForPromoter.assignedPromoters)) {
+                        eventForPromoter.assignedPromoters.forEach(p => promotersToNotify.add(p._id.toString()));
+                    }
+
+                    for (const promoterId of promotersToNotify) {
+                        if (promoterId === req.user._id.toString()) continue;
+                        const promoterNotif = await notificationController.createNotification({
+                            title: 'Payment Confirmed',
+                            content: `${buyerName}'s payment for ${reservationInfo} in "${eventForPromoter.title}" has been confirmed.`,
+                            type: 'payment',
+                            path: '/promoter/promoter-sales',
+                            unread: true,
+                            userId: promoterId,
+                            createdBy: req.user._id
+                        });
+                        emitNotif('newNotification', promoterNotif);
+                    }
+                }
+            } catch (notifErr) {
+                console.error('Confirmed payment notification error:', notifErr);
+            }
+        }
+
+        // If status changed to rejected, refunded, or cancelled, reset the booth/seat status
 
         // If status changed to rejected, refunded, or cancelled, reset the booth/seat status in Event layout
         if (['rejected', 'refunded', 'cancelled'].includes(status) && !['rejected', 'refunded', 'cancelled'].includes(oldStatus)) {
