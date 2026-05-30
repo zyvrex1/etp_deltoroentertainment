@@ -45,7 +45,17 @@ const CustomerTicketOrder = () => {
             time: item.event?.startTime || "TBA",
             location: item.event?.venue?.name || "TBA",
             seat: `Seat ${item.seat?.label || 'N/A'}`,
-            status: item.status || "Upcoming",
+            status: (() => {
+                const rawStatus = item.status?.toLowerCase();
+                if (rawStatus === 'confirmed') return 'Paid';
+                if (rawStatus === 'rejected') return 'Rejected';
+                if (rawStatus === 'refunded') return 'Refunded';
+                if (rawStatus === 'pending') return 'Pending';
+                if (item.paymentMethod && item.paymentMethod.toLowerCase() === 'invoice') {
+                    return 'Pending';
+                }
+                return 'Paid';
+            })(),
             image: item.event?.image ? `${BACKEND_URL}/uploads/${item.event.image}` : "/assets/eventbg.jpg",
             purchasedAt: item.purchaseDate,
             qrData: item.qrData || item.cartId
@@ -118,10 +128,11 @@ const CustomerTicketOrder = () => {
                                 onChange={(e) => setStatusFilter(e.target.value)}
                                 className="status-dropdown"
                             >
-                                <option value="All">All Status</option>
-                                <option value="Upcoming">Upcoming</option>
-                                <option value="Live">Live</option>
-                                <option value="Completed">Completed</option>
+                                <option value="All">All</option>
+                                <option value="Paid">Paid</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Rejected">Rejected</option>
+                                <option value="Refunded">Refunded</option>
                             </select>
                         </div>
                         <div className="filter-dropdown-wrapper">
@@ -202,12 +213,12 @@ const CustomerTicketOrder = () => {
                                     </div>
                                 </div>
                                 <div className="ticket-card-footer">
-                                    <button
-                                        className="request-refund-btn"
-                                        onClick={() => handleRequestRefund(ticket)}
-                                    >
-                                        Request Refund
-                                    </button>
+                                     <button
+                                         className="request-refund-btn"
+                                         onClick={() => handleRequestRefund(ticket)}
+                                     >
+                                         Request Refund
+                                     </button>
                                 </div>
                             </div>
                         ))}

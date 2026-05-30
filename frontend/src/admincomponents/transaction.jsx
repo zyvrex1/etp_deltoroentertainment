@@ -165,9 +165,9 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
   };
 
   const getStatusClass = (status) => {
-    if (status === "completed") return "button-label tx-status-completed";
+    if (status === "completed" || status === "paid") return "button-label tx-status-completed";
     if (status === "pending") return "button-label tx-status-pending";
-    if (status === "refunded") return "button-label tx-status-refunded";
+    if (status === "refunded"|| status === "rejected" ) return "button-label tx-status-refunded";
     return "button-label tx-status";
   };
 

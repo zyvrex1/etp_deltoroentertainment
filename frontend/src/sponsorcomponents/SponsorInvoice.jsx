@@ -24,7 +24,9 @@ export default function SponsorInvoice() {
                 setLoading(true);
                 const reservations = await reservationService.getMyReservations(user.token);
                 
-                const formattedInvoices = reservations.map((res, index) => {
+                const paidReservations = reservations.filter(res => res.status?.toLowerCase() === 'confirmed');
+                
+                const formattedInvoices = paidReservations.map((res, index) => {
                     const eventTitle = res.event?.title || 'Unknown Event';
                     const invoiceRef = `INV-${new Date(res.createdAt).getFullYear()}-${res._id.slice(-5).toUpperCase()}`;
                     const createdDate = new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });

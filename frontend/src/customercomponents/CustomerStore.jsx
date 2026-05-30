@@ -43,6 +43,7 @@ const CustomerStore = () => {
         // Get unique event IDs from purchase history
         const bookedEventIds = new Set(
           purchaseHistory
+            .filter(item => item.status?.toLowerCase() === 'confirmed')
             .map(item => item.event?._id)
             .filter(Boolean)
         );

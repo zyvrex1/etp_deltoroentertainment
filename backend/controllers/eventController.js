@@ -60,10 +60,10 @@ const autoHealEvents = async (eventsArr) => {
 
   try {
     // 1. Fetch all ACTIVE reservations for these events (not cancelled)
-    const reservations = await Reservation.find({ 
-      event: { $in: eventIds },
-      status: { $ne: 'cancelled' }
-    });
+  const reservations = await Reservation.find({ 
+  event: { $in: eventIds },
+  status: { $in: ['pending', 'confirmed'] }
+});
 
     for (let event of events) {
       let changed = false;
@@ -1431,7 +1431,7 @@ const buySeats = async (req, res) => {
         },
         paymentMethod: paymentMethod || 'invoice',
         poNumber: billingInfo?.poNumber || "",
-        status: 'confirmed'
+        status: (paymentMethod === 'invoice' || !paymentMethod) ? 'pending' : 'confirmed'
       }));
 
       await Reservation.insertMany(reservationObjects);
@@ -1627,7 +1627,7 @@ const reserveBooth = async (req, res) => {
       billingAddress,
       paymentMethod: paymentMethod || "invoice",
       poNumber: poNumber || "",
-      status: "confirmed", // Auto-confirmed for invoice/sample flow
+      status: (paymentMethod === 'invoice' || !paymentMethod) ? "pending" : "confirmed",
     });
 
     // 2. Update the booth status and Price Level stats in the Event
@@ -1766,13 +1766,10 @@ const syncBoothStatus = async (req, res) => {
     if (!event) return res.status(404).json({ error: "No such event" });
 
     // 1. Get all active (non-cancelled) reservations for this event and populate user details
-    const reservations = await Reservation.find({ 
-      event: id,
-      status: { $ne: 'cancelled' } 
-    }).populate(
-      "user",
-      "firstName lastName companyName email",
-    );
+ const reservations = await Reservation.find({ 
+  event: id,
+  status: { $in: ['pending', 'confirmed'] }
+}).populate("user", "firstName lastName companyName email");
 
     let changed = false;
 

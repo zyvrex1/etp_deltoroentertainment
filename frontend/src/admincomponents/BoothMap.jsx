@@ -117,6 +117,9 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
 
   const containerRef = useRef(null);
 
+  const isOccupied = useCallback((status) => {
+    return status === 'sold' || status === 'reserved';
+  }, []);
   /**
    * Parse boothSize string (e.g. "10x10", "10x20") into pixel dimensions.
    * Base rule: "10x10" = 40×40 px (1 unit = 4 px), matching LayoutBuilder.
@@ -582,7 +585,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                                 y={-boothH / 2}
                                 width={boothW}
                                 height={boothH}
-                                fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#e0e0e0")}
+                                fill={isOccupied(item.status) ? '#22c55e' : (cat?.color || "#e0e0e0")} 
                                 stroke="#000"
                                 strokeWidth={1}
                                 strokeScaleEnabled={false}
@@ -590,7 +593,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                             ) : (
                               <Circle
                                 radius={20}
-                                fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#666666")}
+                                fill={isOccupied(item.status) ? '#22c55e' : (cat?.color || "#666666")}
                                 stroke="white"
                                 strokeWidth={1}
                               />

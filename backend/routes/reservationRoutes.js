@@ -10,7 +10,8 @@ const {
     removeExhibitor,
     deleteReservation,
     updateStoreSettings,
-    checkInReservation
+    checkInReservation,
+    updateReservationStatus
 } = require('../controllers/reservationController');
 const { upload } = require('../controllers/userController');
 const requireAuth = require('../middleware/requireAuth');
@@ -34,6 +35,7 @@ router.post('/:id/exhibitors', requireRole('sponsor'), addExhibitors);
 router.delete('/:id/exhibitors/:userId', requireRole('sponsor'), removeExhibitor);
 
 router.delete('/:id', requireRole('admin'), deleteReservation);
+router.put('/:id/status', requireRole('admin'), updateReservationStatus);
 router.put('/:id/store-settings', upload.single('avatar'), updateStoreSettings);
 
 module.exports = router;

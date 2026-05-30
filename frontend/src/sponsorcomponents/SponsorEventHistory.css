@@ -249,6 +249,16 @@
     color: var(--color-green-primary);
 }
 
+.cancelled {
+    background-color: var(--color-red-quaternary);
+    color: var(--color-red-primary);
+}
+
+.refunded {
+    background-color: var(--color-red-quaternary);
+    color: var(--color-red-primary);
+}
+
 .sh-actions {
     display: flex;
     justify-content: flex-start;

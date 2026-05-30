@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./payments.css";
 import Swal from "sweetalert2";
-import { showSuccessAlert, showErrorAlert, showApproveConfirmAlert } from "../utils/sweetAlert";
+import { showSuccessAlert, showErrorAlert, showApproveConfirmAlert, showRejectConfirmAlert } from "../utils/sweetAlert";
 import PaymentRejectionModal from "./Modal/PaymentRejectionModal";
+import ViewTransactionModal from "./Modal/ViewTransactionModal";
 import TransactionMonitoring from "./transaction";
 import axios from "axios";
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -90,6 +91,8 @@ const Payments = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [payoutPdfUrl, setPayoutPdfUrl] = useState(null);
   const [viewingPayout, setViewingPayout] = useState(null);
+  const [isTxModalOpen, setIsTxModalOpen] = useState(false);
+  const [selectedTx, setSelectedTx] = useState(null);
 
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -307,11 +310,84 @@ const Payments = () => {
     setPayoutPdfUrl(pdfDataUrl);
   };
 
+  const handleViewReservation = (row) => {
+    setSelectedTx({
+      id: row.id,
+      resId: row.resId,
+      user: row.promoter,
+      event: row.event,
+      category: row.category,
+      amount: row.amount,
+      status: row.status === 'confirmed' ? 'completed' : row.status,
+      date: row.date,
+      paymentMethod: row.paymentMethod
+    });
+    setIsTxModalOpen(true);
+  };
+
+  const handleTxRefund = async (transactionId) => {
+    const matchingRes = reservations.find(res => {
+      const isBooth = !!res.boothCode;
+      const formattedId = isBooth ? `Booth-${res._id.toString().slice(-6).toUpperCase()}` : `Seats-${res._id.toString().slice(-6).toUpperCase()}`;
+      return formattedId === transactionId;
+    });
+
+    if (!matchingRes) return;
+
+    try {
+      await reservationService.updateReservationStatus(matchingRes._id, "refunded", user.token);
+      setReservations(prev =>
+        prev.map(res => res._id === matchingRes._id ? { ...res, status: 'refunded' } : res)
+      );
+    } catch (error) {
+      console.error('Error refunding reservation:', error);
+      await showErrorAlert('Error', error.response?.data?.error || 'Failed to process refund on backend.');
+    }
+  };
+
+  const handleAcceptReservation = async (id, promoter, amount) => {
+    const confirmResult = await showApproveConfirmAlert(promoter, amount);
+
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+
+    try {
+      await reservationService.updateReservationStatus(id, "confirmed", user.token);
+      setReservations(prev =>
+        prev.map(res => res._id === id ? { ...res, status: "confirmed" } : res)
+      );
+      await showSuccessAlert('Reservation Approved', 'The reservation invoice has been approved.');
+    } catch (error) {
+      console.error('Error approving reservation:', error);
+      await showErrorAlert('Error', error.response?.data?.error || 'Failed to approve reservation.');
+    }
+  };
+
+  const handleRejectReservation = async (id, promoter, amount) => {
+    const confirmResult = await showRejectConfirmAlert(promoter, amount);
+
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+
+    try {
+      await reservationService.updateReservationStatus(id, "rejected", user.token);
+      setReservations(prev =>
+        prev.map(res => res._id === id ? { ...res, status: "rejected" } : res)
+      );
+      await showSuccessAlert('Reservation Rejected', 'The reservation invoice has been rejected.');
+    } catch (error) {
+      console.error('Error rejecting reservation:', error);
+      await showErrorAlert('Error', error.response?.data?.error || 'Failed to reject reservation.');
+    }
+  };
+
   const getStatusClass = (status) => {
     if (status === "paid" || status === "confirmed") return "button-label pay-status-paid";
     if (status === "pending") return "button-label pay-status-pending";
     if (status === "processing") return "button-label pay-status-processing";
-    if (status === "rejected" || status === "reject") return "button-label pay-status-rejected";
+    if (status === "rejected" || status === "reject" || status === "refunded") return "button-label pay-status-rejected";
     return "button-label";
   };
 
@@ -632,7 +708,7 @@ const Payments = () => {
                       ))}
                     </tbody>
                   </>
-                ) : (
+                 ) : (
                   <>
                     <thead>
                       <tr>
@@ -644,6 +720,7 @@ const Payments = () => {
                         <th>Method</th>
                         <th>Status</th>
                         <th>Date</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -666,6 +743,69 @@ const Payments = () => {
                             <span className={getStatusClass(row.status)}>{row.status}</span>
                           </td>
                           <td data-label="Date" className="small-body-text">{row.date}</td>
+                          <td data-label="Actions">
+                            <div className="pay-actions">
+                              <button
+                                className="pay-btn-view"
+                                title="View details"
+                                style={{
+                                  backgroundColor: 'rgba(30, 60, 114, 0.1)',
+                                  color: 'var(--primary-blue)',
+                                  border: '1px solid rgba(30, 60, 114, 0.2)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  padding: '8px',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                onClick={() => handleViewReservation(row)}
+                              >
+                                <Icon icon="mdi:eye-outline" style={{ fontSize: '18px' }} />
+                              </button>
+                              {row.paymentMethod === 'Invoice' && row.status === 'pending' && (
+                                <>
+                                  <button
+                                    className="pay-btn-approve"
+                                    title="Approve Reservation"
+                                    style={{
+                                      backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                                      color: '#28a745',
+                                      border: '1px solid rgba(40, 167, 69, 0.2)',
+                                      padding: '8px',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center'
+                                    }}
+                                    onClick={() => handleAcceptReservation(row.resId, row.promoter, row.amount)}
+                                  >
+                                    <Icon icon="mdi:check-bold" style={{ fontSize: '18px' }} />
+                                  </button>
+                                  <button
+                                    className="pay-btn-reject"
+                                    title="Reject Reservation"
+                                    style={{
+                                      backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                                      color: '#dc3545',
+                                      border: '1px solid rgba(220, 53, 69, 0.2)',
+                                      padding: '8px',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center'
+                                    }}
+                                    onClick={() => handleRejectReservation(row.resId, row.promoter, row.amount)}
+                                  >
+                                    <Icon icon="mdi:close-thick" style={{ fontSize: '18px' }} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -721,6 +861,18 @@ const Payments = () => {
           payout={viewingPayout}
           pdfUrl={payoutPdfUrl}
           onDownloadInvoice={() => generateInvoicePDF(viewingPayout, true)}
+        />
+      )}
+
+      {isTxModalOpen && selectedTx && (
+        <ViewTransactionModal
+          isOpen={isTxModalOpen}
+          onClose={() => {
+            setIsTxModalOpen(false);
+            setSelectedTx(null);
+          }}
+          transaction={selectedTx}
+          onRefund={handleTxRefund}
         />
       )}
     </div>

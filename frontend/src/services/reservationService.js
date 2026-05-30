@@ -33,6 +33,11 @@ const reservationService = {
   updateStoreSettings: async (id, data, token) => {
     const response = await api.put(`/reservations/${id}/store-settings`, data, reservationService.getAuthHeaders(token));
     return response.data;
+  },
+
+  updateReservationStatus: async (id, status, token) => {
+    const response = await api.put(`/reservations/${id}/status`, { status }, reservationService.getAuthHeaders(token));
+    return response.data;
   }
 };
 

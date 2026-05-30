@@ -15,6 +15,7 @@ const createOrder = async (req, res) => {
     try {
         const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
         
+        const isInvoice = paymentMethod && paymentMethod.toLowerCase().includes('invoice');
         const order = await Order.create({
             orderId,
             customerId,
@@ -26,7 +27,7 @@ const createOrder = async (req, res) => {
             totalAmount,
             paymentMethod,
             status: 'Pending',
-            paymentStatus: 'Unpaid' // Defaulting to Unpaid for simulation
+            paymentStatus: isInvoice ? 'Pending' : 'Paid'
         });
 
         // Update stock for each product

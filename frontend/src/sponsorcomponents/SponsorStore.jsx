@@ -49,7 +49,7 @@ const SponsorStore = () => {
         const now = new Date();
 
         const formattedEvents = reservationsData
-          .filter(res => res.event && res.event.title) // Ensure event exists and has a title
+          .filter(res => res.event && res.event.title && res.status?.toLowerCase() === 'confirmed')
           .map(res => {
             const eventObj = res.event || {};
             const storeSettings = res.storeSettings || {};
@@ -100,20 +100,31 @@ const SponsorStore = () => {
             }
 
             return {
-              id: res._id,
-              _id: eventObj._id,
-              boothCodeRaw: res.boothCode,
-              boothNumber: `Booth ${res.boothCode || ''}`,
-              title: storeName, // Use store name as primary title
-              eventTitle: eventObj.title || 'Unknown Event',
-              industry: industry,
-              date: formattedDate,
-              location: eventObj.venue?.name || 'TBA',
-              products: count,
-              activeOrders: activeOrdersCount,
-              status: status,
-              image: imageUrl
-            };
+                id: res._id,
+                _id: eventObj._id,
+                boothCodeRaw: res.boothCode,
+                boothNumber: `Booth ${res.boothCode || ''}`,
+                title: storeName, // Use store name as primary title
+                eventTitle: eventObj.title || 'Unknown Event',
+                industry: industry,
+                date: formattedDate,
+                location: eventObj.venue?.name || 'TBA',
+                products: count,
+                activeOrders: activeOrdersCount,
+                status: status, // event status (Live/Upcoming/Completed)
+                image: imageUrl,
+                paymentStatus: (() => {
+                    const rawStatus = res.status?.toLowerCase();
+                    if (rawStatus === 'confirmed') return 'Paid';
+                    if (rawStatus === 'rejected') return 'Rejected';
+                    if (rawStatus === 'refunded') return 'Refunded';
+                    if (rawStatus === 'pending') return 'Pending';
+                    if (res.paymentMethod && res.paymentMethod.toLowerCase() === 'invoice') {
+                        return 'Pending';
+                    }
+                    return 'Paid';
+                })()
+              };
           });
 
         setEventData(formattedEvents);

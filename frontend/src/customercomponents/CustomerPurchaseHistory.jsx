@@ -67,8 +67,28 @@ export default function CustomerPurchaseHistory() {
                     id: date,
                     type: item.type || 'ticket',
                     title: eventTitle,
-                    status: item.status || 'Confirmed',
-                    statusClass: item.status === 'Refunded' ? 'status-refunded' : 'status-confirmed',
+                    status: (() => {
+                        const rawStatus = item.status?.toLowerCase();
+                        if (rawStatus === 'confirmed') return 'Paid';
+                        if (rawStatus === 'rejected') return 'Rejected';
+                        if (rawStatus === 'refunded') return 'Refunded';
+                        if (rawStatus === 'pending') return 'Pending';
+                        if (item.paymentMethod && item.paymentMethod.toLowerCase() === 'invoice') {
+                            return 'Pending';
+                        }
+                        return 'Paid';
+                    })(),
+                    statusClass: (() => {
+                        const rawStatus = item.status?.toLowerCase();
+                        if (rawStatus === 'confirmed') return 'status-confirmed'; // green
+                        if (rawStatus === 'rejected') return 'status-refunded'; // red
+                        if (rawStatus === 'refunded') return 'status-refunded'; // red
+                        if (rawStatus === 'pending') return 'status-pending'; // yellow
+                        if (item.paymentMethod && item.paymentMethod.toLowerCase() === 'invoice') {
+                            return 'status-preparing'; // yellow/blue
+                        }
+                        return 'status-confirmed';
+                    })(),
                     orderNum: `Seat - ${(item.cartId || '').toUpperCase().slice(0, 8)}`,
                     date: date ? new Date(date).toLocaleDateString() : 'N/A',
                     totalAmount: 0,

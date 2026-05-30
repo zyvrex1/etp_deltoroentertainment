@@ -455,6 +455,135 @@ const checkInReservation = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 };
+
+const updateReservationStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['pending', 'confirmed', 'cancelled', 'rejected', 'refunded'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status value" });
+    }
+
+    try {
+        const reservation = await Reservation.findById(id);
+        if (!reservation) {
+            return res.status(404).json({ error: "Reservation not found" });
+        }
+
+        const oldStatus = reservation.status;
+        reservation.status = status;
+        await reservation.save();
+
+        // If status changed to rejected, refunded, or cancelled, reset the booth/seat status in Event layout
+        if (['rejected', 'refunded', 'cancelled'].includes(status) && !['rejected', 'refunded', 'cancelled'].includes(oldStatus)) {
+            const event = await Event.findById(reservation.event);
+            if (event) {
+                let changed = false;
+
+                if (reservation.type === 'booth') {
+                    let boothIndex = event.booths.findIndex(b => b._id.toString() === (reservation.boothId || "").toString());
+                    if (boothIndex === -1) {
+                        boothIndex = event.booths.findIndex(b => b.code === reservation.boothCode || b.label === reservation.boothCode);
+                    }
+
+                    if (boothIndex !== -1) {
+                        event.booths[boothIndex].status = "available";
+                        event.booths[boothIndex].reservedBy = "";
+                        event.booths[boothIndex].reservedByEmail = "";
+                        event.booths[boothIndex].reservedByPO = "";
+                        changed = true;
+
+                        const booth = event.booths[boothIndex];
+                        if (booth.priceLevelId && booth.priceLevelId !== "none") {
+                            const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === booth.priceLevelId.toString());
+                            if (plIndex !== -1) {
+                                event.priceLevels[plIndex].quantitySold = Math.max(0, event.priceLevels[plIndex].quantitySold - 1);
+                            }
+                        }
+                    }
+
+                    // Adjust booth revenue
+                    const saleTotal = reservation.amount?.total || 0;
+                    if (saleTotal > 0) {
+                        event.boothRevenue = Math.max(0, (event.boothRevenue || 0) - saleTotal);
+                    }
+
+                    if (event.layoutData && event.layoutData.items) {
+                        const identifier = (reservation.boothId || "").toString();
+                        const layoutItemIndex = event.layoutData.items.findIndex(item =>
+                            (item._id?.toString() === identifier ||
+                                item.id?.toString() === identifier ||
+                                item.code === reservation.boothCode ||
+                                item.label === reservation.boothCode) &&
+                            (item.type || "").toLowerCase() === 'booth'
+                        );
+                        if (layoutItemIndex !== -1) {
+                            event.layoutData.items[layoutItemIndex].status = "available";
+                            event.layoutData.items[layoutItemIndex].reservedBy = "";
+                            event.layoutData.items[layoutItemIndex].reservedByEmail = "";
+                            event.layoutData.items[layoutItemIndex].reservedByPO = "";
+                            event.markModified('layoutData');
+                            changed = true;
+                        }
+                    }
+                } else if (reservation.type === 'seat') {
+                    const seatIds = reservation.seatIds || [];
+                    const seatLabels = reservation.seatLabels || [];
+
+                    // Adjust seat revenue
+                    const saleTotal = reservation.amount?.total || 0;
+                    if (saleTotal > 0) {
+                        event.seatRevenue = Math.max(0, (event.seatRevenue || 0) - saleTotal);
+                    }
+
+                    if (event.layoutData && event.layoutData.items) {
+                        event.layoutData.items.forEach((item, index) => {
+                            const type = (item.type || "").toLowerCase();
+                            const idStr = (item._id || item.id || "").toString();
+
+                            if (type === "seat") {
+                                const isThisSeat = seatIds.includes(idStr) || seatLabels.includes(item.label) || seatLabels.includes(item.code);
+
+                                if (isThisSeat) {
+                                    event.layoutData.items[index].status = "available";
+                                    event.layoutData.items[index].reservedBy = "";
+                                    event.layoutData.items[index].reservedByEmail = "";
+                                    event.layoutData.items[index].reservedByPO = "";
+                                    event.layoutData.items[index].ticketId = "";
+
+                                    const priceLevelId = item.categoryId || item.priceLevelId;
+                                    if (priceLevelId && priceLevelId !== "none") {
+                                        const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === priceLevelId.toString());
+                                        if (plIndex !== -1) {
+                                            event.priceLevels[plIndex].quantitySold = Math.max(0, event.priceLevels[plIndex].quantitySold - 1);
+                                        }
+                                    }
+                                    changed = true;
+                                }
+                            }
+                        });
+                        if (changed) event.markModified('layoutData');
+                    }
+                }
+
+                if (changed) {
+                    event.markModified('booths');
+                    event.markModified('priceLevels');
+                    await event.save();
+                }
+            }
+        }
+
+        const { emitUpdate } = require("../socket");
+        emitUpdate('dashboardUpdate');
+
+        res.status(200).json(reservation);
+    } catch (error) {
+        console.error("Update Reservation Status Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getMyReservations,
     getAllReservations,
@@ -465,6 +594,7 @@ module.exports = {
     getEventBoothReservations,
     getEventSalesForPromoter,
     checkInReservation,
-    updateStoreSettings
+    updateStoreSettings,
+    updateReservationStatus
 };
 

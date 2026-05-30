@@ -23,7 +23,22 @@
             color: var(--color-black-primary);
         }
     }
-
+.status-confirmed{
+    color: var(--color-green-primary);
+    background-color: var(--color-green-quaternary);
+}
+.status-pending{
+    color: var(--color-yellow-primary);
+    background-color: var(--color-yellow-quaternary);
+}
+.status-cancelled{
+    color: var(--color-red-primary);
+     background-color: var(--color-red-quaternary);
+}
+.status-refunded{
+    color: var(--color-red-primary);
+     background-color: var(--color-red-quaternary);
+}
 
 
     .cph-controls {

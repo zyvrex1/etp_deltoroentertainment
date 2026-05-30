@@ -210,7 +210,7 @@ export default function SponsorEventHistory() {
                     eventStatus: 'Upcoming', // Default status, logic could be more complex based on date
                     invoiceRef: `${res.poNumber}`,
                     amount: `$${(res.amount?.total || 0).toLocaleString()}`,
-                    paymentStatus: res.status === 'confirmed' ? 'Paid' : (res.status === 'pending' ? 'Pending' : 'Cancelled'),
+                    paymentStatus: res.status === 'confirmed' ? 'Paid' : (res.status === 'pending' ? 'Pending' : res.status === 'refunded' ? 'Refunded' : 'Cancelled'),
                     paymentDate: res.createdAt ? new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A',
                     // Full details for modal
                     fullReservation: res

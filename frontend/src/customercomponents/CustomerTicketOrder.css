@@ -149,6 +149,26 @@
                             background-color: #101828;
                             color: #FFFFFF;
                         }
+
+                        &.paid {
+                            background-color: var(--color-green-quaternary);
+                            color: var(--color-green-primary);
+                        }
+
+                        &.pending {
+                            background-color: var(--color-yellow-quaternary);
+                            color: var(--color-yellow-primary);
+                        }
+
+                        &.rejected {
+                            background-color: var(--color-red-quaternary);
+                            color: var(--color-red-primary);
+                        }
+
+                        &.refunded {
+                            background-color: var(--color-red-quaternary);
+                            color: var(--color-red-primary);
+                        }
                     }
                 }
 
@@ -258,28 +278,34 @@
                         }
                     }
 
+                    
+                }
+            }
+        }
+
+     .ticket-card-footer {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
+                    padding-top: 15px;
+                    border-top: 1px solid var(--color-black-quaternary);
+
                     .request-refund-btn {
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
                         background-color: #D92D20;
                         color: white;
                         border: none;
-                        padding: 12px 20px;
+                        padding: 10px 20px;
                         border-radius: 8px;
                         font-weight: 600;
                         font-size: 14px; /* Matches .small-body-text */
                         cursor: pointer;
-                        width: 100%;
+                        text-decoration: none;
 
                         &:hover {
                             background-color: #b42318;
                         }
                     }
                 }
-            }
-        }
-
         .empty-state {
             padding: 60px;
             text-align: left;

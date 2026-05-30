@@ -120,7 +120,7 @@ export const CustomerCartProvider = ({ children }) => {
                             purchaseDate: res.createdAt,
                             paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
                             poNumber: res.poNumber || '',
-                            status: res.status === 'confirmed' ? 'Upcoming' : 'Confirmed',
+                            status: res.status,
                             qrData: res.qrData || res._id.toString()
                         });
                     });
@@ -140,7 +140,7 @@ export const CustomerCartProvider = ({ children }) => {
                         purchaseDate: res.createdAt,
                         paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
                         poNumber: res.poNumber || '',
-                        status: 'Confirmed',
+                        status: res.status,
                         qrData: res.qrData || res._id.toString()
                     });
                 }

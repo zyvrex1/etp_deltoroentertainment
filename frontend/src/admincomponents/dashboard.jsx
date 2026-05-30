@@ -98,7 +98,9 @@ export default function Dashboard() {
             ]);
 
             // Filter out cancelled reservations for all metrics
-            const activeReservations = reservations.filter(res => res.status !== 'cancelled');
+      const activeReservations = reservations.filter(
+    res => res.status === 'confirmed'
+);
 
             const pendingCount = events.filter(e => e.status === 'pending').length;
             const activeCount = events.filter(e => e.status === 'approved').length;

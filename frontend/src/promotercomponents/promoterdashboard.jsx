@@ -16,12 +16,17 @@ export default function PromoterDashboard() {
   const { events, dispatch } = useEventsContext();
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  
+
   const [topSponsorsData, setTopSponsorsData] = useState([]);
   const [revenueData, setRevenueData] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [expandedSponsorRow, setExpandedSponsorRow] = useState(null);
+  const [eventSoldMapState, setEventSoldMap] = useState({});
+  const [confirmedSeatsSold, setConfirmedSeatsSold] = useState(0);
+  const [confirmedBoothsSold, setConfirmedBoothsSold] = useState(0);
+  const [confirmedTotalRevenue, setConfirmedTotalRevenue] = useState(0);
+
   const navigate = useNavigate();
 
   const toggleSponsorRow = (index) => {
@@ -49,9 +54,9 @@ export default function PromoterDashboard() {
         }
 
         const approvedEvts = fetchedEvents.filter(e => e.status === "approved" || e.status === "live");
-        
+
         // 2. Fetch sales (reservations) for all approved events in parallel
-        const salesPromises = approvedEvts.map(e => 
+        const salesPromises = approvedEvts.map(e =>
           reservationService.getEventSales(e._id, user.token)
             .catch(err => {
               console.error(`Error fetching sales for event ${e._id}:`, err);
@@ -68,13 +73,40 @@ export default function PromoterDashboard() {
           }
         });
 
-        // Filter active (non-cancelled) reservations
-        const activeReservations = allReservations.filter(r => r.status !== 'cancelled');
+        // Filter confirmed reservations only (excludes cancelled, refunded, rejected, pending)
+        const activeReservations = allReservations.filter(r => r.status === 'confirmed');
+
+        // --- Build per-event sold map from confirmed reservations ---
+        const eventSoldMap = {};
+        activeReservations.forEach(r => {
+          const eventId = String(r.event?._id || r.event);
+          if (!eventSoldMap[eventId]) eventSoldMap[eventId] = { seats: 0, booths: 0 };
+          if (r.type === 'seat') eventSoldMap[eventId].seats += (r.seatIds?.length || 1);
+          else if (r.type === 'booth') eventSoldMap[eventId].booths += 1;
+        });
+        setEventSoldMap(eventSoldMap);
+
+        // --- Total confirmed sold counts ---
+        const totalConfirmedSeats = activeReservations
+          .filter(r => r.type === 'seat')
+          .reduce((sum, r) => sum + (r.seatIds?.length || 1), 0);
+        const totalConfirmedBooths = activeReservations
+          .filter(r => r.type === 'booth').length;
+        setConfirmedSeatsSold(totalConfirmedSeats);
+        setConfirmedBoothsSold(totalConfirmedBooths);
+
+        // Total revenue from confirmed reservations only
+        const totalRevFromConfirmed = activeReservations
+          .reduce((sum, r) => sum + (r.amount?.total || 0), 0);
+        setConfirmedTotalRevenue(totalRevFromConfirmed);
 
         // --- Calculate Top Sponsors ---
         const sponsorMap = {};
+
+        // Process only confirmed booth reservations for sponsors
         activeReservations.forEach(res => {
           if (res.type !== 'booth' || !res.user) return;
+
           const sponsorId = String(res.user._id || res.user);
           if (!sponsorMap[sponsorId]) {
             sponsorMap[sponsorId] = {
@@ -141,8 +173,8 @@ export default function PromoterDashboard() {
     fetchDashboardData();
   }, [user, dispatch]);
 
-  const approvedEvents = events 
-    ? events.filter(e => e.status === "approved") 
+  const approvedEvents = events
+    ? events.filter(e => e.status === "approved")
     : [];
 
   const displayEvents = [...approvedEvents]
@@ -154,7 +186,7 @@ export default function PromoterDashboard() {
       const ticketsSold = evt.ticketsSold || 0;
       const totalBooths = evt.totalBooths || 0;
       const boothsSold = evt.boothsSold || 0;
-      
+
       const totalCapacity = totalTickets + totalBooths;
       const totalSold = ticketsSold + boothsSold;
 
@@ -179,7 +211,7 @@ export default function PromoterDashboard() {
         soldText: `${totalSold} / ${totalCapacity} Seats sold`,
         progress: progress,
         subStats: [
-          `${evt.ticketsSold || totalSold} checked in`, 
+          `${evt.ticketsSold || totalSold} checked in`,
           `${evt.booths?.filter(b => b.status === "sold").length || 0}/${evt.booths?.length || 0} booths sold`
         ],
         raw: evt
@@ -188,7 +220,7 @@ export default function PromoterDashboard() {
 
   const allEvents = events || [];
   const totalRevenue = allEvents.reduce((sum, e) => sum + (e.seatRevenue || 0) + (e.boothRevenue || 0), 0);
-  
+
   const seatsSold = allEvents.reduce((sum, e) => {
     let soldCount = 0;
     let layout = e.layoutData;
@@ -220,12 +252,12 @@ export default function PromoterDashboard() {
     }
 
     if (layout && Array.isArray(layout.items)) {
-        layout.items.forEach(item => {
-          if ((item.type === 'booth' || item.isBooth) && item.status === 'sold') {
-            soldCount++;
-          }
-        });
-      } else if (e.booths && Array.isArray(e.booths)) {
+      layout.items.forEach(item => {
+        if ((item.type === 'booth' || item.isBooth) && item.status === 'sold') {
+          soldCount++;
+        }
+      });
+    } else if (e.booths && Array.isArray(e.booths)) {
       soldCount += e.booths.filter(b => b.status === "sold").length;
     } else {
       soldCount += e.boothsSold || 0;
@@ -241,14 +273,14 @@ export default function PromoterDashboard() {
   const row1Stats = [
     {
       label: "Total Revenue",
-      value: `$${totalRevenue.toLocaleString()}`,
+      value: `$${confirmedTotalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       delta: "+12.5%",
       icon: "mdi:currency-usd",
       color: "green",
     },
     {
       label: "Potential Payout",
-      value: `$${(totalRevenue * 0.85).toLocaleString()}`,
+      value: `$${(confirmedTotalRevenue * 0.85).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       delta: "Estimated",
       icon: "mdi:chart-line",
       color: "purple",
@@ -256,14 +288,14 @@ export default function PromoterDashboard() {
     },
     {
       label: "Seats Sold",
-      value: seatsSold.toLocaleString(),
+      value: confirmedSeatsSold.toLocaleString(),
       delta: "+8.2%",
       icon: "mdi:ticket-confirmation-outline",
       color: "blue",
     },
     {
       label: "Booth Sold",
-      value: boothsSold.toLocaleString(),
+      value: confirmedBoothsSold.toLocaleString(),
       delta: "+5.0%",
       icon: "mdi:storefront-outline",
       color: "orange",
@@ -332,56 +364,46 @@ export default function PromoterDashboard() {
   const ticketSalesData = approvedEvents.map(e => {
     let totalSeats = 0;
     let totalBooths = 0;
-    let seatsSold = 0;
-    let boothsSold = 0;
 
     let layout = e.layoutData;
     if (typeof layout === 'string') {
-        try { layout = JSON.parse(layout); } catch (err) { layout = null; }
+      try { layout = JSON.parse(layout); } catch (err) { layout = null; }
     }
 
+    // Capacity only from layout (totals are fine from layout)
     if (layout && Array.isArray(layout.items)) {
-        layout.items.forEach(item => {
-            const isSeat = item.type === 'seat' || item.isSeat || (!item.isBooth && !item.isElement && !item.isBackground && item.type !== 'booth');
-            const isBooth = item.type === 'booth' || item.isBooth;
-            
-            if (isSeat) {
-                totalSeats++;
-                if (item.status === 'sold') seatsSold++;
-            } else if (isBooth) {
-                totalBooths++;
-                if (item.status === 'sold') boothsSold++;
-            }
-        });
+      layout.items.forEach(item => {
+        const isSeat = item.type === 'seat' || item.isSeat || (!item.isBooth && !item.isElement && !item.isBackground && item.type !== 'booth');
+        const isBooth = item.type === 'booth' || item.isBooth;
+        if (isSeat) totalSeats++;
+        else if (isBooth) totalBooths++;
+      });
     } else {
-        if (e.seatMap && e.seatMap.sections) {
-            e.seatMap.sections.forEach(sec => {
-                if (sec.seats) {
-                    totalSeats += sec.seats.length;
-                    seatsSold += sec.seats.filter(s => s.status === 'sold').length;
-                }
-            });
-        }
-        if (e.booths && Array.isArray(e.booths)) {
-            totalBooths += e.booths.length;
-            boothsSold += e.booths.filter(b => b.status === "sold").length;
-        }
+      if (e.seatMap && e.seatMap.sections) {
+        e.seatMap.sections.forEach(sec => {
+          if (sec.seats) totalSeats += sec.seats.length;
+        });
+      }
+      if (e.booths && Array.isArray(e.booths)) {
+        totalBooths += e.booths.length;
+      }
     }
 
     if (e.eventType === "General Admission") {
-        const gaSeatsSold = (e.priceLevels || []).reduce((sum, p) => sum + (p.quantitySold || 0), 0);
-        const gaSeatsTotal = (e.priceLevels || []).reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
-        if (gaSeatsTotal > 0) {
-            seatsSold = gaSeatsSold;
-            totalSeats = gaSeatsTotal;
-        }
+      const gaSeatsTotal = (e.priceLevels || []).reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
+      if (gaSeatsTotal > 0) totalSeats = gaSeatsTotal;
     }
+
+    // ✅ Sold counts from confirmed reservations only
+    const soldData = eventSoldMapState[String(e._id)] || { seats: 0, booths: 0 };
+    const seatsSold = soldData.seats;
+    const boothsSold = soldData.booths;
 
     return {
       name: e.title.length > 10 ? e.title.substring(0, 10) + '...' : e.title,
-      seatsSold: seatsSold,
+      seatsSold,
       seatsAvailable: Math.max(0, totalSeats - seatsSold),
-      boothsSold: boothsSold,
+      boothsSold,
       boothsAvailable: Math.max(0, totalBooths - boothsSold)
     };
   });

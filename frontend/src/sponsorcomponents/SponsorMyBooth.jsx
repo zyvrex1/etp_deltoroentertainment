@@ -65,7 +65,10 @@ export default function SponsorMyBooth() {
         }
 
         if (statusFilter !== "All") {
-            result = result.filter(res => getStatus(res.event) === statusFilter);
+            result = result.filter(res => {
+                const payStatus = res.status === 'confirmed' ? 'Paid' : (res.status === 'pending' ? 'Pending' : (res.status === 'rejected' ? 'Rejected' : (res.status === 'refunded' ? 'Refunded' : 'Pending')));
+                return payStatus === statusFilter;
+            });
         }
 
         if (sortFilter === "Recently Buy") {
@@ -144,10 +147,11 @@ export default function SponsorMyBooth() {
                                 onChange={(e) => setStatusFilter(e.target.value)}
                                 className="status-dropdown"
                             >
-                                <option value="All">All Status</option>
-                                <option value="Upcoming">Upcoming</option>
-                                <option value="Live">Live</option>
-                                <option value="Completed">Completed</option>
+                                <option value="All">All</option>
+                                <option value="Paid">Paid</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Rejected">Rejected</option>
+                                <option value="Refunded">Refunded</option>
                             </select>
                         </div>
                         <div className="filter-dropdown-wrapper">
@@ -188,13 +192,14 @@ export default function SponsorMyBooth() {
                         ))
                     ) : paginatedBooths.length > 0 ? (
                         paginatedBooths.map(res => {
-                            const status = getStatus(res.event);
+                            const payStatusLabel = res.status === 'confirmed' ? 'Paid' : (res.status?.charAt(0).toUpperCase() + res.status?.slice(1) || 'Pending');
+                            const payStatusClass = res.status === 'confirmed' ? 'live' : (res.status === 'pending' ? 'upcoming' : (res.status === 'rejected' || res.status === 'refunded' ? 'rejected' : 'upcoming'));
                             return (
                                 <div key={res._id} className="booth-card-new">
                                     <div className="booth-card-top">
                                         <h4 className="booth-event-title">{res.event?.title}</h4>
-                                        <span className={`booth-status-badge ${status.toLowerCase()}`}>
-                                            {status}
+                                        <span className={`booth-status-badge ${payStatusClass}`}>
+                                            {payStatusLabel}
                                         </span>
                                     </div>
                                     <div className="booth-card-body">
@@ -236,7 +241,7 @@ export default function SponsorMyBooth() {
                                         <NavLink to={`/sponsor/sponsor-booth-details/${res._id}`} className="view-details-btn">
                                             <Icon icon="mdi:eye-outline" /> View Full Details
                                         </NavLink>
-                                        {(res.user?._id === user?._id || res.user === user?._id) && (
+                                        {(res.user?._id === user?._id || res.user === user?._id) && res.status === 'confirmed' && (
                                             <button 
                                                 className="request-refund-btn"
                                                 onClick={() => handleOpenRefund(res)}
