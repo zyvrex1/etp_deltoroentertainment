@@ -15,6 +15,7 @@ import {
   removeExportToast,
   drawTable,
   finalizeReport,
+  generatePayoutInvoicePDF
 } from "../utils/pdfExport";
 import PromoterViewPayout from "./PromoterModal/PromoterViewPayout.jsx";
 
@@ -322,18 +323,18 @@ const PromoterPayouts = () => {
       y += 8;
 
       const headers = [
+        "Reference No.",
         "Date",
         "Amount",
         "Method",
         "Status",
-        "Reference",
       ];
       const rows = sortedAndFilteredPayouts.map((row) => [
+        row.reference,
         row.date,
         row.amountStr,
         row.method,
         row.status,
-        row.reference,
       ]);
       y = drawTable(
         pdf,
@@ -372,157 +373,11 @@ const PromoterPayouts = () => {
   };
 
   const generateInvoicePDF = async (payout, shouldSave = true) => {
-    const loadingToast = shouldSave ? showExportToast() : null;
-    const INVOICE_TITLE = "Payout Invoice Receipt";
     try {
-      const logoData = await loadLogo();
-      const doc = new jsPDF("p", "mm", "a4");
-      const pdfWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
-      let y = 45;
-
-      addReportHeader(doc, INVOICE_TITLE, logoData);
-
-      doc.setFontSize(12);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Date Requested: ${payout.date}`, margin, y);
-      y += 8;
-      doc.text(`Status: ${payout.status}`, margin, y);
-      y += 8;
-      doc.text(`Reference: ${payout.reference || `WTD-${Math.floor(Math.random() * 10000000)}`}`, margin, y);
-      y += 8;
-
-      const methodText = payout.method || "Not Specified";
-      doc.text(`Payout Method: ${methodText}`, margin, y);
-      y += 6;
-
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.setFont("helvetica", "normal");
-
-      if (payout.methodDetails) {
-        Object.entries(payout.methodDetails).forEach(([key, value]) => {
-          if (value && key !== 'last4') { // Skip last4 if other details are present, or show it if it's the only one
-            const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            doc.text(`${formattedKey}: ${value}`, margin + 5, y);
-            y += 5;
-          }
-        });
-        // Fallback for old payouts with only last4
-        if (Object.keys(payout.methodDetails).length === 1 && payout.methodDetails.last4) {
-          doc.text(`Details: ${payout.methodDetails.last4}`, margin + 5, y);
-          y += 5;
-        }
-      }
-      y += 5;
-
-      doc.setFontSize(12);
-      doc.setTextColor(30, 60, 114);
-      doc.setFont("helvetica", "bold");
-
-      const hasSpecificEvents = payout.eventIds && payout.eventIds.length > 0;
-      const targetEventIds = hasSpecificEvents
-        ? payout.eventIds
-        : [...new Set(salesData.map(s => s.eventId))];
-
-      // Determine Header Text
-      const headerText = (hasSpecificEvents && payout.eventIds.length === 1)
-        ? events.find(e => e._id === payout.eventIds[0])?.title || "Event Name"
-        : (hasSpecificEvents ? "Event Name" : "All Events");
-
-      doc.text(headerText, margin, y);
-      doc.text("Amount", pdfWidth - margin - 30, y);
-      y += 4;
-
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, y, pdfWidth - margin, y);
-      y += 8;
-
-      doc.setTextColor(50, 50, 50);
-      doc.setFont("helvetica", "normal");
-
-      // Calculate total revenue across all relevant events to determine proportional shares
-      const totalRevenueAll = salesData
-        .filter(s => targetEventIds.includes(s.eventId))
-        .reduce((sum, s) => sum + (s.amount?.total || 0), 0);
-
-      const formatCurrency = (val) => `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-      // Iterate through each event and draw its section
-      targetEventIds.forEach((eventId, index) => {
-        const event = events.find(e => e._id === eventId);
-        const eventTitle = event ? event.title : "Unknown Event";
-        
-        const eventSales = salesData.filter(s => s.eventId === eventId);
-        const eventTicketRev = eventSales.filter(s => s.type !== 'booth').reduce((sum, s) => sum + (s.amount?.total || 0), 0);
-        const eventBoothRev = eventSales.filter(s => s.type === 'booth').reduce((sum, s) => sum + (s.amount?.total || 0), 0);
-        const eventTotalRev = eventTicketRev + eventBoothRev;
-
-        if (eventTotalRev > 0) {
-          const eventPayoutShare = totalRevenueAll > 0 ? (eventTotalRev / totalRevenueAll) * (payout.amount || 0) : 0;
-          const ticketShare = (eventTicketRev / eventTotalRev) * eventPayoutShare;
-          const boothShare = (eventBoothRev / eventTotalRev) * eventPayoutShare;
-
-          // If multiple events or "All Events", we need to show the event title as a sub-header
-          if (targetEventIds.length > 1 || !hasSpecificEvents) {
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(30, 60, 114);
-            doc.text(eventTitle, margin, y);
-            y += 8;
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(50, 50, 50);
-          }
-
-          if (ticketShare > 0) {
-            doc.text("Ticket Sales", (targetEventIds.length > 1 || !hasSpecificEvents) ? margin + 5 : margin, y);
-            doc.text(formatCurrency(ticketShare), pdfWidth - margin - 30, y);
-            y += 8;
-          }
-          
-          if (boothShare > 0) {
-            doc.text("Booth Sales", (targetEventIds.length > 1 || !hasSpecificEvents) ? margin + 5 : margin, y);
-            doc.text(formatCurrency(boothShare), pdfWidth - margin - 30, y);
-            y += 8;
-          }
-          
-          if (targetEventIds.length > 1 || !hasSpecificEvents) {
-            doc.setDrawColor(230, 230, 230);
-            doc.line(margin, y, pdfWidth - margin, y);
-            y += 8; // Extra space after line
-          }
-        }
-      });
-
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, y, pdfWidth - margin, y);
-      y += 8;
-
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(30, 60, 114);
-      doc.text("Total:", margin, y);
-      doc.text(`${payout.amountStr}`, pdfWidth - margin - 30, y);
-      y += 15;
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text("Thank you for using our platform.", margin, y);
-
-      finalizeReport(doc);
-
-      if (shouldSave) {
-        doc.save(
-          `Payout_Invoice_${payout.date.replace(/, /g, "_").replace(/ /g, "_")}.pdf`,
-        );
-      } else {
-        const blob = doc.output('blob');
-        return URL.createObjectURL(blob);
-      }
+      return await generatePayoutInvoicePDF(jsPDF, payout, events, salesData, { shouldSave });
     } catch (error) {
       console.error("Error generating invoice PDF:", error);
       if (shouldSave) alert("Failed to generate PDF. Please try again.");
-    } finally {
-      if (loadingToast) removeExportToast(loadingToast);
     }
   };
 
@@ -710,6 +565,7 @@ const PromoterPayouts = () => {
                 <table className="pay-table">
                   <thead>
                     <tr>
+                      <th>Reference No.</th>
                       <th>Date</th>
                       <th>Amount</th>
                       <th>Method</th>
@@ -717,57 +573,81 @@ const PromoterPayouts = () => {
                       <th>Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {paginatedData.map((item, index) => (
-                      <tr
-                        key={index}
-                        className={expandedRow === index ? "expanded" : ""}
-                      >
-                        <td className="small-body-text pay-date-td" data-label="Date">
-                          <div
-                            className="mobile-expand-icon"
-                            onClick={() => toggleRow(index)}
-                          >
-                            <Icon
-                              icon={
-                                expandedRow === index
-                                  ? "mdi:chevron-up"
-                                  : "mdi:chevron-down"
-                              }
-                            />
-                          </div>
-                          <span className="pay-date-text">{item.date}</span>
-                        </td>
-                        <td className="large-body-text pay-amount-text" data-label="Amount">
-                          {item.amountStr}
-                        </td>
-                        <td className="small-body-text" data-label="Method">{item.method}</td>
-                        <td data-label="Status" className="pay-status-cell">
-                          <span className={`button-label pay-status-pill ${item.status === 'paid' ? 'pill-bg-green' : item.status === 'pending' ? 'pill-bg-orange' : 'pill-bg-red'}`}>
-                            {item.status === 'paid' ? 'Paid' : item.status === 'pending' ? 'Pending' : 'Reject'}
-                          </span>
-                        </td>
-                        <td data-label="Actions">
-                          <div className="pay-actions">
-                            <button
-                              className="pay-action-btn"
-                              title="View Details"
-                              onClick={() => handleViewDetails(item)}
-                            >
-                              <Icon icon="mdi:eye-outline" />
-                            </button>
-                            <button
-                              className="pay-action-btn"
-                              title="Download Invoice"
-                              onClick={() => handleDownloadInvoice(item)}
-                            >
-                              <Icon icon="mdi:tray-arrow-down" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+                    <tbody>
+                      {paginatedData.map((item, index) => (
+                        <React.Fragment key={index}>
+                          <tr className={expandedRow === index ? "expanded" : ""}>
+                            <td className="small-body-text" data-label="Reference No.">
+                              {item.reference}
+                            </td>
+                            <td className="small-body-text pay-date-td" data-label="Date">
+                              <div
+                                className="mobile-expand-icon"
+                                onClick={() => toggleRow(index)}
+                              >
+                                <Icon
+                                  icon={
+                                    expandedRow === index
+                                      ? "mdi:chevron-up"
+                                      : "mdi:chevron-down"
+                                  }
+                                />
+                              </div>
+                              <span className="pay-date-text">{item.date}</span>
+                            </td>
+                            <td className="large-body-text pay-amount-text" data-label="Amount">
+                              {item.amountStr}
+                            </td>
+                            <td className="small-body-text" data-label="Method">{item.method}</td>
+                            <td data-label="Status" className="pay-status-cell">
+                              <span className={`button-label pay-status-pill ${item.status === 'paid' ? 'pill-bg-green' : item.status === 'pending' ? 'pill-bg-orange' : 'pill-bg-red'}`}>
+                                {item.status === 'paid' ? 'Paid' : item.status === 'pending' ? 'Pending' : 'Reject'}
+                              </span>
+                            </td>
+                            <td data-label="Actions">
+                              <div className="pay-actions">
+                                <button
+                                  className="pay-action-btn"
+                                  title="View Details"
+                                  onClick={() => handleViewDetails(item)}
+                                >
+                                  <Icon icon="mdi:eye-outline" />
+                                </button>
+                                <button
+                                  className="pay-action-btn"
+                                  title="Download Invoice"
+                                  onClick={() => handleDownloadInvoice(item)}
+                                >
+                                  <Icon icon="mdi:tray-arrow-down" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          {expandedRow === index && (
+                            <tr className="expanded-row-content">
+                              <td colSpan="6">
+                                <div className="expanded-info-container" style={{ padding: '15px', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                      <div>
+                                        <h6 style={{ marginBottom: '8px', fontSize: '13px', fontWeight: '700', color: '#1e3c72' }}>Included Events</h6>
+                                        <p className="small-body-text" style={{ margin: 0, opacity: 0.8 }}>
+                                          {item.eventIds && item.eventIds.length > 0 ? item.eventIds.map(e => e.title).join(', ') : 'All Events'}
+                                        </p>
+                                      </div>
+                                      {(item.status === 'reject' || item.status === 'rejected') && (
+                                        <div>
+                                          <h6 style={{ marginBottom: '8px', fontSize: '13px', fontWeight: '700', color: '#dc2626' }}>Rejection Reason</h6>
+                                          <p className="small-body-text" style={{ margin: 0, opacity: 0.8 }}>{item.rejectionReason || "No reason provided."}</p>
+                                        </div>
+                                      )}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
                 </table>
               )}
             </div>

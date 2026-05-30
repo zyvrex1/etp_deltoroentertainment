@@ -17,7 +17,7 @@ const PromoterViewPayout = ({ isOpen, onClose, payout, pdfUrl, onDownloadInvoice
 
                 <div className="pvp-modal-body pvp-pdf-body">
                     {pdfUrl ? (
-                        <embed 
+                        <embed
                             src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
                             type="application/pdf"
                             className="pvp-pdf-iframe"

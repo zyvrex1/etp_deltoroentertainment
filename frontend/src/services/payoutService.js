@@ -28,6 +28,22 @@ const payoutService = {
       throw new Error(error.error || 'Failed to fetch payouts');
     }
     return response.json();
+  },
+
+  updatePayoutStatus: async (payoutId, status, rejectionReason, token) => {
+    const response = await fetch(`${BASE_URL}/api/payouts/${payoutId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ status, rejectionReason })
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update payout status');
+    }
+    return response.json();
   }
 };
 

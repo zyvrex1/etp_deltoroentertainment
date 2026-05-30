@@ -23,10 +23,17 @@ const createPayout = async (req, res) => {
   }
 };
 
-// Get payout history for a promoter
+// Get payouts (All for admin, only own for promoter)
 const getPayouts = async (req, res) => {
   try {
-    const payouts = await Payout.find({ promoterId: req.user._id })
+    let query = {};
+    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+      query = { promoterId: req.user._id };
+    }
+
+    const payouts = await Payout.find(query)
+      .populate('promoterId', 'firstName lastName companyName')
+      .populate('eventIds', 'title')
       .sort({ createdAt: -1 });
     res.status(200).json(payouts);
   } catch (error) {
@@ -35,7 +42,40 @@ const getPayouts = async (req, res) => {
   }
 };
 
+// Update payout status (Admin only)
+const updatePayoutStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status, rejectionReason } = req.body;
+
+  if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Only admins can update payout status' });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(404).json({ error: 'No such payout' });
+  }
+
+  try {
+    const payout = await Payout.findOneAndUpdate(
+      { _id: id },
+      { status, rejectionReason },
+      { new: true }
+    ).populate('promoterId', 'firstName lastName companyName')
+     .populate('eventIds', 'title');
+
+    if (!payout) {
+      return res.status(404).json({ error: 'No such payout' });
+    }
+
+    res.status(200).json(payout);
+  } catch (error) {
+    console.error('UPDATE PAYOUT STATUS ERROR:', error);
+    res.status(400).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createPayout,
-  getPayouts
+  getPayouts,
+  updatePayoutStatus
 };

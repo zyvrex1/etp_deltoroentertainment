@@ -1,5 +1,5 @@
 const express = require('express');
-const { createPayout, getPayouts } = require('../controllers/payoutController');
+const { createPayout, getPayouts, updatePayoutStatus } = require('../controllers/payoutController');
 const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
@@ -9,5 +9,6 @@ router.use(requireAuth);
 
 router.post('/', createPayout);
 router.get('/', getPayouts);
+router.patch('/:id/status', updatePayoutStatus);
 
 module.exports = router;

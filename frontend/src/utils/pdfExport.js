@@ -293,3 +293,176 @@ export function drawLongText(pdf, startY, text, margin, pdfWidth, pdfHeight, foo
     return y;
 }
 
+
+/**
+ * Generate a Payout Invoice PDF
+ * @param {Object} pdfDeps - Dependencies: jsPDF class
+ * @param {Object} payout - Payout data
+ * @param {Array} events - List of all events (for titles)
+ * @param {Array} salesData - List of all sales (for share calculation)
+ * @param {Object} options - { shouldSave, logoData }
+ * @returns {Promise<string|null>} - Blob URL if not saving, or null
+ */
+export async function generatePayoutInvoicePDF(jsPDF, payout, events, salesData, options = {}) {
+  const { shouldSave = true } = options;
+  const INVOICE_TITLE = "Payout Invoice Receipt";
+  
+  try {
+    const logoData = options.logoData || await loadLogo();
+    const doc = new jsPDF("p", "mm", "a4");
+    const pdfWidth = doc.internal.pageSize.getWidth();
+    let y = 45;
+
+    addReportHeader(doc, INVOICE_TITLE, logoData);
+
+    doc.setFontSize(12);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Date Requested: ${payout.requested || payout.date}`, MARGIN, y);
+    y += 8;
+    doc.text(`Status: ${payout.status}`, MARGIN, y);
+    y += 8;
+    doc.text(`Reference: ${payout.reference}`, MARGIN, y);
+    y += 8;
+
+    const methodText = payout.method || "Not Specified";
+    doc.text(`Payout Method: ${methodText}`, MARGIN, y);
+    y += 6;
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "normal");
+
+    if (payout.methodDetails) {
+      Object.entries(payout.methodDetails).forEach(([key, value]) => {
+        if (value && key !== 'last4') {
+          const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+          doc.text(`${formattedKey}: ${value}`, MARGIN + 5, y);
+          y += 5;
+        }
+      });
+      if (Object.keys(payout.methodDetails).length === 1 && payout.methodDetails.last4) {
+        doc.text(`Details: ${payout.methodDetails.last4}`, MARGIN + 5, y);
+        y += 5;
+      }
+    }
+    y += 5;
+
+    if (payout.status === 'reject' || payout.status === 'rejected') {
+      doc.setFontSize(10);
+      doc.setTextColor(200, 0, 0); // Red for rejection
+      doc.setFont("helvetica", "bold");
+      doc.text("Rejection Reason:", MARGIN, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      
+      const reason = payout.rejectionReason || "No reason provided.";
+      const lines = doc.splitTextToSize(reason, pdfWidth - 2 * MARGIN);
+      doc.text(lines, MARGIN, y + 5);
+      y += 10 + (lines.length * 5);
+    }
+
+    doc.setFontSize(12);
+    doc.setTextColor(30, 60, 114);
+    doc.setFont("helvetica", "bold");
+
+    const hasSpecificEvents = payout.eventIds && payout.eventIds.length > 0;
+    const targetEventIds = hasSpecificEvents
+      ? (typeof payout.eventIds[0] === 'object' ? payout.eventIds.map(e => e._id) : payout.eventIds)
+      : [...new Set(salesData.map(s => s.eventId))];
+
+    // Determine Header Text
+    const headerText = (hasSpecificEvents && targetEventIds.length === 1)
+      ? events.find(e => e._id === targetEventIds[0])?.title || payout.eventIds[0]?.title || "Event Name"
+      : (hasSpecificEvents ? "Event Name" : "All Events");
+
+    doc.text(headerText, MARGIN, y);
+    doc.text("Amount", pdfWidth - MARGIN - 30, y);
+    y += 4;
+
+    doc.setDrawColor(200, 200, 200);
+    doc.line(MARGIN, y, pdfWidth - MARGIN, y);
+    y += 8;
+
+    doc.setTextColor(50, 50, 50);
+    doc.setFont("helvetica", "normal");
+
+    const totalRevenueAll = salesData
+      .filter(s => targetEventIds.includes(s.eventId))
+      .reduce((sum, s) => sum + (s.amount?.total || 0), 0);
+
+    const formatCurrency = (val) => `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const amountNum = parseFloat(payout.amount?.toString().replace(/[$,]/g, '') || 0);
+
+    targetEventIds.forEach((eventId) => {
+      const event = events.find(e => e._id === eventId);
+      const eventTitle = event ? event.title : "Unknown Event";
+      
+      const eventSales = salesData.filter(s => s.eventId === eventId);
+      const eventTicketRev = eventSales.filter(s => s.type !== 'booth').reduce((sum, s) => sum + (s.amount?.total || 0), 0);
+      const eventBoothRev = eventSales.filter(s => s.type === 'booth').reduce((sum, s) => sum + (s.amount?.total || 0), 0);
+      const eventTotalRev = eventTicketRev + eventBoothRev;
+
+      if (eventTotalRev > 0) {
+        const eventPayoutShare = totalRevenueAll > 0 ? (eventTotalRev / totalRevenueAll) * amountNum : 0;
+        const ticketShare = (eventTicketRev / eventTotalRev) * eventPayoutShare;
+        const boothShare = (eventBoothRev / eventTotalRev) * eventPayoutShare;
+
+        if (targetEventIds.length > 1 || !hasSpecificEvents) {
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 60, 114);
+          doc.text(eventTitle, MARGIN, y);
+          y += 8;
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(50, 50, 50);
+        }
+
+        if (ticketShare > 0) {
+          doc.text("Ticket Sales", (targetEventIds.length > 1 || !hasSpecificEvents) ? MARGIN + 5 : MARGIN, y);
+          doc.text(formatCurrency(ticketShare), pdfWidth - MARGIN - 30, y);
+          y += 8;
+        }
+        
+        if (boothShare > 0) {
+          doc.text("Booth Sales", (targetEventIds.length > 1 || !hasSpecificEvents) ? MARGIN + 5 : MARGIN, y);
+          doc.text(formatCurrency(boothShare), pdfWidth - MARGIN - 30, y);
+          y += 8;
+        }
+        
+        if (targetEventIds.length > 1 || !hasSpecificEvents) {
+          doc.setDrawColor(230, 230, 230);
+          doc.line(MARGIN, y, pdfWidth - MARGIN, y);
+          y += 8;
+        }
+      }
+    });
+
+    doc.setDrawColor(200, 200, 200);
+    doc.line(MARGIN, y, pdfWidth - MARGIN, y);
+    y += 8;
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 60, 114);
+    doc.text("Total:", MARGIN, y);
+    doc.text(`${payout.amountStr || payout.amount}`, pdfWidth - MARGIN - 30, y);
+    y += 15;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Thank you for using our platform.", MARGIN, y);
+
+    finalizeReport(doc);
+
+    if (shouldSave) {
+      doc.save(`Payout_Invoice_${(payout.requested || payout.date).replace(/, /g, "_").replace(/ /g, "_")}.pdf`);
+      return null;
+    } else {
+      const blob = doc.output('blob');
+      return URL.createObjectURL(blob);
+    }
+  } catch (error) {
+    console.error("Error generating invoice PDF:", error);
+    throw error;
+  }
+}
