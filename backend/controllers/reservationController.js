@@ -474,6 +474,45 @@ const updateReservationStatus = async (req, res) => {
         reservation.status = status;
         await reservation.save();
 
+        // Notify the sponsor/user when their reservation is refunded or cancelled
+        if (['refunded', 'cancelled', 'rejected'].includes(status) && !['refunded', 'cancelled', 'rejected'].includes(oldStatus)) {
+            const notificationController = require('./notificationController');
+            const { emitUpdate } = require('../socket');
+
+            const reservationInfo = reservation.boothCode
+                ? `booth ${reservation.boothCode}`
+                : reservation.seatLabels?.length > 0
+                    ? `seat(s) ${reservation.seatLabels.join(', ')}`
+                    : 'your reservation';
+
+            const statusMessages = {
+                refunded: {
+                    title: 'Reservation Refunded',
+                    content: `Your reservation for ${reservationInfo} has been successfully refunded.`
+                },
+                cancelled: {
+                    title: 'Reservation Cancelled',
+                    content: `Your reservation for ${reservationInfo} has been cancelled.`
+                },
+                rejected: {
+                    title: 'Reservation Rejected',
+                    content: `Your reservation for ${reservationInfo} has been rejected.`
+                }
+            };
+
+            const msg = statusMessages[status];
+            const notification = await notificationController.createNotification({
+                title: msg.title,
+                content: msg.content,
+                type: 'reservation',
+                path: '/sponsor/sponsor-my-booths',
+                unread: true,
+                userId: reservation.user,   // sends to the sponsor specifically
+                createdBy: req.user._id
+            });
+            emitUpdate('newNotification', notification);
+        }
+
         // If status changed to rejected, refunded, or cancelled, reset the booth/seat status in Event layout
         if (['rejected', 'refunded', 'cancelled'].includes(status) && !['rejected', 'refunded', 'cancelled'].includes(oldStatus)) {
             const event = await Event.findById(reservation.event);

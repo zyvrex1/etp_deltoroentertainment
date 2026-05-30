@@ -4,7 +4,7 @@ import './SponsorNotificationDropdown.css';
 
 const SponsorNotificationDropdown = ({ notifications, onClose, onMarkAsRead, onMarkAllRead, onViewAll }) => {
     
-    const iconMap = {
+   const iconMap = {
         concern: "mdi:chat-outline",
         payment: "mdi:wallet-outline",
         event: "mdi:calendar-outline",
@@ -15,14 +15,24 @@ const SponsorNotificationDropdown = ({ notifications, onClose, onMarkAsRead, onM
         policy: "mdi:file-document-outline"
     };
 
-    const handleNotifClick = (notif) => {
+    // Detect refund/cancel/reject from title to show a different icon
+    const getIcon = (notif) => {
+        const title = notif.title?.toLowerCase() || '';
+        if (title.includes('refund')) return "mdi:cash-refund";
+        if (title.includes('cancel')) return "mdi:cancel";
+        if (title.includes('reject')) return "mdi:close-circle-outline";
+        return iconMap[notif.type] || "mdi:bell-outline";
+    };
+
+ const handleNotifClick = (notif) => {
         if (notif.unread) {
             onMarkAsRead(notif._id);
         }
-        // Add navigation logic if needed
         onClose();
+        if (notif.path) {
+            window.location.href = notif.path;
+        }
     };
-
     return (
         <div className="notif-dropdown">
             <div className="notif-header">
@@ -41,8 +51,12 @@ const SponsorNotificationDropdown = ({ notifications, onClose, onMarkAsRead, onM
                             onClick={() => handleNotifClick(notif)}
                         >
                             <div className="notif-status-dot"></div>
-                            <div className={`notif-icon-box ${notif.type}`}>
-                                <Icon icon={iconMap[notif.type] || "mdi:bell-outline"} />
+                           <div className={`notif-icon-box ${notif.type} ${
+                                notif.title?.toLowerCase().includes('refund') ? 'refund' :
+                                notif.title?.toLowerCase().includes('cancel') ? 'cancel' :
+                                notif.title?.toLowerCase().includes('reject') ? 'reject' : ''
+                            }`}>
+                                <Icon icon={getIcon(notif)} />
                             </div>
                             <div className="notif-content">
                                 <p className="notif-text">
