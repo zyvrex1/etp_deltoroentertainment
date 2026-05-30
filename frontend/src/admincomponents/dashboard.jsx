@@ -13,6 +13,7 @@ import eventsService from '../services/eventsService';
 import adminService from '../services/adminService';
 import concernService from '../services/concernService';
 import reservationService from '../services/reservationService';
+import payoutService from '../services/payoutService';
 
 import { useNotificationsContext } from '../hooks/useNotificationsContext';
 import { io } from 'socket.io-client';
@@ -90,17 +91,21 @@ export default function Dashboard() {
 
         try {
             // Fetch events, users, and concerns in parallel
-            const [events, users, concerns, reservations] = await Promise.all([
+          const [events, users, concerns, reservations, payouts] = await Promise.all([
                 eventsService.getEvents(user.token),
                 adminService.getUsers(user.token),
                 concernService.getAdminConcerns(user.token),
-                reservationService.getAdminReservations(user.token)
+                reservationService.getAdminReservations(user.token),
+                payoutService.getPayouts(user.token).catch(() => [])
             ]);
 
             // Filter out cancelled reservations for all metrics
       const activeReservations = reservations.filter(
     res => res.status === 'confirmed'
 );
+
+             const pendingPayoutsCount = (Array.isArray(payouts) ? payouts : [])
+                .filter(p => p.status === 'pending' || p.status === 'requested').length;
 
             const pendingCount = events.filter(e => e.status === 'pending').length;
             const activeCount = events.filter(e => e.status === 'approved').length;
@@ -392,7 +397,7 @@ export default function Dashboard() {
                 boothTrend,
                 revenueTrend,
                 ticketTrend,
-                pendingPayoutsCount: 0, 
+                pendingPayoutsCount: pendingPayoutsCount, 
                 loading: false
             });
 
@@ -994,8 +999,8 @@ export default function Dashboard() {
                                 <Icon icon="mdi:alert-circle-outline" className="alert-icon" />
                                 <div className="alert-details left-aligned">
                                     <h5 className="left-aligned">Pending Payout Requests</h5>
-                                    <p className="left-aligned">5 payouts waiting for approval</p>
-                                    <span className="time left-aligned">2 hours ago</span>
+                                    <p className="left-aligned">{stats.loading ? "..." : stats.pendingPayoutsCount} payouts waiting for approval</p>
+                                    <span className="time left-aligned">Just now</span>
                                 </div>
                                 <Icon icon="mdi:close" className="close-icon" />
                             </div>
