@@ -15,7 +15,8 @@
             justify-content: space-between;
             align-items: center;
             max-width: 1200px;
-            margin: 0 auto;
+            margin: 20px auto;
+ 
 
             .ppb-header-left {
                 display: flex;
@@ -128,6 +129,9 @@
                 .ppb-card-body {
                     padding: 24px;
                     text-align: left;
+                    gap: 24px;
+                    display: flex;
+                    flex-direction: column;
 
                     h4 {
                         color: var(--color-black-primary);
@@ -139,27 +143,17 @@
                         padding: 16px;
                         cursor: pointer;
                         transition: all 0.2s ease;
-
-                        &.selected {
-                            border-color: var(--color-red-primary);
-                            background-color: var(--color-red-quaternary);
-                        }
-
-                    .ppb-payout-option {
                         display: flex;
                         align-items: center;
                         gap: 16px;
-                        border: 1px solid #e5e7eb;
-                        border-radius: 12px;
-                        padding: 16px;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
+
 
                         &.selected {
                             border-color: var(--color-red-primary);
                             background-color: var(--color-red-quaternary);
                         }
 
+                  
                         .ppb-radio-wrapper {
                             display: flex;
                             align-items: center;
@@ -214,7 +208,7 @@
                             border-radius: 4px;
                             font-weight: 600;
                         }
-                    }
+                    
 
                         .ppb-payout-body {
                             padding-top: 16px;
@@ -392,12 +386,13 @@ margin-bottom: 12px;
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 16px;
+                margin: 0;
 
                 .ppb-header-right {
                     width: 100%;
 
                     .ppb-step-info {
-                        justify-content: space-between;
+                        justify-content: flex-end;
                         width: 100%;
                     }
                 }
@@ -421,6 +416,7 @@ margin-bottom: 12px;
                 .ppb-back-btn {
                     height: 40px;
                     width: 40px;
+                    padding: 0;
                 }
 
                 .ppb-title-wrapper .ppb-title {
@@ -429,10 +425,5 @@ margin-bottom: 12px;
             }
         }
 
-        .ppb-main-container {
-            .ppb-card-body {
-                padding: 12px !important;
-            }
-        }
     }
 }
