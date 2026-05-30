@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import analyticsService from "../services/analyticsService";
+import reservationService from "../services/reservationService";
 
 import "./reportsandanalytics.css";
 import { Icon } from "@iconify/react";
@@ -77,18 +78,68 @@ export default function ReportsAnalytics() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchAnalytics = async () => {
+       const fetchAnalytics = async () => {
             if (!user?.token) return;
             
             try {
                 setIsLoading(true);
-                const [topData, overviewData] = await Promise.all([
+                const [topData, overviewData, allReservations] = await Promise.all([
                     analyticsService.getTopPerformingEvents(user.token, dateRange.start, dateRange.end),
-                    analyticsService.getOverviewStats(user.token, dateRange.start, dateRange.end)
+                    analyticsService.getOverviewStats(user.token, dateRange.start, dateRange.end),
+                    reservationService.getAdminReservations(user.token)
                 ]);
 
                 if (topData) setTopEvents(topData);
-                if (overviewData) setOverviewStats(overviewData);
+
+                if (overviewData) {
+                    const rangeStart = new Date(dateRange.start);
+                    const rangeEnd = new Date(dateRange.end);
+                    rangeEnd.setHours(23, 59, 59, 999);
+
+                    // Reservations within selected date range
+                    const inRange = (allReservations || []).filter(r => {
+                        const d = new Date(r.createdAt);
+                        return d >= rangeStart && d <= rangeEnd;
+                    });
+
+                    const totalCount = inRange.length;
+                    const refundedCount = inRange.filter(r =>
+                        ['refunded', 'rejected', 'cancelled'].includes(r.status)
+                    ).length;
+
+                    const refundRate = totalCount > 0
+                        ? parseFloat(((refundedCount / totalCount) * 100).toFixed(1))
+                        : 0;
+
+                    // Calculate refund trend vs previous period of same length
+                    const periodMs = rangeEnd.getTime() - rangeStart.getTime();
+                    const prevEnd = new Date(rangeStart.getTime() - 1);
+                    const prevStart = new Date(prevEnd.getTime() - periodMs);
+
+                    const prevInRange = (allReservations || []).filter(r => {
+                        const d = new Date(r.createdAt);
+                        return d >= prevStart && d <= prevEnd;
+                    });
+
+                    const prevTotal = prevInRange.length;
+                    const prevRefunded = prevInRange.filter(r =>
+                        ['refunded', 'rejected', 'cancelled'].includes(r.status)
+                    ).length;
+
+                    const prevRefundRate = prevTotal > 0
+                        ? parseFloat(((prevRefunded / prevTotal) * 100).toFixed(1))
+                        : 0;
+
+                    const refundTrend = prevRefundRate > 0
+                        ? parseFloat(((refundRate - prevRefundRate) / prevRefundRate * 100).toFixed(1))
+                        : refundRate > 0 ? 100 : 0;
+
+                    setOverviewStats({
+                        ...overviewData,
+                        refundRate,
+                        refundTrend
+                    });
+                }
             } catch (error) {
                 console.error("Error fetching analytics:", error);
             } finally {
@@ -129,10 +180,15 @@ export default function ReportsAnalytics() {
         { month: "Dec", total: 0 },
     ];
 
+   const totalSold = (overviewStats.boothsSold || 0) + (overviewStats.ticketsSold || 0);
+    const refundedCount = totalSold > 0
+        ? Math.round(totalSold * ((overviewStats.refundRate || 0) / 100))
+        : 0;
+
     const categoryData = [
         { name: "Booth", value: overviewStats.boothsSold || 0, color: "#0059ff" },
         { name: "Seats", value: overviewStats.ticketsSold || 0, color: "#8c52ff" },
-        { name: "Refund", value: Math.round((overviewStats.ticketsSold + overviewStats.boothsSold) * (overviewStats.refundRate / 100)) || 0, color: "#e6e6e6" },
+        { name: "Refund", value: refundedCount, color: "#e6e6e6" },
     ];
 
     const totalSalesForChart = categoryData.reduce((acc, item) => acc + item.value, 0);
