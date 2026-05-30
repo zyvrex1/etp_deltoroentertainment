@@ -470,12 +470,13 @@ const updateReservationStatus = async (req, res) => {
             return res.status(404).json({ error: "Reservation not found" });
         }
 
-        const oldStatus = reservation.status;
+       const oldStatus = reservation.status;
         reservation.status = status;
         await reservation.save();
 
-        // Notify the sponsor/user when their reservation is refunded or cancelled
-        if (['refunded', 'cancelled', 'rejected'].includes(status) && !['refunded', 'cancelled', 'rejected'].includes(oldStatus)) {
+        // If status changed to rejected, refunded, or cancelled, reset the booth/seat status in Event layout
+        if (['rejected', 'refunded', 'cancelled'].includes(status) && !['rejected', 'refunded', 'cancelled'].includes(oldStatus)) {
+            const event = await Event.findById(reservation.event).populate('assignedPromoters', '_id');
             const notificationController = require('./notificationController');
             const { emitUpdate } = require('../socket');
 
@@ -610,6 +611,67 @@ const updateReservationStatus = async (req, res) => {
                     event.markModified('priceLevels');
                     await event.save();
                 }
+            }
+        }
+
+        // Notify promoters when a reservation on their event is refunded/cancelled/rejected
+        if (['rejected', 'refunded', 'cancelled'].includes(status) && !['rejected', 'refunded', 'cancelled'].includes(oldStatus)) {
+            try {
+                const notificationController = require('./notificationController');
+                const { emitUpdate: emit } = require('../socket');
+
+                const eventForNotif = await Event.findById(reservation.event)
+                    .populate('assignedPromoters', '_id')
+                    .populate('createdBy', '_id role');
+
+                if (eventForNotif) {
+                    // Get the buyer's name from the reservation
+                    const buyerUser = await User.findById(reservation.user).select('firstName lastName companyName');
+                    const buyerName = buyerUser
+                        ? (buyerUser.companyName || `${buyerUser.firstName} ${buyerUser.lastName}`)
+                        : 'A user';
+
+                    const reservationInfo = reservation.boothCode
+                        ? `booth "${reservation.boothCode}"`
+                        : reservation.seatLabels?.length > 0
+                            ? `seat(s) "${reservation.seatLabels.join(', ')}"`
+                            : 'a reservation';
+
+                    const statusWord = status === 'refunded' ? 'refunded'
+                        : status === 'rejected' ? 'rejected'
+                        : 'cancelled';
+
+                    const notifTitle = `Reservation ${statusWord.charAt(0).toUpperCase() + statusWord.slice(1)}`;
+                    const notifContent = `${buyerName}'s reservation for ${reservationInfo} in "${eventForNotif.title}" has been ${statusWord}.`;
+
+                    // Collect promoters to notify: creator + assigned promoters
+                    const promotersToNotify = new Set();
+                    if (eventForNotif.createdBy && eventForNotif.createdBy.role === 'promoter') {
+                        promotersToNotify.add(eventForNotif.createdBy._id.toString());
+                    }
+                    if (Array.isArray(eventForNotif.assignedPromoters)) {
+                        eventForNotif.assignedPromoters.forEach(p => promotersToNotify.add(p._id.toString()));
+                    }
+
+                    for (const promoterId of promotersToNotify) {
+                        // Don't notify if the promoter is the one making the status change
+                        if (promoterId === req.user._id.toString()) continue;
+
+                        const notif = await notificationController.createNotification({
+                            title: notifTitle,
+                            content: notifContent,
+                            type: 'reservation',
+                            path: '/promoter/promoter-sales',
+                            unread: true,
+                            userId: promoterId,
+                            createdBy: req.user._id
+                        });
+                        emit('newNotification', notif);
+                    }
+                }
+            } catch (notifErr) {
+                console.error('Promoter notification error:', notifErr);
+                // Don't crash the main response
             }
         }
 
