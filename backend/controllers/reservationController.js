@@ -357,7 +357,7 @@ const getEventSalesForPromoter = async (req, res) => {
 
         const reservations = await Reservation.find({
             event: eventId,
-            status: { $ne: 'cancelled' }
+            status: { $nin: ['cancelled', 'rejected', 'refunded'] }
         })
             .populate('user', 'firstName lastName email companyName avatar')
             .sort({ createdAt: -1 });

@@ -138,8 +138,8 @@ const PromoterSales = ({ selectedEvent }) => {
   }, [isFilterDropdownOpen]);
 
   // ─── Computed values ───────────────────────────────────────────────────────
-  const ticketRows = salesData.filter((r) => r.typePill === "Ticket");
-  const boothRows = salesData.filter((r) => r.typePill === "Booth");
+  const ticketRows = salesData.filter((r) => r.typePill === "Ticket" && !['rejected', 'refunded', 'cancelled'].includes(r.status));
+  const boothRows = salesData.filter((r) => r.typePill === "Booth" && !['rejected', 'refunded', 'cancelled'].includes(r.status));
 
   const ticketRevenue = ticketRows.reduce((s, r) => s + r.amountRaw, 0);
   const boothRevenue = boothRows.reduce((s, r) => s + r.amountRaw, 0);

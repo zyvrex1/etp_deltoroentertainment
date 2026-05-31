@@ -437,6 +437,11 @@
             color: var(--color-red-primary);
         }
 
+        .pill-bg-yellow {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
         .date-col {
             color: var(--color-black-secondary);
         }
