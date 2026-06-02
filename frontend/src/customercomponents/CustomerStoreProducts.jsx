@@ -10,6 +10,12 @@ import "./CustomerStoreProducts.css";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
+ const CATEGORY_DEFAULT_IMAGES = {
+    food: '/assets/defaultfood.jpg',
+    drinks: '/assets/defaultdrinks.jpg',
+    merch: '/assets/defaultmerch.jpg',
+  };
+
 const CartModal = ({ isOpen, onClose, cartItems, totalAmount, onCheckout, onUpdateQty }) => {
   if (!isOpen) return null;
 
@@ -240,12 +246,14 @@ const CustomerStoreProducts = () => {
               return (
                 <div key={product._id || product.id} className="csp-card">
                   <div className="csp-card-img-wrap">
-                    <img 
-                      src={getProductImage(product.image)} 
-                      alt={product.name} 
-                      style={{width: '100%', height: '100%', objectFit: 'cover'}} 
-                      onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
-                    />
+                     <img src={product.image || CATEGORY_DEFAULT_IMAGES[product.category?.toLowerCase()] || '/assets/eventbg.jpg'} onError={(e) => {
+                    e.target.onerror = null;
+                    const category = product.category?.toLowerCase();
+                    e.target.src = CATEGORY_DEFAULT_IMAGES[category] || '/assets/eventbg.jpg';
+                  }} 
+
+                  alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                   
                     <div className={`csp-category-badge button-label ${product.category.toLowerCase()}`}>{product.category}</div>
                   </div>
                   <div className="csp-card-content">

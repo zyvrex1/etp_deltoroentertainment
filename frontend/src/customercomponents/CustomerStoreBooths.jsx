@@ -45,7 +45,7 @@ const CustomerStoreBooths = () => {
             storeName: res.storeSettings?.companyName || res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
             industry: res.storeSettings?.industry || res.user?.industry || "Sponsor",
             products: boothProducts.length,
-            logo: res.storeSettings?.logo ? (res.storeSettings.logo.startsWith('/') ? res.storeSettings.logo : `/uploads/${res.storeSettings.logo}`) : (res.user?.avatar ? (res.user.avatar.startsWith('/') ? res.user.avatar : `/uploads/${res.user.avatar}`) : '/assets/eventbg.jpg'),
+            logo: res.storeSettings?.logo ? (res.storeSettings.logo.startsWith('/') ? res.storeSettings.logo : `/uploads/${res.storeSettings.logo}`) : (res.user?.avatar ? (res.user.avatar.startsWith('/') ? res.user.avatar : `/uploads/${res.user.avatar}`) : '/assets/eTicketsPro.png'),
             description: res.storeSettings?.description || "there is no description"
           };
         });
@@ -159,7 +159,7 @@ const CustomerStoreBooths = () => {
                   <img 
                     src={booth.logo} 
                     alt={booth.storeName} 
-                    onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
+                    onError={(e) => { e.target.src = '/assets/eTicketsPro.png'; }}
                   />
                   <div className="csb-booth-badge button-label">{booth.boothNumber}</div>
                 </div>

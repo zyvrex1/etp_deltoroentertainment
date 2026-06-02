@@ -9,17 +9,6 @@ import { useAuthContext } from "../hooks/useAuthContext";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
-const initialProducts = [
-  { id: 1, image: "/assets/eventbg.jpg", category: "Food", name: "Gourmet Burger", price: "$12.99", description: "Premium beef patty with artisan cheese and house sauce.", stock: 40, stockStatus: "Medium Stock", active: true },
-  { id: 2, image: "/assets/eventbg.jpg", category: "Food", name: "Loaded Nachos", price: "$9.99", description: "Crispy tortilla chips topped with melted cheese, jalapeños, and salsa.", stock: 25, stockStatus: "Medium Stock", active: true },
-  { id: 3, image: "/assets/eventbg.jpg", category: "Food", name: "Caesar Wrap", price: "$8.49", description: "Grilled chicken, crisp romaine, and parmesan in a spinach wrap.", stock: 30, stockStatus: "Medium Stock", active: true },
-  { id: 4, image: "/assets/eventbg.jpg", category: "Food", name: "Truffle Fries", price: "$7.99", description: "Crispy fries tossed in truffle oil and parmesan cheese.", stock: 50, stockStatus: "Medium Stock", active: true },
-  { id: 5, image: "/assets/eventbg.jpg", category: "Drinks", name: "Craft Lemonade", price: "$4.99", description: "Freshly squeezed lemonade with a hint of mint.", stock: 100, stockStatus: "High Stock", active: true },
-  { id: 6, image: "/assets/eventbg.jpg", category: "Drinks", name: "Cold Brew Coffee", price: "$5.99", description: "Smooth, slow-steeped cold brew coffee.", stock: 15, stockStatus: "Low Stock", active: true },
-  { id: 7, image: "/assets/eventbg.jpg", category: "Merch", name: "Event T-Shirt", price: "$24.99", description: "Official event t-shirt. 100% cotton.", stock: 200, stockStatus: "High Stock", active: true },
-  { id: 8, image: "/assets/eventbg.jpg", category: "Merch", name: "Ceramic Mug", price: "$14.99", description: "11oz ceramic mug with event logo.", stock: 0, stockStatus: "Out of Stock", active: false },
-  { id: 9, image: "/assets/eventbg.jpg", category: "Drinks", name: "Bottled Water", price: "$2.99", description: "Spring water.", stock: 150, stockStatus: "High Stock", active: true },
-];
 
 const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
   const { user } = useAuthContext();
@@ -37,6 +26,11 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef(null);
 
+  const CATEGORY_DEFAULT_IMAGES = {
+    food: '/assets/defaultfood.jpg',
+    drinks: '/assets/defaultdrinks.jpg',
+    merch: '/assets/defaultmerch.jpg',
+  };
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -52,9 +46,9 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
       const filters = {};
       if (eventId) filters.eventId = eventId;
       if (boothCode) filters.boothCode = boothCode;
-      
+
       const data = await merchandiseService.getMerchandises(user.token, filters);
-      
+
       setProducts(data);
       updateStats(data);
     } catch (error) {
@@ -64,7 +58,7 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
       setLoading(false);
     }
   };
- 
+
   const getProductImage = (image) => {
     if (!image) return "/assets/eventbg.jpg";
     if (image.startsWith("http") || image.startsWith("data:") || image.startsWith("/assets/")) return image;
@@ -100,8 +94,8 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
   }, []);
 
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterCategory === "All Categories" || product.category === filterCategory;
     return matchesSearch && matchesFilter;
   });
@@ -144,7 +138,7 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
     try {
       const { _id, ...updateData } = updatedProduct;
       const response = await merchandiseService.updateMerchandise(_id, updateData, user.token);
-      
+
       const newProducts = products.map(p => p._id === _id ? response : p);
       setProducts(newProducts);
       updateStats(newProducts);
@@ -209,7 +203,7 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
           <p className="regular-body-text">Manage your booth's food, drinks, and merchandise.</p>
         </div>
         {!isCompleted && (
-          <button 
+          <button
             className="primary-button add-product-btn"
             onClick={() => setIsAddModalOpen(true)}
           >
@@ -223,143 +217,150 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
           <div className="smp-toolbar-left">
             <div className="smp-search">
               <Icon icon="mdi:magnify" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="small-body-text"
-            />
-          </div>
-        </div>
-
-        <div className="smp-toolbar-right">
-          <div className="smp-filter-dropdown" ref={dropdownRef}>
-            <button
-              className="smp-filter-dropdown-btn small-body-text"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            >
-              <span className="truncate-text">{filterCategory}</span>
-              <Icon icon="mdi:chevron-down" className={`dropdown-icon ${isDropdownOpen ? "open" : ""}`} />
-            </button>
-            {isDropdownOpen && (
-              <div className="smp-filter-dropdown-menu">
-                {["All Categories", "Food", "Drinks", "Merch"].map((option) => (
-                  <button
-                    key={option}
-                    className={`smp-filter-dropdown-item small-body-text ${filterCategory === option ? "active" : ""}`}
-                    onClick={() => {
-                      setFilterCategory(option);
-                      setIsDropdownOpen(false);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="smp-grid">
-        {loading ? (
-          Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="smp-card skeleton" style={{ minHeight: '340px' }}></div>
-          ))
-        ) : paginatedData.length > 0 ? (
-          paginatedData.map((product) => (
-            <div key={product._id} className="smp-card">
-              <div className="smp-card-img-wrap">
-                <img src={getProductImage(product.image)} alt={product.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-                <div className={`smp-category-badge button-label ${product.category.toLowerCase()}`}>{product.category}</div>
-              </div>
-              <div className="smp-card-content">
-                <div className="smp-title-row">
-                  <h6 className="left-aligned">{product.name}</h6>
-                  <span className="smp-price">${product.price.toFixed(2)}</span>
-                </div>
-                <p className="smaller-body-text smp-desc">{product.description}</p>
-                
-                <div className="smp-stock-row small-body-text">
-                  <span>
-                    <Icon icon="mdi:package-variant-closed" /> Stock: {product.stock}
-                  </span>
-                  <span className={`smp-stock-status ${product.stock <= 0 ? 'out-of-stock' : product.stock <= 10 ? 'low-stock' : 'high-stock'}`}>
-                    {product.stock <= 0 ? 'Out of Stock' : product.stock <= 10 ? 'Low Stock' : 'In Stock'}
-                  </span>
-                </div>
-
-                {/* Simulated Stock Progress bar */}
-                <div className="smp-stock-progress">
-                  <div 
-                    className={`smp-stock-bar ${product.stock <= 0 ? 'out-of-stock' : product.stock <= 10 ? 'low-stock' : 'high-stock'}`}
-                    style={{width: `${Math.min((product.stock / 100) * 100, 100)}%`}}
-                  ></div>
-                </div>
-
-                <div className="smp-card-actions">
-                  
-                  {!isCompleted && (
-                    <div className="smp-action-icons">
-                      <button className="smp-icon-btn" onClick={() => openEditModal(product)}>
-                        <Icon icon="mdi:square-edit-outline" />
-                      </button>
-                      <button className="smp-icon-btn" onClick={() => handleDeleteProduct(product._id)}>
-                        <Icon icon="mdi:trash-can-outline" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="small-body-text"
+              />
             </div>
-          ))
-        ) : (
-          <div className="smp-empty">
-            <Icon icon="mdi:package-variant" width="48" />
-            <p className="regular-body-text">No products found.</p>
+          </div>
+
+          <div className="smp-toolbar-right">
+            <div className="smp-filter-dropdown" ref={dropdownRef}>
+              <button
+                className="smp-filter-dropdown-btn small-body-text"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              >
+                <span className="truncate-text">{filterCategory}</span>
+                <Icon icon="mdi:chevron-down" className={`dropdown-icon ${isDropdownOpen ? "open" : ""}`} />
+              </button>
+              {isDropdownOpen && (
+                <div className="smp-filter-dropdown-menu">
+                  {["All Categories", "Food", "Drinks", "Merch"].map((option) => (
+                    <button
+                      key={option}
+                      className={`smp-filter-dropdown-item small-body-text ${filterCategory === option ? "active" : ""}`}
+                      onClick={() => {
+                        setFilterCategory(option);
+                        setIsDropdownOpen(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="smp-grid">
+          {loading ? (
+            Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="smp-card skeleton" style={{ minHeight: '340px' }}></div>
+            ))
+          ) : paginatedData.length > 0 ? (
+            paginatedData.map((product) => (
+              <div key={product._id} className="smp-card">
+                <div className="smp-card-img-wrap">
+
+                 <img src={product.image || CATEGORY_DEFAULT_IMAGES[product.category?.toLowerCase()] || '/assets/eventbg.jpg'} onError={(e) => {
+                    e.target.onerror = null;
+                    const category = product.category?.toLowerCase();
+                    e.target.src = CATEGORY_DEFAULT_IMAGES[category] || '/assets/eventbg.jpg';
+                  }} 
+
+                  alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div className={`smp-category-badge button-label ${product.category.toLowerCase()}`}>{product.category}</div>
+                </div>
+                <div className="smp-card-content">
+                  <div className="smp-title-row">
+                    <h6 className="left-aligned">{product.name}</h6>
+                    <span className="smp-price">${product.price.toFixed(2)}</span>
+                  </div>
+                  <p className="smaller-body-text smp-desc">{product.description}</p>
+
+                  <div className="smp-stock-row small-body-text">
+                    <span>
+                      <Icon icon="mdi:package-variant-closed" /> Stock: {product.stock}
+                    </span>
+                    <span className={`smp-stock-status ${product.stock <= 0 ? 'out-of-stock' : product.stock <= 10 ? 'low-stock' : 'high-stock'}`}>
+                      {product.stock <= 0 ? 'Out of Stock' : product.stock <= 10 ? 'Low Stock' : 'In Stock'}
+                    </span>
+                  </div>
+
+                  {/* Simulated Stock Progress bar */}
+                  <div className="smp-stock-progress">
+                    <div
+                      className={`smp-stock-bar ${product.stock <= 0 ? 'out-of-stock' : product.stock <= 10 ? 'low-stock' : 'high-stock'}`}
+                      style={{ width: `${Math.min((product.stock / 100) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+
+                  <div className="smp-card-actions">
+
+                    {!isCompleted && (
+                      <div className="smp-action-icons">
+                        <button className="smp-icon-btn" onClick={() => openEditModal(product)}>
+                          <Icon icon="mdi:square-edit-outline" />
+                        </button>
+                        <button className="smp-icon-btn" onClick={() => handleDeleteProduct(product._id)}>
+                          <Icon icon="mdi:trash-can-outline" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="smp-empty">
+              <Icon icon="mdi:package-variant" width="48" />
+              <p className="regular-body-text">No products found.</p>
+            </div>
+          )}
+        </div>
+
+        {totalPages > 1 && (
+          <div className="smp-pagination">
+            <button
+              className="smp-pagination-btn"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            <span className="smp-pagination-info small-body-text">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              className="smp-pagination-btn"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
           </div>
         )}
       </div>
 
-      {totalPages > 1 && (
-        <div className="smp-pagination">
-          <button
-            className="smp-pagination-btn"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </button>
-          <span className="smp-pagination-info small-body-text">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            className="smp-pagination-btn"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
-        </div>
-      )}
-      </div>
-
-      <SponsorAddProduct 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
-        onAdd={handleAddProduct} 
+      <SponsorAddProduct
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAddProduct}
       />
 
-      <SponsorEditProduct 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
-        product={selectedProduct} 
-        onSave={handleEditProduct} 
+      <SponsorEditProduct
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        product={selectedProduct}
+        onSave={handleEditProduct}
       />
 
     </div>

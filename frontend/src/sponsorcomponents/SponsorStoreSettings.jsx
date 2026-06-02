@@ -190,7 +190,7 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                             <div className="sss-logo-upload">
                                 <div className="sss-logo-preview">
                                     {previewUrl ? (
-                                        <img src={previewUrl} alt="Store Logo" onError={(e) => e.target.src = '/assets/eventbg.jpg'} />
+                                        <img src={previewUrl} alt="Store Logo" nError={(e) => { e.target.src = '/assets/eTicketsPro.png'; }} />
                                     ) : (
                                         <div className="sss-logo-placeholder">
                                             <Icon icon="mdi:storefront-outline" />
@@ -275,9 +275,9 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                         <div className="csb-card sss-mock-card">
                             <div className="csb-card-image-wrap">
                                 <img 
-                                    src={previewUrl || '/assets/eventbg.jpg'} 
+                                    src={previewUrl || '/assets/eTicketsPro.png'} 
                                     alt="Preview" 
-                                    onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
+                                    onError={(e) => { e.target.src = '/assets/eTicketsPro.png'; }}
                                 />
                                 <div className="csb-booth-badge button-label">{boothCode || 'N/A'}</div>
                             </div>
