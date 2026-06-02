@@ -28,7 +28,7 @@ export default function LandingLayout() {
         initialRole={authRole}
       />
 
-      <Outlet context={{ openAuthModal }} />
+      <Outlet context={{ openAuthModal, isAuthOpen }} />
     </>
   );
 }

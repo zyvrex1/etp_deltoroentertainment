@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import './Home.css';
 import { Icon } from "@iconify/react";
@@ -11,7 +11,8 @@ import PromoterViewFullAnnouncement from '../promotercomponents/PromoterModal/Pr
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "";
 
 const Home = () => {
-  const { openAuthModal } = useOutletContext() || { openAuthModal: () => { } };
+const { openAuthModal: _openAuthModal, isAuthOpen } = useOutletContext() || {};
+const autoTriggerTimer = useRef(null);
 
   // Modal State for Policies & Announcements
   const [modalData, setModalData] = useState(null);
@@ -23,12 +24,41 @@ const Home = () => {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
+
+const openAuthModal = (...args) => {
+  if (autoTriggerTimer.current) {
+    clearTimeout(autoTriggerTimer.current);
+    autoTriggerTimer.current = null;
+  }
+  sessionStorage.setItem('signupModalShown', 'true');
+  _openAuthModal?.(...args);
+};
+
+
   // Track window width for responsive carousel positioning
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // ✅ NEW: Auto-trigger signup modal after 5 seconds
+useEffect(() => {
+  // Don't trigger if modal is already open or user already saw it
+  if (isAuthOpen) return;
+  const hasShown = sessionStorage.getItem('signupModalShown');
+  if (hasShown) return;
+
+  autoTriggerTimer.current = setTimeout(() => {
+    // Double-check modal still isn't open at fire time
+    if (!isAuthOpen) {
+      _openAuthModal?.('signup');
+      sessionStorage.setItem('signupModalShown', 'true');
+    }
+  }, 5000);
+
+  return () => clearTimeout(autoTriggerTimer.current);
+}, [isAuthOpen]); // ← re-evaluate if modal opens
 
   // Intersection Observer for scroll reveal
   useEffect(() => {
@@ -354,7 +384,7 @@ const Home = () => {
             {liveEvents.map((evt, idx) => (
               <div className={`nft-event-card-v2 nft-glass reveal stagger-${(idx % 4) + 1}`} key={idx}>
                 <div className="nft-v2-image-area">
-                  <img src={evt.image} alt={`Event image for ${evt.title}`} className="nft-v2-img" loading="lazy" />
+                  <img src={evt.image} onError={(e) => { e.target.src = "/assets/eventbg.jpg" }} alt={`Event image for ${evt.title}`} className="nft-v2-img" loading="lazy" />
                   <div className="nft-v2-date-badge">
                     <Icon icon="mdi:calendar-month" />
                     <span>{evt.date}</span>
