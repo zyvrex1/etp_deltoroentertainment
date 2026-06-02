@@ -186,7 +186,7 @@ const PromoterEventMonitoring = () => {
                                                 onClick={() => setSelectedEvent(event)}
                                             >
                                                 <div className="pmon-card-image-wrap">
-                                                    <img src={imageUrl} alt={event.title} />
+                                                    <img src={imageUrl} onError={(e) => { e.target.src = "/assets/eventbg.jpg" }} alt={event.title} />
                                                 </div>
                                                 <div className="pmon-card-details">
                                                     <div className="pmon-card-info">

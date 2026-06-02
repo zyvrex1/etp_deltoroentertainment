@@ -189,6 +189,7 @@ const PromoterEventManagement = () => {
                     const imageUrl = event.image
                       ? `${import.meta.env.VITE_BACKEND_URL || ""}/uploads/${event.image}`
                       : "/assets/eventbg.jpg";
+                      
 
                     return (
                       <div
@@ -197,7 +198,7 @@ const PromoterEventManagement = () => {
                         onClick={() => setSelectedEvent(event)}
                       >
                         <div className="pem-card-image-wrap">
-                          <img src={imageUrl} alt={event.title} />
+                          <img src={imageUrl}onError={(e) => { e.target.src = "/assets/eventbg.jpg" }} alt={event.title} />
                           <span className={`pem-status-badge status-${event.status?.toLowerCase()}`}>
                             {event.status}
                           </span>
