@@ -198,65 +198,254 @@ export default function ReportsAnalytics() {
     };
 
 
-    const exportReport = async () => {
-        const loadingToast = showExportToast();
-        const REPORT_TITLE = "Reports & Analytics";
-        try {
-            const logoData = await loadLogo();
-            const pdf = new jsPDF("p", "mm", "a4");
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const margin = 15;
-            const FOOTER_HEIGHT = 15;
-            let y = 45;
-            const lineHeight = 6;
+const exportReport = async () => {
+    const loadingToast = showExportToast();
+    const REPORT_TITLE = "Reports & Analytics";
+    try {
+        const logoData = await loadLogo();
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 15;
+        let y = 45;
 
-            addReportHeader(pdf, REPORT_TITLE, logoData);
+        addReportHeader(pdf, REPORT_TITLE, logoData);
 
-            pdf.setFontSize(12);
-            pdf.setTextColor(30, 60, 114);
-            pdf.setFont("helvetica", "bold");
-            pdf.text("Key Metrics", margin, y);
-            y += lineHeight + 2;
+        // ── Date Range Banner ─────────────────────────────────────────
+        pdf.setFillColor(245, 247, 255);
+        pdf.setDrawColor(220, 225, 245);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, y, pdfWidth - margin * 2, 10, 2, 2, 'FD');
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(80, 80, 120);
+        pdf.setFont('helvetica', 'normal');
+        const rangeLabel = `Period: ${dateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – ${dateRange.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        pdf.text(rangeLabel, pdfWidth / 2, y + 6.5, { align: 'center' });
+        y += 18;
 
-            pdf.setFontSize(10);
+        // ── Section Label: Key Metrics ────────────────────────────────
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Key Metrics', margin, y);
+        pdf.setDrawColor(30, 60, 114);
+        pdf.setLineWidth(0.4);
+        pdf.line(margin, y + 2, pdfWidth - margin, y + 2);
+        y += 10;
+
+        // ── 4 Metric Cards (2x2 grid) ─────────────────────────────────
+        const cardW = (pdfWidth - margin * 2 - 6) / 2;
+        const cardH = 22;
+        const cardGap = 6;
+
+        const metrics = [
+            {
+                label: 'Total Revenue',
+                value: `$${overviewStats.grossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                trend: overviewStats.revenueTrend,
+                icon: '●',
+                color: [0, 168, 107],       // green
+                bg: [235, 255, 245],
+                border: [180, 235, 210],
+            },
+            {
+                label: 'Booths Sold',
+                value: overviewStats.boothsSold.toLocaleString(),
+                trend: overviewStats.boothsTrend,
+                icon: '●',
+                color: [30, 60, 200],        // blue
+                bg: [235, 240, 255],
+                border: [180, 200, 245],
+            },
+            {
+                label: 'Seats Sold',
+                value: overviewStats.ticketsSold.toLocaleString(),
+                trend: overviewStats.ticketsTrend,
+                icon: '●',
+                color: [120, 60, 200],       // purple
+                bg: [245, 235, 255],
+                border: [210, 190, 245],
+            },
+            {
+                label: 'Refund Rate',
+                value: `${overviewStats.refundRate}%`,
+                trend: overviewStats.refundTrend,
+                trendInverted: true,         // lower is better
+                icon: '●',
+                color: [198, 40, 40],        // red
+                bg: [255, 240, 240],
+                border: [245, 190, 190],
+            },
+        ];
+
+        metrics.forEach((m, i) => {
+            const col = i % 2;
+            const row = Math.floor(i / 2);
+            const cx = margin + col * (cardW + cardGap);
+            const cy = y + row * (cardH + cardGap);
+
+            // Card background
+            pdf.setFillColor(...m.bg);
+            pdf.setDrawColor(...m.border);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, 'FD');
+
+            // Color dot
+            pdf.setFillColor(...m.color);
+            pdf.circle(cx + 5, cy + 6, 2, 'F');
+
+            // Label
+            pdf.setFontSize(8);
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(m.label, cx + 10, cy + 7);
+
+            // Value
+            pdf.setFontSize(14);
+            pdf.setTextColor(...m.color);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(m.value, cx + 5, cy + 16);
+
+            // Trend badge
+     const trendVal = parseFloat(m.trend);
+if (!isNaN(trendVal)) {
+    const isGood     = m.trendInverted ? trendVal <= 0 : trendVal >= 0;
+    const trendColor = isGood ? [22, 163, 74] : [220, 38, 38];
+    const trendText  = `${trendVal >= 0 ? '+' : '-'}${Math.abs(trendVal)}%`;
+
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(...trendColor);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(trendText, cx + cardW - 4, cy + 7, { align: 'right' });
+    pdf.setFontSize(6.5);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(130, 130, 130);
+    pdf.text('vs prev. period', cx + cardW - 4, cy + 11.5, { align: 'right' });
+}
+        });
+
+        y += 2 * (cardH + cardGap) + 4;
+
+        // ── Sales by Category ─────────────────────────────────────────
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Sales by Category', margin, y);
+        pdf.setDrawColor(30, 60, 114);
+        pdf.setLineWidth(0.4);
+        pdf.line(margin, y + 2, pdfWidth - margin, y + 2);
+        y += 10;
+
+        const categories = [
+            { label: 'Booth Sales', value: overviewStats.boothsSold || 0, color: [0, 89, 255] },
+            { label: 'Seat Sales',  value: overviewStats.ticketsSold || 0, color: [140, 82, 255] },
+            { label: 'Refunded',   value: refundedCount,                   color: [200, 200, 200] },
+        ];
+        const catTotal = categories.reduce((s, c) => s + c.value, 0);
+        const barMaxW = pdfWidth - margin * 2 - 45;
+
+        categories.forEach((cat) => {
+            const pct = catTotal > 0 ? (cat.value / catTotal) * 100 : 0;
+            const fillW = (pct / 100) * barMaxW;
+
+            pdf.setFontSize(8.5);
             pdf.setTextColor(50, 50, 50);
-            pdf.setFont("helvetica", "normal");
-            pdf.text(`Gross Revenue: $${overviewStats.grossRevenue.toLocaleString()} (↑ 15%)`, margin + 2, y); y += lineHeight;
-            pdf.text(`Net Revenue: $${overviewStats.netRevenue.toLocaleString()} (↑ 12%)`, margin + 2, y); y += lineHeight;
-            pdf.text(`Tickets Sold: ${overviewStats.ticketsSold.toLocaleString()} (↑ 8%)`, margin + 2, y); y += lineHeight;
-            pdf.text(`Refund Rate: ${overviewStats.refundRate}% (↓ 2%)`, margin + 2, y); y += lineHeight + 6;
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(cat.label, margin, y + 4);
 
+            // Track background
+            pdf.setFillColor(235, 235, 235);
+            pdf.roundedRect(margin + 32, y, barMaxW, 5, 1, 1, 'F');
 
-            pdf.setFontSize(12);
-            pdf.setTextColor(30, 60, 114);
-            pdf.setFont("helvetica", "bold");
-            pdf.text("Top Performing Events", margin, y);
-            y += 8;
-            
-            const eventHeaders = ['Rank', 'Event Name', 'Tickets Info', 'Revenue Info'];
-            const eventRows = topEvents.map((e, index) => [
-                `#${index + 1}`,
-                e.name,
-                e.ticketsText,
-                `${e.revenueText} (${e.cap})`
-            ]);
-            y = drawTable(pdf, y, eventHeaders, eventRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, REPORT_TITLE);
+            // Fill
+            if (fillW > 0) {
+                pdf.setFillColor(...cat.color);
+                pdf.roundedRect(margin + 32, y, fillW, 5, 1, 1, 'F');
+            }
+
+            // Percent label
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(80, 80, 80);
+            pdf.text(`${pct.toFixed(1)}% (${cat.value})`, margin + 32 + barMaxW + 2, y + 4);
 
             y += 10;
-            pdf.setFontSize(9);
-            pdf.setTextColor(100, 100, 100);
-            pdf.text("Report generated from Reports & Analytics.", margin, y, { maxWidth: pdfWidth - 2 * margin });
+        });
 
-            finalizeReport(pdf);
-            pdf.save(`Reports_Analytics_${new Date().toISOString().split("T")[0]}.pdf`);
-        } catch (error) {
-            console.error("Error generating PDF:", error);
-            alert("Failed to generate PDF. Please try again.");
-        } finally {
-            removeExportToast(loadingToast);
+        // Occupancy bars
+        y += 2;
+        const occupancyItems = [
+            { label: 'Booth Occupancy', pct: overviewStats.boothOccupancy || 0, color: [30, 60, 200] },
+            { label: 'Seat Occupancy',  pct: overviewStats.seatOccupancy || 0,  color: [22, 163, 74] },
+        ];
+        occupancyItems.forEach((oc) => {
+            const fillW = ((oc.pct || 0) / 100) * barMaxW;
+            pdf.setFontSize(8.5);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(oc.label, margin, y + 4);
+
+            pdf.setFillColor(235, 235, 235);
+            pdf.roundedRect(margin + 32, y, barMaxW, 5, 1, 1, 'F');
+            if (fillW > 0) {
+                pdf.setFillColor(...oc.color);
+                pdf.roundedRect(margin + 32, y, fillW, 5, 1, 1, 'F');
+            }
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(80, 80, 80);
+            pdf.text(`${oc.pct}%`, margin + 32 + barMaxW + 2, y + 4);
+            y += 10;
+        });
+
+        y += 4;
+
+        // ── Top Performing Events Table ───────────────────────────────
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Top Performing Events', margin, y);
+        pdf.setDrawColor(30, 60, 114);
+        pdf.setLineWidth(0.4);
+        pdf.line(margin, y + 2, pdfWidth - margin, y + 2);
+        y += 8;
+
+        const eventHeaders = ['#', 'Event Name', 'Seats / Booths', 'Revenue', 'Capacity'];
+        const eventRows = topEvents.map((e, i) => [
+            `#${i + 1}`,
+            e.name,
+            `${e.ticketsSold} seats • ${e.boothsSold} booths`,
+            e.revenueText,
+            e.cap,
+        ]);
+
+        y = drawTable(pdf, y, eventHeaders, eventRows, margin, pdfWidth, pdfHeight, 15, 11, 3, logoData, REPORT_TITLE);
+
+        // ── Summary Footer Strip ──────────────────────────────────────
+        y += 8;
+        if (y + 16 < pdfHeight - 20) {
+            pdf.setFillColor(245, 247, 255);
+            pdf.setDrawColor(210, 218, 245);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(margin, y, pdfWidth - margin * 2, 14, 2, 2, 'FD');
+            pdf.setFontSize(8);
+            pdf.setTextColor(80, 90, 130);
+            pdf.setFont('helvetica', 'italic');
+            pdf.text(
+                `This report covers ${topEvents.length} event(s) • Generated by eTicketsPro Analytics`,
+                pdfWidth / 2, y + 9,
+                { align: 'center' }
+            );
         }
-    };
+
+        finalizeReport(pdf);
+        pdf.save(`Reports_Analytics_${new Date().toISOString().split("T")[0]}.pdf`);
+    } catch (error) {
+        console.error("Error generating PDF:", error);
+        alert("Failed to generate PDF. Please try again.");
+    } finally {
+        removeExportToast(loadingToast);
+    }
+};
+
 
     return (
         <div className="admin-reports-page">
@@ -300,10 +489,10 @@ export default function ReportsAnalytics() {
                     <div className="report-stat-card">
                         <div className="upper-stats">
                             <span className="icon blue"><Icon icon="mdi:trending-up" width="24" /></span>
-                            <span className={`trend ${overviewStats.boothsTrend >= 0 ? 'up' : 'down'}`}>
-                                <Icon icon={overviewStats.boothsTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
-                                {Math.abs(overviewStats.boothsTrend)}%
-                            </span>
+                            <span className={`trend ${(overviewStats.boothsTrend ?? 0) >= 0 ? 'up' : 'down'}`}>
+    <Icon icon={(overviewStats.boothsTrend ?? 0) >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+    {overviewStats.boothsTrend != null ? `${Math.abs(overviewStats.boothsTrend)}%` : '—'}
+</span>
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Booths Sold</p>
