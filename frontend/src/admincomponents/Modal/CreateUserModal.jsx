@@ -16,86 +16,132 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
   const { user } = useAuthContext();
   const [userType, setUserType] = useState("Customer");
   const [formData, setFormData] = useState({ phone: "" });
+  const [errors, setErrors] = useState({});
+
+  // Clear errors and data when switching user Type
+  React.useEffect(() => {
+    setErrors({});
+    setFormData({ phone: "" });
+  }, [userType]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handlePhoneChange = (phone) => {
     setFormData((prev) => ({ ...prev, phone }));
+    if (errors.phone) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.phone;
+        return newErrors;
+      });
+    }
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const currentToken = user?.token;
+    const newErrors = {};
+    if (!formData.firstName?.trim()) newErrors.firstName = "First Name is required";
+    if (!formData.lastName?.trim()) newErrors.lastName = "Last Name is required";
+    if (!formData.email?.trim()) {
+      newErrors.email = "Email Address is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Invalid email format";
+    }
+    
+    if (!formData.phone?.trim() || formData.phone.length <= 3) {
+      newErrors.phone = "Phone Number is required";
+    }
 
-  if (!currentToken) {
-    showErrorAlert("Error", "Session expired. Please log in again.");
-    return;
-  }
+    if (["Promoter", "Sponsor"].includes(userType)) {
+      if (!formData.companyName?.trim()) newErrors.companyName = "Company Name is required";
+      if (!formData.industry?.trim()) newErrors.industry = "Industry is required";
+    }
 
-  const result = await showCreateConfirmAlert(
-    "Create User?",
-    `Are you sure you want to create a new ${userType} user?`
-  );
-  
-  if (!result.isConfirmed) return;
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
-  try {
-    const payload = {
-      firstName: formData.firstName || "",
-      lastName: formData.lastName || "",
-      email: formData.email || "",
-      phone: formData.phone || "",
-      companyName: formData.companyName || "",
-      industry: formData.industry || "",
-      role: userType.toLowerCase(),
-    };
+    const currentToken = user?.token;
 
-    const route =
-      user?.role === "superadmin"
-        ? "/api/superadmin/create-user"
-        : "/api/admin/create-user";
+    if (!currentToken) {
+      showErrorAlert("Error", "Session expired. Please log in again.");
+      return;
+    }
 
-    const response = await fetch(route, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${currentToken}`, // Use the captured token here
-      },
-      body: JSON.stringify(payload),
-    });
+    const result = await showCreateConfirmAlert(
+      "Create User?",
+      `Are you sure you want to create a new ${userType} user?`
+    );
 
-    let data;
+    if (!result.isConfirmed) return;
+
     try {
-      data = await response.json();
-    } catch {
-      data = { error: "Server did not return JSON. Check backend." };
-    }
+      const payload = {
+        firstName: formData.firstName || "",
+        lastName: formData.lastName || "",
+        email: formData.email || "",
+        phone: formData.phone || "",
+        companyName: formData.companyName || "",
+        industry: formData.industry || "",
+        role: userType.toLowerCase(),
+      };
 
-    if (!response.ok) {
-      // If the backend actually returned an error, this will catch it
-      throw new Error(data.error || "Failed to create user");
-    }
+      const route =
+        user?.role === "superadmin"
+          ? "/api/superadmin/create-user"
+          : "/api/admin/create-user";
 
-    // Success logic
-    showSuccessAlert("User Created", data.message || "User created successfully");
-    
-    // Reset and notify parent
-    if (onUserCreated) {
-      onUserCreated();
-    }
-    
-    setFormData({ phone: "" }); // Reset to initial state
-    onClose();
+      const response = await fetch(route, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${currentToken}`, // Use the captured token here
+        },
+        body: JSON.stringify(payload),
+      });
 
-  } catch (error) {
-    console.error("Error creating user:", error);
-    showErrorAlert("Error", error.message);
-  }
-};
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        data = { error: "Server did not return JSON. Check backend." };
+      }
+
+      if (!response.ok) {
+        // If the backend actually returned an error, this will catch it
+        throw new Error(data.error || "Failed to create user");
+      }
+
+      // Success logic
+      showSuccessAlert("User Created", data.message || "User created successfully");
+
+      // Reset and notify parent
+      if (onUserCreated) {
+        onUserCreated();
+      }
+
+      setFormData({ phone: "" }); // Reset to initial state
+      setErrors({});
+      onClose();
+
+    } catch (error) {
+      console.error("Error creating user:", error);
+      showErrorAlert("Error", error.message);
+    }
+  };
 
   const handleCancel = async () => {
     const hasChanges = Object.values(formData).some(
@@ -113,21 +159,22 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
 
   const renderFormFields = () => {
     const renderPhoneField = (extraClass = "") => (
-      <div className={`add-user-form-group ${extraClass}`}>
+      <div className={`add-user-form-group ${extraClass} ${errors.phone ? 'has-error' : ''}`}>
         <h6>Phone Number</h6>
         <PhoneInput
-          defaultCountry="ph" 
+          defaultCountry="ph"
           value={formData.phone || ""}
-          onChange={(phone) => setFormData((prev) => ({ ...prev, phone }))}
-          inputClassName="add-user-form-input" 
+          onChange={handlePhoneChange}
+          inputClassName="add-user-form-input"
           className="phone-input-container"
         />
+        {errors.phone && <span className="error-message">{errors.phone}</span>}
       </div>
     );
 
     const commonFields = (
       <>
-        <div className="add-user-form-group">
+        <div className={`add-user-form-group ${errors.firstName ? 'has-error' : ''}`}>
           <h6>First Name</h6>
           <input
             type="text"
@@ -135,10 +182,10 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
             value={formData.firstName || ""}
             onChange={handleChange}
             placeholder="e.g. John"
-            required
           />
+          {errors.firstName && <span className="error-message">{errors.firstName}</span>}
         </div>
-        <div className="add-user-form-group">
+        <div className={`add-user-form-group ${errors.lastName ? 'has-error' : ''}`}>
           <h6>Last Name</h6>
           <input
             type="text"
@@ -146,10 +193,10 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
             value={formData.lastName || ""}
             onChange={handleChange}
             placeholder="e.g. Doe"
-            required
           />
+          {errors.lastName && <span className="error-message">{errors.lastName}</span>}
         </div>
-        <div className="add-user-form-group">
+        <div className={`add-user-form-group ${errors.email ? 'has-error' : ''}`}>
           <h6>Email Address</h6>
           <input
             type="email"
@@ -157,8 +204,8 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
             value={formData.email || ""}
             onChange={handleChange}
             placeholder="john@example.com"
-            required
           />
+          {errors.email && <span className="error-message">{errors.email}</span>}
         </div>
       </>
     );
@@ -172,7 +219,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
               {renderPhoneField()}
             </div>
             <div className="add-user-form-row">
-              <div className="add-user-form-group">
+              <div className={`add-user-form-group ${errors.companyName ? 'has-error' : ''}`}>
                 <h6>Company Name</h6>
                 <input
                   type="text"
@@ -180,10 +227,10 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.companyName || ""}
                   onChange={handleChange}
                   placeholder="e.g. Acme Corp"
-                  required
                 />
+                {errors.companyName && <span className="error-message">{errors.companyName}</span>}
               </div>
-              <div className="add-user-form-group">
+              <div className={`add-user-form-group ${errors.industry ? 'has-error' : ''}`}>
                 <h6>Industry</h6>
                 <input
                   type="text"
@@ -191,8 +238,8 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.industry || ""}
                   onChange={handleChange}
                   placeholder="e.g. Tech"
-                  required
                 />
+                {errors.industry && <span className="error-message">{errors.industry}</span>}
               </div>
             </div>
           </>
@@ -205,7 +252,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
               {renderPhoneField()}
             </div>
             <div className="add-user-form-row">
-              <div className="add-user-form-group">
+              <div className={`add-user-form-group ${errors.companyName ? 'has-error' : ''}`}>
                 <h6>Company Name</h6>
                 <input
                   type="text"
@@ -213,10 +260,10 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.companyName || ""}
                   onChange={handleChange}
                   placeholder="e.g. Acme Corp"
-                  required
                 />
+                {errors.companyName && <span className="error-message">{errors.companyName}</span>}
               </div>
-              <div className="add-user-form-group">
+              <div className={`add-user-form-group ${errors.industry ? 'has-error' : ''}`}>
                 <h6>Industry</h6>
                 <input
                   type="text"
@@ -224,8 +271,8 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.industry || ""}
                   onChange={handleChange}
                   placeholder="e.g. Tech"
-                  required
                 />
+                {errors.industry && <span className="error-message">{errors.industry}</span>}
               </div>
             </div>
           </>

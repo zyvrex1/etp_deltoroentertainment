@@ -245,6 +245,20 @@
                 }
             }
         }
+
+        .error-message {
+            color: #ff4d4f;
+            font-size: 12px;
+            margin-top: -4px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        &.has-error {
+            input, .phone-input-container {
+                border-color: #ff4d4f !important;
+            }
+        }
     }
 
     .add-user-full-width {

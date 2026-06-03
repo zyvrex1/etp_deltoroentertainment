@@ -60,10 +60,10 @@ const autoHealEvents = async (eventsArr) => {
 
   try {
     // 1. Fetch all ACTIVE reservations for these events (not cancelled)
-  const reservations = await Reservation.find({ 
-  event: { $in: eventIds },
-  status: { $in: ['pending', 'confirmed'] }
-});
+    const reservations = await Reservation.find({
+      event: { $in: eventIds },
+      status: { $in: ['pending', 'confirmed'] }
+    });
 
     for (let event of events) {
       let changed = false;
@@ -131,7 +131,7 @@ const autoHealEvents = async (eventsArr) => {
               changed = true;
             }
           } else if (type === "seat") {
-            const isReserved = 
+            const isReserved =
               reservedSeatIds.includes(idStr) ||
               reservedSeatLabels.includes(item.label) ||
               reservedSeatLabels.includes(item.code);
@@ -419,7 +419,6 @@ const createEvent = async (req, res) => {
 
       "endTime",
     ];
-
     let errors = [];
 
     requiredFields.forEach((field) => {
@@ -427,6 +426,20 @@ const createEvent = async (req, res) => {
         errors.push(field);
       }
     });
+
+    if (errors.length) {
+      return res.status(400).json({ error: "Validation failed", fields: errors });
+    }
+
+    // New Date/Time Range Validation
+    const startDateTime = new Date(`${startDate}T${startTime}`);
+    const endDateTime = new Date(`${endDate}T${endTime}`);
+
+    if (endDateTime <= startDateTime) {
+      return res.status(400).json({
+        error: "End date/time must be after the start date/time."
+      });
+    }
 
     const venueFields = ["name", "address", "city", "zipCode"];
 
@@ -722,11 +735,11 @@ const deleteEvent = async (req, res) => {
   try {
     // Delete all reservations for this event
     await Reservation.deleteMany({ event: id });
-    
+
     // Delete all merchandise/products for this event
     // Note: Merchandise eventId is a string in the model
     await Merchandise.deleteMany({ eventId: id.toString() });
-    
+
     console.log(`Cascade delete completed for event: ${id}`);
   } catch (cascadeError) {
     console.error("Error during cascade delete:", cascadeError);
@@ -837,7 +850,7 @@ const updateEvent = async (req, res) => {
     if (isNaN(sDateTime.getTime()) || isNaN(eDateTime.getTime())) {
       errors.push("Invalid date or time format.");
     } else if (eDateTime <= sDateTime) {
-      errors.push("End date must be strictly after start date.");
+      errors.push("End date/time must be after the start date/time.");
     }
 
 
@@ -889,10 +902,10 @@ const updateEvent = async (req, res) => {
 
         // Auto-sync quantityAvailable with map count for seated/exhibition events
         if (finalEventType !== "General Admission") {
-          const placedCount = (layoutData?.items || []).filter(item => 
+          const placedCount = (layoutData?.items || []).filter(item =>
             (item.categoryId?.toString() === inputId?.toString() || item.categoryId === p.priceName)
           ).length;
-          
+
           if (placedCount > finalQAvailable) {
             finalQAvailable = placedCount;
           }
@@ -934,7 +947,7 @@ const updateEvent = async (req, res) => {
             const seatPillarId = seat.priceLevelId.toString();
             // Check if it's in our mapping or already a valid ID in the list
             const finalId = idMap[seatPillarId] || seatPillarId;
-            
+
             if (!priceLevelIdStrings.includes(finalId)) {
               errors.push(
                 `seatMap.sections[${sIndex}].seats[${i}] invalid priceLevelId (${seatPillarId})`,
@@ -1077,27 +1090,27 @@ const updateEvent = async (req, res) => {
     // Notification Logic
     const notificationController = require("./notificationController");
     if (finalStatus === "approved" && existingEvent.status !== "approved") {
-        const sponsorNotification = await notificationController.createNotification({
-            title: `New Event: ${updatedEvent.title}`,
-            content: `A new event has been posted. Check it out!`,
-            type: "event",
-            path: "/sponsor/sponsor-events",
-            unread: true,
-            createdBy: req.user._id,
-            targetRole: "sponsor",
-        });
-        emitUpdate("newNotification", sponsorNotification);
+      const sponsorNotification = await notificationController.createNotification({
+        title: `New Event: ${updatedEvent.title}`,
+        content: `A new event has been posted. Check it out!`,
+        type: "event",
+        path: "/sponsor/sponsor-events",
+        unread: true,
+        createdBy: req.user._id,
+        targetRole: "sponsor",
+      });
+      emitUpdate("newNotification", sponsorNotification);
     } else if (finalStatus === "rejected" && existingEvent.status !== "rejected") {
-        const rejectionNotification = await notificationController.createNotification({
-            title: `Event Rejected: ${updatedEvent.title}`,
-            content: `Reason: ${rejectionReason || 'No reason provided'}`,
-            type: "event",
-            path: "/promoter/events",
-            unread: true,
-            userId: updatedEvent.createdBy._id,
-            createdBy: req.user._id,
-        });
-        emitUpdate("newNotification", rejectionNotification);
+      const rejectionNotification = await notificationController.createNotification({
+        title: `Event Rejected: ${updatedEvent.title}`,
+        content: `Reason: ${rejectionReason || 'No reason provided'}`,
+        type: "event",
+        path: "/promoter/events",
+        unread: true,
+        userId: updatedEvent.createdBy._id,
+        createdBy: req.user._id,
+      });
+      emitUpdate("newNotification", rejectionNotification);
     }
 
     emitUpdate("dashboardUpdate");
@@ -1162,8 +1175,8 @@ const saveVenueLayout = async (req, res) => {
         unassignedIndices: item.unassignedIndices || [],
         priceLevelId:
           item.priceLevelId &&
-          item.priceLevelId !== "none" &&
-          item.priceLevelId !== ""
+            item.priceLevelId !== "none" &&
+            item.priceLevelId !== ""
             ? item.priceLevelId
             : null,
       };
@@ -1239,8 +1252,8 @@ const assignPriceLevels = async (req, res) => {
           unassignedIndices: seat.unassignedIndices || [],
           priceLevelId:
             seat.priceLevelId &&
-            seat.priceLevelId !== "none" &&
-            seat.priceLevelId !== ""
+              seat.priceLevelId !== "none" &&
+              seat.priceLevelId !== ""
               ? seat.priceLevelId // Note: Mongoose handles string to ObjectId casting if schema is set
               : null,
         })),
@@ -1257,8 +1270,8 @@ const assignPriceLevels = async (req, res) => {
         status: booth.status || "available",
         priceLevelId:
           booth.priceLevelId &&
-          booth.priceLevelId !== "none" &&
-          booth.priceLevelId !== ""
+            booth.priceLevelId !== "none" &&
+            booth.priceLevelId !== ""
             ? booth.priceLevelId
             : null,
       }));
@@ -1448,7 +1461,7 @@ const buySeats = async (req, res) => {
         const currentSold = event.priceLevels[plIdx].quantitySold || 0;
         const newSold = currentSold + delta;
         event.priceLevels[plIdx].quantitySold = newSold;
-        
+
         // Ensure quantityAvailable is synced for physical items to prevent validation errors
         if (event.priceLevels[plIdx].quantityAvailable < newSold) {
           event.priceLevels[plIdx].quantityAvailable = newSold;
@@ -1608,11 +1621,11 @@ const reserveBooth = async (req, res) => {
       );
       if (plIndex !== -1) {
         const pl = event.priceLevels[plIndex];
-        
+
         // Auto-expand quantityAvailable if it's desynced from the map's inventory
         // Since this is a physical booth, the map is the source of truth.
         if (pl.quantityAvailable <= pl.quantitySold) {
-            event.priceLevels[plIndex].quantityAvailable = pl.quantitySold + 1;
+          event.priceLevels[plIndex].quantityAvailable = pl.quantitySold + 1;
         }
       }
     }
@@ -1633,7 +1646,7 @@ const reserveBooth = async (req, res) => {
     // 2. Update the booth status and Price Level stats in the Event
     const buyerName =
       req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
-    
+
     event.booths[boothIndex].status = "sold";
     event.booths[boothIndex].reservedBy = buyerName;
     event.booths[boothIndex].reservedByEmail = req.user.email || "";
@@ -1732,22 +1745,22 @@ const reserveBooth = async (req, res) => {
     });
   } catch (error) {
     console.error("Reserve Booth Error:", error);
-    
+
     // Notification for the Sponsor (Error/Failure)
     try {
-        const notificationController = require("./notificationController");
-        await notificationController.createNotification({
-            title: `Reservation Failed`,
-            content: `We encountered an error while processing your reservation: ${error.message}`,
-            type: "reservation",
-            path: "/sponsor/sponsor-events",
-            unread: true,
-            userId: req.user._id,
-            createdBy: req.user._id
-        });
-        emitUpdate("newNotification", { userId: req.user._id }); // Trigger refresh
+      const notificationController = require("./notificationController");
+      await notificationController.createNotification({
+        title: `Reservation Failed`,
+        content: `We encountered an error while processing your reservation: ${error.message}`,
+        type: "reservation",
+        path: "/sponsor/sponsor-events",
+        unread: true,
+        userId: req.user._id,
+        createdBy: req.user._id
+      });
+      emitUpdate("newNotification", { userId: req.user._id }); // Trigger refresh
     } catch (notifError) {
-        console.error("Failed to create error notification:", notifError);
+      console.error("Failed to create error notification:", notifError);
     }
 
     res.status(500).json({ error: error.message });
@@ -1766,10 +1779,10 @@ const syncBoothStatus = async (req, res) => {
     if (!event) return res.status(404).json({ error: "No such event" });
 
     // 1. Get all active (non-cancelled) reservations for this event and populate user details
- const reservations = await Reservation.find({ 
-  event: id,
-  status: { $in: ['pending', 'confirmed'] }
-}).populate("user", "firstName lastName companyName email");
+    const reservations = await Reservation.find({
+      event: id,
+      status: { $in: ['pending', 'confirmed'] }
+    }).populate("user", "firstName lastName companyName email");
 
     let changed = false;
 
@@ -1790,7 +1803,7 @@ const syncBoothStatus = async (req, res) => {
         const buyerName =
           res && res.user
             ? res.user.companyName ||
-              `${res.user.firstName} ${res.user.lastName}`
+            `${res.user.firstName} ${res.user.lastName}`
             : "";
         const buyerEmail =
           res && res.user ? res.user.email : res?.billingAddress?.email || "";
@@ -1838,7 +1851,7 @@ const syncBoothStatus = async (req, res) => {
           const buyerName =
             res && res.user
               ? res.user.companyName ||
-                `${res.user.firstName} ${res.user.lastName}`
+              `${res.user.firstName} ${res.user.lastName}`
               : "";
           const buyerEmail =
             res && res.user ? res.user.email : res?.billingAddress?.email || "";
@@ -1878,7 +1891,7 @@ const syncBoothStatus = async (req, res) => {
           const buyerName =
             res && res.user
               ? res.user.companyName ||
-                `${res.user.firstName} ${res.user.lastName}`
+              `${res.user.firstName} ${res.user.lastName}`
               : "";
           const buyerEmail =
             res && res.user ? res.user.email : res?.billingAddress?.email || "";
@@ -1903,12 +1916,12 @@ const syncBoothStatus = async (req, res) => {
             // but usually tickets are separate from "reservations".
             // However, based on the codebase, tickets seem to be handled as 'seat' type reservations too (buySeats).
             if (!item.ticketId) {
-                event.layoutData.items[index].status = "available";
-                event.layoutData.items[index].reservedBy = "";
-                event.layoutData.items[index].reservedByEmail = "";
-                event.layoutData.items[index].reservedByPO = "";
-                changed = true;
-                event.markModified("layoutData");
+              event.layoutData.items[index].status = "available";
+              event.layoutData.items[index].reservedBy = "";
+              event.layoutData.items[index].reservedByEmail = "";
+              event.layoutData.items[index].reservedByPO = "";
+              changed = true;
+              event.markModified("layoutData");
             }
           }
         }
@@ -1927,16 +1940,16 @@ const syncBoothStatus = async (req, res) => {
       // For seats in layoutData
       let soldSeats = 0;
       if (event.layoutData && event.layoutData.items) {
-          soldSeats = event.layoutData.items.filter(
-              (item) => 
-                (item.type || "").toLowerCase() === "seat" && 
-                (item.categoryId?.toString() === pl._id.toString() || item.priceLevelId?.toString() === pl._id.toString()) &&
-                item.status === "sold"
-          ).length;
+        soldSeats = event.layoutData.items.filter(
+          (item) =>
+            (item.type || "").toLowerCase() === "seat" &&
+            (item.categoryId?.toString() === pl._id.toString() || item.priceLevelId?.toString() === pl._id.toString()) &&
+            item.status === "sold"
+        ).length;
       }
 
       const totalSold = soldBooths + soldSeats;
-      
+
       if (pl.quantitySold !== totalSold) {
         event.priceLevels[index].quantitySold = totalSold;
         changed = true;

@@ -55,6 +55,33 @@ const adminService = {
       console.error("Error in updateUser service:", error);
       throw error;
     }
+  },
+
+  /**
+   * Delete a user
+   * @param {string} id - The user ID
+   * @param {string} token - The authentication token
+   * @returns {Promise<Object>} Success message
+   */
+  deleteUser: async (id, token) => {
+    try {
+      const response = await fetch(`${API_URL}/users/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const json = await response.json();
+
+      if (!response.ok) {
+        throw new Error(json.error || "Failed to delete user");
+      }
+
+      return json;
+    } catch (error) {
+      console.error("Error in deleteUser service:", error);
+      throw error;
+    }
   }
 };
 

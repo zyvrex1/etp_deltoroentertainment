@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { useEventsContext } from "../../hooks/useEventsContext";
 import "./CreateEventModal.css";
@@ -16,6 +16,10 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   const { user } = useAuthContext();
 
   const today = new Date().toISOString().split("T")[0];
+  const currentTime = new Date().toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   const [title, setTitle] = useState("");
   const [eventType, setEventType] = useState("General Admission");
@@ -40,7 +44,24 @@ const CreateEventModal = ({ isOpen, onClose }) => {
 
 
   const [error, setError] = useState("");
-  const [emptyFields, setEmptyFields] = useState([]);
+  const [errors, setErrors] = useState({});
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
+
+  const clearError = (fieldName) => {
+    if (errors[fieldName]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+    }
+  };
 
   // Image handlers remain the same
   const handleImageDrag = (e) => {
@@ -90,36 +111,30 @@ const resetForm = () => {
   setImageFile(null);
   setImagePreviewUrl(null);
   setError("");
-  setEmptyFields([]);
+  setErrors({});
 };
 
 const handleSubmit = async (e) => {
   e.preventDefault();
 
   setError("");
-  setEmptyFields([]);
+  const newErrors = {};
 
-  const fieldsToCheck = {
-    title,
-    eventType,
-    description,
-    category,
-    startDate,
-    endDate,
-    startTime,
-    endTime,
-    venueName: venue.name,
-    venueAddress: venue.address,
-    venueCity: venue.city,
-    venueZip: venue.zipCode,
-  };
+  if (!title?.trim()) newErrors.title = "Event Title is required";
+  if (!category?.trim()) newErrors.category = "Category is required";
+  if (!startDate) newErrors.startDate = "Start Date is required";
+  if (!endDate) newErrors.endDate = "End Date is required";
+  if (!startTime) newErrors.startTime = "Start Time is required";
+  if (!endTime) newErrors.endTime = "End Time is required";
+  if (!description?.trim()) newErrors.description = "Description is required";
+  
+  if (!venue.name?.trim()) newErrors.venueName = "Venue Name is required";
+  if (!venue.address?.trim()) newErrors.venueAddress = "Street Address is required";
+  if (!venue.city?.trim()) newErrors.venueCity = "City is required";
+  if (!venue.zipCode?.trim()) newErrors.venueZip = "Zip Code is required";
 
-  const empty = Object.entries(fieldsToCheck)
-    .filter(([_, value]) => value === "" || value === null || value === undefined)
-    .map(([key]) => key);
-
-  if (empty.length > 0) {
-    setEmptyFields(empty);
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
     setError("Please fill in all required fields.");
     return;
   }
@@ -128,7 +143,25 @@ const handleSubmit = async (e) => {
   const endDateTime = new Date(`${endDate}T${endTime}`);
 
   if (endDateTime <= startDateTime) {
-    setError("End date/time must be after the start date/time.");
+    if (startDate === endDate) {
+      newErrors.endTime = "End Time must be after Start Time";
+    } else {
+      newErrors.endDate = "End Date must be after Start Date";
+    }
+    setErrors(newErrors);
+    return;
+  }
+
+  // Check if times are in the past for today
+  const now = new Date();
+  if (startDate === today && startTime < currentTime) {
+    newErrors.startTime = "Start Time cannot be in the past";
+    setErrors(newErrors);
+    return;
+  }
+  if (endDate === today && endTime < currentTime) {
+    newErrors.endTime = "End Time cannot be in the past";
+    setErrors(newErrors);
     return;
   }
 
@@ -312,32 +345,38 @@ const handleManualClose = () => {
 
               {/* Title & Category */}
               <div className="add-event-form-row">
-                <div className="add-event-form-group">
+                <div className={`add-event-form-group ${errors.title ? 'has-error' : ''}`}>
                   <h6>Event Title</h6>
                   <input
                     type="text"
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      clearError("title");
+                    }}
                     placeholder="e.g. Tech Summit 2024"
-                    className={emptyFields.includes("title") ? "error" : ""}
                   />
+                  {errors.title && <span className="error-message">{errors.title}</span>}
                 </div>
 
-                <div className="add-event-form-group">
+                <div className={`add-event-form-group ${errors.category ? 'has-error' : ''}`}>
                   <h6>Category</h6>
                   <input
                     type="text"
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
+                    onChange={(e) => {
+                      setCategory(e.target.value);
+                      clearError("category");
+                    }}
                     placeholder="e.g. Concert, Conference, Festival"
-                    className={emptyFields.includes("category") ? "error" : ""}
                   />
+                  {errors.category && <span className="error-message">{errors.category}</span>}
                 </div>
               </div>
 
               {/* Dates */}
               <div className="add-event-form-row">
-                <div className="add-event-form-group">
+                <div className={`add-event-form-group ${errors.startDate ? 'has-error' : ''}`}>
                   <h6>Start Date</h6>
                   <input
                     type="date"
@@ -346,96 +385,129 @@ const handleManualClose = () => {
                     onChange={(e) => {
                       setStartDate(e.target.value);
                       if (endDate < e.target.value) setEndDate(e.target.value);
+                      clearError("startDate");
                     }}
-                    className={emptyFields.includes("startDate") ? "error" : ""}
                   />
+                  {errors.startDate && <span className="error-message">{errors.startDate}</span>}
                 </div>
-                <div className="add-event-form-group">
+                <div className={`add-event-form-group ${errors.endDate ? 'has-error' : ''}`}>
                   <h6>End Date</h6>
                   <input
                     type="date"
                     min={startDate}
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className={emptyFields.includes("endDate") ? "error" : ""}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      clearError("endDate");
+                    }}
                   />
+                  {errors.endDate && <span className="error-message">{errors.endDate}</span>}
                 </div>
               </div>
 
               {/* Times */}
               <div className="add-event-form-row">
-                <div className="add-event-form-group">
+                <div className={`add-event-form-group ${errors.startTime ? 'has-error' : ''}`}>
                   <h6>Start Time</h6>
                   <input
                     type="time"
                     value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className={emptyFields.includes("startTime") ? "error" : ""}
+                    min={startDate === today ? currentTime : undefined}
+                    onChange={(e) => {
+                      setStartTime(e.target.value);
+                      clearError("startTime");
+                    }}
                   />
+                  {errors.startTime && <span className="error-message">{errors.startTime}</span>}
                 </div>
-                <div className="add-event-form-group">
+                <div className={`add-event-form-group ${errors.endTime ? 'has-error' : ''}`}>
                   <h6>End Time</h6>
                   <input
                     type="time"
                     value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className={emptyFields.includes("endTime") ? "error" : ""}
+                    min={
+                      startDate === endDate
+                        ? startTime
+                        : (endDate === today ? currentTime : undefined)
+                    }
+                    onChange={(e) => {
+                      setEndTime(e.target.value);
+                      clearError("endTime");
+                    }}
                   />
+                  {errors.endTime && <span className="error-message">{errors.endTime}</span>}
                 </div>
               </div>
 
               {/* Description */}
-              <div className="add-event-form-group add-event-full-width">
+              <div className={`add-event-form-group add-event-full-width ${errors.description ? 'has-error' : ''}`}>
                 <h6>About the Event</h6>
                 <textarea
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    clearError("description");
+                  }}
                   placeholder="Event description..."
                   rows="3"
-                  className={emptyFields.includes("description") ? "error" : ""}
                 ></textarea>
+                {errors.description && <span className="error-message">{errors.description}</span>}
               </div>
 
               {/* Venue */}
               <div className="add-event-form-group add-event-full-width">
                 <h6>Venue Details</h6>
-                <input
-                  type="text"
-                  placeholder="Venue Name"
-                  value={venue.name}
-                  onChange={(e) => setVenue({ ...venue, name: e.target.value })}
-                  className={emptyFields.includes("venueName") ? "error" : ""}
-                />
-                <input
-                  type="text"
-                  placeholder="Street Address"
-                  value={venue.address}
-                  onChange={(e) =>
-                    setVenue({ ...venue, address: e.target.value })
-                  }
-                  className={
-                    emptyFields.includes("venueAddress") ? "error" : ""
-                  }
-                />
-                <div className="add-event-form-row">
+                <div className={`add-event-form-group ${errors.venueName ? 'has-error' : ''}`} style={{gap: '4px'}}>
                   <input
                     type="text"
-                    placeholder="City"
-                    value={venue.city}
-                    onChange={(e) =>
-                      setVenue({ ...venue, city: e.target.value })
-                    }
-                    className={emptyFields.includes("venueCity") ? "error" : ""}
+                    placeholder="Venue Name"
+                    value={venue.name}
+                    onChange={(e) => {
+                      setVenue({ ...venue, name: e.target.value });
+                      clearError("venueName");
+                    }}
                   />
+                  {errors.venueName && <span className="error-message">{errors.venueName}</span>}
+                </div>
+                
+                <div className={`add-event-form-group ${errors.venueAddress ? 'has-error' : ''}`} style={{gap: '4px', marginTop: '12px'}}>
                   <input
                     type="text"
-                    placeholder="Zip Code"
-                    value={venue.zipCode}
-                    onChange={(e) =>
-                      setVenue({ ...venue, zipCode: e.target.value })
-                    }
-                    className={emptyFields.includes("venueZip") ? "error" : ""}
+                    placeholder="Street Address"
+                    value={venue.address}
+                    onChange={(e) => {
+                      setVenue({ ...venue, address: e.target.value });
+                      clearError("venueAddress");
+                    }}
                   />
+                  {errors.venueAddress && <span className="error-message">{errors.venueAddress}</span>}
+                </div>
+
+                <div className="add-event-form-row" style={{marginTop: '12px', gap: '12px'}}>
+                  <div className={`add-event-form-group ${errors.venueCity ? 'has-error' : ''}`} style={{gap: '4px'}}>
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={venue.city}
+                      onChange={(e) => {
+                        setVenue({ ...venue, city: e.target.value });
+                        clearError("venueCity");
+                      }}
+                    />
+                    {errors.venueCity && <span className="error-message">{errors.venueCity}</span>}
+                  </div>
+                  <div className={`add-event-form-group ${errors.venueZip ? 'has-error' : ''}`} style={{gap: '4px'}}>
+                    <input
+                      type="text"
+                      placeholder="Zip Code"
+                      value={venue.zipCode}
+                      onChange={(e) => {
+                        setVenue({ ...venue, zipCode: e.target.value });
+                        clearError("venueZip");
+                      }}
+                    />
+                    {errors.venueZip && <span className="error-message">{errors.venueZip}</span>}
+                  </div>
                 </div>
               </div>
 

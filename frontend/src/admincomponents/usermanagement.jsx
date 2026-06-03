@@ -122,6 +122,20 @@ const UserManagement = () => {
     return diffInDays <= 30 ? "active" : "inactive";
   };
 
+  const getStatusText = (lastLogin) => {
+    const status = getUserStatus(lastLogin);
+    if (!lastLogin) return "Inactive";
+    
+    if (status === "inactive") {
+      const lastLoginDate = new Date(lastLogin);
+      const now = new Date();
+      const diffInDays = Math.floor((now - lastLoginDate) / (1000 * 60 * 60 * 24));
+      return `Inactive - ${diffInDays} days`;
+    }
+    
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
   const getTableData = () => {
     // Filter out the logged-in user first
     let usersExcludingCurrent = allUsers.filter(u => u._id !== user._id);
@@ -194,6 +208,26 @@ const UserManagement = () => {
 
     setSelectedUserType(userType);
     setIsEditUserModalOpen(true);
+  };
+
+  const handleDeleteUser = async (userToDelete) => {
+    if (!user?.token) return;
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${userToDelete.firstName} ${userToDelete.lastName}? This action cannot be undone.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await adminService.deleteUser(userToDelete._id, user.token);
+      // Refresh the list
+      await fetchUsers();
+      alert("User deleted successfully.");
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      alert(err.message || "Failed to delete user.");
+    }
   };
 
   const renderEmptyState = (type) => {
@@ -311,8 +345,7 @@ const UserManagement = () => {
                          className={`button-label em-status-${getUserStatus(user.lastLogin)}`}
 
                       >
-                        {getUserStatus(user.lastLogin).charAt(0).toUpperCase() +
-                          getUserStatus(user.lastLogin).slice(1)}
+                        {getStatusText(user.lastLogin)}
                       </span>
                     </td>
 
@@ -332,6 +365,16 @@ const UserManagement = () => {
                         >
                           <Icon icon="mdi:pencil" />
                         </button>
+                        {getUserStatus(user.lastLogin) === "inactive" && (
+                          <button
+                            className="action-btn delete-btn"
+                            onClick={() => handleDeleteUser(user)}
+                            title="Delete Inactive User"
+                            style={{ color: "#ff4d4f" }}
+                          >
+                            <Icon icon="mdi:trash-can" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -429,8 +472,7 @@ const UserManagement = () => {
                       <span
                         className={`button-label em-status-${getUserStatus(customer.lastLogin)}`}
                       >
-                        {getUserStatus(customer.lastLogin).charAt(0).toUpperCase() +
-                          getUserStatus(customer.lastLogin).slice(1)}
+                        {getStatusText(customer.lastLogin)}
                       </span>
                     </td>
 
@@ -450,6 +492,16 @@ const UserManagement = () => {
                         >
                           <Icon icon="mdi:pencil" />
                         </button>
+                        {getUserStatus(customer.lastLogin) === "inactive" && (
+                          <button
+                            className="action-btn delete-btn"
+                            onClick={() => handleDeleteUser(customer)}
+                            title="Delete Inactive User"
+                            style={{ color: "#ff4d4f" }}
+                          >
+                            <Icon icon="mdi:trash-can" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -537,8 +589,7 @@ const UserManagement = () => {
                       <span
                         className={`button-label em-status-${getUserStatus(promoter.lastLogin)}`}
                       >
-                        {getUserStatus(promoter.lastLogin).charAt(0).toUpperCase() +
-                          getUserStatus(promoter.lastLogin).slice(1)}
+                        {getStatusText(promoter.lastLogin)}
                       </span>
                     </td>
                     <td data-label="Actions">
@@ -557,6 +608,16 @@ const UserManagement = () => {
                         >
                           <Icon icon="mdi:pencil" />
                         </button>
+                        {getUserStatus(promoter.lastLogin) === "inactive" && (
+                          <button
+                            className="action-btn delete-btn"
+                            onClick={() => handleDeleteUser(promoter)}
+                            title="Delete Inactive User"
+                            style={{ color: "#ff4d4f" }}
+                          >
+                            <Icon icon="mdi:trash-can" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -644,8 +705,7 @@ const UserManagement = () => {
                       <span
                         className={`button-label em-status-${getUserStatus(sponsor.lastLogin)}`}
                       >
-                        {getUserStatus(sponsor.lastLogin).charAt(0).toUpperCase() +
-                          getUserStatus(sponsor.lastLogin).slice(1)}
+                        {getStatusText(sponsor.lastLogin)}
                       </span>
                     </td>
                     <td data-label="Actions">
@@ -664,6 +724,16 @@ const UserManagement = () => {
                         >
                           <Icon icon="mdi:pencil" />
                         </button>
+                        {getUserStatus(sponsor.lastLogin) === "inactive" && (
+                          <button
+                            className="action-btn delete-btn"
+                            onClick={() => handleDeleteUser(sponsor)}
+                            title="Delete Inactive User"
+                            style={{ color: "#ff4d4f" }}
+                          >
+                            <Icon icon="mdi:trash-can" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

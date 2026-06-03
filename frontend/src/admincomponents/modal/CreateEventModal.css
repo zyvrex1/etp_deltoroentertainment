@@ -134,6 +134,20 @@
             border-color: var(--color-black-primary);
         }
     }
+
+    .error-message {
+        color: #ff4d4f;
+        font-size: 12px;
+        margin-top: -4px;
+        text-align: left;
+        font-weight: 500;
+    }
+
+    &.has-error {
+        input, textarea, select {
+            border-color: #ff4d4f !important;
+        }
+    }
 }
 
 .add-event-full-width {
