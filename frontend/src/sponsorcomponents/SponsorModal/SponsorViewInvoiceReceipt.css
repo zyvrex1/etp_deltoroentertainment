@@ -222,6 +222,17 @@
     gap: 12px;
 }
 
+
+.sir-payment-status.paid {
+    background-color: var(--color-green-quaternary);
+    border: 1px solid var(--color-green-secondary);
+}
+
+.sir-payment-status.pending {
+    background-color: var(--color-yellow-quaternary);
+    border: 1px solid var(--color-yellow-secondary);
+}
+
 .sir-status-text {
     display: flex;
     flex-direction: column;

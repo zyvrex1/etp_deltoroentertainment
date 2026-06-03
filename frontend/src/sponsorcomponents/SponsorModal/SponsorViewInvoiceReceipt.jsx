@@ -109,15 +109,27 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload })
                             </div>
                         </div>
 
-                        <div className="sir-payment-status">
-                            <Icon icon="mdi:check-circle-outline" width="24" className="text-green" />
-                            <div className="sir-status-text">
-                                <h6 className="m-0 text-green">Payment Received</h6>
-                                <span className="smaller-body-text text-secondary">
-                                    Paid on <span className="text-green">{item.paidDate}</span> via <span className="text-green">{item.paymentMethod}</span>
-                                </span>
-                            </div>
-                        </div>
+                    {item.status === 'paid' ? (
+    <div className="sir-payment-status paid">
+        <Icon icon="mdi:check-circle-outline" width="24" className="text-green" />
+        <div className="sir-status-text">
+            <h6 className="m-0 text-green">Payment Received</h6>
+            <span className="smaller-body-text text-secondary">
+                Paid on <span className="text-green">{item.paidDate}</span> via <span className="text-green">{item.paymentMethod}</span>
+            </span>
+        </div>
+    </div>
+) : (
+    <div className="sir-payment-status pending">
+        <Icon icon="mdi:clock-alert-outline" width="24" color="#d97706" />
+        <div className="sir-status-text">
+            <h6 className="m-0" style={{ color: '#d97706' }}>Payment Pending</h6>
+            <span className="smaller-body-text text-secondary">
+                This invoice has not been paid yet. Please complete your payment at the earliest.
+            </span>
+        </div>
+    </div>
+)}
 
                         <div className="sir-payment-instructions">
                             <p className="smaller-body-text text-black font-medium m-0 mb-4">Payment Instructions:</p>

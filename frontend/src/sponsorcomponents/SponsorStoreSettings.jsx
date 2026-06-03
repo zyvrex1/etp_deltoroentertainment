@@ -190,7 +190,7 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                             <div className="sss-logo-upload">
                                 <div className="sss-logo-preview">
                                     {previewUrl ? (
-                                        <img src={previewUrl} alt="Store Logo" nError={(e) => { e.target.src = '/assets/eTicketsPro.png'; }} />
+                                        <img src={previewUrl} alt="Store Logo" onError={(e) => { e.target.src = '/assets/eTicketsPro.png'; }} />
                                     ) : (
                                         <div className="sss-logo-placeholder">
                                             <Icon icon="mdi:storefront-outline" />
