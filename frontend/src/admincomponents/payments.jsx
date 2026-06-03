@@ -124,7 +124,14 @@ const Payments = () => {
         event: res.event?.title || 'Unknown Event',
         category: isBooth ? 'Booth' : 'Seats',
         amount: `$${res.amount?.total ? res.amount.total.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}`,
-        paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
+booth: isBooth
+  ? `Booth (${res.boothCode})`
+  : res.seatLabels?.length > 0
+    ? `Seats (${res.seatLabels.join(', ')})`
+    : res.seatIds?.length > 0
+      ? `Seats (${res.seatIds.length} seat${res.seatIds.length > 1 ? 's' : ''})`
+      : null, 
+             paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
         status: res.status,
         date: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A'
       };
@@ -715,6 +722,7 @@ const Payments = () => {
                         <th>ID</th>
                         <th>User</th>
                         <th>Event</th>
+                        <th>Booth/Seats</th>
                         <th>Category</th>
                         <th>Amount</th>
                         <th>Method</th>
@@ -734,6 +742,12 @@ const Payments = () => {
                           </td>
                           <td data-label="Promoter" className="regular-body-text name-td">{row.promoter}</td>
                           <td data-label="Event" className="small-body-text">{row.event}</td>
+                          <td data-label="Booth" className="small-body-text">  {row.booth ? (
+    <span>{row.booth}</span>
+  ) : (
+    <span style={{ opacity: 0.4 }}>—</span>
+  )}
+</td>
                           <td data-label="Category">
                             <span className={getCategoryClass(row.category)}>{row.category}</span>
                           </td>
