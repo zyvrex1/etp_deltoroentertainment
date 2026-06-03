@@ -106,19 +106,7 @@
                 gap: 12px;
                 align-items: center;
 
-                .att-export-btn {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    color: var(--color-black-secondary);
-                    padding: 10px 16px;
-                    border-radius: 8px;
-                    background-color: var(--color-white-primary);
-
-                    .export-icon {
-                        font-size: 18px;
-                    }
-                }
+                
 
                 .att-scan-btn {
                     display: flex;
@@ -132,6 +120,20 @@
                     }
                 }
             }
+
+            .att-export-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    color: var(--color-black-secondary);
+                    padding: 10px 16px;
+                    border-radius: 8px;
+                    background-color: var(--color-white-primary);
+
+                    .export-icon {
+                        font-size: 18px;
+                    }
+                }
         }
     }
 

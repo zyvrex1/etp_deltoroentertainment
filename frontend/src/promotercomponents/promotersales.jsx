@@ -215,118 +215,273 @@ const PromoterSales = ({ selectedEvent }) => {
   const eventVenue = selectedEvent?.venue?.name || "—";
 
   // ─── PDF Export ───────────────────────────────────────────────────────────
-  const exportReport = async () => {
+const exportReport = async () => {
     const loadingToast = showExportToast();
     const REPORT_TITLE = "Sales Overview";
+ 
     try {
-      const logoData = await loadLogo();
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 15;
-      const FOOTER_HEIGHT = 15;
-      let y = 45;
-      const lineHeight = 6;
-
-      addReportHeader(pdf, REPORT_TITLE, logoData);
-
-      pdf.setFontSize(12);
-      pdf.setTextColor(30, 60, 114);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Summary", margin, y);
-      y += lineHeight + 2;
-
-      pdf.setFontSize(10);
-      pdf.setTextColor(50, 50, 50);
-      pdf.setFont("helvetica", "normal");
-
-      pdf.text(`Event: ${eventTitle}`, margin + 2, y);
-      y += lineHeight;
-      pdf.text(
-        `Ticket Sales: $${ticketRevenue.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })} (${ticketRows.length} transactions)`,
-        margin + 2,
-        y
-      );
-      y += lineHeight;
-      pdf.text(
-        `Booth Sales: $${boothRevenue.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })} (${boothRows.length} transactions)`,
-        margin + 2,
-        y
-      );
-      y += lineHeight;
-      pdf.text(
-        `Total Transactions: ${filteredSalesData.length}`,
-        margin + 2,
-        y
-      );
-      y += lineHeight + 4;
-
-      pdf.setFontSize(12);
-      pdf.setTextColor(30, 60, 114);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Transactions", margin, y);
-      y += 8;
-
-      const headers = [
-        "Order ID",
-        "Customer",
-        "Type",
-        "Item",
-        "Amount",
-        "Date",
-        "Status",
-      ];
-      const rows = filteredSalesData.map((row) => [
-        row.id,
-        row.name,
-        row.typePill,
-        row.item,
-        row.amount,
-        row.date,
-        row.status,
-      ]);
-      y = drawTable(
-        pdf,
-        y,
-        headers,
-        rows,
-        margin,
-        pdfWidth,
-        pdfHeight,
-        FOOTER_HEIGHT,
-        10,
-        3,
-        logoData,
-        REPORT_TITLE
-      );
-
-      y += 10;
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 100, 100);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(
-        "Report generated from Sales Overview. Use the dashboard for real-time updates.",
-        margin,
-        y,
-        { maxWidth: pdfWidth - 2 * margin }
-      );
-
-      finalizeReport(pdf);
-      pdf.save(`Sales_Report_${new Date().toISOString().split("T")[0]}.pdf`);
+        const logoData = await loadLogo();
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth  = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 15;
+        let y = 45;
+ 
+        addReportHeader(pdf, REPORT_TITLE, logoData);
+ 
+        // ── helpers ────────────────────────────────────────────────────────
+        const newPageIfNeeded = (needed) => {
+            if (y + needed > pdfHeight - 20) {
+                addReportFooter(pdf);
+                pdf.addPage();
+                addReportHeader(pdf, REPORT_TITLE, logoData);
+                y = 45;
+            }
+        };
+ 
+        const sectionHeading = (title) => {
+            newPageIfNeeded(14);
+            pdf.setFontSize(11);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont("helvetica", "bold");
+            pdf.text(title, margin, y);
+            pdf.setDrawColor(30, 60, 114);
+            pdf.setLineWidth(0.4);
+            pdf.line(margin, y + 2, pdfWidth - margin, y + 2);
+            y += 10;
+        };
+ 
+        // ══════════════════════════════════════════════════════════════════
+        // EVENT BANNER
+        // ══════════════════════════════════════════════════════════════════
+        pdf.setFillColor(235, 240, 255);
+        pdf.setDrawColor(180, 200, 245);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, y, pdfWidth - margin * 2, 22, 3, 3, "FD");
+ 
+        // Left — event info
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont("helvetica", "bold");
+        const titleMaxW = pdfWidth - margin * 2 - 55;
+        const wrappedTitle = pdf.splitTextToSize(eventTitle, titleMaxW);
+        pdf.text(wrappedTitle[0], margin + 4, y + 8); // first line only to stay in box
+ 
+        pdf.setFontSize(8);
+        pdf.setTextColor(80, 90, 130);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`${eventDate}  •  ${eventVenue}`, margin + 4, y + 15);
+ 
+        // Right — total revenue badge
+        const badgeX = pdfWidth - margin - 50;
+        pdf.setFillColor(30, 60, 114);
+        pdf.roundedRect(badgeX, y + 4, 46, 14, 2, 2, "F");
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont("helvetica", "normal");
+        pdf.text("Total Revenue", badgeX + 23, y + 10, { align: "center" });
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(
+            `$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+            badgeX + 23, y + 16, { align: "center" }
+        );
+ 
+        y += 30;
+ 
+        // ══════════════════════════════════════════════════════════════════
+        // KEY METRICS — 2-col cards
+        // ══════════════════════════════════════════════════════════════════
+        sectionHeading("Key Metrics");
+ 
+        const cardW   = (pdfWidth - margin * 2 - 6) / 2;
+        const cardH   = 22;
+ 
+        const metricCards = [
+            {
+                label: "Ticket Sales",
+                value: `$${ticketRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                sub: `${ticketRows.length} transaction${ticketRows.length !== 1 ? "s" : ""}`,
+                color: [22, 163, 74],
+                bg: [235, 255, 245],
+                border: [180, 235, 210],
+            },
+            {
+                label: "Booth Sales",
+                value: `$${boothRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                sub: `${boothRows.length} transaction${boothRows.length !== 1 ? "s" : ""}`,
+                color: [120, 60, 200],
+                bg: [245, 235, 255],
+                border: [210, 190, 245],
+            },
+        ];
+ 
+        metricCards.forEach((m, i) => {
+            const cx = margin + i * (cardW + 6);
+            const cy = y;
+ 
+            pdf.setFillColor(...m.bg);
+            pdf.setDrawColor(...m.border);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, "FD");
+ 
+            // Dot
+            pdf.setFillColor(...m.color);
+            pdf.circle(cx + 5, cy + 6, 2, "F");
+ 
+            // Label
+            pdf.setFontSize(8);
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(m.label, cx + 10, cy + 7);
+ 
+            // Value
+            pdf.setFontSize(13);
+            pdf.setTextColor(...m.color);
+            pdf.setFont("helvetica", "bold");
+            pdf.text(m.value, cx + 5, cy + 16);
+ 
+            // Sub
+            pdf.setFontSize(7);
+            pdf.setTextColor(130, 130, 130);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(m.sub, cx + cardW - 4, cy + 16, { align: "right" });
+        });
+ 
+        y += cardH + 10;
+ 
+        // ══════════════════════════════════════════════════════════════════
+        // SALES BREAKDOWN BARS
+        // ══════════════════════════════════════════════════════════════════
+        sectionHeading("Sales Breakdown");
+ 
+        // compute refunded amount
+        const refundedRows   = salesData.filter(r =>
+            ["rejected", "refunded", "cancelled"].includes(r.status)
+        );
+        const refundedRevenue = refundedRows.reduce((s, r) => s + r.amountRaw, 0);
+        const refundedCount   = refundedRows.length;
+ 
+        const breakdownItems = [
+            {
+                label: "Ticket Sales",
+                value: ticketRevenue,
+                count: ticketRows.length,
+                color: [22, 163, 74],
+            },
+            {
+                label: "Booth Sales",
+                value: boothRevenue,
+                count: boothRows.length,
+                color: [120, 60, 200],
+            },
+            {
+                label: "Refunded / Cancelled",
+                value: refundedRevenue,
+                count: refundedCount,
+                color: [200, 200, 200],
+            },
+        ];
+ 
+        const maxBreakdown = Math.max(...breakdownItems.map(b => b.value), 1);
+        const barMaxW      = pdfWidth - margin * 2 - 60;
+ 
+        breakdownItems.forEach((item) => {
+            newPageIfNeeded(14);
+            const fillW = (item.value / maxBreakdown) * barMaxW;
+ 
+            pdf.setFontSize(8.5);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(item.label, margin, y + 4.5);
+ 
+            // Track
+            pdf.setFillColor(235, 235, 235);
+            pdf.roundedRect(margin + 38, y, barMaxW, 6, 1, 1, "F");
+ 
+            // Fill
+            if (fillW > 0) {
+                pdf.setFillColor(...item.color);
+                pdf.roundedRect(margin + 38, y, fillW, 6, 1, 1, "F");
+            }
+ 
+            // Label right
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(80, 80, 80);
+            pdf.text(
+                `$${item.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}  (${item.count})`,
+                margin + 38 + barMaxW + 2, y + 4.5
+            );
+ 
+            y += 11;
+        });
+ 
+        // Summary strip
+        y += 2;
+        newPageIfNeeded(12);
+        pdf.setFillColor(248, 248, 255);
+        pdf.setDrawColor(210, 210, 240);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, y, pdfWidth - margin * 2, 10, 2, 2, "FD");
+        pdf.setFontSize(8);
+        pdf.setTextColor(60, 60, 120);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(
+            `Total Revenue: $${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}   |   Total Transactions: ${filteredSalesData.length}`,
+            pdfWidth / 2, y + 6.5, { align: "center" }
+        );
+        y += 16;
+ 
+        // ══════════════════════════════════════════════════════════════════
+        // TRANSACTIONS TABLE
+        // ══════════════════════════════════════════════════════════════════
+        newPageIfNeeded(20);
+        sectionHeading("Transactions");
+ 
+        const headers = ["Order ID", "Customer", "Type", "Item", "Amount", "Date", "Status"];
+        const rows = filteredSalesData.map((row) => [
+            row.id,
+            row.name,
+            row.typePill,
+            row.item,
+            row.amount,
+            row.date,
+            row.status,
+        ]);
+ 
+        y = drawTable(
+            pdf, y, headers, rows,
+            margin, pdfWidth, pdfHeight, 15, 10, 3,
+            logoData, REPORT_TITLE
+        );
+ 
+        // ══════════════════════════════════════════════════════════════════
+        // FOOTER STRIP
+        // ══════════════════════════════════════════════════════════════════
+        y += 8;
+        newPageIfNeeded(16);
+        pdf.setFillColor(245, 247, 255);
+        pdf.setDrawColor(210, 218, 245);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, y, pdfWidth - margin * 2, 14, 2, 2, "FD");
+        pdf.setFontSize(8);
+        pdf.setTextColor(80, 90, 130);
+        pdf.setFont("helvetica", "italic");
+        pdf.text(
+            `${filteredSalesData.length} transaction(s) for "${eventTitle}"  •  Generated by eTicketsPro`,
+            pdfWidth / 2, y + 9, { align: "center" }
+        );
+ 
+        finalizeReport(pdf);
+        pdf.save(`Sales_Report_${new Date().toISOString().split("T")[0]}.pdf`);
+ 
     } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF. Please try again.");
+        console.error("Error generating PDF:", error);
+        alert("Failed to generate PDF. Please try again.");
     } finally {
-      removeExportToast(loadingToast);
+        removeExportToast(loadingToast);
     }
-  };
-
+};
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="sales-container">

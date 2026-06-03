@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import {
   loadLogo,
   addReportHeader,
+  addReportFooter,
   showExportToast,
   removeExportToast,
   drawTable,
@@ -45,31 +46,26 @@ const formatDateTime = (dateStr) => {
   });
 };
 
-
-
 const mapReservation = (r) => {
   const customerName = `${r.user?.firstName || ""} ${r.user?.lastName || ""}`.trim() || "Unknown";
   const companyName = r.user?.companyName || "No Company";
   const itemLabel = r.boothCode || r.boothId || "Booth";
   const categoryName = r.categoryName || "Booth";
 
-  // Normalise checkIns array (may be absent on legacy records)
   const checkIns = Array.isArray(r.checkIns) ? r.checkIns : [];
   const scanCount = checkIns.length;
-  // 6-event cycle: In1 \u2192 Out1 \u2192 In2 \u2192 Out2 \u2192 In3 \u2192 Out3
   const ACTION_LABELS = ["Check In", "Exit", "Check In 2", "Exit 2", "Check In 3", "Exit 3"];
   const nextAction = scanCount < 6 ? ACTION_LABELS[scanCount] : null;
 
-  // Status: odd scanCount = inside (checkin), even > 0 = outside (exited)
   let status, statusType;
   if (scanCount === 0) { status = "Registered"; statusType = "pending"; }
   else if (scanCount % 2 === 1) {
     const num = Math.ceil(scanCount / 2);
-    status = num === 1 ? "Checked In" : `Checked In (\)`;
+    status = num === 1 ? "Checked In" : `Checked In (${num})`;
     statusType = "checked";
   } else {
     const num = scanCount / 2;
-    status = num === 1 ? "Exited" : `Exited (\)`;
+    status = num === 1 ? "Exited" : `Exited (${num})`;
     statusType = "exited";
   }
 
@@ -80,14 +76,14 @@ const mapReservation = (r) => {
     initials: getInitials(customerName),
     name: customerName,
     company: companyName,
-    email: r.user?.email || "\u2014",
+    email: r.user?.email || "—",
     typePill: categoryName,
     typeColor: "purple",
     categoryName,
     item: itemLabel,
     purchaseDate: formatDate(r.createdAt),
     checkedIn: r.checkedIn || false,
-    checkedInAt: r.checkedInAt ? formatDateTime(r.checkedInAt) : "\u2014",
+    checkedInAt: r.checkedInAt ? formatDateTime(r.checkedInAt) : "—",
     checkIns,
     scanCount,
     nextAction,
@@ -118,7 +114,6 @@ const PromoterSponsors = ({ selectedEvent }) => {
   const itemsPerPage = 5;
   const filterDropdownRef = useRef(null);
 
-  /* ── Fetch attendees from the sales endpoint ── */
   const fetchAttendees = useCallback(async () => {
     if (!selectedEvent?._id || !user?.token) return;
 
@@ -161,7 +156,6 @@ const PromoterSponsors = ({ selectedEvent }) => {
     fetchAttendees();
   }, [fetchAttendees]);
 
-  /* ── Close dropdown on outside click ── */
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -175,14 +169,24 @@ const PromoterSponsors = ({ selectedEvent }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isFilterDropdownOpen]);
 
-  /* ── Derived counts ── */
   const counts = {
     all: attendees.length,
     checked: attendees.filter((a) => a.scanCount >= 1).length,
     pending: attendees.filter((a) => a.scanCount === 0).length,
   };
 
-  /* ── Filtering & search ── */
+  // Booth category stats (by typePill/categoryName)
+  const boothCategoryStats = (() => {
+    const map = {};
+    attendees.forEach((a) => {
+      const key = a.categoryName || a.typePill;
+      if (!map[key]) map[key] = { name: key, total: 0, checked: 0 };
+      map[key].total += 1;
+      if (a.scanCount >= 1) map[key].checked += 1;
+    });
+    return Object.values(map);
+  })();
+
   const filteredData = attendees.filter((row) => {
     const q = searchQuery.toLowerCase();
     const matchesFilter =
@@ -200,7 +204,6 @@ const PromoterSponsors = ({ selectedEvent }) => {
     );
   });
 
-  /* ── Pagination ── */
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
@@ -217,10 +220,21 @@ const PromoterSponsors = ({ selectedEvent }) => {
   const toggleRow = (index) =>
     setExpandedRow(expandedRow === index ? null : index);
 
+  const eventTitle = selectedEvent?.title || "—";
+  const eventDate = selectedEvent?.startDate
+    ? new Date(selectedEvent.startDate).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+    : "—";
+  const eventVenue = selectedEvent?.venue?.name || "—";
 
+  // ─── PDF Export (improved, matching PromoterSales style) ──────────────────
   const exportList = async () => {
     const loadingToast = showExportToast();
     const REPORT_TITLE = "Sponsors & Exhibitors";
+
     try {
       const logoData = await loadLogo();
       const pdf = new jsPDF("p", "mm", "a4");
@@ -229,33 +243,202 @@ const PromoterSponsors = ({ selectedEvent }) => {
       const margin = 15;
       const FOOTER_HEIGHT = 15;
       let y = 45;
-      const lineHeight = 6;
 
       addReportHeader(pdf, REPORT_TITLE, logoData);
 
-      pdf.setFontSize(12);
-      pdf.setTextColor(30, 60, 114);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Summary", margin, y);
-      y += lineHeight + 2;
+      // ── helpers ──────────────────────────────────────────────────────────
+      const newPageIfNeeded = (needed) => {
+        if (y + needed > pdfHeight - 20) {
+          addReportFooter(pdf);
+          pdf.addPage();
+          addReportHeader(pdf, REPORT_TITLE, logoData);
+          y = 45;
+        }
+      };
 
-      pdf.setFontSize(10);
-      pdf.setTextColor(50, 50, 50);
+      const sectionHeading = (title) => {
+        newPageIfNeeded(14);
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(title, margin, y);
+        pdf.setDrawColor(30, 60, 114);
+        pdf.setLineWidth(0.4);
+        pdf.line(margin, y + 2, pdfWidth - margin, y + 2);
+        y += 10;
+      };
+
+      // ══════════════════════════════════════════════════════════════════
+      // EVENT BANNER
+      // ══════════════════════════════════════════════════════════════════
+      pdf.setFillColor(245, 235, 255);
+      pdf.setDrawColor(210, 180, 245);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(margin, y, pdfWidth - margin * 2, 22, 3, 3, "FD");
+
+      // Left — event info
+      pdf.setFontSize(11);
+      pdf.setTextColor(80, 30, 140);
+      pdf.setFont("helvetica", "bold");
+      const titleMaxW = pdfWidth - margin * 2 - 55;
+      const wrappedTitle = pdf.splitTextToSize(eventTitle, titleMaxW);
+      pdf.text(wrappedTitle[0], margin + 4, y + 8);
+
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 70, 150);
       pdf.setFont("helvetica", "normal");
-      pdf.text(`Event: ${selectedEvent?.title || "—"}`, margin + 2, y);
-      y += lineHeight;
-      pdf.text(`Total Sponsors: ${attendees.length}`, margin + 2, y);
-      y += lineHeight;
-      pdf.text(`Checked In: ${counts.checked}`, margin + 2, y);
-      y += lineHeight;
-      pdf.text(`Pending: ${counts.pending}`, margin + 2, y);
-      y += lineHeight + 4;
+      pdf.text(`${eventDate}  •  ${eventVenue}`, margin + 4, y + 15);
 
-      pdf.setFontSize(12);
-      pdf.setTextColor(30, 60, 114);
+      // Right — total sponsors badge
+      const badgeX = pdfWidth - margin - 50;
+      pdf.setFillColor(100, 40, 180);
+      pdf.roundedRect(badgeX, y + 4, 46, 14, 2, 2, "F");
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont("helvetica", "normal");
+      pdf.text("Total Sponsors", badgeX + 23, y + 10, { align: "center" });
+      pdf.setFontSize(13);
       pdf.setFont("helvetica", "bold");
-      pdf.text("Sponsors", margin, y);
-      y += 8;
+      pdf.text(`${filteredData.length}`, badgeX + 23, y + 16, { align: "center" });
+
+      y += 30;
+
+      // ══════════════════════════════════════════════════════════════════
+      // KEY METRICS — 3-col cards
+      // ══════════════════════════════════════════════════════════════════
+      sectionHeading("Key Metrics");
+
+      const cardW = (pdfWidth - margin * 2 - 12) / 3;
+      const cardH = 22;
+
+      const metricCards = [
+        {
+          label: "Total Sponsors",
+          value: `${counts.all}`,
+          sub: "registered booths",
+          color: [100, 40, 180],
+          bg: [245, 235, 255],
+          border: [210, 180, 245],
+        },
+        {
+          label: "Checked In",
+          value: `${counts.checked}`,
+          sub: `${counts.all > 0 ? Math.round((counts.checked / counts.all) * 100) : 0}% attendance rate`,
+          color: [22, 163, 74],
+          bg: [235, 255, 245],
+          border: [180, 235, 210],
+        },
+        {
+          label: "Pending / Not In",
+          value: `${counts.pending}`,
+          sub: `${counts.all > 0 ? Math.round((counts.pending / counts.all) * 100) : 0}% not yet arrived`,
+          color: [185, 60, 60],
+          bg: [255, 240, 240],
+          border: [240, 180, 180],
+        },
+      ];
+
+      metricCards.forEach((m, i) => {
+        const cx = margin + i * (cardW + 6);
+        const cy = y;
+
+        pdf.setFillColor(...m.bg);
+        pdf.setDrawColor(...m.border);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, "FD");
+
+        // Dot
+        pdf.setFillColor(...m.color);
+        pdf.circle(cx + 5, cy + 6, 2, "F");
+
+        // Label
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(m.label, cx + 10, cy + 7);
+
+        // Value
+        pdf.setFontSize(13);
+        pdf.setTextColor(...m.color);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(m.value, cx + 5, cy + 16);
+
+        // Sub
+        pdf.setFontSize(7);
+        pdf.setTextColor(130, 130, 130);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(m.sub, cx + cardW - 4, cy + 16, { align: "right" });
+      });
+
+      y += cardH + 10;
+
+      // ══════════════════════════════════════════════════════════════════
+      // BOOTH CATEGORY BREAKDOWN BARS
+      // ══════════════════════════════════════════════════════════════════
+      if (boothCategoryStats.length > 0) {
+        sectionHeading("Check-in by Booth Category");
+
+        const maxCat = Math.max(...boothCategoryStats.map((c) => c.total), 1);
+        const barMaxW = pdfWidth - margin * 2 - 60;
+
+        boothCategoryStats.forEach((cat) => {
+          newPageIfNeeded(14);
+          const checkedInRate = cat.total > 0 ? cat.checked / cat.total : 0;
+          const fillW = (cat.total / maxCat) * barMaxW;
+          const checkedFillW = fillW * checkedInRate;
+
+          pdf.setFontSize(8.5);
+          pdf.setTextColor(50, 50, 50);
+          pdf.setFont("helvetica", "normal");
+          const labelText = pdf.splitTextToSize(cat.name, 35)[0];
+          pdf.text(labelText, margin, y + 4.5);
+
+          // Track (total)
+          pdf.setFillColor(235, 235, 235);
+          pdf.roundedRect(margin + 38, y, barMaxW, 6, 1, 1, "F");
+
+          // Fill (checked in — purple)
+          if (checkedFillW > 0) {
+            pdf.setFillColor(120, 60, 200);
+            pdf.roundedRect(margin + 38, y, checkedFillW, 6, 1, 1, "F");
+          }
+
+          // Label right
+          pdf.setFontSize(7.5);
+          pdf.setTextColor(80, 80, 80);
+          pdf.text(
+            `${cat.checked}/${cat.total} checked in`,
+            margin + 38 + barMaxW + 2,
+            y + 4.5
+          );
+
+          y += 11;
+        });
+
+        // Summary strip
+        y += 2;
+        newPageIfNeeded(12);
+        pdf.setFillColor(250, 245, 255);
+        pdf.setDrawColor(220, 200, 245);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, y, pdfWidth - margin * 2, 10, 2, 2, "FD");
+        pdf.setFontSize(8);
+        pdf.setTextColor(80, 40, 130);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(
+          `Total Sponsors: ${counts.all}   |   Checked In: ${counts.checked}   |   Pending: ${counts.pending}`,
+          pdfWidth / 2,
+          y + 6.5,
+          { align: "center" }
+        );
+        y += 16;
+      }
+
+      // ══════════════════════════════════════════════════════════════════
+      // SPONSORS TABLE
+      // ══════════════════════════════════════════════════════════════════
+      newPageIfNeeded(20);
+      sectionHeading("Sponsors & Exhibitors");
 
       const headers = [
         "Name",
@@ -271,7 +454,7 @@ const PromoterSponsors = ({ selectedEvent }) => {
         `${row.typePill} | ${row.item}`,
         row.purchaseDate,
         row.status,
-        row.checkIn1,
+        row.checkIn1 || "—",
       ]);
 
       y = drawTable(
@@ -289,15 +472,23 @@ const PromoterSponsors = ({ selectedEvent }) => {
         REPORT_TITLE
       );
 
-      y += 10;
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 100, 100);
-      pdf.setFont("helvetica", "normal");
+      // ══════════════════════════════════════════════════════════════════
+      // FOOTER STRIP
+      // ══════════════════════════════════════════════════════════════════
+      y += 8;
+      newPageIfNeeded(16);
+      pdf.setFillColor(250, 245, 255);
+      pdf.setDrawColor(220, 200, 245);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(margin, y, pdfWidth - margin * 2, 14, 2, 2, "FD");
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 60, 150);
+      pdf.setFont("helvetica", "italic");
       pdf.text(
-        "Sponsors list export. Use the dashboard for real-time updates.",
-        margin,
-        y,
-        { maxWidth: pdfWidth - 2 * margin }
+        `${filteredData.length} sponsor(s) for "${eventTitle}"  •  Generated by eTicketsPro`,
+        pdfWidth / 2,
+        y + 9,
+        { align: "center" }
       );
 
       finalizeReport(pdf);
@@ -310,7 +501,6 @@ const PromoterSponsors = ({ selectedEvent }) => {
     }
   };
 
-  /* ── QR Check-in Logic ── */
   const handleManualCheckIn = async (reservationId) => {
     if (!reservationId || !user?.token) return;
 
@@ -511,7 +701,6 @@ const PromoterSponsors = ({ selectedEvent }) => {
             </div>
           </div>
 
-
           <div className="spon-table-wrapper">
             {loading ? (
               <div className="empty-state">
@@ -591,9 +780,7 @@ const PromoterSponsors = ({ selectedEvent }) => {
                         {row.purchaseDate}
                       </td>
                       <td className="status-cell" data-label="Status">
-                        <span
-                          className={`status-pill status-${row.statusType}`}
-                        >
+                        <span className={`status-pill status-${row.statusType}`}>
                           {row.status}
                         </span>
                       </td>
@@ -672,8 +859,9 @@ const PromoterSponsors = ({ selectedEvent }) => {
                         <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                           {row.nextAction ? (
                             <button
-                              className={`action-btn action-checkin-btn ${row.nextAction.startsWith("Exit") ? "action-exit" : "action-enter"
-                                }`}
+                              className={`action-btn action-checkin-btn ${
+                                row.nextAction.startsWith("Exit") ? "action-exit" : "action-enter"
+                              }`}
                               title={`Manual: ${row.nextAction}`}
                               onClick={() => handleManualCheckIn(row.id)}
                             >

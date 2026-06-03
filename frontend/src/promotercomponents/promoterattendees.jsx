@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import {
   loadLogo,
   addReportHeader,
+  addReportFooter,
   showExportToast,
   removeExportToast,
   drawTable,
@@ -251,9 +252,11 @@ const PromoterAttendees = ({ selectedEvent }) => {
     : "—";
   const eventVenue = selectedEvent?.venue?.name || "—";
 
+  // ─── PDF Export (improved, matching PromoterSales style) ──────────────────
   const exportList = async () => {
     const loadingToast = showExportToast();
     const REPORT_TITLE = "Attendee List";
+
     try {
       const logoData = await loadLogo();
       const pdf = new jsPDF("p", "mm", "a4");
@@ -262,33 +265,204 @@ const PromoterAttendees = ({ selectedEvent }) => {
       const margin = 15;
       const FOOTER_HEIGHT = 15;
       let y = 45;
-      const lineHeight = 6;
 
       addReportHeader(pdf, REPORT_TITLE, logoData);
 
-      pdf.setFontSize(12);
+      // ── helpers ──────────────────────────────────────────────────────────
+      const newPageIfNeeded = (needed) => {
+        if (y + needed > pdfHeight - 20) {
+          addReportFooter(pdf);
+          pdf.addPage();
+          addReportHeader(pdf, REPORT_TITLE, logoData);
+          y = 45;
+        }
+      };
+
+      const sectionHeading = (title) => {
+        newPageIfNeeded(14);
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(title, margin, y);
+        pdf.setDrawColor(30, 60, 114);
+        pdf.setLineWidth(0.4);
+        pdf.line(margin, y + 2, pdfWidth - margin, y + 2);
+        y += 10;
+      };
+
+      // ══════════════════════════════════════════════════════════════════
+      // EVENT BANNER
+      // ══════════════════════════════════════════════════════════════════
+      pdf.setFillColor(235, 240, 255);
+      pdf.setDrawColor(180, 200, 245);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(margin, y, pdfWidth - margin * 2, 22, 3, 3, "FD");
+
+      // Left — event info
+      pdf.setFontSize(11);
       pdf.setTextColor(30, 60, 114);
       pdf.setFont("helvetica", "bold");
-      pdf.text("Summary", margin, y);
-      y += lineHeight + 2;
+      const titleMaxW = pdfWidth - margin * 2 - 55;
+      const wrappedTitle = pdf.splitTextToSize(eventTitle, titleMaxW);
+      pdf.text(wrappedTitle[0], margin + 4, y + 8);
 
-      pdf.setFontSize(10);
-      pdf.setTextColor(50, 50, 50);
+      pdf.setFontSize(8);
+      pdf.setTextColor(80, 90, 130);
       pdf.setFont("helvetica", "normal");
-      pdf.text(`Event: ${eventTitle}`, margin + 2, y);
-      y += lineHeight;
-      pdf.text(`Total Attendees: ${filteredData.length}`, margin + 2, y);
-      y += lineHeight;
-      pdf.text(`Checked In: ${counts.checked}`, margin + 2, y);
-      y += lineHeight;
-      pdf.text(`Registered (Pending): ${counts.pending}`, margin + 2, y);
-      y += lineHeight + 4;
+      pdf.text(`${eventDate}  •  ${eventVenue}`, margin + 4, y + 15);
 
-      pdf.setFontSize(12);
-      pdf.setTextColor(30, 60, 114);
+      // Right — total attendees badge
+      const badgeX = pdfWidth - margin - 50;
+      pdf.setFillColor(30, 60, 114);
+      pdf.roundedRect(badgeX, y + 4, 46, 14, 2, 2, "F");
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont("helvetica", "normal");
+      pdf.text("Total Registered", badgeX + 23, y + 10, { align: "center" });
+      pdf.setFontSize(13);
       pdf.setFont("helvetica", "bold");
-      pdf.text("Attendees", margin, y);
-      y += 8;
+      pdf.text(`${filteredData.length}`, badgeX + 23, y + 16, { align: "center" });
+
+      y += 30;
+
+      // ══════════════════════════════════════════════════════════════════
+      // KEY METRICS — 3-col cards
+      // ══════════════════════════════════════════════════════════════════
+      sectionHeading("Key Metrics");
+
+      const cardW = (pdfWidth - margin * 2 - 12) / 3;
+      const cardH = 22;
+
+      const metricCards = [
+        {
+          label: "Total Registered",
+          value: `${counts.all}`,
+          sub: "attendees",
+          color: [30, 60, 114],
+          bg: [235, 240, 255],
+          border: [180, 200, 245],
+        },
+        {
+          label: "Checked In",
+          value: `${counts.checked}`,
+          sub: `${counts.all > 0 ? Math.round((counts.checked / counts.all) * 100) : 0}% attendance rate`,
+          color: [22, 163, 74],
+          bg: [235, 255, 245],
+          border: [180, 235, 210],
+        },
+        {
+          label: "Pending / Not In",
+          value: `${counts.pending}`,
+          sub: `${counts.all > 0 ? Math.round((counts.pending / counts.all) * 100) : 0}% not yet arrived`,
+          color: [185, 60, 60],
+          bg: [255, 240, 240],
+          border: [240, 180, 180],
+        },
+      ];
+
+      metricCards.forEach((m, i) => {
+        const cx = margin + i * (cardW + 6);
+        const cy = y;
+
+        pdf.setFillColor(...m.bg);
+        pdf.setDrawColor(...m.border);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, "FD");
+
+        // Dot
+        pdf.setFillColor(...m.color);
+        pdf.circle(cx + 5, cy + 6, 2, "F");
+
+        // Label
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(m.label, cx + 10, cy + 7);
+
+        // Value
+        pdf.setFontSize(13);
+        pdf.setTextColor(...m.color);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(m.value, cx + 5, cy + 16);
+
+        // Sub
+        pdf.setFontSize(7);
+        pdf.setTextColor(130, 130, 130);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(m.sub, cx + cardW - 4, cy + 16, { align: "right" });
+      });
+
+      y += cardH + 10;
+
+      // ══════════════════════════════════════════════════════════════════
+      // ATTENDANCE BREAKDOWN BARS (by ticket category)
+      // ══════════════════════════════════════════════════════════════════
+      if (categoryStats.length > 0) {
+        sectionHeading("Attendance by Ticket Category");
+
+        const maxCat = Math.max(...categoryStats.map((c) => c.total), 1);
+        const barMaxW = pdfWidth - margin * 2 - 60;
+
+        categoryStats.forEach((cat) => {
+          newPageIfNeeded(14);
+          const checkedInRate = cat.total > 0 ? cat.checked / cat.total : 0;
+          const fillW = (cat.total / maxCat) * barMaxW;
+          const checkedFillW = fillW * checkedInRate;
+
+          pdf.setFontSize(8.5);
+          pdf.setTextColor(50, 50, 50);
+          pdf.setFont("helvetica", "normal");
+          // Truncate label if too long
+          const labelMaxW = 35;
+          const labelText = pdf.splitTextToSize(cat.name, labelMaxW)[0];
+          pdf.text(labelText, margin, y + 4.5);
+
+          // Track (total)
+          pdf.setFillColor(235, 235, 235);
+          pdf.roundedRect(margin + 38, y, barMaxW, 6, 1, 1, "F");
+
+          // Fill (checked in — green)
+          if (checkedFillW > 0) {
+            pdf.setFillColor(22, 163, 74);
+            pdf.roundedRect(margin + 38, y, checkedFillW, 6, 1, 1, "F");
+          }
+
+          // Label right
+          pdf.setFontSize(7.5);
+          pdf.setTextColor(80, 80, 80);
+          pdf.text(
+            `${cat.checked}/${cat.total} checked in`,
+            margin + 38 + barMaxW + 2,
+            y + 4.5
+          );
+
+          y += 11;
+        });
+
+        // Summary strip
+        y += 2;
+        newPageIfNeeded(12);
+        pdf.setFillColor(248, 248, 255);
+        pdf.setDrawColor(210, 210, 240);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, y, pdfWidth - margin * 2, 10, 2, 2, "FD");
+        pdf.setFontSize(8);
+        pdf.setTextColor(60, 60, 120);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(
+          `Total Registered: ${counts.all}   |   Checked In: ${counts.checked}   |   Pending: ${counts.pending}`,
+          pdfWidth / 2,
+          y + 6.5,
+          { align: "center" }
+        );
+        y += 16;
+      }
+
+      // ══════════════════════════════════════════════════════════════════
+      // ATTENDEES TABLE
+      // ══════════════════════════════════════════════════════════════════
+      newPageIfNeeded(20);
+      sectionHeading("Attendees");
 
       const headers = [
         "Name",
@@ -304,7 +478,7 @@ const PromoterAttendees = ({ selectedEvent }) => {
         `${row.typePill} | ${row.item}`,
         row.purchaseDate,
         row.status,
-        row.checkedInAt,
+        row.checkIn1 || "—",
       ]);
 
       y = drawTable(
@@ -322,15 +496,23 @@ const PromoterAttendees = ({ selectedEvent }) => {
         REPORT_TITLE
       );
 
-      y += 10;
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 100, 100);
-      pdf.setFont("helvetica", "normal");
+      // ══════════════════════════════════════════════════════════════════
+      // FOOTER STRIP
+      // ══════════════════════════════════════════════════════════════════
+      y += 8;
+      newPageIfNeeded(16);
+      pdf.setFillColor(245, 247, 255);
+      pdf.setDrawColor(210, 218, 245);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(margin, y, pdfWidth - margin * 2, 14, 2, 2, "FD");
+      pdf.setFontSize(8);
+      pdf.setTextColor(80, 90, 130);
+      pdf.setFont("helvetica", "italic");
       pdf.text(
-        "Attendee list export. Check-in status reflects QR scan records.",
-        margin,
-        y,
-        { maxWidth: pdfWidth - 2 * margin }
+        `${filteredData.length} attendee(s) for "${eventTitle}"  •  Generated by eTicketsPro`,
+        pdfWidth / 2,
+        y + 9,
+        { align: "center" }
       );
 
       finalizeReport(pdf);
@@ -481,20 +663,6 @@ const PromoterAttendees = ({ selectedEvent }) => {
             </div>
           </div>
         </div>
-
-        {!loading && !error && categoryStats.length > 0 && (
-          <div className="att-cards-container">
-            {categoryStats.map((stat, idx) => (
-              <div className="att-card" key={idx}>
-                <p className="smaller-body-text att-card-title">{stat.name}</p>
-                <h2>{stat.total}</h2>
-                <p className="smaller-body-text att-card-sub">
-                  {stat.checked} checked in
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* ── Table Section ── */}
         <div className="att-table-container">
