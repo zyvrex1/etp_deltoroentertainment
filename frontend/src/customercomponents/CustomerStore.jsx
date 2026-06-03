@@ -32,73 +32,90 @@ const CustomerStore = () => {
   };
 
   // Fetch and filter events
-  useEffect(() => {
-    const fetchAndFilterEvents = async () => {
-      if (!user?.token) return;
-      
-      try {
-        setLoading(true);
-        const allEvents = await eventsService.getEvents(user.token);
-        
-        // Get unique event IDs from purchase history
-        const bookedEventIds = new Set(
-          purchaseHistory
-            .filter(item => item.status?.toLowerCase() === 'confirmed')
-            .map(item => item.event?._id)
-            .filter(Boolean)
-        );
+ // Fetch and filter events
+useEffect(() => {
+  const fetchAndFilterEvents = async () => {
+    if (!user?.token) return;
 
-        // Filter allEvents to only those booked by the user
-        const bookedEvents = allEvents.filter(event => bookedEventIds.has(event._id));
+    try {
+      setLoading(true);
+      const allEvents = await eventsService.getEvents(user.token);
 
-        // Map to UI format
-        const mappedEvents = bookedEvents.map(event => {
-          let status = "Live";
-          if (event.status === "completed") {
-            status = "Completed";
-          } else if (event.status === "approved") {
-            const now = new Date();
-            const startDate = new Date(event.startDate);
-            if (startDate > now) {
-              status = "Upcoming";
-            }
+      // Get unique event IDs from customer's confirmed ticket purchases
+      const bookedEventIds = new Set(
+        purchaseHistory
+          .filter(item => item.status?.toLowerCase() === 'confirmed')
+          .map(item => item.event?._id)
+          .filter(Boolean)
+      );
+
+      const bookedEvents = allEvents.filter(event => bookedEventIds.has(event._id));
+
+      // Fetch confirmed booth count per event from the dedicated endpoint
+      const boothCountsPerEvent = await Promise.all(
+        bookedEvents.map(async (event) => {
+          try {
+            const res = await fetch(`/api/reservations/event/${event._id}/booths`, {
+              headers: { Authorization: `Bearer ${user.token}` }
+            });
+            const booths = await res.json();
+            return { eventId: event._id, count: Array.isArray(booths) ? booths.length : 0 };
+          } catch {
+            return { eventId: event._id, count: 0 };
           }
+        })
+      );
 
-          // Price range
-          let priceRange = "N/A";
-          if (event.priceLevels && event.priceLevels.length > 0) {
-            const prices = event.priceLevels.map(pl => pl.facePrice);
-            const minPrice = Math.min(...prices);
-            const maxPrice = Math.max(...prices);
-            priceRange = minPrice === maxPrice ? `$${minPrice}` : `$${minPrice} - $${maxPrice}`;
-          }
+      const boothCountMap = boothCountsPerEvent.reduce((acc, { eventId, count }) => {
+        acc[eventId] = count;
+        return acc;
+      }, {});
 
-          return {
-            id: event._id,
-            title: event.title,
-            date: new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            location: event.venue?.name || "Unknown Location",
-            price: priceRange,
-            category: event.category,
-            image: event.image ? `/uploads/${event.image}` : '/assets/eventbg.jpg',
-            time: `${event.startTime} - ${event.endTime}`,
-            availability: (event.totalTickets || 0) - (event.ticketsSold || 0),
-            products: event.boothsSold || 0, // Using boothsSold as "Stores"
-            status: status,
-            _id: event._id
-          };
-        });
+      const mappedEvents = bookedEvents.map(event => {
+        let status = "Live";
+        if (event.status === "completed") {
+          status = "Completed";
+        } else if (event.status === "approved") {
+          const now = new Date();
+          const startDate = new Date(event.startDate);
+          if (startDate > now) status = "Upcoming";
+        }
 
-        setEventData(mappedEvents);
-      } catch (error) {
-        console.error("Error fetching events for store:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+        let priceRange = "N/A";
+        if (event.priceLevels && event.priceLevels.length > 0) {
+          const prices = event.priceLevels.map(pl => pl.facePrice);
+          const minPrice = Math.min(...prices);
+          const maxPrice = Math.max(...prices);
+          priceRange = minPrice === maxPrice ? `$${minPrice}` : `$${minPrice} - $${maxPrice}`;
+        }
 
-    fetchAndFilterEvents();
-  }, [user?.token, purchaseHistory]);
+        return {
+          id: event._id,
+          title: event.title,
+          date: new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          location: event.venue?.name || "Unknown Location",
+          price: priceRange,
+          category: event.category,
+          image: event.image ? `/uploads/${event.image}` : '/assets/eventbg.jpg',
+          time: `${event.startTime} - ${event.endTime}`,
+          availability: (event.totalTickets || 0) - (event.ticketsSold || 0),
+          products: boothCountMap[event._id] || 0, // ✅ from real API
+          status: status,
+          _id: event._id
+        };
+      });
+
+      setEventData(mappedEvents);
+    } catch (error) {
+      console.error("Error fetching events for store:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchAndFilterEvents();
+}, [user?.token, purchaseHistory]);
+
 
   // Close dropdown when clicking outside
   useEffect(() => {

@@ -32,6 +32,7 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
     try {
       setLoading(true);
       const data = await orderService.getOrders(user?.token, { eventId, boothCode });
+      console.log("Order sample:", data[0]);
       
       // Transform backend data to match UI expectations
       const formattedOrders = data.map(order => ({
@@ -42,7 +43,7 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
         items: `${order.items.reduce((sum, item) => sum + item.quantity, 0)} items`,
         itemDesc: order.items.map(i => `${i.quantity}x ${i.name}`).join(", ").substring(0, 30) + "...",
         total: `$${order.totalAmount.toFixed(2)}`,
-        payment: order.paymentStatus,
+        payment: order.paymentStatus === 'Pending' ? 'Unpaid' : order.paymentStatus,
         status: order.status,
         fullItems: order.items // Keep full items for the modal
       }));
