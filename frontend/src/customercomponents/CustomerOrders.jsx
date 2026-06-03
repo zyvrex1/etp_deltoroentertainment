@@ -31,7 +31,7 @@ const CustomerOrders = () => {
                 time: new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 date: new Date(order.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
                 status: order.status,
-                paymentStatus: order.paymentStatus,
+                paymentStatus: order.paymentStatus === 'Pending' ? 'Unpaid' : order.paymentStatus,
                 storeName: order.storeName || order.sponsorId?.companyName || "Store",
                 boothInfo: `Booth - ${order.boothCode}`,
                 itemsCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
