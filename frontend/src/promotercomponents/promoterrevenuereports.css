@@ -31,6 +31,7 @@
 
             .rep-filter-dropdown {
                 position: relative;
+                width: 250px;
 
                 .rep-filter-dropdown-btn {
                     width: 100%;
@@ -44,6 +45,7 @@
                     color: var(--color-black-secondary);
                     font-size: 14px;
                     cursor: pointer;
+                    
 
                     .truncate-text {
                         white-space: nowrap;
@@ -77,6 +79,8 @@
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
+                max-height: 150px;
+                overflow-y: auto;
 
                 .rep-filter-dropdown-item {
                     padding: 10px 16px;
