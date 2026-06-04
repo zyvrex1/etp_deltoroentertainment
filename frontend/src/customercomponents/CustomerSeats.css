@@ -58,6 +58,7 @@
 
     .cs-content-left {
         flex: 1;
+        min-width: 0;
         background-color: var(--color-white-primary);
         border-radius: 12px;
         padding: 24px;
@@ -429,6 +430,10 @@
     padding: 24px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
     border: 1px solid var(--color-black-quaternary);
+
+    p {
+        text-align: left;
+    }
 }
 
 .cs-summary-row {

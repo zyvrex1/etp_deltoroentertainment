@@ -110,7 +110,7 @@ const SponsorVenueLayout = () => {
     const [zoom, setZoom] = useState(1);
     const [fitScale, setFitScale] = useState(1);
     const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
-    const [containerSize, setContainerSize] = useState({ w: 1000, h: 600 });
+    const [containerSize, setContainerSize] = useState({ w: 100, h: 100 });
 
     const stageRef = useRef(null);
     const containerRef = useRef(null);
@@ -267,11 +267,11 @@ const SponsorVenueLayout = () => {
 
     const handleAddToCart = () => {
         if (selectedIds.length === 0) return;
-        
+
         const itemsToAdd = selectedIds.map(id => {
             const selectedItem = localItems.find(i => i.id === id);
             if (!selectedItem) return null;
-            
+
             const category = priceLevels.find(pl => pl._id === selectedItem.categoryId);
 
             const facePrice = category?.facePrice || 0;
@@ -323,319 +323,390 @@ const SponsorVenueLayout = () => {
 
     return (
         <div className="svl-page-wrapper">
-            <div className="svl-header-top">
-                <div className="svl-header-content">
-                    <div className="svl-header-left">
-                        <button className="svl-back-btn" onClick={() => navigate(-1)}>
-                            <Icon icon="mdi:arrow-left" />
-                        </button>
-                        <div>
-                            <h2 className="text-primary">Select Your Booth</h2>
-                            <div className="svl-subtitle mt-1">
-                                <span className="small-body-text text-secondary">{event?.title}</span>
-                                <span className="svl-dot mx-2 text-secondary">•</span>
-                                <div className="calendar-row">
-                                    <Icon icon="mdi:calendar-blank-outline" className="text-secondary" />
-                                    <span className="small-body-text text-secondary">
-                                        {new Date(event?.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+            <div className="svl-header-card">
+                <div className="svl-header-left">
+                    <button className="svl-back-btn" onClick={() => navigate(-1)}>
+                        <Icon icon="mdi:arrow-left" width="24" />
+                    </button>
+                    <div>
+                        <h2 className="text-black mb-1">{event.title}</h2>
+                        <span className="small-body-text text-secondary">
+                            {new Date(event.startDate).toLocaleDateString()} • {event.startTime || "TBA"} • {event.venue?.name || "TBA"}
+                        </span>
                     </div>
-                    <div className="svl-header-right">
-                        <div className="svl-step-info">
-                            <span className="small-body-text font-bold text-primary mr-4">Booth Selection</span>
-                            <div className="svl-step-progress">
-                                <span className="smaller-body-text text-secondary mb-1 block text-right">Step 1 of 4</span>
-                                <div className="svl-progress-bar-container">
-                                    <div className="svl-progress-bar" style={{ width: '25%' }}></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                </div>
+                <div className="svl-header-right">
+                    <span className="small-body-text text-secondary">Booths Selected</span>
+                    <h2 className="text-red m-0">{selectedIds.length}</h2>
                 </div>
             </div>
 
             <div className="svl-main-container">
-                <div className="svl-content-left">
-                    <div className="svl-info-box mb-4">
-                        <Icon icon="mdi:information-outline" className="text-blue" />
-                        <span className="small-body-text text-primary">
-                            Click on any <span className="font-bold">available</span> booth to select it. Drag to pan and use controls to zoom.
+<div className="svl-content-left">
+    <div className="svl-seats-instructions mb-4">
+        <h4 className="mb-2">Interactive Seat Map</h4>
+        <p className="regular-body-text text-secondary m-0">
+            Click on any available booth to select it. Booths are reference only for seats.
+        </p>
+    </div>
+
+    <div className="svl-map-canvas-container" ref={containerRef}>
+        <div className="svl-zoom-controls">
+            <button onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))} title="Zoom In">
+                <Icon icon="mdi:magnify-plus-outline" />
+            </button>
+            <button onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))} title="Zoom Out">
+                <Icon icon="mdi:magnify-minus-outline" />
+            </button>
+            <button onClick={() => {
+                setZoom(fitScale);
+                if (containerRef.current) {
+                    const { clientWidth, clientHeight } = containerRef.current;
+                    setStagePos({
+                        x: (clientWidth - canvasWidth * fitScale) / 2,
+                        y: (clientHeight - canvasHeight * fitScale) / 2,
+                    });
+                }
+            }} title="Reset View">
+                <Icon icon="mdi:fit-to-screen-outline" />
+            </button>
+        </div>
+
+        <Stage
+            width={containerSize.w}
+            height={containerSize.h}
+            ref={stageRef}
+            scaleX={zoom}
+            scaleY={zoom}
+            x={stagePos.x}
+            y={stagePos.y}
+            onMouseDown={(e) => {
+                if (e.target !== e.target.getStage()) return;
+                isPanningRef.current = true;
+                const pos = stageRef.current.getPointerPosition();
+                lastPointerRef.current = { x: pos.x, y: pos.y };
+                stageRef.current.container().style.cursor = 'grabbing';
+            }}
+            onMouseMove={() => {
+                if (!isPanningRef.current) return;
+                const stage = stageRef.current;
+                const pos = stage.getPointerPosition();
+                const dx = pos.x - lastPointerRef.current.x;
+                const dy = pos.y - lastPointerRef.current.y;
+                lastPointerRef.current = { x: pos.x, y: pos.y };
+                stage.x(stage.x() + dx);
+                stage.y(stage.y() + dy);
+                stage.batchDraw();
+            }}
+            onMouseUp={() => {
+                if (!isPanningRef.current) return;
+                isPanningRef.current = false;
+                stageRef.current.container().style.cursor = 'default';
+                setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
+            }}
+            onMouseLeave={() => {
+                if (!isPanningRef.current) return;
+                isPanningRef.current = false;
+                stageRef.current.container().style.cursor = 'default';
+                setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
+            }}
+            onTouchStart={(e) => {
+                if (e.evt.touches.length !== 1) return;
+                e.evt.preventDefault();
+                const touch = e.evt.touches[0];
+                isPanningRef.current = true;
+                lastPointerRef.current = { x: touch.clientX, y: touch.clientY };
+            }}
+            onTouchMove={(e) => {
+                if (!isPanningRef.current || e.evt.touches.length !== 1) return;
+                e.evt.preventDefault();
+                const touch = e.evt.touches[0];
+                const dx = touch.clientX - lastPointerRef.current.x;
+                const dy = touch.clientY - lastPointerRef.current.y;
+                lastPointerRef.current = { x: touch.clientX, y: touch.clientY };
+                const stage = stageRef.current;
+                stage.x(stage.x() + dx);
+                stage.y(stage.y() + dy);
+                stage.batchDraw();
+            }}
+            onTouchEnd={() => {
+                if (!isPanningRef.current) return;
+                isPanningRef.current = false;
+                setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
+            }}
+            onWheel={(e) => {
+                e.evt.preventDefault();
+                const stage = stageRef.current;
+                const oldScale = zoom;
+                const pointer = stage.getPointerPosition();
+                const minScale = fitScale * 0.3;
+                const maxScale = fitScale * 4;
+                const direction = e.evt.deltaY > 0 ? -1 : 1;
+                const newScale = Math.min(maxScale, Math.max(minScale, oldScale + direction * 0.05));
+                const mousePointTo = {
+                    x: (pointer.x - stagePos.x) / oldScale,
+                    y: (pointer.y - stagePos.y) / oldScale,
+                };
+                setZoom(newScale);
+                setStagePos({
+                    x: pointer.x - mousePointTo.x * newScale,
+                    y: pointer.y - mousePointTo.y * newScale,
+                });
+            }}
+        >
+            {bgKonvaImage && bgWidth && bgHeight && (
+                <Layer>
+                    <KonvaImage
+                        image={bgKonvaImage}
+                        x={0} y={0}
+                        width={bgWidth}
+                        height={bgHeight}
+                        opacity={bgOpacity}
+                        listening={false}
+                    />
+                </Layer>
+            )}
+            <Layer>
+                {sortedItems.map((item, i) => (
+                    <React.Fragment key={item.id || i}>
+                        {item.imageUrl ? (
+                            <BackgroundImage item={item} onClick={() => {
+                                if (item.type === "booth" || item.isBooth) toggleSelection(item.id);
+                            }} />
+                        ) : (item.type === "seat" || item.type === "booth") ? (
+                            (() => {
+                                const isBooth = item.type === 'booth' || item.isBooth;
+                                const cat = priceLevels.find(c => c._id === item.categoryId);
+                                const { w: boothW, h: boothH } = isBooth
+                                    ? parseBoothSizePx(cat?.boothSize)
+                                    : { w: 40, h: 40 };
+                                return (
+                                    <Group
+                                        x={item.x}
+                                        y={item.y}
+                                        scaleX={item.scaleX || 1}
+                                        scaleY={item.scaleY || 1}
+                                        rotation={item.rotation || 0}
+                                        opacity={isBooth ? 1 : 0.35}
+                                        listening={isBooth ? true : false}
+                                        onMouseEnter={(e) => {
+                                            const stage = e.target.getStage();
+                                            if (item.status === 'available') {
+                                                stage.container().style.cursor = 'pointer';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.getStage().container().style.cursor = 'default';
+                                        }}
+                                        onClick={() => {
+                                            if (isBooth && item.status === 'available') toggleSelection(item.id);
+                                        }}
+                                        onTap={() => {
+                                            if (isBooth && item.status === 'available') toggleSelection(item.id);
+                                        }}
+                                    >
+                                        {isBooth ? (
+                                            <Rect
+                                                x={-boothW / 2}
+                                                y={-boothH / 2}
+                                                width={boothW}
+                                                height={boothH}
+                                                fill={selectedIds.includes(item.id) ? "#2563EB" : (item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#e0e0e0"))}
+                                                stroke="#fff"
+                                                strokeWidth={1}
+                                                strokeScaleEnabled={false}
+                                                shadowBlur={selectedIds.includes(item.id) ? 10 : 0}
+                                                shadowColor="#000"
+                                                shadowOpacity={0.2}
+                                            />
+                                        ) : (
+                                            <Circle
+                                                radius={20}
+                                                fill={cat?.color || "#666666"}
+                                                stroke="#fff"
+                                                strokeWidth={1}
+                                            />
+                                        )}
+                                        <Text
+                                            text={item.label || item.code || ""}
+                                            fontSize={isBooth ? Math.max(8, Math.min(boothW, boothH) / 5) : 9}
+                                            fontStyle="bold"
+                                            fill="white"
+                                            align="center"
+                                            verticalAlign="middle"
+                                            x={0} y={0}
+                                            offsetX={isBooth ? boothW / 2 : 20}
+                                            offsetY={isBooth ? boothH / 2 : 20}
+                                            width={isBooth ? boothW : 40}
+                                            height={isBooth ? boothH : 40}
+                                            shadowColor="black"
+                                            shadowBlur={2}
+                                            shadowOpacity={0.8}
+                                            shadowOffset={{ x: 1, y: 1 }}
+                                        />
+                                    </Group>
+                                );
+                            })()
+                        ) : (
+                            <BackgroundShape item={item} />
+                        )}
+                    </React.Fragment>
+                ))}
+            </Layer>
+        </Stage>
+    </div>
+
+    {/* Legend — mirrors cs-seat-legend exactly */}
+    <div className="svl-seat-legend">
+        <div className="svl-legend-item">
+            <span className="svl-legend-dot" style={{ backgroundColor: '#2563EB' }}></span>
+            <span className="smaller-body-text text-secondary">Selected</span>
+        </div>
+        <div className="svl-legend-item">
+            <span className="svl-legend-dot" style={{ backgroundColor: '#22c55e' }}></span>
+            <span className="smaller-body-text text-secondary">Sold / Occupied</span>
+        </div>
+        <div className="svl-legend-item">
+            <span className="svl-legend-dot" style={{ backgroundColor: '#666666' }}></span>
+            <span className="smaller-body-text text-secondary">Available</span>
+        </div>
+        <div className="svl-legend-item">
+            <span className="svl-legend-dot" style={{ backgroundColor: '#94a3b8', opacity: 0.4 }}></span>
+            <span className="smaller-body-text text-secondary">Seat (reference only)</span>
+        </div>
+    </div>
+</div>
+                <div className="svl-content-right">
+    {/* Booth Categories Card — mirrors cs-categories-card */}
+    <div className="svl-categories-card mb-4">
+        <div className="svl-cat-card-header">
+            <h4 className="m-0">Booth Categories</h4>
+        </div>
+        <div className="svl-categories-list">
+            {priceLevels.map((cat) => {
+                const isSeat = cat.type?.includes("Seat");
+                const catType = cat.type || "Booth (Square)";
+
+                return (
+                    <div
+                        key={cat._id || cat.id}
+                        className={`svl-cat-item ${isSeat ? 'svl-cat-disabled' : ''}`}
+                    >
+                        {/* Colored icon — circle for seats, square for booths */}
+                        <div
+                            className="svl-cat-palette-visual"
+                            style={{
+                                backgroundColor: isSeat ? '#94a3b8' : (cat.color || '#666'),
+                                borderRadius: isSeat ? '50%' : '10px'
+                            }}
+                        >
+                            <Icon
+                                icon={isSeat ? "mdi:circle" : "mdi:square"}
+                                color="white"
+                                width="20"
+                            />
+                        </div>
+
+                        {/* Details */}
+                        <div className="svl-cat-details">
+                            <div className="svl-cat-top">
+                                <span className="svl-cat-name">
+                                    {cat.priceName}
+                                </span>
+                                {isSeat ? (
+                                    <span className="svl-not-bookable-badge">Not bookable</span>
+                                ) : (
+                                    <span className="svl-map-hint smaller-body-text text-secondary">Select on map</span>
+                                )}
+                            </div>
+                            <div className="svl-cat-meta">
+                                <span className={`svl-cat-price ${isSeat ? 'svl-cat-price-muted' : ''}`}>
+                                    ${(cat.facePrice || 0).toFixed(2)}
+                                </span>
+                                <span className="svl-cat-units">
+                                    {isSeat
+                                        ? 'Reference only'
+                                        : `${cat.quantityAvailable != null
+                                            ? cat.quantityAvailable - (cat.quantitySold || 0)
+                                            : '—'} available`
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    </div>
+
+    {/* Order Summary Card — mirrors cs-order-summary-card */}
+    <div className="svl-summary-card">
+        <h4 className="mb-4">Selection Summary</h4>
+
+        <div className="svl-selected-list mb-4">
+            {selectedItemsData.length === 0 ? (
+                <p className="small-body-text text-secondary mb-3">No booths selected</p>
+            ) : (
+                selectedItemsData.map((item, idx) => (
+                    <div key={item.id || idx} className="svl-summary-row mb-2">
+                        <div style={{ textAlign: 'left' }}>
+                            <span className="small-body-text text-black d-block">
+                                {item.label || item.code || 'Booth'}
+                            </span>
+                            <span className="smaller-body-text text-secondary">
+                                {item.category?.priceName || 'Booth Category'}
+                            </span>
+                        </div>
+                        <span className="small-body-text text-black">
+                            ${(item.category?.facePrice || 0).toLocaleString()}
                         </span>
                     </div>
+                ))
+            )}
+        </div>
 
-                    <div className="svl-map-container" style={{ padding: 0, overflow: 'hidden', position: 'relative' }}>
-                        <div className="svl-zoom-controls" style={{ zIndex: 10 }}>
-                            <button onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))} title="Zoom In"><Icon icon="mdi:magnify-plus-outline" /></button>
-                            <button onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))} title="Zoom Out"><Icon icon="mdi:magnify-minus-outline" /></button>
-                            <button onClick={() => {
-                                setZoom(fitScale);
-                                if (containerRef.current) {
-                                    const { clientWidth, clientHeight } = containerRef.current;
-                                    setStagePos({
-                                        x: (clientWidth - canvasWidth * fitScale) / 2,
-                                        y: (clientHeight - canvasHeight * fitScale) / 2,
-                                    });
-                                }
-                            }} title="Reset View"><Icon icon="mdi:fit-to-screen-outline" /></button>
-                        </div>
+        <hr className="svl-divider mb-3" />
 
-                        <div className="svl-map-wrapper" ref={containerRef} style={{ height: '100%', overflow: 'hidden', touchAction: 'none' }}>
-                            <Stage
-                                width={containerSize.w}
-                                height={containerSize.h}
-                                ref={stageRef}
-                                scaleX={zoom}
-                                scaleY={zoom}
-                                x={stagePos.x}
-                                y={stagePos.y}
-                                onMouseDown={(e) => {
-                                    // Only pan on empty canvas background, not on items
-                                    if (e.target !== e.target.getStage()) return;
-                                    isPanningRef.current = true;
-                                    const pos = stageRef.current.getPointerPosition();
-                                    lastPointerRef.current = { x: pos.x, y: pos.y };
-                                    stageRef.current.container().style.cursor = 'grabbing';
-                                    // Removed setSelectedId(null) to allow panning without clearing selection
-                                }}
-                                onMouseMove={() => {
-                                    if (!isPanningRef.current) return;
-                                    const stage = stageRef.current;
-                                    const pos = stage.getPointerPosition();
-                                    const dx = pos.x - lastPointerRef.current.x;
-                                    const dy = pos.y - lastPointerRef.current.y;
-                                    lastPointerRef.current = { x: pos.x, y: pos.y };
-                                    stage.x(stage.x() + dx);
-                                    stage.y(stage.y() + dy);
-                                    stage.batchDraw();
-                                }}
-                                onMouseUp={() => {
-                                    if (!isPanningRef.current) return;
-                                    isPanningRef.current = false;
-                                    stageRef.current.container().style.cursor = 'default';
-                                    setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
-                                }}
-                                onMouseLeave={() => {
-                                    if (!isPanningRef.current) return;
-                                    isPanningRef.current = false;
-                                    stageRef.current.container().style.cursor = 'default';
-                                    setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
-                                }}
-                                onTouchStart={(e) => {
-                                    // Single-finger pan only
-                                    if (e.evt.touches.length !== 1) return;
-                                    e.evt.preventDefault();
-                                    const touch = e.evt.touches[0];
-                                    isPanningRef.current = true;
-                                    lastPointerRef.current = { x: touch.clientX, y: touch.clientY };
-                                }}
-                                onTouchMove={(e) => {
-                                    if (!isPanningRef.current || e.evt.touches.length !== 1) return;
-                                    e.evt.preventDefault();
-                                    const touch = e.evt.touches[0];
-                                    const dx = touch.clientX - lastPointerRef.current.x;
-                                    const dy = touch.clientY - lastPointerRef.current.y;
-                                    lastPointerRef.current = { x: touch.clientX, y: touch.clientY };
-                                    const stage = stageRef.current;
-                                    stage.x(stage.x() + dx);
-                                    stage.y(stage.y() + dy);
-                                    stage.batchDraw();
-                                }}
-                                onTouchEnd={() => {
-                                    if (!isPanningRef.current) return;
-                                    isPanningRef.current = false;
-                                    setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
-                                }}
-                                onWheel={(e) => {
-                                    e.evt.preventDefault();
-                                    const stage = stageRef.current;
-                                    const oldScale = zoom;
-                                    const pointer = stage.getPointerPosition();
-                                    const minScale = fitScale * 0.3;
-                                    const maxScale = fitScale * 4;
-                                    const direction = e.evt.deltaY > 0 ? -1 : 1;
-                                    const newScale = Math.min(maxScale, Math.max(minScale, oldScale + direction * 0.05));
-                                    const mousePointTo = {
-                                        x: (pointer.x - stagePos.x) / oldScale,
-                                        y: (pointer.y - stagePos.y) / oldScale,
-                                    };
-                                    setZoom(newScale);
-                                    setStagePos({
-                                        x: pointer.x - mousePointTo.x * newScale,
-                                        y: pointer.y - mousePointTo.y * newScale,
-                                    });
-                                }}
-                            >
-                                {/* Background image from layoutData */}
-                                {bgKonvaImage && bgWidth && bgHeight && (
-                                    <Layer>
-                                        <KonvaImage
-                                            image={bgKonvaImage}
-                                            x={0}
-                                            y={0}
-                                            width={bgWidth}
-                                            height={bgHeight}
-                                            opacity={bgOpacity}
-                                            listening={false}
-                                        />
-                                    </Layer>
-                                )}
-                                <Layer>
-                                    {sortedItems.map((item, i) => (
-                                        <React.Fragment key={item.id || i}>
-                                            {item.imageUrl ? (
-                                                <BackgroundImage item={item} onClick={() => {
-                                                    if (item.type === "booth" || item.isBooth) toggleSelection(item.id);
-                                                }} />
-                                            ) : (item.type === "seat" || item.type === "booth") ? (
-                                                (() => {
-                                                    const isBooth = item.type === 'booth' || item.isBooth;
-                                                    const cat = priceLevels.find(c => c._id === item.categoryId);
-                                                    const { w: boothW, h: boothH } = isBooth
-                                                        ? parseBoothSizePx(cat?.boothSize)
-                                                        : { w: 40, h: 40 };
-                                                    return (
-                                                        <Group
-                                                            x={item.x}
-                                                            y={item.y}
-                                                            scaleX={item.scaleX || 1}
-                                                            scaleY={item.scaleY || 1}
-                                                            rotation={item.rotation || 0}
-                                                            opacity={isBooth ? 1 : 0.3}
-                                                            onMouseEnter={(e) => {
-                                                                const stage = e.target.getStage();
-                                                                if (!isBooth) {
-                                                                    stage.container().style.cursor = 'not-allowed';
-                                                                } else if (item.status === 'available') {
-                                                                    stage.container().style.cursor = 'pointer';
-                                                                }
-                                                            }}
-                                                            onMouseLeave={(e) => {
-                                                                const stage = e.target.getStage();
-                                                                stage.container().style.cursor = 'default';
-                                                            }}
+        <div className="svl-summary-row mb-2">
+            <span className="small-body-text text-secondary">Subtotal</span>
+            <span className="small-body-text text-black">
+                ${selectedItemsData.reduce((acc, item) => acc + (item.category?.facePrice || 0), 0).toLocaleString()}
+            </span>
+        </div>
+        <div className="svl-summary-row mb-3">
+            <span className="small-body-text text-secondary">Est. Fees & Taxes</span>
+            <span className="small-body-text text-black">At checkout</span>
+        </div>
 
-                                                            onClick={() => {
+        <hr className="svl-divider mb-3" />
 
-                                                                if (isBooth && item.status === 'available') toggleSelection(item.id);
-                                                            }}
-                                                            onTap={() => {
-                                                                if (isBooth && item.status === 'available') toggleSelection(item.id);
-                                                            }}
+        <div className="svl-summary-row mb-4">
+            <h4 className="m-0">Total</h4>
+            <h4 className="text-red m-0">
+                ${selectedItemsData.reduce((acc, item) => acc + (item.category?.facePrice || 0), 0).toLocaleString()}
+            </h4>
+        </div>
 
-                                                        >
-                                                            {isBooth ? (
-                                                                <Rect
-                                                                    x={-boothW / 2}
-                                                                    y={-boothH / 2}
-                                                                    width={boothW}
-                                                                    height={boothH}
-                                                                    fill={selectedIds.includes(item.id) ? "#3b82f6" : (item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#e0e0e0"))}
-                                                                    stroke="white"
-                                                                    strokeWidth={selectedIds.includes(item.id) ? 2 : 1}
-                                                                    cornerRadius={4}
-                                                                />
-                                                            ) : (
-                                                                <Circle
-                                                                    radius={20}
-                                                                    fill={selectedIds.includes(item.id) ? "#3b82f6" : (item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#666666"))}
-                                                                    stroke="white"
-                                                                    strokeWidth={selectedIds.includes(item.id) ? 2 : 1}
-                                                                    opacity={1}
-                                                                />
-                                                            )}
-                                                            <Text
-                                                                text={item.label || item.code || ""}
-                                                                fontSize={isBooth ? Math.max(8, Math.min(boothW, boothH) / 5) : 9}
-                                                                fontStyle="bold"
-                                                                fill="white"
-                                                                align="center"
-                                                                verticalAlign="middle"
-                                                                x={0}
-                                                                y={0}
-                                                                offsetX={isBooth ? boothW / 2 : 20}
-                                                                offsetY={isBooth ? boothH / 2 : 20}
-                                                                width={isBooth ? boothW : 40}
-                                                                height={isBooth ? boothH : 40}
-                                                                scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
-                                                                scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
-                                                            />
-                                                        </Group>
-                                                    );
-                                                })()
-                                            ) : (
-                                                <BackgroundShape item={item} />
-                                            )}
-                                        </React.Fragment>
-                                    ))}
-                                </Layer>
-                            </Stage>
-                        </div>
+        <button
+            className="primary-button svl-confirm-btn w-100 mb-3"
+            disabled={selectedItemsData.length === 0}
+            onClick={handleAddToCart}
+        >
+            Add {selectedItemsData.length} Booth{selectedItemsData.length !== 1 ? 's' : ''} to Cart
+        </button>
 
-                        <div className="svl-legend">
-                            <div className="svl-legend-item"><span className="svl-dot-icon gray" style={{ backgroundColor: '#e0e0e0' }}></span>Available</div>
-                            <div className="svl-legend-item"><span className="svl-dot-icon green" style={{ backgroundColor: '#22c55e' }}></span>Sold</div>
-                            <div className="svl-legend-item"><span className="svl-dot-icon blue" style={{ backgroundColor: '#3b82f6' }}></span>Selected</div>
-                        </div>
-                    </div>
-                </div>
+        <button
+            className="outlined-button svl-continue-btn w-100 mb-3"
+            onClick={() => navigate('/sponsor/sponsor-events')}
+        >
+            Continue Browsing Events
+        </button>
 
-                <div className="svl-content-right">
-                    <div className="svl-summary-card">
-                        <h4 className="text-primary mb-4 block">Selection Summary</h4>
-
-                        {selectedItemsData.length > 0 ? (
-                            <>
-                                <div className="svl-summary-header">
-                                    <span className="blue-pill button-label">{selectedItemsData.length} Selected</span>
-                                    <h4 className="text-red">
-                                        ${selectedItemsData.reduce((acc, item) => acc + (item.category?.facePrice || 0), 0).toLocaleString()}
-                                    </h4>
-                                </div>
-
-                                <div className="svl-selected-items-list" style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '16px' }}>
-                                    {selectedItemsData.map((item, idx) => (
-                                        <div key={item.id || idx} className="svl-booth-item-row" style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
-                                            <div className="svl-booth-title">
-                                                <h5 className="text-primary m-0">{item.label || item.code || 'Booth'}</h5>
-                                                <p className="smaller-body-text text-secondary">{item.category?.priceName || 'Booth Category'}</p>
-                                            </div>
-                                            <div style={{ textAlign: 'right', color: 'var(--color-black-primary)' }}>
-                                                <span className="small-body-text font-bold">${(item.category?.facePrice || 0).toLocaleString()}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <hr className="svl-divider" />
-
-                                <div className="svl-dim-row">
-                                    <span className="smaller-body-text text-secondary">Total Subtotal</span>
-                                    <span className="smaller-body-text text-secondary font-bold">
-                                        ${selectedItemsData.reduce((acc, item) => acc + (item.category?.facePrice || 0), 0).toLocaleString()}
-                                    </span>
-                                </div>
-
-                                <div className="svl-features">
-                                    <span className="smaller-body-text font-bold text-secondary">ESTIMATED FEES & TAXES</span>
-                                    <p className="smaller-body-text text-secondary">Processing fees and taxes will be calculated at checkout.</p>
-                                </div>
-
-                                <button className="primary-button svl-confirm-btn" onClick={handleAddToCart}>
-                                    Add {selectedItemsData.length} to Cart
-                                </button>
-                            </>
-                        ) : (
-                            <div className="text-center py-5">
-                                <Icon icon="mdi:cursor-default-click-outline" width="48" className="text-secondary opacity-20 mb-3" />
-                                <p className="small-body-text text-secondary">Select one or more booths on the map to see details and pricing</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+        <p className="smaller-body-text text-secondary text-center m-0">
+            Booths will be held for 10 minutes once added to cart
+        </p>
+    </div>
+</div>            </div>
         </div>
     );
 };

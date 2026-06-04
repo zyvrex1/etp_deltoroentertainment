@@ -36,7 +36,7 @@ const CustomerSeats = () => {
     const [zoom, setZoom] = useState(1);
     const [fitScale, setFitScale] = useState(1);
     const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
-    const [containerSize, setContainerSize] = useState({ w: 800, h: 500 });
+    const [containerSize, setContainerSize] = useState({ w: 100, h: 100 });
     const [canvasSize, setCanvasSize] = useState({ w: 1400, h: 900 });
     const [bgConfig, setBgConfig] = useState(null);
 
@@ -249,7 +249,7 @@ const CustomerSeats = () => {
                         </div>
                     </div>
                     <div className="cs-header-right">
-                        <span className="small-body-text text-secondary">Tickets Selected</span>
+                        <span className="small-body-text text-secondary">Seats Selected</span>
                         <h2 className="text-red m-0">{selectedSeats.length}</h2>
                     </div>
                 </div>
@@ -380,7 +380,7 @@ const CustomerSeats = () => {
                     </div>
                 </div>
                 <div className="cs-header-right">
-                    <span className="small-body-text text-secondary">Tickets Selected</span>
+                    <span className="small-body-text text-secondary">Seats Selected</span>
                     <h2 className="text-red m-0">{getSelectedTicketsCount()}</h2>
                 </div>
             </div>
@@ -564,19 +564,17 @@ const CustomerSeats = () => {
                                                 scaleY={item.scaleY || 1}
                                                 rotation={item.rotation || 0}
                                                 listening={false}
+                                                opacity={0.4}  // ← add this: makes the whole booth look dimmed/disabled
                                             >
                                                 <Rect
                                                     x={-boothW / 2}
                                                     y={-boothH / 2}
                                                     width={boothW}
                                                     height={boothH}
-                                                    fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
-                                                    stroke="#000"
+                                                    fill={category?.color || '#94a3b8'}  // ← muted fallback color
+                                                    stroke="#94a3b8"                      // ← gray stroke instead of black
                                                     strokeWidth={1}
                                                     strokeScaleEnabled={false}
-                                                    shadowBlur={0}
-                                                    shadowColor="#000"
-                                                    shadowOpacity={0.2}
                                                 />
                                                 <Text
                                                     text={item.label || item.code || ""}
@@ -590,15 +588,10 @@ const CustomerSeats = () => {
                                                     offsetY={boothH / 2}
                                                     width={boothW}
                                                     height={boothH}
-                                                    shadowColor="black"
-                                                    shadowBlur={2}
-                                                    shadowOpacity={0.8}
-                                                    shadowOffset={{ x: 1, y: 1 }}
                                                 />
                                             </Group>
                                         );
                                     }
-
                                     if (isElement) {
                                         return (
                                             <Group key={item.id} x={item.x} y={item.y} rotation={item.rotation || 0} listening={false}>
@@ -641,6 +634,11 @@ const CustomerSeats = () => {
                             <span className="cs-legend-dot" style={{ backgroundColor: '#666666' }}></span>
                             <span className="smaller-body-text text-secondary">Available</span>
                         </div>
+                        {/* Add this */}
+                        <div className="cs-legend-item">
+                            <span className="cs-legend-dot" style={{ backgroundColor: '#94a3b8', opacity: 0.4 }}></span>
+                            <span className="smaller-body-text text-secondary">Booth (reference only)</span>
+                        </div>
                     </div>
                 </div>
 
@@ -659,11 +657,15 @@ const CustomerSeats = () => {
                                 const catType = cat.type || "Seat (Circle)";
 
                                 return (
-                                    <div key={cat._id || cat.id} className="cs-sidebar-cat-item mb-2">
-                                        {/* Coloured icon — same as Admin cat-palette-visual */}
+                                    <div
+                                        key={cat._id || cat.id}
+                                        className={`cs-sidebar-cat-item mb-2 ${catType === "Booth (Square)" ? "cs-cat-disabled" : ""}`}
+                                        style={catType === "Booth (Square)" ? { opacity: 0.5, pointerEvents: 'none' } : {}}
+                                    >
+                                        {/* Coloured icon */}
                                         <div
                                             className="cs-cat-palette-visual"
-                                            style={{ backgroundColor: cat.color || '#666' }}
+                                            style={{ backgroundColor: catType === "Booth (Square)" ? '#94a3b8' : (cat.color || '#666') }}
                                         >
                                             {catType === "General Fee" ? (
                                                 <Icon icon="mdi:ticket-confirmation-outline" />
@@ -680,23 +682,45 @@ const CustomerSeats = () => {
                                                 <span className="cs-cat-name">
                                                     {cat.priceName === 'General Fee' ? 'Entrance Fee' : cat.priceName}
                                                 </span>
-                                                {!isDirectQty && (
+                                                {catType === "Booth (Square)" ? (
+                                                    // ← Replaces "Select on map" for booths
+                                                    <span
+                                                        className="smaller-body-text"
+                                                        style={{
+                                                            color: '#ef4444',
+                                                            backgroundColor: '#fef2f2',
+                                                            border: '1px solid #fecaca',
+                                                            borderRadius: '4px',
+                                                            padding: '1px 6px',
+                                                            fontWeight: 600,
+                                                            fontSize: '10px'
+                                                        }}
+                                                    >
+                                                        Not bookable
+                                                    </span>
+                                                ) : !isDirectQty ? (
                                                     <span className="cs-map-hint smaller-body-text text-secondary">Select on map</span>
-                                                )}
+                                                ) : null}
                                             </div>
+
                                             {/* Price + availability meta */}
                                             <div className="cs-cat-meta">
-                                                <span className="cs-cat-price">${(cat.facePrice || 0).toFixed(2)}</span>
+                                                <span className="cs-cat-price" style={catType === "Booth (Square)" ? { color: '#94a3b8' } : {}}>
+                                                    ${(cat.facePrice || 0).toFixed(2)}
+                                                </span>
                                                 <span className="cs-cat-units">
-                                                    {cat.quantityAvailable != null 
-                                                        ? (cat.quantityAvailable - (cat.quantitySold || 0)) - qty 
-                                                        : cat.quantity != null 
-                                                            ? (cat.quantity - (cat.quantitySold || 0)) - qty 
-                                                            : '—'} available
+                                                    {catType === "Booth (Square)"
+                                                        ? "Reference only"
+                                                        : cat.quantityAvailable != null
+                                                            ? (cat.quantityAvailable - (cat.quantitySold || 0)) - qty
+                                                            : cat.quantity != null
+                                                                ? (cat.quantity - (cat.quantitySold || 0)) - qty
+                                                                : '—'} {catType !== "Booth (Square)" && "available"}
                                                 </span>
                                             </div>
-                                            {/* Progress bar showing selected qty */}
-                                            {isDirectQty && cat.quantityAvailable > 0 && (
+
+                                            {/* Progress bar — hidden for booths */}
+                                            {isDirectQty && cat.quantityAvailable > 0 && catType !== "Booth (Square)" && (
                                                 <div className="cs-progress-bar">
                                                     <div
                                                         className="cs-progress-fill"
@@ -707,9 +731,9 @@ const CustomerSeats = () => {
                                                     />
                                                 </div>
                                             )}
-                                            
-                                            {/* Action: GA/General Fee stepper */}
-                                            {isDirectQty && (
+
+                                            {/* Stepper — hidden for booths */}
+                                            {isDirectQty && catType !== "Booth (Square)" && (
                                                 <div className="cs-quantity-selector" style={{ marginTop: '12px' }}>
                                                     <button
                                                         className="cs-qty-btn"
@@ -758,7 +782,7 @@ const CustomerSeats = () => {
 
                         <div className="cs-selected-list mb-4">
                             {getSelectedTicketsCount() === 0 ? (
-                                <p className="small-body-text text-secondary mb-3">No tickets selected</p>
+                                <p className="small-body-text text-secondary mb-3">No Seats Selected</p>
                             ) : (
                                 <>
                                     {/* Physical Seats */}
