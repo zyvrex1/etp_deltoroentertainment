@@ -102,7 +102,22 @@
 }
 
 .chvr-text-green {
-    color: var(--color-green-primary);
+    color: var(--color-green-primary) !important;
+    font-weight: 500;
+}
+
+.chvr-text-yellow {
+    color: var(--color-yellow-primary) !important;
+    font-weight: 500;
+}
+
+.chvr-text-blue {
+    color: var(--color-blue-primary) !important;
+    font-weight: 500;
+}
+
+.chvr-text-red {
+    color: var(--color-red-primary) !important;
     font-weight: 500;
 }
 

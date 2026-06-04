@@ -1,13 +1,29 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import jsPDF from 'jspdf';
-import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable } from '../../utils/pdfExport';
+import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../../utils/pdfExport';
 import './CustomerHistoryViewReceipt.css';
 
 const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
     if (!show) return null;
 
-    // Use mock data if no receiptData provided
+    const getStatusTextClass = (status) => {
+        const s = status?.toLowerCase();
+        if (s === 'pending') return 'chvr-text-yellow';
+        if (s === 'preparing') return 'chvr-text-blue';
+        if (s === 'ready' || s === 'ready for pickup') return 'chvr-text-blue';
+        if (s === 'completed' || s === 'confirmed') return 'chvr-text-green';
+        return 'chvr-text-green';
+    };
+
+    const getPaymentStatusTextClass = (paymentStatus) => {
+        const p = paymentStatus?.toLowerCase();
+        if (p === 'paid' || p === 'confirmed') return 'chvr-text-green';
+        if (p === 'unpaid' || p === 'pending') return 'chvr-text-yellow';
+        if (p === 'refunded' || p === 'rejected') return 'chvr-text-red';
+        return 'chvr-text-yellow';
+    };
+
     const data = receiptData || {
         orderNum: 'Seat - 12345',
         date: '5/1/2026 10:30:00 PM',
@@ -17,6 +33,7 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
         },
         paymentMethod: 'Visa ending in 4242',
         status: 'Paid',
+        paymentStatus: 'Paid',
         items: [
             { item: 'Seat 12', type: 'VIP Ticket', qty: 1, price: '$150.00', total: '$150.00' },
             { item: 'Event Hoodie', type: 'Merch', qty: 1, price: '$45.00', total: '$45.00' }
@@ -33,41 +50,155 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
 
     const handleDownloadPDF = async () => {
         const loadingToast = showExportToast();
+        const INVOICE_TITLE = 'Transaction Receipt';
+
         try {
             const logoData = await loadLogo();
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const MARGIN = 15;
+            const pdfWidth  = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const MARGIN        = 15;
+            const FOOTER_HEIGHT = 15;
             let y = 45;
 
-            addReportHeader(pdf, 'Transaction Receipt', logoData);
+            addReportHeader(pdf, INVOICE_TITLE, logoData);
 
-            pdf.setFontSize(14);
+            // ── helpers ──────────────────────────────────────────────────────
+            const newPageIfNeeded = (needed) => {
+                if (y + needed > pdfHeight - FOOTER_HEIGHT - 5) {
+                    pdf.addPage();
+                    addReportHeader(pdf, INVOICE_TITLE, logoData);
+                    y = 45;
+                }
+            };
+
+            const sectionHeading = (title) => {
+                newPageIfNeeded(14);
+                pdf.setFontSize(11);
+                pdf.setTextColor(30, 60, 114);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(title, MARGIN, y);
+                pdf.setDrawColor(30, 60, 114);
+                pdf.setLineWidth(0.4);
+                pdf.line(MARGIN, y + 2, pdfWidth - MARGIN, y + 2);
+                y += 10;
+            };
+
+            // ── status color ─────────────────────────────────────────────────
+            const statusColor =
+                data.status === 'Paid'     ? [22, 163, 74]  :
+                data.status === 'Pending'  ? [217, 119, 6]  :
+                                             [180, 50, 50];
+
+            // ════════════════════════════════════════════════════════════════
+            // BANNER
+            // ════════════════════════════════════════════════════════════════
+            pdf.setFillColor(235, 240, 255);
+            pdf.setDrawColor(180, 200, 245);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 22, 3, 3, 'FD');
+
+            // Left — order number
+            pdf.setFontSize(11);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
-            pdf.text(data.orderNum, MARGIN, y);
-            pdf.setFontSize(10);
-            pdf.setTextColor(50, 50, 50);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text(data.date, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
-            y += 15;
+            pdf.text(data.orderNum, MARGIN + 4, y + 8);
 
-            pdf.setFontSize(10);
-            pdf.setTextColor(50, 50, 50);
-            pdf.setFont('helvetica', 'bold');
-            pdf.text('BILLED TO', MARGIN, y);
-            pdf.text('PAYMENT METHOD', pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
-            y += 6;
-            
+            pdf.setFontSize(8);
+            pdf.setTextColor(80, 90, 130);
             pdf.setFont('helvetica', 'normal');
-            pdf.text(data.billedTo.name, MARGIN, y);
-            const paymentText = data.poNumber ? `${data.paymentMethod} (PO: ${data.poNumber})` : data.paymentMethod;
-            pdf.text(paymentText, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
-            y += 6;
-            
-            pdf.text(data.billedTo.email, MARGIN, y);
-            pdf.setTextColor(40, 167, 69); // Green status
-            pdf.text(data.status, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
-            y += 20;
+            pdf.text(`Transaction Receipt  •  ${data.date}`, MARGIN + 4, y + 15);
+
+            // Right — total paid badge
+            const badgeX = pdfWidth - MARGIN - 50;
+            pdf.setFillColor(30, 60, 114);
+            pdf.roundedRect(badgeX, y + 4, 46, 14, 2, 2, 'F');
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Total Paid', badgeX + 23, y + 10, { align: 'center' });
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(data.totalPaid, badgeX + 23, y + 16, { align: 'center' });
+
+            y += 30;
+
+            // ════════════════════════════════════════════════════════════════
+            // INVOICE DETAILS — 2-col info cards
+            // ════════════════════════════════════════════════════════════════
+            sectionHeading('Invoice Details');
+
+            const cardW = (pdfWidth - MARGIN * 2 - 6) / 2;
+            const cardH = 40;
+
+            const detailCards = [
+                {
+                    title: 'Billed To',
+                    lines: [
+                        { label: 'Name',  value: data.billedTo.name  },
+                        { label: 'Email', value: data.billedTo.email },
+                        { label: 'Date',  value: data.date           },
+                        
+                    ],
+                    color:  [30, 60, 114],
+                    bg:     [235, 240, 255],
+                    border: [180, 200, 245],
+                },
+                {
+                    title: 'Payment Information',
+                    lines: [
+                        { label: 'Method', value: data.paymentMethod },
+                        ...(data.poNumber ? [{ label: 'PO Number', value: data.poNumber }] : []),
+                        { label: 'Status', value: data.status },
+                        { label: 'Payment Status', value: data.paymentStatus },
+                        { label: 'Total',  value: data.totalPaid },
+                    ],
+                    color:  statusColor,
+                    bg:     data.status === 'Paid'    ? [235, 255, 245] :
+                            data.status === 'Pending' ? [255, 251, 235] : [255, 240, 240],
+                    border: data.status === 'Paid'    ? [180, 235, 210] :
+                            data.status === 'Pending' ? [245, 220, 160] : [245, 190, 190],
+                },
+            ];
+
+            detailCards.forEach((card, i) => {
+                const cx = MARGIN + i * (cardW + 6);
+                const cy = y;
+
+                pdf.setFillColor(...card.bg);
+                pdf.setDrawColor(...card.border);
+                pdf.setLineWidth(0.3);
+                pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, 'FD');
+
+                // Card title dot + label
+                pdf.setFillColor(...card.color);
+                pdf.circle(cx + 5, cy + 6, 2, 'F');
+                pdf.setFontSize(8.5);
+                pdf.setTextColor(...card.color);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(card.title, cx + 10, cy + 7);
+
+                // Lines
+                card.lines.forEach((line, li) => {
+                    const lineY = cy + 14 + li * 5.5;
+                    pdf.setFontSize(7.5);
+                    pdf.setTextColor(100, 100, 100);
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.text(`${line.label}:`, cx + 5, lineY);
+                    pdf.setTextColor(40, 40, 40);
+                    pdf.setFont('helvetica', 'bold');
+                    const val = pdf.splitTextToSize(line.value || '', cardW - 30);
+                    pdf.text(val[0], cx + cardW - 4, lineY, { align: 'right' });
+                });
+            });
+
+            y += cardH + 10;
+
+            // ════════════════════════════════════════════════════════════════
+            // ITEMS TABLE
+            // ════════════════════════════════════════════════════════════════
+            newPageIfNeeded(20);
+            sectionHeading('Items');
 
             const headers = ['Item', 'Type', 'Qty', 'Price', 'Total'];
             const rows = data.items.map(item => [
@@ -75,30 +206,77 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                 item.type,
                 item.qty.toString(),
                 item.price,
-                item.total
+                item.total,
             ]);
 
-            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5);
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 12, 5, logoData, INVOICE_TITLE);
 
-            y += 10;
-            pdf.setFontSize(10);
-            pdf.setTextColor(50, 50, 50);
-            pdf.text(`Subtotal: ${data.subtotal}`, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
-            y += 6;
-            pdf.text(`Service Fee: ${data.serviceFee}`, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
-            y += 6;
-            pdf.text(`Tax: ${data.tax}`, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
-            y += 10;
-            
-            pdf.setFontSize(14);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(30, 60, 114);
-            pdf.text('Total Paid:', pdf.internal.pageSize.getWidth() - MARGIN - 30, y, { align: 'right' });
-            pdf.setTextColor(220, 53, 69); // Red color for total
-            pdf.text(data.totalPaid, pdf.internal.pageSize.getWidth() - MARGIN, y, { align: 'right' });
+            // ════════════════════════════════════════════════════════════════
+            // TOTALS BREAKDOWN
+            // ════════════════════════════════════════════════════════════════
+            y += 8;
+            newPageIfNeeded(40);
+            sectionHeading('Payment Summary');
 
-            addReportFooter(pdf, 1, 1);
-            pdf.save(`Receipt_${data.orderNum}.pdf`);
+            const summaryRows = [
+                { label: 'Subtotal',    value: data.subtotal,    bold: false },
+                { label: 'Service Fee', value: data.serviceFee,  bold: false },
+                { label: 'Tax',         value: data.tax,         bold: false },
+                { label: 'Total Paid',  value: data.totalPaid,   bold: true  },
+            ];
+
+            const summaryW = 90;
+            const summaryX = pdfWidth - MARGIN - summaryW;
+
+            summaryRows.forEach((row, i) => {
+                const isLast = i === summaryRows.length - 1;
+
+                if (isLast) {
+                    // Highlighted total row
+                    pdf.setFillColor(30, 60, 114);
+                    pdf.roundedRect(summaryX, y - 3, summaryW, 10, 2, 2, 'F');
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(255, 255, 255);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text(row.label, summaryX + 5, y + 4);
+                    pdf.text(row.value, summaryX + summaryW - 4, y + 4, { align: 'right' });
+                    y += 13;
+                } else {
+                    pdf.setFontSize(8.5);
+                    pdf.setTextColor(row.bold ? 30 : 80, row.bold ? 60 : 80, row.bold ? 114 : 80);
+                    pdf.setFont('helvetica', row.bold ? 'bold' : 'normal');
+                    pdf.text(row.label, summaryX + 5, y + 4);
+                    pdf.setTextColor(40, 40, 40);
+                    pdf.text(row.value, summaryX + summaryW - 4, y + 4, { align: 'right' });
+
+                    // Separator line
+                    pdf.setDrawColor(220, 220, 230);
+                    pdf.setLineWidth(0.2);
+                    pdf.line(summaryX, y + 7, summaryX + summaryW, y + 7);
+                    y += 10;
+                }
+            });
+
+            // ════════════════════════════════════════════════════════════════
+            // FOOTER STRIP
+            // ════════════════════════════════════════════════════════════════
+            y += 8;
+            newPageIfNeeded(16);
+            pdf.setFillColor(245, 247, 255);
+            pdf.setDrawColor(210, 218, 245);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 14, 2, 2, 'FD');
+            pdf.setFontSize(8);
+            pdf.setTextColor(80, 90, 130);
+            pdf.setFont('helvetica', 'italic');
+            pdf.text(
+                `Receipt ${data.orderNum}  •  Generated by eTicketsPro`,
+                pdfWidth / 2, y + 9, { align: 'center' }
+            );
+
+            finalizeReport(pdf);
+            pdf.save(`Receipt_${data.orderNum.replace(/\s+/g, '_')}.pdf`);
+
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('Failed to generate PDF. Please try again.');
@@ -141,7 +319,14 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                             {data.paymentMethod}
                             {data.poNumber && <span className="text-secondary ml-1" style={{ fontWeight: 'normal' }}> {data.poNumber}</span>}
                         </h6>
-                        <span className="small-body-text chvr-text-green">{data.status}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', marginTop: '8px' }}>
+                            <span className="small-body-text text-secondary" style={{ fontSize: '13px' }}>
+                                Status: <span className={getStatusTextClass(data.status)}>{data.status}</span>
+                            </span>
+                            <span className="small-body-text text-secondary" style={{ fontSize: '13px' }}>
+                                Payment: <span className={getPaymentStatusTextClass(data.paymentStatus)}>{data.paymentStatus || 'Paid'}</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
 

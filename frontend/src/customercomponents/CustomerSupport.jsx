@@ -95,62 +95,106 @@ export default function CustomerSupport() {
         { name: 'Help Center', icon: 'mdi:help-circle-outline' }
     ];
 
-    const exportDocumentToPDF = async (doc) => {
-        const loadingToast = showExportToast();
-        const DOCUMENT_TITLE = doc.title;
-        try {
-            const logoData = await loadLogo();
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const MARGIN = 15;
-            const FOOTER_HEIGHT = 15;
-            let y = 45;
+const exportDocumentToPDF = async (doc) => {
+    const loadingToast = showExportToast();
+    const DOCUMENT_TITLE = doc.title;
 
-            addReportHeader(pdf, DOCUMENT_TITLE, logoData);
+    try {
+        const logoData = await loadLogo();
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const MARGIN = 15;
+        const FOOTER_HEIGHT = 15;
+        let y = 45;
 
-            pdf.setFontSize(14);
+        addReportHeader(pdf, DOCUMENT_TITLE, logoData);
+
+        // ── helpers ──────────────────────────────────────────────────────────
+        const newPageIfNeeded = (needed) => {
+            if (y + needed > pdfHeight - FOOTER_HEIGHT - 5) {
+                pdf.addPage();
+                addReportHeader(pdf, DOCUMENT_TITLE, logoData);
+                y = 45;
+            }
+        };
+
+
+
+        // ══════════════════════════════════════════════════════════════════════
+        // FULL SECTION CONTENT
+        // ══════════════════════════════════════════════════════════════════════
+
+        if (doc.sections) {
+            doc.sections.forEach((sec, idx) => {
+                newPageIfNeeded(20);
+
+                // Section title row
+                const rowBg = idx % 2 === 0 ? [245, 247, 255] : [255, 255, 255];
+                pdf.setFillColor(...rowBg);
+                pdf.setDrawColor(220, 225, 245);
+                pdf.setLineWidth(0.2);
+                pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 8, 1, 1, 'FD');
+
+                pdf.setFontSize(9);
+                pdf.setTextColor(30, 60, 114);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(`${idx + 1}.  ${sec.title}`, MARGIN + 4, y + 5.5);
+                y += 15;
+
+                const sectionContent = sec.pdfContent && sec.pdfContent.length > 0
+                    ? sec.pdfContent.join('\n')
+                    : 'Please refer to the application portal for the full detailed content of this section.';
+
+                y = drawLongText(pdf, y, sectionContent, MARGIN + 4, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, logoData, DOCUMENT_TITLE);
+                y += 6;
+            });
+        } else if (doc.content) {
+            // Plain policy from Content Manager — render as a single section
+            newPageIfNeeded(20);
+
+            pdf.setFillColor(245, 247, 255);
+            pdf.setDrawColor(220, 225, 245);
+            pdf.setLineWidth(0.2);
+            pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 8, 1, 1, 'FD');
+
+            pdf.setFontSize(9);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
-            pdf.text(doc.title || 'Document Export', MARGIN, y);
-            y += 10;
+            pdf.text(`1.  Policy Content`, MARGIN + 4, y + 5.5);
+            y += 15;
 
-            if (doc.sections) {
-                doc.sections.forEach(sec => {
-                    if (y > pdfHeight - FOOTER_HEIGHT - 20) {
-                        pdf.addPage();
-                        addReportHeader(pdf, DOCUMENT_TITLE, logoData);
-                        y = 45;
-                    }
-
-                    pdf.setFontSize(12);
-                    pdf.setTextColor(30, 60, 114);
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.text(sec.title, MARGIN, y);
-                    y += 6;
-
-                    const sectionContent = sec.pdfContent && sec.pdfContent.length > 0 
-                        ? sec.pdfContent.join('\n') 
-                        : 'Please refer to the application portal for the full detailed content of this section.';
-
-                    y = drawLongText(pdf, y, sectionContent, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, logoData, DOCUMENT_TITLE);
-                    y += 8;
-                });
-            } else if (doc.content) {
-                // If it's a simple policy from Content Manager
-                y = drawLongText(pdf, y, doc.content, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, logoData, DOCUMENT_TITLE);
-            }
-
-            finalizeReport(pdf);
-            pdf.save(`${DOCUMENT_TITLE.replace(/\s+/g, '_')}.pdf`);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            alert('Failed to generate PDF. Please try again.');
-        } finally {
-            removeExportToast(loadingToast);
+            y = drawLongText(pdf, y, doc.content, MARGIN + 4, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, logoData, DOCUMENT_TITLE);
+            y += 6;
         }
-    };
 
+        // ══════════════════════════════════════════════════════════════════════
+        // FOOTER STRIP
+        // ══════════════════════════════════════════════════════════════════════
+        y += 8;
+        newPageIfNeeded(16);
+        pdf.setFillColor(245, 247, 255);
+        pdf.setDrawColor(210, 218, 245);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 14, 2, 2, 'FD');
+        pdf.setFontSize(8);
+        pdf.setTextColor(80, 90, 130);
+        pdf.setFont('helvetica', 'italic');
+        pdf.text(
+            `${DOCUMENT_TITLE}  •  Generated by eTicketsPro`,
+            pdfWidth / 2, y + 9, { align: 'center' }
+        );
+
+        finalizeReport(pdf);
+        pdf.save(`${DOCUMENT_TITLE.replace(/\s+/g, '_')}.pdf`);
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Failed to generate PDF. Please try again.');
+    } finally {
+        removeExportToast(loadingToast);
+    }
+};
     const faqs = [
         {
             question: "How do I purchase tickets?",
