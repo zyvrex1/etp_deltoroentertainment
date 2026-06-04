@@ -34,7 +34,6 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
       const data = await orderService.getOrders(user?.token, { eventId, boothCode });
       console.log("Order sample:", data[0]);
       
-      // Transform backend data to match UI expectations
       const formattedOrders = data.map(order => ({
         id: order.orderId,
         _id: order._id,
@@ -43,9 +42,10 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
         items: `${order.items.reduce((sum, item) => sum + item.quantity, 0)} items`,
         itemDesc: order.items.map(i => `${i.quantity}x ${i.name}`).join(", ").substring(0, 30) + "...",
         total: `$${order.totalAmount.toFixed(2)}`,
+        totalAmount: order.totalAmount,
         payment: order.paymentStatus === 'Pending' ? 'Unpaid' : order.paymentStatus,
         status: order.status,
-        fullItems: order.items // Keep full items for the modal
+        fullItems: order.items
       }));
       
       setOrders(formattedOrders);
@@ -130,13 +130,229 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
   const exportToPDF = async () => {
     const loadingToast = showExportToast();
     const REPORT_TITLE = "Orders Report";
+
     try {
       const logoData = await loadLogo();
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      const MARGIN = 15;
+      const FOOTER_HEIGHT = 15;
+      let y = 45;
 
       addReportHeader(pdf, REPORT_TITLE, logoData);
+
+      // ── helpers ────────────────────────────────────────────────────────
+      const newPageIfNeeded = (needed) => {
+        if (y + needed > pdfHeight - FOOTER_HEIGHT - 5) {
+          addReportFooter(pdf);
+          pdf.addPage();
+          addReportHeader(pdf, REPORT_TITLE, logoData);
+          y = 45;
+        }
+      };
+
+      const sectionHeading = (title) => {
+        newPageIfNeeded(14);
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(title, MARGIN, y);
+        pdf.setDrawColor(30, 60, 114);
+        pdf.setLineWidth(0.4);
+        pdf.line(MARGIN, y + 2, pdfWidth - MARGIN, y + 2);
+        y += 10;
+      };
+
+      // ── pre-compute values ─────────────────────────────────────────────
+      const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+      const paidOrders    = filteredOrders.filter(o => o.payment === 'Paid');
+      const unpaidOrders  = filteredOrders.filter(o => o.payment === 'Unpaid');
+      const pendingOrders = filteredOrders.filter(o => o.status === 'Pending');
+      const completedOrders = filteredOrders.filter(o => o.status === 'Completed');
+      const preparingOrders = filteredOrders.filter(o => o.status === 'Preparing');
+      const readyOrders   = filteredOrders.filter(o => o.status === 'Ready for Pickup');
+
+      const paidRevenue   = paidOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
+      const unpaidRevenue = unpaidOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
+
+      const filterLabel = filterStatus === 'All' ? 'All Statuses' : filterStatus;
+
+      // ══════════════════════════════════════════════════════════════════
+      // BANNER
+      // ══════════════════════════════════════════════════════════════════
+      pdf.setFillColor(235, 240, 255);
+      pdf.setDrawColor(180, 200, 245);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 22, 3, 3, 'FD');
+
+      // Left — filter label
+      pdf.setFontSize(11);
+      pdf.setTextColor(30, 60, 114);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(filterLabel, MARGIN + 4, y + 8);
+
+      pdf.setFontSize(8);
+      pdf.setTextColor(80, 90, 130);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(
+        `Orders Report  •  ${filteredOrders.length} order${filteredOrders.length !== 1 ? 's' : ''}`,
+        MARGIN + 4, y + 15
+      );
+
+      // Right — total revenue badge
+      const badgeX = pdfWidth - MARGIN - 50;
+      pdf.setFillColor(30, 60, 114);
+      pdf.roundedRect(badgeX, y + 4, 46, 14, 2, 2, 'F');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Total Revenue', badgeX + 23, y + 10, { align: 'center' });
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(
+        `$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        badgeX + 23, y + 16, { align: 'center' }
+      );
+
+      y += 30;
+
+      // ══════════════════════════════════════════════════════════════════
+      // KEY METRICS — 3-col cards
+      // ══════════════════════════════════════════════════════════════════
+      sectionHeading('Key Metrics');
+
+      const cardW = (pdfWidth - MARGIN * 2 - 12) / 3;
+      const cardH = 22;
+
+      const metricCards = [
+        {
+          label: 'Paid Orders',
+          value: `$${paidRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          sub: `${paidOrders.length} order${paidOrders.length !== 1 ? 's' : ''}`,
+          color: [22, 163, 74],
+          bg: [235, 255, 245],
+          border: [180, 235, 210],
+        },
+        {
+          label: 'Unpaid Orders',
+          value: `$${unpaidRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          sub: `${unpaidOrders.length} order${unpaidOrders.length !== 1 ? 's' : ''}`,
+          color: [217, 119, 6],
+          bg: [255, 251, 235],
+          border: [245, 220, 160],
+        },
+        {
+          label: 'Completed Orders',
+          value: `${completedOrders.length}`,
+          sub: `${pendingOrders.length} still pending`,
+          color: [30, 60, 114],
+          bg: [235, 240, 255],
+          border: [180, 200, 245],
+        },
+      ];
+
+      metricCards.forEach((m, i) => {
+        const cx = MARGIN + i * (cardW + 6);
+        const cy = y;
+
+        pdf.setFillColor(...m.bg);
+        pdf.setDrawColor(...m.border);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, 'FD');
+
+        // Dot
+        pdf.setFillColor(...m.color);
+        pdf.circle(cx + 5, cy + 6, 2, 'F');
+
+        // Label
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(m.label, cx + 10, cy + 7);
+
+        // Value
+        pdf.setFontSize(11);
+        pdf.setTextColor(...m.color);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(m.value, cx + 5, cy + 16);
+
+        // Sub
+        pdf.setFontSize(7);
+        pdf.setTextColor(130, 130, 130);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(m.sub, cx + cardW - 4, cy + 16, { align: 'right' });
+      });
+
+      y += cardH + 10;
+
+      // ══════════════════════════════════════════════════════════════════
+      // ORDER STATUS BREAKDOWN BARS
+      // ══════════════════════════════════════════════════════════════════
+      sectionHeading('Order Status Breakdown');
+
+      const breakdownItems = [
+        { label: 'Completed', value: completedOrders.length, color: [22, 163, 74] },
+        { label: 'Ready for Pickup', value: readyOrders.length, color: [30, 60, 114] },
+        { label: 'Preparing', value: preparingOrders.length, color: [217, 119, 6] },
+        { label: 'Pending', value: pendingOrders.length, color: [200, 200, 200] },
+      ];
+
+      const maxBreakdown = Math.max(...breakdownItems.map(b => b.value), 1);
+      const barMaxW = pdfWidth - MARGIN * 2 - 65;
+
+      breakdownItems.forEach((item) => {
+        newPageIfNeeded(14);
+        const fillW = (item.value / maxBreakdown) * barMaxW;
+
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(50, 50, 50);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(item.label, MARGIN, y + 4.5);
+
+        // Track
+        pdf.setFillColor(235, 235, 235);
+        pdf.roundedRect(MARGIN + 43, y, barMaxW, 6, 1, 1, 'F');
+
+        // Fill
+        if (fillW > 0) {
+          pdf.setFillColor(...item.color);
+          pdf.roundedRect(MARGIN + 43, y, fillW, 6, 1, 1, 'F');
+        }
+
+        // Right label
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(80, 80, 80);
+        pdf.text(
+          `${item.value} order${item.value !== 1 ? 's' : ''}`,
+          MARGIN + 43 + barMaxW + 2, y + 4.5
+        );
+
+        y += 11;
+      });
+
+      // Payment summary strip
+      y += 2;
+      newPageIfNeeded(12);
+      pdf.setFillColor(248, 248, 255);
+      pdf.setDrawColor(210, 210, 240);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 10, 2, 2, 'FD');
+      pdf.setFontSize(8);
+      pdf.setTextColor(60, 60, 120);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(
+        `Total Revenue: $${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}   |   Orders: ${filteredOrders.length}   |   Filter: ${filterLabel}`,
+        pdfWidth / 2, y + 6.5, { align: 'center' }
+      );
+      y += 16;
+
+      // ══════════════════════════════════════════════════════════════════
+      // ORDERS TABLE
+      // ══════════════════════════════════════════════════════════════════
+      newPageIfNeeded(20);
+      sectionHeading('Order Details');
 
       const headers = ["Order ID", "Customer", "Time", "Items", "Total", "Payment", "Status"];
       const pdfData = filteredOrders.map((order) => [
@@ -149,21 +365,36 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
         order.status,
       ]);
 
-      let currentY = 50;
-
-      currentY = drawTable(
+      y = drawTable(
         pdf,
-        currentY,
+        y,
         headers,
         pdfData,
-        15,
+        MARGIN,
         pdfWidth,
         pdfHeight,
-        15,
-        10,
-        3,
+        FOOTER_HEIGHT,
+        12,
+        5,
         logoData,
         REPORT_TITLE
+      );
+
+      // ══════════════════════════════════════════════════════════════════
+      // FOOTER STRIP
+      // ══════════════════════════════════════════════════════════════════
+      y += 8;
+      newPageIfNeeded(16);
+      pdf.setFillColor(245, 247, 255);
+      pdf.setDrawColor(210, 218, 245);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 14, 2, 2, 'FD');
+      pdf.setFontSize(8);
+      pdf.setTextColor(80, 90, 130);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text(
+        `Orders report export  •  Generated by eTicketsPro`,
+        pdfWidth / 2, y + 9, { align: 'center' }
       );
 
       finalizeReport(pdf);
@@ -178,6 +409,14 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
     }
   };
 
+  const paidOrdersList = orders.filter(o => o.payment === 'Paid');
+  const unpaidOrdersList = orders.filter(o => o.payment === 'Unpaid');
+  const pendingOrdersList = orders.filter(o => o.status === 'Pending');
+  const completedOrdersList = orders.filter(o => o.status === 'Completed');
+
+  const paidRevenue = paidOrdersList.reduce((s, o) => s + (o.totalAmount || 0), 0);
+  const unpaidRevenue = unpaidOrdersList.reduce((s, o) => s + (o.totalAmount || 0), 0);
+
   return (
     <div className="smo-container">
       <div className="smo-header-section">
@@ -186,6 +425,43 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
       </div>
 
       <div className="smo-content-card">
+        <div className="smo-metrics-section">
+          <div className="smo-metrics-grid">
+            <div className="smo-metric-card metric-paid">
+              <div className="smo-metric-header">
+                <span className="metric-dot dot-paid"></span>
+                <span className="metric-label small-body-text">Paid Orders</span>
+              </div>
+              <div className="smo-metric-footer">
+                <span className="metric-value text-paid">${paidRevenue.toFixed(2)}</span>
+                <span className="metric-sub smaller-body-text">{paidOrdersList.length} order{paidOrdersList.length !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+
+            <div className="smo-metric-card metric-unpaid">
+              <div className="smo-metric-header">
+                <span className="metric-dot dot-unpaid"></span>
+                <span className="metric-label small-body-text">Unpaid Orders</span>
+              </div>
+              <div className="smo-metric-footer">
+                <span className="metric-value text-unpaid">${unpaidRevenue.toFixed(2)}</span>
+                <span className="metric-sub smaller-body-text">{unpaidOrdersList.length} order{unpaidOrdersList.length !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+
+            <div className="smo-metric-card metric-completed">
+              <div className="smo-metric-header">
+                <span className="metric-dot dot-completed"></span>
+                <span className="metric-label small-body-text">Completed Orders</span>
+              </div>
+              <div className="smo-metric-footer">
+                <span className="metric-value text-completed">{completedOrdersList.length}</span>
+                <span className="metric-sub smaller-body-text">{pendingOrdersList.length} still pending</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="smo-toolbar">
           <div className="smo-toolbar-left">
             <div className="smo-search">

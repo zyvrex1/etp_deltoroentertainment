@@ -28,6 +28,119 @@
         padding: 20px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
+        .smo-metrics-section {
+            margin-bottom: 24px;
+
+            .smo-metrics-title {
+                font-size: 16px;
+                font-weight: 700;
+                color: #1e3c72;
+                margin: 0 0 16px 0;
+                padding-bottom: 8px;
+                border-bottom: 2px solid #1e3c72;
+                text-align: left;
+                font-family: 'Inter', sans-serif;
+            }
+
+            .smo-metrics-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 16px;
+            }
+
+            .smo-metric-card {
+                border-radius: 12px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                min-height: 84px;
+                border: 1px solid transparent;
+                box-sizing: border-box;
+
+                .smo-metric-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+
+                    .metric-dot {
+                        width: 12px;
+                        height: 12px;
+                        border-radius: 50%;
+                        display: inline-block;
+                    }
+
+                    .metric-label {
+                        color: var(--color-black-secondary);
+                        font-weight: 500;
+                    }
+                }
+
+                .smo-metric-footer {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                    margin-top: 12px;
+
+                    .metric-value {
+                        font-size: 20px;
+                        font-weight: 700;
+                        line-height: 1;
+                    }
+
+                    .metric-sub {
+                        color: var(--color-black-tertiary);
+                        font-size: 12px;
+                    }
+                }
+
+                /* Metric Types */
+                &.metric-paid {
+                    background-color: #ebfff5;
+                    border-color: #b4ebd2;
+
+                    .metric-dot {
+                        background-color: #16a34a;
+                    }
+                    .metric-value {
+                        color: #16a34a;
+                    }
+                }
+
+                &.metric-unpaid {
+                    background-color: #fffbeb;
+                    border-color: #f5dc9f;
+
+                    .metric-dot {
+                        background-color: #d97706;
+                    }
+                    .metric-value {
+                        color: #d97706;
+                    }
+                }
+
+                &.metric-completed {
+                    background-color: #ebf0ff;
+                    border-color: #b4c8f5;
+
+                    .metric-dot {
+                        background-color: #1e3c72;
+                    }
+                    .metric-value {
+                        color: #1e3c72;
+                    }
+                }
+            }
+        }
+
+        @media (max-width: 768px) {
+            .smo-metrics-section {
+                .smo-metrics-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        }
+
         /* Toolbar from SponsorStore style */
         .smo-toolbar {
             display: flex;

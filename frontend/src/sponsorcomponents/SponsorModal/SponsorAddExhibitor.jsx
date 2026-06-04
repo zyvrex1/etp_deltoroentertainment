@@ -14,6 +14,19 @@ const SponsorAddExhibitor = ({ isOpen, onClose, reservationId, onSuccess }) => {
     const [selectedExhibitors, setSelectedExhibitors] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const searchRef = React.useRef(null);
+
+    // Listen for click outside to close dropdown
+    React.useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // Debounced search
     React.useEffect(() => {
@@ -26,6 +39,11 @@ const SponsorAddExhibitor = ({ isOpen, onClose, reservationId, onSuccess }) => {
 
         const fetchUsers = async () => {
             if (!user?.token) return;
+            if (!searchQuery.trim()) {
+                setSearchResults([]);
+                setIsSearching(false);
+                return;
+            }
 
             setIsSearching(true);
             try {
@@ -58,6 +76,7 @@ const SponsorAddExhibitor = ({ isOpen, onClose, reservationId, onSuccess }) => {
             setSearchResults(searchResults.filter(u => u._id !== foundUser._id));
         }
         setSearchQuery('');
+        setShowDropdown(false);
     };
 
     const handleRemoveUser = (id) => {
@@ -106,7 +125,7 @@ const SponsorAddExhibitor = ({ isOpen, onClose, reservationId, onSuccess }) => {
                 </div>
 
                 <div className="add-exhibitor-modal-body">
-                    <div className="add-exhibitor-search-section">
+                    <div className="add-exhibitor-search-section" ref={searchRef}>
                         <label className="smaller-body-text">Search User</label>
                         <div className="add-exhibitor-search-bar">
                             <input
@@ -114,13 +133,17 @@ const SponsorAddExhibitor = ({ isOpen, onClose, reservationId, onSuccess }) => {
                                 placeholder="Search users by name or email..."
                                 className="add-exhibitor-search-input"
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setShowDropdown(true);
+                                }}
+                                onFocus={() => setShowDropdown(true)}
                             />
                         </div>
 
                         {isSearching && <p className="smaller-body-text text-secondary" style={{marginTop: '10px'}}>Searching...</p>}
                         
-                        {searchResults.length > 0 && !isSearching && (
+                        {searchResults.length > 0 && !isSearching && showDropdown && (
                             <div className="add-exhibitor-search-results">
                                 {searchResults.map((foundUser) => (
                                     <div key={foundUser._id} className="add-exhibitor-search-item">
@@ -147,7 +170,7 @@ const SponsorAddExhibitor = ({ isOpen, onClose, reservationId, onSuccess }) => {
                                 ))}
                             </div>
                         )}
-                        {searchQuery && searchResults.length === 0 && !isSearching && (
+                        {searchQuery && searchResults.length === 0 && !isSearching && showDropdown && (
                             <p className="smaller-body-text text-secondary" style={{marginTop: '10px'}}>No users found.</p>
                         )}
                     </div>

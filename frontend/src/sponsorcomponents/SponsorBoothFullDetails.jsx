@@ -45,142 +45,409 @@ export default function SponsorBoothFullDetails() {
         fetchReservation();
     }, [fetchReservation]);
 
-    const exportDocumentToPDF = async (doc) => {
-        if (!doc) return;
-        const loadingToast = showExportToast();
-        const DOCUMENT_TITLE = doc.title;
-        try {
-            const logoData = await loadLogo();
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const MARGIN = 15;
-            const FOOTER_HEIGHT = 15;
-            let y = 45;
+const exportDocumentToPDF = async (doc) => {
+    if (!doc) return;
+    const loadingToast = showExportToast();
+    const DOCUMENT_TITLE = doc.title;
 
-            addReportHeader(pdf, DOCUMENT_TITLE, logoData);
+    try {
+        const logoData = await loadLogo();
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const MARGIN = 15;
+        const FOOTER_HEIGHT = 15;
+        let y = 45;
 
-            pdf.setFontSize(14);
+        addReportHeader(pdf, DOCUMENT_TITLE, logoData);
+
+        // ── helpers ──────────────────────────────────────────────────────────
+        const newPageIfNeeded = (needed) => {
+            if (y + needed > pdfHeight - FOOTER_HEIGHT - 5) {
+                pdf.addPage();
+                addReportHeader(pdf, DOCUMENT_TITLE, logoData);
+                y = 45;
+            }
+        };
+
+        const sectionHeading = (title) => {
+            newPageIfNeeded(14);
+            pdf.setFontSize(11);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('Document Export', MARGIN, y);
+            pdf.text(title, MARGIN, y);
+            pdf.setDrawColor(30, 60, 114);
+            pdf.setLineWidth(0.4);
+            pdf.line(MARGIN, y + 2, pdfWidth - MARGIN, y + 2);
             y += 10;
+        };
 
-            doc.sections.forEach(sec => {
-                if (y > pdfHeight - FOOTER_HEIGHT - 20) {
-                    pdf.addPage();
-                    addReportHeader(pdf, DOCUMENT_TITLE, logoData);
-                    y = 45;
-                }
+        // ══════════════════════════════════════════════════════════════════════
+        // FULL SECTION CONTENT
+        // ══════════════════════════════════════════════════════════════════════
+        sectionHeading('Document Content');
 
-                pdf.setFontSize(12);
-                pdf.setTextColor(30, 60, 114);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text(sec.title, MARGIN, y);
-                y += 6;
+        doc.sections.forEach((sec, idx) => {
+            newPageIfNeeded(20);
 
-                const sectionContent = sec.pdfContent && sec.pdfContent.length > 0
-                    ? sec.pdfContent.join('\n')
-                    : 'Please refer to the application portal for the full detailed content of this section.';
+            // Section title row
+            const rowBg = idx % 2 === 0 ? [245, 247, 255] : [255, 255, 255];
+            pdf.setFillColor(...rowBg);
+            pdf.setDrawColor(220, 225, 245);
+            pdf.setLineWidth(0.2);
+            pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 8, 1, 1, 'FD');
 
-                y = drawLongText(pdf, y, sectionContent, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, logoData, DOCUMENT_TITLE);
-                y += 8;
-            });
-
-            finalizeReport(pdf);
-            pdf.save(`${DOCUMENT_TITLE.replace(/\s+/g, '_')}.pdf`);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            alert('Failed to generate PDF. Please try again.');
-        } finally {
-            removeExportToast(loadingToast);
-        }
-    };
-
-    const exportInvoiceToPDF = async () => {
-        if (!reservation) return;
-        const loadingToast = showExportToast();
-        const INVOICE_TITLE = 'Invoice';
-        try {
-            const logoData = await loadLogo();
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const MARGIN = 15;
-            let y = 45;
-
-            addReportHeader(pdf, INVOICE_TITLE, logoData);
-
-            pdf.setFontSize(14);
+            pdf.setFontSize(9);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('Invoice Details', MARGIN, y);
+            pdf.text(`${idx + 1}.  ${sec.title}`, MARGIN + 4, y + 5.5);
+            y += 15;
+
+            const sectionContent = sec.pdfContent && sec.pdfContent.length > 0
+                ? sec.pdfContent.join('\n')
+                : 'Please refer to the application portal for the full detailed content of this section.';
+
+            y = drawLongText(pdf, y, sectionContent, MARGIN + 4, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, logoData, DOCUMENT_TITLE);
+            y += 6;
+        });
+
+        // ══════════════════════════════════════════════════════════════════════
+        // FOOTER STRIP
+        // ══════════════════════════════════════════════════════════════════════
+        y += 8;
+        newPageIfNeeded(16);
+        pdf.setFillColor(245, 247, 255);
+        pdf.setDrawColor(210, 218, 245);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 14, 2, 2, 'FD');
+        pdf.setFontSize(8);
+        pdf.setTextColor(80, 90, 130);
+        pdf.setFont('helvetica', 'italic');
+        pdf.text(
+            `${DOCUMENT_TITLE}  •  Generated by eTicketsPro`,
+            pdfWidth / 2, y + 9, { align: 'center' }
+        );
+
+        finalizeReport(pdf);
+        pdf.save(`${DOCUMENT_TITLE.replace(/\s+/g, '_')}.pdf`);
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Failed to generate PDF. Please try again.');
+    } finally {
+        removeExportToast(loadingToast);
+    }
+};
+const exportInvoiceToPDF = async () => {
+    if (!reservation) return;
+    const loadingToast = showExportToast();
+    const INVOICE_TITLE = 'Invoice';
+
+    try {
+        const logoData = await loadLogo();
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const MARGIN = 15;
+        const FOOTER_HEIGHT = 15;
+        let y = 45;
+
+        addReportHeader(pdf, INVOICE_TITLE, logoData);
+
+        // ── helpers ──────────────────────────────────────────────────────────
+        const newPageIfNeeded = (needed) => {
+            if (y + needed > pdfHeight - FOOTER_HEIGHT - 5) {
+                pdf.addPage();
+                addReportHeader(pdf, INVOICE_TITLE, logoData);
+                y = 45;
+            }
+        };
+
+        const sectionHeading = (title) => {
+            newPageIfNeeded(14);
+            pdf.setFontSize(11);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(title, MARGIN, y);
+            pdf.setDrawColor(30, 60, 114);
+            pdf.setLineWidth(0.4);
+            pdf.line(MARGIN, y + 2, pdfWidth - MARGIN, y + 2);
             y += 10;
+        };
+
+        const priceLevel = reservation.event?.priceLevels?.find(
+            pl => pl._id === reservation.event?.booths?.find(b => b.code === reservation.boothCode)?.priceLevelId
+        );
+        const subtotal = reservation.amount?.subtotal || 0;
+        const fee = reservation.amount?.fee || 0;
+        const tax = reservation.amount?.tax || 0;
+        const total = reservation.amount?.total || 0;
+        const confirmNum = `Booth-${reservation._id.toString().slice(-6).toUpperCase()}`;
+        const invoiceRef = `INV-${new Date(reservation.createdAt).getFullYear()}-${reservation._id.slice(-5).toUpperCase()}`;
+
+        // ══════════════════════════════════════════════════════════════════════
+        // BANNER
+        // ══════════════════════════════════════════════════════════════════════
+        pdf.setFillColor(235, 240, 255);
+        pdf.setDrawColor(180, 200, 245);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 22, 3, 3, 'FD');
+
+        // Left — event title + ref
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(reservation.event?.title || 'Unknown Event', MARGIN + 4, y + 8);
+        pdf.setFontSize(8);
+        pdf.setTextColor(80, 90, 130);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(
+            `${invoiceRef}  •  Booth ${reservation.boothCode}  •  ${new Date(reservation.createdAt).toLocaleDateString()}`,
+            MARGIN + 4, y + 15
+        );
+
+        // Right — total paid badge
+        const badgeX = pdfWidth - MARGIN - 50;
+        pdf.setFillColor(30, 60, 114);
+        pdf.roundedRect(badgeX, y + 4, 46, 14, 2, 2, 'F');
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('Total Paid', badgeX + 23, y + 10, { align: 'center' });
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(
+            `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+            badgeX + 23, y + 16, { align: 'center' }
+        );
+        y += 30;
+
+        // ══════════════════════════════════════════════════════════════════════
+        // KEY DETAILS — 3-col cards
+        // ══════════════════════════════════════════════════════════════════════
+        sectionHeading('Booking Details');
+
+        const cardW = (pdfWidth - MARGIN * 2 - 12) / 3;
+        const cardH = 22;
+
+        const detailCards = [
+            {
+                label: 'Confirmation',
+                value: confirmNum,
+                sub: `Booked ${new Date(reservation.createdAt).toLocaleDateString()}`,
+                color: [30, 60, 114],
+                bg: [235, 240, 255],
+                border: [180, 200, 245],
+            },
+            {
+                label: 'Booth Type',
+                value: priceLevel?.priceName || 'Standard',
+                sub: priceLevel?.boothSize || '10x10 ft',
+                color: [217, 119, 6],
+                bg: [255, 251, 235],
+                border: [245, 220, 160],
+            },
+            {
+                label: 'Payment Method',
+                value: reservation.paymentMethod === 'card' ? 'Credit Card' : 'Invoice',
+                sub: 'Payment confirmed',
+                color: [22, 163, 74],
+                bg: [235, 255, 245],
+                border: [180, 235, 210],
+            },
+        ];
+
+        detailCards.forEach((card, i) => {
+            const cx = MARGIN + i * (cardW + 6);
+            const cy = y;
+
+            pdf.setFillColor(...card.bg);
+            pdf.setDrawColor(...card.border);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, 'FD');
+
+            pdf.setFillColor(...card.color);
+            pdf.circle(cx + 5, cy + 6, 2, 'F');
+
+            pdf.setFontSize(8);
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(card.label, cx + 10, cy + 7);
 
             pdf.setFontSize(10);
-            pdf.setTextColor(50, 50, 50);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text(`Event: ${reservation.event?.title || 'Unknown Event'}`, MARGIN, y);
-            y += 6;
-            pdf.text(`Booth: ${reservation.boothCode}`, MARGIN, y);
-            y += 6;
-            pdf.text(`Confirmation Number: Booth-${reservation._id.toString().slice(-6).toUpperCase()}`, MARGIN, y);
-            y += 6;
-            pdf.text(`Booking Date: ${new Date(reservation.createdAt).toLocaleDateString()}`, MARGIN, y);
-            y += 6;
-            const priceLevel = reservation.event?.priceLevels?.find(pl => pl._id === reservation.event?.booths?.find(b => b.code === reservation.boothCode)?.priceLevelId);
-            pdf.text(`Booth Type: ${priceLevel?.priceName || 'Standard'} • ${priceLevel?.boothSize || '10x10'}`, MARGIN, y);
-            y += 10;
-
-            // Exhibitors Section
-            pdf.setFontSize(12);
-            pdf.setTextColor(30, 60, 114);
+            pdf.setTextColor(...card.color);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('Exhibitors', MARGIN, y);
-            y += 6;
-            pdf.setFontSize(10);
+            pdf.text(card.value, cx + 5, cy + 16);
+
+            pdf.setFontSize(7);
+            pdf.setTextColor(130, 130, 130);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(card.sub, cx + cardW - 4, cy + 16, { align: 'right' });
+        });
+
+        y += cardH + 10;
+
+        // ══════════════════════════════════════════════════════════════════════
+        // BILL TO
+        // ══════════════════════════════════════════════════════════════════════
+        sectionHeading('Billed To');
+
+        newPageIfNeeded(28);
+        pdf.setFillColor(248, 248, 255);
+        pdf.setDrawColor(210, 210, 240);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 24, 2, 2, 'FD');
+
+        pdf.setFontSize(10);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(billTo.companyName, MARGIN + 4, y + 8);
+
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(60, 60, 60);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(billTo.address, MARGIN + 4, y + 15);
+
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`Tax ID: ${billTo.taxId}`, MARGIN + 4, y + 21);
+
+        y += 30;
+
+        // ══════════════════════════════════════════════════════════════════════
+        // EXHIBITORS
+        // ══════════════════════════════════════════════════════════════════════
+        sectionHeading('Exhibitors');
+
+        const allExhibitors = [];
+        if (reservation.user) {
+            const leadName = `${reservation.user.firstName || ''} ${reservation.user.lastName || ''}`.trim()
+                || reservation.user.email || 'Lead Representative';
+            allExhibitors.push({ name: leadName, role: 'Lead Representative' });
+        }
+        (reservation.exhibitors || []).forEach(ex => {
+            const exName = `${ex.firstName || ''} ${ex.lastName || ''}`.trim() || ex.email || 'Exhibitor';
+            allExhibitors.push({ name: exName, role: 'Exhibitor' });
+        });
+
+        allExhibitors.forEach((ex, idx) => {
+            newPageIfNeeded(10);
+            const rowBg = idx % 2 === 0 ? [245, 247, 255] : [255, 255, 255];
+            pdf.setFillColor(...rowBg);
+            pdf.setDrawColor(220, 225, 245);
+            pdf.setLineWidth(0.2);
+            pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 8, 1, 1, 'FD');
+
+            pdf.setFontSize(9);
+            pdf.setTextColor(30, 30, 30);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(ex.name, MARGIN + 4, y + 5.5);
+
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(100, 100, 120);
+            pdf.text(ex.role, pdfWidth - MARGIN - 4, y + 5.5, { align: 'right' });
+
+            y += 10;
+        });
+
+        y += 4;
+
+        // ══════════════════════════════════════════════════════════════════════
+        // PRICE BREAKDOWN TABLE
+        // ══════════════════════════════════════════════════════════════════════
+        sectionHeading('Price Breakdown');
+
+        const headers = ['Description', 'Amount'];
+        const rows = [
+            ['Booth Registration', `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`],
+            ['Processing Fee', `$${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}`],
+            ['Tax', `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}`],
+            ['Total Paid', `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`],
+        ];
+        y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 12, 5, logoData, INVOICE_TITLE);
+
+        // ══════════════════════════════════════════════════════════════════════
+        // BREAKDOWN BARS
+        // ══════════════════════════════════════════════════════════════════════
+        y += 8;
+        sectionHeading('Payment Breakdown');
+
+        const breakdownItems = [
+            { label: 'Booth Price', value: subtotal, color: [30, 60, 114] },
+            { label: 'Processing Fee', value: fee, color: [217, 119, 6] },
+            { label: 'Tax', value: tax, color: [22, 163, 74] },
+        ];
+        const maxBar = Math.max(...breakdownItems.map(b => b.value), 1);
+        const barMaxW = pdfWidth - MARGIN * 2 - 65;
+
+        breakdownItems.forEach(item => {
+            newPageIfNeeded(14);
+            const fillW = (item.value / maxBar) * barMaxW;
+
+            pdf.setFontSize(8.5);
             pdf.setTextColor(50, 50, 50);
             pdf.setFont('helvetica', 'normal');
+            pdf.text(item.label, MARGIN, y + 4.5);
 
-            // Lead
-            const leadName = `${reservation.user?.firstName || ''} ${reservation.user?.lastName || ''}`.trim() || reservation.user?.email || "Lead Representative";
-            pdf.text(`• ${leadName} (Lead Representative)`, MARGIN, y);
-            y += 6;
+            pdf.setFillColor(235, 235, 235);
+            pdf.roundedRect(MARGIN + 43, y, barMaxW, 6, 1, 1, 'F');
 
-            // Others
-            (reservation.exhibitors || []).forEach(ex => {
-                if (y > 270) {
-                    pdf.addPage();
-                    addReportHeader(pdf, INVOICE_TITLE, logoData);
-                    y = 45;
-                }
-                const exName = `${ex.firstName || ''} ${ex.lastName || ''}`.trim() || ex.email || "Exhibitor";
-                pdf.text(`• ${exName} (Exhibitor)`, MARGIN, y);
-                y += 6;
-            });
-            y += 10;
+            if (fillW > 0) {
+                pdf.setFillColor(...item.color);
+                pdf.roundedRect(MARGIN + 43, y, fillW, 6, 1, 1, 'F');
+            }
 
-            y += 4;
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(80, 80, 80);
+            pdf.text(
+                `$${item.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                MARGIN + 43 + barMaxW + 2, y + 4.5
+            );
+            y += 11;
+        });
 
-            const headers = ['Description', 'Amount'];
-            const rows = [
-                ['Booth Price', `$${(reservation.amount?.subtotal || 0).toLocaleString()}`],
-                ['Processing Fee', `$${(reservation.amount?.fee || 0).toLocaleString()}`],
-                ['Tax', `$${(reservation.amount?.tax || 0).toLocaleString()}`],
-                ['Total Paid', `$${(reservation.amount?.total || 0).toLocaleString()}`]
-            ];
-            y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5, logoData, INVOICE_TITLE);
+        // Summary strip
+        y += 2;
+        newPageIfNeeded(12);
+        pdf.setFillColor(248, 248, 255);
+        pdf.setDrawColor(210, 210, 240);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 10, 2, 2, 'FD');
+        pdf.setFontSize(8);
+        pdf.setTextColor(60, 60, 120);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(
+            `Total Paid: $${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}   |   Booth: ${reservation.boothCode}   |   ${reservation.event?.title || 'Unknown Event'}`,
+            pdfWidth / 2, y + 6.5, { align: 'center' }
+        );
+        y += 16;
 
-            finalizeReport(pdf);
-            pdf.save(`Invoice_${reservation._id}.pdf`);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            alert('Failed to generate PDF. Please try again.');
-        } finally {
-            removeExportToast(loadingToast);
-        }
-    };
+        // ══════════════════════════════════════════════════════════════════════
+        // FOOTER STRIP
+        // ══════════════════════════════════════════════════════════════════════
+        y += 8;
+        newPageIfNeeded(16);
+        pdf.setFillColor(245, 247, 255);
+        pdf.setDrawColor(210, 218, 245);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 14, 2, 2, 'FD');
+        pdf.setFontSize(8);
+        pdf.setTextColor(80, 90, 130);
+        pdf.setFont('helvetica', 'italic');
+        pdf.text(
+            `${invoiceRef}  •  Generated by eTicketsPro`,
+            pdfWidth / 2, y + 9, { align: 'center' }
+        );
 
+        finalizeReport(pdf);
+        pdf.save(`Invoice_${reservation._id}.pdf`);
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Failed to generate PDF. Please try again.');
+    } finally {
+        removeExportToast(loadingToast);
+    }
+};
     const handleEventDetails = () => {
         if (reservation?.event?._id) {
             navigate(`/sponsor/sponsor-event/${reservation.event._id}`);

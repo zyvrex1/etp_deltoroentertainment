@@ -108,7 +108,7 @@ const SponsorDocuments = ({ isOpen, onClose, document, onDownload }) => {
                                     <h4 className="sd-section-title">{section.title}</h4>
                                 </div>
 
-                                <div className="sd-section-content">
+                                <div className="sd-section-content regular-body-text">
                                     {section.content}
                                 </div>
                             </div>

@@ -222,56 +222,309 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
 
   // Replaced dynamic stats array with the user provided static stats array in the component body
 
-  const exportToPDF = async () => {
-    const loadingToast = showExportToast();
-    const REPORT_TITLE = "Product Analytics Report";
-    try {
-      const logoData = await loadLogo();
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      addReportHeader(pdf, REPORT_TITLE, logoData);
+// ─────────────────────────────────────────────────────────────────────────────
+// DROP-IN REPLACEMENT for the exportToPDF function in SponsorProductAnalytics
+// Matches the visual style used in SponsorEventHistory (Code 1)
+// ─────────────────────────────────────────────────────────────────────────────
 
-      const headers = ["Product", "Category", "Stock", "Price", "Sales", "Status"];
-      const pdfData = filteredInventory.map((item) => [
-        item.name,
-        item.category,
-        item.stock.toString(),
-        formatCurrency(item.price),
-        (productSales[item._id] || 0).toString(),
-        item.stock > 0 ? "Active" : "Out of Stock",
-      ]);
+const exportToPDF = async () => {
+  const loadingToast = showExportToast();
+  const REPORT_TITLE = "Product Analytics Report";
 
-      let currentY = 50; // below header
-      
-      currentY = drawTable(
-        pdf,
-        currentY,
-        headers,
-        pdfData,
-        15, // margin
-        pdfWidth,
-        pdfHeight,
-        15, // footer height
-        10, // row height
-        3,  // padding Y
-        logoData,
-        REPORT_TITLE
+  try {
+    const logoData = await loadLogo();
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth  = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const MARGIN        = 15;
+    const FOOTER_HEIGHT = 15;
+    let y = 45;
+
+    addReportHeader(pdf, REPORT_TITLE, logoData);
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+    const newPageIfNeeded = (needed) => {
+      if (y + needed > pdfHeight - FOOTER_HEIGHT - 5) {
+        addReportFooter(pdf);
+        pdf.addPage();
+        addReportHeader(pdf, REPORT_TITLE, logoData);
+        y = 45;
+      }
+    };
+
+    const sectionHeading = (title) => {
+      newPageIfNeeded(14);
+      pdf.setFontSize(11);
+      pdf.setTextColor(30, 60, 114);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(title, MARGIN, y);
+      pdf.setDrawColor(30, 60, 114);
+      pdf.setLineWidth(0.4);
+      pdf.line(MARGIN, y + 2, pdfWidth - MARGIN, y + 2);
+      y += 10;
+    };
+
+    // ── pre-compute values ───────────────────────────────────────────────────
+    const activeProducts    = filteredInventory.filter(i => i.stock > 0);
+    const outOfStockProducts = filteredInventory.filter(i => i.stock === 0);
+
+    const totalProductRevenue = filteredInventory.reduce((sum, item) => {
+      return sum + (item.price * (productSales[item._id] || 0));
+    }, 0);
+
+    const activeRevenue    = activeProducts.reduce((s, i) => s + (i.price * (productSales[i._id] || 0)), 0);
+    const outOfStockRevenue = outOfStockProducts.reduce((s, i) => s + (i.price * (productSales[i._id] || 0)), 0);
+    const totalSalesUnits   = filteredInventory.reduce((s, i) => s + (productSales[i._id] || 0), 0);
+
+    const filterLabel = filterCategory === 'All Categories' ? 'All Categories' : filterCategory;
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // BANNER
+    // ══════════════════════════════════════════════════════════════════════════
+    pdf.setFillColor(235, 240, 255);
+    pdf.setDrawColor(180, 200, 245);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 22, 3, 3, 'FD');
+
+    // Left — filter label
+    pdf.setFontSize(11);
+    pdf.setTextColor(30, 60, 114);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(filterLabel, MARGIN + 4, y + 8);
+
+    pdf.setFontSize(8);
+    pdf.setTextColor(80, 90, 130);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(
+      `Product Analytics Report  •  ${filteredInventory.length} product${filteredInventory.length !== 1 ? 's' : ''}`,
+      MARGIN + 4, y + 15
+    );
+
+    // Right — total revenue badge
+    const badgeX = pdfWidth - MARGIN - 50;
+    pdf.setFillColor(30, 60, 114);
+    pdf.roundedRect(badgeX, y + 4, 46, 14, 2, 2, 'F');
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Total Revenue', badgeX + 23, y + 10, { align: 'center' });
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(
+      `$${totalProductRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      badgeX + 23, y + 16, { align: 'center' }
+    );
+
+    y += 30;
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // KEY METRICS — 3-col cards
+    // ══════════════════════════════════════════════════════════════════════════
+    sectionHeading('Key Metrics');
+
+    const cardW = (pdfWidth - MARGIN * 2 - 12) / 3;
+    const cardH = 22;
+
+    const metricCards = [
+      {
+        label: 'Total Orders',
+        value: analyticsStats.totalOrders.toString(),
+        sub: `$${totalProductRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })} revenue`,
+        color: [22, 163, 74],
+        bg: [235, 255, 245],
+        border: [180, 235, 210],
+      },
+      {
+        label: 'Average Order Value',
+        value: `$${analyticsStats.avgOrderValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        sub: `across ${analyticsStats.totalOrders} order${analyticsStats.totalOrders !== 1 ? 's' : ''}`,
+        color: [217, 119, 6],
+        bg: [255, 251, 235],
+        border: [245, 220, 160],
+      },
+      {
+        label: 'Orders Today',
+        value: analyticsStats.ordersToday.toString(),
+        sub: `${analyticsStats.ordersToday !== 1 ? 'orders' : 'order'} placed today`,
+        color: [30, 60, 114],
+        bg: [235, 240, 255],
+        border: [180, 200, 245],
+      },
+    ];
+
+    metricCards.forEach((m, i) => {
+      const cx = MARGIN + i * (cardW + 6);
+      const cy = y;
+
+      pdf.setFillColor(...m.bg);
+      pdf.setDrawColor(...m.border);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, 'FD');
+
+      // Dot
+      pdf.setFillColor(...m.color);
+      pdf.circle(cx + 5, cy + 6, 2, 'F');
+
+      // Label
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(m.label, cx + 10, cy + 7);
+
+      // Value
+      pdf.setFontSize(11);
+      pdf.setTextColor(...m.color);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(m.value, cx + 5, cy + 16);
+
+      // Sub
+      pdf.setFontSize(7);
+      pdf.setTextColor(130, 130, 130);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(m.sub, cx + cardW - 4, cy + 16, { align: 'right' });
+    });
+
+    y += cardH + 10;
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // SALES BREAKDOWN BARS (by category)
+    // ══════════════════════════════════════════════════════════════════════════
+    sectionHeading('Sales Breakdown by Category');
+
+    // Build category-level revenue from filteredInventory + productSales
+    const categoryRevMap = {};
+    filteredInventory.forEach(item => {
+      const rev = item.price * (productSales[item._id] || 0);
+      categoryRevMap[item.category] = (categoryRevMap[item.category] || 0) + rev;
+    });
+
+    const breakdownItems = Object.entries(categoryRevMap).map(([cat, rev]) => {
+      const colorMap = {
+        Drinks: [22, 163, 74],
+        Food:   [217, 119, 6],
+        Merch:  [30, 100, 200],
+      };
+      return {
+        label: cat,
+        value: rev,
+        count: filteredInventory.filter(i => i.category === cat).length,
+        countLabel: 'products',
+        color: colorMap[cat] || [100, 100, 180],
+      };
+    });
+
+    // Fallback if no category data
+    if (breakdownItems.length === 0) {
+      breakdownItems.push({
+        label: 'No Data',
+        value: 0,
+        count: 0,
+        countLabel: 'products',
+        color: [200, 200, 200],
+      });
+    }
+
+    const maxBreakdown = Math.max(...breakdownItems.map(b => b.value), 1);
+    const barMaxW      = pdfWidth - MARGIN * 2 - 65;
+
+    breakdownItems.forEach((item) => {
+      newPageIfNeeded(14);
+      const fillW = (item.value / maxBreakdown) * barMaxW;
+
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(50, 50, 50);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(item.label, MARGIN, y + 4.5);
+
+      // Track
+      pdf.setFillColor(235, 235, 235);
+      pdf.roundedRect(MARGIN + 43, y, barMaxW, 6, 1, 1, 'F');
+
+      // Fill
+      if (fillW > 0) {
+        pdf.setFillColor(...item.color);
+        pdf.roundedRect(MARGIN + 43, y, fillW, 6, 1, 1, 'F');
+      }
+
+      // Right label
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text(
+        `$${item.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}  (${item.count} ${item.countLabel})`,
+        MARGIN + 43 + barMaxW + 2, y + 4.5
       );
 
-      finalizeReport(pdf);
-      
-      const fileName = `product_analytics_report_${new Date().toISOString().slice(0, 10)}.pdf`;
-      pdf.save(fileName);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
-    } finally {
-      removeExportToast(loadingToast);
-    }
-  };
+      y += 11;
+    });
 
+    // Summary strip
+    y += 2;
+    newPageIfNeeded(12);
+    pdf.setFillColor(248, 248, 255);
+    pdf.setDrawColor(210, 210, 240);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 10, 2, 2, 'FD');
+    pdf.setFontSize(8);
+    pdf.setTextColor(60, 60, 120);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(
+      `Total Revenue: $${totalProductRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}   |   Products: ${filteredInventory.length}   |   Filter: ${filterLabel}`,
+      pdfWidth / 2, y + 6.5, { align: 'center' }
+    );
+    y += 16;
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // PRODUCT INVENTORY TABLE
+    // ══════════════════════════════════════════════════════════════════════════
+    newPageIfNeeded(20);
+    sectionHeading('Product Inventory');
+
+    const headers = ['Product', 'Category', 'Stock', 'Price', 'Sales', 'Revenue', 'Status'];
+    const rows = filteredInventory.map((item) => [
+      item.name,
+      item.category,
+      item.stock.toString(),
+      formatCurrency(item.price),
+      (productSales[item._id] || 0).toString(),
+      formatCurrency(item.price * (productSales[item._id] || 0)),
+      item.stock > 0 ? 'Active' : 'Out of Stock',
+    ]);
+
+    y = drawTable(
+      pdf, y, headers, rows,
+      MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT,
+      12, 5, logoData, REPORT_TITLE
+    );
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // FOOTER STRIP
+    // ══════════════════════════════════════════════════════════════════════════
+    y += 8;
+    newPageIfNeeded(16);
+    pdf.setFillColor(245, 247, 255);
+    pdf.setDrawColor(210, 218, 245);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 14, 2, 2, 'FD');
+    pdf.setFontSize(8);
+    pdf.setTextColor(80, 90, 130);
+    pdf.setFont('helvetica', 'italic');
+    pdf.text(
+      `Product analytics export  •  Generated by eTicketsPro`,
+      pdfWidth / 2, y + 9, { align: 'center' }
+    );
+
+    finalizeReport(pdf);
+
+    const fileName = `product_analytics_report_${new Date().toISOString().slice(0, 10)}.pdf`;
+    pdf.save(fileName);
+
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    alert('Failed to generate PDF. Please try again.');
+  } finally {
+    removeExportToast(loadingToast);
+  }
+};
   return (
     <div className="spa-container">
       <div className="spa-header-section">

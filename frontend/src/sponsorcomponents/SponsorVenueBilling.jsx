@@ -10,18 +10,78 @@ import './SponsorVenueBilling.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
+// Maps HTTP status codes and known error strings to user-friendly messages
+const getPaymentErrorMessage = (error) => {
+    if (!error.response) {
+        // Network error — no response received at all
+        return "Unable to reach the server. Please check your internet connection and try again.";
+    }
+
+    const status = error.response?.status;
+    const serverMessage = error.response?.data?.error || error.response?.data?.message;
+
+    switch (status) {
+        case 400:
+            return serverMessage || "Invalid reservation details. Please review your information and try again.";
+        case 401:
+            return "Your session has expired. Please log in again and retry.";
+        case 403:
+            return "You don't have permission to reserve this booth.";
+        case 404:
+            return "The event or booth could not be found. It may have been removed.";
+        case 409:
+            return serverMessage || "This booth has already been reserved by someone else.";
+        case 422:
+            return serverMessage || "Some required fields are missing or invalid.";
+        case 429:
+            return "Too many requests. Please wait a moment before trying again.";
+        case 500:
+        case 502:
+        case 503:
+            return "A server error occurred. Please try again in a few minutes.";
+        default:
+            return serverMessage || "An unexpected error occurred. Please try again.";
+    }
+};
+
+// Validates required billing fields before submission
+const validateBillingInfo = (billingInfo, paymentMethod) => {
+    const errors = [];
+
+    if (!billingInfo.companyName.trim()) {
+        errors.push("Company Name is required.");
+    }
+    if (!billingInfo.streetAddress.trim()) {
+        errors.push("Street Address is required.");
+    }
+    if (!billingInfo.city.trim()) {
+        errors.push("City is required.");
+    }
+    if (!billingInfo.postalCode.trim()) {
+        errors.push("Postal Code is required.");
+    }
+    if (paymentMethod === 'invoice' && !billingInfo.apEmail.trim()) {
+        errors.push("Accounts Payable Email is required for invoice payments.");
+    }
+    if (paymentMethod === 'invoice' && billingInfo.apEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingInfo.apEmail)) {
+        errors.push("Please enter a valid Accounts Payable Email address.");
+    }
+
+    return errors;
+};
+
 const SponsorVenueBilling = () => {
     const { user } = useAuthContext();
     const { removeFromCart } = useSponsorCartContext();
     const navigate = useNavigate();
     const location = useLocation();
-    
-    // Support either legacy single item passing or new selectedItems array from cart
+
     const state = location.state || {};
     const selectedItems = state.selectedItems || (state.event && state.booth ? [state] : []);
-    
+
     const [paymentMethod, setPaymentMethod] = useState('invoice');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [validationErrors, setValidationErrors] = useState([]);
 
     const [billingInfo, setBillingInfo] = useState({
         companyName: '',
@@ -55,20 +115,35 @@ const SponsorVenueBilling = () => {
                     poNumber: prev.poNumber || generatePONumber()
                 }));
             } catch (error) {
-                console.error("Error fetching profile for billing autofill:", error);
-                setBillingInfo(prev => ({ ...prev, poNumber: prev.poNumber || generatePONumber() }));
+                // Non-fatal: autofill failed, user can still fill manually
+                console.warn("Could not autofill billing info from profile:", error);
+                setBillingInfo(prev => ({
+                    ...prev,
+                    poNumber: prev.poNumber || generatePONumber()
+                }));
             }
         };
+
         fetchProfile();
     }, [user]);
+
+    // Clear validation errors when the user edits any field
+    const handleInputChange = (field, value) => {
+        setValidationErrors([]);
+        setBillingInfo(prev => ({ ...prev, [field]: value }));
+    };
 
     if (!selectedItems || selectedItems.length === 0) {
         return (
             <div className="sed-error-container">
                 <Icon icon="mdi:alert-circle-outline" width="48" />
                 <h3>No items found in checkout</h3>
-                <p className="small-body-text text-secondary mb-4">Please return to your cart and complete your selection.</p>
-                <button className="primary-button" onClick={() => navigate('/sponsor/cart')}>Go to Cart</button>
+                <p className="small-body-text text-secondary mb-4">
+                    Please return to your cart and complete your selection.
+                </p>
+                <button className="primary-button" onClick={() => navigate('/sponsor/cart')}>
+                    Go to Cart
+                </button>
             </div>
         );
     }
@@ -77,86 +152,141 @@ const SponsorVenueBilling = () => {
     const subtotalGrand = selectedItems.reduce((sum, item) => sum + (item.facePrice || 0), 0);
     const processingFeeGrand = selectedItems.reduce((sum, item) => sum + (item.processingFee || 0), 0);
     const estimatedTaxGrand = selectedItems.reduce((sum, item) => sum + (item.estimatedTax || 0), 0);
-    
-    // For header display
+
     const firstEvent = selectedItems[0].event;
     const isMultipleEvents = new Set(selectedItems.map(i => i.event._id || i.event.id)).size > 1;
     const headerTitle = isMultipleEvents ? 'Multiple Events' : firstEvent.title;
 
+    // Resolve payment method string for the API — 'saved' is treated as 'card'
+    const resolveApiPaymentMethod = () => {
+        if (paymentMethod === 'invoice') return 'invoice';
+        return 'card'; // covers both 'card' and 'saved'
+    };
+
     const handlePay = async () => {
         if (isSubmitting) return;
 
+        // 1. Client-side validation
+        const errors = validateBillingInfo(billingInfo, paymentMethod);
+        if (errors.length > 0) {
+            setValidationErrors(errors);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+        setValidationErrors([]);
+
+        // 2. Confirm dialog
         const result = await showConfirmAlert(
             "Confirm Reservation",
             `Are you sure you want to reserve ${selectedItems.length} booth(s) for $${totalGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}?`,
             "Yes, Reserve Now"
         );
 
-        if (result.isConfirmed) {
-            setIsSubmitting(true);
-            try {
-                let successCount = 0;
-                // Loop through selected items and hit reserve-booth endpoint
-                for (const item of selectedItems) {
-                    const eventId = item.event?._id || item.event?.id;
-                    const boothId = item.booth?._id || item.booth?.id;
-                    const totalAmount = item.total || 0;
+        if (!result.isConfirmed) return;
 
-                    if (!eventId || !boothId) {
-                        console.error("Missing IDs for item:", item);
-                        continue;
-                    }
+        setIsSubmitting(true);
 
-                    const response = await axios.post(`${BACKEND_URL}/api/events/${eventId}/reserve-booth`, {
-                        boothId: boothId,
-                        billingAddress: {
-                            companyName: billingInfo.companyName,
-                            address: billingInfo.streetAddress,
-                            city: billingInfo.city,
-                            zipCode: billingInfo.postalCode,
-                            email: billingInfo.apEmail || user.email
+        const successfulItems = [];
+        const failedItems = [];   // { item, reason }
+
+        try {
+            for (const item of selectedItems) {
+                const eventId = item.event?._id || item.event?.id;
+                const boothId = item.booth?._id || item.booth?.id;
+                const boothLabel = item.booth?.label || item.booth?.code || boothId;
+
+                // Guard: skip items missing IDs and record as failed
+                if (!eventId || !boothId) {
+                    console.error("Missing event or booth ID for item:", item);
+                    failedItems.push({ item, reason: `Booth #${boothLabel}: Missing event or booth identifier.` });
+                    continue;
+                }
+
+                try {
+                    const response = await axios.post(
+                        `${BACKEND_URL}/api/events/${eventId}/reserve-booth`,
+                        {
+                            boothId,
+                            billingAddress: {
+                                companyName: billingInfo.companyName,
+                                address: billingInfo.streetAddress,
+                                city: billingInfo.city,
+                                zipCode: billingInfo.postalCode,
+                                email: billingInfo.apEmail || user.email
+                            },
+                            amount: {
+                                total: item.total || 0,
+                                subtotal: item.facePrice || 0,
+                                fee: item.processingFee || 0,
+                                tax: item.estimatedTax || 0
+                            },
+                            paymentMethod: resolveApiPaymentMethod(),
+                            poNumber: billingInfo.poNumber
                         },
-                        amount: {
-                            total: totalAmount,
-                            subtotal: item.facePrice || (totalAmount / 1.11), 
-                            fee: item.processingFee || (totalAmount * 0.03),
-                            tax: item.estimatedTax || (totalAmount * 0.08)
-                        },
-                        paymentMethod: paymentMethod === 'invoice' ? 'invoice' : 'card',
-                        poNumber: billingInfo.poNumber
-                    }, {
-                        headers: {
-                            Authorization: `Bearer ${user.token}`
+                        {
+                            headers: { Authorization: `Bearer ${user.token}` }
                         }
-                    });
+                    );
 
                     if (response.status === 201) {
-                        successCount++;
-                        // Remove successfully reserved item from cart
-                        if (item.cartId) {
-                            removeFromCart(item.cartId);
-                        }
+                        successfulItems.push(item);
+                        if (item.cartId) removeFromCart(item.cartId);
+                    } else {
+                        // Unexpected 2xx that isn't 201
+                        failedItems.push({
+                            item,
+                            reason: `Booth #${boothLabel}: Unexpected response (status ${response.status}).`
+                        });
+                    }
+                } catch (itemError) {
+                    const friendlyMessage = getPaymentErrorMessage(itemError);
+                    failedItems.push({ item, reason: `Booth #${boothLabel}: ${friendlyMessage}` });
+
+                    // Stop immediately on auth errors — retrying the loop won't help
+                    if (itemError.response?.status === 401 || itemError.response?.status === 403) {
+                        break;
                     }
                 }
-
-                if (successCount > 0) {
-                    await showSuccessAlert("Reservation Successful", `Successfully reserved ${successCount} booth(s). You can find your tickets and QR codes in 'My Booths'.`);
-                    navigate('/sponsor/sponsor-my-booths');
-                } else {
-                    await showErrorAlert("Reservation Failed", "No booths could be reserved.");
-                }
-            } catch (error) {
-                console.error("Reservation Error:", error);
-                await showErrorAlert("Reservation Failed", error.response?.data?.error || "An unexpected error occurred.");
-            } finally {
-                setIsSubmitting(false);
             }
+
+            // 3. Show outcome based on success/failure mix
+            if (successfulItems.length > 0 && failedItems.length === 0) {
+                // All succeeded
+                await showSuccessAlert(
+                    "Reservation Successful",
+                    `Successfully reserved ${successfulItems.length} booth(s). You can find your tickets and QR codes in 'My Booths'.`
+                );
+                navigate('/sponsor/sponsor-my-booths');
+
+            } else if (successfulItems.length > 0 && failedItems.length > 0) {
+                // Partial success
+                const failedReasons = failedItems.map(f => `• ${f.reason}`).join('\n');
+                await showErrorAlert(
+                    `Partially Reserved (${successfulItems.length} of ${selectedItems.length})`,
+                    `${successfulItems.length} booth(s) were reserved successfully.\n\nThe following could not be reserved:\n${failedReasons}\n\nSuccessfully reserved booths are in 'My Booths'.`
+                );
+                navigate('/sponsor/sponsor-my-booths');
+
+            } else {
+                // All failed
+                const isSingleItem = failedItems.length === 1;
+                const errorDetail = isSingleItem
+                    ? failedItems[0].reason
+                    : `Multiple booths could not be reserved:\n${failedItems.map(f => `• ${f.reason}`).join('\n')}`;
+
+                await showErrorAlert("Reservation Failed", errorDetail);
+            }
+
+        } catch (unexpectedError) {
+            // Catches anything that escaped the per-item try/catch (e.g. removeFromCart throwing)
+            console.error("Unexpected reservation error:", unexpectedError);
+            await showErrorAlert(
+                "Reservation Failed",
+                "An unexpected error occurred while processing your reservation. Please try again or contact support."
+            );
+        } finally {
+            setIsSubmitting(false);
         }
-    };
-
-
-    const handleInputChange = (field, value) => {
-        setBillingInfo(prev => ({ ...prev, [field]: value }));
     };
 
     return (
@@ -164,7 +294,7 @@ const SponsorVenueBilling = () => {
             <div className="svb-header-top">
                 <div className="svb-header-content">
                     <div className="svb-header-left">
-                        <button className="svb-back-btn" onClick={() => navigate(-1)}>
+                        <button className="svb-back-btn" onClick={() => navigate(-1)} disabled={isSubmitting}>
                             <Icon icon="mdi:arrow-left" />
                         </button>
                         <div>
@@ -182,17 +312,12 @@ const SponsorVenueBilling = () => {
                             <span className="small-body-text font-bold text-primary mr-4" style={{ whiteSpace: 'nowrap' }}>
                                 Secure Checkout
                             </span>
-
                             <div className="svb-step-progress">
                                 <span className="smaller-body-text text-secondary mb-1 block text-right">
                                     Step 4 of 4
                                 </span>
-
                                 <div className="svb-progress-bar-container">
-                                    <div
-                                        className="svb-progress-bar"
-                                        style={{ width: '100%' }}
-                                    ></div>
+                                    <div className="svb-progress-bar" style={{ width: '100%' }} />
                                 </div>
                             </div>
                         </div>
@@ -202,13 +327,28 @@ const SponsorVenueBilling = () => {
 
             <div className="svb-main-container">
                 <div className="svb-content-left">
+
+                    {/* Validation error banner */}
+                    {validationErrors.length > 0 && (
+                        <div className="svb-validation-banner mb-4">
+                            <Icon icon="mdi:alert-circle-outline" className="svb-validation-icon" />
+                            <div>
+                                <strong>Please fix the following before continuing:</strong>
+                                <ul className="svb-validation-list mt-1 mb-0">
+                                    {validationErrors.map((err, i) => (
+                                        <li key={i}>{err}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="svb-card mb-4">
                         <div className="svb-card-body">
                             <h4 className="mb-4">Company Information</h4>
-
                             <div className="svb-form-grid">
                                 <div className="svb-form-group">
-                                    <label>Company Name</label>
+                                    <label>Company Name <span className="text-red">*</span></label>
                                     <input
                                         type="text"
                                         placeholder="Your Company Name"
@@ -231,7 +371,7 @@ const SponsorVenueBilling = () => {
 
                             <h4 className="svb-form-grid">Billing Address</h4>
                             <div className="svb-form-group mb-3">
-                                <label>Street Address</label>
+                                <label>Street Address <span className="text-red">*</span></label>
                                 <input
                                     type="text"
                                     placeholder="123 Business St"
@@ -243,7 +383,7 @@ const SponsorVenueBilling = () => {
 
                             <div className="svb-form-grid">
                                 <div className="svb-form-group">
-                                    <label>City</label>
+                                    <label>City <span className="text-red">*</span></label>
                                     <input
                                         type="text"
                                         placeholder=""
@@ -253,7 +393,7 @@ const SponsorVenueBilling = () => {
                                     />
                                 </div>
                                 <div className="svb-form-group">
-                                    <label>Postal Code</label>
+                                    <label>Postal Code <span className="text-red">*</span></label>
                                     <input
                                         type="text"
                                         placeholder=""
@@ -273,16 +413,11 @@ const SponsorVenueBilling = () => {
                             {/* Saved Payment Option */}
                             <div
                                 className={`svb-payment-option mb-3 ${paymentMethod === 'saved' ? 'selected' : ''}`}
-                                onClick={() => setPaymentMethod('saved')}
+                                onClick={() => { setValidationErrors([]); setPaymentMethod('saved'); }}
                             >
                                 <div className="svb-payment-header">
                                     <div className="svb-radio-group">
-                                        <input
-                                            type="radio"
-                                            checked={paymentMethod === 'saved'}
-                                            readOnly
-                                            className="svb-radio"
-                                        />
+                                        <input type="radio" checked={paymentMethod === 'saved'} readOnly className="svb-radio" />
                                         <div>
                                             <div className="d-flex align-items-center mb-1">
                                                 <Icon icon="mdi:credit-card" className="mr-2" style={{ fontSize: '1.2rem' }} />
@@ -300,22 +435,17 @@ const SponsorVenueBilling = () => {
                             {/* Credit Card Option */}
                             <div
                                 className={`svb-payment-option ${paymentMethod === 'card' ? 'selected' : ''}`}
-                                onClick={() => setPaymentMethod('card')}
+                                onClick={() => { setValidationErrors([]); setPaymentMethod('card'); }}
                             >
                                 <div className="svb-payment-header">
                                     <div className="svb-radio-group">
-                                        <input
-                                            type="radio"
-                                            checked={paymentMethod === 'card'}
-                                            readOnly
-                                            className="svb-radio"
-                                        />
+                                        <input type="radio" checked={paymentMethod === 'card'} readOnly className="svb-radio" />
                                         <h5>Credit Card</h5>
                                     </div>
                                     <div className="svb-card-badges">
                                         <span className="svb-badge button-label blue">VISA</span>
                                         <span className="svb-badge button-label orange">MC</span>
-                                        <span className="svb-badge  button-label light-blue">AMEX</span>
+                                        <span className="svb-badge button-label light-blue">AMEX</span>
                                     </div>
                                 </div>
 
@@ -328,7 +458,6 @@ const SponsorVenueBilling = () => {
                                                 <input type="text" placeholder="0000 0000 0000 0000" className="svb-input with-icon" />
                                             </div>
                                         </div>
-
                                         <div className="svb-form-grid">
                                             <div className="svb-form-group">
                                                 <label>Expiration</label>
@@ -346,25 +475,21 @@ const SponsorVenueBilling = () => {
                             {/* Invoice Option */}
                             <div
                                 className={`svb-payment-option mt-3 ${paymentMethod === 'invoice' ? 'selected' : ''}`}
-                                onClick={() => setPaymentMethod('invoice')}
+                                onClick={() => { setValidationErrors([]); setPaymentMethod('invoice'); }}
                             >
                                 <div className="svb-payment-header">
                                     <div className="svb-radio-group">
-                                        <input
-                                            type="radio"
-                                            checked={paymentMethod === 'invoice'}
-                                            readOnly
-                                            className="svb-radio"
-                                        />
+                                        <input type="radio" checked={paymentMethod === 'invoice'} readOnly className="svb-radio" />
                                         <div>
                                             <div className="d-flex align-items-center mb-1">
                                                 <Icon icon="mdi:domain" className="mr-2" style={{ fontSize: '1.2rem' }} />
                                                 <h5 className="h6 m-0">Invoice / Bank Transfer</h5>
                                             </div>
-                                            <span className="smaller-body-text text-secondary block">Net 30 payment terms available for qualified businesses</span>
+                                            <span className="smaller-body-text text-secondary block">
+                                                Net 30 payment terms available for qualified businesses
+                                            </span>
                                         </div>
                                     </div>
-
                                     {paymentMethod !== 'invoice' && (
                                         <Icon icon="mdi:information-outline" className="text-red" style={{ fontSize: '1.2rem' }} />
                                     )}
@@ -378,7 +503,6 @@ const SponsorVenueBilling = () => {
                                                 <strong>How it works:</strong> After submitting this form, we'll send an invoice to your company email within 1 business day. Payment is due within 30 days of invoice date.
                                             </span>
                                         </div>
-
                                         <div className="svb-form-group mb-3">
                                             <label>Purchase Order Number (Optional)</label>
                                             <input
@@ -389,9 +513,8 @@ const SponsorVenueBilling = () => {
                                                 onChange={(e) => handleInputChange('poNumber', e.target.value)}
                                             />
                                         </div>
-
                                         <div className="svb-form-group">
-                                            <label>Accounts Payable Email</label>
+                                            <label>Accounts Payable Email <span className="text-red">*</span></label>
                                             <input
                                                 type="email"
                                                 placeholder="billing@yourcompany.com"
@@ -423,10 +546,16 @@ const SponsorVenueBilling = () => {
                                     {selectedItems.map((item, index) => (
                                         <div className="svb-item-row mb-3" key={item.cartId || index}>
                                             <div>
-                                                <h5 className="m-0" style={{ fontSize: '1rem' }}>{item.category?.priceName || 'Booth'} #{item.booth?.label || item.booth?.code}</h5>
-                                                <span className="smaller-body-text text-secondary">{item.category?.boothSize || 'Standard'} • {item.event?.venue?.name}</span>
+                                                <h5 className="m-0" style={{ fontSize: '1rem' }}>
+                                                    {item.category?.priceName || 'Booth'} #{item.booth?.label || item.booth?.code}
+                                                </h5>
+                                                <span className="smaller-body-text text-secondary">
+                                                    {item.category?.boothSize || 'Standard'} • {item.event?.venue?.name}
+                                                </span>
                                             </div>
-                                            <span className="small-body-text text-secondary">${(item.facePrice || 0).toLocaleString()}</span>
+                                            <span className="small-body-text text-secondary">
+                                                ${(item.facePrice || 0).toLocaleString()}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
@@ -438,22 +567,26 @@ const SponsorVenueBilling = () => {
                                 <span className="small-body-text text-secondary">Subtotal</span>
                                 <span className="small-body-text text-secondary">${subtotalGrand.toLocaleString()}</span>
                             </div>
-
                             <div className="svb-price-row mb-2">
                                 <span className="small-body-text text-secondary">Processing Fees</span>
-                                <span className="small-body-text text-secondary">${processingFeeGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="small-body-text text-secondary">
+                                    ${processingFeeGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
                             </div>
-
                             <div className="svb-price-row mb-4">
                                 <span className="small-body-text text-secondary">Tax</span>
-                                <span className="small-body-text text-secondary">${estimatedTaxGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="small-body-text text-secondary">
+                                    ${estimatedTaxGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
                             </div>
 
                             <hr className="svb-divider mb-3 mt-0" />
 
                             <div className="svb-price-row">
                                 <h5 className="m-0">Total</h5>
-                                <h4 className="text-red m-0">${totalGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</h4>
+                                <h4 className="text-red m-0">
+                                    ${totalGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                                </h4>
                             </div>
 
                             <button
