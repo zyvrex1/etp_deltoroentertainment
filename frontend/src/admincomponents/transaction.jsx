@@ -15,6 +15,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
   const filterOptions = [
     { value: "all", label: "All Transactions" },
     { value: "booth", label: "Booth filter" },
+    { value: "seated-ticket", label: "Seated Ticket filter" },
     { value: "ticket", label: "Ticket filter" },
     { value: "payout", label: "Payout filter" },
   ];
@@ -120,60 +121,60 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
     const loadingToast = showExportToast();
     const REPORT_TITLE = 'Transactions Report';
     try {
-        const logoData = await loadLogo();
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 15;
-        const FOOTER_HEIGHT = 15;
-        let y = 45;
+      const logoData = await loadLogo();
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const FOOTER_HEIGHT = 15;
+      let y = 45;
 
-        addReportHeader(pdf, REPORT_TITLE, logoData);
+      addReportHeader(pdf, REPORT_TITLE, logoData);
 
-        pdf.setFontSize(12);
-        pdf.setTextColor(30, 60, 114);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Real-time view of all financial activities.', margin, y);
-        y += 8;
+      pdf.setFontSize(12);
+      pdf.setTextColor(30, 60, 114);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Real-time view of all financial activities.', margin, y);
+      y += 8;
 
-        const tableColumn = ["ID", "User", "Event", "Category", "Amount", "Status", "Date"];
-        const tableRows = displayTransactions.map((tx) => [
-            tx.id,
-            tx.user,
-            tx.event,
-            tx.category,
-            tx.amount,
-            tx.status,
-            tx.date,
-        ]);
+      const tableColumn = ["ID", "User", "Event", "Category", "Amount", "Status", "Date"];
+      const tableRows = displayTransactions.map((tx) => [
+        tx.id,
+        tx.user,
+        tx.event,
+        tx.category,
+        tx.amount,
+        tx.status,
+        tx.date,
+      ]);
 
-        y = drawTable(pdf, y, tableColumn, tableRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, REPORT_TITLE);
+      y = drawTable(pdf, y, tableColumn, tableRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, REPORT_TITLE);
 
-        y += 10;
-        pdf.setFontSize(9);
-        pdf.setTextColor(100, 100, 100);
-        pdf.text(`Report generated from Transaction Monitoring. ${displayTransactions.length} entries.`, margin, y, { maxWidth: pdfWidth - 2 * margin });
+      y += 10;
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Report generated from Transaction Monitoring. ${displayTransactions.length} entries.`, margin, y, { maxWidth: pdfWidth - 2 * margin });
 
-        finalizeReport(pdf);
-        pdf.save(`Transaction_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      finalizeReport(pdf);
+      pdf.save(`Transaction_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
-        console.error('Error generating PDF:', error);
-        alert('Failed to generate PDF. Please try again.');
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
     } finally {
-        removeExportToast(loadingToast);
+      removeExportToast(loadingToast);
     }
   };
 
   const getStatusClass = (status) => {
     if (status === "completed" || status === "paid") return "button-label tx-status-completed";
     if (status === "pending") return "button-label tx-status-pending";
-    if (status === "refunded"|| status === "rejected" ) return "button-label tx-status-refunded";
+    if (status === "refunded" || status === "rejected" || status === "reject") return "button-label tx-status-refunded";
     return "button-label tx-status";
   };
 
   const getCategoryClass = (category) => {
     if (category === "Booth") return "button-label tx-category-booth";
-    if (category === "Seats") return "button-label tx-category-seats";
+    if (category === "Seats" || category === "Seated Ticket" || category === "Ticket") return "button-label tx-category-seats";
     if (category === "Payout" || category === "-") return "button-label tx-category-payout";
     return "button-label";
   };
@@ -279,7 +280,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
             </table>
           ) : paginatedTransactions.length === 0 ? (
             <div className="empty-state">
-              <Icon 
+              <Icon
                 icon={
                   (isTab ? externalFilter : internalFilter) === "booth"
                     ? "mdi:store-off"
@@ -288,8 +289,8 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
                       : (isTab ? externalFilter : internalFilter) === "payout"
                         ? "mdi:bank-off"
                         : "mdi:cash-off"
-                } 
-                style={{ fontSize: '48px', marginBottom: '16px' }} 
+                }
+                style={{ fontSize: '48px', marginBottom: '16px' }}
               />
               <h4>{(isTab ? externalSearchQuery : internalSearchQuery) ? "No transactions found" : `No ${isTab ? externalFilter : internalFilter} transactions yet`}</h4>
               <p className="small-body-text">
@@ -330,7 +331,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
                     </td>
                     <td data-label="Category">
                       <span className={getCategoryClass(tx.category)}>
-                        {tx.category}
+                        {tx.category === 'Seats' ? 'Seated Ticket' : tx.category}
                       </span>
                     </td>
                     <td className="regular-body-text amount" data-label="Amount">
@@ -338,7 +339,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
                     </td>
                     <td data-label="Status">
                       <span className={getStatusClass(tx.status)}>
-                        {tx.status}
+                        {tx.status === 'reject' ? 'rejected' : tx.status}
                       </span>
                     </td>
                     <td className="small-body-text" data-label="Date">

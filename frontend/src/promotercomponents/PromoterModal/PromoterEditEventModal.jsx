@@ -18,6 +18,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
     const today = new Date().toISOString().split("T")[0];
 
     const [title, setTitle] = useState("");
+    const [eventType, setEventType] = useState("General Admission");
     const [category, setCategory] = useState("other");
     const [description, setDescription] = useState("");
     const [startDate, setStartDate] = useState(today);
@@ -36,12 +37,23 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
     const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
 
     const [error, setError] = useState("");
-    const [emptyFields, setEmptyFields] = useState([]);
+    const [errors, setErrors] = useState({});
+
+    const clearError = (fieldName) => {
+        if (errors[fieldName]) {
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors[fieldName];
+                return newErrors;
+            });
+        }
+    };
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (initialEvent && isOpen) {
             setTitle(initialEvent.title || "");
+            setEventType(initialEvent.eventType || "General Admission");
             setCategory(initialEvent.category || "other");
             setDescription(initialEvent.description || "");
 
@@ -69,7 +81,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             } else {
                 setImagePreviewUrl(null);
             }
-            
+
             setImageFile(null);
             setError("");
             setEmptyFields([]);
@@ -111,23 +123,38 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const fieldsToCheck = {
-            title,
-            category,
-            startDate,
-            endDate,
-            startTime,
-            endTime,
-            venueName: venue.name,
-        };
+        setError("");
+        const newErrors = {};
 
-        const empty = Object.entries(fieldsToCheck)
-            .filter(([, value]) => value === "" || value === null)
-            .map(([key]) => key);
+        if (!title?.trim()) newErrors.title = "Event Title is required";
+        if (!category?.trim()) newErrors.category = "Category is required";
+        if (!startDate) newErrors.startDate = "Start Date is required";
+        if (!endDate) newErrors.endDate = "End Date is required";
+        if (!startTime) newErrors.startTime = "Start Time is required";
+        if (!endTime) newErrors.endTime = "End Time is required";
+        if (!description?.trim()) newErrors.description = "Description is required";
 
-        if (empty.length > 0) {
-            setEmptyFields(empty);
+        if (!venue.name?.trim()) newErrors.venueName = "Venue Name is required";
+        if (!venue.address?.trim()) newErrors.venueAddress = "Street Address is required";
+        if (!venue.city?.trim()) newErrors.venueCity = "City is required";
+        if (!venue.zipCode?.trim()) newErrors.venueZip = "Zip Code is required";
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             setError("Please fill in all required fields.");
+            return;
+        }
+
+        const startDateTime = new Date(`${startDate}T${startTime}`);
+        const endDateTime = new Date(`${endDate}T${endTime}`);
+
+        if (endDateTime <= startDateTime) {
+            if (startDate === endDate) {
+                newErrors.endTime = "End Time must be after Start Time";
+            } else {
+                newErrors.endDate = "End Date must be after Start Date";
+            }
+            setErrors(newErrors);
             return;
         }
 
@@ -149,6 +176,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
         try {
             const formData = new FormData();
             formData.append('title', title);
+            formData.append('eventType', eventType);
             formData.append('category', category);
             formData.append('description', description);
             formData.append('startDate', startDate);
@@ -156,7 +184,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             formData.append('startTime', startTime);
             formData.append('endTime', endTime);
             formData.append('venue', JSON.stringify(venue));
-            
+
             if (imageFile) {
                 formData.append('image', imageFile);
             }
@@ -173,7 +201,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             );
 
             dispatch({ type: "UPDATE_EVENT", payload: response.data.event });
-            
+
             onClose();
             await showSuccessAlert(
                 "Event Updated",
@@ -218,7 +246,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                     className="promoter-edit-event-modal-body promoter-edit-event-form"
                     onSubmit={handleSubmit}
                 >
-                          <div className="promoter-edit-event-section-box">
+                    <div className="promoter-edit-event-section-box">
                         <h5 className="modal-section-title">Event Image</h5>
                         <div
                             className={`promoter-edit-event-upload-area ${imageDragActive ? "drag-active" : ""
@@ -288,25 +316,60 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                             )}
                         </div>
                     </div>
+
                     <div className="promoter-edit-event-form-row">
-                        <div className="promoter-edit-event-form-group">
+                        <div className="promoter-edit-event-form-group promoter-edit-event-full-width">
+                            <h6>Event Type</h6>
+                            <div className="event-type-options">
+                                <label className={`event-type-option ${eventType === "General Admission" ? "active" : ""}`}>
+                                    <input
+                                        type="radio"
+                                        name="eventType"
+                                        value="General Admission"
+                                        checked={eventType === "General Admission"}
+                                        onChange={(e) => setEventType(e.target.value)}
+                                        disabled={isReadOnly}
+                                    />
+                                    <span>General Admission</span>
+                                </label>
+                                <label className={`event-type-option ${eventType === "Reservation" ? "active" : ""}`}>
+                                    <input
+                                        type="radio"
+                                        name="eventType"
+                                        value="Reservation"
+                                        checked={eventType === "Reservation"}
+                                        onChange={(e) => setEventType(e.target.value)}
+                                        disabled={isReadOnly}
+                                    />
+                                    <span>Reservation</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="promoter-edit-event-form-row">
+                        <div className={`promoter-edit-event-form-group ${errors.title ? 'has-error' : ''}`}>
                             <h6>Event Title</h6>
                             <input
                                 type="text"
                                 required
                                 value={title}
-                                onChange={(e) => setTitle(e.target.value)}
+                                onChange={(e) => {
+                                    setTitle(e.target.value);
+                                    clearError("title");
+                                }}
                                 placeholder="e.g. Tech Summit 2024"
-                                className={emptyFields.includes("title") ? "error" : ""}
                                 disabled={isReadOnly}
                             />
+                            {errors.title && <span className="error-message">{errors.title}</span>}
                         </div>
-                        <div className="promoter-edit-event-form-group">
+                        <div className={`promoter-edit-event-form-group ${errors.category ? 'has-error' : ''}`}>
                             <h6>Category</h6>
                             <select
                                 value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className={emptyFields.includes("category") ? "error" : ""}
+                                onChange={(e) => {
+                                    setCategory(e.target.value);
+                                    clearError("category");
+                                }}
                                 disabled={isReadOnly}
                             >
                                 <option value="concert">Concert</option>
@@ -316,11 +379,14 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                 <option value="sports">Sports</option>
                                 <option value="other">Other</option>
                             </select>
+                            {errors.category && <span className="error-message">{errors.category}</span>}
                         </div>
                     </div>
 
+
+
                     <div className="promoter-edit-event-form-row">
-                        <div className="promoter-edit-event-form-group">
+                        <div className={`promoter-edit-event-form-group ${errors.startDate ? 'has-error' : ''}`}>
                             <h6>Start Date</h6>
                             <input
                                 type="date"
@@ -331,119 +397,139 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                     if (endDate < e.target.value) {
                                         setEndDate(e.target.value);
                                     }
+                                    clearError("startDate");
                                 }}
-                                className={emptyFields.includes("startDate") ? "error" : ""}
                                 disabled={isReadOnly}
                             />
+                            {errors.startDate && <span className="error-message">{errors.startDate}</span>}
                         </div>
-                        <div className="promoter-edit-event-form-group">
+                        <div className={`promoter-edit-event-form-group ${errors.endDate ? 'has-error' : ''}`}>
                             <h6>End Date</h6>
                             <input
                                 type="date"
                                 required
                                 min={startDate}
                                 value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className={emptyFields.includes("endDate") ? "error" : ""}
+                                onChange={(e) => {
+                                    setEndDate(e.target.value);
+                                    clearError("endDate");
+                                }}
                                 disabled={isReadOnly}
                             />
+                            {errors.endDate && <span className="error-message">{errors.endDate}</span>}
                         </div>
                     </div>
 
                     <div className="promoter-edit-event-form-row">
-                        <div className="promoter-edit-event-form-group">
+                        <div className={`promoter-edit-event-form-group ${errors.startTime ? 'has-error' : ''}`}>
                             <h6>Start Time</h6>
                             <input
                                 type="time"
                                 required
                                 value={startTime}
-                                onChange={(e) => setStartTime(e.target.value)}
-                                className={emptyFields.includes("startTime") ? "error" : ""}
+                                onChange={(e) => {
+                                    setStartTime(e.target.value);
+                                    clearError("startTime");
+                                }}
                                 disabled={isReadOnly}
                             />
+                            {errors.startTime && <span className="error-message">{errors.startTime}</span>}
                         </div>
-                        <div className="promoter-edit-event-form-group">
+                        <div className={`promoter-edit-event-form-group ${errors.endTime ? 'has-error' : ''}`}>
                             <h6>End Time</h6>
                             <input
                                 type="time"
                                 required
                                 value={endTime}
-                                onChange={(e) => setEndTime(e.target.value)}
-                                className={emptyFields.includes("endTime") ? "error" : ""}
+                                onChange={(e) => {
+                                    setEndTime(e.target.value);
+                                    clearError("endTime");
+                                }}
                                 disabled={isReadOnly}
                             />
+                            {errors.endTime && <span className="error-message">{errors.endTime}</span>}
                         </div>
                     </div>
 
                     <div className="promoter-edit-event-section-box">
                         <h5 className="modal-section-title">Venue Details</h5>
-                        <div className="promoter-edit-event-form-group">
+                        <div className={`promoter-edit-event-form-group ${errors.venueName ? 'has-error' : ''}`}>
                             <input
                                 type="text"
                                 placeholder="Venue Name"
                                 required
                                 value={venue.name}
-                                onChange={(e) =>
-                                    setVenue({ ...venue, name: e.target.value })
-                                }
-                                className={emptyFields.includes("venueName") ? "error" : ""}
+                                onChange={(e) => {
+                                    setVenue({ ...venue, name: e.target.value });
+                                    clearError("venueName");
+                                }}
                                 disabled={isReadOnly}
                             />
+                            {errors.venueName && <span className="error-message">{errors.venueName}</span>}
                         </div>
 
-                        <div className="promoter-edit-event-form-group">
+                        <div className={`promoter-edit-event-form-group ${errors.venueAddress ? 'has-error' : ''}`}>
                             <input
                                 type="text"
                                 placeholder="Street Address"
                                 value={venue.address}
-                                onChange={(e) =>
-                                    setVenue({ ...venue, address: e.target.value })
-                                }
+                                onChange={(e) => {
+                                    setVenue({ ...venue, address: e.target.value });
+                                    clearError("venueAddress");
+                                }}
                                 disabled={isReadOnly}
                             />
+                            {errors.venueAddress && <span className="error-message">{errors.venueAddress}</span>}
                         </div>
 
                         <div className="promoter-edit-event-form-row">
-                            <div className="promoter-edit-event-form-group">
+                            <div className={`promoter-edit-event-form-group ${errors.venueCity ? 'has-error' : ''}`}>
                                 <input
                                     type="text"
                                     placeholder="City"
                                     value={venue.city}
-                                    onChange={(e) =>
-                                        setVenue({ ...venue, city: e.target.value })
-                                    }
+                                    onChange={(e) => {
+                                        setVenue({ ...venue, city: e.target.value });
+                                        clearError("venueCity");
+                                    }}
                                     disabled={isReadOnly}
                                 />
+                                {errors.venueCity && <span className="error-message">{errors.venueCity}</span>}
                             </div>
-                            <div className="promoter-edit-event-form-group">
+                            <div className={`promoter-edit-event-form-group ${errors.venueZip ? 'has-error' : ''}`}>
                                 <input
                                     type="text"
                                     placeholder="Zip Code"
                                     value={venue.zipCode}
-                                    onChange={(e) =>
-                                        setVenue({ ...venue, zipCode: e.target.value })
-                                    }
+                                    onChange={(e) => {
+                                        setVenue({ ...venue, zipCode: e.target.value });
+                                        clearError("venueZip");
+                                    }}
                                     disabled={isReadOnly}
                                 />
+                                {errors.venueZip && <span className="error-message">{errors.venueZip}</span>}
                             </div>
                         </div>
                     </div>
 
-              
+
 
                     {/* About the Event */}
 
-                    <div className="promoter-edit-event-form-group promoter-edit-event-full-width">
+                    <div className={`promoter-edit-event-form-group promoter-edit-event-full-width ${errors.description ? 'has-error' : ''}`}>
                         <h6>About The Event</h6>
                         <textarea
                             required
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => {
+                                setDescription(e.target.value);
+                                clearError("description");
+                            }}
                             placeholder="Event description..."
                             rows="4"
-                            className={emptyFields.includes("description") ? "error" : ""}
                             disabled={isReadOnly}
                         ></textarea>
+                        {errors.description && <span className="error-message">{errors.description}</span>}
                     </div>
 
                     {initialEvent?.status === "rejected" && initialEvent?.rejectionReason && (

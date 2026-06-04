@@ -22,7 +22,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const [batchModal, setBatchModal] = useState(null); // null or { category }
   const [batchDirection, setBatchDirection] = useState('row');
   const [batchCount, setBatchCount] = useState(1);
-  const [batchSpacing, setBatchSpacing] = useState(50);
+  const [batchSpacing, setBatchSpacing] = useState(45);
   const [batchStartX, setBatchStartX] = useState(100);
   const [batchStartY, setBatchStartY] = useState(100);
   const [batchLabelStart, setBatchLabelStart] = useState(1);
@@ -343,19 +343,32 @@ const LayoutBuilder = ({ selectedEvent }) => {
   };
 
   const openBatchModal = (category) => {
-    const placedCount = placedItems.filter(i => i.categoryId === category.id).length;
-    const remaining = category.quantity - placedCount;
+    const itemsInCat = placedItems.filter(i => i.categoryId === category.id);
+    const remaining = category.quantity - itemsInCat.length;
     if (remaining <= 0) {
       showErrorAlert("Limit Reached", "All units for this category have been placed.");
       return;
     }
+
+    // Find the max number currently used in labels for this category
+    let maxNum = 0;
+    itemsInCat.forEach(item => {
+      if (item.label) {
+        const match = item.label.match(/(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+      }
+    });
+
     setBatchModal({ category });
     setBatchDirection('row');
     setBatchCount(Math.min(remaining, 10));
-    setBatchSpacing(50);
+    setBatchSpacing(45);
     setBatchStartX(100);
     setBatchStartY(100);
-    setBatchLabelStart(placedCount + 1);
+    setBatchLabelStart(maxNum + 1);
   };
 
   const handleConfirmBatchPlace = () => {
@@ -545,8 +558,18 @@ const LayoutBuilder = ({ selectedEvent }) => {
         };
       });
 
+    // Determine eventType based on placed items
+    let autoEventType = selectedEvent?.eventType || "Seating Arrangement";
+    const hasSeats = placedItems.some(i => i.type === 'seat' || i.isSeat);
+    const hasBooths = placedItems.some(i => i.type === 'booth' || i.isBooth);
+
+    if (hasSeats || hasBooths) {
+      autoEventType = "Reservation";
+    }
+
     const payload = {
       priceLevels,
+      eventType: autoEventType,
       seatMap: {
         sections: [{ name: "Main Section", seats }]
       },
@@ -752,11 +775,27 @@ const LayoutBuilder = ({ selectedEvent }) => {
                     <div key={cat.id} className={`sidebar-cat-item ${isFull ? 'is-full' : ''}`}>
                       <div
                         className="cat-palette-visual"
-                        style={{ backgroundColor: cat.color }}
-                        onClick={() => !isFull && openBatchModal(cat)}
-                        title={isFull ? "All units placed" : "Click to place seats/booths on map"}
+                        style={{
+                          backgroundColor: cat.color,
+                          cursor: cat.type === "General Fee" ? "not-allowed" : "pointer",
+                          opacity: cat.type === "General Fee" ? 0.5 : 1
+                        }}
+                        onClick={() => !isFull && cat.type !== "General Fee" && openBatchModal(cat)}
+                        title={
+                          cat.type === "General Fee"
+                            ? "General Fee categories don't require seat/booth placement"
+                            : isFull
+                              ? "All units placed"
+                              : "Click to place seats/booths on map"
+                        }
                       >
-                        {cat.type.includes("Seat") ? <Icon icon="mdi:circle" /> : <Icon icon="mdi:square" />}
+                        {cat.type === "General Fee" ? (
+                          <Icon icon="mdi:ticket-confirmation-outline" />
+                        ) : cat.type.includes("Seat") ? (
+                          <Icon icon="mdi:circle" />
+                        ) : (
+                          <Icon icon="mdi:square" />
+                        )}
                       </div>
 
                       <div className="cat-details">
@@ -1304,6 +1343,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
         onClose={() => setIsAddCategoryModalOpen(false)}
         onSave={handleSaveCategory}
         editingCategory={editingCategory}
+        eventType={selectedEvent?.eventType}
       />
 
       {/* ── Batch Placement Modal ── */}

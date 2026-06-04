@@ -91,27 +91,79 @@ const CustomerPaySuccess = () => {
                         <div className="cps-tickets-section">
                             <h5 className="cps-section-title">Your Tickets</h5>
 
-                            {latestPurchases.map((item, index) => (
-                                <div className="cps-ticket-item" key={index}>
-                                    <div className="cps-ticket-left">
-                                        <p className="small-body-text cps-ticket-type">{item.categoryName}</p>
-                                        <p className="smaller-body-text cps-ticket-seat mb-1">Seat {item.seat.label}</p>
-                                        <p className="small-body-text cps-ticket-price">${(item.facePrice + item.serviceFee).toFixed(2)}</p>
-                                    </div>
-                                    <div className="cps-ticket-right cps-qr-container">
-                                        <div className="cps-qr-wrapper" style={{ background: '#fff', padding: '5px', borderRadius: '4px' }}>
-                                            <QRCodeCanvas
-                                                value={item.qrData || item.cartId}
-                                                size={60}
-                                                bgColor={"#ffffff"}
-                                                fgColor={"#000000"}
-                                                level={"M"}
-                                            />
+                            {(() => {
+                                const physicalSeats = latestPurchases.filter(i => !i.seat?.id?.startsWith("GA-"));
+                                const gaItems = latestPurchases.filter(i => i.seat?.id?.startsWith("GA-"));
+
+                                const gaGroups = {};
+                                gaItems.forEach(item => {
+                                    const catKey = item.categoryId || item.categoryName;
+                                    if (!gaGroups[catKey]) {
+                                        gaGroups[catKey] = [];
+                                    }
+                                    gaGroups[catKey].push(item);
+                                });
+
+                                const elements = [];
+
+                                // Render Physical Seats
+                                physicalSeats.forEach((item, index) => {
+                                    const catName = item.categoryName === 'Seated Ticket' ? 'Seat Ticket' : item.categoryName;
+                                    elements.push(
+                                        <div className="cps-ticket-item" key={`phys-${index}`}>
+                                            <div className="cps-ticket-left">
+                                                <p className="small-body-text cps-ticket-type">{catName}</p>
+                                                <p className="smaller-body-text cps-ticket-seat mb-1">Seat {item.seat.label}</p>
+                                                <p className="small-body-text cps-ticket-price">${(item.facePrice + item.serviceFee).toFixed(2)}</p>
+                                            </div>
+                                            <div className="cps-ticket-right cps-qr-container">
+                                                <div className="cps-qr-wrapper" style={{ background: '#fff', padding: '5px', borderRadius: '4px' }}>
+                                                    <QRCodeCanvas
+                                                        value={item.qrData || item.cartId}
+                                                        size={60}
+                                                        bgColor={"#ffffff"}
+                                                        fgColor={"#000000"}
+                                                        level={"M"}
+                                                    />
+                                                </div>
+                                                <p className="smaller-body-text mt-1 text-secondary">Seat - {item.cartId.toUpperCase().slice(0, 8)}</p>
+                                            </div>
                                         </div>
-                                        <p className="smaller-body-text mt-1 text-secondary">Seat - {item.cartId.toUpperCase().slice(0, 8)}</p>
-                                    </div>
-                                </div>
-                            ))}
+                                    );
+                                });
+
+                                // Render Grouped GA / General Fee Tickets
+                                Object.entries(gaGroups).forEach(([catKey, group]) => {
+                                    const first = group[0];
+                                    const totalFace = group.reduce((sum, i) => sum + i.facePrice, 0);
+                                    const totalFee = group.reduce((sum, i) => sum + i.serviceFee, 0);
+                                    const catName = first.categoryName === 'Seated Ticket' ? 'Ticket' : first.categoryName;
+                                    
+                                    elements.push(
+                                        <div className="cps-ticket-item" key={`ga-${catKey}`}>
+                                            <div className="cps-ticket-left">
+                                                <p className="small-body-text cps-ticket-type">{catName} x {group.length}</p>
+                                                <p className="smaller-body-text cps-ticket-seat mb-1">General Entry</p>
+                                                <p className="small-body-text cps-ticket-price">${(totalFace + totalFee).toFixed(2)}</p>
+                                            </div>
+                                            <div className="cps-ticket-right cps-qr-container">
+                                                <div className="cps-qr-wrapper" style={{ background: '#fff', padding: '5px', borderRadius: '4px' }}>
+                                                    <QRCodeCanvas
+                                                        value={first.qrData || first.cartId}
+                                                        size={60}
+                                                        bgColor={"#ffffff"}
+                                                        fgColor={"#000000"}
+                                                        level={"M"}
+                                                    />
+                                                </div>
+                                                <p className="smaller-body-text mt-1 text-secondary">Qty: {group.length}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                });
+
+                                return elements;
+                            })()}
                         </div>
 
                         <hr className="cps-divider-thick" />

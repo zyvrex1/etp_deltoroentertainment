@@ -154,11 +154,19 @@ const autoHealEvents = async (eventsArr) => {
         });
       }
 
-      // 4. Persist corrections using findByIdAndUpdate
+      // 4. AUTO-HEAL Mismatched Event Types
+      // If it's GA but has layout items, we MUST flip it so virtuals work correctly
+      if (event.eventType === "General Admission" && event.layoutData && event.layoutData.items && event.layoutData.items.length > 0) {
+        event.eventType = "Reservation";
+        changed = true;
+      }
+
+      // 5. Persist corrections using findByIdAndUpdate
       if (changed) {
         const updatePayload = {};
         if (event.booths) updatePayload.booths = event.booths;
         if (event.layoutData) updatePayload.layoutData = event.layoutData;
+        updatePayload.eventType = event.eventType;
 
         await Event.findByIdAndUpdate(
           event._id,
@@ -487,7 +495,7 @@ const createEvent = async (req, res) => {
 
     // 2. Seating Arrangement Logic
 
-    if (eventType === "Seating Arrangement" && seatMap) {
+    if ((eventType === "Seating Arrangement" || eventType === "Reservation") && seatMap) {
       seatMap.sections?.forEach((section, sIndex) => {
         section.seats?.forEach((seat, i) => {
           const seatPillarId = seat.priceLevelId?.toString();
@@ -821,9 +829,9 @@ const updateEvent = async (req, res) => {
         errors.push(`${field} cannot be empty`);
       }
     });
-
     const validEventTypes = [
       "General Admission",
+      "Reservation",
       "Seating Arrangement",
       "Exhibition",
       "Reservation",
@@ -939,7 +947,11 @@ const updateEvent = async (req, res) => {
     console.log("updateEvent priceLevelIdStrings:", priceLevelIdStrings);
 
     // Smart Seating Validation
-    if (finalEventType === "Seating Arrangement" && finalSeatMap?.sections) {
+    if (
+      (finalEventType === "Seating Arrangement" ||
+        finalEventType === "Reservation") &&
+      finalSeatMap?.sections
+    ) {
       finalSeatMap.sections.forEach((section, sIndex) => {
         section.seats?.forEach((seat, i) => {
           if (!seat.priceLevelId || seat.priceLevelId === "none") {
@@ -1052,7 +1064,7 @@ const updateEvent = async (req, res) => {
       eventType: finalEventType,
       priceLevels: finalPriceLevels,
       // Clean seatMap if switched to General Admission
-      seatMap: finalEventType === "Seating Arrangement" ? finalSeatMap : null,
+      seatMap: (finalEventType === "Seating Arrangement" || finalEventType === "Reservation") ? finalSeatMap : null,
       booths: finalBooths,
       hasBooths: Array.isArray(finalBooths) && finalBooths.length > 0,
       venue: finalVenue,
@@ -1318,9 +1330,6 @@ const buySeats = async (req, res) => {
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ error: "No such event" });
 
-    const items = event.layoutData?.items;
-    if (!items) return res.status(400).json({ error: "This event has no layout data" });
-
     const buyerName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
     const buyerEmail = req.user.email || "";
     const ticketIdBase = new mongoose.Types.ObjectId().toString();
@@ -1336,84 +1345,119 @@ const buySeats = async (req, res) => {
     });
     const plSoldDelta = {}; // categoryId -> increment count
 
-    // Support both layoutData and legacy seatMap
-    let layout = event.layoutData;
-    if (typeof layout === "string") {
-      try {
-        layout = JSON.parse(layout);
-      } catch (e) {
-        layout = null;
+    const gaSeatIds = seatIds.filter(sid => sid.startsWith("GA-"));
+    const physicalSeatIds = seatIds.filter(sid => !sid.startsWith("GA-"));
+
+    // 1. Process GA / General Fee tickets
+    gaSeatIds.forEach((sid) => {
+      const parts = sid.split('-');
+      const catId = parts[1];
+      const cat = event.priceLevels.find(pl => pl._id.toString() === catId);
+      if (!cat) {
+        notFound.push(sid);
+        return;
       }
-    }
+      
+      const sold = cat.quantitySold || 0;
+      const capacity = cat.quantityAvailable ?? cat.quantity ?? 0;
+      if (sold >= capacity) {
+        alreadySold.push(`${cat.priceName} Ticket (Sold Out)`);
+        return;
+      }
 
-    if (layout && Array.isArray(layout.items)) {
-      const items = layout.items;
-      seatIds.forEach((sid) => {
-        const idx = items.findIndex((item) => {
-          const isSeatType = (item.type || "").toLowerCase() === "seat" || item.isSeat;
-          const isCircle = !item.isBooth && !item.isElement && !item.isBackground && item.type !== "booth";
-          const matchesId = String(item._id || item.id) === sid || item.id === sid;
-          return (isSeatType || isCircle) && matchesId;
-        });
-
-        if (idx === -1) {
-          notFound.push(sid);
-          return;
-        }
-        const item = items[idx];
-
-        if (item.status === "sold" || item.status === "reserved" || item.status === "blocked") {
-          alreadySold.push(item.label || sid);
-          return;
-        }
-
-        // Generate a unique Reservation ID for this specific seat
-        const resId = new mongoose.Types.ObjectId();
-
-        // Mark sold in layoutData
-        event.layoutData.items[idx].status = "sold";
-        event.layoutData.items[idx].reservedBy = buyerName;
-        event.layoutData.items[idx].reservedByEmail = buyerEmail;
-        event.layoutData.items[idx].ticketId = resId.toString();
-
-        // Track price level delta
-        const catId = (item.categoryId || item.priceLevelId)?.toString();
-        if (catId && plMap[catId] !== undefined) {
-          plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
-        }
-
-        purchasedSeats.push({ ...item, reservationId: resId });
+      const resId = new mongoose.Types.ObjectId();
+      if (catId && plMap[catId] !== undefined) {
+        plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
+      }
+      purchasedSeats.push({
+        _id: sid,
+        id: sid,
+        label: `${cat.priceName} Ticket`,
+        categoryId: catId,
+        reservationId: resId
       });
-    } else if (event.seatMap && event.seatMap.sections) {
-      // Process using legacy seatMap
-      seatIds.forEach((sid) => {
-        let found = false;
-        event.seatMap.sections.forEach((section) => {
-          const seatIdx = section.seats.findIndex((s) => String(s._id || s.id) === sid);
-          if (seatIdx !== -1) {
-            const seat = section.seats[seatIdx];
-            if (seat.status === "sold" || seat.status === "reserved" || seat.status === "blocked") {
-              alreadySold.push(seat.label || sid);
-            } else {
-              const resId = new mongoose.Types.ObjectId();
-              seat.status = "sold";
-              seat.reservedBy = buyerName;
-              seat.reservedByEmail = buyerEmail;
-              seat.ticketId = resId.toString(); // Map unique ID to legacy seat too
+    });
 
-              const catId = seat.priceLevelId?.toString();
-              if (catId && plMap[catId] !== undefined) {
-                plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
-              }
-              purchasedSeats.push({ ...seat, reservationId: resId });
-            }
-            found = true;
+    // 2. Process physical/seated tickets
+    if (physicalSeatIds.length > 0) {
+      let layout = event.layoutData;
+      if (typeof layout === "string") {
+        try {
+          layout = JSON.parse(layout);
+        } catch (e) {
+          layout = null;
+        }
+      }
+
+      if (layout && Array.isArray(layout.items)) {
+        const items = layout.items;
+        physicalSeatIds.forEach((sid) => {
+          const idx = items.findIndex((item) => {
+            const isSeatType = (item.type || "").toLowerCase() === "seat" || item.isSeat;
+            const isCircle = !item.isBooth && !item.isElement && !item.isBackground && item.type !== "booth";
+            const matchesId = String(item._id || item.id) === sid || item.id === sid;
+            return (isSeatType || isCircle) && matchesId;
+          });
+
+          if (idx === -1) {
+            notFound.push(sid);
+            return;
           }
+          const item = items[idx];
+
+          if (item.status === "sold" || item.status === "reserved" || item.status === "blocked") {
+            alreadySold.push(item.label || sid);
+            return;
+          }
+
+          // Generate a unique Reservation ID for this specific seat
+          const resId = new mongoose.Types.ObjectId();
+
+          // Mark sold in layoutData
+          event.layoutData.items[idx].status = "sold";
+          event.layoutData.items[idx].reservedBy = buyerName;
+          event.layoutData.items[idx].reservedByEmail = buyerEmail;
+          event.layoutData.items[idx].ticketId = resId.toString();
+
+          // Track price level delta
+          const catId = (item.categoryId || item.priceLevelId)?.toString();
+          if (catId && plMap[catId] !== undefined) {
+            plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
+          }
+
+          purchasedSeats.push({ ...item, reservationId: resId });
         });
-        if (!found) notFound.push(sid);
-      });
-    } else {
-      return res.status(400).json({ error: "This event has no layout data or seat map" });
+      } else if (event.seatMap && event.seatMap.sections) {
+        // Process using legacy seatMap
+        physicalSeatIds.forEach((sid) => {
+          let found = false;
+          event.seatMap.sections.forEach((section) => {
+            const seatIdx = section.seats.findIndex((s) => String(s._id || s.id) === sid);
+            if (seatIdx !== -1) {
+              const seat = section.seats[seatIdx];
+              if (seat.status === "sold" || seat.status === "reserved" || seat.status === "blocked") {
+                alreadySold.push(seat.label || sid);
+              } else {
+                const resId = new mongoose.Types.ObjectId();
+                seat.status = "sold";
+                seat.reservedBy = buyerName;
+                seat.reservedByEmail = buyerEmail;
+                seat.ticketId = resId.toString(); // Map unique ID to legacy seat too
+
+                const catId = seat.priceLevelId?.toString();
+                if (catId && plMap[catId] !== undefined) {
+                  plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
+                }
+                purchasedSeats.push({ ...seat, reservationId: resId });
+              }
+              found = true;
+            }
+          });
+          if (!found) notFound.push(sid);
+        });
+      } else {
+        return res.status(400).json({ error: "This event has no layout data or seat map for physical seats" });
+      }
     }
 
     if (alreadySold.length > 0) {

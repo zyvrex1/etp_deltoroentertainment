@@ -109,7 +109,7 @@ export const CustomerCartProvider = ({ children }) => {
                             cartId: `db-${res._id}-${idx}`,
                             event: res.event,
                             categoryId: '', // We don't have cat info in reservation model yet
-                            categoryName: 'Seated Ticket',
+                            categoryName: sid.startsWith("GA-") ? "Ticket" : "Seat Ticket",
                             seat: {
                                 id: sid,
                                 label: res.seatLabels[idx] || sid,

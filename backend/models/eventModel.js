@@ -134,7 +134,7 @@ const eventSchema = new Schema(
     title: { type: String, required: true, trim: true },
     eventType: {
       type: String,
-      enum: ["General Admission", "Seating Arrangement", "Exhibition", "Reservation"],
+      enum: ["General Admission", "Reservation"],
       default: "General Admission",
     },
 
@@ -238,7 +238,11 @@ eventSchema.pre("save", function (next) {
     .filter(Boolean);
 
   // 1. Logic for Seating Arrangement - CLEANUP & Validation
-  if (this.eventType === "Seating Arrangement" && this.seatMap) {
+  if (
+    (this.eventType === "Seating Arrangement" ||
+      this.eventType === "Reservation") &&
+    this.seatMap
+  ) {
     if (this.seatMap.sections) {
       for (const section of this.seatMap.sections) {
         if (!section.seats) continue;
@@ -373,24 +377,40 @@ eventSchema.pre("save", function (next) {
 
 
 eventSchema.virtual("totalBooths").get(function () {
-  if (this.layoutData && Array.isArray(this.layoutData.items)) {
-    const layoutBooths = this.layoutData.items.filter(
-      (i) => (i.type || "").toLowerCase() === "booth"
-    );
-    if (layoutBooths.length > 0) return layoutBooths.length;
+  const isExhibition =
+    this.eventType === "Exhibition" ||
+    this.eventType === "Seating Arrangement" ||
+    this.eventType === "Reservation";
+
+  if (isExhibition) {
+    if (this.layoutData && Array.isArray(this.layoutData.items)) {
+      const layoutBooths = this.layoutData.items.filter(
+        (i) => (i.type || "").toLowerCase() === "booth"
+      );
+      return layoutBooths.length;
+    }
+    return (this.booths || []).length;
   }
+
+  // For General Admission or other types, we might not have booths at all
   return (this.booths || []).length;
 });
 
 eventSchema.virtual("boothsSold").get(function () {
-  if (this.layoutData && Array.isArray(this.layoutData.items)) {
-    const layoutBooths = this.layoutData.items.filter(
-      (i) => (i.type || "").toLowerCase() === "booth"
-    );
-    if (layoutBooths.length > 0) {
-      return layoutBooths.filter(i => i.status === "sold").length;
+  const isExhibition =
+    this.eventType === "Exhibition" ||
+    this.eventType === "Seating Arrangement" ||
+    this.eventType === "Reservation";
+
+  if (isExhibition) {
+    if (this.layoutData && Array.isArray(this.layoutData.items)) {
+      return this.layoutData.items.filter(
+        (i) => (i.type || "").toLowerCase() === "booth" && i.status === "sold"
+      ).length;
     }
+    return (this.booths || []).filter(b => b.status === "sold").length;
   }
+
   return (this.booths || []).filter(b => b.status === "sold").length;
 });
 
@@ -407,34 +427,39 @@ eventSchema.virtual("boothsReserved").get(function () {
 });
 
 eventSchema.virtual("totalTickets").get(function () {
-  // 1. Prioritize layoutData for seated events
-  if (this.layoutData && Array.isArray(this.layoutData.items)) {
-    const layoutSeats = this.layoutData.items.filter(
-      (i) => (i.type || "").toLowerCase() === "seat"
-    );
-    if (layoutSeats.length > 0) return layoutSeats.length;
-  }
+  const isSeated =
+    this.eventType === "Seating Arrangement" ||
+    this.eventType === "Exhibition" ||
+    this.eventType === "Reservation";
 
-  // 2. Fallback to General Admission price levels
-  if (this.eventType === "General Admission") {
-    return (this.priceLevels || []).reduce(
-      (sum, p) => sum + (p.quantityAvailable || 0),
-      0
-    );
-  }
+  if (isSeated) {
+    // 1. Strictly use layoutData if it exists
+    if (this.layoutData && Array.isArray(this.layoutData.items)) {
+      return this.layoutData.items.filter(
+        (i) => (i.type || "").toLowerCase() === "seat"
+      ).length;
+    }
 
-  // 3. Fallback to legacy seatMap
-  if (this.seatMap && Array.isArray(this.seatMap.sections)) {
-    let total = 0;
-    this.seatMap.sections.forEach((s) => {
-      (s.seats || []).forEach((seat) => {
-        total += seat.seatCount || 1;
+    // 2. Fallback to legacy seatMap only
+    if (this.seatMap && Array.isArray(this.seatMap.sections)) {
+      let total = 0;
+      this.seatMap.sections.forEach((s) => {
+        (s.seats || []).forEach((seat) => {
+          total += seat.seatCount || 1;
+        });
       });
-    });
-    return total;
+      return total;
+    }
+
+    // If it's supposed to be seated but nothing is placed, total is 0
+    return 0;
   }
 
-  return 0;
+  // 3. For General Admission, use price level quantities
+  return (this.priceLevels || []).reduce(
+    (sum, p) => sum + (p.quantityAvailable || 0),
+    0
+  );
 });
 
 eventSchema.virtual("ticketsReserved").get(function () {
@@ -462,43 +487,42 @@ eventSchema.virtual("ticketsReserved").get(function () {
 });
 
 eventSchema.virtual("ticketsSold").get(function () {
-  let soldCount = 0;
+  const isSeated =
+    this.eventType === "Seating Arrangement" ||
+    this.eventType === "Exhibition" ||
+    this.eventType === "Reservation";
 
-  // 1. Always prioritize priceLevels for General Admission or any event with sold stats
-  const plSold = (this.priceLevels || []).reduce(
+  if (isSeated) {
+    // 1. Strictly use layoutData if it exists
+    if (this.layoutData && Array.isArray(this.layoutData.items)) {
+      return this.layoutData.items.filter(
+        (item) => (item.type || "").toLowerCase() === "seat" && item.status === "sold"
+      ).length;
+    }
+
+    // 2. Count from legacy seatMap
+    if (this.seatMap && Array.isArray(this.seatMap.sections)) {
+      let legacySeatsSold = 0;
+      this.seatMap.sections.forEach((s) => {
+        (s.seats || []).forEach((seat) => {
+          if (seat.status === "sold" || seat.status === "partially-sold") {
+            legacySeatsSold += (seat.type === "Table" || seat.seatCount > 1)
+              ? (seat.occupiedSeats || 0)
+              : 1;
+          }
+        });
+      });
+      return legacySeatsSold;
+    }
+
+    return 0; // Seated event with no layout/seatMap = 0 sold
+  }
+
+  // 3. For General Admission, use price level statistics
+  return (this.priceLevels || []).reduce(
     (sum, p) => sum + (p.quantitySold || 0),
     0
   );
-
-  // 2. Count from layoutData if it exists (Modern Seating/Exhibition)
-  let layoutSeatsSold = 0;
-  if (this.layoutData && Array.isArray(this.layoutData.items)) {
-    layoutSeatsSold = this.layoutData.items.filter(
-      (item) => (item.type || "").toLowerCase() === "seat" && item.status === "sold"
-    ).length;
-  }
-
-  // 3. Count from legacy seatMap
-  let legacySeatsSold = 0;
-  if (this.seatMap && Array.isArray(this.seatMap.sections)) {
-    this.seatMap.sections.forEach((s) => {
-      (s.seats || []).forEach((seat) => {
-        if (seat.status === "sold" || seat.status === "partially-sold") {
-          legacySeatsSold += (seat.type === "Table" || seat.seatCount > 1)
-            ? (seat.occupiedSeats || 0)
-            : 1;
-        }
-      });
-    });
-  }
-
-  // Return the most accurate count
-  // If we have seats on the layout, that's our source of truth for seated events
-  if (layoutSeatsSold > 0) return layoutSeatsSold;
-  if (legacySeatsSold > 0) return legacySeatsSold;
-
-  // Otherwise fallback to price level statistics
-  return plSold;
 });
 
 eventSchema.virtual("totalRevenue").get(function () {

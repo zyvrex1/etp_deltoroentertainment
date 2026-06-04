@@ -8,7 +8,7 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
 
     const handleProcessRefund = async () => {
         const result = await showRefundConfirmAlert(transaction.id, transaction.amount);
-        
+
         if (result.isConfirmed) {
             if (onRefund) {
                 onRefund(transaction.id);
@@ -92,19 +92,22 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
 
                             <div className="info-item">
                                 <span className="small-body-text info-label">Category / Tier</span>
-                                <h5 className="info-value">{transaction.category || 'N/A'}</h5>
+                                <h5 className="info-value">
+                                    {transaction.category === 'Seats' ? 'Seat Ticket' : transaction.category || 'N/A'}
+                                    {transaction.details && ` (${[...new Set(transaction.details.split(',').map(s => s.trim()))].join(', ')})`}
+                                </h5>
                             </div>
 
                             <div className="info-item">
                                 <span className="small-body-text info-label">Quantity</span>
-                                <h5 className="info-value">1</h5>
+                                <h5 className="info-value">{transaction.quantity || 1}</h5>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="tx-modal-footer">
-                    {(transaction.category === 'Booth' || transaction.category === 'Seats') && transaction.status !== 'refunded' && (
+                    {(transaction.category === 'Booth' || transaction.category === 'Seats' || transaction.category === 'Ticket') && transaction.status !== 'refunded' && (
                         <button className="process-refund-btn" onClick={handleProcessRefund}>Process Refund</button>
                     )}
                     <button className="primary-button close-button-main" onClick={onClose}>Close</button>
