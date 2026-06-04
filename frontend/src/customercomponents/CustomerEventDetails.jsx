@@ -119,6 +119,29 @@ const CustomerEventDetails = () => {
             availableCount = 0;
         }
 
+        if (event?.priceLevels && Array.isArray(event.priceLevels)) {
+            event.priceLevels.forEach(pl => {
+                if (event.eventType === "General Admission" || pl.type === "General Fee") {
+                    const plTotal = pl.quantityAvailable || 0;
+                    const plSold = pl.quantitySold || 0;
+                    const plAvail = Math.max(0, plTotal - plSold);
+                    totalCount += plTotal;
+                    ticketsSold += plSold;
+                    availableCount += plAvail;
+
+                    const plId = pl._id || pl.id;
+                    if (plId) {
+                        if (!plStats[plId]) {
+                            plStats[plId] = { total: 0, available: 0, sold: 0 };
+                        }
+                        plStats[plId].total += plTotal;
+                        plStats[plId].available += plAvail;
+                        plStats[plId].sold += plSold;
+                    }
+                }
+            });
+        }
+
         return { totalCount, availableCount, ticketsSold, plStats };
     }, [event]);
 
@@ -291,7 +314,9 @@ const CustomerEventDetails = () => {
                                             <Icon icon="mdi:ticket-outline" />
                                         </div>
                                         <div className="sed-summary-text">
-                                            <p className="smaller-body-text text-secondary">Total Seats</p>
+                                            <p className="smaller-body-text text-secondary">
+                                                {event.eventType === "General Admission" ? "Total Tickets" : "Total Seats"}
+                                            </p>
                                             <h6>{stats.totalCount} Capacity</h6>
                                         </div>
                                     </div>
@@ -325,12 +350,13 @@ const CustomerEventDetails = () => {
                                     {(event.priceLevels || [])
                                         .filter(pl => {
                                             const isSeat = (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle");
+                                            const isGA = event.eventType === "General Admission" || pl.type === "General Fee";
                                             const isPlaced = stats.plStats[pl._id]?.total > 0 || stats.plStats[pl.id]?.total > 0;
                                             
-                                            // If no layout data/seatMap at all, everything is "unplaced" -> hide it to match CustomerBrowseEvent's 0 count
-                                            if (!event.layoutData && !event.seatMap) return false;
+                                            // If no layout data/seatMap at all, and not GA, hide it
+                                            if (!event.layoutData && !event.seatMap && !isGA) return false;
                                             
-                                            return isSeat && isPlaced;
+                                            return (isSeat && isPlaced) || isGA;
                                         })
                                         .map((pl, idx) => {
                                             const plStat = stats.plStats[pl._id] || stats.plStats[pl.id] || { available: 0 };
@@ -352,9 +378,10 @@ const CustomerEventDetails = () => {
                                     }
                                     {(!event.priceLevels || (event.priceLevels || []).filter(pl => {
                                         const isSeat = (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle");
+                                        const isGA = event.eventType === "General Admission" || pl.type === "General Fee";
                                         const isPlaced = stats.plStats[pl._id]?.total > 0 || stats.plStats[pl.id]?.total > 0;
-                                        if (!event.layoutData && !event.seatMap) return false;
-                                        return isSeat && isPlaced;
+                                        if (!event.layoutData && !event.seatMap && !isGA) return false;
+                                        return (isSeat && isPlaced) || isGA;
                                     }).length === 0) && (
                                         <p className="text-secondary">No ticket pricing available yet.</p>
                                     )}
@@ -374,9 +401,10 @@ const CustomerEventDetails = () => {
                         {(event.priceLevels || [])
                             .filter(pl => {
                                 const isSeat = (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle");
+                                const isGA = event.eventType === "General Admission" || pl.type === "General Fee";
                                 const isPlaced = stats.plStats[pl._id]?.total > 0 || stats.plStats[pl.id]?.total > 0;
-                                if (!event.layoutData && !event.seatMap) return false;
-                                return isSeat && isPlaced;
+                                if (!event.layoutData && !event.seatMap && !isGA) return false;
+                                return (isSeat && isPlaced) || isGA;
                             })
                             .slice(0, 3)
                             .map((pl, idx) => {

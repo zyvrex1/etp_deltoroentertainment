@@ -134,11 +134,13 @@ const Payments = () => {
         feeVal: res.amount?.fee || 0,
         booth: isBooth
           ? `Booth (${res.boothCode})`
-          : res.seatLabels?.length > 0
-            ? `Seats (${res.seatLabels.join(', ')})`
-            : res.seatIds?.length > 0
-              ? `Seats (${res.seatIds.length} seat${res.seatIds.length > 1 ? 's' : ''})`
-              : null,
+          : isGA
+            ? `Tickets (${res.seatIds?.length || 1})`
+            : res.seatLabels?.length > 0
+              ? `Seats (${res.seatLabels.join(', ')})`
+              : res.seatIds?.length > 0
+                ? `Seats (${res.seatIds.length} seat${res.seatIds.length > 1 ? 's' : ''})`
+                : null,
         paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
         status: res.status,
         dateStr: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A',
@@ -189,11 +191,11 @@ const Payments = () => {
       );
 
       if (existingGroup) {
-        // Add to existing group
         existingGroup.amountVal += item.amountVal;
         existingGroup.quantity += item.quantity;
         if (item.details) {
-          existingGroup.detailsList.push(item.details);
+          const newDetails = item.details.split(',').map(s => s.trim());
+          existingGroup.detailsList.push(...newDetails);
         }
       } else {
         // Create new group
@@ -210,7 +212,7 @@ const Payments = () => {
           quantity: item.quantity,
           dateStr: item.dateStr,
           resId: item.resId, // Store first resId as reference
-          detailsList: item.details ? [item.details] : []
+          detailsList: item.details ? [...new Set(item.details.split(',').map(s => s.trim()))] : []
         };
         gaGroups.push(newGroup);
       }
@@ -223,7 +225,7 @@ const Payments = () => {
         resId: g.resId,
         promoter: g.promoter,
         event: g.event,
-        booth: `Seats (${g.quantity} ticket${g.quantity > 1 ? 's' : ''})`,
+        booth: `Tickets (${g.quantity})`,
         category: g.category,
         amount: `$${g.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
         paymentMethod: g.paymentMethod,
@@ -231,7 +233,7 @@ const Payments = () => {
         date: g.dateStr,
         createdAtTime: g.createdAtTime,
         quantity: g.quantity,
-        details: g.detailsList.join(", ")
+        details: [...new Set(g.detailsList)].join(", ")
       });
     });
 
@@ -381,7 +383,8 @@ const Payments = () => {
         existingGroup.amountVal += item.amountVal;
         existingGroup.quantity += item.quantity;
         if (item.details) {
-          existingGroup.detailsList.push(item.details);
+          const newDetails = item.details.split(',').map(s => s.trim());
+          existingGroup.detailsList.push(...newDetails);
         }
       } else {
         const newGroup = {
@@ -399,7 +402,7 @@ const Payments = () => {
           filterType: item.filterType,
           rawDate: item.rawDate,
           resId: item.resId,
-          detailsList: item.details ? [item.details] : []
+          detailsList: item.details ? [...new Set(item.details.split(',').map(s => s.trim()))] : []
         };
         gaGroups.push(newGroup);
       }
@@ -418,7 +421,7 @@ const Payments = () => {
         rawDate: g.rawDate,
         paymentMethod: g.paymentMethod,
         quantity: g.quantity,
-        details: g.detailsList.join(", ")
+        details: [...new Set(g.detailsList)].join(", ")
       });
     });
 

@@ -114,7 +114,6 @@ const CustomerBrowseEvent = () => {
                     availableCount++;
                 }
             });
-            return availableCount;
         } else if (event.seatMap && event.seatMap.sections) {
             event.seatMap.sections.forEach(sec => {
                 (sec.seats || []).forEach(seat => {
@@ -124,10 +123,19 @@ const CustomerBrowseEvent = () => {
                     }
                 });
             });
-            return availableCount;
         }
 
-        return 0;
+        // Check for General Admission or General Fee categories
+        if (event.priceLevels && Array.isArray(event.priceLevels)) {
+            event.priceLevels.forEach(pl => {
+                if (event.eventType === "General Admission" || pl.type === "General Fee") {
+                    const availableQty = Math.max(0, (pl.quantityAvailable || 0) - (pl.quantitySold || 0));
+                    availableCount += availableQty;
+                }
+            });
+        }
+
+        return availableCount;
     };
 
     return (

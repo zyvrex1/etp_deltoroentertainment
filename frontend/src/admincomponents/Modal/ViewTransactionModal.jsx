@@ -94,7 +94,7 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
                                 <span className="small-body-text info-label">Category / Tier</span>
                                 <h5 className="info-value">
                                     {transaction.category === 'Seats' ? 'Seat Ticket' : transaction.category || 'N/A'}
-                                    {transaction.details && ` (${transaction.details})`}
+                                    {transaction.details && ` (${[...new Set(transaction.details.split(',').map(s => s.trim()))].join(', ')})`}
                                 </h5>
                             </div>
 

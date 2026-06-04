@@ -689,9 +689,9 @@ const CustomerSeats = () => {
                                                 <span className="cs-cat-price">${(cat.facePrice || 0).toFixed(2)}</span>
                                                 <span className="cs-cat-units">
                                                     {cat.quantityAvailable != null 
-                                                        ? cat.quantityAvailable - qty 
+                                                        ? (cat.quantityAvailable - (cat.quantitySold || 0)) - qty 
                                                         : cat.quantity != null 
-                                                            ? cat.quantity - qty 
+                                                            ? (cat.quantity - (cat.quantitySold || 0)) - qty 
                                                             : '—'} available
                                                 </span>
                                             </div>
@@ -701,7 +701,7 @@ const CustomerSeats = () => {
                                                     <div
                                                         className="cs-progress-fill"
                                                         style={{
-                                                            width: `${Math.min((qty / (cat.quantityAvailable || 1)) * 100, 100)}%`,
+                                                            width: `${Math.min((qty / (Math.max(1, cat.quantityAvailable - (cat.quantitySold || 0)))) * 100, 100)}%`,
                                                             backgroundColor: cat.color || '#666'
                                                         }}
                                                     />
@@ -724,10 +724,11 @@ const CustomerSeats = () => {
                                                         className="cs-qty-input"
                                                         value={qty}
                                                         min="0"
-                                                        max={cat.quantityAvailable || 9999}
+                                                        max={cat.quantityAvailable != null ? Math.max(0, cat.quantityAvailable - (cat.quantitySold || 0)) : 9999}
                                                         onChange={(e) => {
                                                             const val = parseInt(e.target.value) || 0;
-                                                            const clamped = Math.max(0, Math.min(val, cat.quantityAvailable || 9999));
+                                                            const maxAvailable = cat.quantityAvailable != null ? Math.max(0, cat.quantityAvailable - (cat.quantitySold || 0)) : 9999;
+                                                            const clamped = Math.max(0, Math.min(val, maxAvailable));
                                                             setTicketQuantities(prev => ({
                                                                 ...prev,
                                                                 [cat._id || cat.id]: clamped
@@ -738,7 +739,7 @@ const CustomerSeats = () => {
                                                     <button
                                                         className="cs-qty-btn"
                                                         onClick={() => updateGAQuantity(cat._id || cat.id, 1)}
-                                                        disabled={cat.quantityAvailable != null && qty >= cat.quantityAvailable}
+                                                        disabled={cat.quantityAvailable != null && qty >= Math.max(0, cat.quantityAvailable - (cat.quantitySold || 0))}
                                                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                     >
                                                         <Icon icon="mdi:plus" width="20" height="20" />
