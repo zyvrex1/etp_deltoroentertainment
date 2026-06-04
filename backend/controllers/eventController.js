@@ -1730,9 +1730,16 @@ const reserveBooth = async (req, res) => {
       }
     }
 
-    event.markModified("booths");
+   event.markModified("booths");
     event.markModified("priceLevels");
     await event.save();
+
+    // Send success response immediately — do NOT wait for notifications
+    res.status(201).json({
+      message: "Booth reserved successfully",
+      reservation,
+      event,
+    });
 
     // 3. Post-save Notifications and Socket updates (Non-fatal, wrapped in try-catch)
     try {
@@ -1792,11 +1799,7 @@ const reserveBooth = async (req, res) => {
       console.error("Non-fatal error in reservation post-processing (notifications/sockets):", notifError);
     }
 
-    res.status(201).json({
-      message: "Booth reserved successfully",
-      reservation,
-      event,
-    });
+   
   } catch (error) {
     console.error("Reserve Booth Error:", error);
 
