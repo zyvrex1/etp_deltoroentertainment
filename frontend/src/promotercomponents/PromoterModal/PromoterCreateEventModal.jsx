@@ -20,6 +20,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
   const today = new Date().toISOString().split("T")[0];
 
   const [title, setTitle] = useState("");
+  const [eventType, setEventType] = useState("General Admission");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState(today);
@@ -132,6 +133,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
     try {
       const formData = new FormData();
       formData.append("title", title);
+      formData.append("eventType", eventType);
       formData.append("description", description);
       formData.append("category", category);
       formData.append("venue", JSON.stringify(venue));
@@ -139,7 +141,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       formData.append("endDate", endDate);
       formData.append("startTime", startTime);
       formData.append("endTime", endTime);
-      
+
       if (imageFile) {
         formData.append("image", imageFile);
       }
@@ -147,6 +149,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       const response = await eventsService.createEvent(formData, user.token);
 
       setTitle("");
+      setEventType("General Admission");
       setDescription("");
       setCategory("");
       setVenue({ name: "", address: "", city: "", zipCode: "" });
@@ -165,7 +168,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       if (dispatch) {
         dispatch({ type: "CREATE_EVENT", payload: response.event });
       }
-      
+
       onClose();
 
       await showSuccessAlert(
@@ -174,7 +177,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       );
     } catch (err) {
       console.error("Submission error:", err);
-      
+
       // Map backend fields to frontend ones
       const backendToFrontendMap = {
         "title": "title",
@@ -194,7 +197,7 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       if (err.fields) {
         mappedFields = err.fields.map(f => backendToFrontendMap[f] || f);
       }
-      
+
       setError(err.message || "Failed to create event.");
       setEmptyFields(mappedFields);
       await showErrorAlert(
@@ -312,7 +315,35 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Title & Category */}
+          <div className="add-event-form-row">
+            <div className="add-event-form-group add-event-full-width">
+              <h6>Event Type</h6>
+              <div className="event-type-options">
+                <label className={`event-type-option ${eventType === "General Admission" ? "active" : ""}`}>
+                  <input
+                    type="radio"
+                    name="eventType"
+                    value="General Admission"
+                    checked={eventType === "General Admission"}
+                    onChange={(e) => setEventType(e.target.value)}
+                  />
+                  <span>General Admission</span>
+                </label>
+                <label className={`event-type-option ${eventType === "Reservation" ? "active" : ""}`}>
+                  <input
+                    type="radio"
+                    name="eventType"
+                    value="Reservation"
+                    checked={eventType === "Reservation"}
+                    onChange={(e) => setEventType(e.target.value)}
+                  />
+                  <span>Reservation</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Title & Category & Type */}
           <div className="add-event-form-row">
             <div className="add-event-form-group">
               <h6>Event Title</h6>
@@ -336,6 +367,8 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
               />
             </div>
           </div>
+
+
 
           {/* Dates */}
           <div className="add-event-form-row">

@@ -220,7 +220,7 @@ const TicketDesigner = ({ selectedEvent }) => {
 
           // Seat Info
           { id: 'category-name', type: 'text', x: 1000, y: 220, text: selectedCategory.priceName || 'Category', fontSize: 70, fontStyle: 'bold' },
-          { id: 'category-sub', type: 'text', x: 1000, y: 330, text: selectedCategory.type?.startsWith('Seat') ? 'Seat' : 'Booth', fontSize: 50, color: '#666' },
+          { id: 'category-sub', type: 'text', x: 1000, y: 330, text: selectedCategory.type?.startsWith('Seat') ? 'Seat' : (selectedCategory.type?.startsWith('Booth') ? 'Booth' : 'Ticket'), fontSize: 50, color: '#666' },
           { id: 'seat-label', type: 'text', x: 1000, y: 400, text: '1', fontSize: 60, fontStyle: 'bold' },
           { id: 'price-text', type: 'text', x: 1000, y: 470, text: selectedCategory.facePrice > 0 ? `$${selectedCategory.facePrice}` : 'FREE', fontSize: 60, fontStyle: 'bold' },
 
@@ -266,7 +266,7 @@ const TicketDesigner = ({ selectedEvent }) => {
       if (item.id === 'venue-name') return { ...item, text: venueStr };
       if (item.id === 'category-name') return { ...item, text: selectedCategory?.priceName || item.text };
       if (item.id === 'category-sub') {
-        const typePrefix = selectedCategory?.type?.startsWith('Seat') ? 'Seat' : 'Booth';
+        const typePrefix = selectedCategory?.type?.startsWith('Seat') ? 'Seat' : (selectedCategory?.type?.startsWith('Booth') ? 'Booth' : 'Ticket');
         return { ...item, text: typePrefix };
       }
       if (item.id === 'event-img') return { ...item, url: eventImgUrl };
@@ -384,51 +384,51 @@ const TicketDesigner = ({ selectedEvent }) => {
       if (response.ok && data) {
         // Update global context first
         dispatch({ type: 'UPDATE_EVENT', payload: data });
-        
+
         // Find the current category in the new data
         const updatedPriceLevels = data.priceLevels || [];
         const updatedCat = updatedPriceLevels.find(pl => pl._id === selectedCategoryId);
-        
-        if (updatedCat) {
-            const eventDate = formatDate(data.startDate);
-            const eventTime = formatTime(data.startTime);
-            const venueStr = `${data.venue?.name || 'Venue'} - ${data.venue?.address || 'Address'}`;
-            const eventImgUrl = data.image && data.image !== "null"
-              ? `${backendUrl}/uploads/${data.image}`
-              : "/assets/eventbg.jpg";
 
-            setTicketItems(prev => prev.map(item => {
-              if (item.id === 'event-title') return { ...item, text: data.title || item.text };
-              if (item.id === 'date-label') return { ...item, text: eventDate.dayName };
-              if (item.id === 'day-text') return { ...item, text: eventDate.day };
-              if (item.id === 'month-year') return { ...item, text: eventDate.monthYear };
-              if (item.id === 'time-text') return { ...item, text: eventTime };
-              if (item.id === 'venue-name') return { ...item, text: venueStr };
-              if (item.id === 'category-name') return { ...item, text: updatedCat.priceName || item.text };
-              if (item.id === 'category-sub') {
-                const typePrefix = updatedCat.type?.startsWith('Seat') ? 'Seat' : 'Booth';
-                return { ...item, text: typePrefix };
-              }
-              if (item.id === 'event-img') return { ...item, url: eventImgUrl };
-              if (item.id === 'qr-code' || item.id === 'qr-placeholder') {
-                return {
-                  ...item,
-                  id: 'qr-code',
-                  type: 'image',
-                  url: `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=${updatedCat._id}`,
-                  dynamicField: 'qrData'
-                };
-              }
-              if (item.id === 'barcode-img') {
-                return {
-                  ...item,
-                  url: `https://bwipjs-api.metafloor.com/?bcid=code128&text=${updatedCat._id}&includetext=false&rotate=R`,
-                  dynamicField: 'qrData'
-                };
-              }
-              if (item.id === 'price-text') return { ...item, text: updatedCat.facePrice > 0 ? `$${updatedCat.facePrice}` : 'FREE' };
-              return item;
-            }));
+        if (updatedCat) {
+          const eventDate = formatDate(data.startDate);
+          const eventTime = formatTime(data.startTime);
+          const venueStr = `${data.venue?.name || 'Venue'} - ${data.venue?.address || 'Address'}`;
+          const eventImgUrl = data.image && data.image !== "null"
+            ? `${backendUrl}/uploads/${data.image}`
+            : "/assets/eventbg.jpg";
+
+          setTicketItems(prev => prev.map(item => {
+            if (item.id === 'event-title') return { ...item, text: data.title || item.text };
+            if (item.id === 'date-label') return { ...item, text: eventDate.dayName };
+            if (item.id === 'day-text') return { ...item, text: eventDate.day };
+            if (item.id === 'month-year') return { ...item, text: eventDate.monthYear };
+            if (item.id === 'time-text') return { ...item, text: eventTime };
+            if (item.id === 'venue-name') return { ...item, text: venueStr };
+            if (item.id === 'category-name') return { ...item, text: updatedCat.priceName || item.text };
+            if (item.id === 'category-sub') {
+              const typePrefix = updatedCat.type?.startsWith('Seat') ? 'Seat' : (updatedCat.type?.startsWith('Booth') ? 'Booth' : 'Ticket');
+              return { ...item, text: typePrefix };
+            }
+            if (item.id === 'event-img') return { ...item, url: eventImgUrl };
+            if (item.id === 'qr-code' || item.id === 'qr-placeholder') {
+              return {
+                ...item,
+                id: 'qr-code',
+                type: 'image',
+                url: `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=${updatedCat._id}`,
+                dynamicField: 'qrData'
+              };
+            }
+            if (item.id === 'barcode-img') {
+              return {
+                ...item,
+                url: `https://bwipjs-api.metafloor.com/?bcid=code128&text=${updatedCat._id}&includetext=false&rotate=R`,
+                dynamicField: 'qrData'
+              };
+            }
+            if (item.id === 'price-text') return { ...item, text: updatedCat.facePrice > 0 ? `$${updatedCat.facePrice}` : 'FREE' };
+            return item;
+          }));
         }
 
         showSuccessAlert("Synced", "Event data and ticket layout refreshed!");
@@ -491,7 +491,7 @@ const TicketDesigner = ({ selectedEvent }) => {
                       <span className="cat-name" style={{ fontWeight: selectedCategoryId === cat._id ? 'bold' : 'normal' }}>
                         {cat.priceName}
                       </span>
-                      <span className="price" style={{color: "var(--color-black-primary)"}}> ${cat.facePrice?.toFixed(2)}</span>
+                      <span className="price" style={{ color: "var(--color-black-primary)" }}> ${cat.facePrice?.toFixed(2)}</span>
                     </div>
                   </div>
                 ))

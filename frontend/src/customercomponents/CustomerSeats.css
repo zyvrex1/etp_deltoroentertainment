@@ -52,7 +52,7 @@
 
     .cs-main-container {
         display: flex;
-        gap: 24px;
+        gap: 20px;
         width: 100%;
     }
 
@@ -98,8 +98,12 @@
 
 .cs-map-canvas-container {
     width: 100%;
-    height: 500px;
-    background-color: #fcfcfc;
+    height: calc(100vh - 340px);
+    min-height: 480px;
+    /* Matches Admin's full-height konva-container — same default fit zoom */
+    background-color: #f1f5f9;
+    background-image: radial-gradient(var(--color-black-quaternary) 0.5px, transparent 0.5px);
+    background-size: 20px 20px;
     border: 1px solid var(--color-black-quaternary);
     border-radius: 8px;
     overflow: hidden;
@@ -253,12 +257,170 @@
 }
 
 .cs-content-right {
-    width: 320px;
+    width: 360px;
     flex-shrink: 0;
 
     h4 {
         text-align: left;
     }
+}
+
+/* ── Categories Card (matches Admin/Promoter sidebar-card design) ── */
+.cs-categories-card {
+    background-color: var(--color-white-primary);
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    border: 1px solid var(--color-black-quaternary);
+}
+
+.cs-cat-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cs-categories-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+/* ── GA Quantity Stepper (mirrors cs-quantity-selector pattern) ── */
+.cs-quantity-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.cs-qty-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--color-black-quaternary);
+    background: var(--color-bg-light);
+    color: var(--color-black-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.cs-qty-btn:hover:not(:disabled) {
+    background: var(--color-black-quaternary);
+    border-color: var(--color-black-tertiary);
+}
+
+.cs-qty-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.cs-qty-count {
+    min-width: 22px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--color-black-primary);
+}
+
+/* ── Category Item Card (mirrors .sidebar-cat-item) ── */
+.cs-sidebar-cat-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: white;
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 14px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+}
+
+/* Coloured icon block (mirrors .cat-palette-visual) */
+.cs-cat-palette-visual {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 22px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Details column (mirrors .cat-details) */
+.cs-cat-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+}
+
+/* Top row: name + action (mirrors .cat-top) */
+.cs-cat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+    gap: 8px;
+}
+
+/* Category name (mirrors .cat-name) */
+.cs-cat-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--color-black-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Price + units row (mirrors .cat-meta) */
+.cs-cat-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-black-tertiary);
+    margin-bottom: 6px;
+}
+
+.cs-cat-price {
+    color: var(--color-black-secondary);
+}
+
+.cs-cat-units {
+    color: var(--color-black-tertiary);
+}
+
+/* "Select on map" hint */
+.cs-map-hint {
+    white-space: nowrap;
+    font-size: 11px;
+}
+
+/* Progress bar (mirrors .progress-bar / .progress-fill) */
+.cs-progress-bar {
+    height: 5px;
+    background: var(--color-black-quaternary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.cs-progress-fill {
+    height: 100%;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 3px;
 }
 
 .cs-order-summary-card {
@@ -412,6 +574,7 @@
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }

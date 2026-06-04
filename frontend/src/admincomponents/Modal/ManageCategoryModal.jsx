@@ -2,16 +2,27 @@ import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./CreateEventModal";
 
-const ManageCategoryModal = ({ isOpen, onClose, onSave, editingCategory }) => {
-  const [modalType, setModalType] = useState("Seat (Circle)");
+const ManageCategoryModal = ({ isOpen, onClose, onSave, editingCategory, eventType }) => {
+  const isGA = eventType === "General Admission";
+
+  const defaultType = isGA ? "General Fee" : "Seat (Circle)";
+
+  const [modalType, setModalType] = useState(defaultType);
+  const [price, setPrice] = useState("99");
 
   useEffect(() => {
     if (editingCategory) {
-      setModalType(editingCategory.type || "Seat (Circle)");
+      setModalType(editingCategory.type || defaultType);
+      setPrice(editingCategory.price?.toString() || "99");
     } else {
-      setModalType("Seat (Circle)");
+      setModalType(defaultType);
+      setPrice("99");
     }
-  }, [editingCategory, isOpen]);
+  }, [editingCategory, isOpen, eventType]);
+
+  const handleTypeChange = (e) => {
+    setModalType(e.target.value);
+  };
 
   if (!isOpen) return null;
 
@@ -24,8 +35,7 @@ const ManageCategoryModal = ({ isOpen, onClose, onSave, editingCategory }) => {
       quantity: parseInt(formData.get("quantity")),
       price: parseFloat(formData.get("price")),
       boothSize: formData.get("boothSize") || "",
-      // Standardize color to the gray theme as requested
-      color: "#666666", 
+      color: "#666666",
     };
     onSave(categoryData);
   };
@@ -42,35 +52,36 @@ const ManageCategoryModal = ({ isOpen, onClose, onSave, editingCategory }) => {
         <form className="add-event-modal-body add-event-form" onSubmit={handleSubmit}>
           <div className="add-event-form-group">
             <h6>Category Name</h6>
-            <input 
-              name="name" 
-              defaultValue={editingCategory?.name} 
-              placeholder="e.g. VIP Seats, Premium Booths" 
-              required 
+            <input
+              name="name"
+              defaultValue={editingCategory?.name}
+              placeholder="e.g. VIP Section, General Admission"
+              required
             />
           </div>
-          
+
           <div className="add-event-form-row">
             <div className="add-event-form-group">
               <h6>Type</h6>
-              <select 
-                name="type" 
-                className="promoter-select-modal" 
-                defaultValue={modalType}
-                onChange={(e) => setModalType(e.target.value)}
+              <select
+                name="type"
+                className="promoter-select-modal"
+                value={modalType}
+                onChange={handleTypeChange}
               >
-                <option>Seat (Circle)</option>
-                <option>Booth (Square)</option>
+                <option value="General Fee">General Fee</option>
+                <option value="Seat (Circle)">Seat (Circle)</option>
+                <option value="Booth (Square)">Booth (Square)</option>
               </select>
             </div>
             {modalType === "Booth (Square)" && (
               <div className="add-event-form-group">
                 <h6>Booth Size</h6>
-                <input 
-                  name="boothSize" 
-                  defaultValue={editingCategory?.boothSize} 
-                  placeholder="e.g. 10x10, 5x5" 
-                  required 
+                <input
+                  name="boothSize"
+                  defaultValue={editingCategory?.boothSize}
+                  placeholder="e.g. 10x10, 5x5"
+                  required
                 />
               </div>
             )}
@@ -79,23 +90,24 @@ const ManageCategoryModal = ({ isOpen, onClose, onSave, editingCategory }) => {
           <div className="add-event-form-row">
             <div className="add-event-form-group">
               <h6>Quantity Available</h6>
-              <input 
-                name="quantity" 
-                type="number" 
-                min="1" 
-                defaultValue={editingCategory?.quantity || 10} 
-                required 
+              <input
+                name="quantity"
+                type="number"
+                min="1"
+                defaultValue={editingCategory?.quantity || 10}
+                required
               />
             </div>
             <div className="add-event-form-group">
               <h6>Face Price ($)</h6>
-              <input 
-                name="price" 
-                type="number" 
-                step="0.01" 
-                min="0" 
-                defaultValue={editingCategory?.price || 99} 
-                required 
+              <input
+                name="price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
               />
             </div>
           </div>

@@ -384,15 +384,44 @@ const handlePay = async () => {
                             {Array.from(new Set(checkoutItems.map(i => i.event._id))).map(eventId => {
                                 const eventItems = checkoutItems.filter(i => i.event._id === eventId);
                                 const event = eventItems[0].event;
+                                
+                                const physicalSeats = eventItems.filter(i => !i.seat?.id?.startsWith("GA-"));
+                                const gaItems = eventItems.filter(i => i.seat?.id?.startsWith("GA-"));
+
+                                const gaGroups = {};
+                                gaItems.forEach(item => {
+                                    const catKey = item.categoryId || item.categoryName;
+                                    if (!gaGroups[catKey]) {
+                                        gaGroups[catKey] = [];
+                                    }
+                                    gaGroups[catKey].push(item);
+                                });
+
                                 return (
                                     <div key={eventId} className="mb-4">
                                         <h5 className="mb-2 text-black">{event.title}</h5>
-                                        {eventItems.map((item, idx) => (
-                                            <div key={idx} className="cc-summary-row mb-1">
-                                                <span className="small-body-text text-secondary">{item.categoryName} - Seat {item.seat.label}</span>
-                                                <h6 className="text-secondary m-0">${item.facePrice.toFixed(2)}</h6>
-                                            </div>
-                                        ))}
+                                        {/* Physical Seats */}
+                                        {physicalSeats.map((item, idx) => {
+                                            const catName = item.categoryName === 'Seated Ticket' ? 'Seat Ticket' : item.categoryName;
+                                            return (
+                                                <div key={`phys-${idx}`} className="cc-summary-row mb-1">
+                                                    <span className="small-body-text text-secondary">{catName} - Seat {item.seat.label}</span>
+                                                    <h6 className="text-secondary m-0">${item.facePrice.toFixed(2)}</h6>
+                                                </div>
+                                            );
+                                        })}
+                                        {/* Grouped GA / General Fee Tickets */}
+                                        {Object.entries(gaGroups).map(([catKey, group]) => {
+                                            const first = group[0];
+                                            const totalFace = group.reduce((sum, i) => sum + i.facePrice, 0);
+                                            const catName = first.categoryName === 'Seated Ticket' ? 'Ticket' : first.categoryName;
+                                            return (
+                                                <div key={`ga-${catKey}`} className="cc-summary-row mb-1">
+                                                    <span className="small-body-text text-secondary">{catName} x {group.length}</span>
+                                                    <h6 className="text-secondary m-0">${totalFace.toFixed(2)}</h6>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 );
                             })}

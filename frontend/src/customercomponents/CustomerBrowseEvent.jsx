@@ -219,7 +219,9 @@ const CustomerBrowseEvent = () => {
                                             <span className="large-body-text stat-value">{event.startTime || "TBA"}</span>
                                         </div>
                                         <div className="cbe-stat-item">
-                                            <span className="smaller-body-text stat-label">Available Seats</span>
+                                            <span className="smaller-body-text stat-label">
+                                                {event.eventType === "General Admission" ? "Available Tickets" : "Available Seats"}
+                                            </span>
                                             <span className="large-body-text stat-value">{getAvailableSeats(event)}</span>
                                         </div>
                                     </div>

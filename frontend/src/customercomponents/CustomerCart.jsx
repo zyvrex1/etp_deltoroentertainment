@@ -189,45 +189,120 @@ export default function CustomerCart() {
                                     <span className="live-badge">Live</span>
                                 </div>
                                 <div className="ticket-list">
-                                    {items.map(item => (
-                                        <div className={`ticket-item ${selectedItems.includes(item.cartId) ? 'checked' : ''}`} key={item.cartId}>
-                                            <label className="custom-checkbox">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedItems.includes(item.cartId)}
-                                                    onChange={() => toggleItem(item.cartId)}
-                                                />
-                                                <span className="checkmark"></span>
-                                            </label>
-                                            <div className="ticket-main">
-                                                <div className="ticket-info">
-                                                    <div className="ticket-type-info">
-                                                        <h5>{item.categoryName || 'Ticket'} (Seat {item.seat?.label})</h5>
-                                                        <p>
-                                                            <Icon icon="mdi:map-marker-outline" width="16" /> {event?.venue?.name || 'Venue TBA'}
-                                                        </p>
-                                                    </div>
-                                                    <div className="ticket-meta">
-                                                        <div className="ticket-meta-item">
-                                                            <Icon icon="mdi:calendar-blank-outline" width="16" />
-                                                            <span>{event?.startDate ? new Date(event.startDate).toLocaleDateString() : 'Date TBA'}</span>
-                                                        </div>
-                                                        <div className="ticket-meta-item">
-                                                            <Icon icon="mdi:clock-outline" width="16" />
-                                                            <span>{event?.startTime || 'TBA'}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                    {(() => {
+                                        const itemsToShow = [];
+                                        const physicalSeats = items.filter(item => !item.seat?.id?.startsWith("GA-"));
+                                        const gaItems = items.filter(item => item.seat?.id?.startsWith("GA-"));
 
-                                                <div className="ticket-price-right">
-                                                    <h5>${(item.facePrice + item.serviceFee).toLocaleString()}</h5>
-                                                    <button className="del-btn" onClick={() => handleDeleteItem(item.cartId)}>
-                                                        <Icon icon="mdi:trash-can-outline" width="20" />
-                                                    </button>
+                                        physicalSeats.forEach(item => {
+                                            const catName = item.categoryName === 'Seated Ticket' ? 'Seat Ticket' : item.categoryName;
+                                            itemsToShow.push({
+                                                type: 'physical',
+                                                key: item.cartId,
+                                                ids: [item.cartId],
+                                                quantity: 1,
+                                                item: item,
+                                                label: `${catName || 'Ticket'} (Seat ${item.seat?.label})`,
+                                                facePrice: item.facePrice,
+                                                serviceFee: item.serviceFee,
+                                            });
+                                        });
+
+                                        const gaGroups = {};
+                                        gaItems.forEach(item => {
+                                            const catKey = item.categoryId || item.categoryName;
+                                            if (!gaGroups[catKey]) {
+                                                gaGroups[catKey] = [];
+                                            }
+                                            gaGroups[catKey].push(item);
+                                        });
+
+                                        Object.entries(gaGroups).forEach(([catKey, group]) => {
+                                            const first = group[0];
+                                            const totalFace = group.reduce((sum, i) => sum + i.facePrice, 0);
+                                            const totalFee = group.reduce((sum, i) => sum + i.serviceFee, 0);
+                                            const ids = group.map(i => i.cartId);
+                                            const catName = first.categoryName === 'Seated Ticket' ? 'Ticket' : first.categoryName;
+
+                                            itemsToShow.push({
+                                                type: 'ga',
+                                                key: `ga-group-${catKey}`,
+                                                ids: ids,
+                                                quantity: group.length,
+                                                item: first,
+                                                label: `${catName || 'Ticket'} x ${group.length}`,
+                                                facePrice: totalFace,
+                                                serviceFee: totalFee,
+                                            });
+                                        });
+
+                                        return itemsToShow.map(showItem => {
+                                            const isChecked = showItem.ids.every(id => selectedItems.includes(id));
+                                            const handleToggleGroup = () => {
+                                                if (isChecked) {
+                                                    setSelectedItems(prev => prev.filter(id => !showItem.ids.includes(id)));
+                                                } else {
+                                                    setSelectedItems(prev => {
+                                                        const toAdd = showItem.ids.filter(id => !prev.includes(id));
+                                                        return [...prev, ...toAdd];
+                                                    });
+                                                }
+                                            };
+
+                                            const handleDeleteGroup = async () => {
+                                                const ticketWord = showItem.quantity > 1 ? 'tickets' : 'ticket';
+                                                const result = await showDeleteConfirmAlert(
+                                                    'Remove Tickets?',
+                                                    `Are you sure you want to remove these ${showItem.quantity} ${ticketWord} from your cart?`
+                                                );
+                                                if (result.isConfirmed) {
+                                                    showItem.ids.forEach(id => removeFromCart(id));
+                                                    setSelectedItems(prev => prev.filter(id => !showItem.ids.includes(id)));
+                                                    showSuccessAlert('Removed!', 'Selected ticket(s) have been removed.');
+                                                }
+                                            };
+
+                                            return (
+                                                <div className={`ticket-item ${isChecked ? 'checked' : ''}`} key={showItem.key}>
+                                                    <label className="custom-checkbox">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={handleToggleGroup}
+                                                        />
+                                                        <span className="checkmark"></span>
+                                                    </label>
+                                                    <div className="ticket-main">
+                                                        <div className="ticket-info">
+                                                            <div className="ticket-type-info">
+                                                                <h5>{showItem.label}</h5>
+                                                                <p>
+                                                                    <Icon icon="mdi:map-marker-outline" width="16" /> {event?.venue?.name || 'Venue TBA'}
+                                                                </p>
+                                                            </div>
+                                                            <div className="ticket-meta">
+                                                                <div className="ticket-meta-item">
+                                                                    <Icon icon="mdi:calendar-blank-outline" width="16" />
+                                                                    <span>{event?.startDate ? new Date(event.startDate).toLocaleDateString() : 'Date TBA'}</span>
+                                                                </div>
+                                                                <div className="ticket-meta-item">
+                                                                    <Icon icon="mdi:clock-outline" width="16" />
+                                                                    <span>{event?.startTime || 'TBA'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="ticket-price-right">
+                                                            <h5>${(showItem.facePrice + showItem.serviceFee).toLocaleString()}</h5>
+                                                            <button className="del-btn" onClick={handleDeleteGroup}>
+                                                                <Icon icon="mdi:trash-can-outline" width="20" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                            );
+                                        });
+                                    })()}
                                 </div>
                             </div>
                         ))}

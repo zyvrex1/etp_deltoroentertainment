@@ -329,7 +329,13 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                   return (
                     <div key={cat._id} className="sidebar-cat-item" style={{ padding: '10px' }}>
                       <div className="cat-palette-visual" style={{ backgroundColor: cat.color, width: '32px', height: '32px', fontSize: '16px' }}>
-                        {cat.type?.includes("Seat") ? <Icon icon="mdi:circle" /> : <Icon icon="mdi:square" />}
+                        {cat.type === "General Fee" ? (
+                          <Icon icon="mdi:ticket-confirmation-outline" />
+                        ) : cat.type?.includes("Seat") ? (
+                          <Icon icon="mdi:circle" />
+                        ) : (
+                          <Icon icon="mdi:square" />
+                        )}
                       </div>
                       <div className="cat-details">
                         <div className="cat-top">
@@ -585,7 +591,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                                 y={-boothH / 2}
                                 width={boothW}
                                 height={boothH}
-                                fill={isOccupied(item.status) ? '#22c55e' : (cat?.color || "#e0e0e0")} 
+                                fill={isOccupied(item.status) ? '#22c55e' : (cat?.color || "#e0e0e0")}
                                 stroke="#000"
                                 strokeWidth={1}
                                 strokeScaleEnabled={false}

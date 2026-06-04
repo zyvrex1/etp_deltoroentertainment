@@ -30,6 +30,7 @@ const CustomerSeats = () => {
     const [priceLevels, setPriceLevels] = useState([]);
     const [layoutItems, setLayoutItems] = useState([]);
     const [selectedSeats, setSelectedSeats] = useState([]);
+    const [ticketQuantities, setTicketQuantities] = useState({}); // { categoryId: quantity } for GA
 
     // Canvas State
     const [zoom, setZoom] = useState(1);
@@ -140,27 +141,83 @@ const CustomerSeats = () => {
 
     const handleBack = () => navigate(-1);
 
-    const subtotal = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
-    const serviceFees = selectedSeats.length > 0 ? (selectedSeats.length * 10) : 0;
+    // Consolidated price calculation
+    const getSelectedTicketsPrice = () => {
+        const seatsPrice = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+        const gaPrice = Object.entries(ticketQuantities).reduce((sum, [catId, qty]) => {
+            const cat = priceLevels.find(pl => pl._id === catId || pl.id === catId);
+            return sum + ((cat?.facePrice || 0) * qty);
+        }, 0);
+        return seatsPrice + gaPrice;
+    };
+
+    const getSelectedTicketsCount = () => {
+        const gaCount = Object.values(ticketQuantities).reduce((a, b) => a + b, 0);
+        return selectedSeats.length + gaCount;
+    };
+
+    const subtotal = getSelectedTicketsPrice();
+    const totalCount = getSelectedTicketsCount();
+    const serviceFees = totalCount > 0 ? (totalCount * 10) : 0;
     const total = subtotal + serviceFees;
 
+    const updateGAQuantity = (categoryId, delta) => {
+        setTicketQuantities(prev => {
+            const current = prev[categoryId] || 0;
+            const next = Math.max(0, current + delta);
+            return { ...prev, [categoryId]: next };
+        });
+    };
+
     const handleAddToCart = async () => {
-        if (selectedSeats.length === 0) return;
-        const result = await showAddToCartConfirmAlert(selectedSeats.length);
+        const totalItemsCount = getSelectedTicketsCount();
+        if (totalItemsCount === 0) return;
+
+        const result = await showAddToCartConfirmAlert(totalItemsCount);
         if (result.isConfirmed) {
-            addToCart(event, selectedSeats);
+            const allSelectedItems = [...selectedSeats];
+
+            // Add GA tickets from quantities
+            Object.entries(ticketQuantities).forEach(([catId, qty]) => {
+                const category = priceLevels.find(pl => pl._id === catId || pl.id === catId);
+                for (let i = 0; i < qty; i++) {
+                    allSelectedItems.push({
+                        id: `GA-${catId}-${Date.now()}-${i}`,
+                        label: `${category?.priceName || "General"} Ticket`,
+                        categoryId: catId,
+                        categoryName: category?.priceName || "General",
+                        price: category?.facePrice || 0
+                    });
+                }
+            });
+
+            addToCart(event, allSelectedItems);
             showSuccessAlert('Added!', 'Ticket(s) added to your cart.');
-            // Removed navigate('/customer/cart') to allow continued selection
-            setSelectedSeats([]); // Clear selection after adding to cart
+            setSelectedSeats([]);
+            setTicketQuantities({});
         }
     };
 
     const handleContinueBrowsing = () => navigate('/customer/browse-events');
 
-    // Rendering Helpers
+    // Rendering Helpers — match Admin LayoutBuilder exactly
+    const parseBoothSizePx = (boothSize) => {
+        const UNIT = 4;
+        if (!boothSize || typeof boothSize !== 'string') return { w: 40, h: 40 };
+        const parts = boothSize.toLowerCase().split('x');
+        if (parts.length !== 2) return { w: 40, h: 40 };
+        const wUnits = parseInt(parts[0], 10);
+        const hUnits = parseInt(parts[1], 10);
+        if (isNaN(wUnits) || isNaN(hUnits) || wUnits <= 0 || hUnits <= 0) return { w: 40, h: 40 };
+        return {
+            w: Math.max(20, wUnits * UNIT),
+            h: Math.max(20, hUnits * UNIT),
+        };
+    };
+
     const getSeatColor = (item) => {
         if (selectedSeats.find(s => s.id === item.id)) return "#2563EB"; // Selected Blue
-        if (item.status === 'sold' || item.status === 'reserved' || item.status === 'blocked') return "#2ECC71"; // Occupied Green
+        if (item.status === 'sold' || item.status === 'reserved' || item.status === 'blocked') return "#22c55e"; // Occupied Green (matches Admin)
         const cat = priceLevels.find(c => c._id === item.categoryId);
         return cat?.color || "#666666";
     };
@@ -216,7 +273,7 @@ const CustomerSeats = () => {
                                     <Icon icon="mdi:fit-to-screen-outline" />
                                 </button>
                             </div>
-                            
+
                             <div className="cs-skeleton-box" style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}></div>
                         </div>
 
@@ -324,7 +381,7 @@ const CustomerSeats = () => {
                 </div>
                 <div className="cs-header-right">
                     <span className="small-body-text text-secondary">Tickets Selected</span>
-                    <h2 className="text-red m-0">{selectedSeats.length}</h2>
+                    <h2 className="text-red m-0">{getSelectedTicketsCount()}</h2>
                 </div>
             </div>
 
@@ -444,37 +501,55 @@ const CustomerSeats = () => {
                                     const isSeat = item.type === "seat";
                                     const isBooth = item.type === "booth";
                                     const isElement = item.type === "element";
+                                    const isSelected = !!selectedSeats.find(s => s.id === item.id);
+                                    const category = priceLevels.find(c => c._id === item.categoryId || c.id === item.categoryId);
+
+                                    // Dynamic booth size — identical to Admin parseBoothSizePx
+                                    const { w: boothW, h: boothH } = isBooth
+                                        ? parseBoothSizePx(category?.boothSize)
+                                        : { w: 40, h: 40 };
 
                                     if (isSeat) {
                                         return (
                                             <Group
                                                 key={item.id}
                                                 x={item.x} y={item.y}
-                                                rotation={item.rotation}
+                                                scaleX={item.scaleX || 1}
+                                                scaleY={item.scaleY || 1}
+                                                rotation={item.rotation || 0}
                                                 onClick={() => toggleSeat(item)}
                                                 onTap={() => toggleSeat(item)}
                                                 onMouseEnter={(e) => {
                                                     const stage = e.target.getStage();
-                                                    if (item.status === 'available') {
-                                                        stage.container().style.cursor = 'pointer';
-                                                    }
+                                                    if (item.status === 'available') stage.container().style.cursor = 'pointer';
                                                 }}
                                                 onMouseLeave={(e) => {
-                                                    const stage = e.target.getStage();
-                                                    stage.container().style.cursor = 'default';
+                                                    e.target.getStage().container().style.cursor = 'default';
                                                 }}
                                             >
-
                                                 <Circle
                                                     radius={20}
                                                     fill={getSeatColor(item)}
-                                                    stroke="#fff" strokeWidth={1}
+                                                    stroke="#fff"
+                                                    strokeWidth={1}
+                                                    shadowBlur={isSelected ? 10 : 0}
+                                                    shadowColor="#000"
+                                                    shadowOpacity={0.2}
                                                 />
                                                 <Text
                                                     text={item.label || ""}
-                                                    fontSize={9} fill="#fff"
-                                                    align="center" verticalAlign="middle"
-                                                    x={-20} y={-20} width={40} height={40}
+                                                    fontSize={9}
+                                                    fontStyle="bold"
+                                                    fill="white"
+                                                    align="center"
+                                                    verticalAlign="middle"
+                                                    x={0} y={0}
+                                                    offsetX={20} offsetY={20}
+                                                    width={40} height={40}
+                                                    shadowColor="black"
+                                                    shadowBlur={2}
+                                                    shadowOpacity={0.8}
+                                                    shadowOffset={{ x: 1, y: 1 }}
                                                 />
                                             </Group>
                                         );
@@ -482,34 +557,43 @@ const CustomerSeats = () => {
 
                                     if (isBooth) {
                                         return (
-                                            <Group 
-                                                key={item.id} 
-                                                x={item.x} y={item.y} 
-                                                rotation={item.rotation}
-                                                opacity={0.3} // Visual disabled look
-                                                onMouseEnter={(e) => {
-                                                    const stage = e.target.getStage();
-                                                    stage.container().style.cursor = 'not-allowed';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    const stage = e.target.getStage();
-                                                    stage.container().style.cursor = 'default';
-                                                }}
+                                            <Group
+                                                key={item.id}
+                                                x={item.x} y={item.y}
+                                                scaleX={item.scaleX || 1}
+                                                scaleY={item.scaleY || 1}
+                                                rotation={item.rotation || 0}
+                                                listening={false}
                                             >
-
-
                                                 <Rect
-                                                    width={50} height={50} x={-25} y={-25}
-                                                    fill={selectedSeats.find(s => s.id === item.id) ? "#2563EB" : (item.status === 'sold' || item.status === 'reserved' || item.status === 'blocked' ? '#2ECC71' : '#F5F5F5')}
-                                                    stroke={selectedSeats.find(s => s.id === item.id) ? "#fff" : "#CCC"}
-                                                    strokeWidth={selectedSeats.find(s => s.id === item.id) ? 2 : 1}
-                                                    opacity={0.8}
+                                                    x={-boothW / 2}
+                                                    y={-boothH / 2}
+                                                    width={boothW}
+                                                    height={boothH}
+                                                    fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
+                                                    stroke="#000"
+                                                    strokeWidth={1}
+                                                    strokeScaleEnabled={false}
+                                                    shadowBlur={0}
+                                                    shadowColor="#000"
+                                                    shadowOpacity={0.2}
                                                 />
                                                 <Text
-                                                    text={item.code || "Booth"}
-                                                    fontSize={10} fill={selectedSeats.find(s => s.id === item.id) ? "#fff" : "#AAA"}
-                                                    align="center" verticalAlign="middle"
-                                                    x={-25} y={-25} width={50} height={50}
+                                                    text={item.label || item.code || ""}
+                                                    fontSize={Math.max(8, Math.min(boothW, boothH) / 5)}
+                                                    fontStyle="bold"
+                                                    fill="white"
+                                                    align="center"
+                                                    verticalAlign="middle"
+                                                    x={0} y={0}
+                                                    offsetX={boothW / 2}
+                                                    offsetY={boothH / 2}
+                                                    width={boothW}
+                                                    height={boothH}
+                                                    shadowColor="black"
+                                                    shadowBlur={2}
+                                                    shadowOpacity={0.8}
+                                                    shadowOffset={{ x: 1, y: 1 }}
                                                 />
                                             </Group>
                                         );
@@ -517,16 +601,23 @@ const CustomerSeats = () => {
 
                                     if (isElement) {
                                         return (
-                                            <Group key={item.id} x={item.x} y={item.y} rotation={item.rotation} listening={false}>
+                                            <Group key={item.id} x={item.x} y={item.y} rotation={item.rotation || 0} listening={false}>
                                                 <Rect
-                                                    width={item.width || 100} height={item.height || 40}
-                                                    fill="#E8F1FF" stroke="#334155" strokeWidth={1}
+                                                    width={item.width || 100}
+                                                    height={item.height || 40}
+                                                    fill="#E8F1FF"
+                                                    stroke="#334155"
+                                                    strokeWidth={1}
                                                 />
                                                 <Text
                                                     text={item.label || ""}
-                                                    fontSize={12} fill="#1E293B" fontStyle="bold"
-                                                    align="center" verticalAlign="middle"
-                                                    width={item.width || 100} height={item.height || 40}
+                                                    fontSize={12}
+                                                    fontStyle="bold"
+                                                    fill="#1E293B"
+                                                    align="center"
+                                                    verticalAlign="middle"
+                                                    width={item.width || 100}
+                                                    height={item.height || 40}
                                                 />
                                             </Group>
                                         );
@@ -543,7 +634,7 @@ const CustomerSeats = () => {
                             <span className="smaller-body-text text-secondary">Selected</span>
                         </div>
                         <div className="cs-legend-item">
-                            <span className="cs-legend-dot" style={{ backgroundColor: '#2ECC71' }}></span>
+                            <span className="cs-legend-dot" style={{ backgroundColor: '#22c55e' }}></span>
                             <span className="smaller-body-text text-secondary">Sold / Occupied</span>
                         </div>
                         <div className="cs-legend-item">
@@ -554,22 +645,149 @@ const CustomerSeats = () => {
                 </div>
 
                 <div className="cs-content-right">
+                    {/* Ticket Categories List - same design as Admin/Promoter */}
+                    <div className="cs-categories-card mb-4">
+                        <div className="cs-cat-card-header mb-4">
+                            <h4 className="m-0 text-black">Ticket Categories</h4>
+                        </div>
+                        <div className="cs-categories-list">
+                            {priceLevels.map((cat) => {
+                                const isGA = event.eventType === "General Admission";
+                                const isGeneralFee = cat.type === "General Fee";
+                                const isDirectQty = isGA || isGeneralFee;
+                                const qty = ticketQuantities[cat._id || cat.id] || 0;
+                                const catType = cat.type || "Seat (Circle)";
+
+                                return (
+                                    <div key={cat._id || cat.id} className="cs-sidebar-cat-item mb-2">
+                                        {/* Coloured icon — same as Admin cat-palette-visual */}
+                                        <div
+                                            className="cs-cat-palette-visual"
+                                            style={{ backgroundColor: cat.color || '#666' }}
+                                        >
+                                            {catType === "General Fee" ? (
+                                                <Icon icon="mdi:ticket-confirmation-outline" />
+                                            ) : catType.includes("Seat") ? (
+                                                <Icon icon="mdi:circle" />
+                                            ) : (
+                                                <Icon icon="mdi:square" />
+                                            )}
+                                        </div>
+
+                                        {/* Details */}
+                                        <div className="cs-cat-details">
+                                            <div className="cs-cat-top">
+                                                <span className="cs-cat-name">
+                                                    {cat.priceName === 'General Fee' ? 'Entrance Fee' : cat.priceName}
+                                                </span>
+                                                {!isDirectQty && (
+                                                    <span className="cs-map-hint smaller-body-text text-secondary">Select on map</span>
+                                                )}
+                                            </div>
+                                            {/* Price + availability meta */}
+                                            <div className="cs-cat-meta">
+                                                <span className="cs-cat-price">${(cat.facePrice || 0).toFixed(2)}</span>
+                                                <span className="cs-cat-units">
+                                                    {cat.quantityAvailable != null 
+                                                        ? cat.quantityAvailable - qty 
+                                                        : cat.quantity != null 
+                                                            ? cat.quantity - qty 
+                                                            : '—'} available
+                                                </span>
+                                            </div>
+                                            {/* Progress bar showing selected qty */}
+                                            {isDirectQty && cat.quantityAvailable > 0 && (
+                                                <div className="cs-progress-bar">
+                                                    <div
+                                                        className="cs-progress-fill"
+                                                        style={{
+                                                            width: `${Math.min((qty / (cat.quantityAvailable || 1)) * 100, 100)}%`,
+                                                            backgroundColor: cat.color || '#666'
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
+                                            
+                                            {/* Action: GA/General Fee stepper */}
+                                            {isDirectQty && (
+                                                <div className="cs-quantity-selector" style={{ marginTop: '12px' }}>
+                                                    <button
+                                                        className="cs-qty-btn"
+                                                        onClick={() => updateGAQuantity(cat._id || cat.id, -1)}
+                                                        disabled={qty === 0}
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                    >
+                                                        <Icon icon="mdi:minus" width="20" height="20" />
+                                                    </button>
+                                                    <input
+                                                        type="number"
+                                                        className="cs-qty-input"
+                                                        value={qty}
+                                                        min="0"
+                                                        max={cat.quantityAvailable || 9999}
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value) || 0;
+                                                            const clamped = Math.max(0, Math.min(val, cat.quantityAvailable || 9999));
+                                                            setTicketQuantities(prev => ({
+                                                                ...prev,
+                                                                [cat._id || cat.id]: clamped
+                                                            }));
+                                                        }}
+                                                        style={{ flex: 1 }}
+                                                    />
+                                                    <button
+                                                        className="cs-qty-btn"
+                                                        onClick={() => updateGAQuantity(cat._id || cat.id, 1)}
+                                                        disabled={cat.quantityAvailable != null && qty >= cat.quantityAvailable}
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                    >
+                                                        <Icon icon="mdi:plus" width="20" height="20" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     <div className="cs-order-summary-card">
                         <h4 className="mb-4 text-black">Order Summary</h4>
 
                         <div className="cs-selected-list mb-4">
-                            {selectedSeats.length === 0 ? (
-                                <p className="small-body-text text-secondary mb-3">No seats selected</p>
+                            {getSelectedTicketsCount() === 0 ? (
+                                <p className="small-body-text text-secondary mb-3">No tickets selected</p>
                             ) : (
-                                selectedSeats.map((seat, index) => (
-                                    <div key={index} className="cs-summary-row mb-2">
-                                        <div style={{ textAlign: 'left' }}>
-                                            <span className="small-body-text text-black d-block">{seat.label}</span>
-                                            <span className="smaller-body-text text-secondary">{seat.categoryName}</span>
+                                <>
+                                    {/* Physical Seats */}
+                                    {selectedSeats.map((seat, index) => (
+                                        <div key={`seat-${index}`} className="cs-summary-row mb-2">
+                                            <div style={{ textAlign: 'left' }}>
+                                                <span className="small-body-text text-black d-block">{seat.label}</span>
+                                                <span className="smaller-body-text text-secondary">{seat.categoryName}</span>
+                                            </div>
+                                            <span className="small-body-text text-black">${seat.price.toFixed(2)}</span>
                                         </div>
-                                        <span className="small-body-text text-black">${seat.price.toFixed(2)}</span>
-                                    </div>
-                                ))
+                                    ))}
+
+                                    {/* GA / General Fee Tickets */}
+                                    {Object.entries(ticketQuantities).map(([catId, qty]) => {
+                                        if (qty === 0) return null;
+                                        const cat = priceLevels.find(pl => pl._id === catId || pl.id === catId);
+                                        return (
+                                            <div key={`ga-${catId}`} className="cs-summary-row mb-2">
+                                                <div style={{ textAlign: 'left' }}>
+                                                    <span className="small-body-text text-black d-block">{cat?.priceName} x {qty}</span>
+                                                    <span className="smaller-body-text text-secondary">
+                                                        {cat?.type === "General Fee" ? "General Fee" : "General Admission"}
+                                                    </span>
+                                                </div>
+                                                <span className="small-body-text text-black">${((cat?.facePrice || 0) * qty).toFixed(2)}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </>
                             )}
                         </div>
 
@@ -593,10 +811,10 @@ const CustomerSeats = () => {
 
                         <button
                             className="primary-button cs-submit-btn w-100 mb-3"
-                            disabled={selectedSeats.length === 0}
+                            disabled={getSelectedTicketsCount() === 0}
                             onClick={handleAddToCart}
                         >
-                            Add {selectedSeats.length} Tickets to Cart
+                            Add {getSelectedTicketsCount()} Tickets to Cart
                         </button>
 
                         <button

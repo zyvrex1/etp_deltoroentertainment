@@ -111,19 +111,27 @@ const Payments = () => {
   }, [isFilterDropdownOpen]);
 
   const getReservationData = () => {
-    return reservations.map((res, index) => {
+    // 1. Only show PENDING reservations — resolved ones move to Transactions tab
+    const pendingReservations = reservations.filter(res => res.status === 'pending');
+
+    // 2. Map each raw reservation to a simplified object
+    const mapped = pendingReservations.map((res) => {
       const promoterName = res.user
         ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`)
         : 'Unknown Promoter';
 
       const isBooth = !!res.boothCode;
+      const isGA = res.seatIds && res.seatIds.some(sid => sid.startsWith("GA-"));
       return {
-        id: isBooth ? `Booth-${res._id.toString().slice(-6).toUpperCase()}` : `Seats-${res._id.toString().slice(-6).toUpperCase()}`,
         resId: res._id,
+        userId: res.user?._id || res.user,
         promoter: promoterName,
         event: res.event?.title || 'Unknown Event',
-        category: isBooth ? 'Booth' : 'Seats',
-        amount: `$${res.amount?.total ? res.amount.total.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}`,
+        eventId: res.event?._id || res.event,
+        category: isBooth ? 'Booth' : (isGA ? 'Ticket' : 'Seated Ticket'),
+        amountVal: res.amount?.total || 0,
+        subtotalVal: res.amount?.subtotal || 0,
+        feeVal: res.amount?.fee || 0,
         booth: isBooth
           ? `Booth (${res.boothCode})`
           : res.seatLabels?.length > 0
@@ -133,12 +141,111 @@ const Payments = () => {
               : null,
         paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
         status: res.status,
-        date: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A'
+        dateStr: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A',
+        createdAtTime: res.createdAt ? new Date(res.createdAt).getTime() : 0,
+        quantity: res.seatIds?.length || 1,
+        details: res.seatLabels?.join(", ") || ""
       };
     });
+
+    // 2. Group the GA/General Fee tickets
+    const result = [];
+    const gaGroups = []; // List of grouped GA entries to check against
+
+    mapped.forEach(item => {
+      if (item.category !== 'Ticket') {
+        // If it's a Booth or Seated Ticket, keep it as an individual row
+        result.push({
+          id: item.category === 'Booth' 
+            ? `Booth-${item.resId.toString().slice(-6).toUpperCase()}` 
+            : `Seats-${item.resId.toString().slice(-6).toUpperCase()}`,
+          resId: item.resId,
+          promoter: item.promoter,
+          event: item.event,
+          booth: item.booth,
+          category: item.category,
+          amount: `$${item.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          paymentMethod: item.paymentMethod,
+          status: item.status,
+          date: item.dateStr,
+          createdAtTime: item.createdAtTime,
+          quantity: item.quantity,
+          details: item.details
+        });
+        return;
+      }
+
+      // If it's a GA / General Fee ticket, try to find an existing group
+      // Use .toString() to safely compare MongoDB ObjectIds
+      const userIdStr = item.userId?.toString() || '';
+      const eventIdStr = item.eventId?.toString() || '';
+
+      const existingGroup = gaGroups.find(g => 
+        g.userId === userIdStr &&
+        g.eventId === eventIdStr &&
+        g.paymentMethod === item.paymentMethod &&
+        g.status === item.status &&
+        Math.abs(g.createdAtTime - item.createdAtTime) < 10000
+      );
+
+      if (existingGroup) {
+        // Add to existing group
+        existingGroup.amountVal += item.amountVal;
+        existingGroup.quantity += item.quantity;
+        if (item.details) {
+          existingGroup.detailsList.push(item.details);
+        }
+      } else {
+        // Create new group
+        const newGroup = {
+          userId: userIdStr,
+          eventId: eventIdStr,
+          paymentMethod: item.paymentMethod,
+          status: item.status,
+          createdAtTime: item.createdAtTime,
+          promoter: item.promoter,
+          event: item.event,
+          category: item.category,
+          amountVal: item.amountVal,
+          quantity: item.quantity,
+          dateStr: item.dateStr,
+          resId: item.resId, // Store first resId as reference
+          detailsList: item.details ? [item.details] : []
+        };
+        gaGroups.push(newGroup);
+      }
+    });
+
+    // 3. Add GA groups to the final result
+    gaGroups.forEach(g => {
+      result.push({
+        id: `Ticket-${g.resId.toString().slice(-6).toUpperCase()}`,
+        resId: g.resId,
+        promoter: g.promoter,
+        event: g.event,
+        booth: `Seats (${g.quantity} ticket${g.quantity > 1 ? 's' : ''})`,
+        category: g.category,
+        amount: `$${g.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        paymentMethod: g.paymentMethod,
+        status: g.status,
+        date: g.dateStr,
+        createdAtTime: g.createdAtTime,
+        quantity: g.quantity,
+        details: g.detailsList.join(", ")
+      });
+    });
+
+    // 4. Sort all rows by date descending so Ticket rows appear in the correct position
+    result.sort((a, b) => (b.createdAtTime || 0) - (a.createdAtTime || 0));
+
+    return result;
   };
 
-  let filteredData = activeTab === "payout-requests" ? payoutRequests : getReservationData();
+  // Payout Request tab: only show unresolved (pending/processing) — resolved go to Transactions
+  const activePendingPayouts = payoutRequests.filter(
+    p => p.status === 'pending' || p.status === 'processing'
+  );
+  let filteredData = activeTab === "payout-requests" ? activePendingPayouts : getReservationData();
 
   if (searchQuery) {
     const query = searchQuery.toLowerCase();
@@ -179,11 +286,12 @@ const Payments = () => {
 
   const getFilterOptions = () => {
     if (activeTab === "payout-requests") {
-      return ["All Status", "Pending", "Processing", "Paid", "Rejected"];
+      // Only actionable statuses remain in this tab
+      return ["All Status", "Pending", "Processing"];
     } else if (activeTab === "booth-reservations") {
-      return ["All", "Booth", "Seats"];
+      return ["All", "Booth", "Seated Ticket", "Ticket"];
     } else if (activeTab === "transactions") {
-      return ["All", "Booth", "Seats", "Payout"];
+      return ["All", "Booth", "Seated Ticket", "Ticket", "Payout"];
     }
     return ["All"];
   };
@@ -192,34 +300,133 @@ const Payments = () => {
     const mapping = {
       "All": "all",
       "Booth": "booth",
-      "Seats": "ticket",
+      "Seated Ticket": "seated-ticket",
+      "Ticket": "ticket",
       "Payout": "payout"
     };
     return mapping[label] || "all";
   };
 
   const getTransactionList = () => {
-    const reservationTx = (reservations || []).map((res) => {
+    // 1. Only include RESOLVED reservations (confirmed/rejected/refunded/cancelled)
+    //    Pending ones still live in the Reservation tab
+    const resolvedReservations = (reservations || []).filter(
+      res => res.status !== 'pending'
+    );
+
+    const mappedReservations = resolvedReservations.map((res) => {
       const name = res.user
         ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`)
         : 'Unknown User';
 
       const isBooth = !!res.boothCode;
+      const isGA = res.seatIds && res.seatIds.some(sid => sid.startsWith("GA-"));
       return {
-        id: isBooth ? `Booth-${res._id.toString().slice(-6).toUpperCase()}` : `Seats-${res._id.toString().slice(-6).toUpperCase()}`,
+        resId: res._id,
+        userId: res.user?._id || res.user,
         user: name,
         event: res.event?.title || 'Unknown Event',
-        category: isBooth ? 'Booth' : 'Seats',
-        amount: `$${res.amount?.total ? res.amount.total.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}`,
+        eventId: res.event?._id || res.event,
+        category: isBooth ? 'Booth' : (isGA ? 'Ticket' : 'Seated Ticket'),
+        amountVal: res.amount?.total || 0,
         status: res.status === 'confirmed' ? 'completed' : res.status,
-        date: res.createdAt ? new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A',
-        filterType: res.boothCode ? 'booth' : 'ticket',
+        dateStr: res.createdAt ? new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A',
+        createdAtTime: res.createdAt ? new Date(res.createdAt).getTime() : 0,
+        filterType: isBooth ? 'booth' : (isGA ? 'ticket' : 'seated-ticket'),
         rawDate: res.createdAt ? new Date(res.createdAt) : new Date(0),
-        paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card'
+        paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
+        quantity: res.seatIds?.length || 1,
+        details: res.seatLabels?.join(", ") || ""
       };
     });
 
-    const payoutTx = (payoutRequests || []).map((p) => ({
+    // 2. Group GA reservations
+    const reservationTx = [];
+    const gaGroups = [];
+
+    mappedReservations.forEach(item => {
+      if (item.category !== 'Ticket') {
+        reservationTx.push({
+          id: item.category === 'Booth'
+            ? `Booth-${item.resId.toString().slice(-6).toUpperCase()}`
+            : `Seats-${item.resId.toString().slice(-6).toUpperCase()}`,
+          user: item.user,
+          event: item.event,
+          category: item.category,
+          amount: `$${item.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          status: item.status,
+          date: item.dateStr,
+          filterType: item.filterType,
+          rawDate: item.rawDate,
+          paymentMethod: item.paymentMethod,
+          quantity: item.quantity,
+          details: item.details
+        });
+        return;
+      }
+
+      // Use .toString() to safely compare MongoDB ObjectIds
+      const userIdStr = item.userId?.toString() || '';
+      const eventIdStr = item.eventId?.toString() || '';
+
+      const existingGroup = gaGroups.find(g =>
+        g.userId === userIdStr &&
+        g.eventId === eventIdStr &&
+        g.paymentMethod === item.paymentMethod &&
+        g.status === item.status &&
+        Math.abs(g.createdAtTime - item.createdAtTime) < 10000
+      );
+
+      if (existingGroup) {
+        existingGroup.amountVal += item.amountVal;
+        existingGroup.quantity += item.quantity;
+        if (item.details) {
+          existingGroup.detailsList.push(item.details);
+        }
+      } else {
+        const newGroup = {
+          userId: userIdStr,
+          eventId: eventIdStr,
+          paymentMethod: item.paymentMethod,
+          status: item.status,
+          createdAtTime: item.createdAtTime,
+          user: item.user,
+          event: item.event,
+          category: item.category,
+          amountVal: item.amountVal,
+          quantity: item.quantity,
+          dateStr: item.dateStr,
+          filterType: item.filterType,
+          rawDate: item.rawDate,
+          resId: item.resId,
+          detailsList: item.details ? [item.details] : []
+        };
+        gaGroups.push(newGroup);
+      }
+    });
+
+    gaGroups.forEach(g => {
+      reservationTx.push({
+        id: `Ticket-${g.resId.toString().slice(-6).toUpperCase()}`,
+        user: g.user,
+        event: g.event,
+        category: g.category,
+        amount: `$${g.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        status: g.status,
+        date: g.dateStr,
+        filterType: g.filterType,
+        rawDate: g.rawDate,
+        paymentMethod: g.paymentMethod,
+        quantity: g.quantity,
+        details: g.detailsList.join(", ")
+      });
+    });
+
+    // Only include RESOLVED payouts (paid/rejected) — pending/processing stay in Payout Request tab
+    const resolvedPayouts = (payoutRequests || []).filter(
+      p => p.status === 'paid' || p.status === 'rejected' || p.status === 'reject'
+    );
+    const payoutTx = resolvedPayouts.map((p) => ({
       id: p.reference,
       user: p.promoter,
       event: "Platform Payout",
@@ -327,7 +534,9 @@ const Payments = () => {
       amount: row.amount,
       status: row.status === 'confirmed' ? 'completed' : row.status,
       date: row.date,
-      paymentMethod: row.paymentMethod
+      paymentMethod: row.paymentMethod,
+      quantity: row.quantity || 1,
+      details: row.details || ""
     });
     setIsTxModalOpen(true);
   };
@@ -400,7 +609,7 @@ const Payments = () => {
 
   const getCategoryClass = (category) => {
     if (category === "Booth") return "button-label pay-category-booth";
-    if (category === "Seats") return "button-label pay-category-seats";
+    if (category === "Seats" || category === "Seated Ticket" || category === "Ticket") return "button-label pay-category-seats";
     if (category === "Payout" || category === "-") return "button-label pay-category-payout";
     return "button-label";
   };
@@ -449,13 +658,13 @@ const Payments = () => {
             className={`pay-tab ${activeTab === "payout-requests" ? "active" : ""}`}
             onClick={() => handleTabChange("payout-requests")}
           >
-            Payout Requests
+            Payout Request
           </button>
           <button
             className={`pay-tab ${activeTab === "booth-reservations" ? "active" : ""}`}
             onClick={() => handleTabChange("booth-reservations")}
           >
-            Reservations
+            Reservation
           </button>
           <button
             className={`pay-tab ${activeTab === "transactions" ? "active" : ""}`}
@@ -578,15 +787,24 @@ const Payments = () => {
                   icon={
                     activeTab === "payout-requests"
                       ? "mdi:bank-off"
-                      : "mdi:store-off"
+                      : "mdi:clock-check-outline"
                   }
                   style={{ fontSize: '48px', marginBottom: '16px' }}
                 />
-                <h4>{searchQuery ? "No results found" : `No ${activeTab === "payout-requests" ? "payout requests" : "reservations"} yet`}</h4>
+                <h4>
+                  {searchQuery
+                    ? "No results found"
+                    : activeTab === "payout-requests"
+                      ? "No pending payout requests"
+                      : "No pending reservations"
+                  }
+                </h4>
                 <p className="small-body-text">
                   {searchQuery
                     ? <>No matches found for "<strong>{searchQuery}</strong>".</>
-                    : `There are currently no ${activeTab === "payout-requests" ? "payout requests" : "reservations"} in this category.`
+                    : activeTab === "payout-requests"
+                      ? "All payout requests have been resolved. Check the Transactions tab for history."
+                      : "All reservations have been actioned. Check the Transactions tab for history."
                   }
                 </p>
               </div>
@@ -725,7 +943,7 @@ const Payments = () => {
                         <th>Booth/Seats</th>
                         <th>Category</th>
                         <th>Amount</th>
-                        <th>Method</th>
+
                         <th>Status</th>
                         <th>Date</th>
                         <th>Actions</th>
@@ -749,10 +967,12 @@ const Payments = () => {
                           )}
                           </td>
                           <td data-label="Category">
-                            <span className={getCategoryClass(row.category)}>{row.category}</span>
+                            <span className={getCategoryClass(row.category)}>
+                              {row.category === 'Seats' ? 'Seated Ticket' : row.category}
+                            </span>
                           </td>
                           <td data-label="Amount" className="pay-amount regular-body-text">{row.amount}</td>
-                          <td data-label="Method" className="small-body-text">{row.paymentMethod}</td>
+                          {/* <td data-label="Method" className="small-body-text">{row.paymentMethod}</td> */}
                           <td data-label="Status">
                             <span className={getStatusClass(row.status)}>{row.status}</span>
                           </td>

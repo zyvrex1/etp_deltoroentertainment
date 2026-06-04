@@ -15,7 +15,17 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
   const today = new Date().toISOString().split("T")[0];
 
   const [error, setError] = useState("");
-  const [emptyFields, setEmptyFields] = useState([]);
+  const [errors, setErrors] = useState({});
+
+  const clearError = (fieldName) => {
+    if (errors[fieldName]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+    }
+  };
 
   const [imageDragActive, setImageDragActive] = useState(false);
 
@@ -29,6 +39,7 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
     startTime: "",
     endTime: "",
     venue: { name: "", address: "", city: "", zipCode: "" },
+    eventType: "General Admission",
     imageFile: null,
     imagePreviewUrl: null,
     seatMap: null,
@@ -57,6 +68,7 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
           city: event.venue?.city || "",
           zipCode: event.venue?.zipCode || "",
         },
+        eventType: event.eventType || "General Admission",
         imageFile: null,
         imagePreviewUrl: event.image ? `http://localhost:4000/uploads/${event.image}` : null,
         seatMap: event.seatMap || null,
@@ -103,64 +115,99 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      setFormData({ 
-        ...formData, 
-        imageFile: file, 
-        imagePreviewUrl: URL.createObjectURL(file) 
+      setFormData({
+        ...formData,
+        imageFile: file,
+        imagePreviewUrl: URL.createObjectURL(file)
       });
     }
   };
 
   // 3. Handle Remove (Also missing based on your JSX)
   const handleImageRemove = () => {
-  if (formData.imagePreviewUrl && formData.imagePreviewUrl.startsWith('blob:')) {
-    URL.revokeObjectURL(formData.imagePreviewUrl);
-  }
-  setFormData({
-    ...formData,
-    imageFile: null,
-    imagePreviewUrl: null
-  });
-};
+    if (formData.imagePreviewUrl && formData.imagePreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(formData.imagePreviewUrl);
+    }
+    setFormData({
+      ...formData,
+      imageFile: null,
+      imagePreviewUrl: null
+    });
+  };
 
-  
+
 
 
   // Image Handlers
   const handleImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setFormData({ 
-        ...formData, 
-        imageFile: file, 
-        imagePreviewUrl: URL.createObjectURL(file) 
+      setFormData({
+        ...formData,
+        imageFile: file,
+        imagePreviewUrl: URL.createObjectURL(file)
       });
     }
   };
 
   const handleSaveChanges = async (e) => {
-   e.preventDefault();
-  if (!user) return setError("You must be logged in");
+    e.preventDefault();
+    if (!user) return setError("You must be logged in");
 
-  const result = await showCreateConfirmAlert("Update Event?", `Update "${formData.title}"?`);
-  if (!result.isConfirmed) return;
+    setError("");
+    const newErrors = {};
+
+    if (!formData.title?.trim()) newErrors.title = "Event Title is required";
+    if (!formData.category?.trim()) newErrors.category = "Category is required";
+    if (!formData.startDate) newErrors.startDate = "Start Date is required";
+    if (!formData.endDate) newErrors.endDate = "End Date is required";
+    if (!formData.startTime) newErrors.startTime = "Start Time is required";
+    if (!formData.endTime) newErrors.endTime = "End Time is required";
+    if (!formData.description?.trim()) newErrors.description = "Description is required";
+
+    if (!formData.venue.name?.trim()) newErrors.venueName = "Venue Name is required";
+    if (!formData.venue.address?.trim()) newErrors.venueAddress = "Street Address is required";
+    if (!formData.venue.city?.trim()) newErrors.venueCity = "City is required";
+    if (!formData.venue.zipCode?.trim()) newErrors.venueZip = "Zip Code is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    const startDateTime = new Date(`${formData.startDate}T${formData.startTime}`);
+    const endDateTime = new Date(`${formData.endDate}T${formData.endTime}`);
+
+    if (endDateTime <= startDateTime) {
+      if (formData.startDate === formData.endDate) {
+        newErrors.endTime = "End Time must be after Start Time";
+      } else {
+        newErrors.endDate = "End Date must be after Start Date";
+      }
+      setErrors(newErrors);
+      return;
+    }
+
+    const result = await showCreateConfirmAlert("Update Event?", `Update "${formData.title}"?`);
+    if (!result.isConfirmed) return;
 
     try {
-    const formDataToSend = new FormData();
-    
-    Object.keys(formData).forEach(key => {
-      if (['venue', 'booths', 'seatMap'].includes(key)) {
-        formDataToSend.append(key, JSON.stringify(formData[key]));
-      } else if (key === 'imageFile') {
-  if (formData.imageFile) {
-    formDataToSend.append('image', formData.imageFile);
-  } else if (!formData.imagePreviewUrl) {
-    formDataToSend.append('image', ''); 
-  }
-} else if (key !== 'imagePreviewUrl') {
-        formDataToSend.append(key, formData[key]);
-      }
-    });
+      const formDataToSend = new FormData();
+
+      Object.keys(formData).forEach(key => {
+        if (['venue', 'booths', 'seatMap'].includes(key)) {
+          formDataToSend.append(key, JSON.stringify(formData[key]));
+        } else if (key === 'imageFile') {
+          if (formData.imageFile) {
+            formDataToSend.append('image', formData.imageFile);
+          } else if (!formData.imagePreviewUrl) {
+            formDataToSend.append('image', '');
+          }
+        } else if (key !== 'imagePreviewUrl') {
+          formDataToSend.append(key, formData[key]);
+        }
+      });
 
       const response = await fetch(`/api/events/${event._id}`, {
         method: "PATCH",
@@ -283,40 +330,74 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
             </div>
           </div>
 
-          {/* Title & Category */}
+          {/* Title & Category & Type */}
+
           <div className="add-event-form-row">
-            <div className="add-event-form-group">
+            <div className="add-event-form-group add-event-full-width">
+              <h6>Event Type</h6>
+              <div className="event-type-options">
+                <label className={`event-type-option ${formData.eventType === "General Admission" ? "active" : ""}`}>
+                  <input
+                    type="radio"
+                    name="eventType"
+                    value="General Admission"
+                    checked={formData.eventType === "General Admission"}
+                    onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
+                    disabled={isReadOnly}
+                  />
+                  <span>General Admission</span>
+                </label>
+                <label className={`event-type-option ${formData.eventType === "Reservation" ? "active" : ""}`}>
+                  <input
+                    type="radio"
+                    name="eventType"
+                    value="Reservation"
+                    checked={formData.eventType === "Reservation"}
+                    onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
+                    disabled={isReadOnly}
+                  />
+                  <span>Reservation</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div className="add-event-form-row">
+            <div className={`add-event-form-group ${errors.title ? 'has-error' : ''}`}>
               <h6>Event Title</h6>
               <input
                 type="text"
                 value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, title: e.target.value });
+                  clearError("title");
+                }}
                 placeholder="Event title..."
-                className={emptyFields.includes("title") ? "error" : ""}
                 disabled={isReadOnly}
               />
+              {errors.title && <span className="error-message">{errors.title}</span>}
             </div>
 
-            <div className="add-event-form-group">
+            <div className={`add-event-form-group ${errors.category ? 'has-error' : ''}`}>
               <h6>Category</h6>
               <input
                 type="text"
                 value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
-                className={emptyFields.includes("category") ? "error" : ""}
+                onChange={(e) => {
+                  setFormData({ ...formData, category: e.target.value });
+                  clearError("category");
+                }}
                 placeholder="Enter category (e.g., Concert, Comedy)"
                 disabled={isReadOnly}
               />
+              {errors.category && <span className="error-message">{errors.category}</span>}
             </div>
           </div>
 
+
+
           {/* Dates */}
           <div className="add-event-form-row">
-            <div className="add-event-form-group">
+            <div className={`add-event-form-group ${errors.startDate ? 'has-error' : ''}`}>
               <h6>Start Date</h6>
               <input
                 type="date"
@@ -324,130 +405,148 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
                 value={formData.startDate}
                 onChange={(e) => {
                   const newStart = e.target.value;
-
                   setFormData((prev) => ({
                     ...prev,
                     startDate: newStart,
                     endDate: prev.endDate < newStart ? newStart : prev.endDate,
                   }));
+                  clearError("startDate");
                 }}
-                className={emptyFields.includes("startDate") ? "error" : ""}
                 disabled={isReadOnly}
               />
+              {errors.startDate && <span className="error-message">{errors.startDate}</span>}
             </div>
-            <div className="add-event-form-group">
+            <div className={`add-event-form-group ${errors.endDate ? 'has-error' : ''}`}>
               <h6>End Date</h6>
               <input
                 type="date"
                 min={formData.startDate}
                 value={formData.endDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, endDate: e.target.value })
-                }
-                className={emptyFields.includes("endDate") ? "error" : ""}
+                onChange={(e) => {
+                  setFormData({ ...formData, endDate: e.target.value });
+                  clearError("endDate");
+                }}
                 disabled={isReadOnly}
               />
+              {errors.endDate && <span className="error-message">{errors.endDate}</span>}
             </div>
           </div>
 
           {/* Times */}
           <div className="add-event-form-row">
-            <div className="add-event-form-group">
+            <div className={`add-event-form-group ${errors.startTime ? 'has-error' : ''}`}>
               <h6>Start Time</h6>
               <input
                 type="time"
                 value={formData.startTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, startTime: e.target.value })
-                }
-                className={emptyFields.includes("startTime") ? "error" : ""}
+                onChange={(e) => {
+                  setFormData({ ...formData, startTime: e.target.value });
+                  clearError("startTime");
+                }}
                 disabled={isReadOnly}
               />
+              {errors.startTime && <span className="error-message">{errors.startTime}</span>}
             </div>
-            <div className="add-event-form-group">
+            <div className={`add-event-form-group ${errors.endTime ? 'has-error' : ''}`}>
               <h6>End Time</h6>
               <input
                 type="time"
                 value={formData.endTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, endTime: e.target.value })
-                }
-                className={emptyFields.includes("endTime") ? "error" : ""}
+                onChange={(e) => {
+                  setFormData({ ...formData, endTime: e.target.value });
+                  clearError("endTime");
+                }}
                 disabled={isReadOnly}
               />
+              {errors.endTime && <span className="error-message">{errors.endTime}</span>}
             </div>
           </div>
 
           {/* Description */}
-          <div className="add-event-form-group add-event-full-width">
+          <div className={`add-event-form-group add-event-full-width ${errors.description ? 'has-error' : ''}`}>
             <h6>About the Event</h6>
             <textarea
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={(e) => {
+                setFormData({ ...formData, description: e.target.value });
+                clearError("description");
+              }}
               rows="3"
-              className={emptyFields.includes("description") ? "error" : ""}
               disabled={isReadOnly}
             ></textarea>
+            {errors.description && <span className="error-message">{errors.description}</span>}
           </div>
 
           {/* Venue */}
           <div className="add-event-form-group add-event-full-width">
             <h6>Venue Details</h6>
-            <input
-              type="text"
-              placeholder="Venue Name"
-              value={formData.venue.name}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  venue: { ...formData.venue, name: e.target.value },
-                })
-              }
-              className={emptyFields.includes("venue.name") ? "error" : ""}
-              disabled={isReadOnly}
-            />
-            <input
-              type="text"
-              placeholder="Street Address"
-              value={formData.venue.address}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  venue: { ...formData.venue, address: e.target.value },
-                })
-              }
-              className={emptyFields.includes("venue.address") ? "error" : ""}
-              disabled={isReadOnly}
-            />
-            <div className="add-event-form-row">
+            <div className={`add-event-form-group ${errors.venueName ? 'has-error' : ''}`} style={{ gap: '4px' }}>
               <input
                 type="text"
-                placeholder="City"
-                value={formData.venue.city}
-                onChange={(e) =>
+                placeholder="Venue Name"
+                value={formData.venue.name}
+                onChange={(e) => {
                   setFormData({
                     ...formData,
-                    venue: { ...formData.venue, city: e.target.value },
-                  })
-                }
-                className={emptyFields.includes("venue.city") ? "error" : ""}
+                    venue: { ...formData.venue, name: e.target.value },
+                  });
+                  clearError("venueName");
+                }}
                 disabled={isReadOnly}
               />
+              {errors.venueName && <span className="error-message">{errors.venueName}</span>}
+            </div>
+
+            <div className={`add-event-form-group ${errors.venueAddress ? 'has-error' : ''}`} style={{ gap: '4px', marginTop: '12px' }}>
               <input
                 type="text"
-                placeholder="Zip Code"
-                value={formData.venue.zipCode}
-                onChange={(e) =>
+                placeholder="Street Address"
+                value={formData.venue.address}
+                onChange={(e) => {
                   setFormData({
                     ...formData,
-                    venue: { ...formData.venue, zipCode: e.target.value },
-                  })
-                }
-                className={emptyFields.includes("venue.zipCode") ? "error" : ""}
+                    venue: { ...formData.venue, address: e.target.value },
+                  });
+                  clearError("venueAddress");
+                }}
                 disabled={isReadOnly}
               />
+              {errors.venueAddress && <span className="error-message">{errors.venueAddress}</span>}
+            </div>
+
+            <div className="add-event-form-row" style={{ marginTop: '12px', gap: '12px' }}>
+              <div className={`add-event-form-group ${errors.venueCity ? 'has-error' : ''}`} style={{ gap: '4px' }}>
+                <input
+                  type="text"
+                  placeholder="City"
+                  value={formData.venue.city}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      venue: { ...formData.venue, city: e.target.value },
+                    });
+                    clearError("venueCity");
+                  }}
+                  disabled={isReadOnly}
+                />
+                {errors.venueCity && <span className="error-message">{errors.venueCity}</span>}
+              </div>
+              <div className={`add-event-form-group ${errors.venueZip ? 'has-error' : ''}`} style={{ gap: '4px' }}>
+                <input
+                  type="text"
+                  placeholder="Zip Code"
+                  value={formData.venue.zipCode}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      venue: { ...formData.venue, zipCode: e.target.value },
+                    });
+                    clearError("venueZip");
+                  }}
+                  disabled={isReadOnly}
+                />
+                {errors.venueZip && <span className="error-message">{errors.venueZip}</span>}
+              </div>
             </div>
           </div>
 

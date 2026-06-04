@@ -228,7 +228,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
 
           // Seat Info
           { id: 'category-name', type: 'text', x: 1000, y: 220, text: selectedCategory.priceName || 'Category', fontSize: 70, fontStyle: 'bold' },
-          { id: 'category-sub', type: 'text', x: 1000, y: 330, text: selectedCategory.type?.startsWith('Seat') ? 'Seat' : 'Booth', fontSize: 50, color: '#666' },
+          { id: 'category-sub', type: 'text', x: 1000, y: 330, text: selectedCategory.type?.startsWith('Seat') ? 'Seat' : (selectedCategory.type?.startsWith('Booth') ? 'Booth' : 'Ticket'), fontSize: 50, color: '#666' },
           { id: 'seat-label', type: 'text', x: 1000, y: 400, text: '1', fontSize: 60, fontStyle: 'bold' },
           { id: 'price-text', type: 'text', x: 1000, y: 470, text: selectedCategory.facePrice > 0 ? `$${selectedCategory.facePrice}` : 'FREE', fontSize: 60, fontStyle: 'bold' },
 
@@ -274,7 +274,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
       if (item.id === 'venue-name') return { ...item, text: venueStr };
       if (item.id === 'category-name') return { ...item, text: selectedCategory?.priceName || item.text };
       if (item.id === 'category-sub') {
-        const typePrefix = selectedCategory?.type?.startsWith('Seat') ? 'Seat' : 'Booth';
+        const typePrefix = selectedCategory?.type?.startsWith('Seat') ? 'Seat' : (selectedCategory?.type?.startsWith('Booth') ? 'Booth' : 'Ticket');
         return { ...item, text: typePrefix };
       }
       if (item.id === 'event-img') return { ...item, url: eventImgUrl };
@@ -402,7 +402,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
             if (item.id === 'venue-name') return { ...item, text: venueStr };
             if (item.id === 'category-name') return { ...item, text: updatedCat.priceName || item.text };
             if (item.id === 'category-sub') {
-              const typePrefix = updatedCat.type?.startsWith('Seat') ? 'Seat' : 'Booth';
+              const typePrefix = updatedCat.type?.startsWith('Seat') ? 'Seat' : (updatedCat.type?.startsWith('Booth') ? 'Booth' : 'Ticket');
               return { ...item, text: typePrefix };
             }
             if (item.id === 'event-img') return { ...item, url: eventImgUrl };
