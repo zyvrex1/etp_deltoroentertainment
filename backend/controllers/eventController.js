@@ -826,6 +826,7 @@ const updateEvent = async (req, res) => {
       "General Admission",
       "Seating Arrangement",
       "Exhibition",
+      "Reservation",
     ];
     if (eventType && !validEventTypes.includes(eventType)) {
       errors.push("Invalid eventType value");
@@ -1546,11 +1547,16 @@ const buySeats = async (req, res) => {
 };
 
 const reserveBooth = async (req, res) => {
-  const { id } = req.params; // Event ID
+  const { id } = req.params;
   const { boothId, billingAddress, amount, paymentMethod, poNumber } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).json({ error: "No such event" });
+  }
+
+  // FIX 1: Validate boothId is present before doing anything
+  if (!boothId) {
+    return res.status(400).json({ error: "boothId is required" });
   }
 
   try {
@@ -1559,27 +1565,24 @@ const reserveBooth = async (req, res) => {
 
     const boothIdStr = String(boothId);
 
-    // Find the booth index - try _id match first, then layout id / label / code
     let boothIndex = event.booths.findIndex(
-      (b) => String(b._id) === boothIdStr,
+      (b) => String(b._id) === boothIdStr
     );
 
     if (boothIndex === -1) {
-      // Fallback: search by label or code (common when IDs shift during layout saves)
       boothIndex = event.booths.findIndex(
-        (b) => b.code === boothIdStr || b.label === boothIdStr,
+        (b) => b.code === boothIdStr || b.label === boothIdStr
       );
     }
 
     if (boothIndex === -1 && event.layoutData?.items) {
-      // Third attempt: find the item in layoutData to get its label/code, then match that back to booths
       const layoutItem = event.layoutData.items.find(
-        (item) => String(item._id || item.id) === boothIdStr,
+        (item) => String(item._id || item.id) === boothIdStr
       );
       if (layoutItem) {
         const identifier = layoutItem.code || layoutItem.label;
         boothIndex = event.booths.findIndex(
-          (b) => b.code === identifier || b.label === identifier,
+          (b) => b.code === identifier || b.label === identifier
         );
       }
     }
@@ -1590,60 +1593,63 @@ const reserveBooth = async (req, res) => {
 
     const booth = event.booths[boothIndex];
 
-    // Check if available - with double-check for desyncs
     if (booth.status !== "available") {
-      // DOUBLE CHECK: Is there actually an active reservation for this booth?
-      // We check by both ID and code to be safe against layout reshuffles.
       const existingRes = await Reservation.findOne({
         event: id,
+        type: "booth",   // FIX 2: scope the query to booth type
         $or: [
           { boothId: booth._id },
           { boothCode: booth.label || booth.code }
         ],
-        status: { $ne: "cancelled" }
+        status: { $nin: ["cancelled", "rejected", "refunded"] }  // FIX 3: also exclude rejected/refunded, not just cancelled
       });
 
       if (existingRes) {
-        return res.status(400).json({ error: "Booth is no longer available" });
+        return res.status(409).json({ error: "Booth is no longer available" });  // FIX 4: 409 Conflict is more accurate than 400
       } else {
-        // If no reservation exists, it was a desync (likely from a failed previous attempt or manual database edit).
-        // We heal the status locally and proceed.
-        console.warn(`Desync detected: Booth ${booth.label || booth.code} was marked ${booth.status} but no active reservation exists. Proceeding with healing.`);
+        console.warn(
+          `Desync detected: Booth ${booth.label || booth.code} was marked ${booth.status} but no active reservation exists. Healing.`
+        );
         event.booths[boothIndex].status = "available";
       }
     }
 
-    // Check Price Level capacity early
     let plIndex = -1;
     if (booth.priceLevelId && booth.priceLevelId !== "none") {
       plIndex = event.priceLevels.findIndex(
-        (pl) => pl._id.toString() === booth.priceLevelId.toString(),
+        (pl) => pl._id.toString() === booth.priceLevelId.toString()
       );
       if (plIndex !== -1) {
         const pl = event.priceLevels[plIndex];
-
-        // Auto-expand quantityAvailable if it's desynced from the map's inventory
-        // Since this is a physical booth, the map is the source of truth.
         if (pl.quantityAvailable <= pl.quantitySold) {
           event.priceLevels[plIndex].quantityAvailable = pl.quantitySold + 1;
         }
       }
     }
 
-    // 1. Create the Reservation record
+    // FIX 5: Add `type: "booth"` — this is the root cause of the 500.
+    // Every consumer of Reservation (deleteReservation, getMyReservations,
+    // updateReservationStatus, syncBoothStatus) branches on reservation.type,
+    // and the schema validation likely requires it.
     const reservation = await Reservation.create({
       user: req.user._id,
       event: id,
+      type: "booth",                          // ← THE FIX
       boothId: booth._id,
       boothCode: booth.label || booth.code,
-      amount,
+      amount: {
+        total: amount?.total || 0,
+        subtotal: amount?.subtotal || 0,
+        fee: amount?.fee || 0,
+        tax: amount?.tax || 0,
+      },
       billingAddress,
       paymentMethod: paymentMethod || "invoice",
       poNumber: poNumber || "",
-      status: (paymentMethod === 'invoice' || !paymentMethod) ? "pending" : "confirmed",
+      status:
+        paymentMethod === "invoice" || !paymentMethod ? "pending" : "confirmed",
     });
 
-    // 2. Update the booth status and Price Level stats in the Event
     const buyerName =
       req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
 
@@ -1652,91 +1658,95 @@ const reserveBooth = async (req, res) => {
     event.booths[boothIndex].reservedByEmail = req.user.email || "";
     event.booths[boothIndex].reservedByPO = poNumber || "";
 
-    // Update Revenue
     const saleTotal = amount?.total || 0;
     event.boothRevenue = (event.boothRevenue || 0) + saleTotal;
 
-    // Update Price Level stats if found
     if (plIndex !== -1) {
       event.priceLevels[plIndex].quantitySold += 1;
     }
 
-    // Also update layoutData if it exists
-    if (event.layoutData && event.layoutData.items) {
+    if (event.layoutData?.items) {
+      // FIX 6: Also try matching by label/code in layoutData, not just _id,
+      // since the frontend may send the booth's _id which might only match
+      // via the booths array fallback path above.
+      const boothLabel = booth.label || booth.code;
       const layoutItemIndex = event.layoutData.items.findIndex(
         (item) =>
-          String(item._id || item.id) === boothIdStr &&
-          (item.type || "").toLowerCase() === "booth",
+          ((String(item._id || item.id) === boothIdStr) ||
+            item.code === boothLabel ||
+            item.label === boothLabel) &&
+          (item.type || "").toLowerCase() === "booth"
       );
       if (layoutItemIndex !== -1) {
         event.layoutData.items[layoutItemIndex].status = "sold";
         event.layoutData.items[layoutItemIndex].reservedBy = buyerName;
-        event.layoutData.items[layoutItemIndex].reservedByEmail =
-          req.user.email || "";
+        event.layoutData.items[layoutItemIndex].reservedByEmail = req.user.email || "";
         event.layoutData.items[layoutItemIndex].reservedByPO = poNumber || "";
         event.markModified("layoutData");
       }
     }
 
-    // Single save for all changes
     event.markModified("booths");
     event.markModified("priceLevels");
     await event.save();
 
-    // 4. Create Notification for Admins
-    const notificationController = require("./notificationController");
-    const sponsorName =
-      req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
+    // 3. Post-save Notifications and Socket updates (Non-fatal, wrapped in try-catch)
+    try {
+      const notificationController = require("./notificationController");
+      const sponsorName = buyerName;
 
-    const notification = await notificationController.createNotification({
-      title: `New Booth Reservation`,
-      content: `${sponsorName} reserved booth ${booth.label || booth.code} for event "${event.title}"`,
-      type: "reservation",
-      path: "/admin/payments",
-      unread: true,
-      createdBy: req.user._id,
-      targetRole: "admin",
-    });
-    emitUpdate("newNotification", notification);
+      const notification = await notificationController.createNotification({
+        title: `New Booth Reservation`,
+        content: `${sponsorName} reserved booth ${booth.label || booth.code} for event "${event.title}"`,
+        type: "reservation",
+        path: "/admin/payments",
+        unread: true,
+        createdBy: req.user._id,
+        targetRole: "admin",
+      });
+      emitUpdate("newNotification", notification);
 
-    // Notify Assigned Promoters and Creator
-    const promotersToNotify = new Set();
-    if (event.createdBy) promotersToNotify.add(event.createdBy.toString());
-    if (Array.isArray(event.assignedPromoters)) {
-      event.assignedPromoters.forEach(p => promotersToNotify.add(p.toString()));
-    }
-
-    for (const promoterId of promotersToNotify) {
-      if (promoterId === req.user._id.toString()) continue;
-      try {
-        const promoterNotification = await notificationController.createNotification({
-          title: `New Booth Reservation`,
-          content: `${sponsorName} reserved booth ${booth.label || booth.code} for event "${event.title}"`,
-          type: "reservation",
-          path: "/promoter/promoter-eventmanagement",
-          unread: true,
-          userId: promoterId,
-          createdBy: req.user._id,
+      const promotersToNotify = new Set();
+      if (event.createdBy) promotersToNotify.add(event.createdBy.toString());
+      if (Array.isArray(event.assignedPromoters)) {
+        event.assignedPromoters.forEach((p) => {
+          if (p) promotersToNotify.add(p.toString());
         });
-        emitUpdate("newNotification", promoterNotification);
-      } catch (pNotifErr) {
-        console.error("Promoter booth reservation notification error:", pNotifErr);
       }
+
+      for (const promoterId of promotersToNotify) {
+        if (promoterId === req.user._id.toString()) continue;
+        try {
+          const promoterNotification = await notificationController.createNotification({
+            title: `New Booth Reservation`,
+            content: `${sponsorName} reserved booth ${booth.label || booth.code} for event "${event.title}"`,
+            type: "reservation",
+            path: "/promoter/promoter-eventmanagement",
+            unread: true,
+            userId: promoterId,
+            createdBy: req.user._id,
+          });
+          emitUpdate("newNotification", promoterNotification);
+        } catch (pNotifErr) {
+          console.error("Promoter booth reservation notification error:", pNotifErr);
+        }
+      }
+
+      const sponsorNotification = await notificationController.createNotification({
+        title: `Reservation Submitted!`,
+        content: `Your reservation for booth ${booth.label || booth.code} in "${event.title}" has been submitted and is pending confirmation.`,
+        type: "reservation",
+        path: "/sponsor/sponsor-my-booths",
+        unread: true,
+        userId: req.user._id,
+        createdBy: req.user._id,
+      });
+      emitUpdate("newNotification", sponsorNotification);
+
+      emitUpdate("dashboardUpdate");
+    } catch (notifError) {
+      console.error("Non-fatal error in reservation post-processing (notifications/sockets):", notifError);
     }
-
-    // 5. Notification for the Sponsor (Success)
-    const sponsorNotification = await notificationController.createNotification({
-      title: `Reservation Success!`,
-      content: `Your reservation for booth ${booth.label || booth.code} in "${event.title}" has been confirmed.`,
-      type: "reservation",
-      path: "/sponsor/my-booth",
-      unread: true,
-      userId: req.user._id,
-      createdBy: req.user._id
-    });
-    emitUpdate("newNotification", sponsorNotification);
-
-    emitUpdate("dashboardUpdate");
 
     res.status(201).json({
       message: "Booth reserved successfully",
@@ -1746,7 +1756,6 @@ const reserveBooth = async (req, res) => {
   } catch (error) {
     console.error("Reserve Booth Error:", error);
 
-    // Notification for the Sponsor (Error/Failure)
     try {
       const notificationController = require("./notificationController");
       await notificationController.createNotification({
@@ -1756,17 +1765,17 @@ const reserveBooth = async (req, res) => {
         path: "/sponsor/sponsor-events",
         unread: true,
         userId: req.user._id,
-        createdBy: req.user._id
+        createdBy: req.user._id,
       });
-      emitUpdate("newNotification", { userId: req.user._id }); // Trigger refresh
+      emitUpdate("newNotification", { userId: req.user._id });
     } catch (notifError) {
       console.error("Failed to create error notification:", notifError);
     }
 
+    // FIX 8: Return structured error so the frontend getPaymentErrorMessage() handler works
     res.status(500).json({ error: error.message });
   }
 };
-
 const syncBoothStatus = async (req, res) => {
   const { id } = req.params;
 
