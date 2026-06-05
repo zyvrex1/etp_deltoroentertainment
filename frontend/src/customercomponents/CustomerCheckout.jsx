@@ -65,8 +65,8 @@ const CustomerCheckout = () => {
     }, [checkoutItems]);
 
     const serviceFees = useMemo(() => {
-        return checkoutItems.reduce((sum, item) => sum + item.serviceFee, 0);
-    }, [checkoutItems]);
+        return subtotal >= 1 ? 0.50 : 0;
+    }, [subtotal]);
 
     const [availableGifts, setAvailableGifts] = useState([]);
     const [selectedGift, setSelectedGift] = useState(null);
@@ -105,56 +105,42 @@ const discount = useMemo(() => {
         return Math.max(0, subtotal - discount + serviceFees);
     }, [subtotal, discount, serviceFees]);
 
-const handlePay = async () => {
-    const result = await showConfirmAlert(
-        "Confirm Payment",
-        `Are you sure you want to proceed with the payment of $${total.toFixed(2)}?`,
-        "Yes, Pay Now"
-    );
 
-    if (result.isConfirmed) {
-        try {
-            // Group selected items by event ID
-            const itemsByEvent = checkoutItems.reduce((acc, item) => {
-                const eventId = item.event._id || item.event.id;
-                if (!acc[eventId]) acc[eventId] = [];
-                acc[eventId].push(item);
-                return acc;
-            }, {});
+    const handlePay = async () => {
+        const result = await showConfirmAlert(
+            "Confirm Payment",
+            `Are you sure you want to proceed with the payment of $${total.toFixed(2)}?`,
+            "Yes, Pay Now"
+        );
+
+        if (result.isConfirmed) {
+            try {
+                // Group selected items by event ID
+                const itemsByEvent = checkoutItems.reduce((acc, item) => {
+                    const eventId = item.event._id || item.event.id;
+                    if (!acc[eventId]) acc[eventId] = [];
+                    acc[eventId].push(item);
+                    return acc;
+                }, {});
+
+                let remainingFee = serviceFees;
 
             // Process each event purchase
-            let remainingDiscount = discount;
-            const eventKeys = Object.keys(itemsByEvent);
-
-            for (let i = 0; i < eventKeys.length; i++) {
-                const eventId = eventKeys[i];
+            for (const eventId in itemsByEvent) {
                 const eventItems = itemsByEvent[eventId];
                 const seatIds = eventItems.map(item => item.seat.id);
-                
+                const eventTotal = eventItems.reduce((sum, item) => sum + item.facePrice + item.serviceFee, 0);
                 const eventSubtotal = eventItems.reduce((sum, item) => sum + item.facePrice, 0);
                 const eventFees = eventItems.reduce((sum, item) => sum + item.serviceFee, 0);
-
-                let eventDiscount = 0;
-                if (discount > 0) {
-                    if (i === eventKeys.length - 1) {
-                        eventDiscount = remainingDiscount;
-                    } else {
-                        eventDiscount = Math.round(((eventSubtotal / subtotal) * discount) * 100) / 100;
-                        remainingDiscount -= eventDiscount;
-                    }
-                }
-
-                const eventTotal = Math.max(0, eventSubtotal - eventDiscount + eventFees);
 
                 try {
                     await eventsService.buySeats(
                         eventId,
                         seatIds,
-                        { total: eventTotal, subtotal: Math.max(0, eventSubtotal - eventDiscount), fee: eventFees },
+                        { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
                         { email: apEmail, poNumber: poNumber },
                         paymentMethod === 'card' ? 'card' : 'invoice',
-                        user.token,
-                        selectedGift ? { giftCode: selectedGift.code, appliedGift: selectedGift.giftId } : null
+                        user.token
                     );
                 } catch (seatError) {
                     // 500 after a successful save means the reservation went through
@@ -171,44 +157,31 @@ const handlePay = async () => {
                 }
             }
 
-            // Redeem the gift card assignment upon successful purchase
-            if (selectedGift) {
-                try {
-                    await digitalgiftsService.redeemAssignment(
-                        selectedGift.giftId,
-                        selectedGift.assignmentId,
-                        user.token
-                    );
-                } catch (redeemError) {
-                    console.error("Failed to redeem assignment post-checkout:", redeemError);
+                // All events processed (or recovered from 500s) — finalize
+                completePurchase(
+                    selectedIds,
+                    paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
+                    paymentMethod === 'invoice' ? poNumber : ''
+                );
+                showSuccessAlert('Payment Successful', 'Your tickets have been confirmed.');
+                navigate('/customer/success');
+
+            } catch (error) {
+                console.error("Payment Error:", error);
+                const status = error?.response?.status;
+
+                if (status === 409) {
+                    showErrorAlert('Seats Unavailable', 'One or more selected seats were just taken. Please go back and choose different seats.');
+                } else if (status === 403) {
+                    showErrorAlert('Access Denied', 'You are not authorized to complete this purchase.');
+                } else if (status === 400) {
+                    showErrorAlert('Invalid Request', error.response?.data?.error || 'Please check your details and try again.');
+                } else {
+                    showErrorAlert('Payment Failed', error.message || 'There was an error processing your payment.');
                 }
             }
-
-            // All events processed (or recovered from 500s) — finalize
-            completePurchase(
-                selectedIds,
-                paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
-                paymentMethod === 'invoice' ? poNumber : ''
-            );
-            showSuccessAlert('Payment Successful', 'Your tickets have been confirmed.');
-            navigate('/customer/success');
-
-        } catch (error) {
-            console.error("Payment Error:", error);
-            const status = error?.response?.status;
-
-            if (status === 409) {
-                showErrorAlert('Seats Unavailable', 'One or more selected seats were just taken. Please go back and choose different seats.');
-            } else if (status === 403) {
-                showErrorAlert('Access Denied', 'You are not authorized to complete this purchase.');
-            } else if (status === 400) {
-                showErrorAlert('Invalid Request', error.response?.data?.error || 'Please check your details and try again.');
-            } else {
-                showErrorAlert('Payment Failed', error.message || 'There was an error processing your payment.');
-            }
         }
-    }
-};
+    };
 
     if (checkoutItems.length === 0) {
         return (

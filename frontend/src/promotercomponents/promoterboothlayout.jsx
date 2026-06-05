@@ -180,6 +180,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                 name: pl.priceName,
                 price: pl.facePrice,
                 quantity: pl.quantityAvailable,
+                sold: pl.quantitySold || 0,
                 color: pl.color || "#666666",
                 type: pl.type || "Seat (Circle)",
                 boothSize: pl.boothSize || ""
@@ -256,6 +257,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                         name: pl.priceName,
                         price: pl.facePrice,
                         quantity: pl.quantityAvailable,
+                        sold: pl.quantitySold || 0,
                         color: pl.color || "#666666",
                         type: pl.type || "Seat (Circle)",
                         boothSize: pl.boothSize || ""
@@ -288,6 +290,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                         name: pl.priceName,
                         price: pl.facePrice,
                         quantity: pl.quantityAvailable,
+                        sold: pl.quantitySold || 0,
                         color: pl.color || "#666666",
                         type: pl.type || "Seat (Circle)",
                         boothSize: pl.boothSize || ""
@@ -338,6 +341,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                         name: pl.priceName,
                         price: pl.facePrice,
                         quantity: pl.quantityAvailable,
+                        sold: pl.quantitySold || 0,
                         color: pl.color || "#666666",
                         type: pl.type || "Seat (Circle)",
                         boothSize: pl.boothSize || ""
@@ -803,7 +807,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                             ) : (
                                 categories.map(cat => {
                                     const placed = placedItems.filter(i => i.categoryId === cat.id).length;
-                                    const remaining = cat.quantity - placed;
+                                    const remaining = cat.type === "General Fee" ? cat.quantity - (cat.sold || 0) : cat.quantity - placed;
                                     const isFull = remaining <= 0;
 
                                     return (
@@ -852,14 +856,18 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                                                 </div>
                                                 <div className="cat-meta">
                                                     <span className="price">${cat.price.toFixed(2)}</span>
-                                                    <span className="count">{placed}/{cat.quantity} units</span>
+                                                    {cat.type === "General Fee" ? (
+                                                        <span className="count">{(cat.quantity || 0) - (cat.sold || 0)}/{cat.quantity} avail</span>
+                                                    ) : (
+                                                        <span className="count">{placed}/{cat.quantity} units</span>
+                                                    )}
                                                     {cat.boothSize && <span className="size-badge">{cat.boothSize}</span>}
                                                 </div>
                                                 <div className="progress-bar">
                                                     <div
                                                         className="progress-fill"
                                                         style={{
-                                                            width: `${(placed / cat.quantity) * 100}%`,
+                                                            width: `${cat.type === "General Fee" ? ((cat.sold || 0) / (cat.quantity || 1)) * 100 : (placed / (cat.quantity || 1)) * 100}%`,
                                                             backgroundColor: cat.color
                                                         }}
                                                     />

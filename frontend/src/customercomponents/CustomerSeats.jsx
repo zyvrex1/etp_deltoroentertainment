@@ -65,10 +65,10 @@ const CustomerSeats = () => {
 
                     if (ld.backgroundImage) {
                         setBgConfig({
-                            url: ld.backgroundImage,
+                            imageUrl: ld.backgroundImage,
                             opacity: ld.bgOpacity ?? 0.4,
-                            w: ld.bgWidth || ld.canvasWidth,
-                            h: ld.bgHeight || ld.canvasHeight
+                            width: ld.bgWidth || ld.canvasWidth,
+                            height: ld.bgHeight || ld.canvasHeight
                         });
                     }
 
@@ -158,7 +158,7 @@ const CustomerSeats = () => {
 
     const subtotal = getSelectedTicketsPrice();
     const totalCount = getSelectedTicketsCount();
-    const serviceFees = totalCount > 0 ? (totalCount * 10) : 0;
+    const serviceFees = subtotal > 0 ? 0.5 : 0;
     const total = subtotal + serviceFees;
 
     const updateGAQuantity = (categoryId, delta) => {
