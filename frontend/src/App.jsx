@@ -28,6 +28,7 @@ const AdminSettings = lazy(() => import("./admincomponents/settings.jsx"));
 const AdminSupport = lazy(() => import("./admincomponents/support.jsx"));
 const AdminAuditLogs = lazy(() => import("./admincomponents/audit.jsx"));
 const AdminEventApproval = lazy(() => import("./admincomponents/eventapproval.jsx"));
+const AdminDigitalGifts = lazy(() => import("./admincomponents/digitalgifts.jsx"));
 
 // Promoter Pages
 const PromoterDashboard = lazy(() => import("./promotercomponents/promoterdashboard.jsx"));
@@ -167,6 +168,7 @@ function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="support" element={<AdminSupport />} />
             <Route path="audit-logs" element={<AdminAuditLogs />} />
+            <Route path="digital-gifts" element={<AdminDigitalGifts />} />
           </Route>
 
           <Route path="/promoter" element={<PromoterLayout />}>

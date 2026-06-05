@@ -1,0 +1,945 @@
+/* ============================================================
+   Digital Gifts — digitalgifts.css
+   Follows the same conventions as payments.css / reportsandanalytics.css
+   Uses CSS variables & typography from index.css
+   ============================================================ */
+
+.dg-page {
+  padding: 32px;
+  background: var(--color-bg-light);
+  min-height: 100vh;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── Toast ─────────────────────────────────────────────────── */
+.dg-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-green-quaternary);
+  border: 1px solid var(--color-green-primary);
+  color: var(--color-green-primary);
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: dg-slide-in 0.25s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+}
+
+.dg-toast-error {
+  background: var(--color-red-quaternary);
+  border-color: var(--color-red-primary);
+  color: var(--color-red-primary);
+}
+
+@keyframes dg-slide-in {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Page Header ────────────────────────────────────────────── */
+.dg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-direction: column;
+  gap: 16px;
+
+  @media (min-width: 769px) {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+  }
+}
+
+.dg-title {
+  font-family: 'Poppins', sans-serif;
+  color: var(--color-black-primary);
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.dg-subtitle {
+  font-family: 'Inter', sans-serif;
+  color: var(--color-black-tertiary);
+  font-size: 18px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.dg-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.dg-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 24px;
+  border-radius: 12px;
+  background-color: var(--color-red-primary);
+  border: none;
+  color: var(--color-white-primary);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.88;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.dg-btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 24px;
+  border-radius: 12px;
+  background-color: transparent;
+  border: 1px solid var(--color-black-tertiary);
+  color: var(--color-black-primary);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-black-primary);
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.dg-btn-ghost {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background-color: transparent;
+  border: none;
+  color: var(--color-black-secondary);
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: var(--color-bg-light);
+  }
+}
+
+/* ── Stats Row ──────────────────────────────────────────────── */
+.dg-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dg-stat-card {
+  background: var(--color-white-primary);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid transparent;
+}
+
+.dg-stat-warn {
+  border-color: var(--color-yellow-tertiary);
+  background: var(--color-yellow-quaternary);
+}
+
+.dg-stat-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-black-secondary);
+}
+
+.dg-stat-value {
+  font-family: 'Poppins', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-black-primary);
+}
+
+.dg-warn-val {
+  color: var(--color-yellow-primary);
+}
+
+/* ── Content Container (toolbar + cards) ────────────────────── */
+.dg-content {
+  background: var(--color-white-primary);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+/* ── Toolbar (search + filters) ─────────────────────────────── */
+.dg-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dg-toolbar-left {
+  flex: 1;
+}
+
+.dg-toolbar-right {
+  flex-shrink: 0;
+}
+
+.dg-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-black-quaternary);
+  border-radius: 8px;
+  padding: 10px 16px;
+
+  input {
+    flex: 1;
+    border: none;
+    background: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--color-black-primary);
+    outline: none;
+
+    &::placeholder {
+      color: var(--color-black-tertiary);
+    }
+  }
+
+  .dg-search-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--color-black-tertiary);
+    flex-shrink: 0;
+  }
+
+  .dg-clear-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--color-black-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover {
+      color: var(--color-black-primary);
+    }
+  }
+}
+
+/* ── Filter Dropdown ────────────────────────────────────────── */
+.dg-filter-dropdown {
+  position: relative;
+}
+
+.dg-filter-dropdown-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--color-white-primary);
+  border: 1px solid var(--color-black-tertiary);
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: var(--color-black-secondary);
+  cursor: pointer;
+  min-width: 180px;
+  transition: border-color 0.2s;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+
+  &:hover {
+    border-color: var(--color-black-secondary);
+  }
+
+  .truncate-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+  }
+
+  .dropdown-icon {
+    transition: transform 0.2s ease;
+    font-size: 18px;
+
+    &.open {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.dg-filter-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  background-color: var(--color-white-primary);
+  border: 1px solid var(--color-black-tertiary);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dg-filter-dropdown-item {
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--color-black-secondary);
+  cursor: pointer;
+  border-radius: 0;
+  transition: background 0.2s ease;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+
+  &:hover {
+    background: var(--color-red-primary);
+    color: var(--color-white-primary);
+  }
+
+  &.active {
+    background: var(--color-red-quaternary);
+    color: var(--color-red-primary);
+    font-weight: 500;
+  }
+}
+
+/* ── Empty State ────────────────────────────────────────────── */
+.dg-empty {
+  width: 100%;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-black-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+
+  p {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    color: var(--color-black-tertiary);
+  }
+}
+
+.dg-empty-icon {
+  width: 56px;
+  height: 56px;
+  color: var(--color-black-quaternary);
+}
+
+/* ── Gift Card Grid ─────────────────────────────────────────── */
+.dg-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Individual Gift Card ───────────────────────────────────── */
+.dg-card {
+  background: var(--color-white-primary);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--color-black-quaternary);
+  transition: box-shadow 0.2s ease;
+  position: relative;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.dg-card-expired {
+  opacity: 0.65;
+}
+
+.dg-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dg-card-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Type Badges ────────────────────────────────────────────── */
+.dg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.badge-blue {
+  background: var(--color-blue-quaternary);
+  color: var(--color-blue-primary);
+}
+
+.badge-amber {
+  background: var(--color-yellow-quaternary);
+  color: var(--color-yellow-primary);
+}
+
+.badge-rose {
+  background: var(--color-red-quaternary);
+  color: var(--color-red-primary);
+}
+
+/* ── Status Pill ────────────────────────────────────────────── */
+
+.status-active {
+  background: var(--color-green-tertiary);
+  color: var(--color-green-primary);
+}
+
+.status-expired {
+  background: var(--color-red-tertiary);
+  color: var(--color-red-primary);
+}
+
+.status-draft {
+  background: var(--color-black-quaternary);
+  color: var(--color-black-secondary);
+}
+
+/* ── Kebab Menu ─────────────────────────────────────────────── */
+.dg-menu-wrap {
+  position: relative;
+}
+
+.dg-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--color-black-secondary);
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--color-bg-light);
+    color: var(--color-black-primary);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.dg-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--color-white-primary);
+  border: 1px solid var(--color-black-quaternary);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    border-radius: 0;
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--color-black-primary);
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    svg {
+      width: 17px;
+      height: 17px;
+      color: var(--color-black-secondary);
+    }
+
+    &:hover {
+      background: var(--color-bg-light);
+    }
+  }
+
+  .dg-menu-delete {
+    color: var(--color-red-primary);
+
+    svg {
+      color: var(--color-red-primary);
+    }
+
+    &:hover {
+      background: var(--color-red-quaternary);
+    }
+  }
+}
+
+.dg-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+/* ── Card Body ──────────────────────────────────────────────── */
+.dg-card-name {
+  text-align: left;
+  color: var(--color-black-primary);
+  margin: 0;
+}
+
+.dg-card-desc {
+  font-family: 'Inter', sans-serif;
+  color: var(--color-black-secondary);
+  margin: 0;
+  line-height: 1.5;
+    text-align: left;
+
+}
+
+.dg-card-value {
+  font-family: 'Poppins', sans-serif;
+  color: var(--color-black-primary);
+    text-align: left;
+
+}
+
+/* ── Progress Bar ───────────────────────────────────────────── */
+.dg-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dg-progress-bar {
+  flex: 1;
+  height: 7px;
+  background: var(--color-black-quaternary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dg-progress-fill {
+  height: 100%;
+  background: var(--color-red-primary);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.dg-progress-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-black-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Card Footer (assignee + code) ──────────────────────────── */
+.dg-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.dg-assignee {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--color-black-secondary);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: var(--color-black-tertiary);
+  }
+}
+
+.dg-code-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dg-code {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-black-quaternary);
+  color: var(--color-black-primary);
+  padding: 3px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.dg-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--color-black-tertiary);
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: var(--color-bg-light);
+    color: var(--color-black-primary);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ── Expiry Row ─────────────────────────────────────────────── */
+.dg-expiry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--color-black-tertiary);
+  margin-top: 2px;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+}
+
+/* ── Recent Assignments Section ─────────────────────────────── */
+.dg-section {
+  background: var(--color-white-primary);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.dg-section-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-black-primary);
+  margin: 0 0 20px 0;
+  text-align: left;
+}
+
+.dg-table-wrap {
+  overflow-x: auto;
+}
+
+.dg-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  thead {
+    background: var(--color-bg-light);
+    border-bottom: 1px solid var(--color-black-quaternary);
+
+    th {
+      padding: 14px 16px;
+      text-align: left;
+      font-family: 'Poppins', sans-serif;
+      color: var(--color-black-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid var(--color-black-quaternary);
+      transition: background 0.2s ease;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: var(--color-bg-light);
+      }
+    }
+
+    td {
+      padding: 14px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: var(--color-black-primary);
+      text-align: left;
+    }
+  }
+}
+
+.dg-td-name {
+  font-weight: 500;
+}
+
+.dg-td-date {
+  color: var(--color-black-secondary) !important;
+  font-size: 13px !important;
+}
+
+/* ── Small inline badge (table) ─────────────────────────────── */
+.dg-badge-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: capitalize;
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+/* ── Small promo code (table) ───────────────────────────────── */
+.dg-code-sm {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-black-quaternary);
+  color: var(--color-black-primary);
+  padding: 3px 8px;
+  border-radius: 5px;
+  letter-spacing: 0.5px;
+}
+
+/* ── Assignment status badge ────────────────────────────────── */
+.dg-assign-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: capitalize;
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  &.redeemed {
+    background: var(--color-green-tertiary);
+    color: var(--color-green-primary);
+  }
+
+  &.pending {
+    background: var(--color-yellow-tertiary);
+    color: var(--color-yellow-primary);
+  }
+}
+
+/* ── CSS variable alias for green ────────────────────────────── */
+:root {
+  --dg-green: var(--color-green-primary);
+}
+
+/* ── Responsive overrides ───────────────────────────────────── */
+@media (max-width: 768px) {
+  .dg-page {
+    padding: 16px;
+  }
+
+  .dg-title {
+    font-size: 32px;
+  }
+
+  .dg-subtitle {
+    font-size: 14px;
+  }
+
+  .dg-header-actions {
+    width: 100%;
+    flex-direction: column;
+
+    .dg-btn-primary,
+    .dg-btn-secondary {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .dg-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dg-toolbar-right {
+    width: 100%;
+  }
+
+  .dg-filter-dropdown,
+  .dg-filter-dropdown-btn,
+  .dg-filter-dropdown-menu {
+    width: 100%;
+  }
+
+  .dg-search {
+    max-width: 100%;
+  }
+
+  .dg-content {
+    padding: 16px;
+  }
+
+  .dg-section {
+    padding: 16px;
+  }
+
+  /* Table → card layout on mobile */
+  .dg-table {
+    thead {
+      display: none;
+    }
+
+    tbody {
+      tr {
+        display: block;
+        border: 1px solid var(--color-black-quaternary);
+        border-radius: 10px;
+        margin-bottom: 12px;
+        padding: 14px;
+        background: var(--color-white-primary);
+        box-shadow: none;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--color-black-quaternary);
+        font-size: 13px;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &::before {
+          content: attr(data-label);
+          font-family: 'Poppins', sans-serif;
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--color-black-tertiary);
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+          flex-shrink: 0;
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .dg-page {
+    padding: 12px;
+  }
+
+  .dg-section {
+    padding: 12px;
+  }
+}

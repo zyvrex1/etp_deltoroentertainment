@@ -28,6 +28,7 @@ const reservationRoutes = require('./routes/reservationRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const payoutRoutes = require('./routes/payoutRoutes');
+const digitalgiftsRoutes = require('./routes/digitalgiftsRoutes');
 
 
 // express app
@@ -75,6 +76,7 @@ app.use('/api/reservations', reservationRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/payouts', payoutRoutes)
+app.use('/api/digital-gifts', digitalgiftsRoutes)
 
 
 // Global error handler

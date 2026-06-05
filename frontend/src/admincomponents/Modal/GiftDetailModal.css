@@ -1,0 +1,329 @@
+/* ============================================================
+   Gift Detail Modal — GiftDetailModal.css
+   Follows general-modal-overlay pattern from CreateUserModal.css
+   Uses CSS variables & typography from index.css
+   ============================================================ */
+
+.gift-detail-modal-container {
+  background-color: var(--color-white-primary);
+  border-radius: 12px;
+  width: 100%;
+  max-width: min(560px, calc(100vw - 32px));
+  max-height: 90vh;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: detailModalSlideIn 0.3s ease-out;
+  box-sizing: border-box;
+}
+
+@keyframes detailModalSlideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ── Header ────────────────────────────────────────────── */
+.gift-detail-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-black-quaternary);
+  gap: 16px;
+  flex-shrink: 0;
+  min-width: 0;
+
+  h3 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 20px;
+    color: var(--color-black-primary);
+    margin: 0;
+    text-align: left;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-black-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+
+    svg {
+      font-size: 24px;
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      color: var(--color-black-primary);
+    }
+  }
+}
+
+/* ── Body ──────────────────────────────────────────────── */
+.gift-detail-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Detail Rows ───────────────────────────────────────── */
+.gift-detail-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gift-detail-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  padding: 7px 15px;
+  border-radius: 6px;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.gift-detail-badge.badge-blue {
+  background: var(--color-blue-quaternary);
+  color: var(--color-blue-primary);
+}
+
+.gift-detail-badge.badge-amber {
+  background: var(--color-yellow-quaternary);
+  color: var(--color-yellow-primary);
+}
+
+.gift-detail-badge.badge-rose {
+  background: var(--color-red-quaternary);
+  color: var(--color-red-primary);
+}
+
+.gift-detail-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  padding: 7px 15px;
+  border-radius: 6px;
+}
+
+.gift-detail-status.status-active {
+  background: var(--color-green-tertiary);
+  color: var(--color-green-primary);
+}
+
+.gift-detail-status.status-expired {
+  background: var(--color-red-tertiary);
+  color: var(--color-red-primary);
+}
+
+.gift-detail-status.status-draft {
+  background: var(--color-black-quaternary);
+  color: var(--color-black-secondary);
+}
+
+.gift-detail-name {
+  font-family: 'Poppins', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-black-primary);
+  margin: 4px 0 0;
+  text-align: left;
+}
+
+.gift-detail-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--color-black-secondary);
+  line-height: 1.6;
+  margin: 0;
+  text-align: left;
+}
+
+/* ── Info Grid ─────────────────────────────────────────── */
+.gift-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.gift-detail-item {
+  background: var(--color-bg-light);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  span {
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    color: var(--color-black-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  strong {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-black-primary);
+  }
+}
+
+/* ── Progress Bar ──────────────────────────────────────── */
+.gift-detail-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.gift-detail-progress-bar {
+  flex: 1;
+  height: 7px;
+  background: var(--color-black-quaternary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.gift-detail-progress-fill {
+  height: 100%;
+  background: var(--color-red-primary);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.gift-detail-progress-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-black-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Code Badge ────────────────────────────────────────── */
+.gift-detail-code {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-black-quaternary);
+  color: var(--color-black-primary);
+  padding: 3px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+/* ── Footer ────────────────────────────────────────────── */
+.gift-detail-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--color-black-quaternary);
+  flex-shrink: 0;
+
+  .close-action-btn {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background-color: transparent;
+    border: none;
+    color: var(--color-black-secondary);
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: var(--color-bg-light);
+    }
+  }
+
+  .edit-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 10px 24px;
+    border-radius: 12px;
+    background-color: transparent;
+    border: 1px solid var(--color-black-tertiary);
+    color: var(--color-black-primary);
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      border-color: var(--color-black-primary);
+    }
+  }
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .gift-detail-modal-container {
+    border-radius: 12px;
+  }
+
+  .gift-detail-modal-header {
+    padding: 16px;
+  }
+
+  .gift-detail-modal-body {
+    padding: 16px;
+  }
+
+  .gift-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gift-detail-modal-footer {
+    padding: 12px 16px;
+    flex-direction: column-reverse;
+    align-items: stretch;
+
+    button {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+    }
+  }
+}

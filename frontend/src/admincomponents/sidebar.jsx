@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
+import { MdCardGiftcard } from "react-icons/md";
 import {
   MdDashboard,
   MdEventAvailable,
@@ -161,6 +162,11 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
           {/* PLATFORM */}
           <div className="sidebar-section">
             <p className="section-title">PLATFORM</p>
+
+            <NavLink to="/admin/digital-gifts" className="sidebar-item" onClick={handleLinkClick}>
+  <MdCardGiftcard className="icon" />
+  <span>Digital Gifts</span>
+</NavLink>
 
             <NavLink to="/admin/content" className="sidebar-item" onClick={handleLinkClick}>
               <MdDescription className="icon" />
