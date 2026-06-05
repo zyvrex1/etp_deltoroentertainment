@@ -104,7 +104,19 @@ export const CustomerCartProvider = ({ children }) => {
             reservations.forEach(res => {
                 // If it's a seated reservation, it has seatIds and seatLabels
                 if (res.type === 'seat' && res.seatIds) {
+                    const isBXGY = res.appliedGift?.valueType === 'bxgy' && res.seatIds.length > 1;
                     res.seatIds.forEach((sid, idx) => {
+                        let facePrice = 0;
+                        if (isBXGY) {
+                            if (idx < res.seatIds.length - 1) {
+                                facePrice = res.amount.subtotal / (res.seatIds.length - 1);
+                            } else {
+                                facePrice = 0;
+                            }
+                        } else {
+                            facePrice = res.amount.subtotal / res.seatIds.length;
+                        }
+
                         formattedHistory.push({
                             cartId: `db-${res._id}-${idx}`,
                             event: res.event,
@@ -115,7 +127,7 @@ export const CustomerCartProvider = ({ children }) => {
                                 label: res.seatLabels[idx] || sid,
                                 row: ''
                             },
-                            facePrice: (res.amount.subtotal / res.seatIds.length) || 0,
+                            facePrice: facePrice || 0,
                             serviceFee: (res.amount.fee / res.seatIds.length) || 0,
                             purchaseDate: res.createdAt,
                             paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',

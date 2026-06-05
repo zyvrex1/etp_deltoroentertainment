@@ -1332,7 +1332,7 @@ const buySeats = async (req, res) => {
 
     const buyerName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
     const buyerEmail = req.user.email || "";
-    const ticketIdBase = new mongoose.Types.ObjectId().toString();
+    const reservationId = new mongoose.Types.ObjectId();
 
     const notFound = [];
     const alreadySold = [];
@@ -1357,7 +1357,7 @@ const buySeats = async (req, res) => {
         notFound.push(sid);
         return;
       }
-      
+
       const sold = cat.quantitySold || 0;
       const capacity = cat.quantityAvailable ?? cat.quantity ?? 0;
       if (sold >= capacity) {
@@ -1365,7 +1365,6 @@ const buySeats = async (req, res) => {
         return;
       }
 
-      const resId = new mongoose.Types.ObjectId();
       if (catId && plMap[catId] !== undefined) {
         plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
       }
@@ -1374,7 +1373,7 @@ const buySeats = async (req, res) => {
         id: sid,
         label: `${cat.priceName} Ticket`,
         categoryId: catId,
-        reservationId: resId
+        reservationId: reservationId
       });
     });
 
@@ -1410,14 +1409,11 @@ const buySeats = async (req, res) => {
             return;
           }
 
-          // Generate a unique Reservation ID for this specific seat
-          const resId = new mongoose.Types.ObjectId();
-
           // Mark sold in layoutData
           event.layoutData.items[idx].status = "sold";
           event.layoutData.items[idx].reservedBy = buyerName;
           event.layoutData.items[idx].reservedByEmail = buyerEmail;
-          event.layoutData.items[idx].ticketId = resId.toString();
+          event.layoutData.items[idx].ticketId = reservationId.toString();
 
           // Track price level delta
           const catId = (item.categoryId || item.priceLevelId)?.toString();
@@ -1425,7 +1421,7 @@ const buySeats = async (req, res) => {
             plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
           }
 
-          purchasedSeats.push({ ...item, reservationId: resId });
+          purchasedSeats.push({ ...item, reservationId: reservationId });
         });
       } else if (event.seatMap && event.seatMap.sections) {
         // Process using legacy seatMap
@@ -1438,17 +1434,16 @@ const buySeats = async (req, res) => {
               if (seat.status === "sold" || seat.status === "reserved" || seat.status === "blocked") {
                 alreadySold.push(seat.label || sid);
               } else {
-                const resId = new mongoose.Types.ObjectId();
                 seat.status = "sold";
                 seat.reservedBy = buyerName;
                 seat.reservedByEmail = buyerEmail;
-                seat.ticketId = resId.toString(); // Map unique ID to legacy seat too
+                seat.ticketId = reservationId.toString(); // Map unique ID to legacy seat too
 
                 const catId = seat.priceLevelId?.toString();
                 if (catId && plMap[catId] !== undefined) {
                   plSoldDelta[catId] = (plSoldDelta[catId] || 0) + 1;
                 }
-                purchasedSeats.push({ ...seat, reservationId: resId });
+                purchasedSeats.push({ ...seat, reservationId: reservationId });
               }
               found = true;
             }
@@ -1467,20 +1462,21 @@ const buySeats = async (req, res) => {
       return res.status(404).json({ error: `Seats not found: ${notFound.join(", ")}` });
     }
 
-    // Create individual Reservation records for each seat
+    // Create a single Reservation record for all seats
     try {
-      const count = purchasedSeats.length;
-      const reservationObjects = purchasedSeats.map((seat) => ({
-        _id: seat.reservationId,
+      const seatIdsArr = purchasedSeats.map(seat => String(seat._id || seat.id));
+      const seatLabelsArr = purchasedSeats.map(seat => seat.label || seat.code);
+      const reservationObject = {
+        _id: reservationId,
         user: req.user._id,
         event: id,
         type: 'seat',
-        seatIds: [String(seat._id || seat.id)],
-        seatLabels: [seat.label || seat.code],
+        seatIds: seatIdsArr,
+        seatLabels: seatLabelsArr,
         amount: {
-          total: (amount.total || 0) / count,
-          subtotal: (amount.subtotal || 0) / count,
-          fee: (amount.fee || 0) / count,
+          total: amount.total || 0,
+          subtotal: amount.subtotal || 0,
+          fee: amount.fee || 0,
           tax: 0
         },
         billingAddress: {
@@ -1489,12 +1485,14 @@ const buySeats = async (req, res) => {
         },
         paymentMethod: paymentMethod || 'invoice',
         poNumber: billingInfo?.poNumber || "",
-        status: (paymentMethod === 'invoice' || !paymentMethod) ? 'pending' : 'confirmed'
-      }));
+        status: (paymentMethod === 'invoice' || !paymentMethod) ? 'pending' : 'confirmed',
+        appliedGift: req.body.appliedGift || null,
+        giftCode: req.body.giftCode || ""
+      };
 
-      await Reservation.insertMany(reservationObjects);
+      await Reservation.create(reservationObject);
     } catch (resErr) {
-      console.error("Failed to create individual reservation records:", resErr);
+      console.error("Failed to create unified reservation record:", resErr);
     }
 
 
@@ -1580,7 +1578,6 @@ const buySeats = async (req, res) => {
 
     res.status(201).json({
       message: "Seats purchased successfully",
-      ticketIdBase,
       purchasedSeats,
       event,
     });
@@ -1592,7 +1589,7 @@ const buySeats = async (req, res) => {
 
 const reserveBooth = async (req, res) => {
   const { id } = req.params;
-  const { boothId, billingAddress, amount, paymentMethod, poNumber } = req.body;
+const { boothId, billingAddress, amount, paymentMethod, poNumber, batchId } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).json({ error: "No such event" });
@@ -1676,23 +1673,26 @@ const reserveBooth = async (req, res) => {
     // updateReservationStatus, syncBoothStatus) branches on reservation.type,
     // and the schema validation likely requires it.
     const reservation = await Reservation.create({
-      user: req.user._id,
-      event: id,
-      type: "booth",                          // ← THE FIX
-      boothId: booth._id,
-      boothCode: booth.label || booth.code,
-      amount: {
+    user: req.user._id,
+    event: id,
+    type: "booth",
+    boothId: booth._id,
+    boothCode: booth.label || booth.code,
+batchId: batchId || uuidv4(), 
+    amount: {
         total: amount?.total || 0,
         subtotal: amount?.subtotal || 0,
         fee: amount?.fee || 0,
         tax: amount?.tax || 0,
-      },
-      billingAddress,
-      paymentMethod: paymentMethod || "invoice",
-      poNumber: poNumber || "",
-      status:
+    },
+    billingAddress,
+    paymentMethod: paymentMethod || "invoice",
+    poNumber: poNumber || "",
+    status:
         paymentMethod === "invoice" || !paymentMethod ? "pending" : "confirmed",
-    });
+    appliedGift: req.body.appliedGift || null,
+    giftCode: req.body.giftCode || ""
+});
 
     const buyerName =
       req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
@@ -1730,7 +1730,7 @@ const reserveBooth = async (req, res) => {
       }
     }
 
-   event.markModified("booths");
+    event.markModified("booths");
     event.markModified("priceLevels");
     await event.save();
 
@@ -1799,7 +1799,7 @@ const reserveBooth = async (req, res) => {
       console.error("Non-fatal error in reservation post-processing (notifications/sockets):", notifError);
     }
 
-   
+
   } catch (error) {
     console.error("Reserve Booth Error:", error);
 

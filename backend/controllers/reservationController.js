@@ -14,6 +14,7 @@ const getMyReservations = async (req, res) => {
             .populate('user', 'firstName lastName email companyName phone avatar industry description')
             .populate('event', 'title startDate endDate startTime endTime image venue')
             .populate('exhibitors', 'firstName lastName email avatar')
+            .populate('appliedGift', 'name type value valueType')
             .sort({ createdAt: -1 });
 
         // Filter out reservations where the event was deleted (orphaned reservations)
@@ -28,24 +29,24 @@ const getMyReservations = async (req, res) => {
 
 // Fetch all reservations for admin view
 const getAllReservations = async (req, res) => {
-    try {
-        console.log("Admin Reservations: Fetching...");
+  try {
+    console.log("Admin Reservations: Fetching...");
 
-        const reservations = await Reservation.find({})
-            .populate({ path: 'user', select: 'firstName lastName email companyName' })
-            .populate({ path: 'event', select: 'title startDate' })
-            .sort({ createdAt: -1 })
-            .lean(); // Use lean() for faster, read-only results
+    const reservations = await Reservation.find({})
+      .populate({ path: 'user', select: 'firstName lastName email companyName' })
+      .populate({ path: 'event', select: 'title startDate' })
+      .populate({ path: 'appliedGift', select: 'name type value valueType' })  // ← add this
+      .sort({ createdAt: -1 })
+      .lean();
 
-        // Filter out reservations where the event was deleted
-        const validReservations = reservations.filter(r => r.event !== null);
+    const validReservations = reservations.filter(r => r.event !== null);
 
-        console.log(`Admin Reservations: Successfully fetched ${validReservations.length} records.`);
-        res.status(200).json(validReservations);
-    } catch (error) {
-        console.error("CRITICAL ADMIN RESERVATIONS ERROR:", error);
-        res.status(500).json({ error: error.message || "Internal Server Error" });
-    }
+    console.log(`Admin Reservations: Successfully fetched ${validReservations.length} records.`);
+    res.status(200).json(validReservations);
+  } catch (error) {
+    console.error("CRITICAL ADMIN RESERVATIONS ERROR:", error);
+    res.status(500).json({ error: error.message || "Internal Server Error" });
+  }
 };
 
 const deleteReservation = async (req, res) => {

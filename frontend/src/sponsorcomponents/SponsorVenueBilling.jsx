@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { useSponsorCartContext } from '../context/SponsorCartContext';
 import * as authService from '../services/authService';
+import digitalgiftsService from '../services/digitalgiftsService';
 import axios from 'axios';
 import './SponsorVenueBilling.css';
 
@@ -148,10 +149,46 @@ const SponsorVenueBilling = () => {
         );
     }
 
-    const totalGrand = selectedItems.reduce((sum, item) => sum + (item.total || 0), 0);
     const subtotalGrand = selectedItems.reduce((sum, item) => sum + (item.facePrice || 0), 0);
     const processingFeeGrand = selectedItems.reduce((sum, item) => sum + (item.processingFee || 0), 0);
     const estimatedTaxGrand = selectedItems.reduce((sum, item) => sum + (item.estimatedTax || 0), 0);
+
+    const [availableGifts, setAvailableGifts] = useState([]);
+    const [selectedGift, setSelectedGift] = useState(null);
+
+    useEffect(() => {
+        const fetchGifts = async () => {
+            if (!user?.token) return;
+            try {
+                const gifts = await digitalgiftsService.getMyGifts(user.token);
+                // Filter for pending/unused assignments only
+                const activeGifts = gifts.filter(g => g.assignmentStatus === 'pending');
+                setAvailableGifts(activeGifts);
+            } catch (error) {
+                console.error("Error fetching my gifts:", error);
+            }
+        };
+        fetchGifts();
+    }, [user]);
+
+    const discount = useMemo(() => {
+        if (!selectedGift) return 0;
+        if (selectedGift.valueType === 'fixed') {
+            return Math.min(selectedGift.value, subtotalGrand);
+        } else if (selectedGift.valueType === 'percent') {
+            return (subtotalGrand * selectedGift.value) / 100;
+        } else if (selectedGift.valueType === 'bxgy') {
+            // Buy 1 Get 1 Free: discount = price of cheapest item
+            if (selectedItems.length < 2) return 0;
+            const prices = selectedItems.map(i => i.facePrice || 0).sort((a, b) => a - b);
+            return prices[0];
+        }
+        return 0;
+    }, [selectedGift, subtotalGrand, selectedItems]);
+
+    const totalGrand = useMemo(() => {
+        return Math.max(0, subtotalGrand - discount + processingFeeGrand + estimatedTaxGrand);
+    }, [subtotalGrand, discount, processingFeeGrand, estimatedTaxGrand]);
 
     const firstEvent = selectedItems[0].event;
     const isMultipleEvents = new Set(selectedItems.map(i => i.event._id || i.event.id)).size > 1;
@@ -190,7 +227,12 @@ const SponsorVenueBilling = () => {
         const failedItems = [];   // { item, reason }
 
         try {
-            for (const item of selectedItems) {
+            const sharedBatchId = crypto.randomUUID(); // ← one ID for this entire checkout
+            let remainingDiscount = discount;
+            const itemCount = selectedItems.length;
+
+            for (let idx = 0; idx < itemCount; idx++) {
+                const item = selectedItems[idx];
                 const eventId = item.event?._id || item.event?.id;
                 const boothId = item.booth?._id || item.booth?.id;
                 const boothLabel = item.booth?.label || item.booth?.code || boothId;
@@ -202,11 +244,26 @@ const SponsorVenueBilling = () => {
                     continue;
                 }
 
+                // Distribute discount proportionally
+                let itemDiscount = 0;
+                if (discount > 0) {
+                    if (idx === itemCount - 1) {
+                        itemDiscount = remainingDiscount;
+                    } else {
+                        itemDiscount = Math.round(((item.facePrice / subtotalGrand) * discount) * 100) / 100;
+                        remainingDiscount -= itemDiscount;
+                    }
+                }
+
+                const itemSubtotal = Math.max(0, item.facePrice - itemDiscount);
+                const itemTotal = Math.max(0, itemSubtotal + (item.processingFee || 0) + (item.estimatedTax || 0));
+
                 try {
                     const response = await axios.post(
                         `${BACKEND_URL}/api/events/${eventId}/reserve-booth`,
-                        {
+                          {
                             boothId,
+                            batchId: sharedBatchId,   // ← same ID for every booth in this order
                             billingAddress: {
                                 companyName: billingInfo.companyName,
                                 address: billingInfo.streetAddress,
@@ -215,13 +272,15 @@ const SponsorVenueBilling = () => {
                                 email: billingInfo.apEmail || user.email
                             },
                             amount: {
-                                total: item.total || 0,
-                                subtotal: item.facePrice || 0,
+                                total: itemTotal,
+                                subtotal: itemSubtotal,
                                 fee: item.processingFee || 0,
                                 tax: item.estimatedTax || 0
                             },
                             paymentMethod: resolveApiPaymentMethod(),
-                            poNumber: billingInfo.poNumber
+                            poNumber: billingInfo.poNumber,
+                            appliedGift: selectedGift ? selectedGift.giftId : null,
+                            giftCode: selectedGift ? selectedGift.code : ""
                         },
                         {
                             headers: { Authorization: `Bearer ${user.token}` }
@@ -246,6 +305,19 @@ const SponsorVenueBilling = () => {
                     if (itemError.response?.status === 401 || itemError.response?.status === 403) {
                         break;
                     }
+                }
+            }
+
+            // Redeem the gift card assignment upon successful purchase
+            if (successfulItems.length > 0 && selectedGift) {
+                try {
+                    await digitalgiftsService.redeemAssignment(
+                        selectedGift.giftId,
+                        selectedGift.assignmentId,
+                        user.token
+                    );
+                } catch (redeemError) {
+                    console.error("Failed to redeem assignment post-booth-billing:", redeemError);
                 }
             }
 
@@ -403,6 +475,41 @@ const SponsorVenueBilling = () => {
                                     />
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="svb-card mb-4">
+                        <div className="svb-card-body">
+                            <h4 className="mb-4">Gift Cards & Promos</h4>
+                            {availableGifts.length === 0 ? (
+                                <p className="small-body-text text-secondary">No available gift cards or promos found.</p>
+                            ) : (
+                                <div className="svb-form-group">
+                                    <label htmlFor="gift-select">Select a promo or gift card to apply:</label>
+                                    <select
+                                        id="gift-select"
+                                        className="svb-input"
+                                        value={selectedGift ? selectedGift.giftId : ''}
+                                        onChange={(e) => {
+                                            const gift = availableGifts.find(g => g.giftId === e.target.value);
+                                            setSelectedGift(gift || null);
+                                        }}
+                                        style={{ marginTop: '8px' }}
+                                    >
+                                        <option value="">-- No Promo / Gift Card --</option>
+                                        {availableGifts.map(g => (
+                                            <option key={g.giftId} value={g.giftId}>
+                                                {g.code} - {g.name} ({g.valueType === 'fixed' ? `$${g.value.toFixed(2)}` : `${g.value}%`} off)
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {selectedGift && (
+                                        <div className="mt-2 text-success small-body-text" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-green-primary)' }}>
+                                            <Icon icon="mdi:check-circle" /> Applied discount of {selectedGift.valueType === 'fixed' ? `$${discount.toFixed(2)}` : `${selectedGift.value}%`}.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -567,6 +674,12 @@ const SponsorVenueBilling = () => {
                                 <span className="small-body-text text-secondary">Subtotal</span>
                                 <span className="small-body-text text-secondary">${subtotalGrand.toLocaleString()}</span>
                             </div>
+                            {selectedGift && (
+                                <div className="svb-price-row mb-2" style={{ color: 'var(--color-green-primary)' }}>
+                                    <span className="small-body-text" style={{ color: 'var(--color-green-primary)' }}>Discount ({selectedGift.code})</span>
+                                    <span className="small-body-text" style={{ color: 'var(--color-green-primary)' }}>-${discount.toFixed(2)}</span>
+                                </div>
+                            )}
                             <div className="svb-price-row mb-2">
                                 <span className="small-body-text text-secondary">Processing Fees</span>
                                 <span className="small-body-text text-secondary">

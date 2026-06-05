@@ -102,6 +102,49 @@ const digitalgiftsService = {
       throw new Error(result.message || 'Failed to fetch recent assignments');
     }
     return result.data;
+  },
+
+  getMyGifts: async (token) => {
+    const response = await fetch(`${BASE_URL}/api/digital-gifts/my-gifts`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to fetch my gifts');
+    }
+    return result.data;
+  },
+
+  redeemByCode: async (code, token) => {
+    const response = await fetch(`${BASE_URL}/api/digital-gifts/redeem-by-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ code })
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to claim gift card');
+    }
+    return result.data;
+  },
+
+  redeemAssignment: async (giftId, assignmentId, token) => {
+    const response = await fetch(`${BASE_URL}/api/digital-gifts/${giftId}/assignments/${assignmentId}/redeem`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to redeem gift assignment');
+    }
+    return result.data;
   }
 };
 

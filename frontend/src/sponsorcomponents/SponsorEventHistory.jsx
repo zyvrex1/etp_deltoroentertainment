@@ -291,6 +291,7 @@ const downloadHistoryItemPDF = async (item) => {
     const loadingToast = showExportToast();
     const INVOICE_TITLE = 'Invoice Receipt';
     const res = item.fullReservation;
+    const isSeat = res?.type === 'seat';
 
     try {
         const logoData = await loadLogo();
@@ -381,7 +382,7 @@ const downloadHistoryItemPDF = async (item) => {
                 lines: [
                     { label: 'Invoice Ref', value: item.invoiceRef },
                     { label: 'Booking Date', value: item.paymentDate },
-                    { label: 'Booth Type', value: `${priceLevel?.priceName || 'Standard'} • ${priceLevel?.boothSize || '10x10'}` },
+                    { label: isSeat ? 'Ticket / Seat' : 'Booth Type', value: isSeat ? (res.seatLabels?.join(', ') || `${res.seatIds?.length || 0} Tickets`) : `${priceLevel?.priceName || 'Standard'} • ${priceLevel?.boothSize || '10x10'}` },
                 ],
                 color: [30, 60, 114],
                 bg: [235, 240, 255],
@@ -480,7 +481,7 @@ const downloadHistoryItemPDF = async (item) => {
 
         const headers = ['Description', 'Amount'];
         const tableRows = [
-            ['Booth Price', `$${(res?.amount?.subtotal || 0).toLocaleString()}`],
+            [isSeat ? 'Ticket Price' : 'Booth Price', `$${(res?.amount?.subtotal || 0).toLocaleString()}`],
             ['Processing Fee', `$${(res?.amount?.fee || 0).toLocaleString()}`],
             ['Tax', `$${(res?.amount?.tax || 0).toLocaleString()}`],
             ['Total Paid', item.amount],
@@ -546,41 +547,104 @@ const downloadHistoryItemPDF = async (item) => {
     const [searchQuery, setSearchQuery] = useState("");
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
-    useEffect(() => {
-        const fetchHistory = async () => {
-            if (!user?.token) return;
-            setIsLoading(true);
-            try {
-                const response = await axios.get(`${BACKEND_URL}/api/reservations/my-booths`, {
-                    headers: { Authorization: `Bearer ${user.token}` }
-                });
-                
-                // Map backend reservation data to the expected history format
-                const mappedHistory = response.data.map(res => ({
-                    id: res._id,
-                    displayId: `Booth-${res._id.toString().slice(-6).toUpperCase()}`,
-                    title: res.event?.title || 'Unknown Event',
-                    booth: `Booth #${res.boothCode}`,
-                    date: res.event?.startDate ? new Date(res.event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBA',
-                    eventStatus: 'Upcoming', // Default status, logic could be more complex based on date
-                    invoiceRef: `${res.poNumber}`,
-                    amount: `$${(res.amount?.total || 0).toLocaleString()}`,
-                    paymentStatus: res.status === 'confirmed' ? 'Paid' : (res.status === 'pending' ? 'Pending' : res.status === 'refunded' ? 'Refunded' : 'Cancelled'),
-                    paymentDate: res.createdAt ? new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A',
-                    // Full details for modal
-                    fullReservation: res
-                }));
+// 1. Define ABOVE useEffect
+const groupReservations = (reservations) => {
+    const groups = new Map();
+    reservations.forEach(res => {
+        // Group by batchId if present, otherwise fall back to own _id (solo booking)
+        const key = res.batchId || res._id?.toString();
+        if (groups.has(key)) {
+            const group = groups.get(key);
+            group.reservations.push(res);
+            group.totalAmount += res.amount?.total || 0;
+        } else {
+            groups.set(key, {
+                batchId: key,
+                eventId: (res.event?._id || res.event)?.toString(),
+                paymentMethod: res.paymentMethod,
+                createdTime: new Date(res.createdAt).getTime(),
+                reservations: [res],
+                totalAmount: res.amount?.total || 0,
+            });
+        }
+    });
+    return Array.from(groups.values());
+};
+// 2. Inside useEffect → fetchHistory, replace the flat .map() with:
+useEffect(() => {
+    const fetchHistory = async () => {
+        if (!user?.token) return;
+        setIsLoading(true);
+        try {
+            const response = await axios.get(`${BACKEND_URL}/api/reservations/my-booths`, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
 
-                setAllHistory(mappedHistory);
-            } catch (error) {
-                console.error("Fetch history error:", error);
-            } finally {
-                setIsLoading(false);
+            const grouped = groupReservations(response.data); // ✅ uses scoped response.data
+
+            const mappedHistory = grouped.map((group, index) => {
+    const res = group.reservations[0];
+    const allRes = group.reservations;
+
+    const boothLabel = allRes.length > 1
+        ? `${allRes.length} Booths (${allRes.map(r => `#${r.boothCode}`).join(', ')})`
+        : `Booth #${res.boothCode || 'N/A'}`;
+
+    const eventStatus = (() => {
+        if (!res.event?.startDate) return 'Upcoming';
+        const now = new Date();
+        const start = new Date(res.event.startDate);
+        const end = new Date(res.event.endDate || res.event.startDate);
+        if (now < start) return 'Upcoming';
+        if (now >= start && now <= end) return 'Live';
+        return 'Completed';
+    })();
+
+    const paymentStatus = res.status === 'confirmed' ? 'Paid'
+        : res.status === 'refunded' ? 'Refunded'
+        : res.status === 'rejected' ? 'Rejected'
+        : res.status === 'cancelled' ? 'Cancelled'
+        : 'Pending';
+
+    const dateOpts = { month: 'short', day: 'numeric', year: 'numeric' };
+    const createdAt = new Date(res.createdAt);
+
+    return {
+        id: group.batchId,
+        displayId: `#${String(index + 1).padStart(4, '0')}`,
+        title: res.event?.title || 'Unknown Event',
+        booth: boothLabel,
+        date: res.event?.startDate
+            ? new Date(res.event.startDate).toLocaleDateString('en-US', dateOpts)
+            : 'TBA',
+        invoiceRef: `INV-${res.poNumber || res._id?.toString().slice(-8).toUpperCase()}`,
+        amount: `$${group.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        eventStatus,
+        paymentStatus,
+        paymentDate: createdAt.toLocaleDateString('en-US', dateOpts),
+        fullReservation: {
+            ...res,
+            amount: {
+                total: group.totalAmount,
+                subtotal: allRes.reduce((s, r) => s + (r.amount?.subtotal || 0), 0),
+                fee: allRes.reduce((s, r) => s + (r.amount?.fee || 0), 0),
+                tax: allRes.reduce((s, r) => s + (r.amount?.tax || 0), 0),
             }
-        };
+        },
+        allReservations: allRes,
+    };
+});
 
-        fetchHistory();
-    }, [user?.token]);
+            setAllHistory(mappedHistory); // ✅ inside the effect
+        } catch (error) {
+            console.error("Fetch history error:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchHistory();
+}, [user?.token]);
+
 
     // Date Range Logic
     const [dateRange, setDateRange] = useState(() => ({
@@ -591,18 +655,16 @@ const downloadHistoryItemPDF = async (item) => {
     }));
 
     const filteredHistory = allHistory.filter(item => {
-        const matchesStatus = selectedStatus === "All Events" || item.eventStatus === selectedStatus;
-        
-        // Search filter
-        const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            item.invoiceRef.toLowerCase().includes(searchQuery.toLowerCase());
-
-        // Date range filtering (based on payment date/createdAt)
-        const paymentDate = new Date(item.fullReservation.createdAt);
-        const matchesDate = paymentDate >= dateRange.start && paymentDate <= dateRange.end;
-
-        return matchesStatus && matchesSearch && matchesDate;
-    });
+    if (!item || !item.title) return false;
+    const matchesStatus = selectedStatus === "All Events" || item.eventStatus === selectedStatus;
+    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        item.invoiceRef.toLowerCase().includes(searchQuery.toLowerCase());
+    const paymentDate = item.fullReservation?.createdAt
+        ? new Date(item.fullReservation.createdAt)
+        : new Date(0);
+    const matchesDate = paymentDate >= dateRange.start && paymentDate <= dateRange.end;
+    return matchesStatus && matchesSearch && matchesDate;
+});
 
     // Pagination Logic
     const [currentPage, setCurrentPage] = useState(1);

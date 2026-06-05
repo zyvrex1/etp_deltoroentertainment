@@ -231,6 +231,11 @@ export default function SponsorHeader() {
                                         </NavLink>
                                     </li>
                                     <li>
+                                        <NavLink to="/sponsor/my-gifts" onClick={() => setIsDropdownOpen(false)}>
+                                            <Icon icon="mdi:ticket-percent-outline" width="20" /> My Gift Cards
+                                        </NavLink>
+                                    </li>
+                                    <li>
                                         <NavLink to="/sponsor/settings" onClick={() => setIsDropdownOpen(false)}>
                                             <Icon icon="mdi:cog-outline" width="20" /> Settings
                                         </NavLink>
@@ -310,6 +315,9 @@ export default function SponsorHeader() {
                             </NavLink>
                             <NavLink to="/sponsor/sponsor-invoices" className="mobile-profile-link" onClick={() => setIsMobileProfileOpen(false)}>
                                 <Icon icon="mdi:receipt-outline" width="24" /> Invoice & Receipts
+                            </NavLink>
+                            <NavLink to="/sponsor/my-gifts" className="mobile-profile-link" onClick={() => setIsMobileProfileOpen(false)}>
+                                <Icon icon="mdi:ticket-percent-outline" width="24" /> My Gift Cards
                             </NavLink>
                             <NavLink to="/sponsor/settings" className="mobile-profile-link" onClick={() => setIsMobileProfileOpen(false)}>
                                 <Icon icon="mdi:cog-outline" width="24" /> Settings

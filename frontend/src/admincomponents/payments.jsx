@@ -111,56 +111,99 @@ const Payments = () => {
   }, [isFilterDropdownOpen]);
 
   const getReservationData = () => {
-    // 1. Only show PENDING reservations — resolved ones move to Transactions tab
     const pendingReservations = reservations.filter(res => res.status === 'pending');
 
-    // 2. Map each raw reservation to a simplified object
-    const mapped = pendingReservations.map((res) => {
-      const promoterName = res.user
-        ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`)
-        : 'Unknown Promoter';
+    // Group by batchId first (booths booked together), then map
+    const boothGroups = new Map();
+    const nonBoothRows = [];
 
+    pendingReservations.forEach(res => {
       const isBooth = !!res.boothCode;
       const isGA = res.seatIds && res.seatIds.some(sid => sid.startsWith("GA-"));
-      return {
+
+      if (isBooth && res.batchId) {
+        // Group booths by batchId
+        if (boothGroups.has(res.batchId)) {
+          const group = boothGroups.get(res.batchId);
+          group.reservations.push(res);
+          group.totalAmount += res.amount?.total || 0;
+        } else {
+          boothGroups.set(res.batchId, {
+            reservations: [res],
+            totalAmount: res.amount?.total || 0,
+          });
+        }
+      } else {
+        nonBoothRows.push(res);
+      }
+    });
+
+    const result = [];
+
+    // Add grouped booth rows
+    boothGroups.forEach((group) => {
+      const res = group.reservations[0];
+      const allRes = group.reservations;
+      const promoterName = res.user
+        ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`)
+        : 'Unknown';
+
+      const boothLabel = allRes.length > 1
+        ? `${allRes.length} Booths (${allRes.map(r => `#${r.boothCode}`).join(', ')})`
+        : `Booth (${res.boothCode})`;
+
+      result.push({
+        id: `Booth-${res._id.toString().slice(-6).toUpperCase()}`,
+        resId: res._id,
+        allResIds: allRes.map(r => r._id), // for bulk approve/reject
+        promoter: promoterName,
+        event: res.event?.title || 'Unknown Event',
+        booth: boothLabel,
+        category: 'Booth',
+        amount: `$${group.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
+        status: res.status,
+        date: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A',
+        createdAtTime: res.createdAt ? new Date(res.createdAt).getTime() : 0,
+        quantity: allRes.length,
+        details: allRes.map(r => `#${r.boothCode}`).join(', ')
+      });
+    });
+
+    // Add non-booth rows (seats, tickets) — keep existing logic
+    const gaGroups = [];
+
+    nonBoothRows.forEach(res => {
+      const isBooth = !!res.boothCode;
+      const isGA = res.seatIds && res.seatIds.some(sid => sid.startsWith("GA-"));
+      const promoterName = res.user
+        ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`)
+        : 'Unknown';
+
+      const item = {
         resId: res._id,
         userId: res.user?._id || res.user,
         promoter: promoterName,
         event: res.event?.title || 'Unknown Event',
         eventId: res.event?._id || res.event,
-        category: isBooth ? 'Booth' : (isGA ? 'Ticket' : 'Seated Ticket'),
+        category: isGA ? 'Ticket' : 'Seated Ticket',
         amountVal: res.amount?.total || 0,
-        subtotalVal: res.amount?.subtotal || 0,
-        feeVal: res.amount?.fee || 0,
-        booth: isBooth
-          ? `Booth (${res.boothCode})`
-          : isGA
-            ? `Tickets (${res.seatIds?.length || 1})`
-            : res.seatLabels?.length > 0
-              ? `Seats (${res.seatLabels.join(', ')})`
-              : res.seatIds?.length > 0
-                ? `Seats (${res.seatIds.length} seat${res.seatIds.length > 1 ? 's' : ''})`
-                : null,
+        booth: isGA
+          ? `Tickets (${res.seatIds?.length || 1})`
+          : res.seatLabels?.length > 0
+            ? `Seats (${res.seatLabels.join(', ')})`
+            : `Seats (${res.seatIds?.length || 0})`,
         paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
         status: res.status,
         dateStr: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A',
         createdAtTime: res.createdAt ? new Date(res.createdAt).getTime() : 0,
         quantity: res.seatIds?.length || 1,
-        details: res.seatLabels?.join(", ") || ""
+        details: res.seatLabels?.join(', ') || ''
       };
-    });
 
-    // 2. Group the GA/General Fee tickets
-    const result = [];
-    const gaGroups = []; // List of grouped GA entries to check against
-
-    mapped.forEach(item => {
       if (item.category !== 'Ticket') {
-        // If it's a Booth or Seated Ticket, keep it as an individual row
         result.push({
-          id: item.category === 'Booth' 
-            ? `Booth-${item.resId.toString().slice(-6).toUpperCase()}` 
-            : `Seats-${item.resId.toString().slice(-6).toUpperCase()}`,
+          id: `Seats-${item.resId.toString().slice(-6).toUpperCase()}`,
           resId: item.resId,
           promoter: item.promoter,
           event: item.event,
@@ -177,12 +220,9 @@ const Payments = () => {
         return;
       }
 
-      // If it's a GA / General Fee ticket, try to find an existing group
-      // Use .toString() to safely compare MongoDB ObjectIds
       const userIdStr = item.userId?.toString() || '';
       const eventIdStr = item.eventId?.toString() || '';
-
-      const existingGroup = gaGroups.find(g => 
+      const existingGroup = gaGroups.find(g =>
         g.userId === userIdStr &&
         g.eventId === eventIdStr &&
         g.paymentMethod === item.paymentMethod &&
@@ -193,32 +233,20 @@ const Payments = () => {
       if (existingGroup) {
         existingGroup.amountVal += item.amountVal;
         existingGroup.quantity += item.quantity;
-        if (item.details) {
-          const newDetails = item.details.split(',').map(s => s.trim());
-          existingGroup.detailsList.push(...newDetails);
-        }
+        if (item.details) existingGroup.detailsList.push(...item.details.split(',').map(s => s.trim()));
       } else {
-        // Create new group
-        const newGroup = {
-          userId: userIdStr,
-          eventId: eventIdStr,
-          paymentMethod: item.paymentMethod,
-          status: item.status,
-          createdAtTime: item.createdAtTime,
-          promoter: item.promoter,
-          event: item.event,
-          category: item.category,
-          amountVal: item.amountVal,
-          quantity: item.quantity,
-          dateStr: item.dateStr,
-          resId: item.resId, // Store first resId as reference
-          detailsList: item.details ? [...new Set(item.details.split(',').map(s => s.trim()))] : []
-        };
-        gaGroups.push(newGroup);
+        gaGroups.push({
+          userId: userIdStr, eventId: eventIdStr,
+          paymentMethod: item.paymentMethod, status: item.status,
+          createdAtTime: item.createdAtTime, promoter: item.promoter,
+          event: item.event, category: item.category,
+          amountVal: item.amountVal, quantity: item.quantity,
+          dateStr: item.dateStr, resId: item.resId,
+          detailsList: item.details ? item.details.split(',').map(s => s.trim()) : []
+        });
       }
     });
 
-    // 3. Add GA groups to the final result
     gaGroups.forEach(g => {
       result.push({
         id: `Ticket-${g.resId.toString().slice(-6).toUpperCase()}`,
@@ -233,13 +261,11 @@ const Payments = () => {
         date: g.dateStr,
         createdAtTime: g.createdAtTime,
         quantity: g.quantity,
-        details: [...new Set(g.detailsList)].join(", ")
+        details: [...new Set(g.detailsList)].join(', ')
       });
     });
 
-    // 4. Sort all rows by date descending so Ticket rows appear in the correct position
     result.sort((a, b) => (b.createdAtTime || 0) - (a.createdAtTime || 0));
-
     return result;
   };
 
@@ -309,13 +335,23 @@ const Payments = () => {
     return mapping[label] || "all";
   };
 
+  // ============================================================
+  // FIND this function in payments.jsx:
+  //   const getTransactionList = () => {
+  // 
+  // REPLACE the ENTIRE function body with the code below.
+  // Everything from the opening { to the closing }; is replaced.
+  // ============================================================
+
   const getTransactionList = () => {
-    // 1. Only include RESOLVED reservations (confirmed/rejected/refunded/cancelled)
-    //    Pending ones still live in the Reservation tab
+
+    // ── 1. Filter: only resolved reservations (not pending) ──
     const resolvedReservations = (reservations || []).filter(
       res => res.status !== 'pending'
     );
 
+    // ── 2. Map raw reservations → flat objects ────────────────
+    //    Added: batchId, boothCode, seatLabels  ← NEW FIELDS
     const mappedReservations = resolvedReservations.map((res) => {
       const name = res.user
         ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`)
@@ -323,6 +359,7 @@ const Payments = () => {
 
       const isBooth = !!res.boothCode;
       const isGA = res.seatIds && res.seatIds.some(sid => sid.startsWith("GA-"));
+
       return {
         resId: res._id,
         userId: res.user?._id || res.user,
@@ -331,43 +368,185 @@ const Payments = () => {
         eventId: res.event?._id || res.event,
         category: isBooth ? 'Booth' : (isGA ? 'Ticket' : 'Seated Ticket'),
         amountVal: res.amount?.total || 0,
-        status: res.status === 'confirmed' ? 'completed' : res.status,
-        dateStr: res.createdAt ? new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A',
+        status: res.status === 'confirmed' ? 'completed'
+          : res.status === 'rejected' ? 'rejected'
+            : res.status,
+        dateStr: res.createdAt
+          ? new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          : 'N/A',
         createdAtTime: res.createdAt ? new Date(res.createdAt).getTime() : 0,
         filterType: isBooth ? 'booth' : (isGA ? 'ticket' : 'seated-ticket'),
         rawDate: res.createdAt ? new Date(res.createdAt) : new Date(0),
         paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
         quantity: res.seatIds?.length || 1,
-        details: res.seatLabels?.join(", ") || ""
+        details: res.seatLabels?.join(", ") || "",
+        giftCode: res.giftCode || null,
+        appliedGift: res.appliedGift || null,
+
+        // ── NEW FIELDS ──────────────────────────────────────────
+        batchId: res.batchId || null,   // groups booths/seats booked together
+        boothCode: res.boothCode || null,   // e.g. "A1"
+        seatLabels: res.seatLabels || [],     // e.g. ["Row A - Seat 1", "Row A - Seat 2"]
       };
     });
 
-    // 2. Group GA reservations
+    // ── 3. Containers ─────────────────────────────────────────
     const reservationTx = [];
+    const boothBatchMap = new Map();   // key: batchId string
+    const seatBatchMap = new Map();   // key: batchId string
     const gaGroups = [];
 
+    // ══════════════════════════════════════════════════════════
+    // PASS 1 — BOOTHS  (sponsor books multiple booths at once)
+    //   Group by batchId → 1 row per batch in the table
+    // ══════════════════════════════════════════════════════════
     mappedReservations.forEach(item => {
-      if (item.category !== 'Ticket') {
+      if (item.category !== 'Booth') return;
+
+      const key = item.batchId?.toString();
+
+      if (key) {
+        // Has a batchId → accumulate into the map
+        if (boothBatchMap.has(key)) {
+          const g = boothBatchMap.get(key);
+          g.totalAmount += item.amountVal;
+          g.allItems.push(item);
+        } else {
+          boothBatchMap.set(key, {
+            firstItem: item,
+            allItems: [item],
+            totalAmount: item.amountVal,
+          });
+        }
+      } else {
+        // No batchId → single booth, push directly
         reservationTx.push({
-          id: item.category === 'Booth'
-            ? `Booth-${item.resId.toString().slice(-6).toUpperCase()}`
-            : `Seats-${item.resId.toString().slice(-6).toUpperCase()}`,
+          id: `Booth-${item.resId.toString().slice(-6).toUpperCase()}`,
           user: item.user,
           event: item.event,
-          category: item.category,
+          category: 'Booth',
           amount: `$${item.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
           status: item.status,
           date: item.dateStr,
-          filterType: item.filterType,
+          filterType: 'booth',
+          rawDate: item.rawDate,
+          paymentMethod: item.paymentMethod,
+          quantity: 1,
+          details: item.boothCode ? `Booth (#${item.boothCode})` : '',
+          giftCode: item.giftCode,
+          appliedGift: item.appliedGift,
+        });
+      }
+    });
+
+    // Flush booth batches → 1 combined row per batchId
+    boothBatchMap.forEach((g) => {
+      const first = g.firstItem;
+      const codes = g.allItems.map(i => `#${i.boothCode}`).join(', ');
+      const label = g.allItems.length > 1
+        ? `${g.allItems.length} Booths (${codes})`
+        : `Booth (${first.boothCode})`;
+
+      reservationTx.push({
+        id: `Booth-${first.resId.toString().slice(-6).toUpperCase()}`,
+        user: first.user,
+        event: first.event,
+        category: 'Booth',
+        amount: `$${g.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        status: first.status,
+        date: first.dateStr,
+        filterType: 'booth',
+        rawDate: first.rawDate,
+        paymentMethod: first.paymentMethod,
+        quantity: g.allItems.length,
+        details: label,
+        giftCode: first.giftCode,
+        appliedGift: first.appliedGift,
+      });
+    });
+
+    // ══════════════════════════════════════════════════════════
+    // PASS 2 — SEATED TICKETS  (customer books multiple seats)
+    //   Group by batchId → 1 row per batch in the table
+    // ══════════════════════════════════════════════════════════
+    mappedReservations.forEach(item => {
+      if (item.category !== 'Seated Ticket') return;
+
+      const key = item.batchId?.toString();
+
+      if (key) {
+        // Has a batchId → accumulate into the map
+        if (seatBatchMap.has(key)) {
+          const g = seatBatchMap.get(key);
+          g.totalAmount += item.amountVal;
+          g.quantity += item.quantity;
+          g.allItems.push(item);
+        } else {
+          seatBatchMap.set(key, {
+            firstItem: item,
+            allItems: [item],
+            totalAmount: item.amountVal,
+            quantity: item.quantity,
+          });
+        }
+      } else {
+        // No batchId → single seat reservation, push directly
+        reservationTx.push({
+          id: `Seats-${item.resId.toString().slice(-6).toUpperCase()}`,
+          user: item.user,
+          event: item.event,
+          category: 'Seated Ticket',
+          amount: `$${item.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          status: item.status,
+          date: item.dateStr,
+          filterType: 'seated-ticket',
           rawDate: item.rawDate,
           paymentMethod: item.paymentMethod,
           quantity: item.quantity,
-          details: item.details
+          details: item.seatLabels?.length > 0
+            ? `Seats (${item.seatLabels.join(', ')})`
+            : `Seats (${item.quantity})`,
+          giftCode: item.giftCode,
+          appliedGift: item.appliedGift,
         });
-        return;
       }
+    });
 
-      // Use .toString() to safely compare MongoDB ObjectIds
+    // Flush seat batches → 1 combined row per batchId
+    seatBatchMap.forEach((g) => {
+      const first = g.firstItem;
+      // Collect all seat labels across every reservation in this batch
+      const allLabels = [...new Set(g.allItems.flatMap(i => i.seatLabels || []))];
+      const label = allLabels.length > 0
+        ? `Seats (${allLabels.join(', ')})`
+        : `Seats (${g.quantity})`;
+
+      reservationTx.push({
+        id: `Seats-${first.resId.toString().slice(-6).toUpperCase()}`,
+        user: first.user,
+        event: first.event,
+        category: 'Seated Ticket',
+        amount: `$${g.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        status: first.status,
+        date: first.dateStr,
+        filterType: 'seated-ticket',
+        rawDate: first.rawDate,
+        paymentMethod: first.paymentMethod,
+        quantity: g.quantity,
+        details: label,
+        giftCode: first.giftCode,
+        appliedGift: first.appliedGift,
+      });
+    });
+
+    // ══════════════════════════════════════════════════════════
+    // PASS 3 — GA TICKETS  (general admission, time-window grouping)
+    //   Skip Booth and Seated Ticket — already handled above
+    // ══════════════════════════════════════════════════════════
+    mappedReservations.forEach(item => {
+      // ← KEY CHANGE: skip the two categories already handled
+      if (item.category === 'Booth' || item.category === 'Seated Ticket') return;
+
       const userIdStr = item.userId?.toString() || '';
       const eventIdStr = item.eventId?.toString() || '';
 
@@ -376,18 +555,19 @@ const Payments = () => {
         g.eventId === eventIdStr &&
         g.paymentMethod === item.paymentMethod &&
         g.status === item.status &&
-        Math.abs(g.createdAtTime - item.createdAtTime) < 10000
+        Math.abs(g.createdAtTime - item.createdAtTime) < 60000  // widened from 10s → 60s
       );
 
       if (existingGroup) {
         existingGroup.amountVal += item.amountVal;
         existingGroup.quantity += item.quantity;
+        if (item.status === 'completed') existingGroup.status = 'completed';
         if (item.details) {
           const newDetails = item.details.split(',').map(s => s.trim());
           existingGroup.detailsList.push(...newDetails);
         }
       } else {
-        const newGroup = {
+        gaGroups.push({
           userId: userIdStr,
           eventId: eventIdStr,
           paymentMethod: item.paymentMethod,
@@ -402,12 +582,16 @@ const Payments = () => {
           filterType: item.filterType,
           rawDate: item.rawDate,
           resId: item.resId,
-          detailsList: item.details ? [...new Set(item.details.split(',').map(s => s.trim()))] : []
-        };
-        gaGroups.push(newGroup);
+          detailsList: item.details
+            ? [...new Set(item.details.split(',').map(s => s.trim()))]
+            : [],
+          giftCode: item.giftCode || null,
+          appliedGift: item.appliedGift || null,
+        });
       }
     });
 
+    // Flush GA groups → 1 row per group
     gaGroups.forEach(g => {
       reservationTx.push({
         id: `Ticket-${g.resId.toString().slice(-6).toUpperCase()}`,
@@ -421,11 +605,13 @@ const Payments = () => {
         rawDate: g.rawDate,
         paymentMethod: g.paymentMethod,
         quantity: g.quantity,
-        details: [...new Set(g.detailsList)].join(", ")
+        details: [...new Set(g.detailsList)].join(", "),
+        giftCode: g.giftCode,
+        appliedGift: g.appliedGift,
       });
     });
 
-    // Only include RESOLVED payouts (paid/rejected) — pending/processing stay in Payout Request tab
+    // ── 4. Resolved payouts (paid / rejected) ─────────────────
     const resolvedPayouts = (payoutRequests || []).filter(
       p => p.status === 'paid' || p.status === 'rejected' || p.status === 'reject'
     );
@@ -439,9 +625,10 @@ const Payments = () => {
       date: p.requested,
       filterType: "payout",
       rawDate: new Date(p.requested),
-      paymentMethod: p.method
+      paymentMethod: p.method,
     }));
 
+    // ── 5. Merge and sort newest first ────────────────────────
     return [...reservationTx, ...payoutTx].sort((a, b) => b.rawDate - a.rawDate);
   };
 
@@ -528,6 +715,9 @@ const Payments = () => {
   };
 
   const handleViewReservation = (row) => {
+    // Find the raw reservation to get giftCode and appliedGift
+    const rawRes = reservations.find(res => res._id === row.resId);
+
     setSelectedTx({
       id: row.id,
       resId: row.resId,
@@ -539,7 +729,9 @@ const Payments = () => {
       date: row.date,
       paymentMethod: row.paymentMethod,
       quantity: row.quantity || 1,
-      details: row.details || ""
+      details: row.details || "",
+      giftCode: rawRes?.giftCode || null,           // ← add this
+      appliedGift: rawRes?.appliedGift || null,      // ← add this
     });
     setIsTxModalOpen(true);
   };
@@ -564,17 +756,25 @@ const Payments = () => {
     }
   };
 
-  const handleAcceptReservation = async (id, promoter, amount) => {
+  const handleAcceptReservation = async (id, promoter, amount, allResIds) => {
     const confirmResult = await showApproveConfirmAlert(promoter, amount);
+    if (!confirmResult.isConfirmed) return;
 
-    if (!confirmResult.isConfirmed) {
-      return;
-    }
+    // If allResIds passed (grouped booths), update all of them; otherwise just the one
+    const idsToUpdate = (allResIds && allResIds.length > 0) ? allResIds : [id];
 
     try {
-      await reservationService.updateReservationStatus(id, "confirmed", user.token);
+      await Promise.all(
+        idsToUpdate.map(rid =>
+          reservationService.updateReservationStatus(rid, "confirmed", user.token)
+        )
+      );
       setReservations(prev =>
-        prev.map(res => res._id === id ? { ...res, status: "confirmed" } : res)
+        prev.map(res =>
+          idsToUpdate.map(String).includes(String(res._id))
+            ? { ...res, status: "confirmed" }
+            : res
+        )
       );
       await showSuccessAlert('Reservation Approved', 'The reservation invoice has been approved.');
     } catch (error) {
@@ -583,17 +783,26 @@ const Payments = () => {
     }
   };
 
-  const handleRejectReservation = async (id, promoter, amount) => {
-    const confirmResult = await showRejectConfirmAlert(promoter, amount);
 
-    if (!confirmResult.isConfirmed) {
-      return;
-    }
+  const handleRejectReservation = async (id, promoter, amount, allResIds) => {
+    const confirmResult = await showRejectConfirmAlert(promoter, amount);
+    if (!confirmResult.isConfirmed) return;
+
+    // If allResIds passed (grouped booths), update all of them; otherwise just the one
+    const idsToUpdate = (allResIds && allResIds.length > 0) ? allResIds : [id];
 
     try {
-      await reservationService.updateReservationStatus(id, "rejected", user.token);
+      await Promise.all(
+        idsToUpdate.map(rid =>
+          reservationService.updateReservationStatus(rid, "rejected", user.token)
+        )
+      );
       setReservations(prev =>
-        prev.map(res => res._id === id ? { ...res, status: "rejected" } : res)
+        prev.map(res =>
+          idsToUpdate.map(String).includes(String(res._id))
+            ? { ...res, status: "rejected" }
+            : res
+        )
       );
       await showSuccessAlert('Reservation Rejected', 'The reservation invoice has been rejected.');
     } catch (error) {
@@ -601,7 +810,6 @@ const Payments = () => {
       await showErrorAlert('Error', error.response?.data?.error || 'Failed to reject reservation.');
     }
   };
-
   const getStatusClass = (status) => {
     if (status === "paid" || status === "confirmed") return "button-label pay-status-paid";
     if (status === "pending") return "button-label pay-status-pending";
@@ -1017,8 +1225,7 @@ const Payments = () => {
                                       alignItems: 'center',
                                       justifyContent: 'center'
                                     }}
-                                    onClick={() => handleAcceptReservation(row.resId, row.promoter, row.amount)}
-                                  >
+                                    onClick={() => handleAcceptReservation(row.resId, row.promoter, row.amount, row.allResIds)}                                  >
                                     <Icon icon="mdi:check-bold" style={{ fontSize: '18px' }} />
                                   </button>
                                   <button
@@ -1035,8 +1242,7 @@ const Payments = () => {
                                       alignItems: 'center',
                                       justifyContent: 'center'
                                     }}
-                                    onClick={() => handleRejectReservation(row.resId, row.promoter, row.amount)}
-                                  >
+                                    onClick={() => handleRejectReservation(row.resId, row.promoter, row.amount, row.allResIds)}                                  >
                                     <Icon icon="mdi:close-thick" style={{ fontSize: '18px' }} />
                                   </button>
                                 </>

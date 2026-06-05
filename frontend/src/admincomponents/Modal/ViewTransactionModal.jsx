@@ -79,6 +79,22 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
                                 <span className="small-body-text info-label">Payment Method</span>
                                 <h5 className="info-value">{transaction.paymentMethod || 'N/A'}</h5>
                             </div>
+
+                            <div className="info-item">
+                                <span className="small-body-text info-label">Gift Applied</span>
+                                <h5 className="info-value" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                    {transaction.giftCode || transaction.appliedGift ? (
+                                        <>
+                                            <Icon icon="mdi:ticket-percent" width="16" />
+                                            {transaction.appliedGift?.name
+                                                ? `${transaction.appliedGift.name} (${transaction.giftCode})`
+                                                : transaction.giftCode}
+                                        </>
+                                    ) : (
+                                        'None'
+                                    )}
+                                </h5>
+                            </div>
                         </div>
 
                         {/* Right Column: Item Details */}
@@ -102,6 +118,27 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
                                 <span className="small-body-text info-label">Quantity</span>
                                 <h5 className="info-value">{transaction.quantity || 1}</h5>
                             </div>
+
+                            <div className="info-item">
+                                <span className="small-body-text info-label">Discount Applied</span>
+                                <h5 className="info-value" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                    {transaction.giftCode || transaction.appliedGift ? (
+                                        <>
+                                            <Icon icon="mdi:ticket-percent" width="16" />
+                                            {transaction.appliedGift?.valueType === 'fixed'
+                                                ? `$${transaction.appliedGift.value?.toLocaleString()} off`
+                                                : transaction.appliedGift?.valueType === 'percent'
+                                                ? `${transaction.appliedGift.value}% off`
+                                                : transaction.appliedGift?.valueType === 'bxgy'
+                                                ? 'Buy 1 Get 1 Free'
+                                                : transaction.giftCode || 'Gift Applied'}
+                                        </>
+                                    ) : (
+                                        'None'
+                                    )}
+                                </h5>
+                            </div>
+ 
                         </div>
                     </div>
                 </div>

@@ -7,6 +7,7 @@ import { useCustomerStoreCart } from '../context/CustomerStoreCartContext';
 import { useAuthContext } from '../hooks/useAuthContext';
 import orderService from '../services/orderService';
 import * as authService from '../services/authService';
+import digitalgiftsService from '../services/digitalgiftsService';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 import './CustomerCheckout.css'; // Reusing the same CSS
 
@@ -56,7 +57,39 @@ const CustomerStoreCheckout = () => {
         fetchPhone();
     }, [user]);
 
-    const total = getTotalAmount();
+    const subtotal = getTotalAmount();
+
+    const [availableGifts, setAvailableGifts] = useState([]);
+    const [selectedGift, setSelectedGift] = useState(null);
+
+    useEffect(() => {
+        const fetchGifts = async () => {
+            if (!user?.token) return;
+            try {
+                const gifts = await digitalgiftsService.getMyGifts(user.token);
+                // Filter for pending/unused assignments only
+                const activeGifts = gifts.filter(g => g.assignmentStatus === 'pending');
+                setAvailableGifts(activeGifts);
+            } catch (error) {
+                console.error("Error fetching my gifts:", error);
+            }
+        };
+        fetchGifts();
+    }, [user]);
+
+    const discount = useMemo(() => {
+        if (!selectedGift) return 0;
+        if (selectedGift.valueType === 'fixed') {
+            return Math.min(selectedGift.value, subtotal);
+        } else if (selectedGift.valueType === 'percent') {
+            return (subtotal * selectedGift.value) / 100;
+        }
+        return 0;
+    }, [selectedGift, subtotal]);
+
+    const total = useMemo(() => {
+        return Math.max(0, subtotal - discount);
+    }, [subtotal, discount]);
 
     const handlePay = async () => {
         const result = await showConfirmAlert(
@@ -80,10 +113,26 @@ const CustomerStoreCheckout = () => {
                     boothCode: cartItems[0]?.boothName || boothName,
                     storeName: storeName,
                     totalAmount: total,
-                    paymentMethod: paymentMethod === 'card' ? 'Credit Card' : paymentMethod === 'saved' ? 'Saved Card' : 'Invoice / Bank Transfer'
+                    paymentMethod: paymentMethod === 'card' ? 'Credit Card' : paymentMethod === 'saved' ? 'Saved Card' : 'Invoice / Bank Transfer',
+                    appliedGift: selectedGift ? selectedGift.giftId : null,
+                    giftCode: selectedGift ? selectedGift.code : ""
                 };
 
                 await orderService.createOrder(orderData, user.token);
+
+                // Redeem the gift card assignment upon successful purchase
+                if (selectedGift) {
+                    try {
+                        await digitalgiftsService.redeemAssignment(
+                            selectedGift.giftId,
+                            selectedGift.assignmentId,
+                            user.token
+                        );
+                    } catch (redeemError) {
+                        console.error("Failed to redeem assignment post-store-checkout:", redeemError);
+                    }
+                }
+
                 showSuccessAlert('Payment Successful', 'Your order has been sent to the booth sponsor.');
                 clearCart();
                 navigate('/customer/my-orders');
@@ -183,6 +232,41 @@ const CustomerStoreCheckout = () => {
                                     }}
                                 />
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="cc-card mb-4">
+                        <div className="cc-card-body">
+                            <h4 className="mb-4 text-black">Gift Cards & Promos</h4>
+                            {availableGifts.length === 0 ? (
+                                <p className="small-body-text text-secondary">No available gift cards or promos found.</p>
+                            ) : (
+                                <div className="cc-form-group">
+                                    <label htmlFor="gift-select">Select a promo or gift card to apply:</label>
+                                    <select
+                                        id="gift-select"
+                                        className="cc-input"
+                                        value={selectedGift ? selectedGift.giftId : ''}
+                                        onChange={(e) => {
+                                            const gift = availableGifts.find(g => g.giftId === e.target.value);
+                                            setSelectedGift(gift || null);
+                                        }}
+                                        style={{ marginTop: '8px' }}
+                                    >
+                                        <option value="">-- No Promo / Gift Card --</option>
+                                        {availableGifts.map(g => (
+                                            <option key={g.giftId} value={g.giftId}>
+                                                {g.code} - {g.name} ({g.valueType === 'fixed' ? `$${g.value.toFixed(2)}` : `${g.value}%`} off)
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {selectedGift && (
+                                        <div className="mt-2 text-success small-body-text" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-green-primary)' }}>
+                                            <Icon icon="mdi:check-circle" /> Applied discount of {selectedGift.valueType === 'fixed' ? `$${discount.toFixed(2)}` : `${selectedGift.value}%`}.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -340,6 +424,17 @@ const CustomerStoreCheckout = () => {
                                     </div>
                                 ))}
                             </div>
+
+                            <div className="cc-summary-row mb-2">
+                                <span className="small-body-text text-secondary">Subtotal</span>
+                                <h5 className="text-secondary">${subtotal.toFixed(2)}</h5>
+                            </div>
+                            {selectedGift && (
+                                <div className="cc-summary-row mb-2" style={{ color: 'var(--color-green-primary)' }}>
+                                    <span className="small-body-text" style={{ color: 'var(--color-green-primary)' }}>Discount ({selectedGift.code})</span>
+                                    <h5 style={{ color: 'var(--color-green-primary)' }}>-${discount.toFixed(2)}</h5>
+                                </div>
+                            )}
 
                             <hr className="cc-divider mb-3" />
 

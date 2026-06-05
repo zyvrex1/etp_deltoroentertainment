@@ -60,6 +60,20 @@ const reservationSchema = new mongoose.Schema({
     poNumber: {
         type: String
     },
+    batchId: {
+        type: String,
+        required: false,
+        index: true
+    },
+    appliedGift: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DigitalGift',
+        required: false
+    },
+    giftCode: {
+        type: String,
+        required: false
+    },
     qrData: {
         type: String // We will store the reservation ID here
     },

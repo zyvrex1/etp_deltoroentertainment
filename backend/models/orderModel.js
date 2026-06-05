@@ -64,6 +64,15 @@ const orderSchema = new Schema({
     paymentMethod: {
         type: String,
         default: 'Credit Card'
+    },
+    appliedGift: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DigitalGift',
+        required: false
+    },
+    giftCode: {
+        type: String,
+        required: false
     }
 }, { timestamps: true });
 

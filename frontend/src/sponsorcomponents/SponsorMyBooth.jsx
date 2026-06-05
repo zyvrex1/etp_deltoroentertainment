@@ -31,7 +31,36 @@ export default function SponsorMyBooth() {
                 const response = await axios.get(`${BACKEND_URL}/api/reservations/my-booths`, {
                     headers: { Authorization: `Bearer ${user.token}` }
                 });
-                setReservations(response.data);
+                // Expand seat type reservations to display one card per seat
+                const expanded = [];
+                response.data.forEach((res) => {
+                    if (res.type === 'seat' && res.seatIds) {
+                        const isBXGY = res.appliedGift?.valueType === 'bxgy' && res.seatIds.length > 1;
+                        res.seatIds.forEach((sid, idx) => {
+                            let itemPrice = 0;
+                            if (isBXGY) {
+                                if (idx < res.seatIds.length - 1) {
+                                    itemPrice = res.amount.subtotal / (res.seatIds.length - 1);
+                                } else {
+                                    itemPrice = 0;
+                                }
+                            } else {
+                                itemPrice = res.amount.subtotal / res.seatIds.length;
+                            }
+                            expanded.push({
+                                ...res,
+                                _id: `${res._id}-${idx}`, // unique React key
+                                isSeatTicket: true,
+                                seatLabel: res.seatLabels?.[idx] || sid,
+                                calculatedPrice: itemPrice,
+                                qrData: res.qrData || res._id.toString()
+                            });
+                        });
+                    } else {
+                        expanded.push(res);
+                    }
+                });
+                setReservations(expanded);
             } catch (err) {
                 console.error("Fetch reservations error:", err);
                 setError(err.response?.data?.error || "Failed to load reservations.");
@@ -60,7 +89,8 @@ export default function SponsorMyBooth() {
         if (searchQuery) {
             result = result.filter(res => 
                 res.event?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                res.boothCode?.toLowerCase().includes(searchQuery.toLowerCase())
+                res.boothCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                res.seatLabel?.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
 
@@ -213,7 +243,7 @@ export default function SponsorMyBooth() {
                                             />
                                         </div>
                                         <div className="booth-details">
-                                            <h5 className="booth-info-title">Booth #{res.boothCode}</h5>
+                                            <h5 className="booth-info-title">{res.isSeatTicket ? `Seat ${res.seatLabel}` : `Booth #${res.boothCode}`}</h5>
                                             <div className="booth-info-row">
                                                 <Icon icon="mdi:calendar-blank-outline" />
                                                 <span>

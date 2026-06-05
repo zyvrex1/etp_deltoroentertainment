@@ -1,0 +1,346 @@
+.gifts-view-container {
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin: 0 auto;
+  max-width: 1440px;
+}
+
+.gifts-view-header {
+  text-align: left;
+  h2 {
+    color: var(--color-black-primary);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  p {
+    color: var(--color-black-tertiary);
+  }
+}
+
+/* ── Claim Code Card ────────────────────────────────────────── */
+.claim-code-card {
+  background: var(--color-white-primary);
+  border: 1px solid var(--color-black-quaternary);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.claim-code-form {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.claim-input-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-black-quaternary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  flex: 1;
+  min-width: 280px;
+
+  .claim-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--color-black-tertiary);
+  }
+
+  input {
+    flex: 1;
+    border: none;
+    background: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    color: var(--color-black-primary);
+    outline: none;
+
+    &::placeholder {
+      color: var(--color-black-tertiary);
+    }
+  }
+}
+
+.claim-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  background-color: var(--color-red-primary);
+  border: none;
+  color: var(--color-white-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 160px;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ── Grid ─────────────────────────────────────────────────── */
+.my-gifts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.my-gift-card {
+  background: var(--color-white-primary);
+  border: 1px solid var(--color-black-quaternary);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  &.redeemed {
+    opacity: 0.7;
+    background: var(--color-bg-light);
+  }
+
+  &.expired {
+    opacity: 0.6;
+    background: var(--color-bg-light);
+  }
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gift-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-red-quaternary);
+  color: var(--color-red-primary);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.status-badge {
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+
+  &.badge-active {
+    background: var(--color-green-tertiary);
+    color: var(--color-green-primary);
+  }
+
+  &.badge-redeemed {
+    background: var(--color-black-quaternary);
+    color: var(--color-black-secondary);
+  }
+
+  &.badge-expired {
+    background: var(--color-red-tertiary);
+    color: var(--color-red-primary);
+  }
+}
+
+.card-main-info {
+  text-align: left;
+  .gift-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--color-black-primary);
+    margin: 0 0 6px 0;
+  }
+  .gift-description {
+    color: var(--color-black-secondary);
+    line-height: 1.5;
+  }
+}
+
+.card-value-display {
+  text-align: left;
+  border-top: 1px dashed var(--color-black-quaternary);
+  border-bottom: 1px dashed var(--color-black-quaternary);
+  padding: 16px 0;
+
+  .gift-value {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    color: var(--color-black-primary);
+    margin: 0;
+  }
+}
+
+.card-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gift-code-display {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  .code-label {
+    font-family: 'Poppins', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--color-black-tertiary);
+    letter-spacing: 1px;
+  }
+
+  .code-text {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--color-black-primary);
+    background: var(--color-bg-light);
+    border: 1px solid var(--color-black-quaternary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 2px;
+  }
+}
+
+.gift-expiry-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--color-black-tertiary);
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ── Loader & Empty State ───────────────────────────────────── */
+.gifts-loader,
+.gifts-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: var(--color-white-primary);
+  border: 1px solid var(--color-black-quaternary);
+  border-radius: 12px;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--color-black-quaternary);
+}
+
+.gifts-empty-state h3 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--color-black-primary);
+  margin: 0;
+}
+
+.gifts-empty-state p {
+  color: var(--color-black-tertiary);
+  max-width: 420px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-large {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-black-quaternary);
+  border-radius: 50%;
+  border-top-color: var(--color-red-primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+  .gifts-view-container {
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .gifts-view-container {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .gifts-view-container {
+    padding: 12px 12px 80px;
+  }
+  .claim-code-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .claim-input-group {
+    min-width: 100%;
+  }
+  .claim-btn {
+    width: 100%;
+  }
+}

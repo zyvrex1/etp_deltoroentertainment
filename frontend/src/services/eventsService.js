@@ -34,8 +34,13 @@ const eventsService = {
     return response.data;
   },
 
-  buySeats: async (id, seatIds, amount, billingInfo, paymentMethod, token) => {
-    const response = await api.post(`/events/${id}/buy-seats`, { seatIds, amount, billingInfo, paymentMethod }, eventsService.getAuthHeaders(token));
+  buySeats: async (id, seatIds, amount, billingInfo, paymentMethod, token, giftInfo = null) => {
+    const payload = { seatIds, amount, billingInfo, paymentMethod };
+    if (giftInfo) {
+      payload.giftCode = giftInfo.giftCode;
+      payload.appliedGift = giftInfo.appliedGift;
+    }
+    const response = await api.post(`/events/${id}/buy-seats`, payload, eventsService.getAuthHeaders(token));
     return response.data;
   },
 };

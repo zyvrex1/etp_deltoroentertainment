@@ -1,25 +1,25 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  MdCardGiftcard,
-  MdAdd,
-  MdSearch,
-  MdClose,
-  MdEdit,
-  MdDelete,
-  MdSend,
-  MdFilterList,
-  MdPeople,
-  MdStorefront,
-  MdLocalOffer,
-  MdConfirmationNumber,
-  MdCalendarToday,
-  MdCheckCircle,
-  MdCancel,
-  MdHourglassEmpty,
-  MdMoreVert,
-  MdContentCopy,
-  MdVisibility,
-  MdExpandMore,
+    MdCardGiftcard,
+    MdAdd,
+    MdSearch,
+    MdClose,
+    MdEdit,
+    MdDelete,
+    MdSend,
+    MdFilterList,
+    MdPeople,
+    MdStorefront,
+    MdLocalOffer,
+    MdConfirmationNumber,
+    MdCalendarToday,
+    MdCheckCircle,
+    MdCancel,
+    MdHourglassEmpty,
+    MdMoreVert,
+    MdContentCopy,
+    MdVisibility,
+    MdExpandMore,
 } from "react-icons/md";
 import "./digitalgifts.css";
 import GiftFormModal from "./Modal/GiftFormModal";
@@ -29,602 +29,519 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import digitalgiftsService from "../services/digitalgiftsService";
 import adminService from "../services/adminService";
 import {
-  showSuccessAlert,
-  showErrorAlert,
-  showCreateConfirmAlert,
-  showUpdateConfirmAlert,
-  showDeleteConfirmAlert
+    showSuccessAlert,
+    showErrorAlert,
+    showCreateConfirmAlert,
+    showUpdateConfirmAlert,
+    showDeleteConfirmAlert
 } from "../utils/sweetAlert";
 
-const MOCK_GIFTS = [
-  {
-    id: 1,
-    name: "Welcome Bonus",
-    type: "gift_card",
-    value: 500,
-    valueType: "fixed",
-    description: "₱500 store credit for new signups",
-    assignedTo: "customers",
-    status: "active",
-    code: "WLCM500",
-    used: 34,
-    total: 100,
-    expiresAt: "2026-06-30",
-    createdAt: "2026-05-01",
-  },
-  {
-    id: 2,
-    name: "Booth Early Bird",
-    type: "discount",
-    value: 20,
-    valueType: "percent",
-    description: "20% off booth reservations",
-    assignedTo: "sponsors",
-    status: "active",
-    code: "ERLYBIRD20",
-    used: 8,
-    total: 50,
-    expiresAt: "2026-07-15",
-    createdAt: "2026-05-10",
-  },
-  {
-    id: 3,
-    name: "Summer Sale",
-    type: "promo",
-    value: null,
-    valueType: "bxgy",
-    description: "Buy 2 tickets, get 1 free",
-    assignedTo: "customers",
-    status: "active",
-    code: "SUMMER2026",
-    used: 19,
-    total: 200,
-    expiresAt: "2026-08-01",
-    createdAt: "2026-05-15",
-  },
-  {
-    id: 4,
-    name: "Loyalty Reward",
-    type: "gift_card",
-    value: 250,
-    valueType: "fixed",
-    description: "₱250 for returning customers",
-    assignedTo: "customers",
-    status: "expired",
-    code: "LOYAL250",
-    used: 45,
-    total: 50,
-    expiresAt: "2026-05-31",
-    createdAt: "2026-04-01",
-  },
-  {
-    id: 5,
-    name: "Sponsor VIP Discount",
-    type: "discount",
-    value: 15,
-    valueType: "percent",
-    description: "15% off for verified sponsors",
-    assignedTo: "sponsors",
-    status: "draft",
-    code: "VIP15",
-    used: 0,
-    total: 30,
-    expiresAt: "2026-09-01",
-    createdAt: "2026-06-01",
-  },
-  {
-    id: 6,
-    name: "Grand Opening Promo",
-    type: "promo",
-    value: 300,
-    valueType: "fixed",
-    description: "₱300 off first event ticket",
-    assignedTo: "all",
-    status: "active",
-    code: "GRAND300",
-    used: 61,
-    total: 150,
-    expiresAt: "2026-07-01",
-    createdAt: "2026-05-20",
-  },
-];
-
-const MOCK_ASSIGNMENTS = [
-  { id: 1, user: "Juan Dela Cruz", role: "customer", gift: "Welcome Bonus", code: "WLCM500", status: "redeemed", date: "Jun 3, 2026" },
-  { id: 2, user: "TechCorp Inc.", role: "sponsor", gift: "Booth Early Bird", code: "ERLYBIRD20", status: "pending", date: "Jun 4, 2026" },
-  { id: 3, user: "Maria Santos", role: "customer", gift: "Summer Sale", code: "SUMMER2026", status: "redeemed", date: "Jun 5, 2026" },
-  { id: 4, user: "BrandX Solutions", role: "sponsor", gift: "Sponsor VIP Discount", code: "VIP15", status: "pending", date: "Jun 5, 2026" },
-  { id: 5, user: "Carlo Reyes", role: "customer", gift: "Grand Opening Promo", code: "GRAND300", status: "redeemed", date: "Jun 5, 2026" },
-];
-
 const TYPE_META = {
-  gift_card: { label: "Gift card", icon: <MdCardGiftcard />, colorClass: "badge-blue" },
-  discount: { label: "Discount", icon: <MdLocalOffer />, colorClass: "badge-amber" },
-  promo: { label: "Promo", icon: <MdConfirmationNumber />, colorClass: "badge-rose" },
+    gift_card: { label: "Gift card", icon: <MdCardGiftcard />, colorClass: "badge-blue" },
+    discount: { label: "Discount", icon: <MdLocalOffer />, colorClass: "badge-amber" },
+    promo: { label: "Promo", icon: <MdConfirmationNumber />, colorClass: "badge-rose" },
 };
 
 const STATUS_META = {
-  active: { label: "Active", colorClass: "status-active" },
-  expired: { label: "Expired", colorClass: "status-expired" },
-  draft: { label: "Draft", colorClass: "status-draft" },
+    active: { label: "Active", colorClass: "status-active" },
+    expired: { label: "Expired", colorClass: "status-expired" },
+    draft: { label: "Draft", colorClass: "status-draft" },
 };
 
 const emptyForm = {
-  name: "",
-  type: "gift_card",
-  value: "",
-  valueType: "fixed",
-  description: "",
-  assignedTo: "customers",
-  total: "",
-  expiresAt: "",
-  code: "",
+    name: "",
+    type: "gift_card",
+    value: "",
+    valueType: "fixed",
+    description: "",
+    assignedTo: "customers",
+    total: "",
+    expiresAt: "",
+    code: "",
 };
 
+
+
 export default function DigitalGifts() {
-  const { user } = useAuthContext();
-  const [gifts, setGifts] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [assignments, setAssignments] = useState([]);
-  const [stats, setStats] = useState({ totalActive: 0, totalRedeemed: 0, totalValueIssued: 0, expiringThisWeek: 0 });
+    const { user } = useAuthContext();
+    const [gifts, setGifts] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [assignments, setAssignments] = useState([]);
+    const [stats, setStats] = useState({ totalActive: 0, totalRedeemed: 0, totalValueIssued: 0, expiringThisWeek: 0 });
 
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedGift, setSelectedGift] = useState(null);
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState(null);
-  const [activeMenu, setActiveMenu] = useState(null);
-  const [assignForm, setAssignForm] = useState({ userId: "", userLabel: "", giftId: "", userRole: "", userEmail: "" });
-  const [copiedCode, setCopiedCode] = useState(null);
-  const [toast, setToast] = useState(null);
+    const [filter, setFilter] = useState("all");
+    const [search, setSearch] = useState("");
+    const [showModal, setShowModal] = useState(false);
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedGift, setSelectedGift] = useState(null);
+    const [form, setForm] = useState(emptyForm);
+    const [editingId, setEditingId] = useState(null);
+    const [activeMenu, setActiveMenu] = useState(null);
+    const [assignForm, setAssignForm] = useState({ userId: "", userLabel: "", giftId: "", userRole: "", userEmail: "" });
+    const [copiedCode, setCopiedCode] = useState(null);
+    const [toast, setToast] = useState(null);
 
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const filterDropdownRef = useRef(null);
+    const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+    const filterDropdownRef = useRef(null);
 
-  const fetchData = async () => {
-    if (!user?.token) return;
-    try {
-      const giftsData = await digitalgiftsService.getGifts(user.token);
-      setGifts(giftsData);
+    const fetchData = async () => {
+        if (!user?.token) return;
+        try {
+            const giftsData = await digitalgiftsService.getGifts(user.token);
+            setGifts(giftsData);
 
-      const statsData = await digitalgiftsService.getStats(user.token);
-      setStats(statsData);
+            const statsData = await digitalgiftsService.getStats(user.token);
+            setStats(statsData);
 
-      const recentAssigns = await digitalgiftsService.getRecentAssignments(user.token);
-      setAssignments(recentAssigns);
+            const recentAssigns = await digitalgiftsService.getRecentAssignments(user.token);
+            setAssignments(recentAssigns);
 
-      const usersList = await adminService.getUsers(user.token);
-      setUsers(usersList);
-    } catch (err) {
-      console.error("Fetch digital gifts error:", err);
-      showToast(err.message || "Failed to load data.", "error");
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [user]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
-        setIsFilterDropdownOpen(false);
-      }
+            const usersList = await adminService.getUsers(user.token);
+            setUsers(usersList);
+        } catch (err) {
+            console.error("Fetch digital gifts error:", err);
+            showToast(err.message || "Failed to load data.", "error");
+        }
     };
-    if (isFilterDropdownOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isFilterDropdownOpen]);
 
-  const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
+    useEffect(() => {
+        fetchData();
+    }, [user]);
 
-  const filtered = gifts.filter((g) => {
-    const matchFilter =
-      filter === "all" ||
-      (filter === "active" && g.status === "active") ||
-      (filter === "gift_card" && g.type === "gift_card") ||
-      (filter === "discount" && g.type === "discount") ||
-      (filter === "promo" && g.type === "promo") ||
-      (filter === "draft" && g.status === "draft") ||
-      (filter === "expired" && g.status === "expired");
-    const matchSearch =
-      !search ||
-      g.name.toLowerCase().includes(search.toLowerCase()) ||
-      g.code.toLowerCase().includes(search.toLowerCase());
-    return matchFilter && matchSearch;
-  });
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
+                setIsFilterDropdownOpen(false);
+            }
+        };
+        if (isFilterDropdownOpen) document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [isFilterDropdownOpen]);
 
-  const handleOpenCreate = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setShowModal(true);
-  };
+    const showToast = (msg, type = "success") => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 3000);
+    };
 
-  const handleEdit = (gift) => {
-    setEditingId(gift._id || gift.id);
-    setForm({
-      name: gift.name,
-      type: gift.type,
-      value: gift.value ?? "",
-      valueType: gift.valueType,
-      description: gift.description,
-      assignedTo: gift.assignedTo,
-      total: gift.totalCount ?? gift.total,
-      expiresAt: gift.expiresAt ? new Date(gift.expiresAt).toISOString().split('T')[0] : "",
-      code: gift.code,
+    const filtered = gifts.filter((g) => {
+        const matchFilter =
+            filter === "all" ||
+            (filter === "active" && g.status === "active") ||
+            (filter === "gift_card" && g.type === "gift_card") ||
+            (filter === "discount" && g.type === "discount") ||
+            (filter === "promo" && g.type === "promo") ||
+            (filter === "draft" && g.status === "draft") ||
+            (filter === "expired" && g.status === "expired");
+        const matchSearch =
+            !search ||
+            g.name.toLowerCase().includes(search.toLowerCase()) ||
+            g.code.toLowerCase().includes(search.toLowerCase());
+        return matchFilter && matchSearch;
     });
-    setShowModal(true);
-    setActiveMenu(null);
-  };
 
-  const handleDelete = async (id) => {
-    const confirm = await showDeleteConfirmAlert("Delete Digital Gift?", "Are you sure you want to delete this digital gift? This action cannot be undone.");
-    if (!confirm.isConfirmed) return;
-
-    try {
-      await digitalgiftsService.deleteGift(id, user.token);
-      await showSuccessAlert("Deleted Successfully", "Gift has been deleted.");
-      fetchData();
-    } catch (err) {
-      await showErrorAlert("Failed to delete", err.message || "Failed to delete gift.");
-    }
-    setActiveMenu(null);
-  };
-
-  const handleSave = async () => {
-if (!form.name || !form.code || !form.expiresAt && form.expiresAt !== "none") {
-              showToast("Please fill in all required fields.", "error");
-      return;
-    }
-
-    const confirm = editingId 
-      ? await showUpdateConfirmAlert("Update Digital Gift?", "Are you sure you want to save these changes?")
-      : await showCreateConfirmAlert("Create Digital Gift?", "Are you sure you want to create this new digital gift?");
-    
-    if (!confirm.isConfirmed) return;
-
-    const payload = {
-      name: form.name,
-      type: form.type,
-      value: form.value !== "" ? Number(form.value) : null,
-      valueType: form.valueType,
-      description: form.description,
-      assignedTo: form.assignedTo,
-      totalCount: Number(form.total),
-expiresAt: form.expiresAt === "none" ? null : form.expiresAt,
-      code: form.code,
-      status: "active",
+    const handleOpenCreate = () => {
+        setEditingId(null);
+        setForm(emptyForm);
+        setShowModal(true);
     };
 
-    try {
-      if (editingId) {
-        await digitalgiftsService.updateGift(editingId, payload, user.token);
-        await showSuccessAlert("Updated Successfully", "Gift has been updated.");
-      } else {
-        await digitalgiftsService.createGift(payload, user.token);
-        await showSuccessAlert("Created Successfully", "Gift has been created.");
-      }
-      setShowModal(false);
-      fetchData();
-    } catch (err) {
-      await showErrorAlert("Failed to save", err.message || "Failed to save gift.");
-    }
-  };
+    const handleEdit = (gift) => {
+        setEditingId(gift._id || gift.id);
+        setForm({
+            name: gift.name,
+            type: gift.type,
+            value: gift.value ?? "",
+            valueType: gift.valueType,
+            description: gift.description,
+            assignedTo: gift.assignedTo,
+            total: gift.totalCount ?? gift.total,
+            expiresAt: gift.expiresAt ? new Date(gift.expiresAt).toISOString().split('T')[0] : "",
+            code: gift.code,
+        });
+        setShowModal(true);
+        setActiveMenu(null);
+    };
 
-  const handleAssign = async () => {
-    if (!assignForm.userLabel || !assignForm.giftId) {
-      showToast("Please select a user and a gift.", "error");
-      return;
-    }
+    const handleDelete = async (id) => {
+        const confirm = await showDeleteConfirmAlert("Delete Digital Gift?", "Are you sure you want to delete this digital gift? This action cannot be undone.");
+        if (!confirm.isConfirmed) return;
 
-    try {
-      if (assignForm.userId === "all_customers" || assignForm.userId === "all_sponsors") {
-        const targetRole = assignForm.userId === "all_customers" ? "customer" : "sponsor";
-        const targetUsers = users.filter(u => u.role.toLowerCase() === targetRole);
-        
-        if (targetUsers.length === 0) {
-          showToast(`No users found with role ${targetRole}.`, "error");
-          return;
+        try {
+            await digitalgiftsService.deleteGift(id, user.token);
+            await showSuccessAlert("Deleted Successfully", "Gift has been deleted.");
+            fetchData();
+        } catch (err) {
+            await showErrorAlert("Failed to delete", err.message || "Failed to delete gift.");
+        }
+        setActiveMenu(null);
+    };
+
+    const handleSave = async () => {
+        if (!form.name || !form.code || !form.expiresAt && form.expiresAt !== "none") {
+            showToast("Please fill in all required fields.", "error");
+            return;
         }
 
-        for (const u of targetUsers) {
-          const displayName = u.companyName
-            ? `${u.firstName} ${u.lastName} (${u.companyName})`
-            : `${u.firstName} ${u.lastName}`;
-          await digitalgiftsService.assignGift(assignForm.giftId, {
-            userId: u._id,
-            userName: displayName,
-            userEmail: u.email,
-            userRole: u.role.toLowerCase()
-          }, user.token);
+        const confirm = editingId
+            ? await showUpdateConfirmAlert("Update Digital Gift?", "Are you sure you want to save these changes?")
+            : await showCreateConfirmAlert("Create Digital Gift?", "Are you sure you want to create this new digital gift?");
+
+        if (!confirm.isConfirmed) return;
+
+        const payload = {
+            name: form.name,
+            type: form.type,
+            value: form.value !== "" ? Number(form.value) : null,
+            valueType: form.valueType,
+            description: form.description,
+            assignedTo: form.assignedTo,
+            totalCount: Number(form.total),
+            expiresAt: form.expiresAt === "none" ? null : form.expiresAt,
+            code: form.code,
+            status: "active",
+        };
+
+        try {
+            if (editingId) {
+                await digitalgiftsService.updateGift(editingId, payload, user.token);
+                await showSuccessAlert("Updated Successfully", "Gift has been updated.");
+            } else {
+                await digitalgiftsService.createGift(payload, user.token);
+                await showSuccessAlert("Created Successfully", "Gift has been created.");
+            }
+            setShowModal(false);
+            fetchData();
+        } catch (err) {
+            await showErrorAlert("Failed to save", err.message || "Failed to save gift.");
         }
-        showToast(`Gift assigned to all ${targetRole}s.`);
-      } else {
-        await digitalgiftsService.assignGift(assignForm.giftId, {
-          userId: assignForm.userId,
-          userName: assignForm.userLabel,
-          userEmail: assignForm.userEmail,
-          userRole: assignForm.userRole || "customer"
-        }, user.token);
-        showToast(`Gift assigned to ${assignForm.userLabel}.`);
-      }
-      setShowAssignModal(false);
-      setAssignForm({ userId: "", userLabel: "", giftId: "", userRole: "", userEmail: "" });
-      fetchData();
-    } catch (err) {
-      showToast(err.message || "Failed to assign gift.", "error");
-    }
-  };
+    };
 
-  const handleCopyCode = (code) => {
-    navigator.clipboard?.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 1500);
-  };
+    const handleAssign = async () => {
+        if (!assignForm.userLabel || !assignForm.giftId) {
+            showToast("Please select a user and a gift.", "error");
+            return;
+        }
 
-  const handleViewDetail = (gift) => {
-    setSelectedGift(gift);
-    setShowDetailModal(true);
-    setActiveMenu(null);
-  };
+        try {
+            if (assignForm.userId === "all_customers" || assignForm.userId === "all_sponsors") {
+                const targetRole = assignForm.userId === "all_customers" ? "customer" : "sponsor";
+                const targetUsers = users.filter(u => u.role.toLowerCase() === targetRole);
 
-  const formatValue = (g) => {
-    if (g.valueType === "percent") return `${g.value}% off`;
-    if (g.valueType === "fixed") return `₱${g.value?.toLocaleString()}`;
-    return "Buy 2 Get 1";
-  };
+                if (targetUsers.length === 0) {
+                    showToast(`No users found with role ${targetRole}.`, "error");
+                    return;
+                }
 
-  return (
-    <div className="dg-page">
-      {toast && (
-        <div className={`dg-toast ${toast.type === "error" ? "dg-toast-error" : ""}`}>
-          {toast.type === "error" ? <MdCancel /> : <MdCheckCircle />}
-          {toast.msg}
-        </div>
-      )}
+                for (const u of targetUsers) {
+                    const displayName = u.companyName
+                        ? `${u.firstName} ${u.lastName} (${u.companyName})`
+                        : `${u.firstName} ${u.lastName}`;
+                    await digitalgiftsService.assignGift(assignForm.giftId, {
+                        userId: u._id,
+                        userName: displayName,
+                        userEmail: u.email,
+                        userRole: u.role.toLowerCase()
+                    }, user.token);
+                }
+                showToast(`Gift assigned to all ${targetRole}s.`);
+            } else {
+                await digitalgiftsService.assignGift(assignForm.giftId, {
+                    userId: assignForm.userId,
+                    userName: assignForm.userLabel,
+                    userEmail: assignForm.userEmail,
+                    userRole: assignForm.userRole || "customer"
+                }, user.token);
+                showToast(`Gift assigned to ${assignForm.userLabel}.`);
+            }
+            setShowAssignModal(false);
+            setAssignForm({ userId: "", userLabel: "", giftId: "", userRole: "", userEmail: "" });
+            fetchData();
+        } catch (err) {
+            showToast(err.message || "Failed to assign gift.", "error");
+        }
+    };
 
-      <div className="dg-header">
-        <div>
-          <h1 className="dg-title">Digital Gifts</h1>
-          <p className="dg-subtitle">Create and assign gift cards, discounts, and promos to customers and sponsors.</p>
-        </div>
-        <div className="dg-header-actions">
-          <button className="dg-btn-secondary" onClick={() => setShowAssignModal(true)}>
-            <MdSend /> Assign gift
-          </button>
-          <button className="dg-btn-primary" onClick={handleOpenCreate}>
-            <MdAdd /> New gift
-          </button>
-        </div>
-      </div>
+    const handleCopyCode = (code) => {
+        navigator.clipboard?.writeText(code);
+        setCopiedCode(code);
+        setTimeout(() => setCopiedCode(null), 1500);
+    };
 
-      <div className="dg-stats">
-        <div className="dg-stat-card">
-          <span className="dg-stat-label">Total active gifts</span>
-          <span className="dg-stat-value">{stats.totalActive}</span>
-        </div>
-        <div className="dg-stat-card">
-          <span className="dg-stat-label">Redeemed all time</span>
-          <span className="dg-stat-value">{stats.totalRedeemed}</span>
-        </div>
-        <div className="dg-stat-card">
-          <span className="dg-stat-label">Total value issued</span>
-          <span className="dg-stat-value">₱{(stats.totalValueIssued || 0).toLocaleString()}</span>
-        </div>
-        <div className="dg-stat-card dg-stat-warn">
-          <span className="dg-stat-label">Expiring this week</span>
-          <span className="dg-stat-value dg-warn-val">{stats.expiringThisWeek}</span>
-        </div>
-      </div>
+    const handleViewDetail = (gift) => {
+        setSelectedGift(gift);
+        setShowDetailModal(true);
+        setActiveMenu(null);
+    };
 
-      <div className="dg-content">
-        <div className="dg-toolbar">
-          <div className="dg-toolbar-left">
-            <div className="dg-search">
-              <MdSearch className="dg-search-icon" />
-              <input
-                type="text"
-                placeholder="Search gifts or codes..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              {search && <MdClose className="dg-clear-icon" onClick={() => setSearch("")} />}
-            </div>
-          </div>
+    const formatValue = (g) => {
+        if (g.valueType === "percent") return `${g.value}% off`;
+        if (g.valueType === "fixed") return `$${g.value?.toLocaleString()}`;
+        return "Buy 2 Get 1";
+    };
 
-          <div className="dg-toolbar-right">
-            <div className="dg-filter-dropdown" ref={filterDropdownRef}>
-              <button
-                className="dg-filter-dropdown-btn small-body-text"
-                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-              >
-                <span className="truncate-text">
-                  {filter === "all"
-                    ? "All"
-                    : filter === "gift_card"
-                    ? "Gift card"
-                    : filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </span>
-                <MdExpandMore className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""}`} />
-              </button>
-              {isFilterDropdownOpen && (
-                <div className="dg-filter-dropdown-menu">
-                  {["all", "active", "gift_card", "discount", "promo", "draft", "expired"].map((f) => (
-                    <button
-                      key={f}
-                      className={`dg-filter-dropdown-item small-body-text ${filter === f ? "active" : ""}`}
-                      onClick={() => {
-                        setFilter(f);
-                        setIsFilterDropdownOpen(false);
-                      }}
-                    >
-                      {f === "all" ? "All" : f === "gift_card" ? "Gift card" : f.charAt(0).toUpperCase() + f.slice(1)}
-                    </button>
-                  ))}
+    return (
+        <div className="dg-page">
+            {toast && (
+                <div className={`dg-toast ${toast.type === "error" ? "dg-toast-error" : ""}`}>
+                    {toast.type === "error" ? <MdCancel /> : <MdCheckCircle />}
+                    {toast.msg}
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+            )}
 
-        {filtered.length === 0 ? (
-          <div className="dg-empty">
-            <MdCardGiftcard className="dg-empty-icon" />
-            <p className="regular-body-text">No gifts found. Try adjusting filters or create a new one.</p>
-          </div>
-        ) : (
-          <div className="dg-grid">
-            {filtered.map((gift) => (
-              <div key={gift.id} className={`dg-card ${gift.status === "expired" ? "dg-card-expired" : ""}`}>
-                <div className="dg-card-top">
-                  <span className={`button-label ${TYPE_META[gift.type].colorClass}`}>
-                    {TYPE_META[gift.type].icon} {TYPE_META[gift.type].label}
-                  </span>
-                  <div className="dg-card-right">
-                    <span className={`button-label ${STATUS_META[gift.status].colorClass}`}>
-                      {STATUS_META[gift.status].label}
-                    </span>
-                    <div className="dg-menu-wrap">
-                      <button className="dg-menu-btn" onClick={() => setActiveMenu(activeMenu === gift.id ? null : gift.id)}>
-                        <MdMoreVert />
-                      </button>
-                      {activeMenu === gift.id && (
-                        <div className="dg-menu">
-                          <button onClick={() => handleViewDetail(gift)}><MdVisibility /> View details</button>
-                          <button onClick={() => handleEdit(gift)}><MdEdit /> Edit</button>
-                          <button
-                            onClick={() => {
-                              setAssignForm((p) => ({ ...p, giftId: gift.id }));
-                              setShowAssignModal(true);
-                              setActiveMenu(null);
-                            }}
-                          >
-                            <MdSend /> Assign
-                          </button>
-                          <button className="dg-menu-delete" onClick={() => handleDelete(gift.id)}><MdDelete /> Delete</button>
+            <div className="dg-header">
+                <div>
+                    <h1 className="dg-title">Digital Gifts</h1>
+                    <p className="dg-subtitle">Create and assign gift cards, discounts, and promos to customers and sponsors.</p>
+                </div>
+                <div className="dg-header-actions">
+                    <button className="dg-btn-secondary" onClick={() => setShowAssignModal(true)}>
+                        <MdSend /> Assign gift
+                    </button>
+                    <button className="dg-btn-primary" onClick={handleOpenCreate}>
+                        <MdAdd /> New gift
+                    </button>
+                </div>
+            </div>
+
+            <div className="dg-stats">
+                <div className="dg-stat-card">
+                    <span className="dg-stat-label">Total active gifts</span>
+                    <span className="dg-stat-value">{stats.totalActive}</span>
+                </div>
+                <div className="dg-stat-card">
+                    <span className="dg-stat-label">Redeemed all time</span>
+                    <span className="dg-stat-value">{stats.totalRedeemed}</span>
+                </div>
+                <div className="dg-stat-card">
+                    <span className="dg-stat-label">Total value issued</span>
+                    <span className="dg-stat-value">${(stats.totalValueIssued || 0).toLocaleString()}</span>
+                </div>
+                <div className="dg-stat-card dg-stat-warn">
+                    <span className="dg-stat-label">Expiring this week</span>
+                    <span className="dg-stat-value dg-warn-val">{stats.expiringThisWeek}</span>
+                </div>
+            </div>
+
+            <div className="dg-content">
+                <div className="dg-toolbar">
+                    <div className="dg-toolbar-left">
+                        <div className="dg-search">
+                            <MdSearch className="dg-search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Search gifts or codes..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            {search && <MdClose className="dg-clear-icon" onClick={() => setSearch("")} />}
                         </div>
-                      )}
                     </div>
-                  </div>
+
+                    <div className="dg-toolbar-right">
+                        <div className="dg-filter-dropdown" ref={filterDropdownRef}>
+                            <button
+                                className="dg-filter-dropdown-btn small-body-text"
+                                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                            >
+                                <span className="truncate-text">
+                                    {filter === "all"
+                                        ? "All"
+                                        : filter === "gift_card"
+                                            ? "Gift card"
+                                            : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                                </span>
+                                <MdExpandMore className={`dropdown-icon ${isFilterDropdownOpen ? "open" : ""}`} />
+                            </button>
+                            {isFilterDropdownOpen && (
+                                <div className="dg-filter-dropdown-menu">
+                                    {["all", "active", "gift_card", "discount", "promo", "draft", "expired"].map((f) => (
+                                        <button
+                                            key={f}
+                                            className={`dg-filter-dropdown-item small-body-text ${filter === f ? "active" : ""}`}
+                                            onClick={() => {
+                                                setFilter(f);
+                                                setIsFilterDropdownOpen(false);
+                                            }}
+                                        >
+                                            {f === "all" ? "All" : f === "gift_card" ? "Gift card" : f.charAt(0).toUpperCase() + f.slice(1)}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
-                <p className="dg-card-name large-body-text">{gift.name}</p>
-                <p className="dg-card-desc smaller-body-text">{gift.description}</p>
+                {filtered.length === 0 ? (
+                    <div className="dg-empty">
+                        <MdCardGiftcard className="dg-empty-icon" />
+                        <p className="regular-body-text">No gifts found. Try adjusting filters or create a new one.</p>
+                    </div>
+                ) : (
+                    <div className="dg-grid">
+                        {filtered.map((gift) => (
+                            <div key={gift.id} className={`dg-card ${gift.status === "expired" ? "dg-card-expired" : ""}`}>
+                                <div className="dg-card-top">
+                                    <span className={`button-label ${TYPE_META[gift.type].colorClass}`}>
+                                        {TYPE_META[gift.type].icon} {TYPE_META[gift.type].label}
+                                    </span>
+                                    <div className="dg-card-right">
+                                        <span className={`button-label ${STATUS_META[gift.status].colorClass}`}>
+                                            {STATUS_META[gift.status].label}
+                                        </span>
+                                        <div className="dg-menu-wrap">
+                                            <button className="dg-menu-btn" onClick={() => setActiveMenu(activeMenu === gift.id ? null : gift.id)}>
+                                                <MdMoreVert />
+                                            </button>
+                                            {activeMenu === gift.id && (
+                                                <div className="dg-menu">
+                                                    <button onClick={() => handleViewDetail(gift)}>
+                                                        <MdVisibility /> View details
+                                                    </button>
+                                                    <button onClick={() => handleEdit(gift)}>
+                                                        <MdEdit /> Edit
+                                                    </button>
+                                                    {gift.status !== "expired" && (
+                                                        <button
+                                                            onClick={() => {
+                                                                setAssignForm((p) => ({ ...p, giftId: gift.id }));
+                                                                setShowAssignModal(true);
+                                                                setActiveMenu(null);
+                                                            }}
+                                                        >
+                                                            <MdSend /> Assign
+                                                        </button>
+                                                    )}
+                                                    <button className="dg-menu-delete" onClick={() => handleDelete(gift.id)}>
+                                                        <MdDelete /> Delete
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
 
-                <h4 className="dg-card-value">{formatValue(gift)}</h4>
+                                <p className="dg-card-name large-body-text">{gift.name}</p>
+                                <p className="dg-card-desc smaller-body-text">{gift.description}</p>
 
-                <div className="dg-progress-wrap">
-                  <div className="dg-progress-bar">
-                    <div
-                      className="dg-progress-fill"
-                      style={{ width: `${Math.min(((gift.usedCount || 0) / (gift.totalCount || 1)) * 100, 100)}%` }}
-                    />
-                  </div>
-                  <span className="dg-progress-label">{(gift.usedCount || 0)}/{(gift.totalCount || 0)} used</span>
+                                <h4 className="dg-card-value">{formatValue(gift)}</h4>
+
+                                <div className="dg-progress-wrap">
+                                    <div className="dg-progress-bar">
+                                        <div
+                                            className="dg-progress-fill"
+                                            style={{ width: `${Math.min(((gift.usedCount || 0) / (gift.totalCount || 1)) * 100, 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="dg-progress-label">{(gift.usedCount || 0)}/{(gift.totalCount || 0)} used</span>
+                                </div>
+
+                                <div className="dg-card-footer">
+                                    <div className="dg-assignee">
+                                        {gift.assignedTo === "customers" ? <MdPeople /> : gift.assignedTo === "sponsors" ? <MdStorefront /> : <MdPeople />}
+                                        <span>{gift.assignedTo === "all" ? "Everyone" : gift.assignedTo.charAt(0).toUpperCase() + gift.assignedTo.slice(1)}</span>
+                                    </div>
+                                    <div className="dg-code-wrap">
+                                        <span className="dg-code">{gift.code}</span>
+                                        <button className="dg-copy-btn" onClick={() => handleCopyCode(gift.code)} title="Copy code">
+                                            {copiedCode === gift.code ? <MdCheckCircle style={{ color: "var(--dg-green)" }} /> : <MdContentCopy />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="dg-expiry">
+                                    <MdCalendarToday />
+                                    <span>
+                                        {gift.expiresAt
+                                            ? `${gift.status === "expired" ? "Expired" : "Expires"} ${new Date(gift.expiresAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`
+                                            : "No expiration"}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div className="dg-section">
+                <h2 className="dg-section-title">Recent assignments</h2>
+                <div className="dg-table-wrap">
+                    <table className="dg-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Gift</th>
+                                <th>Code</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {assignments.map((a) => (
+                                <tr key={a.assignmentId}>
+                                    <td className="dg-td-name small-body-text">{a.userName || a.userEmail}</td>
+                                    <td>
+                                        <span className={`dg-badge-sm button-label ${a.userRole === "sponsor" ? "badge-amber" : "badge-blue"}`}>
+                                            {a.userRole === "sponsor" ? <MdStorefront /> : <MdPeople />} {a.userRole}
+                                        </span>
+                                    </td>
+                                    <td>{a.giftName}</td>
+                                    <td>
+                                        <span className="dg-code-sm">{a.code}</span>
+                                    </td>
+                                    <td>
+                                        <span className={`dg-assign-status button-label ${a.status === "redeemed" ? "redeemed" : "pending"}`}>
+                                            {a.status === "redeemed" ? <MdCheckCircle /> : <MdHourglassEmpty />}
+                                            {a.status}
+                                        </span>
+                                    </td>
+                                    <td className="dg-td-date">{new Date(a.assignedAt).toLocaleDateString()}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
+            </div>
 
-                <div className="dg-card-footer">
-                  <div className="dg-assignee">
-                    {gift.assignedTo === "customers" ? <MdPeople /> : gift.assignedTo === "sponsors" ? <MdStorefront /> : <MdPeople />}
-                    <span>{gift.assignedTo === "all" ? "Everyone" : gift.assignedTo.charAt(0).toUpperCase() + gift.assignedTo.slice(1)}</span>
-                  </div>
-                  <div className="dg-code-wrap">
-                    <span className="dg-code">{gift.code}</span>
-                    <button className="dg-copy-btn" onClick={() => handleCopyCode(gift.code)} title="Copy code">
-                      {copiedCode === gift.code ? <MdCheckCircle style={{ color: "var(--dg-green)" }} /> : <MdContentCopy />}
-                    </button>
-                  </div>
-                </div>
+            {/* ── Modals (extracted to Modal directory) ── */}
+            <GiftFormModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                form={form}
+                setForm={setForm}
+                editingId={editingId}
+                onSave={handleSave}
+            />
 
-                <div className="dg-expiry">
-                  <MdCalendarToday />
-<span>
-  {gift.expiresAt
-    ? `${gift.status === "expired" ? "Expired" : "Expires"} ${new Date(gift.expiresAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`
-    : "No expiration"}
-</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+            <AssignGiftModal
+                isOpen={showAssignModal}
+                onClose={() => setShowAssignModal(false)}
+                gifts={gifts}
+                assignForm={assignForm}
+                setAssignForm={setAssignForm}
+                onAssign={handleAssign}
+                users={users}
+            />
 
-      <div className="dg-section">
-        <h2 className="dg-section-title">Recent assignments</h2>
-        <div className="dg-table-wrap">
-          <table className="dg-table">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Role</th>
-                <th>Gift</th>
-                <th>Code</th>
-                <th>Status</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assignments.map((a) => (
-                <tr key={a.assignmentId}>
-                  <td className="dg-td-name small-body-text">{a.userName || a.userEmail}</td>
-                  <td>
-                    <span className={`dg-badge-sm button-label ${a.userRole === "sponsor" ? "badge-amber" : "badge-blue"}`}>
-                      {a.userRole === "sponsor" ? <MdStorefront /> : <MdPeople />} {a.userRole}
-                    </span>
-                  </td>
-                  <td>{a.giftName}</td>
-                  <td>
-                    <span className="dg-code-sm">{a.code}</span>
-                  </td>
-                  <td>
-                    <span className={`dg-assign-status button-label ${a.status === "redeemed" ? "redeemed" : "pending"}`}>
-                      {a.status === "redeemed" ? <MdCheckCircle /> : <MdHourglassEmpty />}
-                      {a.status}
-                    </span>
-                  </td>
-                  <td className="dg-td-date">{new Date(a.assignedAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            <GiftDetailModal
+                isOpen={showDetailModal}
+                onClose={() => setShowDetailModal(false)}
+                gift={selectedGift}
+                formatValue={formatValue}
+                onEdit={handleEdit}
+            />
 
-      {/* ── Modals (extracted to Modal directory) ── */}
-      <GiftFormModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        form={form}
-        setForm={setForm}
-        editingId={editingId}
-        onSave={handleSave}
-      />
-
-      <AssignGiftModal
-        isOpen={showAssignModal}
-        onClose={() => setShowAssignModal(false)}
-        gifts={gifts}
-        assignForm={assignForm}
-        setAssignForm={setAssignForm}
-        onAssign={handleAssign}
-        users={users}
-      />
-
-      <GiftDetailModal
-        isOpen={showDetailModal}
-        onClose={() => setShowDetailModal(false)}
-        gift={selectedGift}
-        formatValue={formatValue}
-        onEdit={handleEdit}
-      />
-
-      {activeMenu && <div className="dg-menu-backdrop" onClick={() => setActiveMenu(null)} />}
-    </div>
-  );
+            {activeMenu && (
+                <div
+                    className="dg-menu-backdrop"
+                    onMouseDown={(e) => {
+                        e.preventDefault();   // ← stops the backdrop from stealing focus
+                        setActiveMenu(null);
+                    }}
+                />
+            )}   
+             </div>
+    );
 }

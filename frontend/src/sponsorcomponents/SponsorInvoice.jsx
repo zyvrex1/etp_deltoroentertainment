@@ -17,81 +17,130 @@ export default function SponsorInvoice() {
     const [searchQuery, setSearchQuery] = useState("");
     const PAGE_TITLE = 'Invoices Report';
 
-useEffect(() => {
-    const fetchInvoices = async () => {
-        if (!user) return;
-        try {
-            setLoading(true);
-            const reservations = await reservationService.getMyReservations(user.token);
-            
-            // Include both confirmed AND pending reservations
-          const relevantReservations = reservations.filter(res => {
-    const status = res.status?.toLowerCase();
-    console.log('Reservation status:', res._id, status); // 👈 check this in console
-    return status === 'confirmed' || status === 'pending';
-});
-            
-            const formattedInvoices = relevantReservations.map((res) => {
-                const status = res.status?.toLowerCase();
-                const isPaid = status === 'confirmed';
+   const groupReservations = (reservations) => {
+    const groups = [];
+    reservations.forEach(res => {
+        const eventId = (res.event?._id || res.event)?.toString();
+        const createdTime = new Date(res.createdAt).getTime();
 
-                const eventTitle = res.event?.title || 'Unknown Event';
-                const invoiceRef = `INV-${new Date(res.createdAt).getFullYear()}-${res._id.slice(-5).toUpperCase()}`;
-                const createdDate = new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                
-                const subtotal = res.amount?.subtotal || 0;
-                const fee = res.amount?.fee || 0;
-                const tax = res.amount?.tax || 0;
-                const total = res.amount?.total || 0;
-                
-                let companyAddr = '';
-                if (res.billingAddress?.address) {
-                    companyAddr += res.billingAddress.address;
-                } else if (user.streetAddress) {
-                    companyAddr += user.streetAddress;
-                }
-                if (res.billingAddress?.city || user.city) {
-                    if (companyAddr) companyAddr += ', ';
-                    companyAddr += res.billingAddress?.city || user.city;
-                }
-                if (res.billingAddress?.zipCode || user.zipCode) {
-                    if (companyAddr) companyAddr += ' ';
-                    companyAddr += res.billingAddress?.zipCode || user.zipCode;
-                }
+        // Group by same event + same payment method + booked within 10 seconds
+        // BUT never merge reservations that are already a single document
+        const existing = groups.find(g =>
+            g.eventId === eventId &&
+            g.paymentMethod === res.paymentMethod &&
+            Math.abs(g.createdTime - createdTime) < 10000 &&
+            !g.reservations.some(r => r._id === res._id) // ← don't re-add same doc
+        );
 
-                return {
-                    id: res._id,
-                    title: eventTitle,
-                    invoiceRef: invoiceRef,
-                    booth: `Booth ${res.boothCode || 'N/A'}`,
-                    amount: `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-                    issuedDate: createdDate,
-                    paidDate: isPaid ? createdDate : null,       // null if pending
-                    status: isPaid ? 'paid' : 'pending',         // NEW field
-                    companyName: res.billingAddress?.companyName || user.companyName || 'Your Company',
-                    companyAddress: companyAddr.trim() || 'Address not provided',
-                    taxId: 'N/A',
-                    items: [
-                        { description: `Booth Registration (${res.boothCode || ''})`, qty: 1, unitPrice: `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, total: `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-                        { description: 'Processing Fee', qty: 1, unitPrice: `$${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, total: `$${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-                        { description: 'Tax', qty: 1, unitPrice: `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, total: `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}` }
-                    ],
-                    subtotal: `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-                    totalDue: `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-                    paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice'
-                };
+        if (existing) {
+            existing.reservations.push(res);
+            existing.totalAmount += res.amount?.total || 0;
+        } else {
+            groups.push({
+                eventId,
+                paymentMethod: res.paymentMethod,
+                createdTime,
+                reservations: [res],
+                totalAmount: res.amount?.total || 0,
             });
-            
-            setAllInvoices(formattedInvoices);
-        } catch (error) {
-            console.error("Error fetching invoices:", error);
-        } finally {
-            setLoading(false);
         }
-    };
+    });
+    return groups;
+};
 
-    fetchInvoices();
-}, [user]);
+    useEffect(() => {
+        const fetchInvoices = async () => {
+            if (!user) return;
+            try {
+                setLoading(true);
+                const reservations = await reservationService.getMyReservations(user.token);
+
+                // Include both confirmed AND pending reservations
+    const relevantReservations = reservations.filter(res => {
+    const status = res.status?.toLowerCase();
+    return status === 'confirmed' || status === 'pending'; // ← remove type check entirely
+});
+
+                const grouped = groupReservations(relevantReservations);
+
+// Inside fetchInvoices(), replace the formattedInvoices mapping:
+
+const formattedInvoices = grouped.map(group => {
+    const res = group.reservations[0];
+    const allRes = group.reservations;
+    const isSeat = res.type === 'seat';
+    const status = res.status?.toLowerCase();
+    const isPaid = status === 'confirmed';
+
+    const subtotal = allRes.reduce((s, r) => s + (r.amount?.subtotal || 0), 0);
+    const fee = allRes.reduce((s, r) => s + (r.amount?.fee || 0), 0);
+    const tax = allRes.reduce((s, r) => s + (r.amount?.tax || 0), 0);
+    const total = group.totalAmount;
+
+    // Label: seat or booth
+    const boothLabel = isSeat
+        ? (res.seatLabels?.length > 1
+            ? `${res.seatLabels.length} Seats (${res.seatLabels.join(', ')})`
+            : `Seat ${res.seatLabels?.[0] || res.seatIds?.[0] || 'N/A'}`)
+        : (allRes.length > 1
+            ? `${allRes.length} Booths (${allRes.map(r => `#${r.boothCode}`).join(', ')})`
+            : `Booth #${res.boothCode || 'N/A'}`);
+
+    const lineItems = isSeat
+        ? [{
+            description: `Seat Registration (${res.seatLabels?.join(', ') || 'N/A'})`,
+            qty: res.seatIds?.length || 1,
+            unitPrice: `$${(subtotal / (res.seatIds?.length || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+            total: `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          }]
+        : allRes.map(r => ({
+            description: `Booth Registration (${r.boothCode || ''})`,
+            qty: 1,
+            unitPrice: `$${(r.amount?.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+            total: `$${(r.amount?.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          }));
+
+    lineItems.push(
+        { description: 'Processing Fee', qty: 1, unitPrice: `$${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, total: `$${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+        { description: 'Tax', qty: 1, unitPrice: `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, total: `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+    );
+
+    const invoiceNum = res.poNumber || res._id?.toString().slice(-8).toUpperCase();
+    const issuedDateObj = new Date(res.createdAt);
+    const paidDateObj = isPaid ? issuedDateObj : null;
+    const dateOpts = { month: 'short', day: 'numeric', year: 'numeric' };
+
+    return {
+        id: res._id,
+        title: res.event?.title || 'Unknown Event',
+        invoiceRef: `INV-${invoiceNum}`,
+        booth: boothLabel,
+        amount: `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        subtotal: `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        totalDue: `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        status: isPaid ? 'paid' : 'pending',
+        paymentStatus: isPaid ? 'Paid' : 'Pending',
+        issuedDate: issuedDateObj.toLocaleDateString('en-US', dateOpts),
+        paidDate: paidDateObj ? paidDateObj.toLocaleDateString('en-US', dateOpts) : null,
+        paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
+        companyName: res.billingAddress?.company || `${res.user?.firstName || ''} ${res.user?.lastName || ''}`.trim() || 'N/A',
+        companyAddress: [res.billingAddress?.address, res.billingAddress?.city, res.billingAddress?.country].filter(Boolean).join(', ') || 'N/A',
+        taxId: res.billingAddress?.taxId || 'N/A',
+        items: lineItems,
+        fullReservation: res,
+    };
+});
+
+                setAllInvoices(formattedInvoices);
+            } catch (error) {
+                console.error("Error fetching invoices:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchInvoices();
+    }, [user]);
 
     const exportAllInvoicesToPDF = async () => {
         const loadingToast = showExportToast();
@@ -118,7 +167,7 @@ useEffect(() => {
                 item.booth,
                 item.amount,
                 item.issuedDate,
-                item.paidDate
+                item.paidDate ?? 'Pending'
             ]);
 
             y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, 15, 12, 5, logoData, PAGE_TITLE);
@@ -133,129 +182,129 @@ useEffect(() => {
         }
     };
 
-const downloadInvoicePDF = async (item) => {
-    const loadingToast = showExportToast();
-    const INVOICE_TITLE = 'Invoice';
-    try {
-        const logoData = await loadLogo();
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const MARGIN = 15;
-        let y = 45;
+    const downloadInvoicePDF = async (item) => {
+        const loadingToast = showExportToast();
+        const INVOICE_TITLE = 'Invoice';
+        try {
+            const logoData = await loadLogo();
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const MARGIN = 15;
+            let y = 45;
 
-        addReportHeader(pdf, INVOICE_TITLE, logoData);
+            addReportHeader(pdf, INVOICE_TITLE, logoData);
 
-        pdf.setFontSize(14);
-        pdf.setTextColor(30, 60, 114);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Invoice Details', MARGIN, y);
-        y += 10;
+            pdf.setFontSize(14);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Invoice Details', MARGIN, y);
+            y += 10;
 
-        pdf.setFontSize(10);
-        pdf.setTextColor(50, 50, 50);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(`Event: ${item.title}`, MARGIN, y); y += 6;
-        pdf.text(`Booth: ${item.booth}`, MARGIN, y); y += 6;
-        pdf.text(`Invoice Ref: ${item.invoiceRef}`, MARGIN, y); y += 6;
-        pdf.text(`Company: ${item.companyName}`, MARGIN, y); y += 6;
-
-        const addressText = `Address: ${item.companyAddress}`;
-        const maxWidth = pdf.internal.pageSize.getWidth() - (MARGIN * 2);
-        const wrappedAddress = pdf.splitTextToSize(addressText, maxWidth);
-        pdf.text(wrappedAddress, MARGIN, y);
-        y += (wrappedAddress.length * 5);
-
-        pdf.text(`Tax ID: ${item.taxId}`, MARGIN, y); y += 6;
-        pdf.text(`Issued Date: ${item.issuedDate}`, MARGIN, y); y += 6;
-
-        // Show paid date or pending
-        if (item.status === 'paid') {
-            pdf.text(`Paid Date: ${item.paidDate}`, MARGIN, y);
-        } else {
-            pdf.setTextColor(217, 119, 6); // amber
-            pdf.text(`Paid Date: Not yet paid`, MARGIN, y);
+            pdf.setFontSize(10);
             pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`Event: ${item.title}`, MARGIN, y); y += 6;
+            pdf.text(`Booth: ${item.booth}`, MARGIN, y); y += 6;
+            pdf.text(`Invoice Ref: ${item.invoiceRef}`, MARGIN, y); y += 6;
+            pdf.text(`Company: ${item.companyName}`, MARGIN, y); y += 6;
+
+            const addressText = `Address: ${item.companyAddress}`;
+            const maxWidth = pdf.internal.pageSize.getWidth() - (MARGIN * 2);
+            const wrappedAddress = pdf.splitTextToSize(addressText, maxWidth);
+            pdf.text(wrappedAddress, MARGIN, y);
+            y += (wrappedAddress.length * 5);
+
+            pdf.text(`Tax ID: ${item.taxId}`, MARGIN, y); y += 6;
+            pdf.text(`Issued Date: ${item.issuedDate}`, MARGIN, y); y += 6;
+
+            // Show paid date or pending
+            if (item.status === 'paid') {
+                pdf.text(`Paid Date: ${item.paidDate}`, MARGIN, y);
+            } else {
+                pdf.setTextColor(217, 119, 6); // amber
+                pdf.text(`Paid Date: Not yet paid`, MARGIN, y);
+                pdf.setTextColor(50, 50, 50);
+            }
+            y += 20;
+
+            const headers = ['Description', 'Qty', 'Unit Price', 'Total'];
+            const rows = item.items.map(i => [i.description, i.qty.toString(), i.unitPrice, i.total]);
+
+            y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5, logoData, INVOICE_TITLE);
+
+            y += 10;
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(`Total Due: ${item.totalDue}`, MARGIN, y);
+            y += 12;
+
+            // ── Payment Status Box ──────────────────────────────────────────
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const boxWidth = pdfWidth - MARGIN * 2;
+            const boxHeight = 18;
+
+            if (item.status === 'paid') {
+                // Green box
+                pdf.setFillColor(240, 253, 244);
+                pdf.setDrawColor(187, 247, 208);
+            } else {
+                // Amber box
+                pdf.setFillColor(255, 251, 235);
+                pdf.setDrawColor(253, 230, 138);
+            }
+
+            pdf.setLineWidth(0.4);
+            pdf.roundedRect(MARGIN, y, boxWidth, boxHeight, 3, 3, 'FD');
+
+            // Icon placeholder (circle)
+            const iconX = MARGIN + 5;
+            const iconCenterY = y + boxHeight / 2;
+            pdf.setFillColor(item.status === 'paid' ? 22 : 217, item.status === 'paid' ? 163 : 119, item.status === 'paid' ? 74 : 6);
+            pdf.circle(iconX, iconCenterY, 2.5, 'F');
+
+            // Checkmark or clock symbol inside circle
+            pdf.setFontSize(5);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text(item.status === 'paid' ? '✓' : '!', iconX, iconCenterY + 1.5, { align: 'center' });
+
+            // Status title
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(item.status === 'paid' ? 6 : 146, item.status === 'paid' ? 95 : 64, item.status === 'paid' ? 70 : 14);
+            pdf.text(item.status === 'paid' ? 'Payment Received' : 'Payment Pending', iconX + 6, iconCenterY - 1.5);
+
+            // Status subtitle
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(100, 100, 100);
+            const subText = item.status === 'paid'
+                ? `Paid on ${item.paidDate} via ${item.paymentMethod}`
+                : 'This invoice has not been paid yet. Please complete your payment.';
+            pdf.text(subText, iconX + 6, iconCenterY + 4);
+
+            y += boxHeight + 12;
+            // ───────────────────────────────────────────────────────────────
+
+            pdf.setFontSize(10);
+            pdf.setTextColor(30, 60, 114);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Payment Instructions:', MARGIN, y); y += 6;
+            pdf.setFontSize(9);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Wire Transfer: Bank of America, Account #123456789, Routing #987654321', MARGIN, y); y += 5;
+            pdf.text('ACH: Use invoice number as reference', MARGIN, y); y += 5;
+            pdf.text('Questions? Contact us at billing@eticketspro.com or call +1 (555) 123-4567', MARGIN, y);
+
+            finalizeReport(pdf);
+            pdf.save(`Invoice_${item.invoiceRef}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            removeExportToast(loadingToast);
         }
-        y += 20;
-
-        const headers = ['Description', 'Qty', 'Unit Price', 'Total'];
-        const rows = item.items.map(i => [i.description, i.qty.toString(), i.unitPrice, i.total]);
-
-        y = drawTable(pdf, y, headers, rows, MARGIN, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 15, 12, 5, logoData, INVOICE_TITLE);
-
-        y += 10;
-        pdf.setFontSize(12);
-        pdf.setTextColor(30, 60, 114);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(`Total Due: ${item.totalDue}`, MARGIN, y);
-        y += 12;
-
-        // ── Payment Status Box ──────────────────────────────────────────
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const boxWidth = pdfWidth - MARGIN * 2;
-        const boxHeight = 18;
-
-        if (item.status === 'paid') {
-            // Green box
-            pdf.setFillColor(240, 253, 244);
-            pdf.setDrawColor(187, 247, 208);
-        } else {
-            // Amber box
-            pdf.setFillColor(255, 251, 235);
-            pdf.setDrawColor(253, 230, 138);
-        }
-
-        pdf.setLineWidth(0.4);
-        pdf.roundedRect(MARGIN, y, boxWidth, boxHeight, 3, 3, 'FD');
-
-        // Icon placeholder (circle)
-        const iconX = MARGIN + 5;
-        const iconCenterY = y + boxHeight / 2;
-        pdf.setFillColor(item.status === 'paid' ? 22 : 217, item.status === 'paid' ? 163 : 119, item.status === 'paid' ? 74 : 6);
-        pdf.circle(iconX, iconCenterY, 2.5, 'F');
-
-        // Checkmark or clock symbol inside circle
-        pdf.setFontSize(5);
-        pdf.setTextColor(255, 255, 255);
-        pdf.text(item.status === 'paid' ? '✓' : '!', iconX, iconCenterY + 1.5, { align: 'center' });
-
-        // Status title
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(item.status === 'paid' ? 6 : 146, item.status === 'paid' ? 95 : 64, item.status === 'paid' ? 70 : 14);
-        pdf.text(item.status === 'paid' ? 'Payment Received' : 'Payment Pending', iconX + 6, iconCenterY - 1.5);
-
-        // Status subtitle
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(100, 100, 100);
-        const subText = item.status === 'paid'
-            ? `Paid on ${item.paidDate} via ${item.paymentMethod}`
-            : 'This invoice has not been paid yet. Please complete your payment.';
-        pdf.text(subText, iconX + 6, iconCenterY + 4);
-
-        y += boxHeight + 12;
-        // ───────────────────────────────────────────────────────────────
-
-        pdf.setFontSize(10);
-        pdf.setTextColor(30, 60, 114);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Payment Instructions:', MARGIN, y); y += 6;
-        pdf.setFontSize(9);
-        pdf.setTextColor(50, 50, 50);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text('Wire Transfer: Bank of America, Account #123456789, Routing #987654321', MARGIN, y); y += 5;
-        pdf.text('ACH: Use invoice number as reference', MARGIN, y); y += 5;
-        pdf.text('Questions? Contact us at billing@eticketspro.com or call +1 (555) 123-4567', MARGIN, y);
-
-        finalizeReport(pdf);
-        pdf.save(`Invoice_${item.invoiceRef}.pdf`);
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        alert('Failed to generate PDF. Please try again.');
-    } finally {
-        removeExportToast(loadingToast);
-    }
-};
+    };
     const handleViewInvoice = (invoice) => {
         // Map list item structure to match what the modal expects
         const mappedInvoice = {
@@ -287,14 +336,12 @@ const downloadInvoicePDF = async (item) => {
         setDateRange(newRange);
         setCurrentPage(1);
     };
-const filteredInvoices = allInvoices.filter(item => {
+   const filteredInvoices = allInvoices.filter(item => {
+    if (!item?.title || !item?.invoiceRef) return false;   // ← guard added
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        item.invoiceRef.toLowerCase().includes(searchQuery.toLowerCase());
-
-    // Use issuedDate for pending (since paidDate is null)
+        item.invoiceRef.toLowerCase().includes(searchQuery.toLowerCase());
     const dateToCheck = item.paidDate ? new Date(item.paidDate) : new Date(item.issuedDate);
     const matchesDate = dateToCheck >= dateRange.start && dateToCheck <= dateRange.end;
-
     return matchesSearch && matchesDate;
 });
 
@@ -318,10 +365,10 @@ const filteredInvoices = allInvoices.filter(item => {
             <div className="si-controls">
                 <div className="si-search">
                     <Icon icon="mdi:magnify" width="20" color="var(--color-black-secondary)" />
-                    <input 
-                        type="text" 
-                        placeholder="Search by event or invoice order" 
-                        className="small-body-text" 
+                    <input
+                        type="text"
+                        placeholder="Search by event or invoice order"
+                        className="small-body-text"
                         value={searchQuery}
                         onChange={(e) => {
                             setSearchQuery(e.target.value);
@@ -348,72 +395,72 @@ const filteredInvoices = allInvoices.filter(item => {
                     [...Array(5)].map((_, i) => (
                         <div className="si-card" key={i}>
                             <div className="si-card-left">
-                                <div className="skeleton" style={{width: '40px', height: '40px', borderRadius: '8px'}}></div>
+                                <div className="skeleton" style={{ width: '40px', height: '40px', borderRadius: '8px' }}></div>
                                 <div className="si-card-info">
-                                    <div className="skeleton skeleton-text title" style={{width: '200px'}}></div>
-                                    <div className="skeleton skeleton-text" style={{width: '150px'}}></div>
-                                    <div className="skeleton skeleton-text" style={{width: '180px'}}></div>
+                                    <div className="skeleton skeleton-text title" style={{ width: '200px' }}></div>
+                                    <div className="skeleton skeleton-text" style={{ width: '150px' }}></div>
+                                    <div className="skeleton skeleton-text" style={{ width: '180px' }}></div>
                                 </div>
                             </div>
                             <div className="si-card-right">
                                 <div className="si-amount-sec">
-                                    <div className="skeleton skeleton-text" style={{width: '40px'}}></div>
-                                    <div className="skeleton skeleton-text title" style={{width: '80px'}}></div>
+                                    <div className="skeleton skeleton-text" style={{ width: '40px' }}></div>
+                                    <div className="skeleton skeleton-text title" style={{ width: '80px' }}></div>
                                 </div>
-                                <div className="skeleton skeleton-button" style={{width: '80px'}}></div>
+                                <div className="skeleton skeleton-button" style={{ width: '80px' }}></div>
                             </div>
                         </div>
                     ))
                 ) : paginatedInvoices.length > 0 ? (
                     paginatedInvoices.map((item) => (
                         <div className="si-card" key={item.id}>
-    <div className="si-card-left">
-        <div className={`si-card-icon ${item.status === 'pending' ? 'pending' : ''}`}>
-            <Icon
-                icon={item.status === 'pending' ? 'mdi:file-clock-outline' : 'mdi:file-document'}
-                width="24"
-                color="var(--color-white-primary)"
-            />
-        </div>
-        <div className="si-card-info">
-            <div className="si-title-row">
-                <h5 className="si-title">{item.title}</h5>
-            </div>
-            <div className="si-meta small-body-text text-secondary">
-                Invoice {item.invoiceRef} • {item.booth}
-            </div>
-            <div className="si-dates small-body-text text-secondary">
-                <span className="si-date-item">
-                    <Icon icon="mdi:calendar-blank" /> Issued: {item.issuedDate}
-                </span>
-                {item.status === 'paid' ? (
-                    <span className="si-date-item text-green">
-                        <Icon icon="mdi:check-circle-outline" /> Paid: {item.paidDate}
-                    </span>
-                ) : (
-                    <span className="si-date-item text-warning">
-                        <Icon icon="mdi:clock-outline" /> Awaiting Payment
-                    </span>
-                )}
-            </div>
-        </div>
-    </div>
+                            <div className="si-card-left">
+                                <div className={`si-card-icon ${item.status === 'pending' ? 'pending' : ''}`}>
+                                    <Icon
+                                        icon={item.status === 'pending' ? 'mdi:file-clock-outline' : 'mdi:file-document'}
+                                        width="24"
+                                        color="var(--color-white-primary)"
+                                    />
+                                </div>
+                                <div className="si-card-info">
+                                    <div className="si-title-row">
+                                        <h5 className="si-title">{item.title}</h5>
+                                    </div>
+                                    <div className="si-meta small-body-text text-secondary">
+                                        Invoice {item.invoiceRef} • {item.booth}
+                                    </div>
+                                    <div className="si-dates small-body-text text-secondary">
+                                        <span className="si-date-item">
+                                            <Icon icon="mdi:calendar-blank" /> Issued: {item.issuedDate}
+                                        </span>
+                                        {item.status === 'paid' ? (
+                                            <span className="si-date-item text-green">
+                                                <Icon icon="mdi:check-circle-outline" /> Paid: {item.paidDate}
+                                            </span>
+                                        ) : (
+                                            <span className="si-date-item text-warning">
+                                                <Icon icon="mdi:clock-outline" /> Awaiting Payment
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
 
-    <div className="si-card-right">
-        <div className="si-amount-sec">
-            <span className="smaller-body-text text-secondary">Amount</span>
-            <h4 className="si-amount">{item.amount}</h4>
-        </div>
-        <div className="si-actions">
-            <button className="si-action-btn view" onClick={() => handleViewInvoice(item)}>
-                <Icon icon="mdi:eye-outline" width="20" />
-            </button>
-            <button className="si-action-btn download" onClick={() => downloadInvoicePDF(item)}>
-                <Icon icon="mdi:download-outline" width="20" />
-            </button>
-        </div>
-    </div>
-</div>
+                            <div className="si-card-right">
+                                <div className="si-amount-sec">
+                                    <span className="smaller-body-text text-secondary">Amount</span>
+                                    <h4 className="si-amount">{item.amount}</h4>
+                                </div>
+                                <div className="si-actions">
+                                    <button className="si-action-btn view" onClick={() => handleViewInvoice(item)}>
+                                        <Icon icon="mdi:eye-outline" width="20" />
+                                    </button>
+                                    <button className="si-action-btn download" onClick={() => downloadInvoicePDF(item)}>
+                                        <Icon icon="mdi:download-outline" width="20" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     ))
                 ) : (
                     <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-black-secondary)' }}>

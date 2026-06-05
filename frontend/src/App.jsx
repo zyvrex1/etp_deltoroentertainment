@@ -59,6 +59,7 @@ const SponsorSupport = lazy(() => import("./sponsorcomponents/SponsorSupport.jsx
 const SponsorStore = lazy(() => import("./sponsorcomponents/SponsorStore.jsx"));
 const SponsorStoreDashboard = lazy(() => import("./sponsorcomponents/SponsorStoreDashboard.jsx"));
 const SponsorCart = lazy(() => import("./sponsorcomponents/SponsorCart.jsx"));
+const SponsorGifts = lazy(() => import("./sponsorcomponents/SponsorGifts.jsx"));
 
 // Customer Pages
 const CustomerHome = lazy(() => import("./customercomponents/CustomerHome.jsx"));
@@ -77,6 +78,7 @@ const CustomerStoreBooths = lazy(() => import("./customercomponents/CustomerStor
 const CustomerStoreProducts = lazy(() => import("./customercomponents/CustomerStoreProducts.jsx"));
 const CustomerStoreCheckout = lazy(() => import("./customercomponents/CustomerStoreCheckout.jsx"));
 const CustomerOrders = lazy(() => import("./customercomponents/CustomerOrders.jsx"));
+const CustomerGifts = lazy(() => import("./customercomponents/CustomerGifts.jsx"));
 
 // Loading Component
 const PageLoader = () => (
@@ -201,6 +203,7 @@ function App() {
             <Route path="store" element={<SponsorStore />} />
             <Route path="store/dashboard/:reservationId?" element={<SponsorStoreDashboard />} />
             <Route path="cart" element={<SponsorCart />} />
+            <Route path="my-gifts" element={<SponsorGifts />} />
           </Route>
 
           <Route path="/customer" element={<CustomerLayout />}>
@@ -220,6 +223,7 @@ function App() {
             <Route path="store/products" element={<CustomerStoreProducts />} />
             <Route path="store/checkout" element={<CustomerStoreCheckout />} />
             <Route path="my-orders" element={<CustomerOrders />} />
+            <Route path="my-gifts" element={<CustomerGifts />} />  {/* ← add this */}
           </Route>
           </Routes>
         </Suspense>

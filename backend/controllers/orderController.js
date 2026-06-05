@@ -27,7 +27,9 @@ const createOrder = async (req, res) => {
             totalAmount,
             paymentMethod,
             status: 'Pending',
-            paymentStatus: isInvoice ? 'Pending' : 'Paid'
+            paymentStatus: isInvoice ? 'Pending' : 'Paid',
+            appliedGift: req.body.appliedGift || null,
+            giftCode: req.body.giftCode || ""
         });
 
         // Update stock for each product

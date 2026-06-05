@@ -7,6 +7,7 @@ import { useCustomerCart } from '../context/CustomerCartContext';
 import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import * as authService from '../services/authService';
+import digitalgiftsService from '../services/digitalgiftsService';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 import './CustomerCheckout.css';
 
@@ -67,7 +68,43 @@ const CustomerCheckout = () => {
         return checkoutItems.reduce((sum, item) => sum + item.serviceFee, 0);
     }, [checkoutItems]);
 
-    const total = subtotal + serviceFees;
+    const [availableGifts, setAvailableGifts] = useState([]);
+    const [selectedGift, setSelectedGift] = useState(null);
+
+    useEffect(() => {
+        const fetchGifts = async () => {
+            if (!user?.token) return;
+            try {
+                const gifts = await digitalgiftsService.getMyGifts(user.token);
+                // Filter for pending/unused assignments only
+                const activeGifts = gifts.filter(g => g.assignmentStatus === 'pending');
+                setAvailableGifts(activeGifts);
+            } catch (error) {
+                console.error("Error fetching my gifts:", error);
+            }
+        };
+        fetchGifts();
+    }, [user]);
+
+const discount = useMemo(() => {
+    if (!selectedGift) return 0;
+    if (selectedGift.valueType === 'fixed') {
+        return Math.min(selectedGift.value, subtotal);
+    } else if (selectedGift.valueType === 'percent') {
+        return (subtotal * selectedGift.value) / 100;
+    } else if (selectedGift.valueType === 'bxgy') {
+        // Buy 1 Get 1 Free: discount = price of cheapest item
+        if (checkoutItems.length < 2) return 0;
+        const prices = checkoutItems.map(i => i.facePrice).sort((a, b) => a - b);
+        return prices[0]; // cheapest item is free
+    }
+    return 0;
+}, [selectedGift, subtotal, checkoutItems]);
+
+    const total = useMemo(() => {
+        return Math.max(0, subtotal - discount + serviceFees);
+    }, [subtotal, discount, serviceFees]);
+
 const handlePay = async () => {
     const result = await showConfirmAlert(
         "Confirm Payment",
@@ -86,21 +123,38 @@ const handlePay = async () => {
             }, {});
 
             // Process each event purchase
-            for (const eventId in itemsByEvent) {
+            let remainingDiscount = discount;
+            const eventKeys = Object.keys(itemsByEvent);
+
+            for (let i = 0; i < eventKeys.length; i++) {
+                const eventId = eventKeys[i];
                 const eventItems = itemsByEvent[eventId];
                 const seatIds = eventItems.map(item => item.seat.id);
-                const eventTotal = eventItems.reduce((sum, item) => sum + item.facePrice + item.serviceFee, 0);
+                
                 const eventSubtotal = eventItems.reduce((sum, item) => sum + item.facePrice, 0);
                 const eventFees = eventItems.reduce((sum, item) => sum + item.serviceFee, 0);
+
+                let eventDiscount = 0;
+                if (discount > 0) {
+                    if (i === eventKeys.length - 1) {
+                        eventDiscount = remainingDiscount;
+                    } else {
+                        eventDiscount = Math.round(((eventSubtotal / subtotal) * discount) * 100) / 100;
+                        remainingDiscount -= eventDiscount;
+                    }
+                }
+
+                const eventTotal = Math.max(0, eventSubtotal - eventDiscount + eventFees);
 
                 try {
                     await eventsService.buySeats(
                         eventId,
                         seatIds,
-                        { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
+                        { total: eventTotal, subtotal: Math.max(0, eventSubtotal - eventDiscount), fee: eventFees },
                         { email: apEmail, poNumber: poNumber },
                         paymentMethod === 'card' ? 'card' : 'invoice',
-                        user.token
+                        user.token,
+                        selectedGift ? { giftCode: selectedGift.code, appliedGift: selectedGift.giftId } : null
                     );
                 } catch (seatError) {
                     // 500 after a successful save means the reservation went through
@@ -114,6 +168,19 @@ const handlePay = async () => {
                         // Real error (400, 409 seat taken, 403, network, etc.) — bubble up
                         throw seatError;
                     }
+                }
+            }
+
+            // Redeem the gift card assignment upon successful purchase
+            if (selectedGift) {
+                try {
+                    await digitalgiftsService.redeemAssignment(
+                        selectedGift.giftId,
+                        selectedGift.assignmentId,
+                        user.token
+                    );
+                } catch (redeemError) {
+                    console.error("Failed to redeem assignment post-checkout:", redeemError);
                 }
             }
 
@@ -233,6 +300,41 @@ const handlePay = async () => {
                                     }}
                                 />
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="cc-card mb-4">
+                        <div className="cc-card-body">
+                            <h4 className="mb-4 text-black">Gift Cards & Promos</h4>
+                            {availableGifts.length === 0 ? (
+                                <p className="small-body-text text-secondary">No available gift cards or promos found.</p>
+                            ) : (
+                                <div className="cc-form-group">
+                                    <label htmlFor="gift-select">Select a promo or gift card to apply:</label>
+                                    <select
+                                        id="gift-select"
+                                        className="cc-input"
+                                        value={selectedGift ? selectedGift.giftId : ''}
+                                        onChange={(e) => {
+                                            const gift = availableGifts.find(g => g.giftId === e.target.value);
+                                            setSelectedGift(gift || null);
+                                        }}
+                                        style={{ marginTop: '8px' }}
+                                    >
+                                        <option value="">-- No Promo / Gift Card --</option>
+                                        {availableGifts.map(g => (
+                                            <option key={g.giftId} value={g.giftId}>
+                                                {g.code} - {g.name} ({g.valueType === 'fixed' ? `$${g.value.toFixed(2)}` : `${g.value}%`} off)
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {selectedGift && (
+                                        <div className="mt-2 text-success small-body-text" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-green-primary)' }}>
+                                            <Icon icon="mdi:check-circle" /> Applied discount of {selectedGift.valueType === 'fixed' ? `$${discount.toFixed(2)}` : `${selectedGift.value}%`}.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -432,6 +534,12 @@ const handlePay = async () => {
                                 <span className="small-body-text text-secondary">Subtotal</span>
                                 <h5 className="text-secondary">${subtotal.toFixed(2)}</h5>
                             </div>
+                            {selectedGift && (
+                                <div className="cc-summary-row mb-2" style={{ color: 'var(--color-green-primary)' }}>
+                                    <span className="small-body-text" style={{ color: 'var(--color-green-primary)' }}>Discount ({selectedGift.code})</span>
+                                    <h5 style={{ color: 'var(--color-green-primary)' }}>-${discount.toFixed(2)}</h5>
+                                </div>
+                            )}
                             <div className="cc-summary-row mb-3">
                                 <span className="small-body-text text-secondary">Service Fees</span>
                                 <h5 className="text-secondary">${serviceFees.toFixed(2)}</h5>

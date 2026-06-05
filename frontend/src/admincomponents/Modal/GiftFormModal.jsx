@@ -57,7 +57,7 @@ const GiftFormModal = ({ isOpen, onClose, form, setForm, editingId, onSave }) =>
                 value={form.valueType}
                 onChange={(e) => setForm((p) => ({ ...p, valueType: e.target.value }))}
               >
-                <option value="fixed">Fixed (₱)</option>
+                <option value="fixed">Fixed ($)</option>
                 <option value="percent">Percent (%)</option>
                 <option value="bxgy">Buy X Get Y</option>
               </select>
@@ -65,7 +65,7 @@ const GiftFormModal = ({ isOpen, onClose, form, setForm, editingId, onSave }) =>
             {form.valueType !== "bxgy" && (
               <div className="gift-form-group">
                 <label className="smaller-body-text">
-                  {form.valueType === "percent" ? "Discount %" : "Amount (₱)"}
+                  {form.valueType === "percent" ? "Discount %" : "Amount ($)"}
                 </label>
                 <input
                   type="number"

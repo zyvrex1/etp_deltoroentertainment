@@ -230,6 +230,11 @@ exports.redeemAssignment = async (req, res) => {
       return res.status(400).json({ success: false, message: "Gift is no longer redeemable." });
     }
 
+    // Authorize: Only admin/superadmin OR the assignment owner can redeem
+    if (req.user.role !== "admin" && req.user.role !== "superadmin" && assignment.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: "You are not authorized to redeem this assignment." });
+    }
+
     assignment.status     = "redeemed";
     assignment.redeemedAt = new Date();
     gift.usedCount        += 1;
@@ -251,10 +256,47 @@ exports.redeemByCode = async (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ success: false, message: "code is required." });
 
-    const gift = await DigitalGift.redeemByCode(code);
+    const gift = await DigitalGift.findOne({
+      code: code.toUpperCase(),
+      status: "active",
+      $or: [{ expiresAt: null }, { expiresAt: { $gte: new Date() } }]
+    });
+
     if (!gift) {
-      return res.status(400).json({ success: false, message: "Invalid, expired, or fully redeemed gift code." });
+      return res.status(400).json({ success: false, message: "Invalid, expired, or unavailable gift code." });
     }
+
+    if (gift.usedCount >= gift.totalCount) {
+      return res.status(400).json({ success: false, message: "This gift card has already been fully redeemed." });
+    }
+
+    // Check role eligibility
+    const userRole = req.user.role; // "customer" or "sponsor"
+    if (gift.assignedTo !== "all" && gift.assignedTo !== `${userRole}s`) {
+      return res.status(403).json({
+        success: false,
+        message: `This gift is only available for ${gift.assignedTo}.`,
+      });
+    }
+
+    // Check if already assigned to this user
+    const alreadyAssigned = gift.assignments.some(
+      (a) => a.userId.toString() === req.user._id.toString()
+    );
+    if (alreadyAssigned) {
+      return res.status(409).json({ success: false, message: "You have already claimed this gift card." });
+    }
+
+    // Add assignment
+    gift.assignments.push({
+      userId: req.user._id,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userEmail: req.user.email,
+      userRole: userRole,
+      status: "pending"
+    });
+
+    await gift.save();
 
     return res.status(200).json({ success: true, data: gift });
   } catch (error) {
@@ -295,6 +337,45 @@ exports.getRecentAssignments = async (req, res) => {
     flat.sort((a, b) => new Date(b.assignedAt) - new Date(a.assignedAt));
 
     return res.status(200).json({ success: true, data: flat.slice(0, limit) });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+/**
+ * GET /api/digital-gifts/my-gifts
+ * Returns the gifts assigned to the logged-in customer/sponsor.
+ */
+exports.getMyGifts = async (req, res) => {
+  try {
+    const userId = req.user._id.toString();
+
+    // Find all gifts where assignments contains an entry for this user
+    const gifts = await DigitalGift.find({
+      "assignments.userId": req.user._id
+    });
+
+    // Format the response to return the gift details along with the specific assignment status
+    const formatted = gifts.map(g => {
+      const assignment = g.assignments.find(a => a.userId.toString() === userId);
+      return {
+        giftId: g._id,
+        name: g.name,
+        description: g.description,
+        type: g.type,
+        value: g.value,
+        valueType: g.valueType,
+        code: g.code,
+        status: g.status,
+        expiresAt: g.expiresAt,
+        assignmentId: assignment ? assignment._id : null,
+        assignmentStatus: assignment ? assignment.status : null,
+        assignedAt: assignment ? assignment.assignedAt : null,
+        redeemedAt: assignment ? assignment.redeemedAt : null,
+      };
+    });
+
+    return res.status(200).json({ success: true, data: formatted });
   } catch (error) {
     return handleError(res, error);
   }
