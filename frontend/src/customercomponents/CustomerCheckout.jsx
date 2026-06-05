@@ -64,84 +64,91 @@ const CustomerCheckout = () => {
     }, [checkoutItems]);
 
     const serviceFees = useMemo(() => {
-        return checkoutItems.reduce((sum, item) => sum + item.serviceFee, 0);
-    }, [checkoutItems]);
+        return subtotal >= 1 ? 0.50 : 0;
+    }, [subtotal]);
 
     const total = subtotal + serviceFees;
-const handlePay = async () => {
-    const result = await showConfirmAlert(
-        "Confirm Payment",
-        `Are you sure you want to proceed with the payment of $${total.toFixed(2)}?`,
-        "Yes, Pay Now"
-    );
 
-    if (result.isConfirmed) {
-        try {
-            // Group selected items by event ID
-            const itemsByEvent = checkoutItems.reduce((acc, item) => {
-                const eventId = item.event._id || item.event.id;
-                if (!acc[eventId]) acc[eventId] = [];
-                acc[eventId].push(item);
-                return acc;
-            }, {});
+    const handlePay = async () => {
+        const result = await showConfirmAlert(
+            "Confirm Payment",
+            `Are you sure you want to proceed with the payment of $${total.toFixed(2)}?`,
+            "Yes, Pay Now"
+        );
 
-            // Process each event purchase
-            for (const eventId in itemsByEvent) {
-                const eventItems = itemsByEvent[eventId];
-                const seatIds = eventItems.map(item => item.seat.id);
-                const eventTotal = eventItems.reduce((sum, item) => sum + item.facePrice + item.serviceFee, 0);
-                const eventSubtotal = eventItems.reduce((sum, item) => sum + item.facePrice, 0);
-                const eventFees = eventItems.reduce((sum, item) => sum + item.serviceFee, 0);
+        if (result.isConfirmed) {
+            try {
+                // Group selected items by event ID
+                const itemsByEvent = checkoutItems.reduce((acc, item) => {
+                    const eventId = item.event._id || item.event.id;
+                    if (!acc[eventId]) acc[eventId] = [];
+                    acc[eventId].push(item);
+                    return acc;
+                }, {});
 
-                try {
-                    await eventsService.buySeats(
-                        eventId,
-                        seatIds,
-                        { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
-                        { email: apEmail, poNumber: poNumber },
-                        paymentMethod === 'card' ? 'card' : 'invoice',
-                        user.token
-                    );
-                } catch (seatError) {
-                    // 500 after a successful save means the reservation went through
-                    // but a post-save side effect (email, QR, socket) crashed the server.
-                    // Treat it as success so the user isn't blocked.
-                    const status = seatError?.response?.status;
-                    if (status === 500) {
-                        console.warn(`Event ${eventId}: server returned 500 but reservation likely saved. Continuing.`);
-                        // continue to next event — don't re-throw
-                    } else {
-                        // Real error (400, 409 seat taken, 403, network, etc.) — bubble up
-                        throw seatError;
+                let remainingFee = serviceFees;
+
+                // Process each event purchase
+                for (const eventId in itemsByEvent) {
+                    const eventItems = itemsByEvent[eventId];
+                    const seatIds = eventItems.map(item => item.seat.id);
+                    const eventSubtotal = eventItems.reduce((sum, item) => sum + item.facePrice, 0);
+                    
+                    // Assign fee to the first event
+                    const eventFees = remainingFee;
+                    remainingFee = 0; // Only apply fee once per checkout
+
+                    const eventTotal = eventSubtotal + eventFees;
+
+                    try {
+                        await eventsService.buySeats(
+                            eventId,
+                            seatIds,
+                            { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
+                            { email: apEmail, poNumber: poNumber },
+                            paymentMethod === 'card' ? 'card' : 'invoice',
+                            user.token
+                        );
+                    } catch (seatError) {
+                        // 500 after a successful save means the reservation went through
+                        // but a post-save side effect (email, QR, socket) crashed the server.
+                        // Treat it as success so the user isn't blocked.
+                        const status = seatError?.response?.status;
+                        if (status === 500) {
+                            console.warn(`Event ${eventId}: server returned 500 but reservation likely saved. Continuing.`);
+                            // continue to next event — don't re-throw
+                        } else {
+                            // Real error (400, 409 seat taken, 403, network, etc.) — bubble up
+                            throw seatError;
+                        }
                     }
                 }
-            }
 
-            // All events processed (or recovered from 500s) — finalize
-            completePurchase(
-                selectedIds,
-                paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
-                paymentMethod === 'invoice' ? poNumber : ''
-            );
-            showSuccessAlert('Payment Successful', 'Your tickets have been confirmed.');
-            navigate('/customer/success');
+                // All events processed (or recovered from 500s) — finalize
+                completePurchase(
+                    selectedIds,
+                    paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
+                    paymentMethod === 'invoice' ? poNumber : ''
+                );
+                showSuccessAlert('Payment Successful', 'Your tickets have been confirmed.');
+                navigate('/customer/success');
 
-        } catch (error) {
-            console.error("Payment Error:", error);
-            const status = error?.response?.status;
+            } catch (error) {
+                console.error("Payment Error:", error);
+                const status = error?.response?.status;
 
-            if (status === 409) {
-                showErrorAlert('Seats Unavailable', 'One or more selected seats were just taken. Please go back and choose different seats.');
-            } else if (status === 403) {
-                showErrorAlert('Access Denied', 'You are not authorized to complete this purchase.');
-            } else if (status === 400) {
-                showErrorAlert('Invalid Request', error.response?.data?.error || 'Please check your details and try again.');
-            } else {
-                showErrorAlert('Payment Failed', error.message || 'There was an error processing your payment.');
+                if (status === 409) {
+                    showErrorAlert('Seats Unavailable', 'One or more selected seats were just taken. Please go back and choose different seats.');
+                } else if (status === 403) {
+                    showErrorAlert('Access Denied', 'You are not authorized to complete this purchase.');
+                } else if (status === 400) {
+                    showErrorAlert('Invalid Request', error.response?.data?.error || 'Please check your details and try again.');
+                } else {
+                    showErrorAlert('Payment Failed', error.message || 'There was an error processing your payment.');
+                }
             }
         }
-    }
-};
+    };
 
     if (checkoutItems.length === 0) {
         return (

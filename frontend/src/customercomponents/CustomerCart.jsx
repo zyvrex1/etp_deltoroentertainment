@@ -32,9 +32,8 @@ export default function CustomerCart() {
         .filter(item => selectedItems.includes(item.cartId))
         .reduce((sum, item) => sum + (item.facePrice || 0), 0);
 
-    const serviceFees = cartItems
-        .filter(item => selectedItems.includes(item.cartId))
-        .reduce((sum, item) => sum + (item.serviceFee || 0), 0);
+    const selectedCount = cartItems.filter(item => selectedItems.includes(item.cartId)).length;
+    const serviceFees = subtotal > 0 ? 0.5 : 0;
 
     const total = subtotal + serviceFees;
 

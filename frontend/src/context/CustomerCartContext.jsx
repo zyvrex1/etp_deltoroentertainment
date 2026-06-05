@@ -181,7 +181,7 @@ export const CustomerCartProvider = ({ children }) => {
                 row: seat.row
             },
             facePrice: seat.price,
-            serviceFee: 10
+            serviceFee: 0
         }));
 
         setCartItems(prev => {

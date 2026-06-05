@@ -317,18 +317,35 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
             <div className="sidebar-header">
               <h4 className="bt-section-title-layout">Ticket Categories</h4>
             </div>
-            <div className="sidebar-categories-list" style={{ marginTop: '15px' }}>
+            <div className="sidebar-categories-list">
               {priceLevels.length === 0 ? (
-                <div className="sidebar-empty-state">No categories defined</div>
+                <div className="sidebar-empty-state">
+                  <p>No categories defined</p>
+                </div>
               ) : (
                 priceLevels.map(cat => {
                   const itemsInCat = localItems.filter(i => i.categoryId === cat._id);
                   const placed = itemsInCat.length;
                   const sold = cat.quantitySold || 0;
+                  const quantity = cat.quantityAvailable || 1;
+                  const remaining = quantity - sold;
+                  const isFull = remaining <= 0;
 
                   return (
-                    <div key={cat._id} className="sidebar-cat-item" style={{ padding: '10px' }}>
-                      <div className="cat-palette-visual" style={{ backgroundColor: cat.color, width: '32px', height: '32px', fontSize: '16px' }}>
+                    <div key={cat._id} className={`sidebar-cat-item ${isFull ? 'is-full' : ''}`}>
+                      <div
+                        className="cat-palette-visual"
+                        style={{
+                          backgroundColor: cat.color,
+                          cursor: cat.type === "General Fee" ? "not-allowed" : "default",
+                          opacity: cat.type === "General Fee" ? 0.5 : 1
+                        }}
+                        title={
+                          cat.type === "General Fee"
+                            ? "General Fee categories don't require seat/booth placement"
+                            : ""
+                        }
+                      >
                         {cat.type === "General Fee" ? (
                           <Icon icon="mdi:ticket-confirmation-outline" />
                         ) : cat.type?.includes("Seat") ? (
@@ -337,14 +354,27 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                           <Icon icon="mdi:square" />
                         )}
                       </div>
+
                       <div className="cat-details">
                         <div className="cat-top">
                           <span className="cat-name">{cat.priceName}</span>
-                          <span className="price">${cat.facePrice?.toFixed(2)}</span>
                         </div>
-                        <div className="cat-meta" style={{ fontSize: '10px' }}>
-                          <span>{placed} Placed</span>
-                          <span>{cat.quantityAvailable - sold} Avail</span>
+                        <div className="cat-meta">
+                          <span className="price">${cat.facePrice?.toFixed(2)}</span>
+                          {cat.type === "General Fee" ? (
+                            <span className="count">{quantity - sold}/{quantity} Avail</span>
+                          ) : (
+                            <span className="count">{sold}/{quantity} units</span>
+                          )}
+                        </div>
+                        <div className="progress-bar">
+                          <div
+                            className="progress-fill"
+                            style={{
+                              width: `${(sold / quantity) * 100}%`,
+                              backgroundColor: cat.color
+                            }}
+                          />
                         </div>
                       </div>
                     </div>
