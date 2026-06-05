@@ -241,7 +241,7 @@ const CustomerBrowseEvent = () => {
                                             handleGetTickets(event);
                                         }}
                                     >
-                                        Get Tickets <Icon icon="mdi:arrow-right" />
+                                        Get Seats <Icon icon="mdi:arrow-right" />
                                     </button>
                                 </div>
                             </div>

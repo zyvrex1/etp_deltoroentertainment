@@ -25,6 +25,9 @@ const SponsorBrowseEvents = () => {
         end: new Date(2100, 11, 31),
     }));
 
+      const handleGetBooths = (eventObj) => {
+        navigate(`/sponsor/sponsor-venue-layout/${eventObj._id}`, { state: { event: eventObj } });
+    };
     useEffect(() => {
         const fetchEvents = async () => {
             setIsLoading(true);
@@ -183,8 +186,11 @@ const SponsorBrowseEvents = () => {
                                         </div>
                                     </div>
 
-                                    <button className="primary-button sbe-view-btn">
-                                        View Details <Icon icon="mdi:arrow-right" />
+                                    <button className="primary-button sbe-view-btn" onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleGetBooths(event);
+                                        }}>
+                                        Get Booths <Icon icon="mdi:arrow-right" />
                                     </button>
                                 </div>
                             </div>

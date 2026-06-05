@@ -375,7 +375,7 @@
 
     .text-blue { color: var(--color-blue-primary); }
     .text-green { color: var(--color-green-primary); }
-    .text-red { color: var(--color-red-primary); }
+    .text-red { color: var(--color-red-primary)!important; }
     .text-purple { color: var(--color-purple-primary); }
 }
 

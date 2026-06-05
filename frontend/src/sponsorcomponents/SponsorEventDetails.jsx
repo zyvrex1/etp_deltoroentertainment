@@ -309,7 +309,7 @@ const SponsorEventDetails = () => {
                                         })
                                     }
                                     {(!event.priceLevels || event.priceLevels.filter(pl => pl.type?.toLowerCase().includes("booth")).length === 0) && (
-                                        <p className="text-secondary">No booth pricing available yet.</p>
+                                        <p className="text-secondary">No Booth pricing available yet.</p>
                                     )}
                                 </div>
                             </div>

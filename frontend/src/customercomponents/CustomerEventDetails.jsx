@@ -342,53 +342,88 @@ const CustomerEventDetails = () => {
                             </div>
                         )}
 
-                        {activeTab === 'Pricing' && (
-                            <div className="sed-tab-pane">
-                                <h3>Ticket Pricing</h3>
+{activeTab === 'Pricing' && (
+    <div className="sed-tab-pane">
+        <h3>Seats Pricing</h3>
 
-                                <div className="sed-pricing-grid">
-                                    {(event.priceLevels || [])
-                                        .filter(pl => {
-                                            const isSeat = (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle");
-                                            const isGA = event.eventType === "General Admission" || pl.type === "General Fee";
-                                            const isPlaced = stats.plStats[pl._id]?.total > 0 || stats.plStats[pl.id]?.total > 0;
-                                            
-                                            // If no layout data/seatMap at all, and not GA, hide it
-                                            if (!event.layoutData && !event.seatMap && !isGA) return false;
-                                            
-                                            return (isSeat && isPlaced) || isGA;
-                                        })
-                                        .map((pl, idx) => {
-                                            const plStat = stats.plStats[pl._id] || stats.plStats[pl.id] || { available: 0 };
-                                            const totalAvailable = plStat.available;
+        <div className="sed-pricing-grid">
+            {(event.priceLevels || [])
+                .filter(pl => {
+                    const isGA = event.eventType === "General Admission" || pl.type === "General Fee";
+                    const isSeat = (pl.type || '').toLowerCase().includes("seat") ||
+                                   (pl.type || '').toLowerCase().includes("circle") ||
+                                   (pl.type || '').toLowerCase().includes("ticket");
+                    const isBooth = (pl.type || '').toLowerCase().includes("booth");
 
-                                            return (
-                                                <div className="sed-pricing-card" key={idx}>
-                                                    <h6 className="text-primary text-center">{pl.priceName}</h6>
-                                                    <p className="small-body-text text-primary text-center font-bold">{pl.description || "General Entry"}</p>
-                                                    <h3 className="text-red text-center mt-2">${(pl.facePrice || 0).toLocaleString()}</h3>
-                                                    <div className="text-center mt-2">
-                                                        <span className={`smaller-body-text ${totalAvailable > 0 ? 'text-green' : 'text-red'}`}>
-                                                            {totalAvailable > 0 ? `${totalAvailable} Seats Available` : 'Sold Out'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    }
-                                    {(!event.priceLevels || (event.priceLevels || []).filter(pl => {
-                                        const isSeat = (pl.type || '').toLowerCase().includes("seat") || (pl.type || '').toLowerCase().includes("circle");
-                                        const isGA = event.eventType === "General Admission" || pl.type === "General Fee";
-                                        const isPlaced = stats.plStats[pl._id]?.total > 0 || stats.plStats[pl.id]?.total > 0;
-                                        if (!event.layoutData && !event.seatMap && !isGA) return false;
-                                        return (isSeat && isPlaced) || isGA;
-                                    }).length === 0) && (
-                                        <p className="text-secondary">No ticket pricing available yet.</p>
-                                    )}
-                                </div>
+                    // Exclude booth price levels
+                    if (isBooth) return false;
+
+                    // Always show GA
+                    if (isGA) return true;
+
+                    // For physical seats, check if any layoutData item references this price level
+                    const layout = event.layoutData;
+                    const items = Array.isArray(layout?.items) ? layout.items : [];
+                    const isPlaced = items.some(item =>
+                        (item.type || '').toLowerCase() === 'seat' &&
+                        (
+                            item.categoryId?.toString() === pl._id?.toString() ||
+                            item.priceLevelId?.toString() === pl._id?.toString()
+                        )
+                    );
+
+                    return isSeat || isPlaced;
+                })
+                .map((pl, idx) => {
+                    const isGA = event.eventType === "General Admission" || pl.type === "General Fee";
+                    const layout = event.layoutData;
+                    const items = Array.isArray(layout?.items) ? layout.items : [];
+
+                    const placedAvailable = isGA
+                        ? Math.max(0, (pl.quantityAvailable || 0) - (pl.quantitySold || 0))
+                        : items.filter(item =>
+                            (item.type || '').toLowerCase() === 'seat' &&
+                            (
+                                item.categoryId?.toString() === pl._id?.toString() ||
+                                item.priceLevelId?.toString() === pl._id?.toString()
+                            ) &&
+                            (!item.status || item.status === 'available')
+                        ).length;
+
+                    const totalPlaced = isGA
+                        ? (pl.quantityAvailable || 0)
+                        : items.filter(item =>
+                            (item.type || '').toLowerCase() === 'seat' &&
+                            (
+                                item.categoryId?.toString() === pl._id?.toString() ||
+                                item.priceLevelId?.toString() === pl._id?.toString()
+                            )
+                        ).length;
+
+                    return (
+                        <div className="sed-pricing-card" key={idx}>
+                            <h6 className="text-primary text-center">{pl.priceName}</h6>
+                            <p className="small-body-text text-primary text-center font-bold">
+                                {pl.description || "General Entry"}
+                            </p>
+                            <h3 className="text-red text-center mt-2">
+                                ${(pl.facePrice || 0).toLocaleString()}
+                            </h3>
+                            <div className="text-center mt-2">
+                                <span className={`smaller-body-text ${placedAvailable > 0 ? 'text-green' : 'text-red'}`}>
+                                    {placedAvailable} / {totalPlaced} {isGA ? 'Tickets Available' : 'Seats Available'}
+                                </span>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    );
+                })
+            }
+            {(event.priceLevels || []).filter(pl => !(pl.type || '').toLowerCase().includes("booth")).length === 0 && (
+                <p className="text-secondary">No ticket pricing available yet.</p>
+            )}
+        </div>
+    </div>
+)}                    </div>
                 </div>
 
                 <div className="sed-content-right">
