@@ -125,15 +125,7 @@
     box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
   }
 
-  &.redeemed {
-    opacity: 0.7;
-    background: var(--color-bg-light);
-  }
 
-  &.expired {
-    opacity: 0.6;
-    background: var(--color-bg-light);
-  }
 }
 
 .card-top-row {
@@ -148,11 +140,7 @@
   gap: 6px;
   background: var(--color-red-quaternary);
   color: var(--color-red-primary);
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-family: 'Poppins', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
+
 
   svg {
     width: 16px;
@@ -161,13 +149,7 @@
 }
 
 .status-badge {
-  font-family: 'Poppins', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 12px;
-  letter-spacing: 0.5px;
+
 
   &.badge-active {
     background: var(--color-green-tertiary);
@@ -179,10 +161,7 @@
     color: var(--color-black-secondary);
   }
 
-  &.badge-expired {
-    background: var(--color-red-tertiary);
-    color: var(--color-red-primary);
-  }
+
 }
 
 .card-main-info {

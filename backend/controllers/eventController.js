@@ -1678,10 +1678,12 @@ const { boothId, billingAddress, amount, paymentMethod, poNumber, batchId } = re
     type: "booth",
     boothId: booth._id,
     boothCode: booth.label || booth.code,
-batchId: batchId || uuidv4(), 
+    batchId: batchId || uuidv4(), 
     amount: {
         total: amount?.total || 0,
         subtotal: amount?.subtotal || 0,
+        discount: amount?.discount || 0,       
+        discountLabel: amount?.discountLabel || null, 
         fee: amount?.fee || 0,
         tax: amount?.tax || 0,
     },

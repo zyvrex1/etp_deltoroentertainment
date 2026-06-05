@@ -106,7 +106,8 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) =>
                                     }`}
                             >
                                 {item.eventStatus}
-                            </span>                            <span className="button-label svfh-booth-label">{item.booth}</span>
+                            </span>      
+                                                  <span className="button-label svfh-booth-label">{item.booth}</span>
                         </div>
                         <h2 className="svfh-event-title">{item.title}</h2>
                         <div className="svfh-event-details">
@@ -125,7 +126,7 @@ const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) =>
                             </div>
                             <div className="svfh-info-item">
                                 <span className="small-body-text text-secondary">Booth Type</span>
-                                <h5>{res.boothCode}</h5>
+                                <h5>{item.booth}</h5>
                             </div>
                             <div className="svfh-info-item">
                                 <span className="small-body-text text-secondary">Booking Date</span>

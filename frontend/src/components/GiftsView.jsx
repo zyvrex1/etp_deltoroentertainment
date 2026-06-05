@@ -134,7 +134,9 @@ export default function GiftsView({ role = "customer" }) {
                 }`}
               >
                 <div className="card-top-row">
-                  <div className="gift-badge">
+                  <div className={`button-label gift-badge ${isRedeemed ? "redeemed" : ""} ${
+                    isExpired ? "expired" : ""
+                  }`}>
                     <Icon icon={getCardIcon(gift.type)} />
                     <span>
                       {gift.type === "gift_card"
@@ -144,7 +146,7 @@ export default function GiftsView({ role = "customer" }) {
                         : "Coupon"}
                     </span>
                   </div>
-                  <span className={`status-badge ${badgeClass}`}>
+                  <span className={`button-label status-badge ${badgeClass}`}>
                     {isRedeemed ? "Redeemed" : isExpired ? "Expired" : "Active"}
                   </span>
                 </div>

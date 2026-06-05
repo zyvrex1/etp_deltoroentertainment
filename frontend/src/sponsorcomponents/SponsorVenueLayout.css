@@ -205,7 +205,6 @@
 .svl-seat-legend {
     display: flex;
     gap: 24px;
-    justify-content: center;
     margin-top: 32px;
     width: 100%;
 }

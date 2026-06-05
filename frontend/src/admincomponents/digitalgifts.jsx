@@ -277,7 +277,7 @@ export default function DigitalGifts() {
     const formatValue = (g) => {
         if (g.valueType === "percent") return `${g.value}% off`;
         if (g.valueType === "fixed") return `$${g.value?.toLocaleString()}`;
-        return "Buy 2 Get 1";
+        return "Buy 1 Get 1 Free";
     };
 
     return (

@@ -499,14 +499,23 @@ const SponsorVenueBilling = () => {
                                         <option value="">-- No Promo / Gift Card --</option>
                                         {availableGifts.map(g => (
                                             <option key={g.giftId} value={g.giftId}>
-                                                {g.code} - {g.name} ({g.valueType === 'fixed' ? `$${g.value.toFixed(2)}` : `${g.value}%`} off)
-                                            </option>
+{g.code} - {g.name} ({
+  g.valueType === 'fixed' ? `$${g.value.toFixed(2)} off` :
+  g.valueType === 'percent' ? `${g.value}% off` :
+  g.valueType === 'bxgy' ? 'Buy 1 Get 1 Free' :
+  'Promo'
+})                                            </option>
                                         ))}
                                     </select>
                                     {selectedGift && (
                                         <div className="mt-2 text-success small-body-text" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-green-primary)' }}>
-                                            <Icon icon="mdi:check-circle" /> Applied discount of {selectedGift.valueType === 'fixed' ? `$${discount.toFixed(2)}` : `${selectedGift.value}%`}.
-                                        </div>
+<Icon icon="mdi:check-circle" /> {
+  selectedGift.valueType === 'bxgy'
+    ? `Buy 1 Get 1 Free applied — $${discount.toFixed(2)} off`
+    : selectedGift.valueType === 'fixed'
+      ? `Applied discount of $${discount.toFixed(2)}`
+      : `Applied discount of ${selectedGift.value}%`
+}.                                        </div>
                                     )}
                                 </div>
                             )}

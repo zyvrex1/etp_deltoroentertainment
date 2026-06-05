@@ -171,6 +171,10 @@
                 background-color: var(--color-green-tertiary) !important;
                 color: var(--color-green-primary) !important;
             }
+            .svfh-status-label.pending {
+    background-color: var(--color-yellow-tertiary) !important;
+    color: var(--color-yellow-primary) !important;
+}
         }
     }
 }
