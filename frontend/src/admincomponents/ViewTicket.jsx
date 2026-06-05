@@ -303,7 +303,7 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onUpdatePriority, o
                                                             />
                                                             <span className="smaller-body-text">{att.name}</span>
                                                             <a href={`${BACKEND_URL}/${att.path}`} target="_blank" rel="noopener noreferrer" className="vt-att-link">
-                                                                <Icon icon="mdi:download-outline" />
+                                                                <Icon icon="mdi:eye-outline" />
                                                             </a>
                                                         </div>
                                                     ))}

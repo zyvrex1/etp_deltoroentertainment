@@ -101,7 +101,16 @@ const PromoterSidebar = ({ mobileExpanded, setMobileExpanded }) => {
             <MdPayment className="icon" />
             <span>Payouts</span>
           </NavLink>
+        </div>
 
+        {/* ACCOUNT */}
+        <div className="sidebar-section">
+          <p className="section-title">ACCOUNT</p>
+
+          <NavLink to="/promoter/support" className="sidebar-item" onClick={handleLinkClick}>
+            <MdSupport className="icon" />
+            <span>Support</span>
+          </NavLink>
         </div>
       </div>
 

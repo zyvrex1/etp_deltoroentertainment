@@ -131,6 +131,12 @@
         border: 1px solid var(--color-green-tertiary);
     }
 
+    .vt-badge-promoter {
+        background-color: var(--color-red-quaternary);
+        color: var(--color-red-primary);
+        border: 1px solid var(--color-red-tertiary);
+    }
+
     .vt-badge-admin {
         background-color: var(--color-red-quaternary);
         color: var(--color-red-primary);

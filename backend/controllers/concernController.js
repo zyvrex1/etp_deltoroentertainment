@@ -232,10 +232,12 @@ const addMessage = async (req, res) => {
 
     const senderName = (user.role === 'admin' || user.role === 'superadmin') ? 'Admin' : `${user.firstName} ${user.lastName}`;
 
+    const messageText = text || (attachments.length > 0 ? "Sent an attachment" : "");
+
     const newMessage = {
       sender: user._id,
       senderName: senderName,
-      text,
+      text: messageText,
       attachments,
       isSystem: false
     };
@@ -257,21 +259,27 @@ const addMessage = async (req, res) => {
     const recipientId = (user.role === 'admin' || user.role === 'superadmin') ? concern.sponsorId : (concern.assignedTo || null);
     const targetRole = (user.role === 'admin' || user.role === 'superadmin') ? null : (concern.assignedTo ? null : 'admin');
     
-    let path = '/admin/support';
-    if (user.role === 'admin' || user.role === 'superadmin') {
-      path = concern.userRole === 'customer' ? '/customer/support' : '/sponsor/support';
-    }
+  let notifPath = '/admin/support';
+if (user.role === 'admin' || user.role === 'superadmin') {
+  if (concern.userRole === 'customer') {
+    notifPath = '/customer/support';
+  } else if (concern.userRole === 'promoter') {
+    notifPath = '/promoter/support';
+  } else {
+    notifPath = '/sponsor/support';
+  }
+}
 
-    const notification = await notificationController.createNotification({
-      title: `New message for ticket: ${concern.subject}`,
-      content: `New message: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`,
-      type: 'concern',
-      path,
-      unread: true,
-      userId: recipientId,
-      createdBy: user._id,
-      targetRole
-    });
+ const notification = await notificationController.createNotification({
+  title: `New message for ticket: ${concern.subject}`,
+  content: `New message: "${messageText.substring(0, 50)}${messageText.length > 50 ? '...' : ''}"`,
+  type: 'concern',
+  path: notifPath,   // <-- was: path
+  unread: true,
+  userId: recipientId,
+  createdBy: user._id,
+  targetRole
+});
     socket.emitUpdate('newNotification', notification);
 
     // Emit socket event to notify other party
@@ -279,6 +287,7 @@ const addMessage = async (req, res) => {
 
     res.status(200).json(concern);
   } catch (error) {
+    console.error("Error in addMessage:", error);
     res.status(400).json({ error: error.message });
   }
 };

@@ -39,6 +39,7 @@ const PromoterEventMonitoring = lazy(() => import("./promotercomponents/Promoter
 const PromoterRevenue = lazy(() => import("./promotercomponents/promoterrevenuereports.jsx"));
 const PromoterPayouts = lazy(() => import("./promotercomponents/promoterpayouts.jsx"));
 const PromoterPayoutBilling = lazy(() => import("./promotercomponents/PromoterPayoutBilling.jsx"));
+const PromoterSupport = lazy(() => import("./promotercomponents/PromoterSupport.jsx"));
 
 // Sponsor Pages
 const SponsorHome = lazy(() => import("./sponsorcomponents/SponsorHome.jsx"));
@@ -178,6 +179,7 @@ function App() {
             <Route path="promoter-revenue" element={<PromoterRevenue />} />
             <Route path="promoter-payouts" element={<PromoterPayouts />} />
             <Route path="promoter-payout-billing" element={<PromoterPayoutBilling />} />
+            <Route path="support" element={<PromoterSupport />} />
           </Route>
 
           <Route path="/sponsor" element={<SponsorLayout />}>

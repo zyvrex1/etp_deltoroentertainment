@@ -568,3 +568,6 @@
         }
     }
 
+.svc-hint{
+    color: var(--color-black-secondary);
+}
