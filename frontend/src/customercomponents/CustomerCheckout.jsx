@@ -38,6 +38,7 @@ const CustomerCheckout = () => {
         const fetchPhone = async () => {
             if (!user?.token) return;
             try {
+                const response = await authService.getProfile(user.token);
                 const p = response.data;
                 let phone = p.phone || "";
                 if (phone && !phone.startsWith('+')) {

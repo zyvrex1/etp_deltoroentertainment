@@ -532,8 +532,6 @@ const SponsorVenueBilling = () => {
                     <div className="svb-card mb-4">
                         <div className="svb-card-body">
                             <h4 className="mb-4">Payment Method</h4>
-
-                            {/* Saved Payment Options */}
                             {savedMethods.map((method) => {
                                 const methodId = method._id || method.id;
                                 const isSelected = paymentMethod === methodId;
@@ -547,15 +545,15 @@ const SponsorVenueBilling = () => {
                                             <div className="svb-radio-group">
                                                 <input type="radio" checked={isSelected} readOnly className="svb-radio" />
                                                 <div>
-                                                    <div className="d-flex align-items-center mb-1">
-                                                        <Icon icon={method.icon || "mdi:credit-card"} className="mr-2" style={{ fontSize: '1.2rem' }} />
-                                                        <h5 className="h6 m-0">
+                                                    <div className="svb-flex-align-center mb-1">
+                                                        <Icon icon={method.icon || "mdi:credit-card"} className="mr-2 svb-icon-size" />
+                                                        <h5 className="m-0 text-black">
                                                             {method.methodType === 'PayPal' ? method.paypalEmail :
                                                                 method.methodType === 'UPI' ? method.accountNumber :
                                                                     `${method.type || 'Card'} •••• ${method.last4}`}
                                                         </h5>
                                                     </div>
-                                                    <span className="smaller-body-text text-secondary block">
+                                                    <span className="smaller-body-text text-secondary svb-block">
                                                         {method.expires ? `Expires ${method.expires}` : ''} {method.isDefault ? '• Default' : ''}
                                                     </span>
                                                 </div>
@@ -578,9 +576,9 @@ const SponsorVenueBilling = () => {
                                 <div className="svb-payment-header">
                                     <div className="svb-radio-group">
                                         <input type="radio" checked={paymentMethod === 'card'} readOnly className="svb-radio" />
-                                        <h5>Credit Card</h5>
+                                        <h5 className="m-0 text-black">Credit Card</h5>
                                     </div>
-                                    <div className="svb-card-badges">
+                                    <div className="svb-card-badges hidden-mobile">
                                         <span className="svb-badge button-label blue">VISA</span>
                                         <span className="svb-badge button-label orange">MC</span>
                                         <span className="svb-badge button-label light-blue">AMEX</span>
@@ -606,6 +604,10 @@ const SponsorVenueBilling = () => {
                                                 <input type="text" placeholder="123" className="svb-input" />
                                             </div>
                                         </div>
+                                        <div className="svb-form-group mt-3">
+                                            <label>Name on Card</label>
+                                            <input type="text" placeholder={`${user?.firstName} ${user?.lastName}`} className="svb-input" />
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -619,18 +621,15 @@ const SponsorVenueBilling = () => {
                                     <div className="svb-radio-group">
                                         <input type="radio" checked={paymentMethod === 'invoice'} readOnly className="svb-radio" />
                                         <div>
-                                            <div className="d-flex align-items-center mb-1">
-                                                <Icon icon="mdi:domain" className="mr-2" style={{ fontSize: '1.2rem' }} />
-                                                <h5 className="h6 m-0">Invoice / Bank Transfer</h5>
+                                            <div className="svb-flex-align-center mb-1">
+                                                <Icon icon="mdi:domain" className="mr-2 svb-icon-size" />
+                                                <h5 className="m-0 text-black">Invoice / Bank Transfer</h5>
                                             </div>
-                                            <span className="smaller-body-text text-secondary block">
+                                            <span className="smaller-body-text text-secondary svb-block">
                                                 Net 30 payment terms available for qualified businesses
                                             </span>
                                         </div>
                                     </div>
-                                    {paymentMethod !== 'invoice' && (
-                                        <Icon icon="mdi:information-outline" className="text-red" style={{ fontSize: '1.2rem' }} />
-                                    )}
                                 </div>
 
                                 {paymentMethod === 'invoice' && (
