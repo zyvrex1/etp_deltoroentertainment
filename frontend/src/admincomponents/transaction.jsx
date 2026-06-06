@@ -14,19 +14,11 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
 
   const filterOptions = [
     { value: "all", label: "All Transactions" },
-    { value: "booth", label: "Booth filter" },
-    { value: "seated-ticket", label: "Seated Ticket filter" },
-    { value: "ticket", label: "Ticket filter" },
-    { value: "payout", label: "Payout filter" },
+    { value: "payout", label: "Payout" },
+    { value: "ticket", label: "Ticket" },
+    { value: "booth", label: "Booth" },
+    { value: "seated-ticket", label: "Seated Ticket" },
   ];
-
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
 
   const dropdownRef = useRef(null);
 
@@ -83,6 +75,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
       if (!q) return true;
 
       return (
+        (tx.promoter?.toLowerCase().includes(q) || false) ||
         (tx.user?.toLowerCase().includes(q) || false) ||
         (tx.event?.toLowerCase().includes(q) || false) ||
         (tx.type?.toLowerCase().includes(q) || false)
@@ -140,7 +133,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
       const tableColumn = ["ID", "User", "Event", "Category", "Amount", "Status", "Date"];
       const tableRows = displayTransactions.map((tx) => [
         tx.id,
-        tx.user,
+        tx.promoter || tx.user,
         tx.event,
         tx.category,
         tx.amount,
@@ -248,37 +241,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
 
       <div className="tx-content" style={isTab ? { padding: 0 } : {}}>
         <div className="table-wrapper">
-          {isLoading ? (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>User</th>
-                  <th>Event</th>
-                  <th>Category</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...Array(itemsPerPage)].map((_, i) => (
-                  <tr key={i}>
-                    <td><div className="skeleton skeleton-text" style={{ width: '40px' }} /></td>
-                    <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
-                    <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
-                    <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
-                    <td><div className="skeleton skeleton-badge" style={{ width: '70px', height: '24px' }} /></td>
-                    <td><div className="skeleton skeleton-text" style={{ width: '70px' }} /></td>
-                    <td><div className="skeleton skeleton-badge" style={{ width: '80px', height: '24px' }} /></td>
-                    <td><div className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
-                    <td><div className="skeleton skeleton-circle" style={{ width: '32px', height: '32px' }} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : paginatedTransactions.length === 0 ? (
+          {paginatedTransactions.length === 0 ? (
             <div className="empty-state">
               <Icon
                 icon={
@@ -324,7 +287,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
                       <span>{tx.id}</span>
                     </td>
                     <td className="regular-body-text name-td" data-label="User">
-                      {tx.user}
+                      {tx.promoter || tx.user}
                     </td>
                     <td className="small-body-text" data-label="Event">
                       {tx.event}

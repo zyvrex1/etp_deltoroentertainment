@@ -270,7 +270,7 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
               <div key={product._id} className="smp-card">
                 <div className="smp-card-img-wrap">
 
-                 <img src={product.image || CATEGORY_DEFAULT_IMAGES[product.category?.toLowerCase()] || '/assets/eventbg.jpg'} onError={(e) => {
+                 <img src={product.image ? getProductImage(product.image) : (CATEGORY_DEFAULT_IMAGES[product.category?.toLowerCase()] || '/assets/eventbg.jpg')} onError={(e) => {
                     e.target.onerror = null;
                     const category = product.category?.toLowerCase();
                     e.target.src = CATEGORY_DEFAULT_IMAGES[category] || '/assets/eventbg.jpg';

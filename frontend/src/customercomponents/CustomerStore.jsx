@@ -32,89 +32,93 @@ const CustomerStore = () => {
   };
 
   // Fetch and filter events
- // Fetch and filter events
-useEffect(() => {
-  const fetchAndFilterEvents = async () => {
-    if (!user?.token) return;
+  // Fetch and filter events
+  useEffect(() => {
+    const fetchAndFilterEvents = async () => {
+      if (!user?.token) return;
 
-    try {
-      setLoading(true);
-      const allEvents = await eventsService.getEvents(user.token);
+      try {
+        setLoading(true);
+        const allEvents = await eventsService.getEvents(user.token);
 
-      // Get unique event IDs from customer's confirmed ticket purchases
-      const bookedEventIds = new Set(
-        purchaseHistory
-          .filter(item => item.status?.toLowerCase() === 'confirmed')
-          .map(item => item.event?._id)
-          .filter(Boolean)
-      );
+        // Get unique event IDs from customer's ticket purchases
+        const validStatuses = ['confirmed', 'upcoming', 'completed'];
+        const bookedEventIds = new Set(
+          purchaseHistory
+            .filter(item => validStatuses.includes(item.status?.toLowerCase()))
+            .map(item => (item.event?._id || item.event?.id || item.event)?.toString())
+            .filter(Boolean)
+        );
 
-      const bookedEvents = allEvents.filter(event => bookedEventIds.has(event._id));
+        const bookedEvents = allEvents.filter(event =>
+          bookedEventIds.has(event._id?.toString()) ||
+          bookedEventIds.has(event.id?.toString())
+        );
 
-      // Fetch confirmed booth count per event from the dedicated endpoint
-      const boothCountsPerEvent = await Promise.all(
-        bookedEvents.map(async (event) => {
-          try {
-            const res = await fetch(`/api/reservations/event/${event._id}/booths`, {
-              headers: { Authorization: `Bearer ${user.token}` }
-            });
-            const booths = await res.json();
-            return { eventId: event._id, count: Array.isArray(booths) ? booths.length : 0 };
-          } catch {
-            return { eventId: event._id, count: 0 };
+        // Fetch confirmed booth count per event from the dedicated endpoint
+        const boothCountsPerEvent = await Promise.all(
+          bookedEvents.map(async (event) => {
+            try {
+              const res = await fetch(`/api/reservations/event/${event._id}/booths`, {
+                headers: { Authorization: `Bearer ${user.token}` }
+              });
+              const booths = await res.json();
+              return { eventId: event._id, count: Array.isArray(booths) ? booths.length : 0 };
+            } catch {
+              return { eventId: event._id, count: 0 };
+            }
+          })
+        );
+
+        const boothCountMap = boothCountsPerEvent.reduce((acc, { eventId, count }) => {
+          acc[eventId] = count;
+          return acc;
+        }, {});
+
+        const mappedEvents = bookedEvents.map(event => {
+          let status = "Live";
+          if (event.status === "completed") {
+            status = "Completed";
+          } else if (event.status === "approved") {
+            const now = new Date();
+            const startDate = new Date(event.startDate);
+            if (startDate > now) status = "Upcoming";
           }
-        })
-      );
 
-      const boothCountMap = boothCountsPerEvent.reduce((acc, { eventId, count }) => {
-        acc[eventId] = count;
-        return acc;
-      }, {});
+          let priceRange = "N/A";
+          if (event.priceLevels && event.priceLevels.length > 0) {
+            const prices = event.priceLevels.map(pl => pl.facePrice);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            priceRange = minPrice === maxPrice ? `$${minPrice}` : `$${minPrice} - $${maxPrice}`;
+          }
 
-      const mappedEvents = bookedEvents.map(event => {
-        let status = "Live";
-        if (event.status === "completed") {
-          status = "Completed";
-        } else if (event.status === "approved") {
-          const now = new Date();
-          const startDate = new Date(event.startDate);
-          if (startDate > now) status = "Upcoming";
-        }
+          return {
+            id: event._id,
+            title: event.title,
+            date: new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            location: event.venue?.name || "Unknown Location",
+            price: priceRange,
+            category: event.category,
+            image: event.image ? `/uploads/${event.image}` : '/assets/eventbg.jpg',
+            time: `${event.startTime} - ${event.endTime}`,
+            availability: (event.totalTickets || 0) - (event.ticketsSold || 0),
+            products: boothCountMap[event._id] || 0, // ✅ from real API
+            status: status,
+            _id: event._id
+          };
+        });
 
-        let priceRange = "N/A";
-        if (event.priceLevels && event.priceLevels.length > 0) {
-          const prices = event.priceLevels.map(pl => pl.facePrice);
-          const minPrice = Math.min(...prices);
-          const maxPrice = Math.max(...prices);
-          priceRange = minPrice === maxPrice ? `$${minPrice}` : `$${minPrice} - $${maxPrice}`;
-        }
+        setEventData(mappedEvents);
+      } catch (error) {
+        console.error("Error fetching events for store:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        return {
-          id: event._id,
-          title: event.title,
-          date: new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          location: event.venue?.name || "Unknown Location",
-          price: priceRange,
-          category: event.category,
-          image: event.image ? `/uploads/${event.image}` : '/assets/eventbg.jpg',
-          time: `${event.startTime} - ${event.endTime}`,
-          availability: (event.totalTickets || 0) - (event.ticketsSold || 0),
-          products: boothCountMap[event._id] || 0, // ✅ from real API
-          status: status,
-          _id: event._id
-        };
-      });
-
-      setEventData(mappedEvents);
-    } catch (error) {
-      console.error("Error fetching events for store:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchAndFilterEvents();
-}, [user?.token, purchaseHistory]);
+    fetchAndFilterEvents();
+  }, [user?.token, purchaseHistory]);
 
 
   // Close dropdown when clicking outside
@@ -231,9 +235,9 @@ useEffect(() => {
             paginatedData.map((event) => (
               <div key={event.id} className="cs-event-card">
                 <div className="cs-card-image-wrap">
-                  <img 
-                    src={event.image} 
-                    alt={event.title} 
+                  <img
+                    src={event.image}
+                    alt={event.title}
                     onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
                   />
                   <div className={`cs-status-badge button-label ${getStatusClass(event.status)}`}>

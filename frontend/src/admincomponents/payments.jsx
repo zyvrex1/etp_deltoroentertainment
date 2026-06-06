@@ -145,7 +145,7 @@ const Payments = () => {
       const res = group.reservations[0];
       const allRes = group.reservations;
       const promoterName = res.user
-        ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`)
+        ? (`${res.user.firstName || ''} ${res.user.lastName || ''}`.trim() || res.user.companyName || 'Unknown')
         : 'Unknown';
 
       const boothLabel = allRes.length > 1
@@ -177,7 +177,7 @@ const Payments = () => {
       const isBooth = !!res.boothCode;
       const isGA = res.seatIds && res.seatIds.some(sid => sid.startsWith("GA-"));
       const promoterName = res.user
-        ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`)
+        ? (`${res.user.firstName || ''} ${res.user.lastName || ''}`.trim() || res.user.companyName || 'Unknown')
         : 'Unknown';
 
       const item = {
@@ -354,7 +354,7 @@ const Payments = () => {
     //    Added: batchId, boothCode, seatLabels  ← NEW FIELDS
     const mappedReservations = resolvedReservations.map((res) => {
       const name = res.user
-        ? (res.user.companyName || `${res.user.firstName} ${res.user.lastName}`)
+        ? (`${res.user.firstName || ''} ${res.user.lastName || ''}`.trim() || res.user.companyName || 'Unknown User')
         : 'Unknown User';
 
       const isBooth = !!res.boothCode;
@@ -412,17 +412,12 @@ const Payments = () => {
           g.totalAmount += item.amountVal;
           g.allItems.push(item);
         } else {
-          boothBatchMap.set(key, {
-            firstItem: item,
-            allItems: [item],
-            totalAmount: item.amountVal,
-          });
+          boothBatchMap.set(key, { firstItem: item, allItems: [item], totalAmount: item.amountVal });
         }
       } else {
-        // No batchId → single booth, push directly
         reservationTx.push({
           id: `Booth-${item.resId.toString().slice(-6).toUpperCase()}`,
-          user: item.user,
+          promoter: item.user,
           event: item.event,
           category: 'Booth',
           amount: `$${item.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -432,24 +427,20 @@ const Payments = () => {
           rawDate: item.rawDate,
           paymentMethod: item.paymentMethod,
           quantity: 1,
-          details: item.boothCode ? `Booth (#${item.boothCode})` : '',
+          booth: item.boothCode ? `Booth (#${item.boothCode})` : '',
           giftCode: item.giftCode,
           appliedGift: item.appliedGift,
         });
       }
     });
 
-    // Flush booth batches → 1 combined row per batchId
     boothBatchMap.forEach((g) => {
       const first = g.firstItem;
       const codes = g.allItems.map(i => `#${i.boothCode}`).join(', ');
-      const label = g.allItems.length > 1
-        ? `${g.allItems.length} Booths (${codes})`
-        : `Booth (${first.boothCode})`;
-
+      const label = g.allItems.length > 1 ? `${g.allItems.length} Booths (${codes})` : `Booth (${first.boothCode})`;
       reservationTx.push({
         id: `Booth-${first.resId.toString().slice(-6).toUpperCase()}`,
-        user: first.user,
+        promoter: first.user,
         event: first.event,
         category: 'Booth',
         amount: `$${g.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -459,41 +450,28 @@ const Payments = () => {
         rawDate: first.rawDate,
         paymentMethod: first.paymentMethod,
         quantity: g.allItems.length,
-        details: label,
+        booth: label,
         giftCode: first.giftCode,
         appliedGift: first.appliedGift,
       });
     });
 
-    // ══════════════════════════════════════════════════════════
-    // PASS 2 — SEATED TICKETS  (customer books multiple seats)
-    //   Group by batchId → 1 row per batch in the table
-    // ══════════════════════════════════════════════════════════
     mappedReservations.forEach(item => {
       if (item.category !== 'Seated Ticket') return;
-
       const key = item.batchId?.toString();
-
       if (key) {
-        // Has a batchId → accumulate into the map
         if (seatBatchMap.has(key)) {
           const g = seatBatchMap.get(key);
           g.totalAmount += item.amountVal;
           g.quantity += item.quantity;
           g.allItems.push(item);
         } else {
-          seatBatchMap.set(key, {
-            firstItem: item,
-            allItems: [item],
-            totalAmount: item.amountVal,
-            quantity: item.quantity,
-          });
+          seatBatchMap.set(key, { firstItem: item, allItems: [item], totalAmount: item.amountVal, quantity: item.quantity });
         }
       } else {
-        // No batchId → single seat reservation, push directly
         reservationTx.push({
           id: `Seats-${item.resId.toString().slice(-6).toUpperCase()}`,
-          user: item.user,
+          promoter: item.user,
           event: item.event,
           category: 'Seated Ticket',
           amount: `$${item.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -503,27 +481,20 @@ const Payments = () => {
           rawDate: item.rawDate,
           paymentMethod: item.paymentMethod,
           quantity: item.quantity,
-          details: item.seatLabels?.length > 0
-            ? `Seats (${item.seatLabels.join(', ')})`
-            : `Seats (${item.quantity})`,
+          booth: item.seatLabels?.length > 0 ? `Seats (${item.seatLabels.join(', ')})` : `Seats (${item.quantity})`,
           giftCode: item.giftCode,
           appliedGift: item.appliedGift,
         });
       }
     });
 
-    // Flush seat batches → 1 combined row per batchId
     seatBatchMap.forEach((g) => {
       const first = g.firstItem;
-      // Collect all seat labels across every reservation in this batch
       const allLabels = [...new Set(g.allItems.flatMap(i => i.seatLabels || []))];
-      const label = allLabels.length > 0
-        ? `Seats (${allLabels.join(', ')})`
-        : `Seats (${g.quantity})`;
-
+      const label = allLabels.length > 0 ? `Seats (${allLabels.join(', ')})` : `Seats (${g.quantity})`;
       reservationTx.push({
         id: `Seats-${first.resId.toString().slice(-6).toUpperCase()}`,
-        user: first.user,
+        promoter: first.user,
         event: first.event,
         category: 'Seated Ticket',
         amount: `$${g.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -533,69 +504,39 @@ const Payments = () => {
         rawDate: first.rawDate,
         paymentMethod: first.paymentMethod,
         quantity: g.quantity,
-        details: label,
+        booth: label,
         giftCode: first.giftCode,
         appliedGift: first.appliedGift,
       });
     });
 
-    // ══════════════════════════════════════════════════════════
-    // PASS 3 — GA TICKETS  (general admission, time-window grouping)
-    //   Skip Booth and Seated Ticket — already handled above
-    // ══════════════════════════════════════════════════════════
     mappedReservations.forEach(item => {
-      // ← KEY CHANGE: skip the two categories already handled
       if (item.category === 'Booth' || item.category === 'Seated Ticket') return;
-
       const userIdStr = item.userId?.toString() || '';
       const eventIdStr = item.eventId?.toString() || '';
-
       const existingGroup = gaGroups.find(g =>
-        g.userId === userIdStr &&
-        g.eventId === eventIdStr &&
-        g.paymentMethod === item.paymentMethod &&
-        g.status === item.status &&
-        Math.abs(g.createdAtTime - item.createdAtTime) < 60000  // widened from 10s → 60s
+        g.userId === userIdStr && g.eventId === eventIdStr && g.paymentMethod === item.paymentMethod && g.status === item.status && Math.abs(g.createdAtTime - item.createdAtTime) < 60000
       );
-
       if (existingGroup) {
         existingGroup.amountVal += item.amountVal;
         existingGroup.quantity += item.quantity;
         if (item.status === 'completed') existingGroup.status = 'completed';
-        if (item.details) {
-          const newDetails = item.details.split(',').map(s => s.trim());
-          existingGroup.detailsList.push(...newDetails);
-        }
+        if (item.details) existingGroup.detailsList.push(...item.details.split(',').map(s => s.trim()));
       } else {
         gaGroups.push({
-          userId: userIdStr,
-          eventId: eventIdStr,
-          paymentMethod: item.paymentMethod,
-          status: item.status,
-          createdAtTime: item.createdAtTime,
-          user: item.user,
-          event: item.event,
-          category: item.category,
-          amountVal: item.amountVal,
-          quantity: item.quantity,
-          dateStr: item.dateStr,
-          filterType: item.filterType,
-          rawDate: item.rawDate,
-          resId: item.resId,
-          detailsList: item.details
-            ? [...new Set(item.details.split(',').map(s => s.trim()))]
-            : [],
-          giftCode: item.giftCode || null,
-          appliedGift: item.appliedGift || null,
+          userId: userIdStr, eventId: eventIdStr, paymentMethod: item.paymentMethod, status: item.status, createdAtTime: item.createdAtTime,
+          user: item.user, event: item.event, category: item.category, amountVal: item.amountVal, quantity: item.quantity,
+          dateStr: item.dateStr, filterType: item.filterType, rawDate: item.rawDate, resId: item.resId,
+          detailsList: item.details ? [...new Set(item.details.split(',').map(s => s.trim()))] : [],
+          giftCode: item.giftCode || null, appliedGift: item.appliedGift || null
         });
       }
     });
 
-    // Flush GA groups → 1 row per group
     gaGroups.forEach(g => {
       reservationTx.push({
         id: `Ticket-${g.resId.toString().slice(-6).toUpperCase()}`,
-        user: g.user,
+        promoter: g.user,
         event: g.event,
         category: g.category,
         amount: `$${g.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -1151,7 +1092,7 @@ const Payments = () => {
                         <th>ID</th>
                         <th>User</th>
                         <th>Event</th>
-                        <th>Booth/Seats</th>
+                        {/* <th>Booth/Seats</th> */}
                         <th>Category</th>
                         <th>Amount</th>
 
@@ -1171,12 +1112,12 @@ const Payments = () => {
                           </td>
                           <td data-label="Promoter" className="regular-body-text name-td">{row.promoter}</td>
                           <td data-label="Event" className="small-body-text">{row.event}</td>
-                          <td data-label="Booth" className="small-body-text">  {row.booth ? (
+                          {/* <td data-label="Booth" className="small-body-text">  {row.booth ? (
                             <span>{row.booth}</span>
                           ) : (
                             <span style={{ opacity: 0.4 }}>—</span>
                           )}
-                          </td>
+                          </td> */}
                           <td data-label="Category">
                             <span className={getCategoryClass(row.category)}>
                               {row.category === 'Seats' ? 'Seated Ticket' : row.category}

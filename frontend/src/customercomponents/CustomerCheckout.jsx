@@ -129,9 +129,10 @@ const discount = useMemo(() => {
             for (const eventId in itemsByEvent) {
                 const eventItems = itemsByEvent[eventId];
                 const seatIds = eventItems.map(item => item.seat.id);
-                const eventTotal = eventItems.reduce((sum, item) => sum + item.facePrice + item.serviceFee, 0);
                 const eventSubtotal = eventItems.reduce((sum, item) => sum + item.facePrice, 0);
-                const eventFees = eventItems.reduce((sum, item) => sum + item.serviceFee, 0);
+                const eventFees = eventItems.reduce((sum, item) => sum + item.serviceFee, 0) + remainingFee;
+                remainingFee = 0; // apply all remaining global fees to the first event
+                const eventTotal = eventSubtotal + eventFees;
 
                 try {
                     await eventsService.buySeats(
@@ -161,7 +162,8 @@ const discount = useMemo(() => {
                 completePurchase(
                     selectedIds,
                     paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
-                    paymentMethod === 'invoice' ? poNumber : ''
+                    paymentMethod === 'invoice' ? poNumber : '',
+                    serviceFees
                 );
                 showSuccessAlert('Payment Successful', 'Your tickets have been confirmed.');
                 navigate('/customer/success');

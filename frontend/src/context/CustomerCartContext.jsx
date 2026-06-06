@@ -197,7 +197,18 @@ export const CustomerCartProvider = ({ children }) => {
         }));
 
         setCartItems(prev => {
-            const newCart = [...prev, ...newItems];
+            // Filter out seats that are already in the cart for this specific event
+            const filteredNewItems = newItems.filter(newItem => {
+                const isDuplicate = prev.some(item => 
+                    item.event._id === newItem.event._id && 
+                    item.seat.id === newItem.seat.id
+                );
+                return !isDuplicate;
+            });
+
+            if (filteredNewItems.length === 0) return prev;
+
+            const newCart = [...prev, ...filteredNewItems];
             saveCustomerCart(newCart);
             return newCart;
         });
@@ -211,10 +222,12 @@ export const CustomerCartProvider = ({ children }) => {
         });
     };
 
-    const completePurchase = (cartIds, paymentMethod = 'Credit Card', poNumber = '') => {
+    const completePurchase = (cartIds, paymentMethod = 'Credit Card', poNumber = '', totalFee = 0) => {
         const itemsToPurchase = cartItems.filter(item => cartIds.includes(item.cartId));
+        const feePerItem = itemsToPurchase.length > 0 ? (totalFee / itemsToPurchase.length) : 0;
         const purchasedItems = itemsToPurchase.map(item => ({
             ...item,
+            serviceFee: feePerItem,
             purchaseDate: new Date().toISOString(),
             paymentMethod,
             poNumber,
