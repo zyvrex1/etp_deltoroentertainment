@@ -201,10 +201,15 @@ const SponsorVenueBilling = () => {
     const isMultipleEvents = new Set(selectedItems.map(i => i.event._id || i.event.id)).size > 1;
     const headerTitle = isMultipleEvents ? 'Multiple Events' : firstEvent.title;
 
-    // Resolve payment method string for the API — 'saved' is treated as 'card'
+    // Resolve payment method string for the API
     const resolveApiPaymentMethod = () => {
-        if (paymentMethod === 'invoice') return 'invoice';
-        return 'card'; // covers both 'card' and 'saved'
+        if (paymentMethod === 'invoice') return 'Invoice / Bank Transfer';
+        if (paymentMethod === 'card') return 'Credit Card';
+        const m = savedMethods.find(x => (x._id || x.id) === paymentMethod);
+        if (!m) return 'Credit Card';
+        if (m.methodType === 'PayPal') return `PayPal (${m.paypalEmail})`;
+        if (m.methodType === 'UPI') return `UPI (${m.accountNumber})`;
+        return `${m.type || 'Card'} \u2022\u2022\u2022\u2022 ${m.last4}`;
     };
 
     const handlePay = async () => {

@@ -37,6 +37,8 @@ const reservationSchema = new mongoose.Schema({
     amount: {
         total: Number,
         subtotal: Number,
+        discount: { type: Number, default: 0 },
+        discountLabel: { type: String, default: null },
         fee: Number,
         tax: Number
     },
@@ -54,7 +56,6 @@ const reservationSchema = new mongoose.Schema({
     },
     paymentMethod: {
         type: String,
-        enum: ['invoice', 'card'],
         default: 'invoice'
     },
     poNumber: {

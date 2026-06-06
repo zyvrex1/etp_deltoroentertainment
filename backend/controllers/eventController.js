@@ -1485,7 +1485,7 @@ const buySeats = async (req, res) => {
         },
         paymentMethod: paymentMethod || 'invoice',
         poNumber: billingInfo?.poNumber || "",
-        status: (paymentMethod === 'invoice' || !paymentMethod) ? 'pending' : 'confirmed',
+        status: (!paymentMethod || paymentMethod === 'invoice' || paymentMethod.toLowerCase().includes('invoice')) ? 'pending' : 'confirmed',
         appliedGift: req.body.appliedGift || null,
         giftCode: req.body.giftCode || ""
       };
@@ -1589,7 +1589,7 @@ const buySeats = async (req, res) => {
 
 const reserveBooth = async (req, res) => {
   const { id } = req.params;
-const { boothId, billingAddress, amount, paymentMethod, poNumber, batchId } = req.body;
+  const { boothId, billingAddress, amount, paymentMethod, poNumber, batchId } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).json({ error: "No such event" });
@@ -1673,28 +1673,29 @@ const { boothId, billingAddress, amount, paymentMethod, poNumber, batchId } = re
     // updateReservationStatus, syncBoothStatus) branches on reservation.type,
     // and the schema validation likely requires it.
     const reservation = await Reservation.create({
-    user: req.user._id,
-    event: id,
-    type: "booth",
-    boothId: booth._id,
-    boothCode: booth.label || booth.code,
-    batchId: batchId || uuidv4(), 
-    amount: {
+      user: req.user._id,
+      event: id,
+      type: "booth",
+      boothId: booth._id,
+      boothCode: booth.label || booth.code,
+      batchId: batchId || uuidv4(),
+      amount: {
         total: amount?.total || 0,
         subtotal: amount?.subtotal || 0,
-        discount: amount?.discount || 0,       
-        discountLabel: amount?.discountLabel || null, 
+        discount: amount?.discount || 0,
+        discountLabel: amount?.discountLabel || null,
         fee: amount?.fee || 0,
         tax: amount?.tax || 0,
-    },
-    billingAddress,
-    paymentMethod: paymentMethod || "invoice",
-    poNumber: poNumber || "",
-    status:
-        paymentMethod === "invoice" || !paymentMethod ? "pending" : "confirmed",
-    appliedGift: req.body.appliedGift || null,
-    giftCode: req.body.giftCode || ""
-});
+      },
+      billingAddress,
+      paymentMethod: paymentMethod || "invoice",
+      poNumber: poNumber || "",
+      status: (!paymentMethod || paymentMethod === 'invoice' || paymentMethod.toLowerCase().includes('invoice'))
+        ? "pending"
+        : "confirmed",
+      appliedGift: req.body.appliedGift || null,
+      giftCode: req.body.giftCode || ""
+    });
 
     const buyerName =
       req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;

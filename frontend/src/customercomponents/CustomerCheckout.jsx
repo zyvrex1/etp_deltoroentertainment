@@ -148,7 +148,15 @@ const CustomerCheckout = () => {
                             seatIds,
                             { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
                             { email: apEmail, poNumber: poNumber },
-                            paymentMethod === 'card' ? 'card' : 'invoice',
+                            (() => {
+                                if (paymentMethod === 'invoice') return 'Invoice / Bank Transfer';
+                                if (paymentMethod === 'card') return 'Credit Card';
+                                const m = savedMethods.find(x => (x._id || x.id) === paymentMethod);
+                                if (!m) return 'Credit Card';
+                                if (m.methodType === 'PayPal') return `PayPal (${m.paypalEmail})`;
+                                if (m.methodType === 'UPI') return `UPI (${m.accountNumber})`;
+                                return `${m.type || 'Card'} •••• ${m.last4}`;
+                            })(),
                             user.token
                         );
                     } catch (seatError) {
@@ -169,7 +177,15 @@ const CustomerCheckout = () => {
                 // All events processed (or recovered from 500s) — finalize
                 completePurchase(
                     selectedIds,
-                    paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
+                    (() => {
+                        if (paymentMethod === 'invoice') return 'Invoice / Bank Transfer';
+                        if (paymentMethod === 'card') return 'Credit Card';
+                        const m = savedMethods.find(x => (x._id || x.id) === paymentMethod);
+                        if (!m) return 'Credit Card';
+                        if (m.methodType === 'PayPal') return `PayPal (${m.paypalEmail})`;
+                        if (m.methodType === 'UPI') return `UPI (${m.accountNumber})`;
+                        return `${m.type || 'Card'} •••• ${m.last4}`;
+                    })(),
                     paymentMethod === 'invoice' ? poNumber : '',
                     serviceFees
                 );
