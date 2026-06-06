@@ -81,6 +81,7 @@ const SponsorVenueBilling = () => {
     const selectedItems = state.selectedItems || (state.event && state.booth ? [state] : []);
 
     const [paymentMethod, setPaymentMethod] = useState('invoice');
+    const [savedMethods, setSavedMethods] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [validationErrors, setValidationErrors] = useState([]);
 
@@ -106,6 +107,7 @@ const SponsorVenueBilling = () => {
             try {
                 const response = await authService.getProfile(user.token);
                 const p = response.data;
+                setSavedMethods(p.paymentMethods || []);
                 setBillingInfo(prev => ({
                     ...prev,
                     companyName: p.companyName || '',
@@ -115,6 +117,11 @@ const SponsorVenueBilling = () => {
                     apEmail: p.email || '',
                     poNumber: prev.poNumber || generatePONumber()
                 }));
+                // Set default payment method if available
+                if (p.paymentMethods && p.paymentMethods.length > 0) {
+                    const defaultMethod = p.paymentMethods.find(m => m.isDefault) || p.paymentMethods[0];
+                    setPaymentMethod(defaultMethod._id || defaultMethod.id);
+                }
             } catch (error) {
                 // Non-fatal: autofill failed, user can still fill manually
                 console.warn("Could not autofill billing info from profile:", error);
@@ -261,7 +268,7 @@ const SponsorVenueBilling = () => {
                 try {
                     const response = await axios.post(
                         `${BACKEND_URL}/api/events/${eventId}/reserve-booth`,
-                          {
+                        {
                             boothId,
                             batchId: sharedBatchId,   // ← same ID for every booth in this order
                             billingAddress: {
@@ -499,23 +506,23 @@ const SponsorVenueBilling = () => {
                                         <option value="">-- No Promo / Gift Card --</option>
                                         {availableGifts.map(g => (
                                             <option key={g.giftId} value={g.giftId}>
-{g.code} - {g.name} ({
-  g.valueType === 'fixed' ? `$${g.value.toFixed(2)} off` :
-  g.valueType === 'percent' ? `${g.value}% off` :
-  g.valueType === 'bxgy' ? 'Buy 1 Get 1 Free' :
-  'Promo'
-})                                            </option>
+                                                {g.code} - {g.name} ({
+                                                    g.valueType === 'fixed' ? `$${g.value.toFixed(2)} off` :
+                                                        g.valueType === 'percent' ? `${g.value}% off` :
+                                                            g.valueType === 'bxgy' ? 'Buy 1 Get 1 Free' :
+                                                                'Promo'
+                                                })                                            </option>
                                         ))}
                                     </select>
                                     {selectedGift && (
                                         <div className="mt-2 text-success small-body-text" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-green-primary)' }}>
-<Icon icon="mdi:check-circle" /> {
-  selectedGift.valueType === 'bxgy'
-    ? `Buy 1 Get 1 Free applied — $${discount.toFixed(2)} off`
-    : selectedGift.valueType === 'fixed'
-      ? `Applied discount of $${discount.toFixed(2)}`
-      : `Applied discount of ${selectedGift.value}%`
-}.                                        </div>
+                                            <Icon icon="mdi:check-circle" /> {
+                                                selectedGift.valueType === 'bxgy'
+                                                    ? `Buy 1 Get 1 Free applied — $${discount.toFixed(2)} off`
+                                                    : selectedGift.valueType === 'fixed'
+                                                        ? `Applied discount of $${discount.toFixed(2)}`
+                                                        : `Applied discount of ${selectedGift.value}%`
+                                            }.                                        </div>
                                     )}
                                 </div>
                             )}
@@ -526,27 +533,42 @@ const SponsorVenueBilling = () => {
                         <div className="svb-card-body">
                             <h4 className="mb-4">Payment Method</h4>
 
-                            {/* Saved Payment Option */}
-                            <div
-                                className={`svb-payment-option mb-3 ${paymentMethod === 'saved' ? 'selected' : ''}`}
-                                onClick={() => { setValidationErrors([]); setPaymentMethod('saved'); }}
-                            >
-                                <div className="svb-payment-header">
-                                    <div className="svb-radio-group">
-                                        <input type="radio" checked={paymentMethod === 'saved'} readOnly className="svb-radio" />
-                                        <div>
-                                            <div className="d-flex align-items-center mb-1">
-                                                <Icon icon="mdi:credit-card" className="mr-2" style={{ fontSize: '1.2rem' }} />
-                                                <h5 className="h6 m-0">Visa •••• 4242</h5>
+                            {/* Saved Payment Options */}
+                            {savedMethods.map((method) => {
+                                const methodId = method._id || method.id;
+                                const isSelected = paymentMethod === methodId;
+                                return (
+                                    <div
+                                        key={methodId}
+                                        className={`svb-payment-option mb-3 ${isSelected ? 'selected' : ''}`}
+                                        onClick={() => { setValidationErrors([]); setPaymentMethod(methodId); }}
+                                    >
+                                        <div className="svb-payment-header">
+                                            <div className="svb-radio-group">
+                                                <input type="radio" checked={isSelected} readOnly className="svb-radio" />
+                                                <div>
+                                                    <div className="d-flex align-items-center mb-1">
+                                                        <Icon icon={method.icon || "mdi:credit-card"} className="mr-2" style={{ fontSize: '1.2rem' }} />
+                                                        <h5 className="h6 m-0">
+                                                            {method.methodType === 'PayPal' ? method.paypalEmail :
+                                                                method.methodType === 'UPI' ? method.accountNumber :
+                                                                    `${method.type || 'Card'} •••• ${method.last4}`}
+                                                        </h5>
+                                                    </div>
+                                                    <span className="smaller-body-text text-secondary block">
+                                                        {method.expires ? `Expires ${method.expires}` : ''} {method.isDefault ? '• Default' : ''}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <span className="smaller-body-text text-secondary block">Expires 12/25 &bull; Default</span>
+                                            {method.methodType === 'Credit Card' && (
+                                                <div className="svb-card-badges">
+                                                    <span className="svb-badge button-label blue">{method.type || 'Card'}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="svb-card-badges">
-                                        <span className="svb-badge button-label blue">VISA</span>
-                                    </div>
-                                </div>
-                            </div>
+                                );
+                            })}
 
                             {/* Credit Card Option */}
                             <div

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const requireAuth = require('../middleware/requireAuth');
 
-const { getUserById, updateProfile, updateSecurity, updateNotifications, upload, getPromoters, getSponsors, updateCart } = require('../controllers/userController');
+const { getUserById, updateProfile, updateSecurity, updateNotifications, upload, getPromoters, getSponsors, updateCart, addPaymentMethod, removePaymentMethod, setDefaultPaymentMethod } = require('../controllers/userController');
 
 // ✅ Search promoters for collaboration
 router.get("/promoters", requireAuth, getPromoters);
@@ -18,5 +18,10 @@ router.put('/profile', requireAuth, upload.single('avatar'), updateProfile);
 router.put('/security', requireAuth, updateSecurity);
 router.put('/notifications', requireAuth, updateNotifications);
 router.put('/cart', requireAuth, updateCart);
+
+// Payment Methods routes
+router.post('/payment-methods', requireAuth, addPaymentMethod);
+router.delete('/payment-methods/:methodId', requireAuth, removePaymentMethod);
+router.put('/payment-methods/:methodId/default', requireAuth, setDefaultPaymentMethod);
 
 module.exports = router;

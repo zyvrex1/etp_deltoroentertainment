@@ -17,9 +17,10 @@ const CustomerCheckout = () => {
     const { cartItems, completePurchase } = useCustomerCart();
     const { user } = useAuthContext();
     const [paymentMethod, setPaymentMethod] = useState('invoice');
+    const [savedMethods, setSavedMethods] = useState([]);
     const [poNumber, setPoNumber] = useState(`PO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
     const [apEmail, setApEmail] = useState(user?.email || "");
-    
+
     // Pull and format phone number
     const [phoneNumber, setPhoneNumber] = useState(() => {
         let phone = user?.phone || "";
@@ -37,8 +38,8 @@ const CustomerCheckout = () => {
         const fetchPhone = async () => {
             if (!user?.token) return;
             try {
-                const response = await authService.getProfile(user.token);
-                let phone = response.data.phone || "";
+                const p = response.data;
+                let phone = p.phone || "";
                 if (phone && !phone.startsWith('+')) {
                     if (phone.startsWith('0')) {
                         phone = `+63${phone.substring(1)}`;
@@ -47,15 +48,21 @@ const CustomerCheckout = () => {
                     }
                 }
                 if (phone) setPhoneNumber(phone);
+
+                setSavedMethods(p.paymentMethods || []);
+                if (p.paymentMethods && p.paymentMethods.length > 0) {
+                    const defaultMethod = p.paymentMethods.find(m => m.isDefault) || p.paymentMethods[0];
+                    setPaymentMethod(defaultMethod._id || defaultMethod.id);
+                }
             } catch (error) {
-                console.error("Error fetching phone:", error);
+                console.error("Error fetching profile:", error);
             }
         };
         fetchPhone();
     }, [user]);
 
     const selectedIds = location.state?.selectedItems || [];
-    
+
     const checkoutItems = useMemo(() => {
         return cartItems.filter(item => selectedIds.includes(item.cartId));
     }, [cartItems, selectedIds]);
@@ -86,20 +93,20 @@ const CustomerCheckout = () => {
         fetchGifts();
     }, [user]);
 
-const discount = useMemo(() => {
-    if (!selectedGift) return 0;
-    if (selectedGift.valueType === 'fixed') {
-        return Math.min(selectedGift.value, subtotal);
-    } else if (selectedGift.valueType === 'percent') {
-        return (subtotal * selectedGift.value) / 100;
-    } else if (selectedGift.valueType === 'bxgy') {
-        // Buy 1 Get 1 Free: discount = price of cheapest item
-        if (checkoutItems.length < 2) return 0;
-        const prices = checkoutItems.map(i => i.facePrice).sort((a, b) => a - b);
-        return prices[0]; // cheapest item is free
-    }
-    return 0;
-}, [selectedGift, subtotal, checkoutItems]);
+    const discount = useMemo(() => {
+        if (!selectedGift) return 0;
+        if (selectedGift.valueType === 'fixed') {
+            return Math.min(selectedGift.value, subtotal);
+        } else if (selectedGift.valueType === 'percent') {
+            return (subtotal * selectedGift.value) / 100;
+        } else if (selectedGift.valueType === 'bxgy') {
+            // Buy 1 Get 1 Free: discount = price of cheapest item
+            if (checkoutItems.length < 2) return 0;
+            const prices = checkoutItems.map(i => i.facePrice).sort((a, b) => a - b);
+            return prices[0]; // cheapest item is free
+        }
+        return 0;
+    }, [selectedGift, subtotal, checkoutItems]);
 
     const total = useMemo(() => {
         return Math.max(0, subtotal - discount + serviceFees);
@@ -125,38 +132,38 @@ const discount = useMemo(() => {
 
                 let remainingFee = serviceFees;
 
-            // Process each event purchase
-            for (const eventId in itemsByEvent) {
-                const eventItems = itemsByEvent[eventId];
-                const seatIds = eventItems.map(item => item.seat.id);
-                const eventSubtotal = eventItems.reduce((sum, item) => sum + item.facePrice, 0);
-                const eventFees = eventItems.reduce((sum, item) => sum + item.serviceFee, 0) + remainingFee;
-                remainingFee = 0; // apply all remaining global fees to the first event
-                const eventTotal = eventSubtotal + eventFees;
+                // Process each event purchase
+                for (const eventId in itemsByEvent) {
+                    const eventItems = itemsByEvent[eventId];
+                    const seatIds = eventItems.map(item => item.seat.id);
+                    const eventSubtotal = eventItems.reduce((sum, item) => sum + item.facePrice, 0);
+                    const eventFees = eventItems.reduce((sum, item) => sum + item.serviceFee, 0) + remainingFee;
+                    remainingFee = 0; // apply all remaining global fees to the first event
+                    const eventTotal = eventSubtotal + eventFees;
 
-                try {
-                    await eventsService.buySeats(
-                        eventId,
-                        seatIds,
-                        { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
-                        { email: apEmail, poNumber: poNumber },
-                        paymentMethod === 'card' ? 'card' : 'invoice',
-                        user.token
-                    );
-                } catch (seatError) {
-                    // 500 after a successful save means the reservation went through
-                    // but a post-save side effect (email, QR, socket) crashed the server.
-                    // Treat it as success so the user isn't blocked.
-                    const status = seatError?.response?.status;
-                    if (status === 500) {
-                        console.warn(`Event ${eventId}: server returned 500 but reservation likely saved. Continuing.`);
-                        // continue to next event — don't re-throw
-                    } else {
-                        // Real error (400, 409 seat taken, 403, network, etc.) — bubble up
-                        throw seatError;
+                    try {
+                        await eventsService.buySeats(
+                            eventId,
+                            seatIds,
+                            { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
+                            { email: apEmail, poNumber: poNumber },
+                            paymentMethod === 'card' ? 'card' : 'invoice',
+                            user.token
+                        );
+                    } catch (seatError) {
+                        // 500 after a successful save means the reservation went through
+                        // but a post-save side effect (email, QR, socket) crashed the server.
+                        // Treat it as success so the user isn't blocked.
+                        const status = seatError?.response?.status;
+                        if (status === 500) {
+                            console.warn(`Event ${eventId}: server returned 500 but reservation likely saved. Continuing.`);
+                            // continue to next event — don't re-throw
+                        } else {
+                            // Real error (400, 409 seat taken, 403, network, etc.) — bubble up
+                            throw seatError;
+                        }
                     }
                 }
-            }
 
                 // All events processed (or recovered from 500s) — finalize
                 completePurchase(
@@ -317,32 +324,47 @@ const discount = useMemo(() => {
                         <div className="cc-card-body">
                             <h4 className="mb-4 text-black">Payment Details</h4>
 
-                            {/* Saved Payment Option */}
-                            <div
-                                className={`cc-payment-option mb-3 ${paymentMethod === 'saved' ? 'selected' : ''}`}
-                                onClick={() => setPaymentMethod('saved')}
-                            >
-                                <div className="cc-payment-header">
-                                    <div className="cc-radio-group">
-                                        <input
-                                            type="radio"
-                                            checked={paymentMethod === 'saved'}
-                                            readOnly
-                                            className="cc-radio"
-                                        />
-                                        <div>
-                                            <div className="cc-flex-align-center mb-1">
-                                                <Icon icon="mdi:credit-card" className="mr-2 icon-font-size" />
-                                                <h5 className="m-0 text-black">Visa •••• 4242</h5>
+                            {/* Saved Payment Options */}
+                            {savedMethods.map((method) => {
+                                const methodId = method._id || method.id;
+                                const isSelected = paymentMethod === methodId;
+                                return (
+                                    <div
+                                        key={methodId}
+                                        className={`cc-payment-option mb-3 ${isSelected ? 'selected' : ''}`}
+                                        onClick={() => setPaymentMethod(methodId)}
+                                    >
+                                        <div className="cc-payment-header">
+                                            <div className="cc-radio-group">
+                                                <input
+                                                    type="radio"
+                                                    checked={isSelected}
+                                                    readOnly
+                                                    className="cc-radio"
+                                                />
+                                                <div>
+                                                    <div className="cc-flex-align-center mb-1">
+                                                        <Icon icon={method.icon || "mdi:credit-card"} className="mr-2 icon-font-size" />
+                                                        <h5 className="m-0 text-black">
+                                                            {method.methodType === 'PayPal' ? method.paypalEmail :
+                                                                method.methodType === 'UPI' ? method.accountNumber :
+                                                                    `${method.type || 'Card'} •••• ${method.last4}`}
+                                                        </h5>
+                                                    </div>
+                                                    <span className="smaller-body-text text-secondary cc-block">
+                                                        {method.expires ? `Expires ${method.expires}` : ''} {method.isDefault ? '• Default' : ''}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <span className="smaller-body-text text-secondary cc-block">Expires 12/25 &bull; Default</span>
+                                            {method.methodType === 'Credit Card' && (
+                                                <div className="cc-card-badges">
+                                                    <span className="cc-badge button-label blue">{method.type || 'Card'}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="cc-card-badges">
-                                        <span className="cc-badge button-label blue">VISA</span>
-                                    </div>
-                                </div>
-                            </div>
+                                );
+                            })}
 
                             {/* Credit Card Option */}
                             <div
@@ -429,21 +451,21 @@ const discount = useMemo(() => {
 
                                         <div className="cc-form-group mb-3">
                                             <label>Purchase Order Number (Optional)</label>
-                                            <input 
-                                                type="text" 
-                                                value={poNumber} 
+                                            <input
+                                                type="text"
+                                                value={poNumber}
                                                 onChange={(e) => setPoNumber(e.target.value)}
-                                                className="cc-input" 
+                                                className="cc-input"
                                             />
                                         </div>
 
                                         <div className="cc-form-group">
                                             <label>Accounts Payable Email</label>
-                                            <input 
-                                                type="email" 
-                                                value={apEmail} 
+                                            <input
+                                                type="email"
+                                                value={apEmail}
                                                 onChange={(e) => setApEmail(e.target.value)}
-                                                className="cc-input" 
+                                                className="cc-input"
                                             />
                                         </div>
                                     </div>
@@ -461,7 +483,7 @@ const discount = useMemo(() => {
                             {Array.from(new Set(checkoutItems.map(i => i.event._id))).map(eventId => {
                                 const eventItems = checkoutItems.filter(i => i.event._id === eventId);
                                 const event = eventItems[0].event;
-                                
+
                                 const physicalSeats = eventItems.filter(i => !i.seat?.id?.startsWith("GA-"));
                                 const gaItems = eventItems.filter(i => i.seat?.id?.startsWith("GA-"));
 

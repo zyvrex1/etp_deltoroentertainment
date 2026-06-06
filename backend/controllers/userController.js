@@ -248,6 +248,69 @@ const updateCart = async (req, res) => {
   }
 };
 
+const addPaymentMethod = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const newMethod = req.body;
+    
+    // If this is the first method, or requested to be default, set it as default and unset others
+    if (user.paymentMethods.length === 0 || newMethod.isDefault) {
+      newMethod.isDefault = true;
+      user.paymentMethods.forEach(method => {
+        method.isDefault = false;
+      });
+    } else {
+      newMethod.isDefault = false;
+    }
+
+    user.paymentMethods.push(newMethod);
+    await user.save();
+    
+    res.status(200).json(user.paymentMethods);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const removePaymentMethod = async (req, res) => {
+  try {
+    const { methodId } = req.params;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.paymentMethods = user.paymentMethods.filter(method => method._id.toString() !== methodId);
+    
+    // If the default method was removed, make the first remaining method default
+    if (user.paymentMethods.length > 0 && !user.paymentMethods.some(m => m.isDefault)) {
+      user.paymentMethods[0].isDefault = true;
+    }
+
+    await user.save();
+    res.status(200).json(user.paymentMethods);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const setDefaultPaymentMethod = async (req, res) => {
+  try {
+    const { methodId } = req.params;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.paymentMethods.forEach(method => {
+      method.isDefault = (method._id.toString() === methodId);
+    });
+
+    await user.save();
+    res.status(200).json(user.paymentMethods);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   getUserById,
   updateProfile,
@@ -256,5 +319,8 @@ module.exports = {
   getPromoters,
   getSponsors,
   updateCart,
+  addPaymentMethod,
+  removePaymentMethod,
+  setDefaultPaymentMethod,
   upload,
 };

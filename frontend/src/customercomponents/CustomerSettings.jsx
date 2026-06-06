@@ -32,25 +32,17 @@ export default function CustomerSettings() {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    // Mock payment methods for demonstration
-    const paymentMethods = [
-        {
-            id: 1,
-            type: "Visa",
-            last4: "4242",
-            expires: "12/25",
-            isDefault: true,
-            icon: "mdi:credit-card"
-        },
-        {
-            id: 2,
-            type: "Mastercard",
-            last4: "8888",
-            expires: "08/26",
-            isDefault: false,
-            icon: "mdi:credit-card"
-        }
-    ];
+    const [paymentMethods, setPaymentMethods] = useState([]);
+    const [visibleMethods, setVisibleMethods] = useState(new Set());
+
+    const toggleMethodVisibility = (id) => {
+        setVisibleMethods(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
 
     // Sync with User model notifications
     const [notifications, setNotifications] = useState({
@@ -95,6 +87,9 @@ export default function CustomerSettings() {
                         announcements: data.notifications.announcements !== false,
                         supportMessages: data.notifications.supportMessages !== false
                     });
+                }
+                if (data.paymentMethods) {
+                    setPaymentMethods(data.paymentMethods);
                 }
             } catch (error) {
                 console.error("Error fetching profile:", error);
@@ -212,6 +207,43 @@ export default function CustomerSettings() {
             ...prev,
             [key]: !prev[key]
         }));
+    };
+
+    const handleDeleteMethod = async (id) => {
+        if (!user?.token) return;
+        const result = await showConfirmAlert("Delete Method?", "Are you sure you want to remove this payment method?");
+        if (result.isConfirmed) {
+            try {
+                const res = await authService.removePaymentMethod(id, user.token);
+                setPaymentMethods(res.data);
+                showSuccessAlert("Deleted", "Payment method removed.");
+            } catch (err) {
+                showErrorAlert("Error", err.response?.data?.error || "Failed to remove payment method.");
+            }
+        }
+    };
+
+    const handleSetDefaultMethod = async (id) => {
+        if (!user?.token) return;
+        try {
+            const res = await authService.setDefaultPaymentMethod(id, user.token);
+            setPaymentMethods(res.data);
+            showSuccessAlert("Updated", "Default payment method updated.");
+        } catch (err) {
+            showErrorAlert("Error", err.response?.data?.error || "Failed to set default payment method.");
+        }
+    };
+
+    const fetchProfileData = async () => {
+        if (!user?.token) return;
+        try {
+            const response = await authService.getProfile(user.token);
+            if (response.data.paymentMethods) {
+                setPaymentMethods(response.data.paymentMethods);
+            }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     if (loading) {
@@ -524,20 +556,46 @@ export default function CustomerSettings() {
 
                         <div className="cs-payment-list">
                             {paymentMethods.map((method) => (
-                                <div key={method.id} className="cs-payment-item">
-                                    <div className="cs-payment-icon">
-                                        <Icon icon={method.icon} width="24" />
+                                <div key={method._id || method.id} className="cs-payment-item" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid #eee', borderRadius: '8px', marginBottom: '12px'}}>
+                                    <div className="cs-payment-icon" style={{marginRight: '16px'}}>
+                                        <Icon icon={method.icon || "mdi:credit-card"} width="24" />
                                     </div>
-                                    <div className="cs-payment-info">
-                                        <div className="cs-payment-title-row">
-                                            <span className="cs-payment-type">{method.type} •••• {method.last4}</span>
-                                            {method.isDefault && <span className="cs-pill-default">Default</span>}
+                                    <div className="cs-payment-info" style={{flex: 1}}>
+                                        <div className="cs-payment-title-row" style={{marginBottom: '4px'}}>
+                                            <span className="cs-payment-type" style={{fontWeight: 600}}>
+                                                {method.methodType === 'PayPal' ? 'PayPal' : method.methodType === 'UPI' ? 'UPI' : (method.type || 'Card')}
+                                            </span>
                                         </div>
-                                        <span className="cs-payment-expires">Expires {method.expires}</span>
+                                        <span className="cs-payment-detail regular-body-text text-black d-block">
+                                            {visibleMethods.has(method._id || method.id)
+                                              ? (method.cardNumber || method.accountNumber || method.paypalEmail || method.last4)
+                                              : '•••• •••• ••••'}
+                                        </span>
+                                        {method.expires && <span className="cs-payment-expires d-block mt-1" style={{fontSize: '12px', color: '#666'}}>Expires: {method.expires}</span>}
                                     </div>
-                                    <div className="cs-payment-actions">
-                                        {!method.isDefault && <span className="cs-set-default-text smaller-body-text">Set as Default</span>}
-                                        <button className="cs-icon-btn"><Icon icon="mdi:trash-can-outline" width="20" color="#666" /></button>
+                                    <div className="cs-payment-actions" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                        <button
+                                            className="cs-set-default-btn p-0 border-0 bg-transparent"
+                                            onClick={() => handleSetDefaultMethod(method._id || method.id)}
+                                        >
+                                            <span className={`smaller-body-text ${method.isDefault ? 'button-label cs-pill-default px-2 py-1' : 'cs-set-default-text'}`} style={method.isDefault ? {backgroundColor: '#e6f4ea', color: '#137333', padding: '4px 8px', borderRadius: '16px', fontWeight: 600} : {color: '#0066cc', cursor: 'pointer', fontWeight: 600}}>
+                                              {method.isDefault ? "Default" : "Set as Default"}
+                                            </span>
+                                        </button>
+                                        <button
+                                            className="cs-icon-btn" style={{border: 'none', background: 'transparent', cursor: 'pointer'}}
+                                            onClick={() => toggleMethodVisibility(method._id || method.id)}
+                                            title={visibleMethods.has(method._id || method.id) ? "Hide Details" : "Show Details"}
+                                        >
+                                            <Icon
+                                              icon={visibleMethods.has(method._id || method.id) ? "mdi:eye-off-outline" : "mdi:eye-outline"}
+                                              width="20"
+                                              color="#666"
+                                            />
+                                        </button>
+                                        <button className="cs-icon-btn" style={{border: 'none', background: 'transparent', cursor: 'pointer'}} onClick={() => handleDeleteMethod(method._id || method.id)}>
+                                            <Icon icon="mdi:trash-can-outline" width="20" color="#666" />
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -631,6 +689,7 @@ export default function CustomerSettings() {
             <CustomerAddPaymentMethod
                 isOpen={isPaymentModalOpen}
                 onClose={() => setIsPaymentModalOpen(false)}
+                onMethodAdded={fetchProfileData}
             />
         </div>
     );
