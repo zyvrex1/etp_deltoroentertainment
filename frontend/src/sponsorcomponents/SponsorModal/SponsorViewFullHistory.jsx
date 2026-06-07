@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import { useAuthContext } from '../../hooks/useAuthContext';
+import GiftRestoredNotice from '../../components/GiftRestoredNotice';
 import './SponsorViewFullHistory.css';
 
 const SponsorViewFullHistory = ({ isOpen, onClose, historyItem, onDownload }) => {
@@ -163,6 +164,11 @@ allReservations: historyItem?.allReservations || [],
                                 <span className="small-body-text text-secondary">Status</span>
                                 <div><span className={`button-label svfh-status-label ${item.paymentStatus ? item.paymentStatus.toLowerCase() : 'paid'}`}>{item.paymentStatus}</span></div>
                             </div>
+                            <GiftRestoredNotice
+                                paymentStatus={item.paymentStatus}
+                                appliedGift={item.paymentInfo.appliedGift}
+                                giftCode={item.paymentInfo.giftCode}
+                            />
                         </div>
                     </div>
 

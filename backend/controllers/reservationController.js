@@ -475,6 +475,45 @@ const updateReservationStatus = async (req, res) => {
         reservation.status = status;
         await reservation.save();
 
+        // Restore digital gift if payment/reservation is rejected, refunded, or cancelled
+        if (
+            ['rejected', 'refunded', 'cancelled'].includes(status) &&
+            !['rejected', 'refunded', 'cancelled'].includes(oldStatus) &&
+            (reservation.appliedGift || reservation.giftCode)
+        ) {
+            try {
+                const { restoreGiftForUser } = require('./digitalgiftsController');
+                const restored = await restoreGiftForUser(
+                    reservation.appliedGift?._id || reservation.appliedGift,
+                    reservation.user,
+                    reservation.giftCode
+                );
+
+                if (restored?.wasRestored) {
+                    const buyerUser = await User.findById(reservation.user).select('role');
+                    const role = buyerUser?.role === 'sponsor' ? 'sponsor' : 'customer';
+                    const statusWord = status === 'rejected' ? 'rejected'
+                        : status === 'refunded' ? 'refunded'
+                        : 'cancelled';
+                    const notificationController = require('./notificationController');
+                    const { emitUpdate: emitGiftRestore } = require('../socket');
+
+                    const giftNotif = await notificationController.createNotification({
+                        title: status === 'rejected' ? 'Payment Rejected — Gift Restored' : 'Gift Restored',
+                        content: `Your digital gift "${restored.gift.name}" (${restored.gift.code}) has been returned to your account because your payment was ${statusWord}.`,
+                        type: 'payment',
+                        path: role === 'sponsor' ? '/sponsor/my-gifts' : '/customer/my-gifts',
+                        unread: true,
+                        userId: reservation.user,
+                        createdBy: req.user._id,
+                    });
+                    emitGiftRestore('newNotification', giftNotif);
+                }
+            } catch (giftErr) {
+                console.error('Gift restore on reservation status change error:', giftErr);
+            }
+        }
+
         // Notify user when payment is confirmed
         if (status === 'confirmed' && oldStatus !== 'confirmed') {
             try {

@@ -114,6 +114,26 @@
     color: var(--color-white-primary);
 }
 
+.button-label.pending {
+    background-color: var(--color-yellow-tertiary);
+    color: var(--color-yellow-primary);
+}
+
+.button-label.rejected {
+    background: var(--color-red-quaternary);
+    color: var(--color-red-primary);
+}
+
+.button-label.cancelled {
+    background: var(--color-red-quaternary);
+    color: var(--color-red-primary);
+}
+
+.button-label.refunded {
+    background: var(--color-red-quaternary);
+    color: var(--color-red-primary);
+}
+
 .sh-table-container {
     width: 100%;
     overflow-x: auto;
@@ -409,4 +429,9 @@
     .sponsor-history-wrapper {
         padding: 16px;
     }
+}
+
+.sh-gift-restored-notice {
+    margin-top: 8px;
+    max-width: 240px;
 }

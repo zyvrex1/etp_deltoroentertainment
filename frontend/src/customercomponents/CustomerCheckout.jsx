@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { io } from 'socket.io-client';
 import { Icon } from '@iconify/react';
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
@@ -77,20 +78,41 @@ const CustomerCheckout = () => {
     const [availableGifts, setAvailableGifts] = useState([]);
     const [selectedGift, setSelectedGift] = useState(null);
 
+    const fetchGifts = useCallback(async () => {
+        if (!user?.token) return;
+        try {
+            const gifts = await digitalgiftsService.getMyGifts(user.token);
+            const activeGifts = gifts.filter(g => g.assignmentStatus === 'pending');
+            setAvailableGifts(activeGifts);
+            setSelectedGift(prev =>
+                prev && !activeGifts.some(g => g.giftId === prev.giftId) ? null : prev
+            );
+        } catch (error) {
+            console.error("Error fetching my gifts:", error);
+        }
+    }, [user?.token]);
+
     useEffect(() => {
-        const fetchGifts = async () => {
-            if (!user?.token) return;
-            try {
-                const gifts = await digitalgiftsService.getMyGifts(user.token);
-                // Only show gifts that haven't been redeemed yet
-                const activeGifts = gifts.filter(g => g.assignmentStatus === 'pending');
-                setAvailableGifts(activeGifts);
-            } catch (error) {
-                console.error("Error fetching my gifts:", error);
-            }
-        };
         fetchGifts();
-    }, [user]);
+    }, [fetchGifts]);
+
+    useEffect(() => {
+        if (!user?.token) return;
+
+        const socket = io(import.meta.env.VITE_BACKEND_URL, {
+            withCredentials: true,
+            transports: ['websocket', 'polling'],
+        });
+
+        socket.on('newNotification', (notification) => {
+            const title = (notification?.title || '').toLowerCase();
+            if (title.includes('gift restored') || title.includes('payment rejected')) {
+                fetchGifts();
+            }
+        });
+
+        return () => socket.disconnect();
+    }, [user?.token, fetchGifts]);
 
     const discount = useMemo(() => {
         if (!selectedGift) return 0;
@@ -145,6 +167,9 @@ const CustomerCheckout = () => {
                 }, {});
 
                 let remainingFee = serviceFees;
+                const giftInfo = selectedGift
+                    ? { appliedGift: selectedGift.giftId, giftCode: selectedGift.code }
+                    : null;
 
                 for (const eventId in itemsByEvent) {
                     const eventItems = itemsByEvent[eventId];
@@ -161,7 +186,8 @@ const CustomerCheckout = () => {
                             { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
                             { email: apEmail, poNumber: poNumber },
                             resolvePaymentMethodLabel(),
-                            user.token
+                            user.token,
+                            giftInfo
                         );
                     } catch (seatError) {
                         const status = seatError?.response?.status;

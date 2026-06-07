@@ -140,26 +140,42 @@ export const CustomerCartProvider = ({ children }) => {
              *   2. createdAt date key (matches completePurchase items written seconds ago)
              */
             const resolveDiscount = (res) => {
-                if (res.appliedGift || res.amount?.discount) {
+                const backendDiscount = res.amount?.discount || 0;
+
+                // Only treat a gift as redeemed when a discount was actually applied
+                if (backendDiscount > 0) {
                     return {
                         resolvedGift: res.appliedGift || null,
-                        resolvedDiscount: res.amount?.discount || 0,
+                        resolvedDiscount: backendDiscount,
                     };
                 }
 
+                // Rejected/refunded/cancelled orders may still reference a gift on the record
+                // after restore — do not show discount UI for those
+                if (['rejected', 'refunded', 'cancelled'].includes(res.status)) {
+                    return { resolvedGift: null, resolvedDiscount: 0 };
+                }
+
                 const byResId = localDiscountMap[`resId:${res._id}`];
-                if (byResId) return { resolvedGift: byResId.appliedGift, resolvedDiscount: byResId.discountAmount };
+                if (byResId?.discountAmount > 0) {
+                    return { resolvedGift: byResId.appliedGift, resolvedDiscount: byResId.discountAmount };
+                }
 
                 // Match by createdAt minute — covers items just written by completePurchase
                 const dateKey = `date:${res.createdAt?.slice(0, 16)}`;
                 const byDate = localDiscountMap[dateKey];
-                if (byDate) return { resolvedGift: byDate.appliedGift, resolvedDiscount: byDate.discountAmount };
+                if (byDate?.discountAmount > 0) {
+                    return { resolvedGift: byDate.appliedGift, resolvedDiscount: byDate.discountAmount };
+                }
 
                 return { resolvedGift: null, resolvedDiscount: 0 };
             };
 
             const formattedHistory = [];
             reservations.forEach(res => {
+                const orderGift = res.appliedGift || null;
+                const orderGiftCode = res.giftCode || res.appliedGift?.code || null;
+
                 if (res.type === 'seat' && res.seatIds) {
                     const pricePerSeat = res.amount.subtotal / res.seatIds.length;
                     const { resolvedGift, resolvedDiscount } = resolveDiscount(res);
@@ -187,7 +203,10 @@ export const CustomerCartProvider = ({ children }) => {
                             qrData: res.qrData || res._id.toString(),
                             // Discount only on first item to avoid duplication in sum
                             appliedGift: idx === 0 ? resolvedGift : null,
+                            giftCode: idx === 0 ? (res.giftCode || resolvedGift?.code || null) : null,
                             discountAmount: idx === 0 ? resolvedDiscount : 0,
+                            orderGift: idx === 0 ? orderGift : null,
+                            orderGiftCode: idx === 0 ? orderGiftCode : null,
                         });
                     });
                 } else if (res.type === 'booth') {
@@ -211,7 +230,10 @@ export const CustomerCartProvider = ({ children }) => {
                         status: res.status,
                         qrData: res.qrData || res._id.toString(),
                         appliedGift: resolvedGift,
+                        giftCode: res.giftCode || resolvedGift?.code || null,
                         discountAmount: resolvedDiscount,
+                        orderGift,
+                        orderGiftCode,
                     });
                 }
             });
@@ -308,7 +330,10 @@ export const CustomerCartProvider = ({ children }) => {
             isBXGYFree: bxgyFreeCartId === item.cartId,
             // Discount stored on first item only — summed in PaySuccess
             appliedGift: idx === 0 ? (selectedGift || null) : null,
+            giftCode: idx === 0 ? (selectedGift?.code || null) : null,
             discountAmount: idx === 0 ? discount : 0,
+            orderGift: idx === 0 ? (selectedGift || null) : null,
+            orderGiftCode: idx === 0 ? (selectedGift?.code || null) : null,
         }));
 
         setPurchaseHistory(prev => [...purchasedItems, ...prev]);

@@ -5,7 +5,7 @@ import ViewTransactionModal from "./Modal/ViewTransactionModal";
 import jsPDF from "jspdf";
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
 
-const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", externalFilter = "all", data = null }) => {
+const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", externalFilter = "all", data = null, onRefund = null }) => {
   const [internalSearchQuery, setInternalSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [internalFilter, setInternalFilter] = useState("all");
@@ -53,10 +53,15 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
     setExpandedRow(expandedRow === id ? null : id);
   };
 
-  const handleRefund = (transactionId) => {
+  const handleRefund = async (transactionId, transaction = null) => {
+    const tx = transaction || selectedTransaction || displayTransactions.find((t) => t.id === transactionId);
+    if (onRefund) {
+      await onRefund(transactionId, tx);
+      return;
+    }
     setTransactions((prevTransactions) =>
-      prevTransactions.map((tx) =>
-        tx.id === transactionId ? { ...tx, status: "refunded" } : tx
+      prevTransactions.map((item) =>
+        item.id === transactionId ? { ...item, status: "refunded" } : item
       )
     );
   };

@@ -2,6 +2,8 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../../utils/pdfExport';
+import GiftRestoredNotice from '../../components/GiftRestoredNotice';
+import { shouldShowGiftRestoredNotice } from '../../utils/giftNoticeUtils';
 import './CustomerHistoryViewReceipt.css';
 
 const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
@@ -37,12 +39,36 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
         discountLabel: '',
         serviceFee: '$0.00',
         tax: '$0.00',
-        totalPaid: '$0.00'
+        totalPaid: '$0.00',
+        appliedGift: null,
+        giftCode: null,
+        orderGift: null,
+        orderGiftCode: null,
+        giftRestored: false,
     };
 
     // Discount values — receiptData passes these in from handleViewReceipt
     const discountAmount = data.discountAmount || 0;
     const discountLabel = data.discountLabel || '';
+    const giftWasRedeemed = discountAmount > 0;
+    const hasGift = giftWasRedeemed && !!(data.giftCode || data.appliedGift);
+    const giftRestored = data.giftRestored
+        || shouldShowGiftRestoredNotice(data.paymentStatus, data.orderGift, data.orderGiftCode);
+
+    const getGiftBadgeText = () => {
+        if (!hasGift) return '';
+        const name = data.appliedGift?.name
+            ? `${data.appliedGift.name}${data.giftCode ? ` (${data.giftCode})` : ''}`
+            : data.giftCode;
+        const suffix = data.appliedGift?.valueType === 'fixed'
+            ? `$${data.appliedGift.value?.toLocaleString()} off`
+            : data.appliedGift?.valueType === 'percent'
+                ? `${data.appliedGift.value}% off`
+                : data.appliedGift?.valueType === 'bxgy'
+                    ? 'Buy 1 Get 1 Free'
+                    : 'Discount Applied';
+        return `${name} — ${suffix}`;
+    };
 
     const handlePrint = () => {
         window.print();
@@ -182,6 +208,36 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
             });
 
             y += cardH + 10;
+
+            if (hasGift) {
+                newPageIfNeeded(14);
+                pdf.setFillColor(240, 253, 244);
+                pdf.setDrawColor(187, 247, 208);
+                pdf.setLineWidth(0.3);
+                pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 12, 2, 2, 'FD');
+                pdf.setFontSize(8);
+                pdf.setTextColor(22, 163, 74);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(`Gift / Promo Applied: ${getGiftBadgeText()}`, MARGIN + 4, y + 8);
+                y += 16;
+            }
+
+            if (giftRestored) {
+                newPageIfNeeded(14);
+                pdf.setFillColor(255, 251, 235);
+                pdf.setDrawColor(245, 220, 160);
+                pdf.setLineWidth(0.3);
+                pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 14, 2, 2, 'FD');
+                pdf.setFontSize(8);
+                pdf.setTextColor(180, 83, 9);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(
+                    'Gift card returned: The promo/gift used on this order has been restored to your account.',
+                    MARGIN + 4,
+                    y + 9
+                );
+                y += 18;
+            }
 
             // ── ITEMS TABLE ───────────────────────────────────────────────────
             // Items are always at original face price; BXGY free seat shown as Free
@@ -325,6 +381,22 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
 
                 <hr className="chvr-divider" />
 
+                {hasGift && (
+                    <div className="chvr-gift-badge">
+                        <Icon icon="mdi:ticket-percent" width="18" />
+                        <span className="small-body-text">{getGiftBadgeText()}</span>
+                    </div>
+                )}
+
+                {giftRestored && (
+                    <GiftRestoredNotice
+                        paymentStatus={data.paymentStatus}
+                        appliedGift={data.orderGift}
+                        giftCode={data.orderGiftCode}
+                        className="chvr-gift-restored-notice"
+                    />
+                )}
+
                 {/* Items table — original face prices; BXGY free seat shown as Free */}
                 <div className="chvr-table-container">
                     <table className="chvr-table">
@@ -394,9 +466,22 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                 <hr className="chvr-divider" />
 
                 <div className="chvr-footer-content">
-                    <h4 className="text-black mb-2 m-0 mt-2">Thank you for your purchase!</h4>
-                    <p className="small-body-text text-secondary mb-1 mt-2">Please present your QR ticket at the event entrance.</p>
-                    <p className="small-body-text text-secondary mb-3 mt-0">For food and merch orders, present your pickup ticket at the vendor booth.</p>
+                    <h4 className="text-black mb-2 m-0 mt-2">
+                        {giftRestored ? 'Payment not completed' : 'Thank you for your purchase!'}
+                    </h4>
+                    {giftRestored ? (
+                        <p className="small-body-text text-secondary mb-3 mt-2">
+                            This payment was {data.paymentStatus?.toLowerCase()}.
+                            {data.orderGift || data.orderGiftCode
+                                ? ' Your digital gift has been returned to your account and can be used on another transaction.'
+                                : ' Please contact support if you need assistance.'}
+                        </p>
+                    ) : (
+                        <>
+                            <p className="small-body-text text-secondary mb-1 mt-2">Please present your QR ticket at the event entrance.</p>
+                            <p className="small-body-text text-secondary mb-3 mt-0">For food and merch orders, present your pickup ticket at the vendor booth.</p>
+                        </>
+                    )}
                     <p className="smaller-body-text text-secondary m-0">Support Contact: support@eticketspro.com</p>
 
                     <button className="primary-button chvr-print-btn mt-2" onClick={handleDownloadPDF} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

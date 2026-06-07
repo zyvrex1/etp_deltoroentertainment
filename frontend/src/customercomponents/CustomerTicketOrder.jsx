@@ -5,6 +5,8 @@ import { useCustomerCart } from '../context/CustomerCartContext';
 import './CustomerTicketOrder.css';
 import CustomerEnlargeQr from './Modal/CustomerEnlargeQr';
 import CustomerRequestRefund from './Modal/CustomerRequestRefund';
+import GiftRestoredNotice from '../components/GiftRestoredNotice';
+import { shouldShowGiftRestoredNotice } from '../utils/giftNoticeUtils';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -58,7 +60,19 @@ const CustomerTicketOrder = () => {
             })(),
             image: item.event?.image ? `${BACKEND_URL}/uploads/${item.event.image}` : "/assets/eventbg.jpg",
             purchasedAt: item.purchaseDate,
-            qrData: item.qrData || item.cartId
+            qrData: item.qrData || item.cartId,
+            orderGift: item.orderGift || null,
+            orderGiftCode: item.orderGiftCode || null,
+            showGiftRestored: shouldShowGiftRestoredNotice(
+                (() => {
+                    const rawStatus = item.status?.toLowerCase();
+                    if (rawStatus === 'rejected') return 'Rejected';
+                    if (rawStatus === 'refunded') return 'Refunded';
+                    return item.status;
+                })(),
+                item.orderGift,
+                item.orderGiftCode
+            ),
         }));
     }, [purchaseHistory]);
 
@@ -212,6 +226,14 @@ const CustomerTicketOrder = () => {
                                         </div>
                                     </div>
                                 </div>
+                                {ticket.showGiftRestored && (
+                                    <GiftRestoredNotice
+                                        paymentStatus={ticket.status}
+                                        appliedGift={ticket.orderGift}
+                                        giftCode={ticket.orderGiftCode}
+                                        compact
+                                    />
+                                )}
                                 <div className="ticket-card-footer">
                                      <button
                                          className="request-refund-btn"

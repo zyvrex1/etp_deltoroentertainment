@@ -9,6 +9,66 @@ const handleError = (res, error, status = 500) => {
   return res.status(status).json({ success: false, message: error.message });
 };
 
+const getGiftNotificationPath = (role) =>
+  role === "sponsor" ? "/sponsor/my-gifts" : "/customer/my-gifts";
+
+const sendGiftNotification = async ({ title, content, userId, createdBy, role }) => {
+  try {
+    const notificationController = require("./notificationController");
+    const { emitUpdate } = require("../socket");
+    const notification = await notificationController.createNotification({
+      title,
+      content,
+      type: "payment",
+      path: getGiftNotificationPath(role),
+      unread: true,
+      userId,
+      createdBy,
+    });
+    if (notification) emitUpdate("newNotification", notification);
+  } catch (err) {
+    console.error("[DigitalGift] notification error:", err);
+  }
+};
+
+/**
+ * Restore a redeemed gift assignment back to pending for a user.
+ * Used when a reservation using the gift is rejected, refunded, or cancelled.
+ */
+exports.restoreGiftForUser = async (giftId, userId, giftCode) => {
+  let gift = null;
+  if (giftId) {
+    gift = await DigitalGift.findById(giftId);
+  }
+  if (!gift && giftCode) {
+    gift = await DigitalGift.findOne({ code: giftCode.toUpperCase() });
+  }
+  if (!gift) return null;
+
+  const assignment = gift.assignments.find(
+    (a) => a.userId.toString() === userId.toString() && a.status === "redeemed"
+  );
+  if (!assignment) {
+    const alreadyPending = gift.assignments.find(
+      (a) => a.userId.toString() === userId.toString() && a.status === "pending"
+    );
+    return alreadyPending ? { gift, assignment: alreadyPending, wasRestored: false } : null;
+  }
+
+  assignment.status = "pending";
+  assignment.redeemedAt = null;
+  gift.usedCount = Math.max(0, (gift.usedCount || 0) - 1);
+
+  if (gift.status === "expired" && gift.usedCount < gift.totalCount) {
+    if (!gift.expiresAt || new Date(gift.expiresAt) >= new Date()) {
+      gift.status = "active";
+    }
+  }
+
+  await gift.save();
+  return { gift, assignment, wasRestored: true };
+};
+
 /* =========================
    GIFT CRUD
 ========================= */
@@ -204,6 +264,14 @@ exports.assignGift = async (req, res) => {
     gift.assignments.push({ userId, userName, userEmail, userRole });
     await gift.save();
 
+    await sendGiftNotification({
+      title: "New Digital Gift Received",
+      content: `You received "${gift.name}" (${gift.code}). View it in My Gifts.`,
+      userId,
+      createdBy: req.user._id,
+      role: userRole,
+    });
+
     return res.status(201).json({ success: true, data: gift });
   } catch (error) {
     return handleError(res, error);
@@ -297,6 +365,14 @@ exports.redeemByCode = async (req, res) => {
     });
 
     await gift.save();
+
+    await sendGiftNotification({
+      title: "Gift Claimed Successfully",
+      content: `You successfully claimed "${gift.name}" (${gift.code}). You can use it at checkout.`,
+      userId: req.user._id,
+      createdBy: req.user._id,
+      role: userRole,
+    });
 
     return res.status(200).json({ success: true, data: gift });
   } catch (error) {

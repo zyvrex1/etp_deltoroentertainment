@@ -40,6 +40,18 @@
      background-color: var(--color-red-quaternary);
 }
 
+.cph-gift-restored-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background-color: var(--color-yellow-quaternary);
+    border: 1px solid rgba(217, 119, 6, 0.25);
+    color: #92400e;
+}
+
 
     .cph-controls {
         display: flex;

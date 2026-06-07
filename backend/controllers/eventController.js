@@ -1476,6 +1476,8 @@ const buySeats = async (req, res) => {
         amount: {
           total: amount.total || 0,
           subtotal: amount.subtotal || 0,
+          discount: amount.discount || 0,
+          discountLabel: amount.discountLabel || null,
           fee: amount.fee || 0,
           tax: 0
         },

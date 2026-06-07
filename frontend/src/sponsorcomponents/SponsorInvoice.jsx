@@ -69,6 +69,11 @@ export default function SponsorInvoice() {
                     const isSeat = res.type === 'seat';
                     const status = res.status?.toLowerCase();
                     const isPaid = status === 'confirmed';
+                    const paymentStatus = status === 'confirmed' ? 'Paid'
+                        : status === 'rejected' ? 'Rejected'
+                        : status === 'refunded' ? 'Refunded'
+                        : status === 'cancelled' ? 'Cancelled'
+                        : 'Pending';
 
                     const subtotal = allRes.reduce((s, r) => s + (r.amount?.subtotal || 0), 0);
                     const isBXGY_check = res.appliedGift?.valueType === 'bxgy';
@@ -162,8 +167,8 @@ const discountAmt = isBXGY_check
                         amount: `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
                         subtotal: `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
                         totalDue: `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-                        status: isPaid ? 'paid' : 'pending',
-                        paymentStatus: isPaid ? 'Paid' : 'Pending',
+                        status: isPaid ? 'paid' : (status === 'rejected' || status === 'refunded' ? status : 'pending'),
+                        paymentStatus,
                         issuedDate: issuedDateObj.toLocaleDateString('en-US', dateOpts),
                         paidDate: paidDateObj ? paidDateObj.toLocaleDateString('en-US', dateOpts) : null,
                         paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',

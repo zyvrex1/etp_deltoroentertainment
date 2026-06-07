@@ -6,6 +6,8 @@ import SponsorRequestRefund from './SponsorModal/SponsorRequestRefund';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useAuthContext } from '../hooks/useAuthContext';
 import axios from 'axios';
+import GiftRestoredNotice from '../components/GiftRestoredNotice';
+import { shouldShowGiftRestoredNotice } from '../utils/giftNoticeUtils';
 import './SponsorMyBooth.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -267,6 +269,18 @@ export default function SponsorMyBooth() {
                                             </div>
                                         </div>
                                     </div>
+                                    {shouldShowGiftRestoredNotice(
+                                        payStatusLabel,
+                                        res.appliedGift,
+                                        res.giftCode
+                                    ) && (
+                                        <GiftRestoredNotice
+                                            paymentStatus={payStatusLabel}
+                                            appliedGift={res.appliedGift}
+                                            giftCode={res.giftCode}
+                                            compact
+                                        />
+                                    )}
                                     <div className="booth-card-footer">
                                         <NavLink to={`/sponsor/sponsor-booth-details/${res._id}`} className="view-details-btn">
                                             <Icon icon="mdi:eye-outline" /> View Full Details

@@ -4,6 +4,8 @@ import { NavLink } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthContext } from '../hooks/useAuthContext';
 import SponsorViewFullHistory from './SponsorModal/SponsorViewFullHistory';
+import GiftRestoredNotice from '../components/GiftRestoredNotice';
+import { shouldShowGiftRestoredNotice } from '../utils/giftNoticeUtils';
 import DateRangePicker from '../utils/DateRangePicker';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
@@ -851,6 +853,12 @@ export default function SponsorEventHistory() {
                                         <td className="regular-body-text text-secondary">{item.amount}</td>
                                         <td>
                                             <span className={`button-label ${item.paymentStatus.toLowerCase()}`}>{item.paymentStatus}</span>
+                                            {shouldShowGiftRestoredNotice(
+                                                item.paymentStatus,
+                                                item.fullReservation?.appliedGift,
+                                                item.fullReservation?.giftCode
+                                            )
+                                            }
                                         </td>
                                         <td className="regular-body-text text-secondary">{item.paymentDate}</td>
                                         <td>

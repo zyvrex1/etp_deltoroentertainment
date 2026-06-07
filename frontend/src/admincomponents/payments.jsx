@@ -22,6 +22,22 @@ import {
 } from "../utils/pdfExport";
 import "../promotercomponents/PromoterModal/PromoterViewPayout.css";
 
+const formatPaymentMethod = (method) => {
+  if (!method) return "Card";
+  const lower = String(method).toLowerCase();
+  if (lower === "invoice" || lower.includes("invoice") || lower.includes("bank transfer")) {
+    return "Invoice";
+  }
+  return "Card";
+};
+
+const formatReservationTxId = (res) => {
+  const isBooth = !!res.boothCode;
+  const isGA = res.seatIds?.some((sid) => sid.startsWith("GA-"));
+  const prefix = isBooth ? "Booth" : isGA ? "Ticket" : "Seats";
+  return `${prefix}-${res._id.toString().slice(-6).toUpperCase()}`;
+};
+
 const Payments = () => {
   const { user } = useAuthContext();
   const [activeTab, setActiveTab] = useState("payout-requests");
@@ -161,7 +177,7 @@ const Payments = () => {
         booth: boothLabel,
         category: 'Booth',
         amount: `$${group.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-        paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
+        paymentMethod: formatPaymentMethod(res.paymentMethod),
         status: res.status,
         date: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A',
         createdAtTime: res.createdAt ? new Date(res.createdAt).getTime() : 0,
@@ -170,11 +186,36 @@ const Payments = () => {
       });
     });
 
+    // Booths without batchId
+    pendingReservations.forEach(res => {
+      if (!res.boothCode || res.batchId) return;
+      const promoterName = res.user
+        ? (`${res.user.firstName || ''} ${res.user.lastName || ''}`.trim() || res.user.companyName || 'Unknown')
+        : 'Unknown';
+      result.push({
+        id: `Booth-${res._id.toString().slice(-6).toUpperCase()}`,
+        resId: res._id,
+        allResIds: [res._id],
+        promoter: promoterName,
+        event: res.event?.title || 'Unknown Event',
+        booth: `Booth (${res.boothCode})`,
+        category: 'Booth',
+        amount: `$${(res.amount?.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        paymentMethod: formatPaymentMethod(res.paymentMethod),
+        status: res.status,
+        date: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A',
+        createdAtTime: res.createdAt ? new Date(res.createdAt).getTime() : 0,
+        quantity: 1,
+        details: `#${res.boothCode}`
+      });
+    });
+
     // Add non-booth rows (seats, tickets) — keep existing logic
     const gaGroups = [];
 
     nonBoothRows.forEach(res => {
       const isBooth = !!res.boothCode;
+      if (isBooth) return;
       const isGA = res.seatIds && res.seatIds.some(sid => sid.startsWith("GA-"));
       const promoterName = res.user
         ? (`${res.user.firstName || ''} ${res.user.lastName || ''}`.trim() || res.user.companyName || 'Unknown')
@@ -193,7 +234,7 @@ const Payments = () => {
           : res.seatLabels?.length > 0
             ? `Seats (${res.seatLabels.join(', ')})`
             : `Seats (${res.seatIds?.length || 0})`,
-        paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
+        paymentMethod: formatPaymentMethod(res.paymentMethod),
         status: res.status,
         dateStr: res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'N/A',
         createdAtTime: res.createdAt ? new Date(res.createdAt).getTime() : 0,
@@ -205,6 +246,7 @@ const Payments = () => {
         result.push({
           id: `Seats-${item.resId.toString().slice(-6).toUpperCase()}`,
           resId: item.resId,
+          allResIds: [item.resId],
           promoter: item.promoter,
           event: item.event,
           booth: item.booth,
@@ -251,6 +293,7 @@ const Payments = () => {
       result.push({
         id: `Ticket-${g.resId.toString().slice(-6).toUpperCase()}`,
         resId: g.resId,
+        allResIds: [g.resId],
         promoter: g.promoter,
         event: g.event,
         booth: `Tickets (${g.quantity})`,
@@ -377,7 +420,7 @@ const Payments = () => {
         createdAtTime: res.createdAt ? new Date(res.createdAt).getTime() : 0,
         filterType: isBooth ? 'booth' : (isGA ? 'ticket' : 'seated-ticket'),
         rawDate: res.createdAt ? new Date(res.createdAt) : new Date(0),
-        paymentMethod: res.paymentMethod === 'invoice' ? 'Invoice' : 'Card',
+        paymentMethod: formatPaymentMethod(res.paymentMethod),
         quantity: res.seatIds?.length || 1,
         details: res.seatLabels?.join(", ") || "",
         giftCode: res.giftCode || null,
@@ -417,6 +460,8 @@ const Payments = () => {
       } else {
         reservationTx.push({
           id: `Booth-${item.resId.toString().slice(-6).toUpperCase()}`,
+          resId: item.resId,
+          allResIds: [item.resId],
           promoter: item.user,
           event: item.event,
           category: 'Booth',
@@ -440,6 +485,8 @@ const Payments = () => {
       const label = g.allItems.length > 1 ? `${g.allItems.length} Booths (${codes})` : `Booth (${first.boothCode})`;
       reservationTx.push({
         id: `Booth-${first.resId.toString().slice(-6).toUpperCase()}`,
+        resId: first.resId,
+        allResIds: g.allItems.map((i) => i.resId),
         promoter: first.user,
         event: first.event,
         category: 'Booth',
@@ -471,6 +518,8 @@ const Payments = () => {
       } else {
         reservationTx.push({
           id: `Seats-${item.resId.toString().slice(-6).toUpperCase()}`,
+          resId: item.resId,
+          allResIds: [item.resId],
           promoter: item.user,
           event: item.event,
           category: 'Seated Ticket',
@@ -494,6 +543,8 @@ const Payments = () => {
       const label = allLabels.length > 0 ? `Seats (${allLabels.join(', ')})` : `Seats (${g.quantity})`;
       reservationTx.push({
         id: `Seats-${first.resId.toString().slice(-6).toUpperCase()}`,
+        resId: first.resId,
+        allResIds: g.allItems.map((i) => i.resId),
         promoter: first.user,
         event: first.event,
         category: 'Seated Ticket',
@@ -536,6 +587,8 @@ const Payments = () => {
     gaGroups.forEach(g => {
       reservationTx.push({
         id: `Ticket-${g.resId.toString().slice(-6).toUpperCase()}`,
+        resId: g.resId,
+        allResIds: [g.resId],
         promoter: g.user,
         event: g.event,
         category: g.category,
@@ -662,6 +715,7 @@ const Payments = () => {
     setSelectedTx({
       id: row.id,
       resId: row.resId,
+      allResIds: row.allResIds,
       user: row.promoter,
       event: row.event,
       category: row.category,
@@ -677,23 +731,44 @@ const Payments = () => {
     setIsTxModalOpen(true);
   };
 
-  const handleTxRefund = async (transactionId) => {
-    const matchingRes = reservations.find(res => {
-      const isBooth = !!res.boothCode;
-      const formattedId = isBooth ? `Booth-${res._id.toString().slice(-6).toUpperCase()}` : `Seats-${res._id.toString().slice(-6).toUpperCase()}`;
-      return formattedId === transactionId;
-    });
+  const handleTxRefund = async (transactionId, transaction = null) => {
+    let idsToRefund = [];
 
-    if (!matchingRes) return;
+    if (transaction?.allResIds?.length) {
+      idsToRefund = transaction.allResIds;
+    } else if (transaction?.resId) {
+      idsToRefund = [transaction.resId];
+    } else {
+      const matchingRes = reservations.find(
+        (res) => formatReservationTxId(res) === transactionId
+      );
+      if (!matchingRes) {
+        await showErrorAlert('Error', 'Could not find the reservation for this transaction.');
+        return false;
+      }
+      idsToRefund = [matchingRes._id];
+    }
 
     try {
-      await reservationService.updateReservationStatus(matchingRes._id, "refunded", user.token);
-      setReservations(prev =>
-        prev.map(res => res._id === matchingRes._id ? { ...res, status: 'refunded' } : res)
+      for (const rid of idsToRefund) {
+        await reservationService.updateReservationStatus(rid, "refunded", user.token);
+      }
+      setReservations((prev) =>
+        prev.map((res) =>
+          idsToRefund.map(String).includes(String(res._id))
+            ? { ...res, status: 'refunded' }
+            : res
+        )
       );
+      await showSuccessAlert(
+        'Refund Processed',
+        'The refund has been processed. Any applied digital gift has been returned to the customer.'
+      );
+      return true;
     } catch (error) {
       console.error('Error refunding reservation:', error);
       await showErrorAlert('Error', error.response?.data?.error || 'Failed to process refund on backend.');
+      return false;
     }
   };
 
@@ -733,11 +808,9 @@ const Payments = () => {
     const idsToUpdate = (allResIds && allResIds.length > 0) ? allResIds : [id];
 
     try {
-      await Promise.all(
-        idsToUpdate.map(rid =>
-          reservationService.updateReservationStatus(rid, "rejected", user.token)
-        )
-      );
+      for (const rid of idsToUpdate) {
+        await reservationService.updateReservationStatus(rid, "rejected", user.token);
+      }
       setReservations(prev =>
         prev.map(res =>
           idsToUpdate.map(String).includes(String(res._id))
@@ -745,7 +818,10 @@ const Payments = () => {
             : res
         )
       );
-      await showSuccessAlert('Reservation Rejected', 'The reservation invoice has been rejected.');
+      await showSuccessAlert(
+        'Reservation Rejected',
+        'The reservation invoice has been rejected. Any applied digital gift has been returned to the customer.'
+      );
     } catch (error) {
       console.error('Error rejecting reservation:', error);
       await showErrorAlert('Error', error.response?.data?.error || 'Failed to reject reservation.');
@@ -923,6 +999,7 @@ const Payments = () => {
             externalSearchQuery={searchQuery}
             externalFilter={getTransactionFilterValue(statusFilter)}
             data={getTransactionList()}
+            onRefund={handleTxRefund}
           />
         ) : (
           <div className="table-wrapper">
@@ -1150,7 +1227,7 @@ const Payments = () => {
                               >
                                 <Icon icon="mdi:eye-outline" style={{ fontSize: '18px' }} />
                               </button>
-                              {row.paymentMethod === 'Invoice' && row.status === 'pending' && (
+                              {row.status === 'pending' && (
                                 <>
                                   <button
                                     className="pay-btn-approve"

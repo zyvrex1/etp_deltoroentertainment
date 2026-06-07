@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Icon } from "@iconify/react";
+import { io } from "socket.io-client";
 import { useAuthContext } from "../hooks/useAuthContext";
 import digitalgiftsService from "../services/digitalgiftsService";
 import { showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
@@ -12,7 +13,7 @@ export default function GiftsView({ role = "customer" }) {
   const [isLoading, setIsLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
 
-  const fetchMyGifts = async () => {
+  const fetchMyGifts = useCallback(async () => {
     if (!user?.token) return;
     setIsLoading(true);
     try {
@@ -23,11 +24,33 @@ export default function GiftsView({ role = "customer" }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.token]);
 
   useEffect(() => {
     fetchMyGifts();
-  }, [user]);
+  }, [fetchMyGifts]);
+
+  useEffect(() => {
+    if (!user?.token) return;
+
+    const socket = io(import.meta.env.VITE_BACKEND_URL, {
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+    });
+
+    socket.on("newNotification", (notification) => {
+      const title = (notification?.title || "").toLowerCase();
+      if (
+        title.includes("gift restored") ||
+        title.includes("gift returned") ||
+        title.includes("payment rejected")
+      ) {
+        fetchMyGifts();
+      }
+    });
+
+    return () => socket.disconnect();
+  }, [user?.token, fetchMyGifts]);
 
   const handleClaim = async (e) => {
     e.preventDefault();

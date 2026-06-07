@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
+import GiftRestoredNotice from '../../components/GiftRestoredNotice';
 import './SponsorViewInvoiceReceipt.css';
 
 const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload }) => {
@@ -174,6 +175,16 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload })
                                     </span>
                                 </div>
                             </div>
+                        ) : item.paymentStatus === 'Rejected' || item.paymentStatus === 'Refunded' ? (
+                            <div className="sir-payment-status pending">
+                                <Icon icon="mdi:close-circle-outline" width="24" color="#dc2626" />
+                                <div className="sir-status-text">
+                                    <h6 className="m-0" style={{ color: '#dc2626' }}>Payment {item.paymentStatus}</h6>
+                                    <span className="smaller-body-text text-secondary">
+                                        This payment was not completed.
+                                    </span>
+                                </div>
+                            </div>
                         ) : (
                             <div className="sir-payment-status pending">
                                 <Icon icon="mdi:clock-alert-outline" width="24" color="#d97706" />
@@ -185,6 +196,12 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload })
                                 </div>
                             </div>
                         )}
+
+                        <GiftRestoredNotice
+                            paymentStatus={item.paymentStatus}
+                            appliedGift={item.appliedGift}
+                            giftCode={item.giftCode}
+                        />
 
                         <div className="sir-payment-instructions">
                             <p className="smaller-body-text text-black font-medium m-0 mb-4">Payment Instructions:</p>

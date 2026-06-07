@@ -1,0 +1,25 @@
+.gift-restored-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background-color: var(--color-yellow-quaternary, #fffbeb);
+    border: 1px solid rgba(217, 119, 6, 0.25);
+    color: #92400e;
+}
+
+.gift-restored-notice h6 {
+    color: #92400e;
+    font-weight: 600;
+}
+
+.gift-restored-notice--compact {
+    margin-top: 8px;
+    padding: 10px 12px;
+
+        text-align: left;
+
+}
+

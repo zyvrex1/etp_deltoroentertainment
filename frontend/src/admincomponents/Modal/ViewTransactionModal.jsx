@@ -11,12 +11,17 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
 
         if (result.isConfirmed) {
             if (onRefund) {
-                onRefund(transaction.id);
+                const ok = await onRefund(transaction.id, transaction);
+                if (ok !== false) onClose();
+            } else {
+                showSuccessAlert('Refund Processed', `The refund for order #${transaction.id} has been successfully processed.`);
+                onClose();
             }
-            onClose();
-            showSuccessAlert('Refund Processed', `The refund for order #${transaction.id} has been successfully processed.`);
         }
     };
+
+    const isRefundableCategory = ['Booth', 'Seats', 'Seated Ticket', 'Ticket'].includes(transaction.category);
+    const isRefundableStatus = transaction.status === 'completed' || transaction.status === 'confirmed';
 
     const getStatusClass = (status) => {
         if (status === 'completed') return 'button-label transac-completed';
@@ -144,7 +149,7 @@ const ViewTransactionModal = ({ isOpen, onClose, transaction, onRefund }) => {
                 </div>
 
                 <div className="tx-modal-footer">
-                    {(transaction.category === 'Booth' || transaction.category === 'Seats' || transaction.category === 'Ticket') && transaction.status !== 'refunded' && (
+                    {isRefundableCategory && isRefundableStatus && (
                         <button className="process-refund-btn" onClick={handleProcessRefund}>Process Refund</button>
                     )}
                     <button className="primary-button close-button-main" onClick={onClose}>Close</button>

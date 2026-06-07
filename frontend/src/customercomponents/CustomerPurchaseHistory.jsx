@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import { io } from 'socket.io-client';
 import { useCustomerCart } from '../context/CustomerCartContext';
 import { useAuthContext } from '../hooks/useAuthContext';
 import DateRangePicker from '../utils/DateRangePicker';
@@ -7,10 +8,25 @@ import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
 import './CustomerPurchaseHistory.css';
 import CustomerHistoryViewReceipt from './Modal/CustomerHistoryViewReceipt';
+import GiftRestoredNotice from '../components/GiftRestoredNotice';
+import { shouldShowGiftRestoredNotice } from '../utils/giftNoticeUtils';
 import orderService from '../services/orderService';
 
+const isGiftRestoredPayment = (paymentStatus) => {
+    const p = paymentStatus?.toLowerCase();
+    return p === 'rejected' || p === 'refunded';
+};
+
+const getReservationGroupKey = (item) => {
+    const seatMatch = item.cartId?.match(/^db-(.+)-\d+$/);
+    if (seatMatch) return `res-${seatMatch[1]}`;
+    const boothMatch = item.cartId?.match(/^db-(.+)$/);
+    if (boothMatch) return `res-${boothMatch[1]}`;
+    return item.cartId || item.purchaseDate;
+};
+
 export default function CustomerPurchaseHistory() {
-    const { purchaseHistory } = useCustomerCart();
+    const { purchaseHistory, refreshHistory } = useCustomerCart();
     const { user } = useAuthContext();
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]);
@@ -47,6 +63,28 @@ export default function CustomerPurchaseHistory() {
         return () => { isMounted = false; };
     }, [user]);
 
+    useEffect(() => {
+        if (!user?.token) return;
+
+        const socket = io(import.meta.env.VITE_BACKEND_URL, {
+            withCredentials: true,
+            transports: ['websocket', 'polling'],
+        });
+
+        socket.on('newNotification', (notification) => {
+            const title = (notification?.title || '').toLowerCase();
+            if (
+                title.includes('gift restored') ||
+                title.includes('payment rejected') ||
+                title.includes('reservation rejected')
+            ) {
+                refreshHistory?.();
+            }
+        });
+
+        return () => socket.disconnect();
+    }, [user?.token, refreshHistory]);
+
     const tabs = [
         { id: 'all', label: 'All Purchases' },
         { id: 'ticket', label: 'Tickets' },
@@ -74,11 +112,12 @@ export default function CustomerPurchaseHistory() {
             return 'status-pending';
         };
 
-        // 1. Process seated tickets & booths
+        // 1. Process seated tickets & booths — group by reservation, not purchase date
         purchaseHistory.forEach(item => {
+            const groupKey = getReservationGroupKey(item);
             const date = item.purchaseDate;
             const eventTitle = item.event?.title || "Unknown Event";
-            if (!groups[date]) {
+            if (!groups[groupKey]) {
                 const payStatus = (() => {
                     const rawStatus = item.status?.toLowerCase();
                     if (rawStatus === 'confirmed') return 'Paid';
@@ -89,8 +128,8 @@ export default function CustomerPurchaseHistory() {
                     return 'Paid';
                 })();
 
-                groups[date] = {
-                    id: date,
+                groups[groupKey] = {
+                    id: groupKey,
                     type: item.type || 'ticket',
                     title: eventTitle,
                     status: 'Completed',
@@ -106,27 +145,39 @@ export default function CustomerPurchaseHistory() {
                     purchasedAt: date,
                     // Discount info — collected from the first item that has it
                     appliedGift: item.appliedGift || null,
+                    giftCode: item.giftCode || item.appliedGift?.code || null,
                     discountAmount: item.discountAmount || 0,
+                    orderGift: item.orderGift || item.appliedGift || null,
+                    orderGiftCode: item.orderGiftCode || item.giftCode || item.appliedGift?.code || null,
                 };
             } else {
                 // Accumulate discount from whichever item carries it
-                if (!groups[date].appliedGift && item.appliedGift) {
-                    groups[date].appliedGift = item.appliedGift;
+                if (!groups[groupKey].appliedGift && item.appliedGift) {
+                    groups[groupKey].appliedGift = item.appliedGift;
+                }
+                if (!groups[groupKey].giftCode && (item.giftCode || item.appliedGift?.code)) {
+                    groups[groupKey].giftCode = item.giftCode || item.appliedGift?.code;
+                }
+                if (!groups[groupKey].orderGift && (item.orderGift || item.appliedGift)) {
+                    groups[groupKey].orderGift = item.orderGift || item.appliedGift;
+                }
+                if (!groups[groupKey].orderGiftCode && (item.orderGiftCode || item.giftCode || item.appliedGift?.code)) {
+                    groups[groupKey].orderGiftCode = item.orderGiftCode || item.giftCode || item.appliedGift?.code;
                 }
                 if (item.discountAmount) {
-                    groups[date].discountAmount = (groups[date].discountAmount || 0) + item.discountAmount;
+                    groups[groupKey].discountAmount = (groups[groupKey].discountAmount || 0) + item.discountAmount;
                 }
             }
 
             // Always push original facePrice — never adjusted
-            groups[date].items.push({
+            groups[groupKey].items.push({
                 name: `1x ${item.categoryName || 'Ticket'} - Seat ${item.seat?.label || 'N/A'}`,
                 price: `$${(item.facePrice || 0).toFixed(2)}`,
                 originalPrice: item.facePrice || 0,
                 isFree: item.isBXGYFree === true,
                 serviceFee: item.serviceFee || 0,
             });
-            groups[date].totalAmount += (item.facePrice || 0);
+            groups[groupKey].totalAmount += (item.facePrice || 0);
         });
 
         // 2. Process store product orders
@@ -175,6 +226,7 @@ export default function CustomerPurchaseHistory() {
             const subtotalAmount = g.items.reduce((s, i) => s + (i.originalPrice || 0), 0);
             const serviceFeeTotal = g.items.reduce((s, i) => s + (i.serviceFee || 0), 0);
             const discountAmt = g.discountAmount || 0;
+            const giftWasRedeemed = discountAmt > 0;
 
             // Total = subtotal - discount + service fee (floored at 0)
             const finalTotal = g.type === 'product'
@@ -183,16 +235,23 @@ export default function CustomerPurchaseHistory() {
 
             return {
                 ...g,
+                appliedGift: giftWasRedeemed ? g.appliedGift : null,
+                giftCode: giftWasRedeemed ? g.giftCode : null,
+                orderGift: g.orderGift || null,
+                orderGiftCode: g.orderGiftCode || null,
                 subtotalAmount,
                 serviceFeeTotal,
                 total: `$${finalTotal.toFixed(2)}`,
                 totalAmount: finalTotal,
+                giftRestored: shouldShowGiftRestoredNotice(g.paymentStatus, g.orderGift, g.orderGiftCode),
             };
         }).sort((a, b) => new Date(b.purchasedAt) - new Date(a.purchasedAt));
     }, [purchaseHistory, orders]);
 
     const filteredPurchases = purchases.filter(p => {
-        const matchesTab = activeTab === 'all' || p.type === activeTab;
+        const matchesTab = activeTab === 'all'
+            || (activeTab === 'refunds' && isGiftRestoredPayment(p.paymentStatus))
+            || p.type === activeTab;
         const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.orderNum.toLowerCase().includes(searchQuery.toLowerCase());
         const purchaseDate = new Date(p.date);
@@ -265,8 +324,9 @@ export default function CustomerPurchaseHistory() {
     const handleViewReceipt = (purchase) => {
         const subtotalAmount = purchase.subtotalAmount || purchase.totalAmount;
         const discountAmount = purchase.discountAmount || 0;
+        const giftWasRedeemed = discountAmount > 0;
         const serviceFeeTotal = purchase.serviceFeeTotal || 0;
-        const discountLabel = buildDiscountLabel(purchase.appliedGift);
+        const discountLabel = giftWasRedeemed ? buildDiscountLabel(purchase.appliedGift) : '';
 
         // Tax is currently $0 — update here if tax logic is added
         const taxAmount = 0;
@@ -283,6 +343,11 @@ export default function CustomerPurchaseHistory() {
             poNumber: purchase.poNumber,
             status: purchase.status,
             paymentStatus: purchase.paymentStatus,
+            appliedGift: giftWasRedeemed ? (purchase.appliedGift || null) : null,
+            giftCode: giftWasRedeemed ? (purchase.giftCode || purchase.appliedGift?.code || null) : null,
+            orderGift: purchase.orderGift || null,
+            orderGiftCode: purchase.orderGiftCode || null,
+            giftRestored: purchase.giftRestored || false,
 
             // Items — always at original face price; BXGY free seat shown as Free
             items: purchase.items.map(item => {
@@ -356,7 +421,7 @@ export default function CustomerPurchaseHistory() {
 
             const ticketItems  = filteredPurchases.filter(p => p.type === 'ticket');
             const productItems = filteredPurchases.filter(p => p.type === 'product');
-            const refundItems  = filteredPurchases.filter(p => p.status === 'Refunded' || p.status === 'Rejected');
+            const refundItems  = filteredPurchases.filter(p => isGiftRestoredPayment(p.paymentStatus));
 
             const ticketAmount  = ticketItems.reduce((s, p)  => s + p.totalAmount, 0);
             const productAmount = productItems.reduce((s, p) => s + p.totalAmount, 0);
@@ -662,6 +727,15 @@ export default function CustomerPurchaseHistory() {
                                                 -${purchase.discountAmount.toFixed(2)}
                                             </span>
                                         </div>
+                                    )}
+
+                                    {purchase.giftRestored && (
+                                        <GiftRestoredNotice
+                                            paymentStatus={purchase.paymentStatus}
+                                            appliedGift={purchase.orderGift}
+                                            giftCode={purchase.orderGiftCode}
+                                            compact
+                                        />
                                     )}
                                 </div>
 
