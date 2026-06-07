@@ -71,8 +71,32 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload })
                                 <span className="small-body-text text-black"><p className="font-medium inline-block m-0" style={{ display: 'inline-block' }}>Booth Number:</p> {item.booth}</span>
                             </div>
                         </div>
-
+                        \
+                        {/* Promo/Gift Badge */}
+                        {(item.giftCode || item.appliedGift) && (
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                background: '#f0fdf4', border: '1px solid #bbf7d0',
+                                borderRadius: '8px', padding: '8px 12px', marginBottom: '8px'
+                            }}>
+                                <Icon icon="mdi:ticket-percent" width="18" color="#16a34a" />
+                                <span className="small-body-text" style={{ color: '#16a34a', fontWeight: 600 }}>
+                                    {item.appliedGift?.name
+                                        ? `${item.appliedGift.name} (${item.giftCode})`
+                                        : item.giftCode}
+                                    {' — '}
+                                    {item.appliedGift?.valueType === 'fixed'
+                                        ? `$${item.appliedGift.value?.toLocaleString()} off`
+                                        : item.appliedGift?.valueType === 'percent'
+                                            ? `${item.appliedGift.value}% off`
+                                            : item.appliedGift?.valueType === 'bxgy'
+                                                ? 'Buy 1 Get 1 Free'
+                                                : 'Discount Applied'}
+                                </span>
+                            </div>
+                        )}
                         <div className="sir-items-table">
+
                             <table className="sir-table">
                                 <thead>
                                     <tr>
@@ -88,8 +112,12 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload })
                                         <tr key={idx}>
                                             <td data-label="Description">{lineItem.description}</td>
                                             <td data-label="Qty">{lineItem.qty}</td>
-                                            <td data-label="Unit Price">{lineItem.unitPrice}</td>
-                                            <td data-label="Total" className="font-medium text-black">{lineItem.total}</td>
+                                            <td data-label="Unit Price" style={lineItem.isFree ? { color: '#16a34a', fontWeight: 700 } : lineItem.isDiscount ? { color: '#16a34a' } : {}}>
+                                                {lineItem.isFree ? 'FREE' : lineItem.unitPrice}
+                                            </td>
+                                            <td data-label="Total" className={`font-medium ${lineItem.isFree ? '' : 'text-black'}`} style={lineItem.isFree ? { color: '#16a34a', fontWeight: 700 } : lineItem.isDiscount ? { color: '#16a34a' } : {}}>
+                                                {lineItem.isFree ? 'FREE' : lineItem.total}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -97,8 +125,35 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload })
 
                             <div className="sir-table-footer">
                                 <div className="sir-totals-box">
-                                    <div className="sir-totals-row">
-                                        <span className="small-body-text text-secondary">Subtotal:</span>
+    {item.discount > 0 && !item.isBXGY && (
+        <>
+            <div className="sir-totals-row">
+                <span className="small-body-text text-secondary">Subtotal (before discount):</span>
+                <span className="small-body-text text-black">
+                    ${((parseFloat(item.subtotal.replace(/[^\d.]/g, '')) || 0) + item.discount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+            </div>
+            <div className="sir-totals-row">
+                <span className="small-body-text" style={{ color: '#16a34a' }}>
+                    {(() => {
+                        const giftType = item.appliedGift?.valueType;
+                        const giftValue = item.appliedGift?.value;
+                        const suffix = giftType === 'percent'
+                            ? `${giftValue}% off`
+                            : giftType === 'fixed'
+                                ? `Fixed`
+                                : item.discountLabel || '';
+                        return `Gift Card Discount${suffix ? ` — ${suffix}` : ''}:`;
+                    })()}
+                </span>
+                <span className="small-body-text" style={{ color: '#16a34a' }}>
+                    −${item.discount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+            </div>
+        </>
+    )}
+    <div className="sir-totals-row">
+        <span className="small-body-text text-secondary">Subtotal:</span>
                                         <span className="small-body-text text-black">{item.subtotal}</span>
                                     </div>
                                     <div className="sir-totals-row sir-final-total">
@@ -109,27 +164,27 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload })
                             </div>
                         </div>
 
-                    {item.status === 'paid' ? (
-    <div className="sir-payment-status paid">
-        <Icon icon="mdi:check-circle-outline" width="24" className="text-green" />
-        <div className="sir-status-text">
-            <h6 className="m-0 text-green">Payment Received</h6>
-            <span className="smaller-body-text text-secondary">
-                Paid on <span className="text-green">{item.paidDate}</span> via <span className="text-green">{item.paymentMethod}</span>
-            </span>
-        </div>
-    </div>
-) : (
-    <div className="sir-payment-status pending">
-        <Icon icon="mdi:clock-alert-outline" width="24" color="#d97706" />
-        <div className="sir-status-text">
-            <h6 className="m-0" style={{ color: '#d97706' }}>Payment Pending</h6>
-            <span className="smaller-body-text text-secondary">
-                This invoice has not been paid yet. Please complete your payment at the earliest.
-            </span>
-        </div>
-    </div>
-)}
+                       {item.status === 'paid' ? (
+                            <div className="sir-payment-status paid">
+                                <Icon icon="mdi:check-circle-outline" width="24" className="text-green" />
+                                <div className="sir-status-text">
+                                    <h6 className="m-0 text-green">Payment Received</h6>
+                                    <span className="smaller-body-text text-secondary">
+                                        Paid on <span className="text-green">{item.paidDate}</span> via <span className="text-green">{item.paymentMethod}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="sir-payment-status pending">
+                                <Icon icon="mdi:clock-alert-outline" width="24" color="#d97706" />
+                                <div className="sir-status-text">
+                                    <h6 className="m-0" style={{ color: '#d97706' }}>Payment Pending</h6>
+                                    <span className="smaller-body-text text-secondary">
+                                        This invoice has not been paid yet. Please complete your payment at the earliest.
+                                    </span>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="sir-payment-instructions">
                             <p className="smaller-body-text text-black font-medium m-0 mb-4">Payment Instructions:</p>

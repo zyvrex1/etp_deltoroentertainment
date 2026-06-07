@@ -17,36 +17,34 @@ export default function SponsorInvoice() {
     const [searchQuery, setSearchQuery] = useState("");
     const PAGE_TITLE = 'Invoices Report';
 
-   const groupReservations = (reservations) => {
-    const groups = [];
-    reservations.forEach(res => {
-        const eventId = (res.event?._id || res.event)?.toString();
-        const createdTime = new Date(res.createdAt).getTime();
+    const groupReservations = (reservations) => {
+        const groups = [];
+        reservations.forEach(res => {
+            const eventId = (res.event?._id || res.event)?.toString();
+            const createdTime = new Date(res.createdAt).getTime();
 
-        // Group by same event + same payment method + booked within 10 seconds
-        // BUT never merge reservations that are already a single document
-        const existing = groups.find(g =>
-            g.eventId === eventId &&
-            g.paymentMethod === res.paymentMethod &&
-            Math.abs(g.createdTime - createdTime) < 10000 &&
-            !g.reservations.some(r => r._id === res._id) // ← don't re-add same doc
-        );
+            const existing = groups.find(g =>
+                g.eventId === eventId &&
+                g.paymentMethod === res.paymentMethod &&
+                Math.abs(g.createdTime - createdTime) < 10000 &&
+                !g.reservations.some(r => r._id === res._id)
+            );
 
-        if (existing) {
-            existing.reservations.push(res);
-            existing.totalAmount += res.amount?.total || 0;
-        } else {
-            groups.push({
-                eventId,
-                paymentMethod: res.paymentMethod,
-                createdTime,
-                reservations: [res],
-                totalAmount: res.amount?.total || 0,
-            });
-        }
-    });
-    return groups;
-};
+            if (existing) {
+                existing.reservations.push(res);
+                existing.totalAmount += res.amount?.total || 0;
+            } else {
+                groups.push({
+                    eventId,
+                    paymentMethod: res.paymentMethod,
+                    createdTime,
+                    reservations: [res],
+                    totalAmount: res.amount?.total || 0,
+                });
+            }
+        });
+        return groups;
+    };
 
     useEffect(() => {
         const fetchInvoices = async () => {
@@ -56,80 +54,131 @@ export default function SponsorInvoice() {
                 const reservations = await reservationService.getMyReservations(user.token);
 
                 // Include both confirmed AND pending reservations
-    const relevantReservations = reservations.filter(res => {
-    const status = res.status?.toLowerCase();
-    return status === 'confirmed' || status === 'pending'; // ← remove type check entirely
-});
+                const relevantReservations = reservations.filter(res => {
+                    const status = res.status?.toLowerCase();
+                    return status === 'confirmed' || status === 'pending';
+                });
 
                 const grouped = groupReservations(relevantReservations);
 
-// Inside fetchInvoices(), replace the formattedInvoices mapping:
+                // Inside fetchInvoices(), replace the formattedInvoices mapping:
 
-const formattedInvoices = grouped.map(group => {
-    const res = group.reservations[0];
-    const allRes = group.reservations;
-    const isSeat = res.type === 'seat';
-    const status = res.status?.toLowerCase();
-    const isPaid = status === 'confirmed';
+                const formattedInvoices = grouped.map(group => {
+                    const res = group.reservations[0];
+                    const allRes = group.reservations;
+                    const isSeat = res.type === 'seat';
+                    const status = res.status?.toLowerCase();
+                    const isPaid = status === 'confirmed';
 
-    const subtotal = allRes.reduce((s, r) => s + (r.amount?.subtotal || 0), 0);
-    const fee = allRes.reduce((s, r) => s + (r.amount?.fee || 0), 0);
-    const tax = allRes.reduce((s, r) => s + (r.amount?.tax || 0), 0);
-    const total = group.totalAmount;
+                    const subtotal = allRes.reduce((s, r) => s + (r.amount?.subtotal || 0), 0);
+                    const isBXGY_check = res.appliedGift?.valueType === 'bxgy';
+const discountAmt = isBXGY_check
+    ? allRes.filter(r => (r.amount?.subtotal || 0) === 0)
+            .reduce((s, r) => s + (r.amount?.discount || 0), 0)
+    : allRes.reduce((s, r) => s + (r.amount?.discount || 0), 0);  // sum all for display
+                    const discountLabel = res.amount?.discountLabel || res.appliedGift?.name || null;
+                    const fee = allRes.reduce((s, r) => s + (r.amount?.fee || 0), 0);
+                    const tax = allRes.reduce((s, r) => s + (r.amount?.tax || 0), 0);
+                    const total = group.totalAmount;
+                    const isBXGY = res.appliedGift?.valueType === 'bxgy';
+                    const bxgyFreeAmount = isBXGY
+                        ? allRes
+                            .filter(r => (r.amount?.subtotal || 0) === 0)
+                            .reduce((s, r) => s + (r.amount?.discount || 0), 0)
+                        : 0;
 
-    // Label: seat or booth
-    const boothLabel = isSeat
-        ? (res.seatLabels?.length > 1
-            ? `${res.seatLabels.length} Seats (${res.seatLabels.join(', ')})`
-            : `Seat ${res.seatLabels?.[0] || res.seatIds?.[0] || 'N/A'}`)
-        : (allRes.length > 1
-            ? `${allRes.length} Booths (${allRes.map(r => `#${r.boothCode}`).join(', ')})`
-            : `Booth #${res.boothCode || 'N/A'}`);
+                    const boothLabel = isSeat
+                        ? (res.seatLabels?.length > 1
+                            ? `${res.seatLabels.length} Seats (${res.seatLabels.join(', ')})`
+                            : `Seat ${res.seatLabels?.[0] || res.seatIds?.[0] || 'N/A'}`)
+                        : (allRes.length > 1
+                            ? `${allRes.length} Booths (${allRes.map(r => `#${r.boothCode}`).join(', ')})`
+                            : `Booth #${res.boothCode || 'N/A'}`);
 
-    const lineItems = isSeat
-        ? [{
-            description: `Seat Registration (${res.seatLabels?.join(', ') || 'N/A'})`,
-            qty: res.seatIds?.length || 1,
-            unitPrice: `$${(subtotal / (res.seatIds?.length || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-            total: `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-          }]
-        : allRes.map(r => ({
-            description: `Booth Registration (${r.boothCode || ''})`,
-            qty: 1,
-            unitPrice: `$${(r.amount?.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-            total: `$${(r.amount?.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-          }));
+                    let lineItems;
 
-    lineItems.push(
-        { description: 'Processing Fee', qty: 1, unitPrice: `$${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, total: `$${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-        { description: 'Tax', qty: 1, unitPrice: `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, total: `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-    );
+                    if (isBXGY && !isSeat && allRes.length > 1) {
+                        lineItems = allRes.map((r) => {
+                            const isFreeItem = (r.amount?.subtotal || 0) === 0;
+                            const originalPrice = r.amount?.subtotal || 0;
+                            return {
+                                description: `Booth Registration (#${r.boothCode || ''})`,
+                                qty: 1,
+                                unitPrice: isFreeItem ? 'FREE' : `$${originalPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                                total: isFreeItem ? '$0.00' : `$${originalPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                                isFree: isFreeItem,
+                            };
+                        });
+                    }
+                    else if (isSeat) {
+                        lineItems = [{
+                            description: `Seat Registration (${res.seatLabels?.join(', ') || 'N/A'})`,
+                            qty: res.seatIds?.length || 1,
+                            unitPrice: `$${(subtotal / (res.seatIds?.length || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                            total: `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                        }];
+                    }
+                    else {
+                        lineItems = allRes.map(r => ({
+                            description: `Booth Registration (${r.boothCode || ''})`,
+                            qty: 1,
+                            unitPrice: `$${((r.amount?.subtotal || 0) + (r.amount?.discount || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                            total: `$${((r.amount?.subtotal || 0) + (r.amount?.discount || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                        }));
+                    }
 
-    const invoiceNum = res.poNumber || res._id?.toString().slice(-8).toUpperCase();
-    const issuedDateObj = new Date(res.createdAt);
-    const paidDateObj = isPaid ? issuedDateObj : null;
-    const dateOpts = { month: 'short', day: 'numeric', year: 'numeric' };
+                    if (discountAmt > 0 && !isBXGY) {
+                        const giftType = res.appliedGift?.valueType;
+                        const giftValue = res.appliedGift?.value;
+                        const discountSuffix = giftType === 'percent'
+                            ? `${giftValue}% off`
+                            : giftType === 'fixed'
+                                ? `$${giftValue?.toLocaleString()} off`
+                                : discountLabel || '';
+                        lineItems.push({
+                            description: `Gift Card Discount${discountSuffix ? ` — ${discountSuffix}` : ''}`,
+                            qty: 1,
+                            unitPrice: `-$${discountAmt.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                            total: `-$${discountAmt.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                            isDiscount: true,
+                        });
+                    }
 
-    return {
-        id: res._id,
-        title: res.event?.title || 'Unknown Event',
-        invoiceRef: `INV-${invoiceNum}`,
-        booth: boothLabel,
-        amount: `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-        subtotal: `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-        totalDue: `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-        status: isPaid ? 'paid' : 'pending',
-        paymentStatus: isPaid ? 'Paid' : 'Pending',
-        issuedDate: issuedDateObj.toLocaleDateString('en-US', dateOpts),
-        paidDate: paidDateObj ? paidDateObj.toLocaleDateString('en-US', dateOpts) : null,
-        paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
-        companyName: res.billingAddress?.company || `${res.user?.firstName || ''} ${res.user?.lastName || ''}`.trim() || 'N/A',
-        companyAddress: [res.billingAddress?.address, res.billingAddress?.city, res.billingAddress?.country].filter(Boolean).join(', ') || 'N/A',
-        taxId: res.billingAddress?.taxId || 'N/A',
-        items: lineItems,
-        fullReservation: res,
-    };
-});
+                    lineItems.push(
+                        { description: 'Tax', qty: 1, unitPrice: `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, total: `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+                        { description: 'Processing Fee', qty: 1, unitPrice: `$${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, total: `$${fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+                    );
+
+                    const invoiceNum = res.poNumber || res._id?.toString().slice(-8).toUpperCase();
+                    const issuedDateObj = new Date(res.createdAt);
+                    const paidDateObj = isPaid ? issuedDateObj : null;
+                    const dateOpts = { month: 'short', day: 'numeric', year: 'numeric' };
+
+                    return {
+                        id: res._id,
+                        title: res.event?.title || 'Unknown Event',
+                        invoiceRef: `INV-${invoiceNum}`,
+                        booth: boothLabel,
+                        amount: `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                        subtotal: `$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                        totalDue: `$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                        status: isPaid ? 'paid' : 'pending',
+                        paymentStatus: isPaid ? 'Paid' : 'Pending',
+                        issuedDate: issuedDateObj.toLocaleDateString('en-US', dateOpts),
+                        paidDate: paidDateObj ? paidDateObj.toLocaleDateString('en-US', dateOpts) : null,
+                        paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
+                        companyName: res.billingAddress?.company || `${res.user?.firstName || ''} ${res.user?.lastName || ''}`.trim() || 'N/A',
+                        companyAddress: [res.billingAddress?.address, res.billingAddress?.city, res.billingAddress?.country].filter(Boolean).join(', ') || 'N/A',
+                        taxId: res.billingAddress?.taxId || 'N/A',
+                        items: lineItems,
+                        fullReservation: res,
+                        appliedGift: res.appliedGift?.valueType ? res.appliedGift : null,
+                        giftCode: res.giftCode || null,
+                        discount: discountAmt,
+                        discountLabel: discountLabel,
+                        isBXGY: isBXGY,
+                    };
+                });
 
                 setAllInvoices(formattedInvoices);
             } catch (error) {
@@ -336,14 +385,14 @@ const formattedInvoices = grouped.map(group => {
         setDateRange(newRange);
         setCurrentPage(1);
     };
-   const filteredInvoices = allInvoices.filter(item => {
-    if (!item?.title || !item?.invoiceRef) return false;   // ← guard added
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.invoiceRef.toLowerCase().includes(searchQuery.toLowerCase());
-    const dateToCheck = item.paidDate ? new Date(item.paidDate) : new Date(item.issuedDate);
-    const matchesDate = dateToCheck >= dateRange.start && dateToCheck <= dateRange.end;
-    return matchesSearch && matchesDate;
-});
+    const filteredInvoices = allInvoices.filter(item => {
+        if (!item?.title || !item?.invoiceRef) return false;
+        const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.invoiceRef.toLowerCase().includes(searchQuery.toLowerCase());
+        const dateToCheck = item.paidDate ? new Date(item.paidDate) : new Date(item.issuedDate);
+        const matchesDate = dateToCheck >= dateRange.start && dateToCheck <= dateRange.end;
+        return matchesSearch && matchesDate;
+    });
 
     const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
