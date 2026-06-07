@@ -2,7 +2,7 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import './SponsorNotificationDropdown.css';
 
-const SponsorNotificationDropdown = ({ notifications, onClose, onMarkAsRead, onMarkAllRead, onViewAll }) => {
+const SponsorNotificationDropdown = ({ notifications, onClose, onMarkAllRead, onViewAll, onNotifClick }) => {
     
    const iconMap = {
         concern: "mdi:chat-outline",
@@ -24,14 +24,9 @@ const SponsorNotificationDropdown = ({ notifications, onClose, onMarkAsRead, onM
         if (title.includes('confirmed') || title.includes('payment confirmed')) return "mdi:check-circle-outline";
         return iconMap[notif.type] || "mdi:bell-outline";
     };
- const handleNotifClick = (notif) => {
-        if (notif.unread) {
-            onMarkAsRead(notif._id);
-        }
+    const handleNotifClick = (notif) => {
+        onNotifClick?.(notif);
         onClose();
-        if (notif.path) {
-            window.location.href = notif.path;
-        }
     };
     return (
         <div className="notif-dropdown">

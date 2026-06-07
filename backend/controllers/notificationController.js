@@ -59,6 +59,9 @@ const getNotifications = async (req, res) => {
 
             // 4. Platform Updates (Policies/Announcements)
             if (['update', 'announcement', 'policy'].includes(notif.type) && preferences.announcements === false) return false;
+
+            // 5. User management notifications are admin-only
+            if (!isAdmin && notif.type === 'user') return false;
             
             return true;
         });

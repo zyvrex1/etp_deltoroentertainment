@@ -73,7 +73,7 @@ export const NotificationsContextProvider = ({ children }) => {
       // 4. Platform Updates (Policies/Announcements)
       if (['update', 'announcement', 'policy'].includes(notification.type) && preferences.announcements === false) return;
 
-      if (notification.type === 'user' && !isAdmin) return; // Hard filter for sponsors
+      if (notification.type === 'user' && !isAdmin) return;
 
       // Check visibility
 

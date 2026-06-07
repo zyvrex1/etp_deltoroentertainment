@@ -16,6 +16,7 @@ import reservationService from '../services/reservationService';
 import payoutService from '../services/payoutService';
 
 import { useNotificationsContext } from '../hooks/useNotificationsContext';
+import { getNotificationPath } from '../utils/notificationPaths';
 import { io } from 'socket.io-client';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -1020,7 +1021,7 @@ export default function Dashboard() {
                                     const config = activityConfig[notif.type] || { icon: "mdi:bell-outline", color: "blue-light" };
                                     return (
                                         <div className="activity-item" key={notif._id}>
-                                            <div className="activity-left" onClick={() => navigate(notif.path)}>
+                                            <div className="activity-left" onClick={() => navigate(getNotificationPath(notif, user?.role))}>
                                                 <div className={`activity-icon ${config.color}`}>
                                                     <Icon icon={config.icon} />
                                                 </div>
@@ -1034,7 +1035,7 @@ export default function Dashboard() {
                                                 <Icon
                                                     icon="mdi:eye-outline"
                                                     className="view-icon"
-                                                    onClick={() => navigate(notif.path)}
+                                                    onClick={() => navigate(getNotificationPath(notif, user?.role))}
                                                 />
                                             </div>
                                         </div>
@@ -1056,7 +1057,7 @@ export default function Dashboard() {
                 notifications={notifications}
                 onNotifClick={(notif) => {
                     setShowAllNotifs(false);
-                    navigate(notif.path);
+                    navigate(getNotificationPath(notif, user?.role));
                 }}
             />
 

@@ -8,6 +8,7 @@ import axios from "axios";
 import "./header.css";
 import { showLogoutConfirmAlert } from "../utils/sweetAlert";
 import ViewNotif from "./Modal/ViewNotif";
+import { getNotificationPath } from "../utils/notificationPaths";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -88,7 +89,7 @@ const Header = ({ mobileExpanded, setMobileExpanded }) => {
       handleMarkRead(notif._id);
     }
     setIsNotifOpen(false);
-    navigate(notif.path);
+    navigate(getNotificationPath(notif, authUser.role));
   };
 
   const getInitials = (firstName, lastName) => {

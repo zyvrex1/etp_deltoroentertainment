@@ -226,14 +226,7 @@ const CustomerTicketOrder = () => {
                                         </div>
                                     </div>
                                 </div>
-                                {ticket.showGiftRestored && (
-                                    <GiftRestoredNotice
-                                        paymentStatus={ticket.status}
-                                        appliedGift={ticket.orderGift}
-                                        giftCode={ticket.orderGiftCode}
-                                        compact
-                                    />
-                                )}
+                             
                                 <div className="ticket-card-footer">
                                      <button
                                          className="request-refund-btn"

@@ -1,9 +1,11 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
+import { useNavigate } from 'react-router-dom';
 import './SponsorViewNotif.css';
 
-const SponsorViewNotif = ({ isOpen, onClose, notifications, onMarkAsRead }) => {
+const SponsorViewNotif = ({ isOpen, onClose, notifications, onNotifClick, onMarkAllRead }) => {
     const [activeFilter, setActiveFilter] = React.useState('All');
+    const navigate = useNavigate();
 
     if (!isOpen) return null;
 
@@ -29,10 +31,8 @@ const SponsorViewNotif = ({ isOpen, onClose, notifications, onMarkAsRead }) => {
     };
 
     const handleItemClick = (notif) => {
-        if (notif.unread) {
-            onMarkAsRead(notif._id);
-        }
-        // Navigation logic can be added here if path exists
+        onNotifClick?.(notif);
+        onClose();
     };
 
     const filteredNotifications = notifications.filter(notif => {
@@ -67,7 +67,7 @@ const SponsorViewNotif = ({ isOpen, onClose, notifications, onMarkAsRead }) => {
                                 </button>
                             ))}
                         </div>
-                        <button className="mark-all-read-btn" onClick={() => onMarkAsRead('all')}>
+                        <button className="mark-all-read-btn" onClick={onMarkAllRead}>
                             <Icon icon="mdi:check-all" /> Mark all as read
                         </button>
                     </div>
@@ -118,7 +118,7 @@ const SponsorViewNotif = ({ isOpen, onClose, notifications, onMarkAsRead }) => {
                 </div>
 
                 <div className="view-notif-footer">
-                    <button className="settings-btn">
+                    <button className="settings-btn" onClick={() => { navigate('/sponsor/settings'); onClose(); }}>
                         <Icon icon="mdi:cog-outline" /> Notification Settings
                     </button>
                 </div>

@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 import './CustomerViewNotif.css';
 
-const CustomerViewNotif = ({ isOpen, onClose, notifications, onMarkAsRead }) => {
+const CustomerViewNotif = ({ isOpen, onClose, notifications, onNotifClick, onMarkAllRead }) => {
     const [activeFilter, setActiveFilter] = React.useState('All');
     const navigate = useNavigate();
 
@@ -31,12 +31,7 @@ const CustomerViewNotif = ({ isOpen, onClose, notifications, onMarkAsRead }) => 
     };
 
     const handleItemClick = (notif) => {
-        if (notif.unread) {
-            onMarkAsRead(notif._id);
-        }
-        if (notif.path) {
-            navigate(notif.path);
-        }
+        onNotifClick?.(notif);
         onClose();
     };
 
@@ -72,7 +67,7 @@ const CustomerViewNotif = ({ isOpen, onClose, notifications, onMarkAsRead }) => 
                                 </button>
                             ))}
                         </div>
-                        <button className="mark-all-read-btn" onClick={() => onMarkAsRead('all')}>
+                        <button className="mark-all-read-btn" onClick={onMarkAllRead}>
                             <Icon icon="mdi:check-all" /> Mark all as read
                         </button>
                     </div>

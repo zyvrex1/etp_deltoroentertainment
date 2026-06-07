@@ -2,7 +2,7 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 import './CustomerNotificationDropdown.css';
 
-const CustomerNotificationDropdown = ({ notifications, onClose, onMarkAsRead, onMarkAllRead, onViewAll }) => {
+const CustomerNotificationDropdown = ({ notifications, onClose, onMarkAsRead, onMarkAllRead, onViewAll, onNotifClick }) => {
 
     const iconMap = {
         concern: "mdi:chat-outline",
@@ -26,14 +26,7 @@ const CustomerNotificationDropdown = ({ notifications, onClose, onMarkAsRead, on
     };
 
     const handleNotifClick = (notif) => {
-        if (notif.unread) {
-            onMarkAsRead(notif._id);
-        }
-        if (notif.path) {
-            // Optional: navigate(notif.path) if we want it to handle navigation directly,
-            // but the parent might want to handle that, so we just onClose for now.
-            // Actually it's better to let parent handle it or we import useNavigate here.
-        }
+        onNotifClick?.(notif);
         onClose();
     };
 

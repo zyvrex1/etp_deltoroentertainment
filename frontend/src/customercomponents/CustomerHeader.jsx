@@ -8,6 +8,8 @@ import { useNotificationsContext } from '../hooks/useNotificationsContext';
 import axios from 'axios';
 import CustomerNotificationDropdown from './CustomerNotificationDropdown';
 import CustomerViewNotif from './CustomerViewNotif';
+import { getNotificationPath } from '../utils/notificationPaths';
+import { filterNotificationsForRole } from '../utils/notificationFilters';
 import './CustomerHeader.css';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -72,7 +74,10 @@ export default function CustomerHeader() {
                         'Authorization': `Bearer ${authUser.token}`
                     }
                 });
-                const filteredNotifs = response.data.filter(n => !n.createdBy || String(n.createdBy) !== String(authUser._id) || (n.userId && String(n.userId) === String(authUser._id)));
+                const filteredNotifs = filterNotificationsForRole(
+                    response.data.filter(n => !n.createdBy || String(n.createdBy) !== String(authUser._id) || (n.userId && String(n.userId) === String(authUser._id))),
+                    authUser.role
+                );
                 dispatch({ type: 'SET_NOTIFICATIONS', payload: filteredNotifs });
             } catch (error) {
                 console.error('Error fetching notifications:', error);
@@ -108,6 +113,14 @@ export default function CustomerHeader() {
         } catch (error) {
             console.error('Error marking all as read:', error);
         }
+    };
+
+    const handleNotifClick = (notif) => {
+        if (notif.unread) {
+            handleMarkRead(notif._id);
+        }
+        setIsNotifOpen(false);
+        navigate(getNotificationPath(notif, authUser.role));
     };
 
     useEffect(() => {
@@ -181,9 +194,9 @@ export default function CustomerHeader() {
                             <CustomerNotificationDropdown
                                 notifications={notifications}
                                 onClose={() => setIsNotifOpen(false)}
-                                onMarkAsRead={handleMarkRead}
                                 onMarkAllRead={handleMarkAllRead}
                                 onViewAll={() => setShowAllNotifs(true)}
+                                onNotifClick={handleNotifClick}
                             />
                         )}
                     </div>
@@ -348,7 +361,8 @@ export default function CustomerHeader() {
                 isOpen={showAllNotifs}
                 onClose={() => setShowAllNotifs(false)}
                 notifications={notifications}
-                onMarkAsRead={handleMarkRead}
+                onNotifClick={handleNotifClick}
+                onMarkAllRead={handleMarkAllRead}
             />
         </header>
     );

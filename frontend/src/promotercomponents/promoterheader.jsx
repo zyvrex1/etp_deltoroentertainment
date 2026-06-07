@@ -8,6 +8,8 @@ import { useLogout } from "../hooks/useLogout";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useNotificationsContext } from "../hooks/useNotificationsContext";
 import ViewNotif from "../admincomponents/Modal/ViewNotif";
+import { getNotificationPath } from "../utils/notificationPaths";
+import { filterNotificationsForRole } from "../utils/notificationFilters";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -52,7 +54,10 @@ const PromoterHeader = ({ mobileExpanded, setMobileExpanded }) => {
           }
         });
         // Filter out notifications created by the current user
-        const filteredNotifs = response.data.filter(n => !n.createdBy || String(n.createdBy) !== String(authUser._id));
+        const filteredNotifs = filterNotificationsForRole(
+          response.data.filter(n => !n.createdBy || String(n.createdBy) !== String(authUser._id)),
+          authUser.role
+        );
         dispatch({ type: 'SET_NOTIFICATIONS', payload: filteredNotifs });
       } catch (error) {
         console.error('Error fetching notifications:', error);
@@ -95,15 +100,7 @@ const PromoterHeader = ({ mobileExpanded, setMobileExpanded }) => {
       handleMarkRead(notif._id);
     }
     setIsNotifOpen(false);
-    
-    let path = notif.path;
-    // Translate admin paths to promoter paths
-    if (authUser.role === 'promoter') {
-      if (path === '/admin/content') path = '/promoter/promoter-announcement';
-      if (path === '/admin/events') path = '/promoter/promoter-eventmanagement';
-    }
-    
-    navigate(path);
+    navigate(getNotificationPath(notif, authUser.role));
   };
 
   const getInitials = (firstName, lastName) => {
