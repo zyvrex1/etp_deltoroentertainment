@@ -1,3 +1,5 @@
+import { showLoadingToast, closeLoadingToast } from './sweetAlert';
+
 const MARGIN = 15;
 const HEADER_HEIGHT = 35;
 const FOOTER_HEIGHT = 15;
@@ -115,23 +117,18 @@ export function finalizeReport(pdf) {
 }
 
 /**
- * Show loading toast
+ * Show loading toast (SweetAlert2 — consistent with app toasts)
  */
 export function showExportToast() {
-    const toast = document.createElement('div');
-    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #333; color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000;';
-    toast.textContent = 'Generating PDF...';
-    document.body.appendChild(toast);
-    return toast;
+    showLoadingToast('Generating PDF...');
+    return true;
 }
 
 /**
  * Remove loading toast
  */
-export function removeExportToast(toast) {
-    if (toast && document.body.contains(toast)) {
-        document.body.removeChild(toast);
-    }
+export function removeExportToast() {
+    closeLoadingToast();
 }
 
 /**

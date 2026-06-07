@@ -14,44 +14,6 @@
   position: relative;
 }
 
-/* ── Toast ─────────────────────────────────────────────────── */
-.dg-toast {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--color-green-quaternary);
-  border: 1px solid var(--color-green-primary);
-  color: var(--color-green-primary);
-  padding: 12px 20px;
-  border-radius: 12px;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  animation: dg-slide-in 0.25s ease;
-
-  svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-}
-
-.dg-toast-error {
-  background: var(--color-red-quaternary);
-  border-color: var(--color-red-primary);
-  color: var(--color-red-primary);
-}
-
-@keyframes dg-slide-in {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 /* ── Page Header ────────────────────────────────────────────── */
 .dg-header {
   display: flex;
@@ -385,20 +347,136 @@
   color: var(--color-black-quaternary);
 }
 
-/* ── Gift Card Grid ─────────────────────────────────────────── */
+/* ── Gift Card Grid (4 × 2 = 8 per page) ────────────────────── */
 .dg-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 
   @media (max-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 900px) {
     grid-template-columns: repeat(2, 1fr);
   }
 
   @media (max-width: 600px) {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Pagination ─────────────────────────────────────────────── */
+.dg-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.dg-pagination .pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-black-quaternary);
+  background: var(--color-white-primary);
+  color: var(--color-black-primary);
+  cursor: pointer;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+}
+
+.dg-pagination .pagination-btn:hover:not(:disabled) {
+  background: var(--color-bg-light);
+  border-color: var(--color-black-tertiary);
+}
+
+.dg-pagination .pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dg-pagination .pagination-info {
+  color: var(--color-black-secondary);
+  font-size: 14px;
+}
+
+/* ── Skeleton Loading ───────────────────────────────────────── */
+@keyframes dg-skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-box {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: dg-skeleton-shimmer 1.5s infinite linear;
+  border-radius: 4px;
+  display: block;
+}
+
+.dg-card-skeleton {
+  pointer-events: none;
+}
+
+.dg-card-skeleton:hover {
+  box-shadow: none;
+}
+
+.dg-skeleton-badge {
+  width: 100px;
+  height: 24px;
+  border-radius: 8px;
+}
+
+.dg-skeleton-status {
+  width: 64px;
+  height: 24px;
+  border-radius: 8px;
+}
+
+.dg-skeleton-title {
+  width: 70%;
+  height: 20px;
+}
+
+.dg-skeleton-desc {
+  width: 90%;
+  height: 14px;
+}
+
+.dg-skeleton-value {
+  width: 45%;
+  height: 28px;
+  margin: 8px 0;
+}
+
+.dg-skeleton-progress {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.dg-skeleton-footer {
+  width: 80px;
+  height: 14px;
+}
+
+.dg-skeleton-code {
+  width: 72px;
+  height: 14px;
+}
+
+.dg-skeleton-expiry {
+  width: 55%;
+  height: 14px;
 }
 
 /* ── Individual Gift Card ───────────────────────────────────── */

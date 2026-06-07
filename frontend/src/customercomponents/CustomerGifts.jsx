@@ -3,7 +3,7 @@ import GiftsView from "../components/GiftsView";
 
 export default function CustomerGifts() {
   return (
-    <div className="customer-gifts-page" style={{ padding: "24px 0" }}>
+    <div className="customer-gifts-page">
       <GiftsView role="customer" />
     </div>
   );

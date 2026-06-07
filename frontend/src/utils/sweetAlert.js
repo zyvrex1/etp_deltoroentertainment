@@ -42,6 +42,27 @@ export const showErrorAlert = (title, message) => {
     });
 };
 
+// Loading toast (e.g. PDF export) — pair with closeLoadingToast()
+export const showLoadingToast = (message = 'Generating PDF...') => {
+    return Toast.fire({
+        title: message,
+        showConfirmButton: false,
+        timer: undefined,
+        timerProgressBar: false,
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        customClass: {
+            popup: 'swal2-toast-custom',
+            closeButton: 'swal2-close'
+        }
+    });
+};
+
+export const closeLoadingToast = () => {
+    Swal.close();
+};
+
 // Warning Alert (Toast)
 export const showWarningAlert = (title, message) => {
     return Toast.fire({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Icon } from "@iconify/react";
 import { io } from "socket.io-client";
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -6,12 +6,15 @@ import digitalgiftsService from "../services/digitalgiftsService";
 import { showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 import "./GiftsView.css";
 
+const ITEMS_PER_PAGE = 8;
+
 export default function GiftsView({ role = "customer" }) {
   const { user } = useAuthContext();
   const [myGifts, setMyGifts] = useState([]);
   const [claimCode, setClaimCode] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchMyGifts = useCallback(async () => {
     if (!user?.token) return;
@@ -29,6 +32,25 @@ export default function GiftsView({ role = "customer" }) {
   useEffect(() => {
     fetchMyGifts();
   }, [fetchMyGifts]);
+
+  const totalPages = Math.max(1, Math.ceil(myGifts.length / ITEMS_PER_PAGE));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedGifts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return myGifts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [myGifts, currentPage]);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   useEffect(() => {
     if (!user?.token) return;
@@ -61,6 +83,7 @@ export default function GiftsView({ role = "customer" }) {
       await digitalgiftsService.redeemByCode(claimCode.trim(), user.token);
       await showSuccessAlert("Success!", `Gift code "${claimCode.toUpperCase()}" successfully claimed!`);
       setClaimCode("");
+      setCurrentPage(1);
       fetchMyGifts();
     } catch (error) {
       await showErrorAlert("Claim Failed", error.message || "Invalid, expired, or fully redeemed gift code.");
@@ -87,6 +110,89 @@ export default function GiftsView({ role = "customer" }) {
     if (g.valueType === "fixed") return `$${g.value?.toLocaleString()}`;
     return "Buy 2 Get 1 Free";
   };
+
+  const renderGiftCard = (gift) => {
+    const isRedeemed = gift.assignmentStatus === "redeemed";
+    const isExpired = gift.status === "expired" || (gift.expiresAt && new Date(gift.expiresAt) < new Date());
+    const badgeClass = isRedeemed
+      ? "badge-redeemed"
+      : isExpired
+      ? "badge-expired"
+      : "badge-active";
+
+    return (
+      <div
+        key={gift.giftId}
+        className={`my-gift-card ${isRedeemed ? "redeemed" : ""} ${isExpired ? "expired" : ""}`}
+      >
+        <div className="card-top-row">
+          <div className={`button-label gift-badge ${isRedeemed ? "redeemed" : ""} ${isExpired ? "expired" : ""}`}>
+            <Icon icon={getCardIcon(gift.type)} />
+            <span>
+              {gift.type === "gift_card"
+                ? "Gift Card"
+                : gift.type === "discount"
+                ? "Discount"
+                : "Coupon"}
+            </span>
+          </div>
+          <span className={`button-label status-badge ${badgeClass}`}>
+            {isRedeemed ? "Redeemed" : isExpired ? "Expired" : "Active"}
+          </span>
+        </div>
+
+        <div className="card-main-info">
+          <h3 className="gift-name">{gift.name}</h3>
+          <p className="gift-description smaller-body-text">
+            {gift.description || "No description provided."}
+          </p>
+        </div>
+
+        <div className="card-value-display">
+          <h2 className="gift-value">{formatValue(gift)}</h2>
+        </div>
+
+        <div className="card-footer-row">
+          <div className="gift-expiry-display">
+            <Icon icon="mdi:calendar-clock" />
+            <span>
+              {gift.expiresAt
+                ? `Exp: ${new Date(gift.expiresAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}`
+                : "No Expiration"}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSkeletonCards = () => (
+    <div className="my-gifts-grid">
+      {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
+        <div key={index} className="my-gift-card gift-card-skeleton">
+          <div className="card-top-row">
+            <div className="skeleton-box gift-skeleton-badge" />
+            <div className="skeleton-box gift-skeleton-status" />
+          </div>
+          <div className="card-main-info">
+            <div className="skeleton-box gift-skeleton-title" />
+            <div className="skeleton-box gift-skeleton-desc" />
+            <div className="skeleton-box gift-skeleton-desc-short" />
+          </div>
+          <div className="card-value-display">
+            <div className="skeleton-box gift-skeleton-value" />
+          </div>
+          <div className="card-footer-row">
+            <div className="skeleton-box gift-skeleton-expiry" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="gifts-view-container">
@@ -126,10 +232,7 @@ export default function GiftsView({ role = "customer" }) {
 
       {/* Gifts & Discounts Grid */}
       {isLoading ? (
-        <div className="gifts-loader">
-          <div className="spinner-large"></div>
-          <p>Loading your digital gifts...</p>
-        </div>
+        renderSkeletonCards()
       ) : myGifts.length === 0 ? (
         <div className="gifts-empty-state">
           <Icon icon="mdi:gift-off-outline" className="empty-icon" />
@@ -139,70 +242,33 @@ export default function GiftsView({ role = "customer" }) {
           </p>
         </div>
       ) : (
-        <div className="my-gifts-grid">
-          {myGifts.map((gift) => {
-            const isRedeemed = gift.assignmentStatus === "redeemed";
-            const isExpired = gift.status === "expired" || (gift.expiresAt && new Date(gift.expiresAt) < new Date());
-            const badgeClass = isRedeemed
-              ? "badge-redeemed"
-              : isExpired
-              ? "badge-expired"
-              : "badge-active";
+        <>
+          <div className="my-gifts-grid">
+            {paginatedGifts.map((gift) => renderGiftCard(gift))}
+          </div>
 
-            return (
-              <div
-                key={gift.giftId}
-                className={`my-gift-card ${isRedeemed ? "redeemed" : ""} ${
-                  isExpired ? "expired" : ""
-                }`}
+          {totalPages > 1 && (
+            <div className="gifts-pagination">
+              <button
+                className="pagination-btn"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
               >
-                <div className="card-top-row">
-                  <div className={`button-label gift-badge ${isRedeemed ? "redeemed" : ""} ${
-                    isExpired ? "expired" : ""
-                  }`}>
-                    <Icon icon={getCardIcon(gift.type)} />
-                    <span>
-                      {gift.type === "gift_card"
-                        ? "Gift Card"
-                        : gift.type === "discount"
-                        ? "Discount"
-                        : "Coupon"}
-                    </span>
-                  </div>
-                  <span className={`button-label status-badge ${badgeClass}`}>
-                    {isRedeemed ? "Redeemed" : isExpired ? "Expired" : "Active"}
-                  </span>
-                </div>
-
-                <div className="card-main-info">
-                  <h3 className="gift-name">{gift.name}</h3>
-                  <p className="gift-description smaller-body-text">
-                    {gift.description || "No description provided."}
-                  </p>
-                </div>
-
-                <div className="card-value-display">
-                  <h2 className="gift-value">{formatValue(gift)}</h2>
-                </div>
-
-                <div className="card-footer-row">
-                  <div className="gift-expiry-display">
-                    <Icon icon="mdi:calendar-clock" />
-                    <span>
-                      {gift.expiresAt
-                        ? `Exp: ${new Date(gift.expiresAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}`
-                        : "No Expiration"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                Previous
+              </button>
+              <span className="pagination-info regular-body-text">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

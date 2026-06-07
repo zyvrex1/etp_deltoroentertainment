@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
     MdCardGiftcard,
     MdAdd,
@@ -14,7 +14,6 @@ import {
     MdConfirmationNumber,
     MdCalendarToday,
     MdCheckCircle,
-    MdCancel,
     MdHourglassEmpty,
     MdMoreVert,
     MdContentCopy,
@@ -31,10 +30,13 @@ import adminService from "../services/adminService";
 import {
     showSuccessAlert,
     showErrorAlert,
+    showWarningAlert,
     showCreateConfirmAlert,
     showUpdateConfirmAlert,
     showDeleteConfirmAlert
 } from "../utils/sweetAlert";
+
+const ITEMS_PER_PAGE = 8;
 
 const TYPE_META = {
     gift_card: { label: "Gift card", icon: <MdCardGiftcard />, colorClass: "badge-blue" },
@@ -80,13 +82,15 @@ export default function DigitalGifts() {
     const [activeMenu, setActiveMenu] = useState(null);
     const [assignForm, setAssignForm] = useState({ userId: "", userLabel: "", giftId: "", userRole: "", userEmail: "" });
     const [copiedCode, setCopiedCode] = useState(null);
-    const [toast, setToast] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
     const filterDropdownRef = useRef(null);
 
     const fetchData = async () => {
         if (!user?.token) return;
+        setIsLoading(true);
         try {
             const giftsData = await digitalgiftsService.getGifts(user.token);
             setGifts(giftsData);
@@ -101,7 +105,9 @@ export default function DigitalGifts() {
             setUsers(usersList);
         } catch (err) {
             console.error("Fetch digital gifts error:", err);
-            showToast(err.message || "Failed to load data.", "error");
+            showErrorAlert("Failed to load", err.message || "Failed to load digital gifts data.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -119,12 +125,7 @@ export default function DigitalGifts() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isFilterDropdownOpen]);
 
-    const showToast = (msg, type = "success") => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3000);
-    };
-
-    const filtered = gifts.filter((g) => {
+    const filtered = useMemo(() => gifts.filter((g) => {
         const matchFilter =
             filter === "all" ||
             (filter === "active" && g.status === "active") ||
@@ -138,7 +139,30 @@ export default function DigitalGifts() {
             g.name.toLowerCase().includes(search.toLowerCase()) ||
             g.code.toLowerCase().includes(search.toLowerCase());
         return matchFilter && matchSearch;
-    });
+    }), [gifts, filter, search]);
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+
+    const paginatedGifts = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filtered, currentPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filter, search]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
+
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
 
     const handleOpenCreate = () => {
         setEditingId(null);
@@ -179,7 +203,7 @@ export default function DigitalGifts() {
 
     const handleSave = async () => {
         if (!form.name || !form.code || !form.expiresAt && form.expiresAt !== "none") {
-            showToast("Please fill in all required fields.", "error");
+            showWarningAlert("Missing fields", "Please fill in all required fields.");
             return;
         }
 
@@ -219,7 +243,7 @@ export default function DigitalGifts() {
 
     const handleAssign = async () => {
         if (!assignForm.userLabel || !assignForm.giftId) {
-            showToast("Please select a user and a gift.", "error");
+            showWarningAlert("Missing selection", "Please select a user and a gift.");
             return;
         }
 
@@ -229,7 +253,7 @@ export default function DigitalGifts() {
                 const targetUsers = users.filter(u => u.role.toLowerCase() === targetRole);
 
                 if (targetUsers.length === 0) {
-                    showToast(`No users found with role ${targetRole}.`, "error");
+                    showWarningAlert("No users found", `No users found with role ${targetRole}.`);
                     return;
                 }
 
@@ -244,7 +268,7 @@ export default function DigitalGifts() {
                         userRole: u.role.toLowerCase()
                     }, user.token);
                 }
-                showToast(`Gift assigned to all ${targetRole}s.`);
+                await showSuccessAlert("Assigned", `Gift assigned to all ${targetRole}s.`);
             } else {
                 await digitalgiftsService.assignGift(assignForm.giftId, {
                     userId: assignForm.userId,
@@ -252,13 +276,13 @@ export default function DigitalGifts() {
                     userEmail: assignForm.userEmail,
                     userRole: assignForm.userRole || "customer"
                 }, user.token);
-                showToast(`Gift assigned to ${assignForm.userLabel}.`);
+                await showSuccessAlert("Assigned", `Gift assigned to ${assignForm.userLabel}.`);
             }
             setShowAssignModal(false);
             setAssignForm({ userId: "", userLabel: "", giftId: "", userRole: "", userEmail: "" });
             fetchData();
         } catch (err) {
-            showToast(err.message || "Failed to assign gift.", "error");
+            showErrorAlert("Assignment failed", err.message || "Failed to assign gift.");
         }
     };
 
@@ -280,15 +304,114 @@ export default function DigitalGifts() {
         return "Buy 1 Get 1 Free";
     };
 
+    const renderGiftCard = (gift) => {
+        const giftKey = gift._id || gift.id;
+        return (
+            <div key={giftKey} className={`dg-card ${gift.status === "expired" ? "dg-card-expired" : ""}`}>
+                <div className="dg-card-top">
+                    <span className={`button-label ${TYPE_META[gift.type].colorClass}`}>
+                        {TYPE_META[gift.type].icon} {TYPE_META[gift.type].label}
+                    </span>
+                    <div className="dg-card-right">
+                        <span className={`button-label ${STATUS_META[gift.status].colorClass}`}>
+                            {STATUS_META[gift.status].label}
+                        </span>
+                        <div className="dg-menu-wrap">
+                            <button className="dg-menu-btn" onClick={() => setActiveMenu(activeMenu === giftKey ? null : giftKey)}>
+                                <MdMoreVert />
+                            </button>
+                            {activeMenu === giftKey && (
+                                <div className="dg-menu">
+                                    <button onClick={() => handleViewDetail(gift)}>
+                                        <MdVisibility /> View details
+                                    </button>
+                                    <button onClick={() => handleEdit(gift)}>
+                                        <MdEdit /> Edit
+                                    </button>
+                                    {gift.status !== "expired" && (
+                                        <button
+                                            onClick={() => {
+                                                setAssignForm((p) => ({ ...p, giftId: giftKey }));
+                                                setShowAssignModal(true);
+                                                setActiveMenu(null);
+                                            }}
+                                        >
+                                            <MdSend /> Assign
+                                        </button>
+                                    )}
+                                    <button className="dg-menu-delete" onClick={() => handleDelete(giftKey)}>
+                                        <MdDelete /> Delete
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <p className="dg-card-name large-body-text">{gift.name}</p>
+                <p className="dg-card-desc smaller-body-text">{gift.description}</p>
+
+                <h4 className="dg-card-value">{formatValue(gift)}</h4>
+
+                <div className="dg-progress-wrap">
+                    <div className="dg-progress-bar">
+                        <div
+                            className="dg-progress-fill"
+                            style={{ width: `${Math.min(((gift.usedCount || 0) / (gift.totalCount || 1)) * 100, 100)}%` }}
+                        />
+                    </div>
+                    <span className="dg-progress-label">{(gift.usedCount || 0)}/{(gift.totalCount || 0)} used</span>
+                </div>
+
+                <div className="dg-card-footer">
+                    <div className="dg-assignee">
+                        {gift.assignedTo === "customers" ? <MdPeople /> : gift.assignedTo === "sponsors" ? <MdStorefront /> : <MdPeople />}
+                        <span>{gift.assignedTo === "all" ? "Everyone" : gift.assignedTo.charAt(0).toUpperCase() + gift.assignedTo.slice(1)}</span>
+                    </div>
+                    <div className="dg-code-wrap">
+                        <span className="dg-code">{gift.code}</span>
+                        <button className="dg-copy-btn" onClick={() => handleCopyCode(gift.code)} title="Copy code">
+                            {copiedCode === gift.code ? <MdCheckCircle style={{ color: "var(--dg-green)" }} /> : <MdContentCopy />}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="dg-expiry">
+                    <MdCalendarToday />
+                    <span>
+                        {gift.expiresAt
+                            ? `${gift.status === "expired" ? "Expired" : "Expires"} ${new Date(gift.expiresAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`
+                            : "No expiration"}
+                    </span>
+                </div>
+            </div>
+        );
+    };
+
+    const renderSkeletonCards = () => (
+        <div className="dg-grid">
+            {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
+                <div key={index} className="dg-card dg-card-skeleton">
+                    <div className="dg-card-top">
+                        <div className="skeleton-box dg-skeleton-badge" />
+                        <div className="skeleton-box dg-skeleton-status" />
+                    </div>
+                    <div className="skeleton-box dg-skeleton-title" />
+                    <div className="skeleton-box dg-skeleton-desc" />
+                    <div className="skeleton-box dg-skeleton-value" />
+                    <div className="skeleton-box dg-skeleton-progress" />
+                    <div className="dg-card-footer">
+                        <div className="skeleton-box dg-skeleton-footer" />
+                        <div className="skeleton-box dg-skeleton-code" />
+                    </div>
+                    <div className="skeleton-box dg-skeleton-expiry" />
+                </div>
+            ))}
+        </div>
+    );
+
     return (
         <div className="dg-page">
-            {toast && (
-                <div className={`dg-toast ${toast.type === "error" ? "dg-toast-error" : ""}`}>
-                    {toast.type === "error" ? <MdCancel /> : <MdCheckCircle />}
-                    {toast.msg}
-                </div>
-            )}
-
             <div className="dg-header">
                 <div>
                     <h1 className="dg-title">Digital Gifts</h1>
@@ -373,94 +496,41 @@ export default function DigitalGifts() {
                     </div>
                 </div>
 
-                {filtered.length === 0 ? (
+                {isLoading ? (
+                    renderSkeletonCards()
+                ) : filtered.length === 0 ? (
                     <div className="dg-empty">
                         <MdCardGiftcard className="dg-empty-icon" />
                         <p className="regular-body-text">No gifts found. Try adjusting filters or create a new one.</p>
                     </div>
                 ) : (
-                    <div className="dg-grid">
-                        {filtered.map((gift) => (
-                            <div key={gift.id} className={`dg-card ${gift.status === "expired" ? "dg-card-expired" : ""}`}>
-                                <div className="dg-card-top">
-                                    <span className={`button-label ${TYPE_META[gift.type].colorClass}`}>
-                                        {TYPE_META[gift.type].icon} {TYPE_META[gift.type].label}
-                                    </span>
-                                    <div className="dg-card-right">
-                                        <span className={`button-label ${STATUS_META[gift.status].colorClass}`}>
-                                            {STATUS_META[gift.status].label}
-                                        </span>
-                                        <div className="dg-menu-wrap">
-                                            <button className="dg-menu-btn" onClick={() => setActiveMenu(activeMenu === gift.id ? null : gift.id)}>
-                                                <MdMoreVert />
-                                            </button>
-                                            {activeMenu === gift.id && (
-                                                <div className="dg-menu">
-                                                    <button onClick={() => handleViewDetail(gift)}>
-                                                        <MdVisibility /> View details
-                                                    </button>
-                                                    <button onClick={() => handleEdit(gift)}>
-                                                        <MdEdit /> Edit
-                                                    </button>
-                                                    {gift.status !== "expired" && (
-                                                        <button
-                                                            onClick={() => {
-                                                                setAssignForm((p) => ({ ...p, giftId: gift.id }));
-                                                                setShowAssignModal(true);
-                                                                setActiveMenu(null);
-                                                            }}
-                                                        >
-                                                            <MdSend /> Assign
-                                                        </button>
-                                                    )}
-                                                    <button className="dg-menu-delete" onClick={() => handleDelete(gift.id)}>
-                                                        <MdDelete /> Delete
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                    <>
+                        <div className="dg-grid">
+                            {paginatedGifts.map((gift) => renderGiftCard(gift))}
+                        </div>
 
-                                <p className="dg-card-name large-body-text">{gift.name}</p>
-                                <p className="dg-card-desc smaller-body-text">{gift.description}</p>
-
-                                <h4 className="dg-card-value">{formatValue(gift)}</h4>
-
-                                <div className="dg-progress-wrap">
-                                    <div className="dg-progress-bar">
-                                        <div
-                                            className="dg-progress-fill"
-                                            style={{ width: `${Math.min(((gift.usedCount || 0) / (gift.totalCount || 1)) * 100, 100)}%` }}
-                                        />
-                                    </div>
-                                    <span className="dg-progress-label">{(gift.usedCount || 0)}/{(gift.totalCount || 0)} used</span>
-                                </div>
-
-                                <div className="dg-card-footer">
-                                    <div className="dg-assignee">
-                                        {gift.assignedTo === "customers" ? <MdPeople /> : gift.assignedTo === "sponsors" ? <MdStorefront /> : <MdPeople />}
-                                        <span>{gift.assignedTo === "all" ? "Everyone" : gift.assignedTo.charAt(0).toUpperCase() + gift.assignedTo.slice(1)}</span>
-                                    </div>
-                                    <div className="dg-code-wrap">
-                                        <span className="dg-code">{gift.code}</span>
-                                        <button className="dg-copy-btn" onClick={() => handleCopyCode(gift.code)} title="Copy code">
-                                            {copiedCode === gift.code ? <MdCheckCircle style={{ color: "var(--dg-green)" }} /> : <MdContentCopy />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="dg-expiry">
-                                    <MdCalendarToday />
-                                    <span>
-                                        {gift.expiresAt
-                                            ? `${gift.status === "expired" ? "Expired" : "Expires"} ${new Date(gift.expiresAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`
-                                            : "No expiration"}
-                                    </span>
-                                </div>
+                        {totalPages > 1 && (
+                            <div className="dg-pagination pagination">
+                                <button
+                                    className="pagination-btn"
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                >
+                                    Previous
+                                </button>
+                                <span className="pagination-info regular-body-text">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    className="pagination-btn"
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    Next
+                                </button>
                             </div>
-                        ))}
-                    </div>
+                        )}
+                    </>
                 )}
             </div>
 
