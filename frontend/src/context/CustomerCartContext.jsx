@@ -43,14 +43,11 @@ export const CustomerCartProvider = ({ children }) => {
         return [];
     });
 
-    // --- Sync Cart with Backend ---
     const hasInitialSynced = useRef(false);
     const { dispatch } = useAuthContext();
 
-    // Explicit save helper
     const saveCustomerCart = (newItems, currentUser = user) => {
         localStorage.setItem('customerCart', JSON.stringify(newItems));
-        
         if (currentUser && currentUser.token) {
             userService.updateCart(newItems, currentUser.token).then(updatedCart => {
                 const updatedUser = { ...currentUser, cart: updatedCart };
@@ -64,26 +61,20 @@ export const CustomerCartProvider = ({ children }) => {
 
     useEffect(() => {
         if (user && user.token && !hasInitialSynced.current) {
-            // If user just logged in, they might have cart data in their profile
             let didMerge = false;
             let finalCart = [...cartItems];
 
             if (user.cart && user.cart.length > 0) {
                 const localIds = new Set(finalCart.filter(item => item?.seat?.id).map(item => item.seat.id));
                 const remoteItems = user.cart.filter(item => item?.seat?.id && !localIds.has(item.seat.id));
-                
                 if (remoteItems.length > 0) {
                     finalCart = [...finalCart, ...remoteItems];
                     didMerge = true;
                 }
             }
-            
-            if (didMerge) {
-                setCartItems(finalCart);
-            }
-            
-            // Only sync to backend if we had local items that weren't in the DB, 
-            // OR if we merged items. This prevents sending [] to the DB on mount!
+
+            if (didMerge) setCartItems(finalCart);
+
             if (didMerge || (user.cart?.length === 0 && finalCart.length > 0)) {
                 saveCustomerCart(finalCart, user);
             }
@@ -92,51 +83,116 @@ export const CustomerCartProvider = ({ children }) => {
         }
     }, [user]);
 
+    /**
+     * Build a discount lookup map from locally-stored purchase history.
+     *
+     * We key by TWO strategies so we can match both before and after fetchHistory runs:
+     *   1. resId  — extracted from cartId "db-{resId}-{idx}" (post-fetchHistory items)
+     *   2. purchaseDate (ISO string, truncated to the minute) — matches items written
+     *      by completePurchase before they get replaced by fetchHistory items.
+     *
+     * This ensures discount data is never lost during the 2-second fetchHistory delay.
+     */
+    const buildLocalDiscountMap = (localHistory) => {
+        const map = {};
+        localHistory.forEach(item => {
+            if (!item.appliedGift && !item.discountAmount) return;
 
-    // --- Sync Purchase History with Backend ---
+            // Strategy 1: cartId pattern "db-{resId}-{idx}"
+            const match = item.cartId?.match(/^db-(.+)-(\d+)$/);
+            if (match) {
+                const resId = match[1];
+                if (!map[`resId:${resId}`]) {
+                    map[`resId:${resId}`] = {
+                        appliedGift: item.appliedGift || null,
+                        discountAmount: item.discountAmount || 0,
+                    };
+                }
+            }
+
+            // Strategy 2: purchaseDate truncated to minute (e.g. "2024-01-15T10:30")
+            if (item.purchaseDate) {
+                const dateKey = `date:${item.purchaseDate.slice(0, 16)}`;
+                if (!map[dateKey]) {
+                    map[dateKey] = {
+                        appliedGift: item.appliedGift || null,
+                        discountAmount: item.discountAmount || 0,
+                    };
+                }
+            }
+        });
+        return map;
+    };
+
     const fetchHistory = useCallback(async () => {
         if (!user || !user.token) return;
         try {
             const reservations = await reservationService.getMyReservations(user.token);
-            
-            // Format reservations into the format expected by the frontend
+
+            // Snapshot local discount data before overwriting
+            const localHistory = JSON.parse(localStorage.getItem('customerPurchaseHistory') || '[]');
+            const localDiscountMap = buildLocalDiscountMap(localHistory);
+
+            /**
+             * Resolve discount for a reservation.
+             * Checks backend data first, then falls back to local map using:
+             *   1. resId key
+             *   2. createdAt date key (matches completePurchase items written seconds ago)
+             */
+            const resolveDiscount = (res) => {
+                if (res.appliedGift || res.amount?.discount) {
+                    return {
+                        resolvedGift: res.appliedGift || null,
+                        resolvedDiscount: res.amount?.discount || 0,
+                    };
+                }
+
+                const byResId = localDiscountMap[`resId:${res._id}`];
+                if (byResId) return { resolvedGift: byResId.appliedGift, resolvedDiscount: byResId.discountAmount };
+
+                // Match by createdAt minute — covers items just written by completePurchase
+                const dateKey = `date:${res.createdAt?.slice(0, 16)}`;
+                const byDate = localDiscountMap[dateKey];
+                if (byDate) return { resolvedGift: byDate.appliedGift, resolvedDiscount: byDate.discountAmount };
+
+                return { resolvedGift: null, resolvedDiscount: 0 };
+            };
+
             const formattedHistory = [];
             reservations.forEach(res => {
-                // If it's a seated reservation, it has seatIds and seatLabels
                 if (res.type === 'seat' && res.seatIds) {
-                    const isBXGY = res.appliedGift?.valueType === 'bxgy' && res.seatIds.length > 1;
-                    res.seatIds.forEach((sid, idx) => {
-                        let facePrice = 0;
-                        if (isBXGY) {
-                            if (idx < res.seatIds.length - 1) {
-                                facePrice = res.amount.subtotal / (res.seatIds.length - 1);
-                            } else {
-                                facePrice = 0;
-                            }
-                        } else {
-                            facePrice = res.amount.subtotal / res.seatIds.length;
-                        }
+                    const pricePerSeat = res.amount.subtotal / res.seatIds.length;
+                    const { resolvedGift, resolvedDiscount } = resolveDiscount(res);
 
+                    const isBXGY = resolvedGift?.valueType === 'bxgy' && res.seatIds.length > 1;
+
+                    res.seatIds.forEach((sid, idx) => {
                         formattedHistory.push({
                             cartId: `db-${res._id}-${idx}`,
                             event: res.event,
-                            categoryId: '', // We don't have cat info in reservation model yet
+                            categoryId: '',
                             categoryName: sid.startsWith("GA-") ? "Ticket" : "Seat Ticket",
                             seat: {
                                 id: sid,
                                 label: res.seatLabels[idx] || sid,
                                 row: ''
                             },
-                            facePrice: facePrice || 0,
+                            facePrice: pricePerSeat,
+                            isBXGYFree: isBXGY && idx === 0,
                             serviceFee: (res.amount.fee / res.seatIds.length) || 0,
                             purchaseDate: res.createdAt,
                             paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
                             poNumber: res.poNumber || '',
                             status: res.status,
-                            qrData: res.qrData || res._id.toString()
+                            qrData: res.qrData || res._id.toString(),
+                            // Discount only on first item to avoid duplication in sum
+                            appliedGift: idx === 0 ? resolvedGift : null,
+                            discountAmount: idx === 0 ? resolvedDiscount : 0,
                         });
                     });
                 } else if (res.type === 'booth') {
+                    const { resolvedGift, resolvedDiscount } = resolveDiscount(res);
+
                     formattedHistory.push({
                         cartId: `db-${res._id}`,
                         event: res.event,
@@ -153,7 +209,9 @@ export const CustomerCartProvider = ({ children }) => {
                         paymentMethod: res.paymentMethod === 'card' ? 'Credit Card' : 'Invoice / Bank Transfer',
                         poNumber: res.poNumber || '',
                         status: res.status,
-                        qrData: res.qrData || res._id.toString()
+                        qrData: res.qrData || res._id.toString(),
+                        appliedGift: resolvedGift,
+                        discountAmount: resolvedDiscount,
                     });
                 }
             });
@@ -169,7 +227,6 @@ export const CustomerCartProvider = ({ children }) => {
         fetchHistory();
     }, [fetchHistory]);
 
-    // Save history to localStorage (redundant but kept for offline support)
     useEffect(() => {
         localStorage.setItem('customerPurchaseHistory', JSON.stringify(purchaseHistory));
     }, [purchaseHistory]);
@@ -197,17 +254,15 @@ export const CustomerCartProvider = ({ children }) => {
         }));
 
         setCartItems(prev => {
-            // Filter out seats that are already in the cart for this specific event
             const filteredNewItems = newItems.filter(newItem => {
-                const isDuplicate = prev.some(item => 
-                    item.event._id === newItem.event._id && 
+                const isDuplicate = prev.some(item =>
+                    item.event._id === newItem.event._id &&
                     item.seat.id === newItem.seat.id
                 );
                 return !isDuplicate;
             });
 
             if (filteredNewItems.length === 0) return prev;
-
             const newCart = [...prev, ...filteredNewItems];
             saveCustomerCart(newCart);
             return newCart;
@@ -222,27 +277,53 @@ export const CustomerCartProvider = ({ children }) => {
         });
     };
 
-    const completePurchase = (cartIds, paymentMethod = 'Credit Card', poNumber = '', totalFee = 0) => {
+    /**
+     * completePurchase
+     * @param {string[]}    cartIds       - cart item IDs being purchased
+     * @param {string}      paymentMethod - resolved payment method label
+     * @param {string}      poNumber      - PO number (invoice only)
+     * @param {number}      totalFee      - total service fee amount
+     * @param {object|null} selectedGift  - the applied gift card object (or null)
+     * @param {number}      discount      - calculated discount amount
+     */
+    const completePurchase = (cartIds, paymentMethod = 'Credit Card', poNumber = '', totalFee = 0, selectedGift = null, discount = 0) => {
         const itemsToPurchase = cartItems.filter(item => cartIds.includes(item.cartId));
         const feePerItem = itemsToPurchase.length > 0 ? (totalFee / itemsToPurchase.length) : 0;
-        const purchasedItems = itemsToPurchase.map(item => ({
+
+        let bxgyFreeCartId = null;
+        if (selectedGift?.valueType === 'bxgy' && itemsToPurchase.length >= 2) {
+            const sorted = [...itemsToPurchase].sort((a, b) => a.facePrice - b.facePrice);
+            bxgyFreeCartId = sorted[0].cartId;
+        }
+
+        const now = new Date().toISOString();
+
+        const purchasedItems = itemsToPurchase.map((item, idx) => ({
             ...item,
             serviceFee: feePerItem,
-            purchaseDate: new Date().toISOString(),
+            purchaseDate: now,
             paymentMethod,
             poNumber,
-            status: 'Upcoming'
+            status: 'Upcoming',
+            isBXGYFree: bxgyFreeCartId === item.cartId,
+            // Discount stored on first item only — summed in PaySuccess
+            appliedGift: idx === 0 ? (selectedGift || null) : null,
+            discountAmount: idx === 0 ? discount : 0,
         }));
 
         setPurchaseHistory(prev => [...purchasedItems, ...prev]);
+
+        const updatedHistory = [...purchasedItems, ...JSON.parse(localStorage.getItem('customerPurchaseHistory') || '[]')];
+        localStorage.setItem('customerPurchaseHistory', JSON.stringify(updatedHistory));
+
         setCartItems(prev => {
             const newCart = prev.filter(item => !cartIds.includes(item.cartId));
             saveCustomerCart(newCart);
             return newCart;
         });
-        
-        // Refetch from backend to ensure everything is synced
-        setTimeout(() => fetchHistory(), 1000);
+
+        // fetchHistory will now find discount via the date-key fallback
+        setTimeout(() => fetchHistory(), 2000);
     };
 
     const clearCart = () => {

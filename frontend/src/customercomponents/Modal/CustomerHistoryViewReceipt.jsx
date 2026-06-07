@@ -27,22 +27,22 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
     const data = receiptData || {
         orderNum: 'Seat - 12345',
         date: '5/1/2026 10:30:00 PM',
-        billedTo: {
-            name: 'Zyvrex Perez',
-            email: 'hello@zyvrex.com'
-        },
-        paymentMethod: 'Visa ending in 4242',
+        billedTo: { name: 'Guest', email: 'guest@example.com' },
+        paymentMethod: 'Credit Card',
         status: 'Paid',
         paymentStatus: 'Paid',
-        items: [
-            { item: 'Seat 12', type: 'VIP Ticket', qty: 1, price: '$150.00', total: '$150.00' },
-            { item: 'Event Hoodie', type: 'Merch', qty: 1, price: '$45.00', total: '$45.00' }
-        ],
-        subtotal: '$195.00',
-        serviceFee: '$10.00',
-        tax: '$15.37',
-        totalPaid: '$220.37'
+        items: [],
+        subtotal: '$0.00',
+        discountAmount: 0,
+        discountLabel: '',
+        serviceFee: '$0.00',
+        tax: '$0.00',
+        totalPaid: '$0.00'
     };
+
+    // Discount values — receiptData passes these in from handleViewReceipt
+    const discountAmount = data.discountAmount || 0;
+    const discountLabel = data.discountLabel || '';
 
     const handlePrint = () => {
         window.print();
@@ -63,7 +63,6 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
 
             addReportHeader(pdf, INVOICE_TITLE, logoData);
 
-            // ── helpers ──────────────────────────────────────────────────────
             const newPageIfNeeded = (needed) => {
                 if (y + needed > pdfHeight - FOOTER_HEIGHT - 5) {
                     pdf.addPage();
@@ -84,21 +83,17 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                 y += 10;
             };
 
-            // ── status color ─────────────────────────────────────────────────
             const statusColor =
-                data.status === 'Paid'     ? [22, 163, 74]  :
-                data.status === 'Pending'  ? [217, 119, 6]  :
-                                             [180, 50, 50];
+                data.status === 'Paid'    ? [22, 163, 74]  :
+                data.status === 'Pending' ? [217, 119, 6]  :
+                                            [180, 50, 50];
 
-            // ════════════════════════════════════════════════════════════════
-            // BANNER
-            // ════════════════════════════════════════════════════════════════
+            // ── BANNER ────────────────────────────────────────────────────────
             pdf.setFillColor(235, 240, 255);
             pdf.setDrawColor(180, 200, 245);
             pdf.setLineWidth(0.3);
             pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 22, 3, 3, 'FD');
 
-            // Left — order number
             pdf.setFontSize(11);
             pdf.setTextColor(30, 60, 114);
             pdf.setFont('helvetica', 'bold');
@@ -109,7 +104,6 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
             pdf.setFont('helvetica', 'normal');
             pdf.text(`Transaction Receipt  •  ${data.date}`, MARGIN + 4, y + 15);
 
-            // Right — total paid badge
             const badgeX = pdfWidth - MARGIN - 50;
             pdf.setFillColor(30, 60, 114);
             pdf.roundedRect(badgeX, y + 4, 46, 14, 2, 2, 'F');
@@ -123,9 +117,7 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
 
             y += 30;
 
-            // ════════════════════════════════════════════════════════════════
-            // INVOICE DETAILS — 2-col info cards
-            // ════════════════════════════════════════════════════════════════
+            // ── INVOICE DETAILS ───────────────────────────────────────────────
             sectionHeading('Invoice Details');
 
             const cardW = (pdfWidth - MARGIN * 2 - 6) / 2;
@@ -138,7 +130,6 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                         { label: 'Name',  value: data.billedTo.name  },
                         { label: 'Email', value: data.billedTo.email },
                         { label: 'Date',  value: data.date           },
-                        
                     ],
                     color:  [30, 60, 114],
                     bg:     [235, 240, 255],
@@ -149,9 +140,9 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                     lines: [
                         { label: 'Method', value: data.paymentMethod },
                         ...(data.poNumber ? [{ label: 'PO Number', value: data.poNumber }] : []),
-                        { label: 'Status', value: data.status },
+                        { label: 'Status',         value: data.status        },
                         { label: 'Payment Status', value: data.paymentStatus },
-                        { label: 'Total',  value: data.totalPaid },
+                        { label: 'Total',          value: data.totalPaid     },
                     ],
                     color:  statusColor,
                     bg:     data.status === 'Paid'    ? [235, 255, 245] :
@@ -170,7 +161,6 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                 pdf.setLineWidth(0.3);
                 pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, 'FD');
 
-                // Card title dot + label
                 pdf.setFillColor(...card.color);
                 pdf.circle(cx + 5, cy + 6, 2, 'F');
                 pdf.setFontSize(8.5);
@@ -178,7 +168,6 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                 pdf.setFont('helvetica', 'bold');
                 pdf.text(card.title, cx + 10, cy + 7);
 
-                // Lines
                 card.lines.forEach((line, li) => {
                     const lineY = cy + 14 + li * 5.5;
                     pdf.setFontSize(7.5);
@@ -194,45 +183,44 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
 
             y += cardH + 10;
 
-            // ════════════════════════════════════════════════════════════════
-            // ITEMS TABLE
-            // ════════════════════════════════════════════════════════════════
+            // ── ITEMS TABLE ───────────────────────────────────────────────────
+            // Items are always at original face price; BXGY free seat shown as Free
             newPageIfNeeded(20);
             sectionHeading('Items');
 
-            const headers = ['Item', 'Type', 'Qty', 'Price', 'Total'];
+            const headers = ['Item', 'Type', 'Qty', 'Unit Price', 'Total'];
             const rows = data.items.map(item => [
                 item.item,
                 item.type,
                 item.qty.toString(),
-                item.price,
-                item.total,
+                item.isFree ? 'Free' : item.price,
+                item.isFree ? 'Free' : item.total,
             ]);
 
             y = drawTable(pdf, y, headers, rows, MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT, 12, 5, logoData, INVOICE_TITLE);
 
-            // ════════════════════════════════════════════════════════════════
-            // TOTALS BREAKDOWN
-            // ════════════════════════════════════════════════════════════════
+            // ── PAYMENT SUMMARY ───────────────────────────────────────────────
+            // Subtotal = original prices, then discount shown as its own line
             y += 8;
-            newPageIfNeeded(40);
+            newPageIfNeeded(60);
             sectionHeading('Payment Summary');
 
             const summaryRows = [
-                { label: 'Subtotal',    value: data.subtotal,    bold: false },
-                { label: 'Service Fee', value: data.serviceFee,  bold: false },
-                { label: 'Tax',         value: data.tax,         bold: false },
-                { label: 'Total Paid',  value: data.totalPaid,   bold: true  },
+                { label: 'Subtotal (before discount)', value: data.subtotal,   bold: false, color: null },
+                // Discount line — only shown when a gift card / promo was applied
+                ...(discountAmount > 0 && discountLabel
+                    ? [{ label: discountLabel, value: `-$${discountAmount.toFixed(2)}`, bold: false, color: [22, 163, 74] }]
+                    : []),
+                { label: 'Service Fee',               value: data.serviceFee, bold: false, color: null },
+                { label: 'Tax',                        value: data.tax,        bold: false, color: null },
+                { label: 'Total Paid',                 value: data.totalPaid,  bold: true,  color: null, highlight: true },
             ];
 
             const summaryW = 90;
             const summaryX = pdfWidth - MARGIN - summaryW;
 
             summaryRows.forEach((row, i) => {
-                const isLast = i === summaryRows.length - 1;
-
-                if (isLast) {
-                    // Highlighted total row
+                if (row.highlight) {
                     pdf.setFillColor(30, 60, 114);
                     pdf.roundedRect(summaryX, y - 3, summaryW, 10, 2, 2, 'F');
                     pdf.setFontSize(9);
@@ -243,13 +231,20 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                     y += 13;
                 } else {
                     pdf.setFontSize(8.5);
-                    pdf.setTextColor(row.bold ? 30 : 80, row.bold ? 60 : 80, row.bold ? 114 : 80);
+                    if (row.color) {
+                        pdf.setTextColor(...row.color);
+                    } else {
+                        pdf.setTextColor(80, 80, 80);
+                    }
                     pdf.setFont('helvetica', row.bold ? 'bold' : 'normal');
                     pdf.text(row.label, summaryX + 5, y + 4);
-                    pdf.setTextColor(40, 40, 40);
+                    if (row.color) {
+                        pdf.setTextColor(...row.color);
+                    } else {
+                        pdf.setTextColor(40, 40, 40);
+                    }
                     pdf.text(row.value, summaryX + summaryW - 4, y + 4, { align: 'right' });
 
-                    // Separator line
                     pdf.setDrawColor(220, 220, 230);
                     pdf.setLineWidth(0.2);
                     pdf.line(summaryX, y + 7, summaryX + summaryW, y + 7);
@@ -257,9 +252,7 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                 }
             });
 
-            // ════════════════════════════════════════════════════════════════
-            // FOOTER STRIP
-            // ════════════════════════════════════════════════════════════════
+            // ── FOOTER STRIP ──────────────────────────────────────────────────
             y += 8;
             newPageIfNeeded(16);
             pdf.setFillColor(245, 247, 255);
@@ -332,6 +325,7 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
 
                 <hr className="chvr-divider" />
 
+                {/* Items table — original face prices; BXGY free seat shown as Free */}
                 <div className="chvr-table-container">
                     <table className="chvr-table">
                         <thead>
@@ -339,7 +333,7 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                                 <th className="text-left">Item</th>
                                 <th className="text-left">Type</th>
                                 <th className="text-center">Qty</th>
-                                <th className="text-right">Price</th>
+                                <th className="text-right">Unit Price</th>
                                 <th className="text-right">Total</th>
                             </tr>
                         </thead>
@@ -349,8 +343,12 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
                                     <td className="text-left text-black">{row.item}</td>
                                     <td className="text-left text-secondary">{row.type}</td>
                                     <td className="text-center text-black">{row.qty}</td>
-                                    <td className="text-right text-secondary">{row.price}</td>
-                                    <td className="text-right text-black">{row.total}</td>
+                                    <td className="text-right" style={row.isFree ? { color: 'var(--color-green-primary)', fontWeight: 600 } : {}}>
+                                        {row.isFree ? 'Free' : row.price}
+                                    </td>
+                                    <td className="text-right" style={row.isFree ? { color: 'var(--color-green-primary)', fontWeight: 600 } : { color: 'var(--color-black-primary)' }}>
+                                        {row.isFree ? 'Free' : row.total}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -361,10 +359,20 @@ const CustomerHistoryViewReceipt = ({ show, onClose, receiptData }) => {
 
                 <div className="chvr-summary-container">
                     <div className="chvr-summary-content">
+                        {/* Subtotal — always the sum of original face prices, never adjusted */}
                         <div className="chvr-summary-row mb-2">
-                            <span className="small-body-text text-black">Subtotal</span>
+                            <span className="small-body-text text-black">Subtotal (before discount)</span>
                             <span className="small-body-text text-black">{data.subtotal}</span>
                         </div>
+
+                        {/* Discount line — only shown when a gift card / promo was applied */}
+                        {discountAmount > 0 && discountLabel && (
+                            <div className="chvr-summary-row mb-2">
+                                <span className="small-body-text" style={{ color: 'var(--color-green-primary)' }}>{discountLabel}</span>
+                                <span className="small-body-text" style={{ color: 'var(--color-green-primary)' }}>-${discountAmount.toFixed(2)}</span>
+                            </div>
+                        )}
+
                         <div className="chvr-summary-row mb-2">
                             <span className="small-body-text text-black">Service Fee</span>
                             <span className="small-body-text text-black">{data.serviceFee}</span>

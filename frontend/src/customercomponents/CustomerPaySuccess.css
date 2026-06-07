@@ -20,6 +20,9 @@
     text-align: center;
     margin-bottom: 30px;
 }
+.cps-summary-row{
+    color: var(--color-black-secondary);
+}
 
 .cps-check-circle {
     width: 80px;
@@ -167,6 +170,8 @@
 
 .cps-ticket-right p {
     margin: 0;
+        color: var(--color-black-secondary);
+
 }
 
 .cps-ticket-price {
@@ -237,6 +242,8 @@
 .cps-step-text {
     display: flex;
     flex-direction: column;
+        color: var(--color-black-secondary);
+
 }
 
 .cps-step-title {
