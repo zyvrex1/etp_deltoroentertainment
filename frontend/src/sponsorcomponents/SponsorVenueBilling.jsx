@@ -426,22 +426,6 @@ amount: {
                             </div>
                         </div>
                     </div>
-
-                    <div className="svb-header-right">
-                        <div className="svb-step-info">
-                            <span className="small-body-text font-bold text-primary mr-4" style={{ whiteSpace: 'nowrap' }}>
-                                Secure Checkout
-                            </span>
-                            <div className="svb-step-progress">
-                                <span className="smaller-body-text text-secondary mb-1 block text-right">
-                                    Step 4 of 4
-                                </span>
-                                <div className="svb-progress-bar-container">
-                                    <div className="svb-progress-bar" style={{ width: '100%' }} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 

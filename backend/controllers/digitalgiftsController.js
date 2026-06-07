@@ -33,7 +33,7 @@ const sendGiftNotification = async ({ title, content, userId, createdBy, role })
 
 /**
  * Restore a redeemed gift assignment back to pending for a user.
- * Used when a reservation using the gift is rejected, refunded, or cancelled.
+ * Used when a reservation using the gift is rejected or cancelled (not refunded).
  */
 exports.restoreGiftForUser = async (giftId, userId, giftCode) => {
   let gift = null;

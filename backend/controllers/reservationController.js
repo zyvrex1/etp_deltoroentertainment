@@ -475,9 +475,9 @@ const updateReservationStatus = async (req, res) => {
         reservation.status = status;
         await reservation.save();
 
-        // Restore digital gift if payment/reservation is rejected, refunded, or cancelled
+        // Restore digital gift only when payment is rejected or cancelled — not on refund
         if (
-            ['rejected', 'refunded', 'cancelled'].includes(status) &&
+            ['rejected', 'cancelled'].includes(status) &&
             !['rejected', 'refunded', 'cancelled'].includes(oldStatus) &&
             (reservation.appliedGift || reservation.giftCode)
         ) {
@@ -492,9 +492,7 @@ const updateReservationStatus = async (req, res) => {
                 if (restored?.wasRestored) {
                     const buyerUser = await User.findById(reservation.user).select('role');
                     const role = buyerUser?.role === 'sponsor' ? 'sponsor' : 'customer';
-                    const statusWord = status === 'rejected' ? 'rejected'
-                        : status === 'refunded' ? 'refunded'
-                        : 'cancelled';
+                    const statusWord = status === 'rejected' ? 'rejected' : 'cancelled';
                     const notificationController = require('./notificationController');
                     const { emitUpdate: emitGiftRestore } = require('../socket');
 

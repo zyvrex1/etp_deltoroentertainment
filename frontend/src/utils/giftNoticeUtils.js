@@ -1,3 +1,7 @@
+export const isRejectedPayment = (paymentStatus) => {
+    return paymentStatus?.toLowerCase() === 'rejected';
+};
+
 export const isRejectedOrRefundedPayment = (paymentStatus) => {
     const p = paymentStatus?.toLowerCase();
     return p === 'rejected' || p === 'refunded';
@@ -15,5 +19,5 @@ export const getGiftDisplayName = (appliedGift, giftCode) => {
 };
 
 export const shouldShowGiftRestoredNotice = (paymentStatus, appliedGift, giftCode) => {
-    return isRejectedOrRefundedPayment(paymentStatus) && hasGiftOnOrder(appliedGift, giftCode);
+    return isRejectedPayment(paymentStatus) && hasGiftOnOrder(appliedGift, giftCode);
 };

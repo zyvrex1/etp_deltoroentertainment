@@ -150,8 +150,8 @@ export const CustomerCartProvider = ({ children }) => {
                     };
                 }
 
-                // Rejected/refunded/cancelled orders may still reference a gift on the record
-                // after restore — do not show discount UI for those
+                // Rejected/cancelled orders may still reference a gift on the record after restore.
+                // Refunded orders keep the gift redeemed — do not show discount UI for terminal statuses.
                 if (['rejected', 'refunded', 'cancelled'].includes(res.status)) {
                     return { resolvedGift: null, resolvedDiscount: 0 };
                 }
