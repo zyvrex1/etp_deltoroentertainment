@@ -7,8 +7,7 @@ const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const { sendEmail } = require('../utils/email')
 const { emitUpdate } = require('../socket')
-const AuditLog = require('../models/auditlogModel')
-const { bustCapCache } = require('./auditlogController')
+const { recordAuditLog } = require('./auditlogController')
 
 const createUser = async (req, res) => {
   try {
@@ -88,7 +87,7 @@ const createUser = async (req, res) => {
       socket.emitUpdate('newNotification', notification);
       emitUpdate('dashboardUpdate');
       
-      await AuditLog.create({
+      await recordAuditLog({
         action:    'USER_CREATED',
         userId:    newUser._id,
         email:     newUser.email,
@@ -108,7 +107,7 @@ const createUser = async (req, res) => {
     } catch (emailError) {
       console.error('Registration email failed to send:', emailError);
       
-      await AuditLog.create({
+      await recordAuditLog({
         action:    'USER_CREATED',
         userId:    newUser._id,
         email:     newUser.email,

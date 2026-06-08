@@ -27,6 +27,26 @@ function bustCapCache() {
   _capExpires = 0
 }
 
+const AUDIT_SOCKET_EVENTS = {
+  LOGIN_SUCCESS: ['auditLogUpdate'],
+  LOGIN_FAILED:  ['auditLogUpdate', 'auditLoginFailed'],
+  USER_SIGNUP:   ['auditLogUpdate', 'auditUserSignup'],
+  USER_CREATED:  ['auditLogUpdate', 'auditUserCreated'],
+}
+
+function emitAuditSocketEvents(action) {
+  const events = AUDIT_SOCKET_EVENTS[action] || ['auditLogUpdate']
+  events.forEach((event) => emitUpdate(event, { action }))
+}
+
+// Create an audit entry, bust the cap cache, and notify connected clients
+async function recordAuditLog(entry) {
+  const log = await AuditLog.create(entry)
+  bustCapCache()
+  emitAuditSocketEvents(entry.action)
+  return log
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/audit-logs
 //
@@ -123,4 +143,4 @@ const getAuditLogs = async (req, res) => {
   }
 }
 
-module.exports = { getAuditLogs, bustCapCache }
+module.exports = { getAuditLogs, bustCapCache, recordAuditLog, emitAuditSocketEvents }

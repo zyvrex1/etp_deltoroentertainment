@@ -7,7 +7,7 @@ const bcrypt = require('bcrypt')
 const { sendEmail } = require('../utils/email')
 const crypto = require('crypto')
 const { emitUpdate } = require('../socket')
-const AuditLog = require('../models/auditlogModel')
+const { recordAuditLog, emitAuditSocketEvents } = require('./auditlogController')
 
 // Create JWT token
 const createToken = (user) => {
@@ -80,19 +80,22 @@ const ip =
       '';
     const ua = req.headers['user-agent'] || '';
 
-    await AuditLog.create({
-  action:    'USER_SIGNUP',
-  userId:    user._id,
-  email:     user.email,
-  firstName: user.firstName || '',
-  lastName:  user.lastName  || '',
-  role:      user.role      || '',
-  ipAddress: ip,
-  userAgent: ua,
-  details:   `New ${user.role} account self-registered`,
-}).catch(e => console.error('AuditLog write error:', e.message));
-bustCapCache();
-emitUpdate('auditLogUpdate');
+    try {
+      await recordAuditLog({
+        action:    'USER_SIGNUP',
+        userId:    user._id,
+        email:     user.email,
+        firstName: user.firstName || '',
+        lastName:  user.lastName  || '',
+        role:      user.role      || '',
+        ipAddress: ip,
+        userAgent: ua,
+        details:   `New ${user.role} account self-registered`,
+      });
+    } catch (e) {
+      console.error('AuditLog write error:', e.message);
+      emitAuditSocketEvents('USER_SIGNUP');
+    }
 
     const token = createToken(user)
     emitUpdate('dashboardUpdate');
@@ -142,21 +145,17 @@ const loginUser = async (req, res) => {
     await user.save();
 
     // ✅ Record successful login
-    const { bustCapCache } = require('./auditlogController');
-
-await AuditLog.create({
-  action:    'LOGIN_SUCCESS',
-  userId:    user._id,
-  email:     user.email,
-  firstName: user.firstName || '',
-  lastName:  user.lastName  || '',
-  role:      user.role      || '',
-  ipAddress: ip,
-  userAgent: ua,
-  details:   'User logged in successfully',
-});
-bustCapCache();
-emitUpdate('auditLogUpdate'); 
+    await recordAuditLog({
+      action:    'LOGIN_SUCCESS',
+      userId:    user._id,
+      email:     user.email,
+      firstName: user.firstName || '',
+      lastName:  user.lastName  || '',
+      role:      user.role      || '',
+      ipAddress: ip,
+      userAgent: ua,
+      details:   'User logged in successfully',
+    });
 
     res.status(200).json({
       _id:            user._id,
@@ -176,25 +175,28 @@ emitUpdate('auditLogUpdate');
   } catch (err) {
     console.error('Login error:', err.message, 'for email:', email);
 
-    // ❌ Record failed login attempt
-    const existingUser = await User
-      .findOne({ email: email.toLowerCase().trim() })
-      .lean()
-      .catch(() => null);
+    // ❌ Record failed login attempt — always emit socket events even if DB write fails
+    try {
+      const existingUser = await User
+        .findOne({ email: email.toLowerCase().trim() })
+        .lean()
+        .catch(() => null);
 
-    await AuditLog.create({
-  action:    'LOGIN_FAILED',
-  userId:    existingUser?._id  || null,
-  email:     email.toLowerCase().trim(),
-  firstName: existingUser?.firstName || '',
-  lastName:  existingUser?.lastName  || '',
-  role:      existingUser?.role      || '',
-  ipAddress: ip,
-  userAgent: ua,
-  details:   err.message,
-}).catch(e => console.error('AuditLog write error:', e.message));
-bustCapCache();
-emitUpdate('auditLogUpdate')
+      await recordAuditLog({
+        action:    'LOGIN_FAILED',
+        userId:    existingUser?._id || null,
+        email:     email.toLowerCase().trim(),
+        firstName: existingUser?.firstName || '',
+        lastName:  existingUser?.lastName  || '',
+        role:      existingUser?.role      || '',
+        ipAddress: ip,
+        userAgent: ua,
+        details:   err.message,
+      });
+    } catch (auditErr) {
+      console.error('AuditLog write error:', auditErr.message);
+      emitAuditSocketEvents('LOGIN_FAILED');
+    }
 
     res.status(401).json({ error: err.message });
   }

@@ -7,6 +7,8 @@ import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExpo
 import { useAuthContext } from "../hooks/useAuthContext";
 import { io } from 'socket.io-client';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+
 const ACTION_BADGE = {
   'Login Success': 'badge-success',
   'Login Failed':  'badge-danger',
@@ -16,8 +18,8 @@ const ACTION_BADGE = {
 
 const AuditLogs = () => {
   // ── 1. Refs ────────────────────────────────────────────────────────────────
-  const socketRef    = useRef(null);
-  const fetchLogsRef = useRef(null);
+  const socketRef      = useRef(null);
+  const loadLogsRef    = useRef(null);
 
   // ── 2. Auth ────────────────────────────────────────────────────────────────
   const { user } = useAuthContext();
@@ -59,17 +61,25 @@ const AuditLogs = () => {
   const startISO = dateRange?.preset !== 'all' ? dateRange?.start?.toISOString() : null;
   const endISO   = dateRange?.preset !== 'all' ? dateRange?.end?.toISOString()   : null;
 
-  // ── 8. fetchLogs ───────────────────────────────────────────────────────────
-  const fetchLogs = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // ── 8. loadLogs (full fetch or silent WebSocket refresh) ───────────────────
+  const loadLogs = useCallback(async ({ silent = false, page } = {}) => {
+    if (!user?.token) return;
+
+    const fetchPage = page ?? currentPage;
+
+    if (!silent) {
+      setIsLoading(true);
+      setError(null);
+    }
+
     try {
-      const params = new URLSearchParams({ page: currentPage, limit: ITEMS_PER_PAGE });
+      const params = new URLSearchParams({ page: fetchPage, limit: ITEMS_PER_PAGE });
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (startISO)        params.set('startDate', startISO);
       if (endISO)          params.set('endDate',   endISO);
 
       const res = await fetch(`/api/audit-logs?${params.toString()}`, {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${user.token}` },
       });
       if (!res.ok) throw new Error('Failed to load audit logs');
@@ -81,43 +91,56 @@ const AuditLogs = () => {
       if (data.totalStored != null) setTotalStored(data.totalStored);
       setIsSearching(data.isSearching);
     } catch (err) {
-      setError(err.message);
+      if (silent) {
+        console.error('Audit log refresh failed:', err.message);
+      } else {
+        setError(err.message);
+      }
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [currentPage, debouncedSearch, startISO, endISO, user?.token]);
+
+  const fetchLogs = useCallback(() => loadLogs(), [loadLogs]);
 
   // ── 9. Run fetchLogs when deps change ─────────────────────────────────────
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
-  // ── 10. Keep fetchLogsRef current so socket can always call latest version ─
+  // ── 10. Keep loadLogs ref current so socket always uses latest filters ─────
   useEffect(() => {
-    fetchLogsRef.current = fetchLogs;
-  }, [fetchLogs]);
+    loadLogsRef.current = loadLogs;
+  }, [loadLogs]);
 
-  // ── 11. Socket — single connection, mount/unmount only ────────────────────
+  // ── 11. WebSocket — live updates for all audit events (no loading flash) ──
   useEffect(() => {
-    const socket = io('http://localhost:5000', {
-      transports: ['websocket'],
+    if (!user?.token) return;
+
+    const socket = io(BACKEND_URL, {
+      transports: ['websocket', 'polling'],
       withCredentials: true,
     });
     socketRef.current = socket;
+
+    const liveRefresh = () => {
+      setCurrentPage(1);
+      loadLogsRef.current?.({ silent: true, page: 1 });
+    };
 
     socket.on('connect', () => {
       console.log('Audit socket connected:', socket.id);
     });
 
-    socket.on('auditLogUpdate', () => {
-      console.log('auditLogUpdate received — refreshing');
-      fetchLogsRef.current?.();
-    });
+    socket.on('auditLogUpdate', liveRefresh);
+    socket.on('auditLoginFailed', liveRefresh);
+    socket.on('auditUserSignup', liveRefresh);
+    socket.on('auditUserCreated', liveRefresh);
 
     socket.on('connect_error', (err) => {
       console.error('Audit socket error:', err.message);
     });
 
     return () => socket.disconnect();
-  }, []); // mount/unmount only
+  }, [user?.token]);
 
   // ── 12. Handlers ──────────────────────────────────────────────────────────
   const handlePageChange = (page) => {
