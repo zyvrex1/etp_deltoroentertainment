@@ -7,6 +7,8 @@ const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const { sendEmail } = require('../utils/email')
 const { emitUpdate } = require('../socket')
+const AuditLog = require('../models/auditlogModel')
+const { bustCapCache } = require('./auditlogController')
 
 const createUser = async (req, res) => {
   try {
@@ -86,19 +88,45 @@ const createUser = async (req, res) => {
       socket.emitUpdate('newNotification', notification);
       emitUpdate('dashboardUpdate');
       
+      await AuditLog.create({
+        action:    'USER_CREATED',
+        userId:    newUser._id,
+        email:     newUser.email,
+        firstName: newUser.firstName || '',
+        lastName:  newUser.lastName  || '',
+        role:      newUser.role      || '',
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || '',
+        userAgent: req.headers['user-agent'] || '',
+        details:   `Account manually created by ${req.user?.role} (${req.user?.email})`,
+      }).catch(e => console.error('AuditLog write error:', e.message));
+
       return res.status(201).json({
         message: `${role} created successfully and email sent.`,
-        user: newUser // newUser now contains phone/companyName automatically
+        user: newUser
       });
 
     } catch (emailError) {
       console.error('Registration email failed to send:', emailError);
+      
+      await AuditLog.create({
+        action:    'USER_CREATED',
+        userId:    newUser._id,
+        email:     newUser.email,
+        firstName: newUser.firstName || '',
+        lastName:  newUser.lastName  || '',
+        role:      newUser.role      || '',
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || '',
+        userAgent: req.headers['user-agent'] || '',
+        details:   `Account manually created by ${req.user?.role} (${req.user?.email}) — welcome email failed`,
+      }).catch(e => console.error('AuditLog write error:', e.message));
+
       return res.status(201).json({
         message: `${role} created successfully, but Welcome Email failed.`,
         user: newUser,
         temporaryPassword: tempPassword,
         warning: 'Could not send the welcome email due to server configuration.'
       });
+      
     }
 
   } catch (err) {

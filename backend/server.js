@@ -29,6 +29,8 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const payoutRoutes = require('./routes/payoutRoutes');
 const digitalgiftsRoutes = require('./routes/digitalgiftsRoutes');
+const auditLogRoutes = require('./routes/auditlogRoutes')
+
 
 
 // express app
@@ -77,6 +79,7 @@ app.use('/api/analytics', analyticsRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/payouts', payoutRoutes)
 app.use('/api/digital-gifts', digitalgiftsRoutes)
+app.use('/api/audit-logs', auditLogRoutes)
 
 
 // Global error handler

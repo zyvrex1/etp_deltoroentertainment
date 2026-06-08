@@ -7,6 +7,7 @@ const bcrypt = require('bcrypt')
 const { sendEmail } = require('../utils/email')
 const crypto = require('crypto')
 const { emitUpdate } = require('../socket')
+const AuditLog = require('../models/auditlogModel')
 
 // Create JWT token
 const createToken = (user) => {
@@ -73,9 +74,29 @@ const signupUser = async (req, res) => {
       emitUpdate('newNotification', selfNotification);
     }
 
+const ip =
+      req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+      req.socket?.remoteAddress ||
+      '';
+    const ua = req.headers['user-agent'] || '';
+
+    await AuditLog.create({
+  action:    'USER_SIGNUP',
+  userId:    user._id,
+  email:     user.email,
+  firstName: user.firstName || '',
+  lastName:  user.lastName  || '',
+  role:      user.role      || '',
+  ipAddress: ip,
+  userAgent: ua,
+  details:   `New ${user.role} account self-registered`,
+}).catch(e => console.error('AuditLog write error:', e.message));
+bustCapCache();
+emitUpdate('auditLogUpdate');
+
     const token = createToken(user)
     emitUpdate('dashboardUpdate');
-
+    
     res.status(201).json({
       _id: user._id,
       message: 'User created successfully',
@@ -100,6 +121,13 @@ const loginUser = async (req, res) => {
     return res.status(400).json({ error: 'All fields must be filled' });
   }
 
+  // Grab real IP even behind a proxy
+  const ip =
+    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+    req.socket?.remoteAddress ||
+    '';
+  const ua = req.headers['user-agent'] || '';
+
   try {
     const user = await User.login(email, password);
 
@@ -113,26 +141,65 @@ const loginUser = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
+    // ✅ Record successful login
+    const { bustCapCache } = require('./auditlogController');
+
+await AuditLog.create({
+  action:    'LOGIN_SUCCESS',
+  userId:    user._id,
+  email:     user.email,
+  firstName: user.firstName || '',
+  lastName:  user.lastName  || '',
+  role:      user.role      || '',
+  ipAddress: ip,
+  userAgent: ua,
+  details:   'User logged in successfully',
+});
+bustCapCache();
+emitUpdate('auditLogUpdate'); 
+
     res.status(200).json({
-      _id: user._id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      phone: user.phone,
-      avatar: user.avatar,
-      twoFactor: user.twoFactor,
-      notifications: user.notifications,
-      cart: user.cart || [],
+      _id:            user._id,
+      email:          user.email,
+      firstName:      user.firstName,
+      lastName:       user.lastName,
+      role:           user.role,
+      phone:          user.phone,
+      avatar:         user.avatar,
+      twoFactor:      user.twoFactor,
+      notifications:  user.notifications,
+      cart:           user.cart           || [],
       paymentMethods: user.paymentMethods || [],
-      token
+      token,
     });
 
   } catch (err) {
     console.error('Login error:', err.message, 'for email:', email);
+
+    // ❌ Record failed login attempt
+    const existingUser = await User
+      .findOne({ email: email.toLowerCase().trim() })
+      .lean()
+      .catch(() => null);
+
+    await AuditLog.create({
+  action:    'LOGIN_FAILED',
+  userId:    existingUser?._id  || null,
+  email:     email.toLowerCase().trim(),
+  firstName: existingUser?.firstName || '',
+  lastName:  existingUser?.lastName  || '',
+  role:      existingUser?.role      || '',
+  ipAddress: ip,
+  userAgent: ua,
+  details:   err.message,
+}).catch(e => console.error('AuditLog write error:', e.message));
+bustCapCache();
+emitUpdate('auditLogUpdate')
+
     res.status(401).json({ error: err.message });
   }
 };
+
 
 // ================= PROFILE =================
 const getProfile = async (req, res) => {

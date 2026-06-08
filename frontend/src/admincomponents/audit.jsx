@@ -1,357 +1,348 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import './audit.css';
 import DateRangePicker from '../utils/DateRangePicker';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
+import { useAuthContext } from "../hooks/useAuthContext";
+import { io } from 'socket.io-client';
+
+const ACTION_BADGE = {
+  'Login Success': 'badge-success',
+  'Login Failed':  'badge-danger',
+  'User Signup':   'badge-info',
+  'User Created':  'badge-warning',
+};
 
 const AuditLogs = () => {
-    const [dateRange, setDateRange] = useState(() => ({
-        preset: 'all',
-        presetLabel: 'All time',
-        start: new Date(2000, 0, 1),
-        end: new Date(2100, 11, 31),
-    }));
+  // ── 1. Refs ────────────────────────────────────────────────────────────────
+  const socketRef    = useRef(null);
+  const fetchLogsRef = useRef(null);
 
-    // Mock data for audit logs matching the screenshot
-    const [isLoading, setIsLoading] = useState(true);
+  // ── 2. Auth ────────────────────────────────────────────────────────────────
+  const { user } = useAuthContext();
 
-    React.useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 800);
-        return () => clearTimeout(timer);
-    }, []);
+  // ── 3. State ───────────────────────────────────────────────────────────────
+  const [logs,          setLogs]          = useState([]);
+  const [isLoading,     setIsLoading]     = useState(true);
+  const [error,         setError]         = useState(null);
+  const [searchQuery,   setSearchQuery]   = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [currentPage,   setCurrentPage]   = useState(1);
+  const [totalPages,    setTotalPages]    = useState(1);
+  const [totalShown,    setTotalShown]    = useState(0);
+  const [totalStored,   setTotalStored]   = useState(0);
+  const [isSearching,   setIsSearching]   = useState(false);
+  const [expandedRow,   setExpandedRow]   = useState(null);
 
-    const [logs] = useState([
-        {
-            id: 1,
-            action: 'Approved Event',
-            admin: 'Alex Thompson',
-            target: 'TechStart Summit 2024',
-            details: 'Event met all criteria',
-            timestamp: '2024-09-01 10:00:00'
-        },
-        {
-            id: 2,
-            action: 'Suspended User',
-            admin: 'Alex Thompson',
-            target: 'Spam Bot User',
-            details: 'Violation of terms',
-            timestamp: '2024-09-05 14:30:00'
-        },
-        {
-            id: 3,
-            action: 'Created Event',
-            admin: 'Jessica Martinez',
-            target: 'AI Innovation Conference',
-            details: 'New event created',
-            timestamp: '2024-09-10 09:00:00'
-        },
-        {
-            id: 4,
-            action: 'Resolved Ticket',
-            admin: 'Robert Chen',
-            target: 'Refund Request',
-            details: 'Refund processed',
-            timestamp: '2024-09-15 11:00:00'
-        },
-        {
-            id: 5,
-            action: 'Added Admin',
-            admin: 'Alex Thompson',
-            target: 'Amanda Foster',
-            details: 'New admin account',
-            timestamp: '2024-09-20 13:00:00'
-        },
-        {
-            id: 6,
-            action: 'Updated Event',
-            admin: 'Amanda Foster',
-            target: 'TechStart Summit 2024',
-            details: 'Changed venue details',
-            timestamp: '2024-09-25 15:00:00'
-        },
-        {
-            id: 7,
-            action: 'Closed Ticket',
-            admin: 'Michael Brown',
-            target: 'Login Issues',
-            details: 'User issue resolved',
-            timestamp: '2024-09-30 10:00:00'
-        },
-        {
-            id: 8,
-            action: 'Rejected Event',
-            admin: 'Jessica Martinez',
-            target: 'Scam Event',
-            details: 'Fraudulent activity',
-            timestamp: '2024-10-01 12:00:00'
-        },
-        {
-            id: 9,
-            action: 'Suspended Promoter',
-            admin: 'Robert Chen',
-            target: "Kevin O'Brien",
-            details: 'Policy violation',
-            timestamp: '2024-10-05 14:00:00'
-        },
-        {
-            id: 10,
-            action: 'Updated Settings',
-            admin: 'Alex Thompson',
-            target: 'Platform Fees',
-            details: 'Changed fee to 5%',
-            timestamp: '2024-10-10 16:00:00'
-        },
-        {
-            id: 11,
-            action: 'Updated Settings',
-            admin: 'Alex Thompson',
-            target: 'Platform Fees',
-            details: 'Changed fee to 5%',
-            timestamp: '2024-10-10 16:00:00'
-        }
-    ]);
+  // ── 4. Date range state ────────────────────────────────────────────────────
+  const [dateRange, setDateRange] = useState({
+    preset:      'all',
+    presetLabel: 'All time',
+    start: new Date(2000, 0, 1),
+    end:   new Date(2100, 11, 31),
+  });
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 7;
+  // ── 5. Constants ───────────────────────────────────────────────────────────
+  const ITEMS_PER_PAGE = 7;
 
-    const [searchQuery, setSearchQuery] = useState('');
+  // ── 6. Debounce search ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
-    const filterLogsByDateRangeAndSearch = (logsToFilter) => {
-        let filtered = logsToFilter;
+  // ── 7. Derived date strings (stable primitives for useCallback deps) ───────
+  const startISO = dateRange?.preset !== 'all' ? dateRange?.start?.toISOString() : null;
+  const endISO   = dateRange?.preset !== 'all' ? dateRange?.end?.toISOString()   : null;
 
-        if (searchQuery) {
-            filtered = filtered.filter(log =>
-                (log.action?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
-                (log.admin?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
-                (log.target?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
-                (log.details?.toLowerCase().includes(searchQuery.toLowerCase()) || false)
-            );
-        }
+  // ── 8. fetchLogs ───────────────────────────────────────────────────────────
+  const fetchLogs = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ page: currentPage, limit: ITEMS_PER_PAGE });
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      if (startISO)        params.set('startDate', startISO);
+      if (endISO)          params.set('endDate',   endISO);
 
-        if (!dateRange?.start || !dateRange?.end || dateRange?.preset === 'all') return filtered;
+      const res = await fetch(`/api/audit-logs?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (!res.ok) throw new Error('Failed to load audit logs');
+      const data = await res.json();
 
-        const start = new Date(dateRange.start);
-        const end = new Date(dateRange.end);
-        start.setHours(0, 0, 0, 0);
-        end.setHours(23, 59, 59, 999);
+      setLogs(data.logs);
+      setTotalPages(data.totalPages);
+      setTotalShown(data.totalShown);
+      if (data.totalStored != null) setTotalStored(data.totalStored);
+      setIsSearching(data.isSearching);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, debouncedSearch, startISO, endISO, user?.token]);
 
-        return filtered.filter(log => {
-            const logDate = new Date(log.timestamp);
-            return logDate >= start && logDate <= end;
-        });
-    };
+  // ── 9. Run fetchLogs when deps change ─────────────────────────────────────
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
-    const filteredLogs = filterLogsByDateRangeAndSearch(logs);
-    const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedLogs = filteredLogs.slice(startIndex, startIndex + itemsPerPage);
+  // ── 10. Keep fetchLogsRef current so socket can always call latest version ─
+  useEffect(() => {
+    fetchLogsRef.current = fetchLogs;
+  }, [fetchLogs]);
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+  // ── 11. Socket — single connection, mount/unmount only ────────────────────
+  useEffect(() => {
+    const socket = io('http://localhost:5000', {
+      transports: ['websocket'],
+      withCredentials: true,
+    });
+    socketRef.current = socket;
 
-    const handleDateRangeChange = (newRange) => {
-        setDateRange(newRange);
-        setCurrentPage(1);
-    };
+    socket.on('connect', () => {
+      console.log('Audit socket connected:', socket.id);
+    });
 
-    const [expandedRow, setExpandedRow] = useState(null);
-    const toggleRow = (id) => {
-        setExpandedRow(expandedRow === id ? null : id);
-    };
+    socket.on('auditLogUpdate', () => {
+      console.log('auditLogUpdate received — refreshing');
+      fetchLogsRef.current?.();
+    });
 
-    const exportReport = async () => {
-        const loadingToast = showExportToast();
-        const REPORT_TITLE = 'Audit Logs Report';
-        try {
-            const logoData = await loadLogo();
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const margin = 15;
-            const FOOTER_HEIGHT = 15;
-            let y = 45;
+    socket.on('connect_error', (err) => {
+      console.error('Audit socket error:', err.message);
+    });
 
-            addReportHeader(pdf, REPORT_TITLE, logoData);
+    return () => socket.disconnect();
+  }, []); // mount/unmount only
 
-            pdf.setFontSize(12);
-            pdf.setTextColor(30, 60, 114);
-            pdf.setFont('helvetica', 'bold');
-            pdf.text('Audit Log Entries', margin, y);
-            y += 8;
+  // ── 12. Handlers ──────────────────────────────────────────────────────────
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
 
-            const auditHeaders = ['Action', 'Admin', 'Target', 'Details', 'Timestamp'];
-            const auditRows = filteredLogs.map(log => [
-                log.action,
-                log.admin,
-                log.target,
-                log.details,
-                log.timestamp
-            ]);
-            y = drawTable(pdf, y, auditHeaders, auditRows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, REPORT_TITLE);
+  const handleDateRangeChange = (newRange) => {
+    setDateRange(newRange);
+    setCurrentPage(1);
+  };
 
-            y += 10;
-            pdf.setFontSize(9);
-            pdf.setTextColor(100, 100, 100);
-            pdf.text(`Report generated from Audit Logs. ${filteredLogs.length} entries.`, margin, y, { maxWidth: pdfWidth - 2 * margin });
+  const toggleRow = (id) => setExpandedRow(expandedRow === id ? null : id);
 
-            finalizeReport(pdf);
-            pdf.save(`Audit_Logs_${new Date().toISOString().split('T')[0]}.pdf`);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            alert('Failed to generate PDF. Please try again.');
-        } finally {
-            removeExportToast(loadingToast);
-        }
-    };
+  // ── 13. PDF Export ────────────────────────────────────────────────────────
+  const exportReport = async () => {
+    const loadingToast = showExportToast();
+    const REPORT_TITLE = 'Audit Logs Report';
+    try {
+      const logoData = await loadLogo();
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth  = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const FOOTER_HEIGHT = 15;
+      let y = 45;
 
-    return (
-        <div className="audit-container">
-            {/* Header */}
-            <div className="audit-header">
-                <div className="header-title-group">
-                    <h1>Audit Logs</h1>
-                    <p className="large-body-text">Track all administrative actions for security and compliance.</p>
-                </div>
-                <button className="outlined-button export-btn" onClick={exportReport}>
-                    <Icon icon="mdi:download-outline" /> Export Report
-                </button>
-            </div>
+      addReportHeader(pdf, REPORT_TITLE, logoData);
 
-            <div className="audit-content">
-                <div className="audit-toolbar">
-                    <div className="audit-toolbar-left">
-                        <div className="audit-search">
-                            <Icon icon="mdi:magnify" className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Search logs..."
-                                value={searchQuery}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                            />
-                        </div>
-                    </div>
-                    <div className="audit-toolbar-right">
-                        <DateRangePicker
-                            value={dateRange}
-                            onChange={handleDateRangeChange}
-                            buttonClassName="filter-btn"
-                            placeholder="Select date range"
-                        />
-                    </div>
-                </div>
+      pdf.setFontSize(12);
+      pdf.setTextColor(30, 60, 114);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Audit Log Entries', margin, y);
+      y += 8;
 
-                {/* Logs Table */}
-                <div className="table-responsive">
-                    {isLoading ? (
-                        <table className="audit-table">
-                            <thead>
-                                <tr>
-                                    <th>Action</th>
-                                    <th>Admin</th>
-                                    <th>Target</th>
-                                    <th>Details</th>
-                                    <th>Timestamp</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {[...Array(itemsPerPage)].map((_, i) => (
-                                    <tr key={i}>
-                                        <td><div className="skeleton skeleton-text" style={{ width: '120px' }} /></td>
-                                        <td><div className="skeleton skeleton-text" style={{ width: '100px' }} /></td>
-                                        <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
-                                        <td><div className="skeleton skeleton-text" style={{ width: '200px' }} /></td>
-                                        <td><div className="skeleton skeleton-text" style={{ width: '150px' }} /></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    ) : paginatedLogs.length === 0 ? (
-                        // Empty state outside table for mobile-friendly display
-                        <div className="empty-state">
-                            <Icon 
-                                icon="mdi:clipboard-text-off-outline" 
-                                style={{ fontSize: '48px', marginBottom: '16px' }} 
-                            />
-                            <h4>{searchQuery ? "No logs found" : "No audit logs yet"}</h4>
-                            <p className="small-body-text">
-                                {searchQuery 
-                                    ? <>No logs match "<strong>{searchQuery}</strong>".</>
-                                    : "There are currently no administrative actions recorded in the audit log."
-                                }
-                            </p>
-                        </div>
-                    ) : (
-                        <table className="audit-table">
-                            <thead>
-                                <tr>
-                                    <th>Action</th>
-                                    <th>Admin</th>
-                                    <th>Target</th>
-                                    <th>Details</th>
-                                    <th>Timestamp</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedLogs.map((log) => (
-                                    <tr key={log.id} className={expandedRow === log.id ? 'expanded' : ''}>
-                                        <td className="action-td" data-label="Action">
-                                            <div className="mobile-expand-icon" onClick={() => toggleRow(log.id)}>
-                                                <Icon icon={expandedRow === log.id ? "mdi:chevron-up" : "mdi:chevron-down"} />
-                                            </div>
-                                            <div className="action-cell">
-                                                <h6 className="action-text">{log.action}</h6>
-                                            </div>
-                                        </td>
-                                        <td className="regular-body-text admin-td" data-label="Admin">{log.admin}</td>
-                                        <td className="small-body-text target-cell" data-label="Target">{log.target}</td>
-                                        <td className="small-body-text details-cell" data-label="Details">{log.details}</td>
-                                        <td className="small-body-text timestamp-cell" data-label="Timestamp">
-                                            <div className="timestamp-wrapper">
-                                                <Icon icon="mdi:clock-time-four-outline" className="clock-icon" />
-                                                <span>{log.timestamp}</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
+      const headers = ['Action', 'User', 'Email', 'Role', 'IP Address', 'Timestamp'];
+      const rows = logs.map(log => [
+        log.action,
+        log.user,
+        log.email,
+        log.role,
+        log.ipAddress,
+        new Date(log.timestamp).toLocaleString(),
+      ]);
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="pagination">
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
+      y = drawTable(pdf, y, headers, rows, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 10, 3, logoData, REPORT_TITLE);
 
-                        <span className="pagination-info">
-                            Page {currentPage} of {totalPages}
-                        </span>
+      y += 10;
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(
+        `Report generated from Audit Logs. ${totalShown} entries shown of ${totalStored} total stored.`,
+        margin, y,
+        { maxWidth: pdfWidth - 2 * margin }
+      );
 
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
-            </div>
+      finalizeReport(pdf);
+      pdf.save(`Audit_Logs_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      removeExportToast(loadingToast);
+    }
+  };
+
+  // ── 14. Render ─────────────────────────────────────────────────────────────
+  return (
+    <div className="audit-container">
+      {/* Header */}
+      <div className="audit-header">
+        <div className="header-title-group">
+          <h1>Audit Logs</h1>
+          <p className="large-body-text">
+            Track all user login activity for security and compliance.
+          </p>
         </div>
-    );
+        <button className="outlined-button export-btn" onClick={exportReport}>
+          <Icon icon="mdi:download-outline" /> Export Report
+        </button>
+      </div>
+
+      <div className="audit-content">
+        {/* Record count banner */}
+        <div className="audit-record-info">
+          <Icon icon="mdi:information-outline" />
+          {isSearching ? (
+            <span>
+              Searching <strong>all {totalStored.toLocaleString()} stored records</strong> — found {totalShown.toLocaleString()} match{totalShown !== 1 ? 'es' : ''}.
+            </span>
+          ) : (
+            <span>
+              Showing the <strong>latest 100 records</strong> in the frontend.{' '}
+              <strong>{totalStored.toLocaleString()}</strong> total records stored in the database.
+              Use the search bar to find older entries.
+            </span>
+          )}
+        </div>
+
+        {/* Toolbar */}
+        <div className="audit-toolbar">
+          <div className="audit-toolbar-left">
+            <div className="audit-search">
+              <Icon icon="mdi:magnify" className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search all records by name, email, IP…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="clear-search-btn" onClick={() => setSearchQuery('')}>
+                  <Icon icon="mdi:close" />
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="audit-toolbar-right">
+            <DateRangePicker
+              value={dateRange}
+              onChange={handleDateRangeChange}
+              buttonClassName="filter-btn"
+              placeholder="Select date range"
+            />
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="table-responsive">
+          {error ? (
+            <div className="empty-state">
+              <Icon icon="mdi:alert-circle-outline" style={{ fontSize: '48px', marginBottom: '16px', color: 'var(--color-danger)' }} />
+              <h4>Failed to load logs</h4>
+              <p className="small-body-text">{error}</p>
+              <button className="outlined-button" onClick={fetchLogs}>Try Again</button>
+            </div>
+          ) : isLoading ? (
+            <table className="audit-table">
+              <thead>
+                <tr>
+                  <th>Action</th><th>User</th><th>Email</th><th>Role</th><th>IP Address</th><th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(ITEMS_PER_PAGE)].map((_, i) => (
+                  <tr key={i}>
+                    {[120, 130, 180, 80, 110, 150].map((w, j) => (
+                      <td key={j}><div className="skeleton skeleton-text" style={{ width: `${w}px` }} /></td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : logs.length === 0 ? (
+            <div className="empty-state">
+              <Icon icon="mdi:clipboard-text-off-outline" style={{ fontSize: '48px', marginBottom: '16px' }} />
+              <h4>{searchQuery ? 'No logs found' : 'No login activity yet'}</h4>
+              <p className="small-body-text">
+                {searchQuery
+                  ? <> No records match "<strong>{searchQuery}</strong>". </>
+                  : 'No login events have been recorded yet.'}
+              </p>
+            </div>
+          ) : (
+            <table className="audit-table">
+              <thead>
+                <tr>
+                  <th>Action</th><th>User</th><th>Email</th><th>Role</th><th>IP Address</th><th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log) => (
+                  <tr key={log.id} className={expandedRow === log.id ? 'expanded' : ''}>
+                    <td className="action-td" data-label="Action">
+                      <div className="mobile-expand-icon" onClick={() => toggleRow(log.id)}>
+                        <Icon icon={expandedRow === log.id ? 'mdi:chevron-up' : 'mdi:chevron-down'} />
+                      </div>
+                      <span className={`badge ${ACTION_BADGE[log.action] || ''}`}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="regular-body-text" data-label="User">{log.user}</td>
+                    <td className="small-body-text"   data-label="Email">{log.email}</td>
+                    <td className="small-body-text"   data-label="Role">{log.role}</td>
+                    <td className="small-body-text"   data-label="IP Address">
+                      <span className="ip-chip">
+                        <Icon icon="mdi:ip-network-outline" className="clock-icon" />
+                        {log.ipAddress || '—'}
+                      </span>
+                    </td>
+                    <td className="small-body-text timestamp-cell" data-label="Timestamp">
+                      <div className="timestamp-wrapper">
+                        <Icon icon="mdi:clock-time-four-outline" className="clock-icon" />
+                        <span>{new Date(log.timestamp).toLocaleString()}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button
+              className="pagination-btn"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            <span className="pagination-info">Page {currentPage} of {totalPages}</span>
+            <button
+              className="pagination-btn"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default AuditLogs;
