@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuthContext } from './useAuthContext'
+import api from '../services/api'  // ← import your axios instance
 
 export const useLogin = () => {
     const [error, setError] = useState(null)
@@ -11,28 +12,21 @@ export const useLogin = () => {
         setError(null)
 
         try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, role })
-            })
+            const response = await api.post('/auth/login', { email, password, role })
+            const data = response.data
 
-            const data = await response.json()
-
-            if (!response.ok) {
-                // Extracts only the error message instead of the whole JSON object string
-                throw new Error(data.error || 'Login failed')
-            }
-            
-            // Check if the user's role matches the selected portal role (redundancy for safety)
+            // Check if the user's role matches the selected portal role
             if (role && data.role !== role) {
-                throw new Error(`This account is authorized for ${data.role} access only.`);
+                throw new Error(`This account is authorized for ${data.role} access only.`)
             }
 
             localStorage.setItem('user', JSON.stringify(data))
             dispatch({ type: 'LOGIN', payload: data })
+
         } catch (err) {
-            setError(err.message)
+            // axios wraps errors differently — extract the message correctly
+            const message = err.response?.data?.error || err.message || 'Login failed'
+            setError(message)
         } finally {
             setIsLoading(false)
         }

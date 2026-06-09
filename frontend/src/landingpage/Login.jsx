@@ -34,10 +34,16 @@ const ROLES = {
 };
 
 const Login = ({ role, onBack }) => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [isForgotPassword, setIsForgotPassword] = useState(false);
+
+    const [email, setEmail] = useState("")
+
+    const [password, setPassword] = useState("")
+
+    const [showPassword, setShowPassword] = useState(false)
+
+    const [isForgotPassword, setIsForgotPassword] = useState(false)
+
+    const [justLoggedIn, setJustLoggedIn] = useState(false)
 
     const { login, error, isLoading: loginLoading } = useLogin();
     const { user } = useAuthContext();
@@ -71,10 +77,12 @@ const Login = ({ role, onBack }) => {
         }
 
         try {
-            await login(email, password, role);
-        } catch (err) {
-            // Error is handled by the hook and displayed via useEffect or below
-        }
+
+      await login(email, password, role)
+
+      setJustLoggedIn(true)
+
+    } catch (err) {}
     };
 
     // Handle Login Error Toast
@@ -85,8 +93,8 @@ const Login = ({ role, onBack }) => {
     }, [error]);
 
     useEffect(() => {
-        if (user) {
-            // Close modal if it exists
+if (user && justLoggedIn) {
+                // Close modal if it exists
             const closeModalEvent = new CustomEvent("closeLoginModal");
             window.dispatchEvent(closeModalEvent);
 
@@ -103,7 +111,7 @@ const Login = ({ role, onBack }) => {
                 navigate("/sponsor");
             }
         }
-    }, [user, navigate]);
+}, [user, justLoggedIn, navigate])
 
     if (!roleData) return null;
 

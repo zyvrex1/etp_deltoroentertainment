@@ -1,5 +1,4 @@
 import { createContext, useReducer, useEffect } from "react";
-import axios from "axios";
 
 export const AuthContext = createContext()
 
@@ -16,17 +15,38 @@ export const authReducer = (state, action) => {
   }
 }
 
+// ✅ Helper: check if JWT is expired without a library
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    // exp is in seconds, Date.now() is in ms
+    return payload.exp * 1000 < Date.now()
+  } catch {
+    return true // malformed token = treat as expired
+  }
+}
+
 export const AuthContextProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, {
     user: null,
-    loading: true, // add loading flag
+    loading: true,
   })
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'))
-
-    if (user) {
-      dispatch({ type: 'LOGIN', payload: user })
+    try {
+      const raw = localStorage.getItem('user')
+      if (raw) {
+        const user = JSON.parse(raw)
+        // ✅ Only restore if token exists and hasn't expired
+        if (user?.token && !isTokenExpired(user.token)) {
+          dispatch({ type: 'LOGIN', payload: user })
+        } else {
+          // Token expired — clean up silently, no redirect here
+          localStorage.removeItem('user')
+        }
+      }
+    } catch {
+      localStorage.removeItem('user') // corrupted JSON
     }
 
     dispatch({ type: 'FINISH_LOADING' })

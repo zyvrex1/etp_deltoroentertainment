@@ -10,13 +10,23 @@ const { emitUpdate } = require('../socket')
 const { recordAuditLog, emitAuditSocketEvents } = require('./auditlogController')
 
 // Create JWT token
+// const createToken = (user) => {
+//   return jwt.sign(
+//     { _id: user._id, role: user.role },
+//     process.env.SECRET,
+//     { expiresIn: '3d' }
+//   );
+// };
+
+// CHANGED: process.env.SECRET → process.env.JWT_SECRET  (matches renamed .env key)
+// CHANGED: '3d' hardcoded → process.env.JWT_EXPIRES_IN  (configurable per environment)
 const createToken = (user) => {
   return jwt.sign(
     { _id: user._id, role: user.role },
-    process.env.SECRET,
-    { expiresIn: '3d' }
-  );
-};
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '3d' }
+  )
+}
 
 // ================= SIGNUP =================
 const signupUser = async (req, res) => {
@@ -371,12 +381,27 @@ const updatePassword = async (req, res) => {
       throw Error('New password is not strong enough (min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol)')
     }
 
-    const salt = await bcrypt.genSalt(10)
-    const hash = await bcrypt.hash(newPassword, salt)
+//     const salt = await bcrypt.genSalt(10)
+//     const hash = await bcrypt.hash(newPassword, salt)
 
+//     user.password = hash
+//     await user.save()
+
+//     res.status(200).json({ message: 'Password updated successfully' })
+//   } catch (err) {
+//     console.error('Update Password Error:', err.message)
+//     res.status(400).json({ error: err.message })
+//   }
+// }
+
+ // CHANGED: hardcoded genSalt(10) → reads BCRYPT_ROUNDS from .env
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10
+    const salt   = await bcrypt.genSalt(rounds)
+    const hash   = await bcrypt.hash(newPassword, salt)
+ 
     user.password = hash
     await user.save()
-
+ 
     res.status(200).json({ message: 'Password updated successfully' })
   } catch (err) {
     console.error('Update Password Error:', err.message)
@@ -404,34 +429,60 @@ const forgotPassword = async (req, res) => {
     const tempPassword = crypto.randomBytes(4).toString('hex'); // 8 characters
 
     // Hash the temporary password
-    const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(tempPassword, salt);
+  //   const salt = await bcrypt.genSalt(10);
+  //   const hash = await bcrypt.hash(tempPassword, salt);
 
-    // Update user's password in database
-    user.password = hash;
-    await user.save();
+  //   // Update user's password in database
+  //   user.password = hash;
+  //   await user.save();
 
-    // Send the email
+  //   // Send the email
+  //   await sendEmail({
+  //     to: email,
+  //     subject: 'Temporary Password - eTicketsPro',
+  //     text: `Hello ${user.firstName || 'User'},\n\nYour temporary password is: ${tempPassword}\n\nPlease log in and change your password immediately for security reasons.\n\nBest regards,\neTicketsPro Team`,
+  //     html: `
+  //       <h3>Hello ${user.firstName || 'User'},</h3>
+  //       <p>Your temporary password is: <strong>${tempPassword}</strong></p>
+  //       <p>Please log in and change your password immediately for security reasons.</p>
+  //       <br/>
+  //       <p>Best regards,<br/>eTicketsPro Team</p>
+  //     `
+  //   });
+
+  //   res.status(200).json({ message: `A temporary password has been sent to ${email}` });
+
+  // } catch (err) {
+  //   console.error('Forgot Password Error:', err.message);
+  //   res.status(500).json({ error: 'Something went wrong while resetting your password.' }
+   // CHANGED: hardcoded genSalt(10) → reads BCRYPT_ROUNDS from .env
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10
+    const salt   = await bcrypt.genSalt(rounds)
+    const hash   = await bcrypt.hash(tempPassword, salt)
+ 
+    user.password = hash
+    await user.save()
+ 
     await sendEmail({
-      to: email,
+      to:      email,
       subject: 'Temporary Password - eTicketsPro',
-      text: `Hello ${user.firstName || 'User'},\n\nYour temporary password is: ${tempPassword}\n\nPlease log in and change your password immediately for security reasons.\n\nBest regards,\neTicketsPro Team`,
-      html: `
+      text:    `Hello ${user.firstName || 'User'},\n\nYour temporary password is: ${tempPassword}\n\nPlease log in and change your password immediately.\n\nBest regards,\neTicketsPro Team`,
+      html:    `
         <h3>Hello ${user.firstName || 'User'},</h3>
         <p>Your temporary password is: <strong>${tempPassword}</strong></p>
         <p>Please log in and change your password immediately for security reasons.</p>
         <br/>
         <p>Best regards,<br/>eTicketsPro Team</p>
       `
-    });
-
-    res.status(200).json({ message: `A temporary password has been sent to ${email}` });
-
+    })
+ 
+    res.status(200).json({ message: `A temporary password has been sent to ${email}` })
+ 
   } catch (err) {
-    console.error('Forgot Password Error:', err.message);
-    res.status(500).json({ error: 'Something went wrong while resetting your password.' });
+    console.error('Forgot Password Error:', err.message)
+    res.status(500).json({ error: 'Something went wrong while resetting your password.' })
   }
-};
+}
 
 
 module.exports = { signupUser, loginUser, getProfile, updateProfile, updatePassword, forgotPassword }

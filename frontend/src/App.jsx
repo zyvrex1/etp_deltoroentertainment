@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthContext } from "./hooks/useAuthContext.jsx";
 import { useState, lazy, Suspense } from "react";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import "./App.css";
 
 // Layouts
@@ -158,7 +159,11 @@ function App() {
             <Route path="/login" element={<Login />} />
           </Route>
 
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin" element={
+  <ProtectedRoute allowedRole="admin">
+    <AdminLayout />
+  </ProtectedRoute>
+}>
             <Route index element={<AdminDashboard />} />
             <Route path="event-approval" element={<AdminEventApproval />} />
             <Route path="users" element={<AdminUserManagement />} />
@@ -173,7 +178,11 @@ function App() {
             <Route path="digital-gifts" element={<AdminDigitalGifts />} />
           </Route>
 
-          <Route path="/promoter" element={<PromoterLayout />}>
+          <Route path="/promoter" element={
+  <ProtectedRoute allowedRole="promoter">
+    <PromoterLayout />
+  </ProtectedRoute>
+}>
             <Route index element={<PromoterDashboard />} />
             <Route path="settings" element={<PromoterSettings />} />
             <Route path="promoter-events" element={<PromoterEvents />} />
@@ -186,7 +195,11 @@ function App() {
             <Route path="support" element={<PromoterSupport />} />
           </Route>
 
-          <Route path="/sponsor" element={<SponsorLayout />}>
+          <Route path="/sponsor" element={
+  <ProtectedRoute allowedRole="sponsor">
+    <SponsorLayout />
+  </ProtectedRoute>
+}>
             <Route index element={<SponsorHome />} />
             <Route path="sponsor-events" element={<SponsorEvents />} />
             <Route path="sponsor-event/:id" element={<SponsorEventDetails />} />
@@ -206,7 +219,11 @@ function App() {
             <Route path="my-gifts" element={<SponsorGifts />} />
           </Route>
 
-          <Route path="/customer" element={<CustomerLayout />}>
+          <Route path="/customer" element={
+  <ProtectedRoute allowedRole="customer">
+    <CustomerLayout />
+  </ProtectedRoute>
+}>
             <Route index element={<CustomerHome />} />
             <Route path="browse-events" element={<CustomerBrowseEvent />} />
             <Route path="event-details/:id" element={<CustomerEventDetails />} />

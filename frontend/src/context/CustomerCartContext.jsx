@@ -47,9 +47,9 @@ export const CustomerCartProvider = ({ children }) => {
     const { dispatch } = useAuthContext();
 
     const saveCustomerCart = (newItems, currentUser = user) => {
-        localStorage.setItem('customerCart', JSON.stringify(newItems));
-        if (currentUser && currentUser.token) {
-            userService.updateCart(newItems, currentUser.token).then(updatedCart => {
+    localStorage.setItem('customerCart', JSON.stringify(newItems));
+    if (currentUser && currentUser.token && currentUser.role) {
+        userService.updateCart(newItems, currentUser.token).then(updatedCart => {
                 const updatedUser = { ...currentUser, cart: updatedCart };
                 dispatch({ type: 'LOGIN', payload: updatedUser });
                 localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -245,9 +245,10 @@ export const CustomerCartProvider = ({ children }) => {
         }
     }, [user]);
 
-    useEffect(() => {
-        fetchHistory();
-    }, [fetchHistory]);
+   useEffect(() => {
+    if (!user || !user.token) return;
+    fetchHistory();
+}, [fetchHistory, user]);
 
     useEffect(() => {
         localStorage.setItem('customerPurchaseHistory', JSON.stringify(purchaseHistory));

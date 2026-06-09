@@ -1,23 +1,23 @@
-import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-const API = axios.create({
-  baseURL: `${BASE_URL}/api/auth`
-});
+import api from './api'
 
 export const signup = (data) => API.post("/signup", data);
 export const login = (data) => API.post("/login", data);
 
-export const getProfile = (token) => API.get("/profile", {
-  headers: { Authorization: `Bearer ${token}` }
-});
+export const getProfile = () =>
 
-export const updateProfile = (formData, token) => axios.put(`${BASE_URL}/api/user/profile`, formData, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'multipart/form-data'
-  }
-});
+  api.get("/auth/profile")
+
+export const updateProfile =
+
+  (formData) =>
+
+    api.put("/user/profile",
+      formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
 
 export const updatePassword = (data, token) => API.put("/update-password", data, {
   headers: { Authorization: `Bearer ${token}` }

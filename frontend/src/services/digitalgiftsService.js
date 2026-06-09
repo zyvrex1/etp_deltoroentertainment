@@ -1,150 +1,56 @@
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+import api from './api';
 
 const digitalgiftsService = {
   getGifts: async (token, params = {}) => {
     const query = new URLSearchParams(params).toString();
-    const url = `${BASE_URL}/api/digital-gifts${query ? `?${query}` : ""}`;
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch digital gifts');
-    }
-    return result.data; // The controller returns { success: true, data: [...] }
+    const url = `/digital-gifts${query ? `?${query}` : ''}`;
+    const response = await api.get(url);
+    return response.data.data;
   },
 
-  getStats: async (token) => {
-    const response = await fetch(`${BASE_URL}/api/digital-gifts/stats`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch gift stats');
-    }
-    return result.data;
+  getStats: async () => {
+    const response = await api.get('/digital-gifts/stats');
+    return response.data.data;
   },
 
-  createGift: async (giftData, token) => {
-    const response = await fetch(`${BASE_URL}/api/digital-gifts`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(giftData)
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to create digital gift');
-    }
-    return result.data;
+  createGift: async (giftData) => {
+    const response = await api.post('/digital-gifts', giftData);
+    return response.data.data;
   },
 
-  updateGift: async (giftId, giftData, token) => {
-    const response = await fetch(`${BASE_URL}/api/digital-gifts/${giftId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(giftData)
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to update digital gift');
-    }
-    return result.data;
+  updateGift: async (giftId, giftData) => {
+    const response = await api.put(`/digital-gifts/${giftId}`, giftData);
+    return response.data.data;
   },
 
-  deleteGift: async (giftId, token) => {
-    const response = await fetch(`${BASE_URL}/api/digital-gifts/${giftId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to delete digital gift');
-    }
-    return result;
+  deleteGift: async (giftId) => {
+    const response = await api.delete(`/digital-gifts/${giftId}`);
+    return response.data;
   },
 
-  assignGift: async (giftId, assignmentData, token) => {
-    const response = await fetch(`${BASE_URL}/api/digital-gifts/${giftId}/assign`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(assignmentData)
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to assign digital gift');
-    }
-    return result.data;
+  assignGift: async (giftId, assignmentData) => {
+    const response = await api.post(`/digital-gifts/${giftId}/assign`, assignmentData);
+    return response.data.data;
   },
 
-  getRecentAssignments: async (token, limit = 20) => {
-    const response = await fetch(`${BASE_URL}/api/digital-gifts/assignments/recent?limit=${limit}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch recent assignments');
-    }
-    return result.data;
+  getRecentAssignments: async (limit = 20) => {
+    const response = await api.get(`/digital-gifts/assignments/recent?limit=${limit}`);
+    return response.data.data;
   },
 
-  getMyGifts: async (token) => {
-    const response = await fetch(`${BASE_URL}/api/digital-gifts/my-gifts`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch my gifts');
-    }
-    return result.data;
+  getMyGifts: async () => {
+    const response = await api.get('/digital-gifts/my-gifts');
+    return response.data.data;
   },
 
-  redeemByCode: async (code, token) => {
-    const response = await fetch(`${BASE_URL}/api/digital-gifts/redeem-by-code`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ code })
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to claim gift card');
-    }
-    return result.data;
+  redeemByCode: async (code) => {
+    const response = await api.post('/digital-gifts/redeem-by-code', { code });
+    return response.data.data;
   },
 
-  redeemAssignment: async (giftId, assignmentId, token) => {
-    const response = await fetch(`${BASE_URL}/api/digital-gifts/${giftId}/assignments/${assignmentId}/redeem`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to redeem gift assignment');
-    }
-    return result.data;
+  redeemAssignment: async (giftId, assignmentId) => {
+    const response = await api.patch(`/digital-gifts/${giftId}/assignments/${assignmentId}/redeem`);
+    return response.data.data;
   }
 };
 

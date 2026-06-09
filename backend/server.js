@@ -1,5 +1,18 @@
 require('dotenv').config()
 
+// ─── Validate required env vars before anything else ────────
+// If any of these are missing the server crashes immediately
+// with a clear message instead of a cryptic runtime error later.
+
+const REQUIRED_ENV = ['PORT', 'MONGO_URI', 'JWT_SECRET', 'CLIENT_URL']
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.error(`❌  Missing required environment variable: ${key}`)
+    console.error(`    Copy .env.example → .env and fill in the value.`)
+    process.exit(1)
+  }
+}
+
 const express = require('express')
 const dns = require('dns')
 // Use Google DNS to resolve MongoDB Atlas SRV records if local DNS fails
@@ -8,6 +21,10 @@ dns.setServers(['8.8.8.8', '8.8.4.4'])
 const cors = require('cors')
 const path = require('path')
 const fs = require('fs')
+
+const helmet = require('helmet')
+const rateLimit = require('express-rate-limit')
+
 
 // Routes
 const authRoutes = require('./routes/authRoutes')
@@ -43,24 +60,63 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // middleware
-app.use(cors({
-    origin: ['http://localhost:5173', 'http://192.168.18.6:5173'],
-    credentials: true
-}))
 app.use(express.json({ limit: "10mb" }))
-app.use(express.urlencoded({ limit: "10mb", extended: true }))
+app.use(express.urlencoded({
+  limit: "10mb", extended: true
+}))
 
-// request logger
-app.use((req, res, next) => {
+// Single cors block — reads from .env
+const allowedOrigins =
+  process.env.CLIENT_URL.split(',').map(o => o.trim())
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error(
+        `CORS: origin ${origin} not allowed`))
+    }
+  },
+  credentials: true
+}))
+
+// Single dev-only logger
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
     console.log(req.method, req.path)
     next()
+  })
+}
+
+
+
+// helmet sets secure HTTP headers (XSS, clickjacking, MIME sniff, etc.)
+app.use(helmet())
+
+// ─── Rate limiting ────────────────────────────────────────────
+// Limits each IP to 100 requests per 15 minutes on all routes
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+}))
+
+// Stricter limiter for auth routes (prevent brute force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many login attempts, please try again in 15 minutes.' }
 })
+
+
 
 // serve uploaded images
 app.use('/uploads', express.static(uploadDir))
 
 // API routes
-app.use('/api/auth', authRoutes)
+app.use('/api/auth', authLimiter,authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/promoter', promoterRoutes)
@@ -102,11 +158,21 @@ const socket = require('./socket');
 const connectDB = require('./config/db');
 
 // connect to db
-connectDB().then(() => {
-    const server = http.createServer(app);
-    socket.init(server);
+// connectDB().then(() => {
+//     const server = http.createServer(app);
+//     socket.init(server);
 
-    server.listen(process.env.PORT, () => {
-        console.log('Server running on port', process.env.PORT)
-    });
-});
+//     server.listen(process.env.PORT, () => {
+//         console.log('Server running on port', process.env.PORT)
+//     });
+// });
+
+
+connectDB().then(() => {
+  const server = http.createServer(app)
+  socket.init(server)
+ 
+  server.listen(process.env.PORT, () => {
+    console.log(`🚀  Server running on port ${process.env.PORT} [${process.env.NODE_ENV}]`)
+  })
+})

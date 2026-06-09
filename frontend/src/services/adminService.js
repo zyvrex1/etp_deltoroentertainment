@@ -1,83 +1,30 @@
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || "";
-const API_URL = `${BASE_URL}/api/admin`;
+import api from './api';
 
 const adminService = {
-  /**
-   * Fetch all users
-   * @param {string} token - The authentication token
-   * @returns {Promise<Array>} List of users
-   */
-  getUsers: async (token) => {
+  getUsers: async () => {
     try {
-      const response = await fetch(`${API_URL}/users`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      const json = await response.json();
-
-      if (!response.ok) {
-        throw new Error(json.error || "Failed to fetch users");
-      }
-
-      return json;
+      const response = await api.get('/admin/users');
+      return response.data;
     } catch (error) {
       console.error("Error in getUsers service:", error);
       throw error;
     }
   },
 
-  /**
-   * Update a user
-   * @param {string} id - The user ID
-   * @param {Object} data - The data to update
-   * @param {string} token - The authentication token
-   * @returns {Promise<Object>} The updated user
-   */
-  updateUser: async (id, data, token) => {
+  updateUser: async (id, data) => {
     try {
-      const response = await fetch(`${API_URL}/users/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(data)
-      });
-      const json = await response.json();
-
-      if (!response.ok) {
-        throw new Error(json.error || "Failed to update user");
-      }
-
-      return json;
+      const response = await api.patch(`/admin/users/${id}`, data);
+      return response.data;
     } catch (error) {
       console.error("Error in updateUser service:", error);
       throw error;
     }
   },
 
-  /**
-   * Delete a user
-   * @param {string} id - The user ID
-   * @param {string} token - The authentication token
-   * @returns {Promise<Object>} Success message
-   */
-  deleteUser: async (id, token) => {
+  deleteUser: async (id) => {
     try {
-      const response = await fetch(`${API_URL}/users/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      const json = await response.json();
-
-      if (!response.ok) {
-        throw new Error(json.error || "Failed to delete user");
-      }
-
-      return json;
+      const response = await api.delete(`/admin/users/${id}`);
+      return response.data;
     } catch (error) {
       console.error("Error in deleteUser service:", error);
       throw error;

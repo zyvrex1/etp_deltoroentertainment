@@ -154,7 +154,6 @@ digitalGiftSchema.statics.redeemByCode = async function (code) {
    INDEXES
 ========================= */
 
-digitalGiftSchema.index({ code: 1 });
 digitalGiftSchema.index({ status: 1 });
 digitalGiftSchema.index({ type: 1 });
 digitalGiftSchema.index({ createdBy: 1 });
