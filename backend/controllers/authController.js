@@ -8,22 +8,12 @@ const { sendEmail } = require('../utils/email')
 const crypto = require('crypto')
 const { emitUpdate } = require('../socket')
 const { recordAuditLog, emitAuditSocketEvents } = require('./auditlogController')
+const { getJwtSecret } = require('../utils/jwt')
 
-// Create JWT token
-// const createToken = (user) => {
-//   return jwt.sign(
-//     { _id: user._id, role: user.role },
-//     process.env.SECRET,
-//     { expiresIn: '3d' }
-//   );
-// };
-
-// CHANGED: process.env.SECRET → process.env.JWT_SECRET  (matches renamed .env key)
-// CHANGED: '3d' hardcoded → process.env.JWT_EXPIRES_IN  (configurable per environment)
 const createToken = (user) => {
   return jwt.sign(
     { _id: user._id, role: user.role },
-    process.env.JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: process.env.JWT_EXPIRES_IN || '3d' }
   )
 }

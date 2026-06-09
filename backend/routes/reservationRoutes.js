@@ -20,7 +20,7 @@ const requireRole = require('../middleware/requireRole');
 router.use(requireAuth);
 
 // Admin routes
-router.get('/admin', requireRole('admin'), getAllReservations);
+router.get('/admin', requireRole('admin', 'superadmin'), getAllReservations);
 
 // My Reservations (both Sponsors/Booths and Customers/Seats)
 router.get('/my-booths', getMyReservations);

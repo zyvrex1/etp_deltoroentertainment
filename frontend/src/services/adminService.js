@@ -1,9 +1,12 @@
 import api from './api';
 
+const authHeaders = (token) =>
+  token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+
 const adminService = {
-  getUsers: async () => {
+  getUsers: async (token) => {
     try {
-      const response = await api.get('/admin/users');
+      const response = await api.get('/admin/users', authHeaders(token));
       return response.data;
     } catch (error) {
       console.error("Error in getUsers service:", error);
@@ -11,9 +14,9 @@ const adminService = {
     }
   },
 
-  updateUser: async (id, data) => {
+  updateUser: async (id, data, token) => {
     try {
-      const response = await api.patch(`/admin/users/${id}`, data);
+      const response = await api.patch(`/admin/users/${id}`, data, authHeaders(token));
       return response.data;
     } catch (error) {
       console.error("Error in updateUser service:", error);
@@ -21,9 +24,9 @@ const adminService = {
     }
   },
 
-  deleteUser: async (id) => {
+  deleteUser: async (id, token) => {
     try {
-      const response = await api.delete(`/admin/users/${id}`);
+      const response = await api.delete(`/admin/users/${id}`, authHeaders(token));
       return response.data;
     } catch (error) {
       console.error("Error in deleteUser service:", error);

@@ -1,6 +1,7 @@
 
 const User = require('../models/userModel')
 const jwt = require('jsonwebtoken')
+const { getJwtSecret } = require('../utils/jwt')
 
 const requireSuperadmin = async (req, res, next) => {
   const { authorization } = req.headers
@@ -10,7 +11,7 @@ const requireSuperadmin = async (req, res, next) => {
 
   const token = authorization.split(' ')[1]
   try {
-    const { _id } = jwt.verify(token, process.env.SECRET)
+    const { _id } = jwt.verify(token, getJwtSecret())
     const user = await User.findById(_id)
     if (!user || user.role !== 'superadmin') {
       return res.status(403).json({ error: 'Access denied' })

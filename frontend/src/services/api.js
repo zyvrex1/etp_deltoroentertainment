@@ -7,6 +7,21 @@ const api = axios.create({
 });
 
 // Attach token from localStorage on every request
+api.interceptors.request.use((config) => {
+  const raw = localStorage.getItem('user');
+  if (raw) {
+    try {
+      const user = JSON.parse(raw);
+      if (user?.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
+    } catch {
+      // ignore malformed localStorage
+    }
+  }
+  return config;
+});
+
 // Handle 401s globally
 api.interceptors.response.use(
   (response) => response,
