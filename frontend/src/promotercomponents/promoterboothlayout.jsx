@@ -59,6 +59,8 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
     const [bgKonvaImage, setBgKonvaImage] = useState(null);
     const [bgModalOpen, setBgModalOpen] = useState(false);
     const bgFileInputRef = useRef(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveToast, setSaveToast] = useState(null); // { type: 'success'|'error', msg: string }
 
     const historyStack = useRef([]);
     const futureStack = useRef([]);
@@ -526,9 +528,15 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
         }
     };
 
+    const showSaveToast = (type, msg) => {
+        setSaveToast({ type, msg });
+        setTimeout(() => setSaveToast(null), 3000);
+    };
+
     const handleSaveLayout = async () => {
         if (!user) return showErrorAlert("Unauthorized", "You must be logged in.");
         if (!isOwner) return showErrorAlert("Access Denied", "Only the event creator can save changes to the layout.");
+        if (isSaving) return;
 
         const priceLevels = categories.map(c => ({
             _id: c.id,
@@ -609,6 +617,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
             return showErrorAlert("Unauthorized", "Authentication token is missing. Please log in again.");
         }
 
+        setIsSaving(true);
         try {
             const response = await fetch(`${API_URL}/${selectedEvent._id}`, {
                 method: "PATCH",
@@ -623,13 +632,15 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
 
             if (response.ok) {
                 dispatch({ type: "UPDATE_EVENT", payload: json.event || json });
-                showSuccessAlert("Saved", "Layout configuration saved successfully.");
+                showSaveToast('success', 'Layout configuration saved successfully.');
             } else {
-                showErrorAlert("Save Failed", json.error || json.message || "Failed to save layout.");
+                showSaveToast('error', json.error || json.message || "Failed to save layout.");
             }
         } catch (error) {
             console.error("Save error:", error);
-            showErrorAlert("Error", "An unexpected error occurred while saving the layout.");
+            showSaveToast('error', "An unexpected error occurred while saving the layout.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -1135,13 +1146,28 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                                         <Icon icon="mdi:layers-off" /> <span>Clear</span>
                                     </button>
 
-                                    <button className="bt-btn primary save-layout-btn" onClick={handleSaveLayout} title="Save Venue Layout">
-                                        <Icon icon="mdi:check-circle-outline" /> <span>Save Layout</span>
+                                    <button
+                                        className={`bt-btn primary save-layout-btn${isSaving ? ' saving' : ''}`}
+                                        onClick={handleSaveLayout}
+                                        disabled={isSaving}
+                                        title="Save Venue Layout"
+                                    >
+                                        <Icon icon={isSaving ? "mdi:loading" : "mdi:check-circle-outline"} className={isSaving ? "spin" : ""} />
+                                        <span>{isSaving ? 'Saving...' : 'Save Layout'}</span>
                                     </button>
                                 </>
                             )}
                         </div>
                     </div>
+
+                    {/* Fast inline save toast */}
+                    {saveToast && (
+                        <div className={`layout-save-toast layout-save-toast--${saveToast.type}`}>
+                            <Icon icon={saveToast.type === 'success' ? 'mdi:check-circle' : 'mdi:alert-circle'} />
+                            <span>{saveToast.msg}</span>
+                        </div>
+                    )}
+
 
                     <div className="konva-container" ref={containerRef}>
                         <Stage

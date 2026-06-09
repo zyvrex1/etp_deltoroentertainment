@@ -46,7 +46,6 @@ const CreateEventModal = ({ isOpen, onClose }) => {
   const [error, setError] = useState("");
   const [errors, setErrors] = useState({});
 
-  // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
       resetForm();
@@ -63,30 +62,58 @@ const CreateEventModal = ({ isOpen, onClose }) => {
     }
   };
 
+  const validateAndSetFile = async (file) => {
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      // 1. Fire the SweetAlert modal popup alert
+      await showErrorAlert(
+        "File Too Large",
+        "The selected image exceeds the 5MB file size limit. Please choose a smaller file."
+      );
+
+      // 2. Set the UI inline error states as a fallback match
+      setErrors((prev) => ({
+        ...prev,
+        image: "Image file size must be less than 5MB.",
+      }));
+      setError("Image file size must be less than 5MB.");
+      return false;
+    }
+
+    // Clear image specific errors if valid file
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.image;
+      return newErrors;
+    });
+    setError("");
+
+    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    setImageFile(file);
+    setImagePreviewUrl(URL.createObjectURL(file));
+    return true;
+  };
+
   // Image handlers remain the same
   const handleImageDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setImageDragActive(e.type === "dragenter" || e.type === "dragover");
   };
+
   const handleImageDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setImageDragActive(false);
     if (e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-      setImageFile(file);
-      setImagePreviewUrl(URL.createObjectURL(file));
+      validateAndSetFile(e.dataTransfer.files[0]);
     }
   };
+
   const handleImageChange = (e) => {
     e.preventDefault();
     if (e.target.files[0]) {
-      const file = e.target.files[0];
-      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-      setImageFile(file);
-      setImagePreviewUrl(URL.createObjectURL(file));
+      validateAndSetFile(e.target.files[0]);
     }
   };
 

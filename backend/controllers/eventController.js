@@ -1,6 +1,18 @@
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 const Event = require("../models/eventModel");
+const VenueMap = require("../models/venueMapModel");
+
+const mapVenueMapToEvent = (eventDoc) => {
+  if (!eventDoc) return null;
+  const eventObj = typeof eventDoc.toObject === "function" ? eventDoc.toObject() : eventDoc;
+  if (eventObj.venueMap && typeof eventObj.venueMap === "object") {
+    eventObj.layoutData = eventObj.venueMap;
+    eventObj.seatMap = eventObj.venueMap.seatMap;
+    delete eventObj.venueMap.seatMap;
+  }
+  return eventObj;
+};
 const Reservation = require("../models/reservationModel");
 const Merchandise = require("../models/merchandiseModel");
 const { toObjectId } = require("../utils/helpers");
@@ -49,6 +61,9 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 Megabytes in bytes
+  },
 });
 
 const autoHealEvents = async (eventsArr) => {
@@ -317,6 +332,9 @@ const getEvent = async (req, res) => {
         path: "assignedPromoters",
         select: "firstName lastName email avatar",
       },
+      {
+        path: "venueMap",
+      },
     ]);
 
     if (!event) {
@@ -356,7 +374,8 @@ const getEvent = async (req, res) => {
     }
 
     // Auto-heal on the fly
-    const healedEvent = await autoHealEvents(event);
+    const mappedEvent = mapVenueMapToEvent(event);
+    const healedEvent = await autoHealEvents(mappedEvent);
 
     return res.status(200).json(healedEvent);
   } catch (error) {
@@ -582,7 +601,20 @@ const createEvent = async (req, res) => {
         ? "approved"
         : "pending";
 
+    const newEventId = new mongoose.Types.ObjectId();
+    const newVenueMap = new VenueMap({
+      eventId: newEventId,
+      items: typeof layoutData !== 'undefined' && layoutData ? layoutData.items : [],
+      seatMap: eventType === "General Admission" ? null : seatMap,
+      canvasWidth: typeof layoutData !== 'undefined' && layoutData ? layoutData.canvasWidth : 1400,
+      canvasHeight: typeof layoutData !== 'undefined' && layoutData ? layoutData.canvasHeight : 900,
+      backgroundImage: typeof layoutData !== 'undefined' && layoutData ? layoutData.backgroundImage : null,
+      bgOpacity: typeof layoutData !== 'undefined' && layoutData ? layoutData.bgOpacity : 0.4,
+    });
+    await newVenueMap.save();
+
     const newEvent = await Event.create({
+      _id: newEventId,
       title,
 
       description,
@@ -605,7 +637,7 @@ const createEvent = async (req, res) => {
 
       priceLevels,
 
-      seatMap: eventType === "General Admission" ? null : seatMap,
+      venueMap: newVenueMap._id,
 
       booths: Array.isArray(booths) ? booths : [],
 
@@ -1064,7 +1096,6 @@ const updateEvent = async (req, res) => {
       eventType: finalEventType,
       priceLevels: finalPriceLevels,
       // Clean seatMap if switched to General Admission
-      seatMap: (finalEventType === "Seating Arrangement" || finalEventType === "Reservation") ? finalSeatMap : null,
       booths: finalBooths,
       hasBooths: Array.isArray(finalBooths) && finalBooths.length > 0,
       venue: finalVenue,
@@ -1078,8 +1109,6 @@ const updateEvent = async (req, res) => {
         ticketCategories !== undefined
           ? ticketCategories
           : existingEvent.ticketCategories,
-      layoutData:
-        layoutData !== undefined ? layoutData : existingEvent.layoutData,
       status: finalStatus,
       rejectionReason:
         rejectionReason !== undefined
@@ -1091,6 +1120,29 @@ const updateEvent = async (req, res) => {
           : existingEvent.cancellationReason,
     };
 
+    if (layoutData !== undefined || finalSeatMap !== undefined) {
+      await VenueMap.findOneAndUpdate(
+        { eventId: id },
+        { 
+          $set: { 
+            ...(layoutData !== undefined && {
+              items: layoutData.items || [],
+              canvasWidth: layoutData.canvasWidth || 1400,
+              canvasHeight: layoutData.canvasHeight || 900,
+              backgroundImage: layoutData.backgroundImage || null,
+              bgOpacity: layoutData.bgOpacity || 0.4,
+              bgWidth: layoutData.bgWidth || null,
+              bgHeight: layoutData.bgHeight || null,
+            }),
+            ...(finalSeatMap !== undefined && {
+              seatMap: (finalEventType === "Seating Arrangement" || finalEventType === "Reservation") ? finalSeatMap : null
+            })
+          } 
+        },
+        { upsert: true }
+      );
+    }
+    
     const updatedEvent = await Event.findByIdAndUpdate(
       id,
       { $set: updatedData },
@@ -1098,6 +1150,7 @@ const updateEvent = async (req, res) => {
     ).populate([
       { path: "createdBy", select: "firstName lastName role email avatar" },
       { path: "assignedPromoters", select: "firstName lastName email avatar" },
+      { path: "venueMap" },
     ]);
 
     // Notification Logic
@@ -1127,7 +1180,8 @@ const updateEvent = async (req, res) => {
     }
 
     emitUpdate("dashboardUpdate");
-    res.status(200).json({ event: updatedEvent });
+    const mappedUpdatedEvent = mapVenueMapToEvent(updatedEvent);
+    res.status(200).json({ event: mappedUpdatedEvent });
   } catch (error) {
     console.error("Update Event Error:", error);
     res.status(500).json({ error: "Server error", message: error.message });
