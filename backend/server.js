@@ -25,6 +25,7 @@ const fs = require('fs')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
 
+const compression = require('compression')
 
 // Routes
 const authRoutes = require('./routes/authRoutes')
@@ -47,6 +48,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const payoutRoutes = require('./routes/payoutRoutes');
 const digitalgiftsRoutes = require('./routes/digitalgiftsRoutes');
 const auditLogRoutes = require('./routes/auditlogRoutes')
+const uploadRoutes = require('./routes/uploadRoutes');
 
 
 
@@ -79,6 +81,7 @@ app.use(cors({
   },
   credentials: true
 }))
+app.use(compression())
 
 // Single dev-only logger
 if (process.env.NODE_ENV !== 'production') {
@@ -136,6 +139,7 @@ app.use('/api/orders', orderRoutes)
 app.use('/api/payouts', payoutRoutes)
 app.use('/api/digital-gifts', digitalgiftsRoutes)
 app.use('/api/audit-logs', auditLogRoutes)
+app.use('/api/uploads', uploadRoutes)
 
 
 // Global error handler

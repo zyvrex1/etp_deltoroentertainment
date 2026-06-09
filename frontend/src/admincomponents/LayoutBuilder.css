@@ -1491,4 +1491,50 @@
   background: var(--color-bg-light);
   border-radius: 8px;
   font-weight: 500;
-}
+}
+
+/* ── Fast save toast ── */
+.layout-save-toast {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 999;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  animation: toastSlideDown 0.25s ease-out;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.layout-save-toast--success {
+  background: #16a34a;
+  color: white;
+}
+
+.layout-save-toast--error {
+  background: #dc2626;
+  color: white;
+}
+
+@keyframes toastSlideDown {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Saving button state */
+.bt-btn.primary.save-layout-btn:disabled,
+.bt-btn.primary.save-layout-btn.saving {
+  opacity: 0.75;
+  cursor: not-allowed;
+  background: #9ca3af;
+  border-color: #9ca3af;
+  box-shadow: none;
+}
+

@@ -194,7 +194,8 @@ const eventSchema = new Schema(
 
     priceLevels: { type: [priceLevelSchema], default: [] },
 
-    seatMap: { type: seatMapSchema, default: null },
+    // seatMap and layoutData have been moved to VenueMap collection for performance
+    venueMap: { type: Schema.Types.ObjectId, ref: "VenueMap" },
 
     hasBooths: { type: Boolean, default: false },
 
@@ -214,9 +215,8 @@ const eventSchema = new Schema(
     isFeatured: { type: Boolean, default: false },
     assignedPromoters: { type: [{ type: Schema.Types.ObjectId, ref: "User" }], default: [] },
 
-    // Editor data for LayoutBuilder
+    // Editor data for LayoutBuilder (ticketCategories remain on event, layoutData moved to venueMap)
     ticketCategories: { type: Schema.Types.Mixed, default: [] },
-    layoutData: { type: Schema.Types.Mixed, default: null },
 
     // Ticket Layouts
     ticketLayouts: { type: [ticketLayoutSchema], default: [] },

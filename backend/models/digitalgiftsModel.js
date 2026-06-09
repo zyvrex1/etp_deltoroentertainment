@@ -117,11 +117,11 @@ digitalGiftSchema.virtual("remainingCount").get(function () {
 });
 
 digitalGiftSchema.virtual("isRedeemable").get(function () {
-  return (
-    this.status === "active" &&
-    this.usedCount < this.totalCount &&
-    (this.expiresAt === null || new Date(this.expiresAt) >= new Date())
-  );
+    return (
+        this.status === "active" &&
+        this.usedCount < this.totalCount &&
+        (this.expiresAt === null || new Date(this.expiresAt) >= new Date())
+    );
 });
 
 digitalGiftSchema.virtual("redemptionRate").get(function () {
@@ -143,7 +143,7 @@ digitalGiftSchema.statics.redeemByCode = async function (code) {
             code: code.toUpperCase(),
             status: "active",
             $or: [{ expiresAt: null }, { expiresAt: { $gte: new Date() } }],
-             $expr: { $lt: ["$usedCount", "$totalCount"] },
+            $expr: { $lt: ["$usedCount", "$totalCount"] },
         },
         { $inc: { usedCount: 1 } },
         { new: true }

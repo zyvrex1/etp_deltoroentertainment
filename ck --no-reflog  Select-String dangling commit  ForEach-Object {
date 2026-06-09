@@ -1,0 +1,513 @@
+[33m63e6f6b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m live audit logs
+[33m7aea208[m audit logs
+[33ma25338e[m notification pathing for all user
+[33m69d0950[m sweet alert, skeleton loading and pagination
+[33m79cc4bc[m if refunded do not return the digital gift
+[33m1a59ef0[m customer and sponsor returning gift card if rejected
+[33m64d8896[m customer gift card
+[33mfbbfc97[m sponsor promos
+[33m6859b75[m Updated
+[33m485074d[m Updated Customer and Sponsor Payment Method
+[33m6028aaa[m Customer and Sponsor Payment Method
+[33m3d9a8d7[m Revised
+[33m0cb8850[m minimal update
+[33md5abcc9[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m428c908[m sponsor and customer gift card
+[33m6e16f84[m Updated Ticket Categories
+[33ma8c91a3[m admin gift card
+[33m6637e19[m promoter concern
+[33ma074cbb[m minimal update
+[33m28174da[m error hjandling issue
+[33ma2b7a94[m seat/booth map layout
+[33m13d602d[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m2e021a2[m pdf format
+[33mb92b83d[m Revised
+[33m70a0ea4[m Updated
+[33m76285fd[m pdf format sponsor
+[33m8786890[m sponsor payment error handling
+[33m3067509[m minimal update
+[33mb01e90f[m fixing customer check out handle error
+[33m1f1a23e[m pending invoice
+[33m33efe4b[m sponsor history pdf format
+[33m0c29fce[m promoter report pdf
+[33m0cabe39[m promoter pdf format
+[33m8b239d7[m admin report pdf
+[33m121298f[m code clean
+[33mc763093[m payments and payouts in admin
+[33m831471b[m fix payment status in customer store
+[33mc4bc318[m fix payment status in customer and sponsor store
+[33m43e8b87[m Error Message
+[33mbfcebcb[m default images
+[33mc972707[m default image
+[33mfd30c0b[m sign up trigger
+[33mac0b9dc[m Promoter Sales Overview
+[33m986c26f[m paytout billing
+[33m2606dd3[m confirm notif
+[33m98ad951[m promoter notif refund reject
+[33m97a4d20[m refunded and cancelled notif
+[33m9f9d867[m dashboard pending payout
+[33m3c3d13e[m reports and analytics refund rate
+[33m7aece44[m payment method | pull in payments, sponsor side, customer side, admin side and promoter side
+[33m27a23a4[m Admin Payout Request
+[33mcf5569a[m minimal update
+[33m5060dc7[m promoter notif
+[33m2d5d52f[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m7d2c4ca[m promoter dashboard
+[33m483a84c[m Updated Promoter Payout
+[33m871c182[m sponsor adding items in cart simultaneously
+[33m1c92193[m Updated Promoter Payout Method
+[33m4f3aebe[m Promoter Payment Process Request
+[33maed51eb[m skeleton loading
+[33m335dc12[m notification filter
+[33m544431a[m customer available products
+[33m49bf016[m sponsor notification
+[33mae31420[m customer notification
+[33m19aae80[m pulled active orders in sponsor store | fix cart details | add skeleton loading
+[33m7eaea50[m skeleton loading
+[33m314bd5b[m skeleton loading, pulled products order in purchase history
+[33m6072ac2[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m88a7a4e[m skeleton loading
+[33ma168f6a[m Update promoterrevenuereports.jsx
+[33m61492ae[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m2f0e2e9[m sponsor anaylitics | customer payment method
+[33medcc8be[m Promoter Revenue Reports
+[33mb766175[m Promoter Settings Team Members
+[33mc5bbe54[m Admin Live Scanning
+[33m63036fc[m Promoter Scanner
+[33m6d3c6dd[m store option | disable exhibitors
+[33m6497fc6[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m77261f2[m customer buying products in sponsor booth
+[33mec56122[m Promoter Attendees and Sponsors Checked Ins
+[33m2d9c8bc[m sponsor store update
+[33m1a8d41a[m cusotmer booth products separation | pulling of events
+[33mc25c595[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m6bdcbf4[m disable seats and booth
+[33mb6e4a49[m Promoter Attendees
+[33m3e2f419[m Promote Sales Overview
+[33m4511295[m customer orders
+[33m2f14a25[m auto naming
+[33m61c109e[m store booth sponsor to customer
+[33mbf46126[m date range picker | reports and analytics trend
+[33m9323ab8[m Sync Data for Ticket
+[33m578260e[m Promoter Restriction Access
+[33m71e6df0[m customer store | store booth | default image
+[33mc290a93[m reports and analytics
+[33ma4f3a3c[m dashboard | fix reservation
+[33m5586717[m Pulled Reservation in Promoter Booth Layout
+[33m8ed32d8[m minimal update
+[33mc3b78c7[m Ticket Designer Layout
+[33m41e4e58[m added analytics service in frontend | minimal update
+[33m26ab121[m analytics and fix others | default image
+[33m7776a46[m fixed sending temp password in email
+[33m620c395[m update password | temporary password in admin page
+[33m6f175b3[m reports and analytics top performer events
+[33mafcc897[m customer concern
+[33mcaea6d7[m fix error in booth reservation limit
+[33mcd9bb14[m fix log in issue in customer (cannot save the reserved tickets)
+[33m5648d6c[m minimal update
+[33m1789f48[m customer home
+[33m9fe0b8b[m admin event management | dashboard
+[33ma780b3d[m event full details
+[33m56511e9[m admin dashboard
+[33m87e9e80[m Purchase order ID
+[33mee2b309[m fixed data base | minimal updates
+[33ma5e27d6[m qr code | phone number | available seats
+[33mbddd3d6[m save layout error fix
+[33mc43de30[m Customer Purchase
+[33m4b95f42[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m56e3ace[m notification filter in sponsor settings
+[33me546e63[m Backend Buy Seats
+[33mb9425f9[m Seats and Row by Group Row/Column
+[33m391b07c[m fixed chat area
+[33mf3ff204[m sponsor notification
+[33mcd9452c[m Fix the Cut Background Image and Draggable Map in Mobilewwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+[33m154a9f3[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m1ed3a32[m error boundary
+[33m0d4908e[m Skeleton Loading
+[33me8b416d[m Updated Sponsor Venue Layout
+[33m634e9c3[m minimal update | pdf update
+[33m3ae9c57[m date range update in sponsor
+[33m508ff6f[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33mcdc4dc8[m updates
+[33mfcdd72b[m Update BoothMap.jsx
+[33m422170d[m Manage Layout Upload Image Background
+[33m9f07754[m sponsor booth full detains update
+[33ma629a63[m fixed booth map in mobile
+[33m3d31655[m add sponsor exhibitor
+[33mfee7d30[m minimal update
+[33m1de8a64[m sponsor store fixed
+[33m9101d15[m update in the previous push
+[33mebbe157[m updated the sponsor details and invoice receipt
+[33mbbd868c[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m0986836[m sponsor store
+[33m2dbd8d6[m Remove Booth Radius and Added Border
+[33m420aff5[m Layout Builder Undo and Redo
+[33m49aec61[m customer and sponsor transition in home page
+[33me2b8fba[m minimal updates
+[33mf908fe5[m customer store
+[33mef4cc0d[m sponsor navigation mobile update
+[33mf58ce02[m customer navigation in mobile
+[33ma32d089[m dragBoundFunc Limited Area
+[33mbdbc1d7[m Updated
+[33m3919c45[m Eventmanagement ternary operator icon
+[33m0217192[m Create Event Button
+[33mf514f2c[m creeate event
+[33m2f516fc[m Event Management Fixed CSS
+[33m12496c5[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m3835e34[m home page nav bar in mobile
+[33m60e7afa[m empty state landing page
+[33m40102ab[m navigation bar mobile
+[33ma64d10b[m Event Type and Eventmanagement Fix Design
+[33m23ec5d5[m empty state
+[33m1304e55[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m6724a77[m admin empty state
+[33m9f21d16[m promoter settings
+[33m0c0f344[m Updated
+[33m9f71837[m fix changes | fixing minimal design error
+[33mc8dae7f[m updated event management
+[33m785da8e[m Update eventmanagement.jsx
+[33m9f71677[m fix event mnagement
+[33md1f0d42[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33mf021f57[m Prevent Error for Deleted User
+[33mdf214ae[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m9529027[m Updated Manage User Function
+[33mcbcc04a[m add to cart process in sponsor and customer
+[33me06f64f[m cart process in sponsor
+[33m5f191b3[m sponsor process refund
+[33md147840[m updated sponsor booth and customer ticket
+[33m8cfb525[m page loading
+[33m3e894c6[m customer settings
+[33m38e89b8[m gitignore
+[33m73f20b1[m image optimizer
+[33mfc85d37[m Organized the File
+[33m3d5fff7[m Payments | Payments Notification | paymetns tabs table | view full payment
+[33m2419440[m dashboard
+[33m38bc0a7[m admin dashboard
+[33mdbd4163[m customer browse event update
+[33m951bd18[m pull the reservation to history, booth details and full history | minimal updates
+[33m79b0e1a[m booth selling sponsor to admin
+[33mdf81868[m sponsor home
+[33mc1b7741[m sponsor buy booth (reflects on admin)
+[33m44f7893[m customer home page | landing page
+[33mac366cc[m login and signup
+[33maf02205[m landing page
+[33mf04dadc[m add collaborator in promoter
+[33md343e9c[m skeleton loading
+[33m4375105[m promoter panel skeleton loading
+[33m01ce66c[m skeleton loading
+[33mcd37d72[m pull map layout and added promoter access in promoter panel
+[33m423aa0a[m promoter notif and map
+[33m6cabea8[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33mbc9f48d[m map layout
+[33mee0a793[m Promoter Created Event
+[33mb4869bc[m assign promoter
+[33m283c535[m error update
+[33m4123659[m error update
+[33m6fd6933[m Working Assigning Price level in Seats and Booths
+[33mc805e30[m get users yearly/monthly | System Alert | minimal updates
+[33mfcd3e47[m Pending Event Indicator
+[33m6f4099a[m Notification Admin
+[33ma14f7f8[m assgined first before updating status in concern
+[33mf9b4ea3[m Number of message concern indicator
+[33m1990b77[m Updated Seats/Booths Layout
+[33ma549092[m Recent Activity and Pending Tickets admin dashboard
+[33md7c6dee[m Admin Notification
+[33maa45a45[m Admin Notification
+[33mbbdca48[m customer home page dynamic
+[33m5796619[m sponsor product analytics
+[33mf48bccc[m minimal
+[33m573bee3[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m2a82f44[m minimal
+[33m1ac73c3[m Working Creating Seats and Booths
+[33m3662098[m Update SponsorViewConcern.jsx
+[33m0680e27[m fix conversation
+[33m9f47112[m message mobile
+[33m678a965[m message scroll to bottom effect
+[33mec26d99[m Assign Admin | Support and Dispute | Concerns | Live Convo
+[33md708cdf[m assign admin
+[33m078fcdd[m Sponsor Products CRUD
+[33m89a67cc[m update the auth for sponsor
+[33m4f7f9f4[m sponsor support and concern
+[33m8915558[m view ticket sponsor
+[33m3849579[m Sponsor Settings | Avatar
+[33mf64f36e[m sponsor browse event and details
+[33mdee3362[m sponsor support
+[33mf8c2288[m Sponsor browse Event
+[33m49989c9[m sidebar update
+[33mba8b59b[m Real Time Admin Dashboard
+[33m877165b[m minimal update
+[33ma6f7cf5[m Sponsor Home Page | Events | Announcements | Policy
+[33md68c9cf[m Admin Dashboard
+[33mc72864c[m Avatar Updates
+[33m741f936[m Admin DashBoard updates
+[33mfc73563[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m3e92a51[m settingss
+[33md3d726b[m Working remove in Edit Event Modal
+[33mc64aea8[m Signup | Password Indicator | Terms and condition in signup
+[33mdf2d2db[m Fixed the forgot password
+[33m01c2ae8[m User Role Portal | User Avatar
+[33m7313451[m export report
+[33m8970ed4[m export report
+[33m6f116d2[m Working Add and Edit Price Modal Function
+[33mea72e7e[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m0cd0daf[m pdf format
+[33m11cfe86[m Promoter Login Details | Promoter Settings
+[33m27f8fbd[m Price Level Controller and Routes
+[33m559df80[m Working Update Event Function
+[33mea7df28[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m1fb13f9[m Working Create Event Function
+[33m8a8decd[m update
+[33m3ba0910[m minimal update
+[33m3aab5b8[m with also the promoter dash board pulling of events and total events in the previous push
+[33macd82d7[m Announcement Policy in Promoter and Landing Page | Fix minimal issue in the admin page
+[33m0a25f3a[m promoter events pull  and create
+[33m02005aa[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m2466a33[m Revise Event and Ticket Controller
+[33m8f70a35[m pull announcement and policy in promoter
+[33mbee5f25[m Updated the headers in login
+[33m9ee2fe7[m Updated Event Model and Controller
+[33m15845b0[m minimal update
+[33m141ad4c[m create policy sweet alert
+[33m8e1c759[m only approved events will display in the booth and ticket
+[33mc26db1a[m added new policy key
+[33me7fe66e[m home page update
+[33ma87a353[m content mobile
+[33mf299bc8[m logout
+[33mbe0c2b6[m Log out path and sweet alert
+[33mce310fe[m event management reject sweet alert
+[33m8a5edcc[m update edit policy modal | added new policies |
+[33m61a7bed[m sweet alert
+[33made0e7e[m event completed | event rejection reason | minimal updates
+[33m7fc821e[m pull events in home page
+[33ma788a8f[m sponsor's store payment info
+[33m51a6fbd[m added sweet alert custom style
+[33m6a9a49c[m minimal update
+[33m710bfa5[m minimal update
+[33m2fe4f45[m sponsor store minimal upda
+[33mc071dfe[m sweet alert
+[33med3d5e0[m sweet alert
+[33m73f0ac1[m header and sidebar in mobile | admin/promoter
+[33m3364fb4[m log out | email
+[33ma9d8f05[m pull announcement and policy in home page | edit and add announcement/policy
+[33m0294446[m user management
+[33ma06ab4a[m images in event
+[33m7619a20[m add | edit event |event management | admin
+[33m561f5bc[m connecting back | login
+[33m253a9de[m connecting the backend to frontend
+[33m4662d48[m minimal update
+[33m96c6e45[m sponsor product analytics update
+[33me0554f3[m sponsor view order popup
+[33m56ed6aa[m MAnage order updates | empty search pop up calls
+[33mfb05037[m Sponsor Edit Product Modal
+[33m23fb620[m Sponsor Add Product
+[33mcc106a2[m empty search Sponsor manageproduct
+[33m1211a73[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33mce89780[m Updated Create and Update Event
+[33m4cd82a9[m Sponsor Product Analytics
+[33m1301436[m Sponsor Manage Order
+[33ma7a4bf4[m manage product
+[33ma41c1bc[m sponsor store minimal update
+[33mafef66c[m minimal updates
+[33m4f9e0e6[m minimal updates
+[33mda49c1b[m Sponsor Browse Event Update
+[33m314f96c[m Sponsor Store
+[33m1b1b3bd[m sidebar promoter update
+[33m28069d3[m Promoter | Payout Billing
+[33m3ae3545[m Promoter | View Payout Details Pop up
+[33mfcd3cb9[m Promoter | Payout Page | PDF Files
+[33m68556e8[m minimal update
+[33m7d38a1e[m minimal update
+[33mdb7654b[m minimal update
+[33mcdd3570[m promoter settings | payout method
+[33m9b0d966[m minimal update
+[33mab55a38[m pagination | sidebar update
+[33m69a0262[m Promoter announcement pdf file
+[33mde039e3[m promoter event monitoring
+[33m737b3f5[m empty search in announcement promoter minimal update
+[33m59bb3c4[m promoter revenue report
+[33m6a016a7[m promoter dashboard minimal update
+[33m750bbf0[m promoter announcement | announcement / policy pop up
+[33m6c4082a[m Update .env
+[33m3c7193b[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m6231e5e[m promoter event management | Empty search
+[33m3acdcd6[m Settings Pull User Data and Update Data
+[33m766348a[m announcement and policy | promoter
+[33m97a2e81[m mobile sidebar | promoter
+[33m8c12f53[m minimal update
+[33m8d06484[m empty search added
+[33m7d20c81[m alignment | empty search
+[33m51d41eb[m minimal updates
+[33m171cbbc[m promoter dashboard | promoter events | backend connection | promoter sales and people mobile and desktop update
+[33mbc3a163[m Working Login
+[33m470d019[m Updated
+[33meb30a9e[m create policy update
+[33m105f562[m Updated Content
+[33ma392a6b[m policy
+[33mc07412f[m empty research | minimal updates
+[33maac3b77[m On progress Booth and Ticket
+[33m8a2d352[m Updated BoothhandTicket.jsx
+[33mc4f821e[m Admin Content Announcement and Policy CRUD
+[33mb184d87[m Empty Search | Minimal update
+[33m7482edf[m Admin | Support view ticket New
+[33m4e2b179[m Minimal Update
+[33mf935d40[m Admin | Payment UI/UX Improvement
+[33mbffb09c[m Admin | Audit UI/UX Improvement
+[33m8a6dffb[m Deleted View ticket | changed to breadcrumbs effect in Support page
+[33m1f9b0d4[m Admin Update table in support page
+[33m580a300[m Admin Booth and ticket page Improvement
+[33m29315c0[m responsives in admin panel
+[33m93385cf[m Minimal Changes
+[33m2ba354e[m Admin Table Responsive | PDF Format | Content | Report Analytics
+[33mf81531e[m updated dashboard | minimal update
+[33m397f827[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m3cac9c6[m Working Create Event with Image and Updated Edit Event
+[33me65c5fb[m Cart is empty | Sweet alerts
+[33m7fabad4[m Edit Event Modal and Preview Image
+[33m5f9cde3[m event full details pop up
+[33m47ac177[m date range picker
+[33m215e8e7[m payment method customer
+[33m76699c1[m ticket order and customer enlarge qr
+[33mcbce1d9[m minimal update
+[33m390e05b[m Customer Purchase Order View Receipt Modal |  Minimal Update
+[33m09496c4[m button click only
+[33mffd386a[m Customer payment confirmed
+[33m4b140e0[m mobile updates
+[33mf3b2705[m Updated Backend Events Function
+[33mffbb3bb[m update footer and header of customer and sponsor
+[33m30f06ed[m Customer Checkout
+[33mff2e8f0[m customer seats
+[33mb2cc8e7[m Customer browse event update
+[33m6dc2595[m Customer Event Details
+[33m13b0803[m Customer Support
+[33mb63cdca[m Customer settings
+[33m6fd396f[m customer history
+[33m924a494[m ticket order change name
+[33ma838138[m customer cart
+[33m6109464[m change filter
+[33mf5b3960[m routing
+[33m279b781[m customer header | footer | home page | browse event | cart
+[33m206cb98[m Customer Routing
+[33ma924418[m PDF Reports
+[33m2f7a502[m sponsor date picker | minimal update
+[33m95caf80[m Sponsor Add default Billing in Venue Billing | Sweet Alerts | Dynamic Buttons
+[33me52a66a[m Sponsor Add Payment Method Modal
+[33maf15180[m sponsor invoice receipt modal | minimal update
+[33mfbbdf49[m sponsor full history
+[33m7e19668[m modal sponsor add exhibitor | enlarge qr | docuiments | minimal updates
+[33m416e56e[m sponsor kit | add exhibitor
+[33mf44ead7[m sponsor support | minimal update
+[33mbb8c834[m sponsor settings
+[33mfd57532[m sponsor invoice update
+[33mebf2cd5[m sponsor event history | invoice | my booths update
+[33mea40b29[m sponsor my booth | full details | minimal updates
+[33mb1401a3[m sponsor booth reservation summary | venue billing | minimal update
+[33ma5f2ed6[m sponsor confirm selection
+[33mcd30f68[m usermanagement create user
+[33m707790c[m venue layout page | confirm selection page | browse event page | footer update
+[33mc938e9c[m footer and logo
+[33md7cdd0a[m added sponsor footer | minimal update
+[33mfab2ab7[m sponsor homepage | header
+[33md0d9666[m minimal update
+[33m74f0e84[m landing page
+[33m525951a[m minimal update
+[33m1faff7a[m login and sign up per role
+[33m2e0c26a[m landing page header
+[33ma0c6a4d[m reports pdf
+[33m31ad2a4[m minimal update
+[33me749e7a[m minimal update | scan logic
+[33mb5ce96b[m sweet alert | promoter payout modal | other minimal update
+[33m446bd56[m Merge branch 'main' of https://github.com/zyvrex1/ETP_DeltoroEntertainment
+[33m72326be[m promoter edit modal
+[33m5be2769[m Fix Auth and Token for Login
+[33m12812bb[m Management modal | other updates
+[33m62f681c[m page consistency
+[33m92f9099[m payout page
+[33m3ab4d0c[m Fix Routing After Login
+[33mc68259f[m promoter revenue | promoter payout
+[33m5b04efe[m promoter sales | promoter attendees | promoter sponsors | other updates
+[33ma34fa70[m scan
+[33m71ceade[m promoter booth | mobile device access
+[33m8db8b02[m routing for promoters ticket setup
+[33m342e907[m promoters ticket setup | booth and ticket update | setup seat update
+[33m3b043c7[m create event modal in dashboard
+[33m067440b[m filter update only
+[33m7c1fed5[m my events page w/ modal
+[33mc3b0f07[m buttons update
+[33m9d5984b[m dashboard | updated side bar
+[33m88e3e87[m Admin Login Function
+[33m0c90d45[m create event modal admin
+[33m4326415[m admin settings update
+[33m7ef70ef[m promoter settings
+[33m7fd0d1d[m promoter settings
+[33mdc4f324[m promoter utility | view user update
+[33m4bf0265[m header
+[33mf59c020[m side bar
+[33m25bb089[m New routings
+[33madaa681[m Frontend Signup Modal
+[33mbcfdf35[m Backend Signup based on Roles
+[33mea33707[m Login & Signup Modal
+[33m1269b44[m index | promoter and admin panel
+[33m3e3decf[m Landing, Signup, Login Routes
+[33m7127edf[m date range filter
+[33md5ee2f2[m payout
+[33m7554e5f[m sweetalert
+[33m0dc5371[m payout
+[33mb037f87[m payment rejection modal | event rejection modal update
+[33m0ac1c37[m eventrejection modal
+[33m3259c0c[m modal update
+[33m0c90ce9[m event review modal
+[33mfe01549[m modal update
+[33m8b80111[m event approval
+[33mcee35f7[m latest add (unfinished)
+[33m0bd8089[m others
+[33mdd01f53[m view transaction responsive update
+[33m805662c[m viewticket updated version
+[33m02afb01[m view report with pdf files and sweet alerts
+[33mfc61d7b[m responsive updates
+[33mef9e0f9[m manage pricing update
+[33m0cf2707[m format and spacing
+[33mb9b5c77[m manage policy
+[33mb498445[m format only
+[33mf91a2b2[m updated responsive
+[33m20bd225[m responsive
+[33m87d0099[m responsive
+[33mec7661b[m manage policy pop up
+[33m6ad8780[m update edit seat layout mobile mode
+[33m12719c8[m edit seat layout
+[33made9617[m edit layout (booth)
+[33m0cdadd6[m Handle Delete Event
+[33m0cb5cf3[m another 1
+[33m7cef6f8[m organize modal folder
+[33m39eff5b[m dashboard update
+[33mcbc25ee[m Event Context
+[33m2a02f68[m Create Event
+[33m1f85bea[m managepricing modal
+[33m5c4ce8a[m upload map
+[33m099a44a[m add promoter
+[33mb304915[m edit event
+[33m19a7e34[m edit user
+[33m139864d[m viewtransaction update
+[33m12c9ced[m viewticket under support and dispute
+[33m2fd65f2[m transaction modal | transaction label update
+[33m88a3fcf[m view user modal
+[33mdccfc5b[m create announcement modal
+[33m716151d[m Create User Modal
+[33mfbfdd48[m dashboard
+[33m49481c8[m updated dashboard-createevent modal
+[33m2286a32[m create event modal | dashboard updated mobile
+[33m69f6c0a[m reports update
+[33m7b054fd[m report and analytics mobile
+[33mde77d45[m updated audit page
+[33m0911d3a[m support and audit
+[33m26807db[m Event Route, Model, Controller
+[33m1eb28ff[m settings
+[33mb6e4360[m content
+[33mdc41bc8[m reports and analytics
+[33mf22faa8[m Booth and ticket
+[33md0814d3[m boothandticket
+[33ma0374c5[m folder
+[33med256ca[m react logo
+[33m8d6489c[m backend
+[33m9602c85[m folder
+[33mf01b7b1[m folder
+[33mb7f6592[m Initial commit

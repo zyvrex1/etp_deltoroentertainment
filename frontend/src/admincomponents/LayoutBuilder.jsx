@@ -48,11 +48,15 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const [bgKonvaImage, setBgKonvaImage] = useState(null);
   const [bgModalOpen, setBgModalOpen] = useState(false);
   const bgFileInputRef = useRef(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveToast, setSaveToast] = useState(null); // { type: 'success'|'error', msg: string }
 
   const historyStack = useRef([]);
   const futureStack = useRef([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+
+  const [bgFile, setBgFile] = useState(null);
 
   const pushHistory = useCallback((snapshot) => {
     historyStack.current.push(snapshot);
@@ -512,9 +516,50 @@ const LayoutBuilder = ({ selectedEvent }) => {
     }
   };
 
+  const showSaveToast = (type, msg) => {
+    setSaveToast({ type, msg });
+    setTimeout(() => setSaveToast(null), 3000);
+  };
+
   const handleSaveLayout = async () => {
     if (!user) return showErrorAlert("Unauthorized", "You must be logged in.");
+    if (isSaving) return;
 
+    // 1. Lock the UI immediately before starting any network operations
+    setIsSaving(true);
+
+    // Fall back to the existing image string (or null) if no new file has been staged
+    let finalBgImageUrl = backgroundImage;
+
+    // 2. Upload the raw binary file to your dedicated storage endpoint if it exists
+    if (bgFile) {
+      try {
+        const formData = new FormData();
+        formData.append("file", bgFile);
+
+        const uploadResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/api/uploads/floorplan`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+          body: formData, // Native multipart form data streaming
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload floor plan image asset.");
+        }
+
+        const uploadData = await uploadResponse.json();
+        finalBgImageUrl = uploadData.url; // Use the optimized image URL from S3/Cloudinary/etc.
+        setBgFile(null);                  // Clear the staged file state since it's uploaded
+      } catch (err) {
+        console.error("Image upload pipeline error:", err);
+        setIsSaving(false); // Make sure to unlock the UI on failure
+        return showErrorAlert("Upload Error", "Failed to process floor plan image asset.");
+      }
+    }
+
+    // 3. Map out your price levels, seats, and booths data
     const priceLevels = categories.map(c => ({
       _id: c.id,
       priceName: c.name,
@@ -571,6 +616,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
       autoEventType = "Reservation";
     }
 
+    // 4. Assemble the lightweight JSON payload (no mega base64 string bloating this!)
     const payload = {
       priceLevels,
       eventType: autoEventType,
@@ -583,7 +629,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
         items: placedItems,
         canvasWidth,
         canvasHeight,
-        backgroundImage: backgroundImage || null,
+        backgroundImage: finalBgImageUrl, // Small text string URL reference point
         bgOpacity,
         bgWidth: bgWidth || null,
         bgHeight: bgHeight || null,
@@ -591,11 +637,13 @@ const LayoutBuilder = ({ selectedEvent }) => {
     };
 
     if (!user || !user.token) {
+      setIsSaving(false);
       return showErrorAlert("Unauthorized", "Authentication token is missing. Please log in again.");
     }
 
+    // 5. Send layout adjustments to your update router endpoint
     try {
-      const response = await fetch(`/api/events/${selectedEvent._id}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/api/events/${selectedEvent._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -608,13 +656,15 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
       if (response.ok) {
         dispatch({ type: "UPDATE_EVENT", payload: json.event || json });
-        showSuccessAlert("Saved", "Layout configuration saved successfully.");
+        showSuccessAlert("Layout Saved", "Layout configuration saved successfully.");
       } else {
         showErrorAlert("Save Failed", json.error || json.message || "Failed to save layout.");
       }
     } catch (error) {
       console.error("Save error:", error);
       showErrorAlert("Error", "An unexpected error occurred while saving the layout.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -700,10 +750,17 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const handleBgImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // 1. Store the raw binary file object for the backend upload later
+    setBgFile(file);
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target.result;
+
+      // 2. Keep this ONLY for immediate local preview on the Konva stage
       setBackgroundImage(dataUrl);
+
       const img = new window.Image();
       img.src = dataUrl;
       img.onload = () => {
@@ -713,8 +770,9 @@ const LayoutBuilder = ({ selectedEvent }) => {
         setBgHeight(h);
       };
     };
+
     reader.readAsDataURL(file);
-    e.target.value = "";
+    e.target.value = ""; // Clear input so the user can re-upload the same image if needed
   };
 
   const handleFitToStage = () => {
@@ -1080,11 +1138,26 @@ const LayoutBuilder = ({ selectedEvent }) => {
                 <Icon icon="mdi:layers-off" /> <span>Clear</span>
               </button>
 
-              <button className="bt-btn primary save-layout-btn" onClick={handleSaveLayout} title="Save Venue Layout">
-                <Icon icon="mdi:check-circle-outline" /> <span>Save Layout</span>
+              <button
+                className={`bt-btn primary save-layout-btn${isSaving ? ' saving' : ''}`}
+                onClick={handleSaveLayout}
+                disabled={isSaving}
+                title="Save Venue Layout"
+              >
+                <Icon icon={isSaving ? "mdi:loading" : "mdi:check-circle-outline"} className={isSaving ? "spin" : ""} />
+                <span>{isSaving ? 'Saving...' : 'Save Layout'}</span>
               </button>
             </div>
           </div>
+
+          {/* Fast inline save toast */}
+          {saveToast && (
+            <div className={`layout-save-toast layout-save-toast--${saveToast.type}`}>
+              <Icon icon={saveToast.type === 'success' ? 'mdi:check-circle' : 'mdi:alert-circle'} />
+              <span>{saveToast.msg}</span>
+            </div>
+          )}
+
 
           <div className="konva-container" ref={containerRef}>
             <Stage
