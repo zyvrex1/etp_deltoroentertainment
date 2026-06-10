@@ -17,6 +17,35 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
 
+  const [fullEvent, setFullEvent] = useState(selectedEvent);
+
+  useEffect(() => {
+    const loadFullEvent = async () => {
+      if (!selectedEvent?._id) return;
+      try {
+        if (!selectedEvent.layoutData) {
+          const API_URL = `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/api/events`;
+          const response = await fetch(`${API_URL}/${selectedEvent._id}`, {
+            headers: { "Authorization": `Bearer ${user?.token}` }
+          });
+          const data = await response.json();
+          if (response.ok) {
+            setFullEvent(data);
+            // Optionally update context
+            if (dispatch) {
+              dispatch({ type: "UPDATE_EVENT", payload: data });
+            }
+          }
+        } else {
+          setFullEvent(selectedEvent);
+        }
+      } catch (err) {
+        console.error("Error loading full event:", err);
+      }
+    };
+    loadFullEvent();
+  }, [selectedEvent, user?.token, dispatch]);
+
   const [placedItems, setPlacedItems] = useState([]);
   // Batch placement modal
   const [batchModal, setBatchModal] = useState(null); // null or { category }
@@ -167,8 +196,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
   }, [canvasWidth, canvasHeight]);
 
   useEffect(() => {
-    if (selectedEvent?.priceLevels) {
-      const normalizedCategories = selectedEvent.priceLevels.map(pl => ({
+    if (fullEvent?.priceLevels) {
+      const normalizedCategories = fullEvent.priceLevels.map(pl => ({
         id: pl._id,
         name: pl.priceName,
         price: pl.facePrice,
@@ -181,36 +210,36 @@ const LayoutBuilder = ({ selectedEvent }) => {
       setCategories(normalizedCategories);
     }
 
-    else if (selectedEvent?.ticketCategories) {
-      const normalizedCategories = selectedEvent.ticketCategories.map(cat => ({
+    else if (fullEvent?.ticketCategories) {
+      const normalizedCategories = fullEvent.ticketCategories.map(cat => ({
         ...cat,
         id: cat._id || cat.id || Date.now().toString()
       }));
       setCategories(normalizedCategories);
     }
 
-    if (selectedEvent?.layoutData) {
+    if (fullEvent?.layoutData) {
       historyStack.current = [];
       futureStack.current = [];
       setCanUndo(false);
       setCanRedo(false);
-      setPlacedItems(selectedEvent.layoutData.items || []);
+      setPlacedItems(fullEvent.layoutData.items || []);
 
-      const cw = selectedEvent.layoutData.canvasWidth || 1400;
-      const ch = selectedEvent.layoutData.canvasHeight || 900;
+      const cw = fullEvent.layoutData.canvasWidth || 1400;
+      const ch = fullEvent.layoutData.canvasHeight || 900;
       setCanvasWidth(cw); setCanvasWInput(cw);
       setCanvasHeight(ch); setCanvasHInput(ch);
 
-      const savedBg = selectedEvent.layoutData.backgroundImage || null;
+      const savedBg = fullEvent.layoutData.backgroundImage || null;
       setBackgroundImage(savedBg);
-      setBgOpacity(selectedEvent.layoutData.bgOpacity ?? 0.4);
+      setBgOpacity(fullEvent.layoutData.bgOpacity ?? 0.4);
       if (savedBg) {
         const img = new window.Image();
         img.src = savedBg;
         img.onload = () => {
           setBgKonvaImage(img);
-          setBgWidth(selectedEvent.layoutData.bgWidth || cw);
-          setBgHeight(selectedEvent.layoutData.bgHeight || ch);
+          setBgWidth(fullEvent.layoutData.bgWidth || cw);
+          setBgHeight(fullEvent.layoutData.bgHeight || ch);
         };
       } else {
         setBgKonvaImage(null);
@@ -218,7 +247,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
         setBgHeight(null);
       }
     }
-  }, [selectedEvent]);
+  }, [fullEvent]);
 
   const handleSaveCategory = async (categoryData) => {
     if (!selectedEvent?._id) return;
