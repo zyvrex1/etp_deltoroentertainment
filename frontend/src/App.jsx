@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthContext } from "./hooks/useAuthContext.jsx";
 import { useState, lazy, Suspense } from "react";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
@@ -83,14 +83,14 @@ const CustomerGifts = lazy(() => import("./customercomponents/CustomerGifts.jsx"
 
 // Loading Component
 const PageLoader = () => (
-  <div style={{ 
+  <div style={{
     position: 'fixed',
     top: 0,
     left: 0,
-    height: '100vh', 
-    width: '100vw', 
-    display: 'flex', 
-    alignItems: 'center', 
+    height: '100vh',
+    width: '100vw',
+    display: 'flex',
+    alignItems: 'center',
     justifyContent: 'center',
     background: 'rgba(5, 36, 107, 0.11)',
     backdropFilter: 'blur(8px)',
@@ -100,21 +100,21 @@ const PageLoader = () => (
     gap: '24px',
     zIndex: 9999
   }}>
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
       justifyContent: 'center',
       animation: 'pulse 2s infinite ease-in-out'
     }}>
-      <img 
-        src="/logo/Logo1.png" 
-        alt="Logo" 
+      <img
+        src="/logo/Logo1.png"
+        alt="Logo"
         className="loader-logo"
-        style={{ 
+        style={{
           height: 'auto',
           marginBottom: '16px'
-        }} 
+        }}
       />
       <div className="loader-dots" style={{ display: 'flex', gap: '8px' }}>
         <div style={{ width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both' }}></div>
@@ -150,102 +150,100 @@ const PageLoader = () => (
 
 function App() {
   return (
-    <BrowserRouter>
       <ErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-          <Route element={<LandingLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-          </Route>
+            <Route element={<LandingLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+            </Route>
 
-          <Route path="/admin" element={
-  <ProtectedRoute allowedRole="admin">
-    <AdminLayout />
-  </ProtectedRoute>
-}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="event-approval" element={<AdminEventApproval />} />
-            <Route path="users" element={<AdminUserManagement />} />
-            <Route path="events" element={<AdminEventManagement />} />
-            <Route path="payments" element={<AdminPayments />} />
-            <Route path="booths-tickets" element={<AdminBoothandTicket />} />
-            <Route path="analytics" element={<AdminReportsandAnalytics />} />
-            <Route path="content" element={<AdminContent />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="support" element={<AdminSupport />} />
-            <Route path="audit-logs" element={<AdminAuditLogs />} />
-            <Route path="digital-gifts" element={<AdminDigitalGifts />} />
-          </Route>
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRole="admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminDashboard />} />
+              <Route path="event-approval" element={<AdminEventApproval />} />
+              <Route path="users" element={<AdminUserManagement />} />
+              <Route path="events" element={<AdminEventManagement />} />
+              <Route path="payments" element={<AdminPayments />} />
+              <Route path="booths-tickets" element={<AdminBoothandTicket />} />
+              <Route path="analytics" element={<AdminReportsandAnalytics />} />
+              <Route path="content" element={<AdminContent />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="support" element={<AdminSupport />} />
+              <Route path="audit-logs" element={<AdminAuditLogs />} />
+              <Route path="digital-gifts" element={<AdminDigitalGifts />} />
+            </Route>
 
-          <Route path="/promoter" element={
-  <ProtectedRoute allowedRole="promoter">
-    <PromoterLayout />
-  </ProtectedRoute>
-}>
-            <Route index element={<PromoterDashboard />} />
-            <Route path="settings" element={<PromoterSettings />} />
-            <Route path="promoter-events" element={<PromoterEvents />} />
-            <Route path="promoter-eventmanagement" element={<PromoterEventManagement />} />
-            <Route path="promoter-announcement" element={<PromoterAnnouncement />} />
-            <Route path="promoter-eventmonitoring" element={<PromoterEventMonitoring />} />
-            <Route path="promoter-revenue" element={<PromoterRevenue />} />
-            <Route path="promoter-payouts" element={<PromoterPayouts />} />
-            <Route path="promoter-payout-billing" element={<PromoterPayoutBilling />} />
-            <Route path="support" element={<PromoterSupport />} />
-          </Route>
+            <Route path="/promoter" element={
+              <ProtectedRoute allowedRole="promoter">
+                <PromoterLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<PromoterDashboard />} />
+              <Route path="settings" element={<PromoterSettings />} />
+              <Route path="promoter-events" element={<PromoterEvents />} />
+              <Route path="promoter-eventmanagement" element={<PromoterEventManagement />} />
+              <Route path="promoter-announcement" element={<PromoterAnnouncement />} />
+              <Route path="promoter-eventmonitoring" element={<PromoterEventMonitoring />} />
+              <Route path="promoter-revenue" element={<PromoterRevenue />} />
+              <Route path="promoter-payouts" element={<PromoterPayouts />} />
+              <Route path="promoter-payout-billing" element={<PromoterPayoutBilling />} />
+              <Route path="support" element={<PromoterSupport />} />
+            </Route>
 
-          <Route path="/sponsor" element={
-  <ProtectedRoute allowedRole="sponsor">
-    <SponsorLayout />
-  </ProtectedRoute>
-}>
-            <Route index element={<SponsorHome />} />
-            <Route path="sponsor-events" element={<SponsorEvents />} />
-            <Route path="sponsor-event/:id" element={<SponsorEventDetails />} />
-            <Route path="sponsor-venue-layout/:id?" element={<SponsorVenueLayout />} />
-            <Route path="sponsor-confirm-selection" element={<SponsorConfirmSelection />} />
-            <Route path="sponsor-reservation" element={<SponsorReservationSummary />} />
-            <Route path="sponsor-venue-billing" element={<SponsorVenueBilling />} />
-            <Route path="sponsor-my-booths" element={<SponsorMyBooth />} />
-            <Route path="sponsor-booth-details/:id" element={<SponsorBoothFullDetails />} />
-            <Route path="sponsor-history" element={<SponsorEventHistory />} />
-            <Route path="sponsor-invoices" element={<SponsorInvoice />} />
-            <Route path="settings" element={<SponsorSettings />} />
-            <Route path="support" element={<SponsorSupport />} />
-            <Route path="store" element={<SponsorStore />} />
-            <Route path="store/dashboard/:reservationId?" element={<SponsorStoreDashboard />} />
-            <Route path="cart" element={<SponsorCart />} />
-            <Route path="my-gifts" element={<SponsorGifts />} />
-          </Route>
+            <Route path="/sponsor" element={
+              <ProtectedRoute allowedRole="sponsor">
+                <SponsorLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<SponsorHome />} />
+              <Route path="sponsor-events" element={<SponsorEvents />} />
+              <Route path="sponsor-event/:id" element={<SponsorEventDetails />} />
+              <Route path="sponsor-venue-layout/:id?" element={<SponsorVenueLayout />} />
+              <Route path="sponsor-confirm-selection" element={<SponsorConfirmSelection />} />
+              <Route path="sponsor-reservation" element={<SponsorReservationSummary />} />
+              <Route path="sponsor-venue-billing" element={<SponsorVenueBilling />} />
+              <Route path="sponsor-my-booths" element={<SponsorMyBooth />} />
+              <Route path="sponsor-booth-details/:id" element={<SponsorBoothFullDetails />} />
+              <Route path="sponsor-history" element={<SponsorEventHistory />} />
+              <Route path="sponsor-invoices" element={<SponsorInvoice />} />
+              <Route path="settings" element={<SponsorSettings />} />
+              <Route path="support" element={<SponsorSupport />} />
+              <Route path="store" element={<SponsorStore />} />
+              <Route path="store/dashboard/:reservationId?" element={<SponsorStoreDashboard />} />
+              <Route path="cart" element={<SponsorCart />} />
+              <Route path="my-gifts" element={<SponsorGifts />} />
+            </Route>
 
-          <Route path="/customer" element={
-  <ProtectedRoute allowedRole="customer">
-    <CustomerLayout />
-  </ProtectedRoute>
-}>
-            <Route index element={<CustomerHome />} />
-            <Route path="browse-events" element={<CustomerBrowseEvent />} />
-            <Route path="event-details/:id" element={<CustomerEventDetails />} />
-            <Route path="seats/:id" element={<CustomerSeats />} />
-            <Route path="cart" element={<CustomerCart />} />
-            <Route path="checkout" element={<CustomerCheckout />} />
-            <Route path="success" element={<CustomerPaySuccess />} />
-            <Route path="my-ticketsorder" element={<CustomerTicketOrder />} />
-            <Route path="support" element={<CustomerSupport />} />
-            <Route path="settings" element={<CustomerSettings />} />
-            <Route path="history" element={<CustomerHistory />} />
-            <Route path="store" element={<CustomerStore />} />
-            <Route path="store/booths" element={<CustomerStoreBooths />} />
-            <Route path="store/products" element={<CustomerStoreProducts />} />
-            <Route path="store/checkout" element={<CustomerStoreCheckout />} />
-            <Route path="my-orders" element={<CustomerOrders />} />
-            <Route path="my-gifts" element={<CustomerGifts />} />  {/* ← add this */}
-          </Route>
+            <Route path="/customer" element={
+              <ProtectedRoute allowedRole="customer">
+                <CustomerLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<CustomerHome />} />
+              <Route path="browse-events" element={<CustomerBrowseEvent />} />
+              <Route path="event-details/:id" element={<CustomerEventDetails />} />
+              <Route path="seats/:id" element={<CustomerSeats />} />
+              <Route path="cart" element={<CustomerCart />} />
+              <Route path="checkout" element={<CustomerCheckout />} />
+              <Route path="success" element={<CustomerPaySuccess />} />
+              <Route path="my-ticketsorder" element={<CustomerTicketOrder />} />
+              <Route path="support" element={<CustomerSupport />} />
+              <Route path="settings" element={<CustomerSettings />} />
+              <Route path="history" element={<CustomerHistory />} />
+              <Route path="store" element={<CustomerStore />} />
+              <Route path="store/booths" element={<CustomerStoreBooths />} />
+              <Route path="store/products" element={<CustomerStoreProducts />} />
+              <Route path="store/checkout" element={<CustomerStoreCheckout />} />
+              <Route path="my-orders" element={<CustomerOrders />} />
+              <Route path="my-gifts" element={<CustomerGifts />} />  {/* ← add this */}
+            </Route>
           </Routes>
         </Suspense>
       </ErrorBoundary>
-    </BrowserRouter>
   );
 }
 

@@ -15,16 +15,13 @@ for (const key of REQUIRED_ENV) {
 
 const express = require('express')
 const dns = require('dns')
-// Use Google DNS to resolve MongoDB Atlas SRV records if local DNS fails
 dns.setServers(['8.8.8.8', '8.8.4.4'])
 
 const cors = require('cors')
 const path = require('path')
 const fs = require('fs')
-
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
-
 const compression = require('compression')
 
 // Routes
@@ -50,9 +47,6 @@ const digitalgiftsRoutes = require('./routes/digitalgiftsRoutes');
 const auditLogRoutes = require('./routes/auditlogRoutes')
 const uploadRoutes = require('./routes/uploadRoutes');
 
-
-
-// express app
 const app = express()
 
 // Ensure uploads folder exists
@@ -81,6 +75,7 @@ app.use(cors({
   },
   credentials: true
 }))
+
 app.use(compression())
 
 // Single dev-only logger
@@ -92,8 +87,19 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // helmet sets secure HTTP headers (XSS, clickjacking, MIME sniff, etc.)
-app.use(helmet())
-
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      connectSrc: ["'self'", "https://api.iconify.design", "https://api.simplesvg.com", "https://api.unisvg.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:"],
+    }
+  }
+}))
 // ─── Rate limiting ────────────────────────────────────────────
 // Limits each IP to 100 requests per 15 minutes on all routes
 app.use(rateLimit({
@@ -140,9 +146,24 @@ app.use('/api/audit-logs', auditLogRoutes)
 app.use('/api/uploads', uploadRoutes)
 
 
+// NEW - works in Express 5
+app.use('/api/{*path}', (req, res) => {
+  res.status(404).json({ error: `API route not found: ${req.originalUrl}` })
+})
+
+
+const DIST = path.join(__dirname, '../frontend/dist')
+console.log('DIST path:', DIST) 
+app.use(express.static(DIST))
+
+app.get('{*path}', (req, res) => {
+  res.sendFile(path.join(DIST, 'index.html'))
+})
+
 // Global error handler
 app.use((err, req, res, next) => {
-    console.error(err)
+  console.error('FULL ERROR:', err)
+    // console.error(err)
 
     if (err.message === "Only image files are allowed (JPG, PNG, WEBP)") {
         return res.status(400).json({ error: err.message })
@@ -154,6 +175,7 @@ app.use((err, req, res, next) => {
 
     res.status(500).json({ error: 'Something went wrong' })
 })
+
 
 const http = require('http');
 const socket = require('./socket');
