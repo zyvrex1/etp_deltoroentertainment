@@ -36,11 +36,6 @@ const EventCardImage = ({ imageUrl, statusClass, evt, onEdit }) => {
           {evt.status}
         </span>
 
-        {["pending", "approved", "rejected"].includes(statusRaw) && (
-          <button className="pe-edit-top" onClick={onEdit}>
-            <Icon icon="mdi:pencil-outline" />
-          </button>
-        )}
       </div>
     </div>
   );
@@ -366,11 +361,6 @@ const PromoterEvents = () => {
                     imageUrl={imageUrl}
                     statusClass={statusClass}
                     evt={evt}
-                    onEdit={(e) => {
-                      e.stopPropagation();
-                      setSelectedEventToEdit(evt);
-                      setIsEditOpen(true);
-                    }}
                   />
 
                   <div className="pe-card-body">
