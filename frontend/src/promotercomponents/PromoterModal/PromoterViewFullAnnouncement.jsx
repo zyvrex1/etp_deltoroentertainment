@@ -45,7 +45,7 @@ const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
         pdf.text(`Date: ${item.date}`, margin, y);
         y += 8;
       }
-      
+
       y = drawLongText(pdf, y, item.content || '', margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 11, logoData, DOCUMENT_TITLE);
 
       finalizeReport(pdf);
@@ -105,7 +105,7 @@ const PromoterViewFullAnnouncement = ({ isOpen, onClose, item, type }) => {
           <button className="pvfa-btn-close" onClick={onClose}>
             Close
           </button>
-          <button className="primary-button" onClick={downloadPDF} style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+          <button className="primary-button" onClick={downloadPDF} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Icon icon="mdi:download-outline" /> Download PDF
           </button>
         </div>

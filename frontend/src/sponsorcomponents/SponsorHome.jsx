@@ -5,7 +5,7 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import announcementService from '../services/announcementService';
 import policyService from '../services/policyService';
-import PromoterViewFullAnnouncement from '../promotercomponents/PromoterModal/PromoterViewFullAnnouncement';
+import HomeViewFullContent from '../landingpage/HomeViewFullContent';
 
 import './SponsorHome.css';
 
@@ -349,7 +349,7 @@ export default function SponsorHome() {
             </section>
 
             {/* Reusable Modal for Policies/Announcements */}
-            <PromoterViewFullAnnouncement
+            <HomeViewFullContent
                 isOpen={!!modalData}
                 onClose={closeModal}
                 item={modalData}

@@ -7,7 +7,7 @@ import CustomerViewEventFullDetails from './Modal/CustomerViewEventFullDetails';
 import announcementService from '../services/announcementService';
 import policyService from '../services/policyService';
 import eventsService from '../services/eventsService';
-import PromoterViewFullAnnouncement from '../promotercomponents/PromoterModal/PromoterViewFullAnnouncement';
+import HomeViewFullContent from '../landingpage/HomeViewFullContent';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -361,7 +361,7 @@ export default function CustomerHome() {
             </section>
 
             {/* Reusable Modal for Policies/Announcements */}
-            <PromoterViewFullAnnouncement
+            <HomeViewFullContent
                 isOpen={!!modalData}
                 onClose={closeModal}
                 item={modalData}

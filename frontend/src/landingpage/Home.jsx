@@ -6,7 +6,7 @@ import announcementService from '../services/announcementService';
 import policyService from '../services/policyService';
 import eventsService from '../services/eventsService';
 import { showSuccessAlert } from '../utils/sweetAlert';
-import PromoterViewFullAnnouncement from '../promotercomponents/PromoterModal/PromoterViewFullAnnouncement';
+import HomeViewFullContent from './HomeViewFullContent';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "";
 
@@ -756,7 +756,7 @@ useEffect(() => {
       </footer>
 
       {/* Reusable Info Modal for Policies and Announcements */}
-      <PromoterViewFullAnnouncement
+      <HomeViewFullContent
         isOpen={!!modalData}
         onClose={closeModal}
         item={modalData}
