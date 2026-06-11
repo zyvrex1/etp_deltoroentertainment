@@ -30,7 +30,7 @@ const SponsorEventDetails = () => {
                 
                 // Handle hero image validation
                 if (data?.image) {
-                    const imgUrl = `${BACKEND_URL}/uploads/${data.image}`;
+                    const imgUrl = `/uploads/${data.image}`;
                     setHeroImage(imgUrl);
                     const img = new Image();
                     img.src = imgUrl;

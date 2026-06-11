@@ -12,7 +12,7 @@ const CustomerViewEventFullDetails = ({ show, onClose, eventData }) => {
 
     React.useEffect(() => {
         if (eventData?.image) {
-            const imgUrl = eventData.image.startsWith('http') ? eventData.image : `${BACKEND_URL}/uploads/${eventData.image}`;
+            const imgUrl = `/uploads/${eventData.image}`;
             setHeroImage(imgUrl);
             const img = new Image();
             img.src = imgUrl;

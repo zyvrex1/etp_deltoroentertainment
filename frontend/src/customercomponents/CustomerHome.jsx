@@ -256,7 +256,7 @@ export default function CustomerHome() {
                             <div className={`ch-event-card-v2 ch-glass reveal stagger-${(idx % 4) + 1}`} key={evt._id || idx}>
                                 <div className="ch-v2-image-area">
                                     <img
-                                        src={evt.image ? (evt.image.startsWith('http') ? evt.image : `${BACKEND_URL}/uploads/${evt.image}`) : '/assets/eventbg.jpg'}
+                                        src={evt.image ? `/uploads/${evt.image}` : '/assets/eventbg.jpg'}
                                         alt={evt.title}
                                         className="ch-v2-img"
                                         onError={(e) => {

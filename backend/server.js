@@ -94,16 +94,20 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // helmet sets secure HTTP headers (XSS, clickjacking, MIME sniff, etc.)
+const allowedImgSrc = process.env.NODE_ENV === 'production'
+  ? ["'self'", "data:", "blob:"]
+  : ["'self'", "data:", "blob:", "http://localhost:4000", "http://127.0.0.1:4000", "http://192.168.18.6:4000"];
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "https://api.iconify.design", "https://api.simplesvg.com", "https://api.unisvg.com"],
+      connectSrc: ["'self'", "http://localhost:4000", "ws://localhost:4000", "https://api.iconify.design", "https://api.simplesvg.com", "https://api.unisvg.com"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
+      imgSrc: allowedImgSrc,
     }
   }
 }))

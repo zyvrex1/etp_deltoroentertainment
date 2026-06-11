@@ -176,7 +176,7 @@ useEffect(() => {
             if (!rawImage) return '/assets/eventbg.jpg';
             if (rawImage.startsWith('http')) return rawImage;
             const cleanPath = rawImage.replace(/^(\/)?uploads\//, '');
-            return `${BASE_URL}/uploads/${cleanPath}`;
+            return `/uploads/${cleanPath}`;
           };
 
           // 1. Live/Upcoming Events (Status: approved)

@@ -251,7 +251,7 @@ export default function SponsorHome() {
                             <div className={`sh-event-card-v2 sh-glass reveal stagger-${(idx % 4) + 1}`} key={evt._id || idx}>
                                 <div className="sh-v2-image-area">
                                     <img
-                                        src={evt.image ? (evt.image.startsWith('http') ? evt.image : `${BACKEND_URL}/uploads/${evt.image}`) : '/assets/eventbg.jpg'}
+                                        src={evt.image ? `/uploads/${evt.image}` : '/assets/eventbg.jpg'}
                                         alt={evt.title}
                                         className="sh-v2-img"
                                         onError={(e) => { e.target.src = '/assets/eventbg.jpg' }}

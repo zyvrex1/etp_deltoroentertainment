@@ -141,7 +141,7 @@ const SponsorBrowseEvents = () => {
                             <div key={event._id} className="sbe-event-card" onClick={() => handleEventClick(event._id)}>
                                 <div className="sbe-card-image-wrap">
                                     <img
-                                        src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                        src={event.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
                                         alt={event.title}
                                         className="ticket-image"
                                         onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}

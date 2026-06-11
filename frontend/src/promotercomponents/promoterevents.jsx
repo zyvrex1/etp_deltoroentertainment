@@ -341,7 +341,7 @@ const PromoterEvents = () => {
                 });
 
                 const eventLocation = evt.venue ? `${evt.venue.name}, ${evt.venue.city}` : "TBA";
-                const imageUrl = evt.image ? `${import.meta.env.VITE_BACKEND_URL || ""}/uploads/${evt.image}` : "/assets/eventbg.jpg";
+                const imageUrl = evt.image ? `/uploads/${evt.image}` : "/assets/eventbg.jpg";
 
                 return (
                   <div key={evt._id} className="pe-card">

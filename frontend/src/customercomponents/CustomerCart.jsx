@@ -178,7 +178,7 @@ export default function CustomerCart() {
                                 <div className="event-card-header" onClick={() => navigate(`/customer/event-details/${event?._id}`)} style={{ cursor: 'pointer' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <img 
-                                            src={event?.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                        src={event?.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
                                             alt={event?.title || 'Event'}
                                             style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }}
                                             onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}

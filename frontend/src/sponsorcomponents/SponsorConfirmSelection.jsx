@@ -123,7 +123,7 @@ const SponsorConfirmSelection = () => {
                         <hr className="scs-divider mx-0 my-0" />
                         <div className="scs-event-details">
                             <img
-                                src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                src={event.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
                                 alt="Event Thumbnail"
                                 className="scs-event-thumb"
                             />

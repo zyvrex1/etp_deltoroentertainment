@@ -58,7 +58,7 @@ const CustomerTicketOrder = () => {
                 }
                 return 'Paid';
             })(),
-            image: item.event?.image ? `${BACKEND_URL}/uploads/${item.event.image}` : "/assets/eventbg.jpg",
+            image: item.event?.image ? `/uploads/${item.event.image}` : "/assets/eventbg.jpg",
             purchasedAt: item.purchaseDate,
             qrData: item.qrData || item.cartId,
             orderGift: item.orderGift || null,

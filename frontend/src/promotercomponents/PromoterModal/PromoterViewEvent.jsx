@@ -22,7 +22,7 @@ const PromoterViewEvent = ({ isOpen, onClose, event }) => {
     : "TBA";
 
   const imageUrl = event.image
-    ? `${import.meta.env.VITE_BACKEND_URL || ""}/uploads/${event.image}`
+    ? `/uploads/${event.image}`
     : "/assets/eventbg.jpg";
 
   return (

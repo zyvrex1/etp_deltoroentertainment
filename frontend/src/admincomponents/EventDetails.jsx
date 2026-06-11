@@ -3,7 +3,12 @@ const EventDetails = ({ event }) => {
 
     return (
         <div className="event-details">
-            <img src={event.image} alt={event.title} style={{ width: '100%', borderRadius: '8px' }} />
+            <img 
+                src={event.image ? `/uploads/${event.image}` : '/assets/eventbg.jpg'} 
+                alt={event.title} 
+                style={{ width: '100%', borderRadius: '8px' }}
+                onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}
+            />
             
             <h2>{event.title}</h2>
             <p className="category"><em>{event.category.toUpperCase()}</em></p>

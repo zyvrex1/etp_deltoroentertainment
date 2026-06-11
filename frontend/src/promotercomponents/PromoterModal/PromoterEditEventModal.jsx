@@ -76,8 +76,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             });
 
             if (initialEvent.image) {
-                const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-                setImagePreviewUrl(`${backendUrl}/uploads/${initialEvent.image}`);
+                setImagePreviewUrl(`/uploads/${initialEvent.image}`);
             } else {
                 setImagePreviewUrl(null);
             }
@@ -190,7 +189,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             }
 
             const response = await axios.patch(
-                `http://localhost:4000/api/events/${initialEvent._id}`,
+                `/api/events/${initialEvent._id}`,
                 formData,
                 {
                     headers: {

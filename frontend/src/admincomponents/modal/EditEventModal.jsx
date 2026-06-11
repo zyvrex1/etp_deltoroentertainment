@@ -70,7 +70,7 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
         },
         eventType: event.eventType || "General Admission",
         imageFile: null,
-        imagePreviewUrl: event.image ? `http://localhost:4000/uploads/${event.image}` : null,
+        imagePreviewUrl: event.image ? `/uploads/${event.image}` : null,
         seatMap: event.seatMap || null,
         booths: event.booths || [],
         assignedPromoter: event.assignedPromoter?._id || event.assignedPromoter || null,

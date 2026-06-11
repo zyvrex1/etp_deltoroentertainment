@@ -198,7 +198,7 @@ const CustomerBrowseEvent = () => {
                             <div key={event._id} className="cbe-event-card" onClick={() => handleEventClick(event)}>
                                 <div className="cbe-card-image-wrap">
                                     <img
-                                        src={event.image ? `${BACKEND_URL}/uploads/${event.image}` : '/assets/eventbg.jpg'}
+                                        src={event.image ? `/uploads/${event.image}` : '/assets/eventbg.jpg'}
                                         alt={event.title}
                                         onError={(e) => {
                                             e.target.src = '/assets/eventbg.jpg';

@@ -30,7 +30,7 @@ const CustomerEventDetails = () => {
                 setEvent(data);
                 // Set initial hero image and validate it
                 if (data?.image) {
-                    const imgUrl = `${BACKEND_URL}/uploads/${data.image}`;
+                    const imgUrl = `/uploads/${data.image}`;
                     setHeroImage(imgUrl);
                     const img = new Image();
                     img.src = imgUrl;
@@ -165,7 +165,7 @@ const CustomerEventDetails = () => {
 
                 <div 
                     className={displayEvent ? "sed-hero-banner" : "sed-hero-banner skeleton"} 
-                    style={displayEvent && stateEvent?.image ? { backgroundImage: `url(${BACKEND_URL}/uploads/${stateEvent.image})` } : { background: '#eee' }}
+                    style={displayEvent && stateEvent?.image ? { backgroundImage: `url(/uploads/${stateEvent.image})` } : { background: '#eee' }}
                 >
                     {displayEvent && (
                         <>

@@ -69,9 +69,23 @@ const ManageCategoryModal = ({ isOpen, onClose, onSave, editingCategory, eventTy
                 value={modalType}
                 onChange={handleTypeChange}
               >
-                <option value="General Fee">General Fee</option>
-                <option value="Seat (Circle)">Seat (Circle)</option>
-                <option value="Booth (Square)">Booth (Square)</option>
+                {eventType === "General Admission" ? (
+                  <>
+                    <option value="General Fee">General Fee</option>
+                    <option value="Booth (Square)">Booth (Square)</option>
+                  </>
+                ) : eventType === "Reservation" ? (
+                  <>
+                    <option value="Seat (Circle)">Seat (Circle)</option>
+                    <option value="Booth (Square)">Booth (Square)</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="General Fee">General Fee</option>
+                    <option value="Seat (Circle)">Seat (Circle)</option>
+                    <option value="Booth (Square)">Booth (Square)</option>
+                  </>
+                )}
               </select>
             </div>
             {modalType === "Booth (Square)" && (
