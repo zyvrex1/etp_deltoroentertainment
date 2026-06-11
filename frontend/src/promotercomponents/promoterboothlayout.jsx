@@ -868,9 +868,9 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                                                 {cat.type === "General Fee" ? (
                                                     <Icon icon="mdi:ticket-confirmation-outline" />
                                                 ) : cat.type.includes("Seat") ? (
-                                                    <Icon icon="mdi:circle" />
+                                                    <Icon icon="mdi:seat" />
                                                 ) : (
-                                                    <Icon icon="mdi:square" />
+                                                    <Icon icon="mdi:storefront" />
                                                 )}
                                             </div>
 
@@ -898,7 +898,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                                                     ) : (
                                                         <span className="count">{placed}/{cat.quantity} units</span>
                                                     )}
-                                                    {cat.boothSize && <span className="size-badge">{cat.boothSize}</span>}
+                                                    {/* {cat.boothSize && <span className="size-badge">{cat.boothSize}</span>} */}
                                                 </div>
                                                 <div className="progress-bar">
                                                     <div

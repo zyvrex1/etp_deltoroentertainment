@@ -134,7 +134,7 @@ const eventSchema = new Schema(
     title: { type: String, required: true, trim: true },
     eventType: {
       type: String,
-      enum: ["General Admission", "Reservation", "Seating Arrangement", "Exhibition"],
+      enum: ["General Admission", "Reservation"],
     },
 
     description: String,

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Icon } from "@iconify/react";
 import "./promoterevents.css";
 import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.jsx";
@@ -8,9 +8,10 @@ import { NavLink } from "react-router-dom";
 import { useEventsContext } from "../hooks/useEventsContext";
 import { useAuthContext } from "../hooks/useAuthContext";
 import eventsService from "../services/eventsService";
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
- 
+
 const EventCardImage = ({ imageUrl, statusClass, evt, onEdit }) => {
   const [currentImg, setCurrentImg] = useState(imageUrl);
   const statusRaw = evt.status?.toLowerCase() || "";
@@ -20,13 +21,13 @@ const EventCardImage = ({ imageUrl, statusClass, evt, onEdit }) => {
   }, [imageUrl]);
 
   return (
-    <div 
+    <div
       className="pe-card-image"
       style={{ backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.6)), url(${currentImg})` }}
     >
-      <img 
-        src={currentImg} 
-        style={{ display: 'none' }} 
+      <img
+        src={currentImg}
+        style={{ display: 'none' }}
         onError={() => setCurrentImg("/assets/eventbg.jpg")}
         alt=""
       />
@@ -44,7 +45,7 @@ const EventCardImage = ({ imageUrl, statusClass, evt, onEdit }) => {
     </div>
   );
 };
- 
+
 const PromoterEvents = () => {
   const { events, dispatch } = useEventsContext();
   const { user } = useAuthContext();
@@ -61,7 +62,7 @@ const PromoterEvents = () => {
   const dropdownRef = useRef(null);
   const sortDropdownRef = useRef(null);
 
-  // Pagination state
+  // Pagination & Sorting state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const [sortFilter, setSortFilter] = useState("Recently Added");
@@ -110,72 +111,95 @@ const PromoterEvents = () => {
     };
   }, [isDropdownOpen, isSortDropdownOpen]);
 
-  const filteredEvents = (events || []).filter((evt) => {
-    // Only show events created by this promoter
-    if (evt.createdBy?._id !== user?._id) return false;
-
-    const q = searchQuery.toLowerCase();
-    const status = evt.status?.toLowerCase();
-
-    const matchesFilter = (() => {
-      if (activeFilter === "all") return true;
-      if (activeFilter === "active") return status === "approved";
-      if (activeFilter === "pending") return status === "pending";
-      if (activeFilter === "rejected") return status === "rejected";
-      if (activeFilter === "past") return status === "completed";
-      return true;
-    })();
-
-    if (!matchesFilter) return false;
-    if (!q) return true;
-    
-    const location = `${evt.venue?.name || ""} ${evt.venue?.city || ""}`.toLowerCase();
-    return evt.title.toLowerCase().includes(q) || location.includes(q);
-  });
-
-  const sortEvents = (eventsList) => {
-    const sorted = [...eventsList];
-    switch (sortFilter) {
-      case "A-Z":
-        return sorted.sort((a, b) => a.title?.localeCompare(b.title));
-      case "Z-A":
-        return sorted.sort((a, b) => b.title?.localeCompare(a.title));
-      case "Recently Added":
-      default:
-        return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    }
-  };
-
-  const sortedEvents = sortEvents(filteredEvents);
-
-  // Calculate pagination
-  const totalItems = sortedEvents.length + 1; // +1 for the Create Card
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  
-  const paginatedEvents = sortedEvents.slice(
-    (currentPage - 1) * itemsPerPage,
-    Math.min(currentPage * itemsPerPage, sortedEvents.length)
-  );
-
-  // Determine if the Create Card should show on this page
-  // It shows if we are on the last page OR if we are on a page where space is left
-  const showCreateCardOnThisPage = currentPage === totalPages || (paginatedEvents.length < itemsPerPage && currentPage === totalPages);
-
   // Reset to page 1 when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, activeFilter]);
+
+  // Filter & Sort computing optimized with useMemo
+  const processedEvents = useMemo(() => {
+    const filtered = (events || []).filter((evt) => {
+      if (evt.createdBy?._id !== user?._id) return false;
+
+      const q = searchQuery.toLowerCase();
+      const status = evt.status?.toLowerCase();
+
+      const matchesFilter = (() => {
+        if (activeFilter === "all") return true;
+        if (activeFilter === "active") return status === "approved";
+        if (activeFilter === "pending") return status === "pending";
+        if (activeFilter === "rejected") return status === "rejected";
+        if (activeFilter === "past") return status === "completed";
+        return true;
+      })();
+
+      if (!matchesFilter) return false;
+      if (!q) return true;
+
+      const location = `${evt.venue?.name || ""} ${evt.venue?.city || ""}`.toLowerCase();
+      return evt.title.toLowerCase().includes(q) || location.includes(q);
+    });
+
+    switch (sortFilter) {
+      case "A-Z":
+        return filtered.sort((a, b) => a.title?.localeCompare(b.title));
+      case "Z-A":
+        return filtered.sort((a, b) => b.title?.localeCompare(a.title));
+      case "Recently Added":
+      default:
+        return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+  }, [events, user?._id, searchQuery, activeFilter, sortFilter]);
+
+  // Pagination Calculations
+  const totalItems = processedEvents.length + 1; // +1 includes the static Create Card 
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  const paginatedEvents = useMemo(() => {
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    // We only take up to itemsPerPage - 1 if the create card is on this page to leave room
+    const isLastPage = currentPage === totalPages;
+    const sliceCount = isLastPage ? itemsPerPage - 1 : itemsPerPage;
+
+    return processedEvents.slice(startIdx, startIdx + sliceCount);
+  }, [processedEvents, currentPage, totalPages, itemsPerPage]);
+
+  const showCreateCardOnThisPage = currentPage === totalPages;
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleDeleteEvent = async (evt) => {
+    const result = await showConfirmAlert(
+      "Delete Event?",
+      `Are you sure you want to delete "${evt.title}"?`
+    );
+    if (!result.isConfirmed) return;
+
+    try {
+      await eventsService.deleteEvent(evt._id, user.token);
+      dispatch({ type: "DELETE_EVENT", payload: evt._id });
+      showSuccessAlert("Event Deleted", "The event has been successfully deleted.");
+    } catch (err) {
+      console.error("Delete event error:", err);
+      showErrorAlert("Delete Failed", err.response?.data?.error || err.message);
+    }
+  };
+
+  const getStatusClass = (status) => {
+    const statusRaw = status?.toLowerCase() || "";
+    if (statusRaw === "approved") return "active";
+    if (statusRaw === "completed") return "past";
+    if (statusRaw === "rejected") return "draft";
+    return statusRaw;
+  };
 
   return (
     <div className="promoter-events-page">
       <div className="pe-header-row">
-        <h1>My Event</h1>
+        <h1>My Events</h1>
         <div className="pe-header-actions">
           <button
             type="button"
@@ -285,29 +309,26 @@ const PromoterEvents = () => {
               </div>
             ))}
           </div>
-        ) : filteredEvents.length === 0 && activeFilter === "all" && !searchQuery ? (
+        ) : processedEvents.length === 0 && activeFilter === "all" && !searchQuery ? (
           <div className="pe-empty-wrapper">
-             <div className="empty-state">
+            <div className="empty-state">
               <Icon icon="mdi:calendar-blank-outline" width="48" />
               <h4>No events created yet</h4>
               <p className="small-body-text">
-                Start by creating your first event.
-                <span
-                  className="pe-empty-add-btn"
-                  onClick={() => setIsCreateOpen(true)}
-                >
+                Start by creating your first event.{" "}
+                <span className="pe-empty-add-btn" onClick={() => setIsCreateOpen(true)}>
                   Create Event
                 </span>
               </p>
             </div>
           </div>
-        ) : filteredEvents.length === 0 ? (
+        ) : processedEvents.length === 0 ? (
           <div className="pe-empty-wrapper">
             <div className="empty-state">
               <Icon icon="mdi:magnify-close" width="48" />
               <h4>No events found</h4>
               <p className="small-body-text">
-                No events match your current criteria.
+                No events match your current criteria.{" "}
                 <span
                   className="pe-empty-add-btn"
                   onClick={() => {
@@ -316,130 +337,134 @@ const PromoterEvents = () => {
                   }}
                 >
                   Clear filters
-                </span></p>
+                </span>
+              </p>
             </div>
           </div>
         ) : (
           <div className="pe-grid">
-            <>
-              {paginatedEvents.map((evt) => {
-                const statusRaw = evt.status?.toLowerCase() || "";
-                let statusClass = statusRaw;
-                if (statusRaw === "approved") statusClass = "active";
-                if (statusRaw === "completed") statusClass = "past";
-                if (statusRaw === "rejected") statusClass = "draft";
-                if (statusRaw === "cancelled") statusClass = "cancelled";
+            {paginatedEvents.map((evt) => {
+              const statusRaw = evt.status?.toLowerCase() || "";
+              const statusClass = getStatusClass(evt.status);
 
-                const overallTotal = (evt.totalTickets || 0) + (evt.totalBooths || 0);
-                const overallSold = (evt.ticketsSold || 0) + (evt.boothsSold || 0);
-                const percent = overallTotal > 0 ? Math.round((overallSold / overallTotal) * 100) : 0;
+              const overallTotal = (evt.totalTickets || 0) + (evt.totalBooths || 0);
+              const overallSold = (evt.ticketsSold || 0) + (evt.boothsSold || 0);
+              const percent = overallTotal > 0 ? Math.round((overallSold / overallTotal) * 100) : 0;
 
-                const eventDate = new Date(evt.startDate).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric"
-                });
+              const eventDate = new Date(evt.startDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+              });
 
-                const eventLocation = evt.venue ? `${evt.venue.name}, ${evt.venue.city}` : "TBA";
-                const imageUrl = evt.image ? `/uploads/${evt.image}` : "/assets/eventbg.jpg";
+              const eventLocation = evt.venue ? `${evt.venue.name}, ${evt.venue.city}` : "TBA";
+              const imageUrl = evt.image ? `/uploads/${evt.image}` : "/assets/eventbg.jpg";
 
-                return (
-                  <div key={evt._id} className="pe-card">
-                    <EventCardImage 
-                        imageUrl={imageUrl} 
-                        statusClass={statusClass} 
-                        evt={evt} 
-                        onEdit={(e) => {
-                            e.stopPropagation();
-                            setSelectedEventToEdit(evt);
-                            setIsEditOpen(true);
+              return (
+                <div key={evt._id} className="pe-card">
+                  <EventCardImage
+                    imageUrl={imageUrl}
+                    statusClass={statusClass}
+                    evt={evt}
+                    onEdit={(e) => {
+                      e.stopPropagation();
+                      setSelectedEventToEdit(evt);
+                      setIsEditOpen(true);
+                    }}
+                  />
+
+                  <div className="pe-card-body">
+                    <h4>{evt.title}</h4>
+
+                    <div className="pe-card-meta">
+                      <div className="pe-meta-row">
+                        <Icon icon="mdi:calendar-month-outline" />
+                        <span className="small-body-text">{eventDate}</span>
+                      </div>
+
+                      <div className="pe-meta-row">
+                        <Icon icon="mdi:map-marker-outline" />
+                        <span className="small-body-text">{eventLocation}</span>
+                      </div>
+                    </div>
+
+                    {overallTotal > 0 && (
+                      <>
+                        <div className="pe-progress-row">
+                          <span className="small-body-text">
+                            {overallSold} / {overallTotal} Overall Sales
+                          </span>
+                          <span>{percent}%</span>
+                        </div>
+                        <div className="pe-progress">
+                          <div style={{ width: `${percent}%` }} />
+                        </div>
+                      </>
+                    )}
+
+                    <div className="pe-card-actions">
+                      <NavLink
+                        to="/promoter/promoter-eventmanagement"
+                        state={{ event: evt }}
+                        className={["completed", "cancelled", "pending", "rejected"].includes(statusRaw) ? "disabled-nav-link" : ""}
+                        onClick={(e) => {
+                          if (["completed", "cancelled", "pending", "rejected"].includes(statusRaw)) {
+                            e.preventDefault();
+                          }
                         }}
-                    />
-
-                    <div className="pe-card-body">
-                      <h4>{evt.title}</h4>
-
-                      <div className="pe-card-meta">
-                        <div className="pe-meta-row">
-                          <Icon icon="mdi:calendar-month-outline" />
-                          <span className="small-body-text">{eventDate}</span>
-                        </div>
-
-                        <div className="pe-meta-row">
-                          <Icon icon="mdi:map-marker-outline" />
-                          <span className="small-body-text">{eventLocation}</span>
-                        </div>
-                      </div>
-
-                      {overallTotal > 0 && (
-                        <>
-                          <div className="pe-progress-row">
-                            <span className="small-body-text">
-                              {overallSold} / {overallTotal} Overall Sales
-                            </span>
-                            <span>{percent}%</span>
-                          </div>
-                          <div className="pe-progress">
-                            <div style={{ width: `${percent}%` }} />
-                          </div>
-                        </>
-                      )}
-
-                      <div className="pe-card-actions">
-                        <button 
-                          type="button" 
-                          className="outlined-button pe-card-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedEventToView(evt);
-                            setIsViewOpen(true);
-                          }}
+                      >
+                        <button
+                          type="button"
+                          className="primary-button pe-card-btn"
+                          disabled={["completed", "cancelled", "pending", "rejected"].includes(statusRaw)}
                         >
-                          View
+                          Manage
                         </button>
-                        <NavLink 
-                          to="/promoter/promoter-eventmanagement" 
-                          state={{ event: evt }}
-                          className={`${(statusRaw === "completed" || statusRaw === "cancelled") ? "disabled-nav-link" : ""}`}
-                          onClick={(e) => {
-                            if (statusRaw === "completed" || statusRaw === "cancelled") {
-                              e.preventDefault();
-                            }
-                          }}
-                        >
-                          <button 
-                            type="button" 
-                            className="primary-button pe-card-btn"
-                            disabled={statusRaw === "completed" || statusRaw === "cancelled"}
-                          >
-                            Manage
-                          </button>
-                        </NavLink>
-                      </div>
+                      </NavLink>
+                      <button
+                        type="button"
+                        className="outlined-button pe-card-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedEventToEdit(evt);
+                          setIsEditOpen(true);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="outlined-button pe-card-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteEvent(evt);
+                        }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              );
+            })}
 
-              {showCreateCardOnThisPage && (
-                <button
-                  type="button"
-                  className="pe-card pe-create-card"
-                  onClick={() => setIsCreateOpen(true)}
-                >
-                  <div className="pe-create-inner">
-                    <div className="pe-create-icon">
-                      <Icon icon="mdi:plus" />
-                    </div>
-                    <h4>Create New Event</h4>
-                    <p className="small-body-text">
-                      Start selling tickets for your next big experience.
-                    </p>
+            {showCreateCardOnThisPage && (
+              <button
+                type="button"
+                className="pe-card pe-create-card"
+                onClick={() => setIsCreateOpen(true)}
+              >
+                <div className="pe-create-inner">
+                  <div className="pe-create-icon">
+                    <Icon icon="mdi:plus" />
                   </div>
-                </button>
-              )}
-            </>
-
+                  <h4>Create New Event</h4>
+                  <p className="small-body-text">
+                    Start selling tickets for your next big experience.
+                  </p>
+                </div>
+              </button>
+            )}
           </div>
         )}
 
@@ -476,6 +501,7 @@ const PromoterEvents = () => {
           </div>
         )}
       </div>
+
       <PromoterCreateEventModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
@@ -483,7 +509,7 @@ const PromoterEvents = () => {
       <PromoterEditEventModal
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
-        initialEvent={selectedEventToEdit}
+        event={selectedEventToEdit}
       />
       <PromoterViewEvent
         isOpen={isViewOpen}
@@ -498,5 +524,3 @@ const PromoterEvents = () => {
 };
 
 export default PromoterEvents;
-
-

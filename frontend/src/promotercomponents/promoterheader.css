@@ -4,12 +4,13 @@
   right: 0;
   padding: 16px 32px;
   background: var(--color-white-primary);
-  z-index: 1100;
+  z-index: 100;
   border-bottom: 1px solid var(--color-black-quaternary);
   width: calc(100% - 260px);
   display: flex;
   justify-content: flex-end;
   align-items: center;
+
   .header-right {
     display: flex;
     align-items: center;
@@ -233,7 +234,7 @@
         gap: 4px;
         font-weight: 500;
         cursor: pointer;
-        
+
         span {
           text-decoration: underline;
         }
@@ -279,24 +280,48 @@
           flex-shrink: 0;
           font-size: 20px;
 
-          &.concern { background: var(--color-yellow-quaternary); color: var(--color-yellow-primary); }
-          &.event { background: var(--color-red-quaternary); color: var(--color-red-primary); }
-          &.payment { background: var(--color-purple-quaternary); color: var(--color-purple-primary); }
-          &.reservation { background: var(--color-purple-quaternary); color: var(--color-purple-primary); }
-          &.user { background: var(--color-blue-quaternary); color: var(--color-blue-primary); }
+          &.concern {
+            background: var(--color-yellow-quaternary);
+            color: var(--color-yellow-primary);
+          }
+
+          &.event {
+            background: var(--color-red-quaternary);
+            color: var(--color-red-primary);
+          }
+
+          &.payment {
+            background: var(--color-purple-quaternary);
+            color: var(--color-purple-primary);
+          }
+
+          &.reservation {
+            background: var(--color-purple-quaternary);
+            color: var(--color-purple-primary);
+          }
+
+          &.user {
+            background: var(--color-blue-quaternary);
+            color: var(--color-blue-primary);
+          }
+
           &.update,
           &.announcement,
-          &.policy { background: var(--color-bg-dark); color: white; }
+          &.policy {
+            background: var(--color-bg-dark);
+            color: white;
+          }
         }
 
         .notif-content {
           flex: 1;
           text-align: left;
+
           .notif-text {
             font-size: 13.5px;
             color: var(--color-bg-dark);
             margin: 0 0 4px 0;
-            line-height:1.4;
+            line-height: 1.4;
 
             strong {
               font-weight: 600;
@@ -331,7 +356,7 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .app-header {
-    width: calc(100% - 80px); 
+    width: calc(100% - 80px);
   }
 }
 
@@ -396,7 +421,7 @@
   }
 
   .header-notifications {
-    position: static; 
+    position: static;
 
     .notif-dropdown {
       position: fixed !important;

@@ -1,40 +1,18 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import axios from "axios";
-import "./PromoterEditEventModal.css";
-
-import {
-    showSuccessAlert,
-    showCancelConfirmAlert,
-    showErrorAlert,
-    showConfirmAlert,
-} from "../../utils/sweetAlert";
+import "../../admincomponents/modal/CreateEventModal.css";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useEventsContext } from "../../hooks/useEventsContext";
+import {
+    showSuccessAlert,
+    showErrorAlert,
+    showCreateConfirmAlert,
+} from "../../utils/sweetAlert";
 
-const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
+const PromoterEditEventModal = ({ isOpen, onClose, event }) => {
     const { user } = useAuthContext();
     const { dispatch } = useEventsContext();
     const today = new Date().toISOString().split("T")[0];
-
-    const [title, setTitle] = useState("");
-    const [eventType, setEventType] = useState("General Admission");
-    const [category, setCategory] = useState("other");
-    const [description, setDescription] = useState("");
-    const [startDate, setStartDate] = useState(today);
-    const [endDate, setEndDate] = useState(today);
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
-    const [venue, setVenue] = useState({
-        name: "",
-        address: "",
-        city: "",
-        zipCode: "",
-    });
-
-    const [imageFile, setImageFile] = useState(null);
-    const [imageDragActive, setImageDragActive] = useState(false);
-    const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
 
     const [error, setError] = useState("");
     const [errors, setErrors] = useState({});
@@ -48,45 +26,77 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             });
         }
     };
-    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [imageDragActive, setImageDragActive] = useState(false);
+
+    // Single formData state
+    const [formData, setFormData] = useState({
+        title: "",
+        category: "",
+        description: "",
+        startDate: today,
+        endDate: today,
+        startTime: "",
+        endTime: "",
+        venue: { name: "", address: "", city: "", zipCode: "" },
+        eventType: "General Admission",
+        imageFile: null,
+        imagePreviewUrl: null,
+        seatMap: null,
+        booths: [],
+        assignedPromoter: null,
+    });
+    const [promoters, setPromoters] = useState([]);
+
+    // Sync data when event prop changes
+    useEffect(() => {
+        if (event) {
+            const formatDate = (isoDate) =>
+                isoDate ? new Date(isoDate).toISOString().split("T")[0] : today;
+
+            setFormData({
+                title: event.title || "",
+                category: event.category || "other",
+                description: event.description || "",
+                startDate: formatDate(event.startDate),
+                endDate: formatDate(event.endDate),
+                startTime: event.startTime || "",
+                endTime: event.endTime || "",
+                venue: {
+                    name: event.venue?.name || "",
+                    address: event.venue?.address || "",
+                    city: event.venue?.city || "",
+                    zipCode: event.venue?.zipCode || "",
+                },
+                eventType: event.eventType || "General Admission",
+                imageFile: null,
+                imagePreviewUrl: event.image ? `/uploads/${event.image}` : null,
+                seatMap: event.seatMap || null,
+                booths: event.booths || [],
+                assignedPromoter: event.assignedPromoter?._id || event.assignedPromoter || null,
+            });
+        }
+    }, [event, today]);
 
     useEffect(() => {
-        if (initialEvent && isOpen) {
-            setTitle(initialEvent.title || "");
-            setEventType(initialEvent.eventType || "General Admission");
-            setCategory(initialEvent.category || "other");
-            setDescription(initialEvent.description || "");
-
-            // Format dates for input[type="date"]
-            if (initialEvent.startDate) {
-                setStartDate(new Date(initialEvent.startDate).toISOString().split('T')[0]);
+        if (!user?.token) return;
+        const fetchPromoters = async () => {
+            try {
+                const response = await fetch('/api/admin/users', {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                const json = await response.json();
+                if (response.ok) {
+                    setPromoters(json.filter(u => u.role === 'promoter'));
+                }
+            } catch (err) {
+                console.error("Error fetching promoters:", err);
             }
-            if (initialEvent.endDate) {
-                setEndDate(new Date(initialEvent.endDate).toISOString().split('T')[0]);
-            }
+        };
+        fetchPromoters();
+    }, [user]);
 
-            setStartTime(initialEvent.startTime || "");
-            setEndTime(initialEvent.endTime || "");
-
-            setVenue({
-                name: initialEvent.venue?.name || "",
-                address: initialEvent.venue?.address || "",
-                city: initialEvent.venue?.city || "",
-                zipCode: initialEvent.venue?.zipCode || "",
-            });
-
-            if (initialEvent.image) {
-                setImagePreviewUrl(`/uploads/${initialEvent.image}`);
-            } else {
-                setImagePreviewUrl(null);
-            }
-
-            setImageFile(null);
-            setError("");
-            setEmptyFields([]);
-        }
-    }, [initialEvent, isOpen]);
-
+    // 1. Handle Drag Events (Prevent default to allow drop)
     const handleImageDrag = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -97,46 +107,68 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
         }
     };
 
+    // 2. Handle Drop Event
     const handleImageDrop = (e) => {
         e.preventDefault();
         e.stopPropagation();
         setImageDragActive(false);
+
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             const file = e.dataTransfer.files[0];
-            const url = URL.createObjectURL(file);
-            setImageFile(file);
-            setImagePreviewUrl(url);
+            setFormData({
+                ...formData,
+                imageFile: file,
+                imagePreviewUrl: URL.createObjectURL(file)
+            });
         }
     };
 
+    // 3. Handle Remove (Also missing based on your JSX)
+    const handleImageRemove = () => {
+        if (formData.imagePreviewUrl && formData.imagePreviewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(formData.imagePreviewUrl);
+        }
+        setFormData({
+            ...formData,
+            imageFile: null,
+            imagePreviewUrl: null
+        });
+    };
+
+
+
+
+    // Image Handlers
     const handleImageChange = (e) => {
-        e.preventDefault();
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            const url = URL.createObjectURL(file);
-            setImageFile(file);
-            setImagePreviewUrl(url);
+            setFormData({
+                ...formData,
+                imageFile: file,
+                imagePreviewUrl: URL.createObjectURL(file)
+            });
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleSaveChanges = async (e) => {
         e.preventDefault();
+        if (!user) return setError("You must be logged in");
 
         setError("");
         const newErrors = {};
 
-        if (!title?.trim()) newErrors.title = "Event Title is required";
-        if (!category?.trim()) newErrors.category = "Category is required";
-        if (!startDate) newErrors.startDate = "Start Date is required";
-        if (!endDate) newErrors.endDate = "End Date is required";
-        if (!startTime) newErrors.startTime = "Start Time is required";
-        if (!endTime) newErrors.endTime = "End Time is required";
-        if (!description?.trim()) newErrors.description = "Description is required";
+        if (!formData.title?.trim()) newErrors.title = "Event Title is required";
+        if (!formData.category?.trim()) newErrors.category = "Category is required";
+        if (!formData.startDate) newErrors.startDate = "Start Date is required";
+        if (!formData.endDate) newErrors.endDate = "End Date is required";
+        if (!formData.startTime) newErrors.startTime = "Start Time is required";
+        if (!formData.endTime) newErrors.endTime = "End Time is required";
+        if (!formData.description?.trim()) newErrors.description = "Description is required";
 
-        if (!venue.name?.trim()) newErrors.venueName = "Venue Name is required";
-        if (!venue.address?.trim()) newErrors.venueAddress = "Street Address is required";
-        if (!venue.city?.trim()) newErrors.venueCity = "City is required";
-        if (!venue.zipCode?.trim()) newErrors.venueZip = "Zip Code is required";
+        if (!formData.venue.name?.trim()) newErrors.venueName = "Venue Name is required";
+        if (!formData.venue.address?.trim()) newErrors.venueAddress = "Street Address is required";
+        if (!formData.venue.city?.trim()) newErrors.venueCity = "City is required";
+        if (!formData.venue.zipCode?.trim()) newErrors.venueZip = "Zip Code is required";
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -144,11 +176,11 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             return;
         }
 
-        const startDateTime = new Date(`${startDate}T${startTime}`);
-        const endDateTime = new Date(`${endDate}T${endTime}`);
+        const startDateTime = new Date(`${formData.startDate}T${formData.startTime}`);
+        const endDateTime = new Date(`${formData.endDate}T${formData.endTime}`);
 
         if (endDateTime <= startDateTime) {
-            if (startDate === endDate) {
+            if (formData.startDate === formData.endDate) {
                 newErrors.endTime = "End Time must be after Start Time";
             } else {
                 newErrors.endDate = "End Date must be after Start Date";
@@ -157,148 +189,130 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
             return;
         }
 
-        if (endDate < startDate) {
-            setError("End date cannot be earlier than start date.");
-            return;
-        }
-
-        const result = await showConfirmAlert(
-            "Save Changes?",
-            `Are you sure you want to update "${title}"?`
-        );
-
+        const result = await showCreateConfirmAlert("Update Event?", `Update "${formData.title}"?`);
         if (!result.isConfirmed) return;
 
-        setIsSubmitting(true);
-        setError("");
-
         try {
-            const formData = new FormData();
-            formData.append('title', title);
-            formData.append('eventType', eventType);
-            formData.append('category', category);
-            formData.append('description', description);
-            formData.append('startDate', startDate);
-            formData.append('endDate', endDate);
-            formData.append('startTime', startTime);
-            formData.append('endTime', endTime);
-            formData.append('venue', JSON.stringify(venue));
+            const formDataToSend = new FormData();
 
-            if (imageFile) {
-                formData.append('image', imageFile);
-            }
-
-            const response = await axios.patch(
-                `/api/events/${initialEvent._id}`,
-                formData,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${user.token}`,
-                        'Content-Type': 'multipart/form-data'
+            Object.keys(formData).forEach(key => {
+                if (['venue', 'booths', 'seatMap'].includes(key)) {
+                    formDataToSend.append(key, JSON.stringify(formData[key]));
+                } else if (key === 'imageFile') {
+                    if (formData.imageFile) {
+                        formDataToSend.append('image', formData.imageFile);
+                    } else if (!formData.imagePreviewUrl) {
+                        formDataToSend.append('image', '');
                     }
+                } else if (key !== 'imagePreviewUrl') {
+                    formDataToSend.append(key, formData[key]);
                 }
-            );
+            });
 
-            dispatch({ type: "UPDATE_EVENT", payload: response.data.event });
+            const response = await fetch(`/api/events/${event._id}`, {
+                method: "PATCH",
+                headers: { Authorization: `Bearer ${user.token}` },
+                body: formDataToSend,
+            });
+
+            const json = await response.json();
+            if (!response.ok) throw new Error(json.error);
 
             onClose();
-            await showSuccessAlert(
-                "Event Updated",
-                "The event has been updated successfully."
-            );
+            showSuccessAlert("Event updated!");
+            dispatch({ type: "UPDATE_EVENT", payload: json.event });
         } catch (err) {
-            console.error("Update Event Error:", err);
-            setError(err.response?.data?.error || "Failed to update event.");
-            showErrorAlert("Update Failed", err.response?.data?.error || "Could not update event.");
-        } finally {
-            setIsSubmitting(false);
+            showErrorAlert("Update Failed", err.message);
         }
     };
 
     if (!isOpen) return null;
 
-    const isReadOnly = initialEvent?.status === "completed";
+    const isReadOnly =
+        event?.status === "cancelled" ||
+        event?.status === "completed" ||
+        (event?.status === "rejected" && (user?.role === "admin" || user?.role === "superadmin"));
 
     return (
-        <div className="promoter-edit-event-modal-overlay">
-            <div className="promoter-edit-event-modal-container">
-                <div className="promoter-edit-event-modal-header">
+        <div className="general-modal-overlay">
+            <div className="general-event-modal-container">
+                <div className="general-modal-header">
                     <h3>{isReadOnly ? "View Event" : "Edit Event"}</h3>
-                    <button
-                        className="promoter-edit-event-close-btn"
-                        onClick={async () => {
-                            if (isReadOnly) {
-                                onClose();
-                                return;
-                            }
-                            const result = await showCancelConfirmAlert();
-                            if (result.isConfirmed) {
-                                onClose();
-                            }
-                        }}
-                    >
-                        <Icon icon="mdi:close" />
+                    <button className="close-btn" onClick={onClose}>
+                        <Icon icon="mdi:close" width="24" height="24" />
                     </button>
                 </div>
 
                 <form
-                    className="promoter-edit-event-modal-body promoter-edit-event-form"
-                    onSubmit={handleSubmit}
+                    className="add-event-modal-body add-event-form"
+                    onSubmit={handleSaveChanges}
                 >
-                    <div className="promoter-edit-event-section-box">
-                        <h5 className="modal-section-title">Event Image</h5>
+                    <div className="section-box">
                         <div
-                            className={`promoter-edit-event-upload-area ${imageDragActive ? "drag-active" : ""
-                                } ${isReadOnly ? "readonly" : ""}`}
+                            className={`upload-area ${imageDragActive ? "drag-active" : ""} ${isReadOnly ? "readonly" : ""}`}
                             onDragEnter={!isReadOnly ? handleImageDrag : undefined}
                             onDragLeave={!isReadOnly ? handleImageDrag : undefined}
                             onDragOver={!isReadOnly ? handleImageDrag : undefined}
                             onDrop={!isReadOnly ? handleImageDrop : undefined}
                             onClick={
                                 !isReadOnly
-                                    ? () => document.getElementById("promoter-edit-event-image-input")?.click()
+                                    ? () => document.getElementById("event-image-input")?.click()
                                     : undefined
                             }
                         >
                             <input
-                                id="promoter-edit-event-image-input"
+                                id="event-image-input"
                                 type="file"
                                 accept="image/png, image/jpeg, image/webp"
                                 onChange={!isReadOnly ? handleImageChange : undefined}
                                 style={{ display: "none" }}
                                 disabled={isReadOnly}
                             />
-
-                            {imagePreviewUrl ? (
+                            {formData.imageFile || formData.imagePreviewUrl ? (
                                 <div className="file-preview">
-                                    <img
-                                        src={imagePreviewUrl}
-                                        alt="Event Preview"
-                                        className="preview-image"
-                                        onError={(e) => {
-                                            e.target.src = '/assets/eventbg.jpg';
-                                            e.target.onerror = null;
-                                        }}
-                                    />
-                                    {imageFile && (
-                                        <>
-                                            <p className="file-name">{imageFile.name}</p>
-                                            <p className="file-size">
-                                                {((imageFile.size || 0) / 1024 / 1024).toFixed(2)} MB
-                                            </p>
-                                        </>
+                                    {formData.imagePreviewUrl ? (
+                                        <img
+                                            src={formData.imagePreviewUrl}
+                                            alt="Event Preview"
+                                            className="preview-image"
+                                            style={{
+                                                width: "100%",
+                                                maxHeight: "300px",
+                                                objectFit: "contain",
+                                                borderRadius: "8px",
+                                            }}
+                                        />
+                                    ) : (
+                                        <Icon
+                                            icon="mdi:file-image"
+                                            width="48"
+                                            height="48"
+                                            className="preview-icon"
+                                        />
                                     )}
+
+                                    <p className="file-name">
+                                        {formData.imageFile
+                                            ? formData.imageFile.name
+                                            : event.image?.split("/").pop()}
+                                    </p>
+
+                                    {formData.imageFile && (
+                                        <p className="file-size">
+                                            {(formData.imageFile.size / 1024 / 1024).toFixed(2)} MB
+                                        </p>
+                                    )}
+
                                     {!isReadOnly && (
                                         <button
                                             type="button"
                                             className="remove-file-btn"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setImageFile(null);
-                                                setImagePreviewUrl(null);
+                                                handleImageRemove();
                                             }}
                                         >
-                                            Remove/Change
+                                            Remove
                                         </button>
                                     )}
                                 </div>
@@ -308,7 +322,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                                         <Icon icon="mdi:image-area" width="32" height="32" />
                                     </div>
                                     <p className="upload-title">
-                                        {isReadOnly ? "No image provided" : "Click or drag an image here to update"}
+                                        {isReadOnly ? "No image provided" : "Click or drag an image here"}
                                     </p>
                                     {!isReadOnly && <p className="upload-subtitle">PNG, JPG, WEBP up to 5MB</p>}
                                 </div>
@@ -316,28 +330,30 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                         </div>
                     </div>
 
-                    <div className="promoter-edit-event-form-row">
-                        <div className="promoter-edit-event-form-group promoter-edit-event-full-width">
+                    {/* Title & Category & Type */}
+
+                    <div className="add-event-form-row">
+                        <div className="add-event-form-group add-event-full-width">
                             <h6>Event Type</h6>
                             <div className="event-type-options">
-                                <label className={`event-type-option ${eventType === "General Admission" ? "active" : ""}`}>
+                                <label className={`event-type-option ${formData.eventType === "General Admission" ? "active" : ""}`}>
                                     <input
                                         type="radio"
                                         name="eventType"
                                         value="General Admission"
-                                        checked={eventType === "General Admission"}
-                                        onChange={(e) => setEventType(e.target.value)}
+                                        checked={formData.eventType === "General Admission"}
+                                        onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
                                         disabled={isReadOnly}
                                     />
                                     <span>General Admission</span>
                                 </label>
-                                <label className={`event-type-option ${eventType === "Reservation" ? "active" : ""}`}>
+                                <label className={`event-type-option ${formData.eventType === "Reservation" ? "active" : ""}`}>
                                     <input
                                         type="radio"
                                         name="eventType"
                                         value="Reservation"
-                                        checked={eventType === "Reservation"}
-                                        onChange={(e) => setEventType(e.target.value)}
+                                        checked={formData.eventType === "Reservation"}
+                                        onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
                                         disabled={isReadOnly}
                                     />
                                     <span>Reservation</span>
@@ -345,72 +361,69 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                             </div>
                         </div>
                     </div>
-                    <div className="promoter-edit-event-form-row">
-                        <div className={`promoter-edit-event-form-group ${errors.title ? 'has-error' : ''}`}>
+                    <div className="add-event-form-row">
+                        <div className={`add-event-form-group ${errors.title ? 'has-error' : ''}`}>
                             <h6>Event Title</h6>
                             <input
                                 type="text"
-                                required
-                                value={title}
+                                value={formData.title}
                                 onChange={(e) => {
-                                    setTitle(e.target.value);
+                                    setFormData({ ...formData, title: e.target.value });
                                     clearError("title");
                                 }}
-                                placeholder="e.g. Tech Summit 2024"
+                                placeholder="Event title..."
                                 disabled={isReadOnly}
                             />
                             {errors.title && <span className="error-message">{errors.title}</span>}
                         </div>
-                        <div className={`promoter-edit-event-form-group ${errors.category ? 'has-error' : ''}`}>
+
+                        <div className={`add-event-form-group ${errors.category ? 'has-error' : ''}`}>
                             <h6>Category</h6>
-                            <select
-                                value={category}
+                            <input
+                                type="text"
+                                value={formData.category}
                                 onChange={(e) => {
-                                    setCategory(e.target.value);
+                                    setFormData({ ...formData, category: e.target.value });
                                     clearError("category");
                                 }}
+                                placeholder="Enter category (e.g., Concert, Comedy)"
                                 disabled={isReadOnly}
-                            >
-                                <option value="concert">Concert</option>
-                                <option value="comedy">Comedy</option>
-                                <option value="festival">Festival</option>
-                                <option value="conference">Conference</option>
-                                <option value="sports">Sports</option>
-                                <option value="other">Other</option>
-                            </select>
+                            />
                             {errors.category && <span className="error-message">{errors.category}</span>}
                         </div>
                     </div>
 
 
 
-                    <div className="promoter-edit-event-form-row">
-                        <div className={`promoter-edit-event-form-group ${errors.startDate ? 'has-error' : ''}`}>
+                    {/* Dates */}
+                    <div className="add-event-form-row">
+                        <div className={`add-event-form-group ${errors.startDate ? 'has-error' : ''}`}>
                             <h6>Start Date</h6>
                             <input
                                 type="date"
-                                required
-                                value={startDate}
+                                min={today}
+                                value={formData.startDate}
                                 onChange={(e) => {
-                                    setStartDate(e.target.value);
-                                    if (endDate < e.target.value) {
-                                        setEndDate(e.target.value);
-                                    }
+                                    const newStart = e.target.value;
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        startDate: newStart,
+                                        endDate: prev.endDate < newStart ? newStart : prev.endDate,
+                                    }));
                                     clearError("startDate");
                                 }}
                                 disabled={isReadOnly}
                             />
                             {errors.startDate && <span className="error-message">{errors.startDate}</span>}
                         </div>
-                        <div className={`promoter-edit-event-form-group ${errors.endDate ? 'has-error' : ''}`}>
+                        <div className={`add-event-form-group ${errors.endDate ? 'has-error' : ''}`}>
                             <h6>End Date</h6>
                             <input
                                 type="date"
-                                required
-                                min={startDate}
-                                value={endDate}
+                                min={formData.startDate}
+                                value={formData.endDate}
                                 onChange={(e) => {
-                                    setEndDate(e.target.value);
+                                    setFormData({ ...formData, endDate: e.target.value });
                                     clearError("endDate");
                                 }}
                                 disabled={isReadOnly}
@@ -419,29 +432,28 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                         </div>
                     </div>
 
-                    <div className="promoter-edit-event-form-row">
-                        <div className={`promoter-edit-event-form-group ${errors.startTime ? 'has-error' : ''}`}>
+                    {/* Times */}
+                    <div className="add-event-form-row">
+                        <div className={`add-event-form-group ${errors.startTime ? 'has-error' : ''}`}>
                             <h6>Start Time</h6>
                             <input
                                 type="time"
-                                required
-                                value={startTime}
+                                value={formData.startTime}
                                 onChange={(e) => {
-                                    setStartTime(e.target.value);
+                                    setFormData({ ...formData, startTime: e.target.value });
                                     clearError("startTime");
                                 }}
                                 disabled={isReadOnly}
                             />
                             {errors.startTime && <span className="error-message">{errors.startTime}</span>}
                         </div>
-                        <div className={`promoter-edit-event-form-group ${errors.endTime ? 'has-error' : ''}`}>
+                        <div className={`add-event-form-group ${errors.endTime ? 'has-error' : ''}`}>
                             <h6>End Time</h6>
                             <input
                                 type="time"
-                                required
-                                value={endTime}
+                                value={formData.endTime}
                                 onChange={(e) => {
-                                    setEndTime(e.target.value);
+                                    setFormData({ ...formData, endTime: e.target.value });
                                     clearError("endTime");
                                 }}
                                 disabled={isReadOnly}
@@ -450,16 +462,34 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                         </div>
                     </div>
 
-                    <div className="promoter-edit-event-section-box">
-                        <h5 className="modal-section-title">Venue Details</h5>
-                        <div className={`promoter-edit-event-form-group ${errors.venueName ? 'has-error' : ''}`}>
+                    {/* Description */}
+                    <div className={`add-event-form-group add-event-full-width ${errors.description ? 'has-error' : ''}`}>
+                        <h6>About the Event</h6>
+                        <textarea
+                            value={formData.description}
+                            onChange={(e) => {
+                                setFormData({ ...formData, description: e.target.value });
+                                clearError("description");
+                            }}
+                            rows="3"
+                            disabled={isReadOnly}
+                        ></textarea>
+                        {errors.description && <span className="error-message">{errors.description}</span>}
+                    </div>
+
+                    {/* Venue */}
+                    <div className="add-event-form-group add-event-full-width">
+                        <h6>Venue Details</h6>
+                        <div className={`add-event-form-group ${errors.venueName ? 'has-error' : ''}`} style={{ gap: '4px' }}>
                             <input
                                 type="text"
                                 placeholder="Venue Name"
-                                required
-                                value={venue.name}
+                                value={formData.venue.name}
                                 onChange={(e) => {
-                                    setVenue({ ...venue, name: e.target.value });
+                                    setFormData({
+                                        ...formData,
+                                        venue: { ...formData.venue, name: e.target.value },
+                                    });
                                     clearError("venueName");
                                 }}
                                 disabled={isReadOnly}
@@ -467,13 +497,16 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                             {errors.venueName && <span className="error-message">{errors.venueName}</span>}
                         </div>
 
-                        <div className={`promoter-edit-event-form-group ${errors.venueAddress ? 'has-error' : ''}`}>
+                        <div className={`add-event-form-group ${errors.venueAddress ? 'has-error' : ''}`} style={{ gap: '4px', marginTop: '12px' }}>
                             <input
                                 type="text"
                                 placeholder="Street Address"
-                                value={venue.address}
+                                value={formData.venue.address}
                                 onChange={(e) => {
-                                    setVenue({ ...venue, address: e.target.value });
+                                    setFormData({
+                                        ...formData,
+                                        venue: { ...formData.venue, address: e.target.value },
+                                    });
                                     clearError("venueAddress");
                                 }}
                                 disabled={isReadOnly}
@@ -481,27 +514,33 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                             {errors.venueAddress && <span className="error-message">{errors.venueAddress}</span>}
                         </div>
 
-                        <div className="promoter-edit-event-form-row">
-                            <div className={`promoter-edit-event-form-group ${errors.venueCity ? 'has-error' : ''}`}>
+                        <div className="add-event-form-row" style={{ marginTop: '12px', gap: '12px' }}>
+                            <div className={`add-event-form-group ${errors.venueCity ? 'has-error' : ''}`} style={{ gap: '4px' }}>
                                 <input
                                     type="text"
                                     placeholder="City"
-                                    value={venue.city}
+                                    value={formData.venue.city}
                                     onChange={(e) => {
-                                        setVenue({ ...venue, city: e.target.value });
+                                        setFormData({
+                                            ...formData,
+                                            venue: { ...formData.venue, city: e.target.value },
+                                        });
                                         clearError("venueCity");
                                     }}
                                     disabled={isReadOnly}
                                 />
                                 {errors.venueCity && <span className="error-message">{errors.venueCity}</span>}
                             </div>
-                            <div className={`promoter-edit-event-form-group ${errors.venueZip ? 'has-error' : ''}`}>
+                            <div className={`add-event-form-group ${errors.venueZip ? 'has-error' : ''}`} style={{ gap: '4px' }}>
                                 <input
                                     type="text"
                                     placeholder="Zip Code"
-                                    value={venue.zipCode}
+                                    value={formData.venue.zipCode}
                                     onChange={(e) => {
-                                        setVenue({ ...venue, zipCode: e.target.value });
+                                        setFormData({
+                                            ...formData,
+                                            venue: { ...formData.venue, zipCode: e.target.value },
+                                        });
                                         clearError("venueZip");
                                     }}
                                     disabled={isReadOnly}
@@ -511,63 +550,16 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                         </div>
                     </div>
 
-
-
-                    {/* About the Event */}
-
-                    <div className={`promoter-edit-event-form-group promoter-edit-event-full-width ${errors.description ? 'has-error' : ''}`}>
-                        <h6>About The Event</h6>
-                        <textarea
-                            required
-                            value={description}
-                            onChange={(e) => {
-                                setDescription(e.target.value);
-                                clearError("description");
-                            }}
-                            placeholder="Event description..."
-                            rows="4"
-                            disabled={isReadOnly}
-                        ></textarea>
-                        {errors.description && <span className="error-message">{errors.description}</span>}
-                    </div>
-
-                    {initialEvent?.status === "rejected" && initialEvent?.rejectionReason && (
-                        <div className="rejection-reason-banner" style={{
-                            backgroundColor: "#fff5f5",
-                            border: "1px solid #feb2b2",
-                            borderRadius: "8px",
-                            padding: "12px 16px",
-                            marginTop: "16px",
-                            marginBottom: "16px",
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: "12px",
-                            textAlign: "left",
-                        }}>
-                            <Icon icon="mdi:alert-circle-outline" width="24" style={{ color: "#f56565", flexShrink: 0 }} />
-                            <div>
-                                <h6 style={{ margin: 0, color: "#c53030", fontWeight: 600 }}>Rejection Reason</h6>
-                                <p style={{ margin: "4px 0 0 0", color: "#742a2a", fontSize: "0.875rem" }}>
-                                    {initialEvent.rejectionReason}
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
+                    {/* Display errors */}
                     {error && (
-                        <div
-                            className="error-message"
-                            style={{ color: "red", marginTop: "10px" }}
-                        >
-                            {error}
-                        </div>
+                        <div style={{ color: "red", marginTop: "10px" }}>{error}</div>
                     )}
 
-                    <div className="promoter-edit-event-modal-footer">
+                    <div className="general-event-modal-footer">
                         {isReadOnly ? (
                             <button
                                 type="button"
-                                className="primary-button promoter-edit-event-save-btn"
+                                className="primary-button save-btn"
                                 onClick={onClose}
                                 style={{ width: "100%" }}
                             >
@@ -577,23 +569,13 @@ const PromoterEditEventModal = ({ isOpen, onClose, initialEvent }) => {
                             <>
                                 <button
                                     type="button"
-                                    className="button promoter-edit-event-cancel-btn"
-                                    disabled={isSubmitting}
-                                    onClick={async () => {
-                                        const result = await showCancelConfirmAlert();
-                                        if (result.isConfirmed) {
-                                            onClose();
-                                        }
-                                    }}
+                                    className="button cancel-btn"
+                                    onClick={onClose}
                                 >
                                     Cancel
                                 </button>
-                                <button
-                                    type="submit"
-                                    className="primary-button promoter-edit-event-save-btn"
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? "Saving..." : "Save Changes"}
+                                <button type="submit" className="primary-button save-btn">
+                                    Save Changes
                                 </button>
                             </>
                         )}

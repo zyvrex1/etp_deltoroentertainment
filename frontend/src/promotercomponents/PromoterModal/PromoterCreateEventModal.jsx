@@ -178,6 +178,8 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
     } catch (err) {
       console.error("Submission error:", err);
 
+      const errorData = err.response?.data || {};
+
       // Map backend fields to frontend ones
       const backendToFrontendMap = {
         "title": "title",
@@ -194,15 +196,16 @@ const PromoterCreateEventModal = ({ isOpen, onClose }) => {
       };
 
       let mappedFields = [];
-      if (err.fields) {
-        mappedFields = err.fields.map(f => backendToFrontendMap[f] || f);
+      if (errorData.fields) {
+        mappedFields = errorData.fields.map(f => backendToFrontendMap[f] || f);
       }
 
-      setError(err.message || "Failed to create event.");
+      const errorMessage = errorData.error || errorData.message || err.message || "Failed to create event.";
+      setError(errorMessage);
       setEmptyFields(mappedFields);
       await showErrorAlert(
         "Error Creating Event",
-        err.message || "Failed to create event."
+        errorMessage
       );
     }
   };

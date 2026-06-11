@@ -732,6 +732,19 @@ const deleteEvent = async (req, res) => {
     return res.status(404).json({ error: "No such event" });
   }
 
+  const existingEvent = await Event.findById(id);
+  if (!existingEvent) {
+    return res.status(404).json({ error: "No such event" });
+  }
+
+  const roleLower = (req.user.role || "").toLowerCase();
+  const isAdmin = roleLower === "admin" || roleLower === "superadmin";
+  const isOwner = String(existingEvent.createdBy) === String(req.user._id);
+
+  if (!isAdmin && !isOwner) {
+    return res.status(403).json({ error: "Permission denied to delete this event" });
+  }
+
   const event = await Event.findOneAndDelete({ _id: id });
 
   if (!event) {
