@@ -57,7 +57,13 @@ if (!fs.existsSync(uploadDir)) {
 
 // middleware
 app.use(express.json({ limit: "10mb" }))
-app.use(express.urlencoded({ limit: "10mb", extended: true }))
+app.use(express.json({
+  limit: '10kb'
+}))
+app.use(express.urlencoded({
+  limit: '10kb',
+  extended: true
+}))
 
 // Single cors block — reads from .env
 const allowedOrigins =
@@ -77,13 +83,8 @@ app.use(cors({
 app.use(compression())
 
 // ── Sanitize all incoming data against NoSQL injection ──
-const mongoSanitize = require('mongo-sanitize')
-app.use((req, res, next) => {
-  req.body = mongoSanitize(req.body)
-  req.query = mongoSanitize(req.query)
-  req.params = mongoSanitize(req.params)
-  next()
-})
+const mongoSanitize = require('express-mongo-sanitize')
+app.use(mongoSanitize())
 
 // Single dev-only logger
 if (process.env.NODE_ENV !== 'production') {
@@ -113,20 +114,20 @@ app.use(helmet({
 }))
 // ─── Rate limiting ────────────────────────────────────────────
 // Limits each IP to 100 requests per 15 minutes on all routes
-// app.use(rateLimit({
-//   windowMs: 15 * 60 * 1000,
-//   max: 100,
-//   standardHeaders: true,
-//   legacyHeaders: false,
-//   message: { error: 'Too many requests, please try again later.' }
-// }))
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+}))
 
 // Stricter limiter for auth routes (prevent brute force)
-// const authLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000,
-//   max: 20,
-//   message: { error: 'Too many login attempts, please try again in 15 minutes.' }
-// })
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many login attempts, please try again in 15 minutes.' }
+})
 
 
 
@@ -134,8 +135,8 @@ app.use(helmet({
 app.use('/uploads', express.static(uploadDir))
 
 // API routes
-// app.use('/api/auth', authLimiter, authRoutes)
-app.use('/api/auth', authRoutes)
+app.use('/api/auth', authLimiter, authRoutes)
+// app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/promoter', promoterRoutes)

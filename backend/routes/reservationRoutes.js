@@ -15,33 +15,36 @@ const {
 } = require('../controllers/reservationController');
 const { upload } = require('../controllers/userController');
 const requireAuth = require('../middleware/requireAuth');
+const { verifyReservationOwner } = require('../middleware/verifyOwnership');   // already here ✓
+const validateObjectId = require('../middleware/validateObjectId');
 const requireRole = require('../middleware/requireRole');
-
 const {
   validateReservationStatus,
   validateAddExhibitors,
   validateStoreSettings
-} = require('../middleware/validateSchemas')
+} = require('../middleware/validateSchemas');
 
 router.use(requireAuth);
 
-// Admin routes
 router.get('/admin', requireRole('admin', 'superadmin'), getAllReservations);
-
-// My Reservations (both Sponsors/Booths and Customers/Seats)
 router.get('/my-booths', getMyReservations);
 router.get('/event/:eventId/booths', getEventBoothReservations);
 router.get('/event/:eventId/sales', getEventSalesForPromoter);
 
-// Check-in via QR scan
-router.post('/:id/checkin', checkInReservation);
+// ✓ checkin stays open — staff scan any reservation
+router.post('/:id/checkin', validateObjectId, checkInReservation);
 
-router.get('/:id', getReservationById);
-router.post('/:id/exhibitors', requireRole('sponsor'), validateAddExhibitors, addExhibitors);
-router.delete('/:id/exhibitors/:userId', requireRole('sponsor'), removeExhibitor);
+// ✓ verifyReservationOwner now actually applied
+router.get('/:id', validateObjectId, verifyReservationOwner, getReservationById);
 
-router.delete('/:id', requireRole('admin'), deleteReservation);
-router.put('/:id/status', requireRole('admin'), validateReservationStatus, updateReservationStatus);
-router.put('/:id/store-settings', upload.single('avatar'), validateStoreSettings, updateStoreSettings);
+router.post('/:id/exhibitors', requireRole('sponsor'), validateObjectId, verifyReservationOwner, validateAddExhibitors, addExhibitors);
+
+router.delete('/:id/exhibitors/:userId', requireRole('sponsor'), validateObjectId, verifyReservationOwner, removeExhibitor);
+
+router.delete('/:id', requireRole('admin'), validateObjectId, deleteReservation);
+
+router.put('/:id/status', requireRole('admin'), validateObjectId, validateReservationStatus, updateReservationStatus);
+
+router.put('/:id/store-settings', validateObjectId, verifyReservationOwner, upload.single('avatar'), validateStoreSettings, updateStoreSettings);
 
 module.exports = router;

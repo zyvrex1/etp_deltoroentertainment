@@ -81,14 +81,24 @@ const createOrder = async (req, res) => {
 
 // Get Orders (for Sponsor or Admin)
 const getOrders = async (req, res) => {
-    const { sponsorId, eventId, boothCode, status, customerId } = req.query;
+    const { sponsorId, eventId, boothCode, status } = req.query;
     const filter = {};
+
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
 
     if (sponsorId) filter.sponsorId = sponsorId;
     if (eventId) filter.eventId = eventId;
     if (boothCode) filter.boothCode = boothCode;
     if (status) filter.status = status;
-    if (customerId) filter.customerId = customerId;
+
+    // Object-level auth enforced here in lieu of middleware —
+    // non-admins are restricted to their own orders at the query level.
+    // Do not remove this block.
+    if (!isAdmin) {
+        filter.customerId = req.user._id;
+    } else if (req.query.customerId) {
+        filter.customerId = req.query.customerId;
+    }
 
     try {
         const orders = await Order.find(filter)
@@ -102,7 +112,6 @@ const getOrders = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
 // Update Order Status
 const updateOrder = async (req, res) => {
     const { id } = req.params;
@@ -113,6 +122,7 @@ const updateOrder = async (req, res) => {
     }
 
     try {
+        // Use pre-fetched doc from verifyOrderOwner middleware if available
         const order = await Order.findByIdAndUpdate(
             id,
             { status, paymentStatus },
