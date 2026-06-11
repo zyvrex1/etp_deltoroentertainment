@@ -36,10 +36,7 @@ function validateQuery(schema) {
 const createOrderSchema = z.object({
   reservationId: z.string().trim().min(1, 'reservationId is required'),
   amount:        z.number().finite().positive('amount must be greater than 0'),
-  paymentMethod: z.enum(['invoice'], {
-    required_error: 'paymentMethod is required',
-    invalid_type_error: 'paymentMethod must be invoice'
-  }),
+  paymentMethod: z.string().trim().min(1).optional().default('invoice'),
   notes: z.string().trim().max(500).optional()
 }).strict()
 
@@ -71,7 +68,7 @@ const updateStoreSettingsSchema = z.object({
 // ─── Booth reservation (in eventController) ──────────────────
 const reserveBoothSchema = z.object({
   boothId:        z.string().trim().min(1, 'boothId is required'),
-  paymentMethod:  z.enum(['invoice']).default('invoice'),
+  paymentMethod:  z.string().trim().min(1).optional().default('invoice'),
   poNumber:       z.string().trim().max(100).optional(),
   batchId:        z.string().trim().optional(),
   billingAddress: z.object({
@@ -93,7 +90,7 @@ const reserveBoothSchema = z.object({
 // ─── Buy Seats (in eventController) ─────────────────────────
 const buySeatsSchema = z.object({
   seatIds: z.array(z.string().trim().min(1)).min(1, 'At least one seatId required'),
-  paymentMethod: z.enum(['invoice']).default('invoice'),
+  paymentMethod: z.string().trim().min(1).optional().default('invoice'),
   billingInfo: z.object({
     email:    z.string().email().optional(),
     poNumber: z.string().trim().max(100).optional()

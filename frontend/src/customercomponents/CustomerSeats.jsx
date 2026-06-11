@@ -73,12 +73,13 @@ const CustomerSeats = () => {
                     }
 
                     // Normalize Items
-                    const items = (ld.items || []).map(item => ({
-                        ...item,
-                        id: item.id || item._id,
-                        type: item.type?.toLowerCase() || "element",
-                        status: item.status || "available"
-                    }));
+                   const items = (ld.items || []).map(item => ({
+    ...item,
+    id: item.id || item._id,
+    type: item.type?.toLowerCase() || "element",
+    status: (item.status || "available").toLowerCase(),
+    categoryId: item.categoryId || item.priceLevelId
+}));
                     setLayoutItems(items);
                 }
             } catch (error) {
@@ -121,23 +122,28 @@ const CustomerSeats = () => {
     }, [canvasSize, isLoading]);
 
     // Selection Logic
-    const toggleSeat = (seat) => {
-        if (seat.status !== 'available') return;
+  const toggleSeat = (seat) => {
+    const status = (seat.status || "available").toLowerCase();  // ← normalize here too
+    if (status !== 'available') return;
 
-        const isSelected = selectedSeats.find(s => s.id === seat.id);
-        if (isSelected) {
-            setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
-        } else {
-            if (selectedSeats.length >= 6) return;
+    const isSelected = selectedSeats.find(s => s.id === seat.id);
+    if (isSelected) {
+        setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
+    } else {
+        if (selectedSeats.length >= 6) return;
 
-            const category = priceLevels.find(pl => pl._id === seat.categoryId);
-            setSelectedSeats([...selectedSeats, {
-                ...seat,
-                price: category?.facePrice || 0,
-                categoryName: category?.priceName || "General"
-            }]);
-        }
-    };
+        const categoryId = seat.categoryId || seat.priceLevelId;  // ← safe fallback
+        const category = priceLevels.find(pl =>
+            String(pl._id || pl.id) === String(categoryId)
+        );
+        setSelectedSeats([...selectedSeats, {
+            ...seat,
+            categoryId,                                           // ← ensure it's stored
+            price: category?.facePrice || 0,
+            categoryName: category?.priceName || "General"
+        }]);
+    }
+};
 
     const handleBack = () => navigate(-1);
 
@@ -145,7 +151,7 @@ const CustomerSeats = () => {
     const getSelectedTicketsPrice = () => {
         const seatsPrice = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
         const gaPrice = Object.entries(ticketQuantities).reduce((sum, [catId, qty]) => {
-            const cat = priceLevels.find(pl => pl._id === catId || pl.id === catId);
+            const cat = priceLevels.find(pl => String(pl._id || pl.id) === String(catId));
             return sum + ((cat?.facePrice || 0) * qty);
         }, 0);
         return seatsPrice + gaPrice;
@@ -179,7 +185,7 @@ const CustomerSeats = () => {
 
             // Add GA tickets from quantities
             Object.entries(ticketQuantities).forEach(([catId, qty]) => {
-                const category = priceLevels.find(pl => pl._id === catId || pl.id === catId);
+                const category = priceLevels.find(pl => String(pl._id || pl.id) === String(catId));
                 for (let i = 0; i < qty; i++) {
                     allSelectedItems.push({
                         id: `GA-${catId}-${Date.now()}-${i}`,
@@ -218,7 +224,7 @@ const CustomerSeats = () => {
     const getSeatColor = (item) => {
         if (selectedSeats.find(s => s.id === item.id)) return "#2563EB"; // Selected Blue
         if (item.status === 'sold' || item.status === 'reserved' || item.status === 'blocked') return "#22c55e"; // Occupied Green (matches Admin)
-        const cat = priceLevels.find(c => c._id === item.categoryId);
+        const cat = priceLevels.find(c => String(c._id || c.id) === String(item.categoryId || item.priceLevelId));
         return cat?.color || "#666666";
     };
 
@@ -502,7 +508,7 @@ const CustomerSeats = () => {
                                     const isBooth = item.type === "booth";
                                     const isElement = item.type === "element";
                                     const isSelected = !!selectedSeats.find(s => s.id === item.id);
-                                    const category = priceLevels.find(c => c._id === item.categoryId || c.id === item.categoryId);
+                                    const category = priceLevels.find(c => String(c._id || c.id) === String(item.categoryId || item.priceLevelId));
 
                                     // Dynamic booth size — identical to Admin parseBoothSizePx
                                     const { w: boothW, h: boothH } = isBooth
@@ -517,8 +523,16 @@ const CustomerSeats = () => {
                                                 scaleX={item.scaleX || 1}
                                                 scaleY={item.scaleY || 1}
                                                 rotation={item.rotation || 0}
-                                                onClick={() => toggleSeat(item)}
-                                                onTap={() => toggleSeat(item)}
+                                               onClick={() => toggleSeat({
+    ...item,
+    categoryId: item.categoryId || item.priceLevelId,
+    status: (item.status || "available").toLowerCase()
+})}
+onTap={() => toggleSeat({
+    ...item,
+    categoryId: item.categoryId || item.priceLevelId,
+    status: (item.status || "available").toLowerCase()
+})}
                                                 onMouseEnter={(e) => {
                                                     const stage = e.target.getStage();
                                                     if (item.status === 'available') stage.container().style.cursor = 'pointer';
@@ -799,7 +813,7 @@ const CustomerSeats = () => {
                                     {/* GA / General Fee Tickets */}
                                     {Object.entries(ticketQuantities).map(([catId, qty]) => {
                                         if (qty === 0) return null;
-                                        const cat = priceLevels.find(pl => pl._id === catId || pl.id === catId);
+                                        const cat = priceLevels.find(pl => String(pl._id || pl.id) === String(catId));
                                         return (
                                             <div key={`ga-${catId}`} className="cs-summary-row mb-2">
                                                 <div style={{ textAlign: 'left' }}>

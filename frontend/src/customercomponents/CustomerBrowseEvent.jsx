@@ -92,10 +92,15 @@ const CustomerBrowseEvent = () => {
     };
 
     const getAvailableSeats = (event) => {
-        let availableCount = 0;
+    let availableCount = 0;
 
-        let layout = event.layoutData;
-        if (typeof layout === 'string') {
+    let layout = event.layoutData;
+    
+    // TEMPORARY DEBUG - remove after fixing
+    console.log(`[${event.title}] layoutData:`, layout);
+    console.log(`[${event.title}] priceLevels:`, event.priceLevels);
+    
+    if (typeof layout === 'string') {
             try {
                 layout = JSON.parse(layout);
             } catch (e) {
@@ -104,16 +109,17 @@ const CustomerBrowseEvent = () => {
         }
 
         if (layout && Array.isArray(layout.items)) {
-            layout.items.forEach(item => {
-                // Identify circle shapes (seats)
-                const isCircle = item.type === 'seat' || item.isSeat || (!item.isBooth && !item.isElement && !item.isBackground && item.type !== 'booth');
-                // Identify if it is available
-                const isAvailable = !item.status || item.status === 'available';
-                
-                if (isCircle && isAvailable) {
-                    availableCount++;
-                }
-            });
+           layout.items.forEach(item => {
+    const type = (item.type || "").toLowerCase();
+    const status = (item.status || "available").toLowerCase(); // ← normalize case
+
+    const isCircle = type === 'seat';  // ← only trust explicit type
+    const isAvailable = status === 'available';
+
+    if (isCircle && isAvailable) {
+        availableCount++;
+    }
+});
         } else if (event.seatMap && event.seatMap.sections) {
             event.seatMap.sections.forEach(sec => {
                 (sec.seats || []).forEach(seat => {
@@ -128,11 +134,12 @@ const CustomerBrowseEvent = () => {
         // Check for General Admission or General Fee categories
         if (event.priceLevels && Array.isArray(event.priceLevels)) {
             event.priceLevels.forEach(pl => {
-                if (event.eventType === "General Admission" || pl.type === "General Fee") {
-                    const availableQty = Math.max(0, (pl.quantityAvailable || 0) - (pl.quantitySold || 0));
-                    availableCount += availableQty;
-                }
-            });
+    const plType = (pl.type || "").toLowerCase(); // ← normalize
+    if ((event.eventType || "").toLowerCase() === "general admission" || plType === "general fee") {
+        const availableQty = Math.max(0, (pl.quantityAvailable || 0) - (pl.quantitySold || 0));
+        availableCount += availableQty;
+    }
+});
         }
 
         return availableCount;

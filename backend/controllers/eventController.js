@@ -272,20 +272,26 @@ const getEvents = async (req, res) => {
 
     // Re-run the filter if it was a public/approved query to ensure completed items don't show up
     // Or just re-fetch the query to be safe
-    let events = await eventsQuery.populate([
-      {
+ let events = await eventsQuery.populate([
+    {
         path: "createdBy",
         select: "firstName lastName role email avatar companyName lastActive",
-      },
-      {
+    },
+    {
         path: "assignedPromoters",
         select: "firstName lastName email avatar lastActive",
-      },
-    ]);
+    },
+    {
+        path: "venueMap",  // ← add this
+    },
+]);
 
-    events = await autoHealEvents(events);
+// ← add this: map venueMap → layoutData for every event, same as getEvent does
+events = events.map(event => mapVenueMapToEvent(event));
 
-    return res.status(200).json(events);
+events = await autoHealEvents(events);
+
+return res.status(200).json(events);
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
@@ -1394,8 +1400,13 @@ const buySeats = async (req, res) => {
   }
 
   try {
-    const event = await Event.findById(id);
-    if (!event) return res.status(404).json({ error: "No such event" });
+    const event = await Event.findById(id).populate('venueMap');
+if (!event) return res.status(404).json({ error: "No such event" });
+
+// Map venueMap → layoutData so the rest of buySeats can find layout items
+const mappedEvent = mapVenueMapToEvent(event);
+// Re-assign so the rest of the function uses the mapped version
+Object.assign(event, mappedEvent);
 
     const buyerName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
     const buyerEmail = req.user.email || "";

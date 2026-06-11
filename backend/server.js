@@ -52,7 +52,7 @@ const app = express()
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, 'uploads')
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir)
+  fs.mkdirSync(uploadDir)
 }
 
 // middleware
@@ -79,8 +79,8 @@ app.use(compression())
 // ── Sanitize all incoming data against NoSQL injection ──
 const mongoSanitize = require('mongo-sanitize')
 app.use((req, res, next) => {
-  req.body   = mongoSanitize(req.body)
-  req.query  = mongoSanitize(req.query)
+  req.body = mongoSanitize(req.body)
+  req.query = mongoSanitize(req.query)
   req.params = mongoSanitize(req.params)
   next()
 })
@@ -113,20 +113,20 @@ app.use(helmet({
 }))
 // ─── Rate limiting ────────────────────────────────────────────
 // Limits each IP to 100 requests per 15 minutes on all routes
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later.' }
-}))
+// app.use(rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 100,
+//   standardHeaders: true,
+//   legacyHeaders: false,
+//   message: { error: 'Too many requests, please try again later.' }
+// }))
 
 // Stricter limiter for auth routes (prevent brute force)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { error: 'Too many login attempts, please try again in 15 minutes.' }
-})
+// const authLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 20,
+//   message: { error: 'Too many login attempts, please try again in 15 minutes.' }
+// })
 
 
 
@@ -134,7 +134,8 @@ const authLimiter = rateLimit({
 app.use('/uploads', express.static(uploadDir))
 
 // API routes
-app.use('/api/auth', authLimiter,authRoutes)
+// app.use('/api/auth', authLimiter, authRoutes)
+app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/promoter', promoterRoutes)
@@ -164,7 +165,7 @@ app.use('/api/{*path}', (req, res) => {
 
 
 const DIST = path.join(__dirname, '../frontend/dist')
-console.log('DIST path:', DIST) 
+console.log('DIST path:', DIST)
 app.use(express.static(DIST))
 
 app.get('{*path}', (req, res) => {
@@ -174,17 +175,17 @@ app.get('{*path}', (req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('FULL ERROR:', err)
-    // console.error(err)
+  // console.error(err)
 
-    if (err.message === "Only image files are allowed (JPG, PNG, WEBP)") {
-        return res.status(400).json({ error: err.message })
-    }
+  if (err.message === "Only image files are allowed (JPG, PNG, WEBP)") {
+    return res.status(400).json({ error: err.message })
+  }
 
-    if (err.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).json({ error: "File size must be less than 5MB" })
-    }
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({ error: "File size must be less than 5MB" })
+  }
 
-    res.status(500).json({ error: 'Something went wrong' })
+  res.status(500).json({ error: 'Something went wrong' })
 })
 
 
@@ -206,7 +207,7 @@ const connectDB = require('./config/db');
 connectDB().then(() => {
   const server = http.createServer(app)
   socket.init(server)
- 
+
   server.listen(process.env.PORT, () => {
     console.log(`🚀  Server running on port ${process.env.PORT} [${process.env.NODE_ENV}]`)
   })

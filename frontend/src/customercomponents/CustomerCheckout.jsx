@@ -173,22 +173,23 @@ const CustomerCheckout = () => {
 
                 for (const eventId in itemsByEvent) {
                     const eventItems = itemsByEvent[eventId];
-                    const seatIds = eventItems.map(item => item.seat.id);
+const seatIds = eventItems.map(item => item.seat?.id || item.seat?._id || item.id || item._id);
                     const eventSubtotal = eventItems.reduce((sum, item) => sum + item.facePrice, 0);
                     const eventFees = eventItems.reduce((sum, item) => sum + item.serviceFee, 0) + remainingFee;
                     remainingFee = 0;
                     const eventTotal = eventSubtotal + eventFees;
 
                     try {
-                        await eventsService.buySeats(
-                            eventId,
-                            seatIds,
-                            { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
-                            { email: apEmail, poNumber: poNumber },
-                            resolvePaymentMethodLabel(),
-                            user.token,
-                            giftInfo
-                        );
+                      await eventsService.buySeats(
+  eventId,
+  seatIds,
+  { total: eventTotal, subtotal: eventSubtotal, fee: eventFees },
+  { email: apEmail, poNumber: poNumber },
+  paymentMethod,   // ← sends "invoice", "card", or the saved method _id
+
+  user.token,
+  giftInfo
+);
                     } catch (seatError) {
                         const status = seatError?.response?.status;
                         if (status === 500) {
@@ -224,8 +225,10 @@ const CustomerCheckout = () => {
                 showSuccessAlert('Payment Successful', 'Your tickets have been confirmed.');
                 navigate('/customer/success', { state: { selectedGift, discount } });
             } catch (error) {
-                console.error("Payment Error:", error);
-                const status = error?.response?.status;
+    console.error("Payment Error:", error);
+    console.error("Payment Error Response:", error?.response?.data); // ← add this
+    const status = error?.response?.status;
+    
                 if (status === 409) {
                     showErrorAlert('Seats Unavailable', 'One or more selected seats were just taken. Please go back and choose different seats.');
                 } else if (status === 403) {
@@ -505,8 +508,9 @@ const CustomerCheckout = () => {
                                 const eventItems = checkoutItems.filter(i => i.event._id === eventId);
                                 const event = eventItems[0].event;
 
-                                const physicalSeats = eventItems.filter(i => !i.seat?.id?.startsWith("GA-"));
-                                const gaItems = eventItems.filter(i => i.seat?.id?.startsWith("GA-"));
+const getSeatId = (i) => i.seat?.id || i.seat?._id || i.id || i._id || '';
+const physicalSeats = eventItems.filter(i => !getSeatId(i).startsWith("GA-"));
+const gaItems = eventItems.filter(i => getSeatId(i).startsWith("GA-"));
 
                                 const gaGroups = {};
                                 gaItems.forEach(item => {
