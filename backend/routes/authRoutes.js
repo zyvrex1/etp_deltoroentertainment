@@ -2,6 +2,7 @@ const express = require('express')
 
 const { signupUser, loginUser, getProfile, updateProfile, updatePassword, forgotPassword } = require('../controllers/authController')
 const requireAuth = require('../middleware/requireAuth')
+const { validateLogin, validateSignup, validateForgotPassword } = require('../middleware/validateAuth') // ← add this
 
 const router = express.Router()
 
@@ -22,9 +23,9 @@ const noCache = (req, res, next) => {
 };
 
 // Public routes
-router.post('/login', noCache, loginUser)   // add authLimiter back here when ready
-router.post('/signup', signupUser)
-router.post('/forgot-password', forgotPassword)
+router.post('/signup', validateSignup, signupUser)
+router.post('/login', validateLogin, loginUser)
+router.post('/forgot-password', validateForgotPassword, forgotPassword)
 
 // Protected routes
 router.get('/profile', requireAuth, getProfile)

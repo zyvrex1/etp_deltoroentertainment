@@ -8,6 +8,8 @@ const {
   deleteMerchandise,
 } = require('../controllers/merchandiseController');
 
+const { validateCreateMerchandise, validateUpdateMerchandise } = require('../middleware/validateSchemas')
+
 const requireAuth = require('../middleware/requireAuth');
 const optionalAuth = require('../middleware/optionalAuth');
 const requireRole = require('../middleware/requireRole');
@@ -20,8 +22,8 @@ router.get('/:id', optionalAuth, getMerchandise);
 router.use(requireAuth);
 
 // Only Sponsor, Admin, or Superadmin can manage merchandise
-router.post('/', requireRole('sponsor', 'admin', 'superadmin'), createMerchandise);
-router.patch('/:id', requireRole('sponsor', 'admin', 'superadmin'), updateMerchandise);
+router.post('/',     requireRole('sponsor', 'admin', 'superadmin'), validateCreateMerchandise, createMerchandise);
+router.patch('/:id', requireRole('sponsor', 'admin', 'superadmin'), validateUpdateMerchandise, updateMerchandise);
 router.delete('/:id', requireRole('sponsor', 'admin', 'superadmin'), deleteMerchandise);
 
 module.exports = router;

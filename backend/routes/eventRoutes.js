@@ -1,6 +1,8 @@
 const express = require('express')
 const router = express.Router()
 
+const { validateReserveBooth, validateBuySeats } = require('../middleware/validateSchemas')
+
 // Controllers
 const {
   getEvents,
@@ -38,9 +40,9 @@ router.patch('/:id', upload.single('image'), updateEvent)
 // Venue Configuration Routes
 router.put('/:id/layout', saveVenueLayout)
 router.put('/:id/assign-prices', assignPriceLevels)
-router.post('/:id/reserve-booth', reserveBooth)
+router.post('/:id/reserve-booth', validateReserveBooth, reserveBooth)
 router.post('/:id/sync-booths', syncBoothStatus)
-router.post('/:id/buy-seats', buySeats)
+router.post('/:id/buy-seats', validateBuySeats, buySeats)
 
 // Price Level Management
 router.post("/:eventId/price-levels", addPriceLevels);

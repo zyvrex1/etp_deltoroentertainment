@@ -17,6 +17,12 @@ const { upload } = require('../controllers/userController');
 const requireAuth = require('../middleware/requireAuth');
 const requireRole = require('../middleware/requireRole');
 
+const {
+  validateReservationStatus,
+  validateAddExhibitors,
+  validateStoreSettings
+} = require('../middleware/validateSchemas')
+
 router.use(requireAuth);
 
 // Admin routes
@@ -31,11 +37,11 @@ router.get('/event/:eventId/sales', getEventSalesForPromoter);
 router.post('/:id/checkin', checkInReservation);
 
 router.get('/:id', getReservationById);
-router.post('/:id/exhibitors', requireRole('sponsor'), addExhibitors);
+router.post('/:id/exhibitors', requireRole('sponsor'), validateAddExhibitors, addExhibitors);
 router.delete('/:id/exhibitors/:userId', requireRole('sponsor'), removeExhibitor);
 
 router.delete('/:id', requireRole('admin'), deleteReservation);
-router.put('/:id/status', requireRole('admin'), updateReservationStatus);
-router.put('/:id/store-settings', upload.single('avatar'), updateStoreSettings);
+router.put('/:id/status', requireRole('admin'), validateReservationStatus, updateReservationStatus);
+router.put('/:id/store-settings', upload.single('avatar'), validateStoreSettings, updateStoreSettings);
 
 module.exports = router;

@@ -2,6 +2,7 @@
   "dependencies": {
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
-    "recharts": "^3.7.0"
+    "recharts": "^3.7.0",
+    "zod": "^4.4.3"
   }
 }
