@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useAuthContext } from '../hooks/useAuthContext';
 import userService from '../services/userService';
 import reservationService from '../services/reservationService';
-
+import eventsService from '../services/eventsService';
 const CustomerCartContext = createContext();
 
 export const useCustomerCart = () => {
@@ -47,9 +47,9 @@ export const CustomerCartProvider = ({ children }) => {
     const { dispatch } = useAuthContext();
 
     const saveCustomerCart = (newItems, currentUser = user) => {
-    localStorage.setItem('customerCart', JSON.stringify(newItems));
-    if (currentUser && currentUser.token && currentUser.role) {
-        userService.updateCart(newItems, currentUser.token).then(updatedCart => {
+        localStorage.setItem('customerCart', JSON.stringify(newItems));
+        if (currentUser && currentUser.token && currentUser.role) {
+            userService.updateCart(newItems, currentUser.token).then(updatedCart => {
                 const updatedUser = { ...currentUser, cart: updatedCart };
                 dispatch({ type: 'LOGIN', payload: updatedUser });
                 localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -82,6 +82,8 @@ export const CustomerCartProvider = ({ children }) => {
             hasInitialSynced.current = true;
         }
     }, [user]);
+
+
 
     /**
      * Build a discount lookup map from locally-stored purchase history.
@@ -245,10 +247,10 @@ export const CustomerCartProvider = ({ children }) => {
         }
     }, [user]);
 
-   useEffect(() => {
-    if (!user || !user.token) return;
-    fetchHistory();
-}, [fetchHistory, user]);
+    useEffect(() => {
+        if (!user || !user.token) return;
+        fetchHistory();
+    }, [fetchHistory, user]);
 
     useEffect(() => {
         localStorage.setItem('customerPurchaseHistory', JSON.stringify(purchaseHistory));
@@ -263,7 +265,9 @@ export const CustomerCartProvider = ({ children }) => {
                 image: event.image,
                 venue: event.venue,
                 startDate: event.startDate,
-                startTime: event.startTime
+                endDate: event.endDate,
+                startTime: event.startTime,
+                endTime: event.endTime
             },
             categoryId: seat.categoryId,
             categoryName: seat.categoryName,

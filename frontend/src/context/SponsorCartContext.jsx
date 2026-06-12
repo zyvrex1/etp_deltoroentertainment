@@ -42,7 +42,7 @@ export const SponsorCartProvider = ({ children }) => {
     // Explicitly save to storage and backend
     const saveCart = (newItems, currentUser = user) => {
         const leanItems = getLeanCartItems(newItems);
-        
+
         // Always save to guestCart
         try {
             localStorage.setItem('guestCart', JSON.stringify(leanItems));
@@ -56,12 +56,12 @@ export const SponsorCartProvider = ({ children }) => {
             } catch (e) {
                 console.error("Error saving user cart locally", e);
             }
-            
+
             updateCartAPI(leanItems, currentUser.token).then(() => {
                 const updatedUser = { ...currentUser, cart: leanItems };
                 try {
                     localStorage.setItem('user', JSON.stringify(updatedUser));
-                } catch(e) {}
+                } catch (e) { }
             }).catch(err => {
                 console.error("Failed to sync cart with backend", err);
             });
@@ -73,16 +73,16 @@ export const SponsorCartProvider = ({ children }) => {
         if (user) {
             // Check if user has cart items in their profile (from DB)
             const dbItems = (user.cart && Array.isArray(user.cart)) ? user.cart : [];
-            
+
             // Fallback to localStorage if we need to merge guest cart
             const savedCart = localStorage.getItem(`sponsorCart_${user.email}`);
             const guestCart = localStorage.getItem('guestCart');
-            
+
             let localItems = [];
             if (savedCart) {
-                try { localItems = JSON.parse(savedCart); } catch(e) {}
+                try { localItems = JSON.parse(savedCart); } catch (e) { }
             } else if (guestCart) {
-                try { localItems = JSON.parse(guestCart); } catch(e) {}
+                try { localItems = JSON.parse(guestCart); } catch (e) { }
             }
 
             // Merge DB cart and Local cart based on booth ID
@@ -97,10 +97,9 @@ export const SponsorCartProvider = ({ children }) => {
             });
 
             setCartItems(mergedItems);
-            
+
             // Sync merged cart to DB ONLY if we added guest items that weren't in the DB
             // OR if DB is empty but we found items locally.
-            // This prevents a brand new logged-in window from sending [] back to the DB and wiping other windows.
             if (didMerge || (dbItems.length === 0 && mergedItems.length > 0)) {
                 saveCart(mergedItems, user);
             }
@@ -111,62 +110,18 @@ export const SponsorCartProvider = ({ children }) => {
             if (guestCart) {
                 try {
                     parsedCart = JSON.parse(guestCart) || [];
-                } catch(e) {}
+                } catch (e) { }
             }
             setCartItems(parsedCart);
         }
         setIsInitialized(true);
-        hasHealedRef.current = false;
-    }, [user]);
-
-    // Self-healing: if any cart item is missing essential event details, fetch them from DB
-    useEffect(() => {
-        if (isInitialized && user && cartItems.length > 0 && !hasHealedRef.current) {
-            const hasCorruptedItems = cartItems.some(item => 
-                item.event && (!item.event.startDate || !item.event.venue)
-            );
-
-            if (hasCorruptedItems) {
-                hasHealedRef.current = true;
-                const healCart = async () => {
-                    try {
-                        const healedItems = await Promise.all(cartItems.map(async (item) => {
-                            if (item.event && (!item.event.startDate || !item.event.venue)) {
-                                const eventId = item.event._id || item.event.id;
-                                try {
-                                    const fullEvent = await eventsService.getEvent(eventId, user.token);
-                                    if (fullEvent) {
-                                        return {
-                                            ...item,
-                                            event: {
-                                                ...item.event,
-                                                ...fullEvent
-                                            }
-                                        };
-                                    }
-                                } catch (err) {
-                                    console.error(`Error healing event ${eventId} in cart:`, err);
-                                }
-                            }
-                            return item;
-                        }));
-                        setCartItems(healedItems);
-                    } catch (e) {
-                        console.error("Failed to heal cart items:", e);
-                    }
-                };
-                healCart();
-            } else {
-                hasHealedRef.current = true;
-            }
-        }
-    }, [isInitialized, user, cartItems]);
+    }, [user]); // <-- FIXED: Added the missing closure block right here!
 
     // Listen for cross-window storage changes to sync cart in real-time (for same browser)
     useEffect(() => {
         const handleStorageChange = (e) => {
             const relevantKeys = [];
-            
+
             if (user && user.email) {
                 relevantKeys.push(`sponsorCart_${user.email}`);
             } else {
@@ -197,7 +152,7 @@ export const SponsorCartProvider = ({ children }) => {
     // Listen to WebSocket for cross-device/browser sync
     useEffect(() => {
         if (!user) return;
-        
+
         const socket = io(import.meta.env.VITE_BACKEND_URL, {
             withCredentials: true,
             transports: ['websocket', 'polling']
@@ -228,7 +183,7 @@ export const SponsorCartProvider = ({ children }) => {
                 const iId = String(i.booth?._id || i.booth?.id || '');
                 return iId === newItemId;
             });
-            
+
             if (exists) return prevItems;
 
             const cartItem = {
@@ -243,7 +198,7 @@ export const SponsorCartProvider = ({ children }) => {
 
     const addMultipleToCart = (items) => {
         if (!Array.isArray(items) || items.length === 0) return;
-        
+
         setCartItems((prevItems) => {
             const newItems = items
                 .filter(newItem => {
@@ -255,7 +210,7 @@ export const SponsorCartProvider = ({ children }) => {
                     ...item,
                     cartId: (Date.now() + idx).toString() + '-' + Math.random().toString(36).substr(2, 9)
                 }));
-            
+
             if (newItems.length === 0) return prevItems;
             const newCart = [...prevItems, ...newItems];
             saveCart(newCart);
@@ -290,5 +245,3 @@ export const SponsorCartProvider = ({ children }) => {
         </SponsorCartContext.Provider>
     );
 };
-
-

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 import { useSponsorCartContext } from '../context/SponsorCartContext';
+import { useAuthContext } from '../hooks/useAuthContext';
+import eventsService from '../services/eventsService';
 import { showDeleteConfirmAlert, showSuccessAlert, showCheckoutConfirmAlert } from '../utils/sweetAlert';
 import './SponsorCart.css';
 
@@ -10,9 +12,42 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 export default function SponsorCart() {
     const navigate = useNavigate();
     const { cartItems, removeFromCart, removeMultipleFromCart, clearCart } = useSponsorCartContext();
+    const { user } = useAuthContext();
 
     const [selectedItems, setSelectedItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [eventsData, setEventsData] = useState({});
+
+    useEffect(() => {
+        const fetchLatestEventsData = async () => {
+            const uniqueEventIds = [...new Set(cartItems.map(item => item.event?._id || item.event?.id).filter(Boolean))];
+            const newEventsData = { ...eventsData };
+            let hasNewData = false;
+
+            await Promise.all(uniqueEventIds.map(async (id) => {
+                if (!newEventsData[id]) {
+                    try {
+                        const token = user ? user.token : null;
+                        const fullEvent = await eventsService.getEvent(id, token);
+                        if (fullEvent) {
+                            newEventsData[id] = fullEvent;
+                            hasNewData = true;
+                        }
+                    } catch (err) {
+                        console.error('Error fetching event data', err);
+                    }
+                }
+            }));
+
+            if (hasNewData) {
+                setEventsData(newEventsData);
+            }
+        };
+
+        if (cartItems.length > 0) {
+            fetchLatestEventsData();
+        }
+    }, [cartItems, user, eventsData]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -31,7 +66,7 @@ export default function SponsorCart() {
     const processingFees = cartItems
         .filter(item => selectedItems.includes(item.cartId))
         .reduce((sum, item) => sum + (item.processingFee || 0), 0);
-        
+
     const estimatedTax = cartItems
         .filter(item => selectedItems.includes(item.cartId))
         .reduce((sum, item) => sum + (item.estimatedTax || 0), 0);
@@ -39,8 +74,8 @@ export default function SponsorCart() {
     const total = subtotal + processingFees + estimatedTax;
 
     const toggleItem = (cartId) => {
-        setSelectedItems(prev => 
-            prev.includes(cartId) 
+        setSelectedItems(prev =>
+            prev.includes(cartId)
                 ? prev.filter(id => id !== cartId)
                 : [...prev, cartId]
         );
@@ -81,7 +116,7 @@ export default function SponsorCart() {
 
     const handleCheckout = async () => {
         if (countSelected === 0) return;
-        
+
         const result = await showCheckoutConfirmAlert(countSelected);
         if (result.isConfirmed) {
             const itemsToCheckout = cartItems.filter(item => selectedItems.includes(item.cartId));
@@ -91,10 +126,14 @@ export default function SponsorCart() {
 
     // Group items by event
     const groupedItems = cartItems.reduce((acc, item) => {
-        const eventId = item.event._id || item.event.id;
+        const eventId = item.event?._id || item.event?.id;
+        if (!eventId) return acc;
+
+        const actualEvent = eventsData[eventId] || item.event;
+
         if (!acc[eventId]) {
             acc[eventId] = {
-                event: item.event,
+                event: actualEvent,
                 items: []
             };
         }
@@ -181,43 +220,97 @@ export default function SponsorCart() {
                     <div className="cart-content-layout">
                         {Object.values(groupedItems).map(({ event, items }) => (
                             <div className="cart-event-card" key={event._id || event.id}>
-                                <div className="event-card-header">
+                                <div className="event-card-header" onClick={() => navigate(`/customer/event-details/${event?._id}`)} style={{ cursor: 'pointer' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <img
+                                            src={event?.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                            alt={event?.title || 'Event'}
+                                            style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }}
+                                            onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
+                                        />
+                                        <h4>{event?.title || 'Unknown Event'}</h4>
+                                    </div>
+                                    {(() => {
+                                        if (!event || !event.startDate) return <span className="live-badge">TBA</span>;
+
+                                        const now = new Date();
+                                        const startDate = new Date(event.startDate);
+                                        const endDate = event.endDate ? new Date(event.endDate) : new Date(startDate);
+
+                                        if (event.startTime) {
+                                            const [hours, minutes] = event.startTime.split(':').map(Number);
+                                            startDate.setHours(hours || 0, minutes || 0, 0, 0);
+                                        } else {
+                                            startDate.setHours(0, 0, 0, 0);
+                                        }
+
+                                        if (event.endTime) {
+                                            const [hours, minutes] = event.endTime.split(':').map(Number);
+                                            endDate.setHours(hours || 23, minutes || 59, 59, 999);
+                                        } else {
+                                            endDate.setHours(23, 59, 59, 999);
+                                        }
+
+                                        if (now > endDate) {
+                                            return <span className="live-badge ended-badge" style={{ backgroundColor: '#d41d1dff', color: '#fff' }}>Ended</span>;
+                                        } else if (now >= startDate && now <= endDate) {
+                                            return <span className="live-badge live-badge-active" style={{ backgroundColor: '#28a745', color: '#fff' }}>Live</span>;
+                                        } else {
+                                            const todayMidnight = new Date();
+                                            todayMidnight.setHours(0, 0, 0, 0);
+                                            const startMidnight = new Date(event.startDate);
+                                            startMidnight.setHours(0, 0, 0, 0);
+
+                                            const diffTime = startMidnight - todayMidnight;
+                                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                                            if (diffDays === 1) {
+                                                return <span className="live-badge upcoming-badge" style={{ backgroundColor: '#c27d15ff', color: '#fff' }}>Tomorrow</span>;
+                                            } else if (diffDays === 0) {
+                                                return <span className="live-badge upcoming-badge" style={{ backgroundColor: '#6c757d', color: '#fff' }}>Later Today</span>;
+                                            }
+                                            return <span className="live-badge upcoming-badge" style={{ backgroundColor: '#6c757d', color: '#fff' }}>In {diffDays} Days</span>;
+                                        }
+                                    })()}
+                                </div>
+                                {/* <div className="event-card-header">
                                     <h4>{event.title}</h4>
                                     <span className="live-badge">Live</span>
-                                </div>
+                                </div> */}
                                 <div className="ticket-list">
                                     {items.map(item => (
                                         <div className={`ticket-item ${selectedItems.includes(item.cartId) ? 'checked' : ''}`} key={item.cartId}>
                                             <label className="custom-checkbox">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={selectedItems.includes(item.cartId)} 
-                                                    onChange={() => toggleItem(item.cartId)} 
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedItems.includes(item.cartId)}
+                                                    onChange={() => toggleItem(item.cartId)}
                                                 />
                                                 <span className="checkmark"></span>
                                             </label>
                                             <div className="ticket-main">
-                                                <img 
-                                                    src={(event.image || event.banner) ? `${BACKEND_URL}/uploads/${event.image || event.banner}` : "/assets/eventbg.jpg"} 
-                                                    alt={event.title} 
-                                                    className="ticket-image" 
-                                                    onError={(e) => { e.target.src = "/assets/eventbg.jpg" }} 
-                                                />
+                                                {/* <img
+                                                    src={(event.image || event.banner) ? `${BACKEND_URL}/uploads/${event.image || event.banner}` : "/assets/eventbg.jpg"}
+                                                    alt={event.title}
+                                                    className="ticket-image"
+                                                    onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
+                                                /> */}
                                                 <div className="ticket-info">
                                                     <div className="ticket-type-info">
                                                         <h5>{item.category?.priceName || 'Sponsorship Booth'} ({item.booth?.label || item.booth?.code})</h5>
                                                         <p>
-                                                            <Icon icon="mdi:map-marker-outline" width="16" /> {event.venue ? `${event.venue.name}, ${event.venue.city}` : (event.location || 'Location Unavailable')}
+                                                            <Icon icon="mdi:map-marker-outline" width="16" /> {event?.venue ? `${event.venue.name || ''}, ${event.venue.address || ''}, ${event.venue.city || ''}, ${event.venue.zipCode || ''}`.replace(/(, )+/g, ', ').replace(/^, |, $/g, '') : 'Location Unavailable'}
                                                         </p>
                                                     </div>
                                                     <div className="ticket-meta">
                                                         <div className="ticket-meta-item">
                                                             <Icon icon="mdi:calendar-blank-outline" width="16" />
-                                                            <span>{(event.startDate || event.date) ? new Date(event.startDate || event.date).toLocaleDateString() : 'Date Unavailable'}</span>
+                                                            <span>{event?.startDate ? new Date(event.startDate).toLocaleDateString() : 'Start Date TBA'}</span>
                                                         </div>
+
                                                         <div className="ticket-meta-item">
                                                             <Icon icon="mdi:clock-outline" width="16" />
-                                                            <span>{(event.startDate || event.date) ? new Date(event.startDate || event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Time Unavailable'}</span>
+                                                            <span>{event?.startTime || 'TBA'} - {event?.endTime || 'TBA'}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -239,15 +332,15 @@ export default function SponsorCart() {
                     <div className="cart-bottom-actions">
                         <div className="bottom-left-actions">
                             <label className="custom-checkbox" style={{ marginRight: '0.5rem' }}>
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={selectedItems.length > 0 && selectedItems.length === cartItems.length}
-                                    onChange={handleSelectAll} 
+                                    onChange={handleSelectAll}
                                 />
                                 <span className="checkmark"></span>
                             </label>
                             <span className="select-all-label" onClick={handleSelectAll}>Select All</span>
-                            
+
                             {selectedItems.length > 0 && (
                                 <button className="del-btn ml-4" onClick={handleDeleteSelected}>
                                     Delete
@@ -257,8 +350,8 @@ export default function SponsorCart() {
                         <div className="bottom-right-actions">
                             <span className="total-text">Total ({countSelected} item{countSelected !== 1 && 's'})</span>
                             <span className="total-amount">${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            <button 
-                                className={`primary-button checkout-btn ${countSelected === 0 ? 'disabled' : ''}`} 
+                            <button
+                                className={`primary-button checkout-btn ${countSelected === 0 ? 'disabled' : ''}`}
                                 onClick={handleCheckout}
                                 disabled={countSelected === 0}
                             >
