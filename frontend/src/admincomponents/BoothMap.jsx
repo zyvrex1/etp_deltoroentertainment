@@ -349,9 +349,9 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                         {cat.type === "General Fee" ? (
                           <Icon icon="mdi:ticket-confirmation-outline" />
                         ) : cat.type?.includes("Seat") ? (
-                          <Icon icon="mdi:circle" />
+                          <Icon icon="mdi:seat" />
                         ) : (
-                          <Icon icon="mdi:square" />
+                          <Icon icon="mdi:storefront" />
                         )}
                       </div>
 

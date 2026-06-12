@@ -73,13 +73,13 @@ const CustomerSeats = () => {
                     }
 
                     // Normalize Items
-                   const items = (ld.items || []).map(item => ({
-    ...item,
-    id: item.id || item._id,
-    type: item.type?.toLowerCase() || "element",
-    status: (item.status || "available").toLowerCase(),
-    categoryId: item.categoryId || item.priceLevelId
-}));
+                    const items = (ld.items || []).map(item => ({
+                        ...item,
+                        id: item.id || item._id,
+                        type: item.type?.toLowerCase() || "element",
+                        status: (item.status || "available").toLowerCase(),
+                        categoryId: item.categoryId || item.priceLevelId
+                    }));
                     setLayoutItems(items);
                 }
             } catch (error) {
@@ -122,28 +122,28 @@ const CustomerSeats = () => {
     }, [canvasSize, isLoading]);
 
     // Selection Logic
-  const toggleSeat = (seat) => {
-    const status = (seat.status || "available").toLowerCase();  // ← normalize here too
-    if (status !== 'available') return;
+    const toggleSeat = (seat) => {
+        const status = (seat.status || "available").toLowerCase();  // ← normalize here too
+        if (status !== 'available') return;
 
-    const isSelected = selectedSeats.find(s => s.id === seat.id);
-    if (isSelected) {
-        setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
-    } else {
-        if (selectedSeats.length >= 6) return;
+        const isSelected = selectedSeats.find(s => s.id === seat.id);
+        if (isSelected) {
+            setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
+        } else {
+            if (selectedSeats.length >= 6) return;
 
-        const categoryId = seat.categoryId || seat.priceLevelId;  // ← safe fallback
-        const category = priceLevels.find(pl =>
-            String(pl._id || pl.id) === String(categoryId)
-        );
-        setSelectedSeats([...selectedSeats, {
-            ...seat,
-            categoryId,                                           // ← ensure it's stored
-            price: category?.facePrice || 0,
-            categoryName: category?.priceName || "General"
-        }]);
-    }
-};
+            const categoryId = seat.categoryId || seat.priceLevelId;  // ← safe fallback
+            const category = priceLevels.find(pl =>
+                String(pl._id || pl.id) === String(categoryId)
+            );
+            setSelectedSeats([...selectedSeats, {
+                ...seat,
+                categoryId,                                           // ← ensure it's stored
+                price: category?.facePrice || 0,
+                categoryName: category?.priceName || "General"
+            }]);
+        }
+    };
 
     const handleBack = () => navigate(-1);
 
@@ -523,16 +523,16 @@ const CustomerSeats = () => {
                                                 scaleX={item.scaleX || 1}
                                                 scaleY={item.scaleY || 1}
                                                 rotation={item.rotation || 0}
-                                               onClick={() => toggleSeat({
-    ...item,
-    categoryId: item.categoryId || item.priceLevelId,
-    status: (item.status || "available").toLowerCase()
-})}
-onTap={() => toggleSeat({
-    ...item,
-    categoryId: item.categoryId || item.priceLevelId,
-    status: (item.status || "available").toLowerCase()
-})}
+                                                onClick={() => toggleSeat({
+                                                    ...item,
+                                                    categoryId: item.categoryId || item.priceLevelId,
+                                                    status: (item.status || "available").toLowerCase()
+                                                })}
+                                                onTap={() => toggleSeat({
+                                                    ...item,
+                                                    categoryId: item.categoryId || item.priceLevelId,
+                                                    status: (item.status || "available").toLowerCase()
+                                                })}
                                                 onMouseEnter={(e) => {
                                                     const stage = e.target.getStage();
                                                     if (item.status === 'available') stage.container().style.cursor = 'pointer';
@@ -663,131 +663,133 @@ onTap={() => toggleSeat({
                             <h4 className="m-0 text-black">Ticket Categories</h4>
                         </div>
                         <div className="cs-categories-list">
-                            {priceLevels.map((cat) => {
-                                const isGA = event.eventType === "General Admission";
-                                const isGeneralFee = cat.type === "General Fee";
-                                const isDirectQty = isGA || isGeneralFee;
-                                const qty = ticketQuantities[cat._id || cat.id] || 0;
-                                const catType = cat.type || "Seat (Circle)";
+                            {priceLevels
+                                .filter(cat => cat.type !== "Booth (Square)")
+                                .map((cat) => {
+                                    const isGA = event.eventType === "General Admission";
+                                    const isGeneralFee = cat.type === "General Fee";
+                                    const isDirectQty = isGA || isGeneralFee;
+                                    const qty = ticketQuantities[cat._id || cat.id] || 0;
+                                    const catType = cat.type || "Seat (Circle)";
 
-                                return (
-                                    <div
-                                        key={cat._id || cat.id}
-                                        className={`cs-sidebar-cat-item mb-2 ${catType === "Booth (Square)" ? "cs-cat-disabled" : ""}`}
-                                        style={catType === "Booth (Square)" ? { opacity: 0.5, pointerEvents: 'none' } : {}}
-                                    >
-                                        {/* Coloured icon */}
+                                    return (
                                         <div
-                                            className="cs-cat-palette-visual"
-                                            style={{ backgroundColor: catType === "Booth (Square)" ? '#94a3b8' : (cat.color || '#666') }}
+                                            key={cat._id || cat.id}
+                                            className={`cs-sidebar-cat-item mb-2 ${catType === "Booth (Square)" ? "cs-cat-disabled" : ""}`}
+                                            style={catType === "Booth (Square)" ? { opacity: 0.5, pointerEvents: 'none' } : {}}
                                         >
-                                            {catType === "General Fee" ? (
-                                                <Icon icon="mdi:ticket-confirmation-outline" />
-                                            ) : catType.includes("Seat") ? (
-                                                <Icon icon="mdi:circle" />
-                                            ) : (
-                                                <Icon icon="mdi:square" />
-                                            )}
-                                        </div>
+                                            {/* Coloured icon */}
+                                            <div
+                                                className="cs-cat-palette-visual"
+                                                style={{ backgroundColor: catType === "Booth (Square)" ? '#94a3b8' : (cat.color || '#666') }}
+                                            >
+                                                {catType === "General Fee" ? (
+                                                    <Icon icon="mdi:ticket-confirmation-outline" />
+                                                ) : catType.includes("Seat") ? (
+                                                    <Icon icon="mdi:seat" />
+                                                ) : (
+                                                    <Icon icon="mdi:storefront" />
+                                                )}
+                                            </div>
 
-                                        {/* Details */}
-                                        <div className="cs-cat-details">
-                                            <div className="cs-cat-top">
-                                                <span className="cs-cat-name">
-                                                    {cat.priceName === 'General Fee' ? 'Entrance Fee' : cat.priceName}
-                                                </span>
-                                                {catType === "Booth (Square)" ? (
-                                                    // ← Replaces "Select on map" for booths
-                                                    <span
-                                                        className="smaller-body-text"
-                                                        style={{
-                                                            color: '#ef4444',
-                                                            backgroundColor: '#fef2f2',
-                                                            border: '1px solid #fecaca',
-                                                            borderRadius: '4px',
-                                                            padding: '1px 6px',
-                                                            fontWeight: 600,
-                                                            fontSize: '10px'
-                                                        }}
-                                                    >
-                                                        Not bookable
+                                            {/* Details */}
+                                            <div className="cs-cat-details">
+                                                <div className="cs-cat-top">
+                                                    <span className="cs-cat-name">
+                                                        {cat.priceName === 'General Fee' ? 'Entrance Fee' : cat.priceName}
                                                     </span>
-                                                ) : !isDirectQty ? (
-                                                    <span className="cs-map-hint smaller-body-text text-secondary">Select on map</span>
-                                                ) : null}
-                                            </div>
-
-                                            {/* Price + availability meta */}
-                                            <div className="cs-cat-meta">
-                                                <span className="cs-cat-price" style={catType === "Booth (Square)" ? { color: '#94a3b8' } : {}}>
-                                                    ${(cat.facePrice || 0).toFixed(2)}
-                                                </span>
-                                                <span className="cs-cat-units">
-                                                    {catType === "Booth (Square)"
-                                                        ? "Reference only"
-                                                        : cat.quantityAvailable != null
-                                                            ? (cat.quantityAvailable - (cat.quantitySold || 0)) - qty
-                                                            : cat.quantity != null
-                                                                ? (cat.quantity - (cat.quantitySold || 0)) - qty
-                                                                : '—'} {catType !== "Booth (Square)" && "available"}
-                                                </span>
-                                            </div>
-
-                                            {/* Progress bar — hidden for booths */}
-                                            {isDirectQty && cat.quantityAvailable > 0 && catType !== "Booth (Square)" && (
-                                                <div className="cs-progress-bar">
-                                                    <div
-                                                        className="cs-progress-fill"
-                                                        style={{
-                                                            width: `${Math.min((qty / (Math.max(1, cat.quantityAvailable - (cat.quantitySold || 0)))) * 100, 100)}%`,
-                                                            backgroundColor: cat.color || '#666'
-                                                        }}
-                                                    />
+                                                    {catType === "Booth (Square)" ? (
+                                                        // ← Replaces "Select on map" for booths
+                                                        <span
+                                                            className="smaller-body-text"
+                                                            style={{
+                                                                color: '#ef4444',
+                                                                backgroundColor: '#fef2f2',
+                                                                border: '1px solid #fecaca',
+                                                                borderRadius: '4px',
+                                                                padding: '1px 6px',
+                                                                fontWeight: 600,
+                                                                fontSize: '10px'
+                                                            }}
+                                                        >
+                                                            Not bookable
+                                                        </span>
+                                                    ) : !isDirectQty ? (
+                                                        <span className="cs-map-hint smaller-body-text text-secondary">Select on map</span>
+                                                    ) : null}
                                                 </div>
-                                            )}
 
-                                            {/* Stepper — hidden for booths */}
-                                            {isDirectQty && catType !== "Booth (Square)" && (
-                                                <div className="cs-quantity-selector" style={{ marginTop: '12px' }}>
-                                                    <button
-                                                        className="cs-qty-btn"
-                                                        onClick={() => updateGAQuantity(cat._id || cat.id, -1)}
-                                                        disabled={qty === 0}
-                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                    >
-                                                        <Icon icon="mdi:minus" width="20" height="20" />
-                                                    </button>
-                                                    <input
-                                                        type="number"
-                                                        className="cs-qty-input"
-                                                        value={qty}
-                                                        min="0"
-                                                        max={cat.quantityAvailable != null ? Math.max(0, cat.quantityAvailable - (cat.quantitySold || 0)) : 9999}
-                                                        onChange={(e) => {
-                                                            const val = parseInt(e.target.value) || 0;
-                                                            const maxAvailable = cat.quantityAvailable != null ? Math.max(0, cat.quantityAvailable - (cat.quantitySold || 0)) : 9999;
-                                                            const clamped = Math.max(0, Math.min(val, maxAvailable));
-                                                            setTicketQuantities(prev => ({
-                                                                ...prev,
-                                                                [cat._id || cat.id]: clamped
-                                                            }));
-                                                        }}
-                                                        style={{ flex: 1 }}
-                                                    />
-                                                    <button
-                                                        className="cs-qty-btn"
-                                                        onClick={() => updateGAQuantity(cat._id || cat.id, 1)}
-                                                        disabled={cat.quantityAvailable != null && qty >= Math.max(0, cat.quantityAvailable - (cat.quantitySold || 0))}
-                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                    >
-                                                        <Icon icon="mdi:plus" width="20" height="20" />
-                                                    </button>
+                                                {/* Price + availability meta */}
+                                                <div className="cs-cat-meta">
+                                                    <span className="cs-cat-price" style={catType === "Booth (Square)" ? { color: '#94a3b8' } : {}}>
+                                                        ${(cat.facePrice || 0).toFixed(2)}
+                                                    </span>
+                                                    <span className="cs-cat-units">
+                                                        {catType === "Booth (Square)"
+                                                            ? "Reference only"
+                                                            : cat.quantityAvailable != null
+                                                                ? (cat.quantityAvailable - (cat.quantitySold || 0)) - qty
+                                                                : cat.quantity != null
+                                                                    ? (cat.quantity - (cat.quantitySold || 0)) - qty
+                                                                    : '—'} {catType !== "Booth (Square)" && "available"}
+                                                    </span>
                                                 </div>
-                                            )}
+
+                                                {/* Progress bar — hidden for booths */}
+                                                {isDirectQty && cat.quantityAvailable > 0 && catType !== "Booth (Square)" && (
+                                                    <div className="cs-progress-bar">
+                                                        <div
+                                                            className="cs-progress-fill"
+                                                            style={{
+                                                                width: `${Math.min((qty / (Math.max(1, cat.quantityAvailable - (cat.quantitySold || 0)))) * 100, 100)}%`,
+                                                                backgroundColor: cat.color || '#666'
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {/* Stepper — hidden for booths */}
+                                                {isDirectQty && catType !== "Booth (Square)" && (
+                                                    <div className="cs-quantity-selector" style={{ marginTop: '12px' }}>
+                                                        <button
+                                                            className="cs-qty-btn"
+                                                            onClick={() => updateGAQuantity(cat._id || cat.id, -1)}
+                                                            disabled={qty === 0}
+                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        >
+                                                            <Icon icon="mdi:minus" width="20" height="20" />
+                                                        </button>
+                                                        <input
+                                                            type="number"
+                                                            className="cs-qty-input"
+                                                            value={qty}
+                                                            min="0"
+                                                            max={cat.quantityAvailable != null ? Math.max(0, cat.quantityAvailable - (cat.quantitySold || 0)) : 9999}
+                                                            onChange={(e) => {
+                                                                const val = parseInt(e.target.value) || 0;
+                                                                const maxAvailable = cat.quantityAvailable != null ? Math.max(0, cat.quantityAvailable - (cat.quantitySold || 0)) : 9999;
+                                                                const clamped = Math.max(0, Math.min(val, maxAvailable));
+                                                                setTicketQuantities(prev => ({
+                                                                    ...prev,
+                                                                    [cat._id || cat.id]: clamped
+                                                                }));
+                                                            }}
+                                                            style={{ flex: 1 }}
+                                                        />
+                                                        <button
+                                                            className="cs-qty-btn"
+                                                            onClick={() => updateGAQuantity(cat._id || cat.id, 1)}
+                                                            disabled={cat.quantityAvailable != null && qty >= Math.max(0, cat.quantityAvailable - (cat.quantitySold || 0))}
+                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        >
+                                                            <Icon icon="mdi:plus" width="20" height="20" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
                         </div>
                     </div>
 
