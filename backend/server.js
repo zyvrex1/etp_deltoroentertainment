@@ -46,6 +46,7 @@ const payoutRoutes = require('./routes/payoutRoutes');
 const digitalgiftsRoutes = require('./routes/digitalgiftsRoutes');
 const auditLogRoutes = require('./routes/auditlogRoutes')
 const uploadRoutes = require('./routes/uploadRoutes');
+const errorHandler = require('./middleware/errorHandler') 
 
 const app = express()
 
@@ -175,6 +176,12 @@ app.use('/api/digital-gifts', digitalgiftsRoutes)
 app.use('/api/audit-logs', auditLogRoutes)
 app.use('/api/uploads', uploadRoutes)
 
+app.get('/api/test-error', (req, res, next) => {
+  const err = new Error('Test error - delete this route after')
+  err.status = 500
+  next(err)
+})
+
 
 // NEW - works in Express 5
 app.use('/api/{*path}', (req, res) => {
@@ -190,21 +197,10 @@ app.get('{*path}', (req, res) => {
   res.sendFile(path.join(DIST, 'index.html'))
 })
 
+
+
 // Global error handler
-app.use((err, req, res, next) => {
-  console.error('FULL ERROR:', err)
-  // console.error(err)
-
-  if (err.message === "Only image files are allowed (JPG, PNG, WEBP)") {
-    return res.status(400).json({ error: err.message })
-  }
-
-  if (err.code === "LIMIT_FILE_SIZE") {
-    return res.status(400).json({ error: "File size must be less than 5MB" })
-  }
-
-  res.status(500).json({ error: 'Something went wrong' })
-})
+app.use(errorHandler)
 
 
 const http = require('http');
