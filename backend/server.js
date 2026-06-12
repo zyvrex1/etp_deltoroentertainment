@@ -50,6 +50,9 @@ const errorHandler = require('./middleware/errorHandler')
 
 const app = express()
 
+// ✅ STEP 13: Trust proxy for accurate client IP detection behind reverse proxies
+app.set('trust proxy', 1)
+
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, 'uploads')
 if (!fs.existsSync(uploadDir)) {
@@ -130,7 +133,7 @@ app.use(helmet({
     }
   }
 }))
-// ─── Rate limiting ────────────────────────────────────────────
+// ─── STEP 13: Rate limiting ────────────────────────────────────
 // Limits each IP to 100 requests per 15 minutes on all routes
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -140,11 +143,13 @@ app.use(rateLimit({
   message: { error: 'Too many requests, please try again later.' }
 }))
 
-// Stricter limiter for auth routes (prevent brute force)
+// General limiter for other auth endpoints (profile check, updates, logout)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { error: 'Too many login attempts, please try again in 15 minutes.' }
+  max: 60, // Relaxed from 20 to 60 for general routing; strict login/signup routes use the 5-limit instead
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
 })
 
 
