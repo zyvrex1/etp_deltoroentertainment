@@ -203,7 +203,14 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    will-change: transform, box-shadow;
+
+    &:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 20px -5px rgba(15, 23, 42, 0.12),
+        0 8px 12px -6px rgba(15, 23, 42, 0.08);
+    }
 
     .pe-card-image {
       height: 150px;
@@ -273,12 +280,12 @@
       flex-direction: column;
       gap: 4px;
       color: #64748b;
-      
+
       .pe-meta-row {
         display: flex;
         align-items: center;
         gap: 6px;
-              text-align: left;
+        text-align: left;
 
 
         svg {
@@ -327,8 +334,8 @@
     flex: 1;
     text-decoration: none;
     display: flex;
-          width: 100%;
-                align-items: stretch;
+    width: 100%;
+    align-items: stretch;
 
 
   }
@@ -344,11 +351,11 @@
     font-size: 13px;
     padding: 8px;
     white-space: nowrap;
-    
-   
+
+
   }
 
-  .outlined-button.pe-card-btn{
+  .outlined-button.pe-card-btn {
     color: var(--color-black-primary);
   }
 }
@@ -360,10 +367,20 @@
   justify-content: center;
   text-align: center;
   cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  will-change: transform, box-shadow;
+
+  &:hover {
+    transform: translateY(-6px);
+    border-color: var(--color-red-primary);
+    /* Turns your main accent color when hovered */
+    box-shadow: 0 12px 20px -5px rgba(15, 23, 42, 0.12),
+      0 8px 12px -6px rgba(15, 23, 42, 0.08);
+  }
 
   .pe-create-inner {
     padding: 32px 16px;
-    
+
 
     .pe-create-icon {
       width: fit-content;
@@ -378,10 +395,11 @@
       font-size: 36px;
     }
 
-    h4{
+    h4 {
       text-align: center;
     }
-    p{
+
+    p {
       color: var(--color-black-secondary);
     }
   }
@@ -420,13 +438,13 @@
   .pe-toolbar {
     flex-direction: column;
     align-items: stretch;
-          width: 100%;
+    width: 100%;
 
-          .pe-toolbar-left{
-            width: 100%;
-                  align-items: stretch;
+    .pe-toolbar-left {
+      width: 100%;
+      align-items: stretch;
 
-          }
+    }
 
 
     .pe-toolbar-right {
@@ -507,15 +525,16 @@
 .pe-grid:has(.pe-empty-wrapper) {
   display: grid;
   place-items: center;
-  min-height: 400px; /* adjust depending on your layout */
+  min-height: 400px;
+  /* adjust depending on your layout */
 
-  
+
 }
 
 .pe-empty-wrapper {
   text-align: center;
 
-  span{
+  span {
     margin-left: 6px;
     color: var(--color-red-primary);
     cursor: pointer;
@@ -608,13 +627,14 @@
   .pe-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
   .pe-pagination {
     gap: 12px;
   }
 }
 
 @media (max-width: 480px) {
- 
+
   .pagination-btn span {
     display: none;
   }

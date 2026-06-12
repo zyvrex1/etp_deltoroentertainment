@@ -356,7 +356,13 @@ const PromoterEvents = () => {
               const imageUrl = evt.image ? `/uploads/${evt.image}` : "/assets/eventbg.jpg";
 
               return (
-                <div key={evt._id} className="pe-card">
+                <div key={evt._id} className="pe-card"
+
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedEventToView(evt);
+                    setIsViewOpen(true);
+                  }}>
                   <EventCardImage
                     imageUrl={imageUrl}
                     statusClass={statusClass}
