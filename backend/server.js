@@ -84,7 +84,24 @@ app.use(compression())
 
 // ── Sanitize all incoming data against NoSQL injection ──
 const mongoSanitize = require('express-mongo-sanitize')
-app.use(mongoSanitize())
+
+app.use((req, res, next) => {
+  // If it's a websocket handshake request, bypass mongo-sanitize to prevent crashes
+  if (req.headers.upgrade && req.headers.upgrade.toLowerCase() === 'websocket') {
+    return next()
+  }
+
+  // In Express 5, req.query is a getter-only property. 
+  // express-mongo-sanitize middleware crashes when trying to reassign it.
+  // We manually sanitize the properties instead.
+  ['body', 'params', 'headers', 'query'].forEach((key) => {
+    if (req[key]) {
+      mongoSanitize.sanitize(req[key]);
+    }
+  });
+
+  next()
+})
 
 // Single dev-only logger
 if (process.env.NODE_ENV !== 'production') {
