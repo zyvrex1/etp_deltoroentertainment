@@ -9,6 +9,19 @@ import { io } from 'socket.io-client';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
+const maskIP = (ip) => {
+  if (!ip) return '—';
+  if (ip === '::1') return 'localhost';
+
+  // IPv4
+  const parts = ip.split('.');
+  if (parts.length === 4) return `${parts[0]}.${parts[1]}…`;
+
+  // IPv6
+  const v6parts = ip.split(':');
+  const first = v6parts.filter(Boolean);
+  return first.length > 0 ? `${first[0]}::…` : ip;
+};
 const ACTION_BADGE = {
   'Login Success': 'badge-success',
   'Login Failed':  'badge-danger',
@@ -324,12 +337,11 @@ const AuditLogs = () => {
                     <td className="regular-body-text" data-label="User">{log.user}</td>
                     <td className="small-body-text"   data-label="Email">{log.email}</td>
                     <td className="small-body-text"   data-label="Role">{log.role}</td>
-                    <td className="small-body-text"   data-label="IP Address">
-                      <span className="ip-chip">
-                        <Icon icon="mdi:ip-network-outline" className="clock-icon" />
-                        {log.ipAddress || '—'}
-                      </span>
-                    </td>
+                   <td className="small-body-text" data-label="IP Address">
+  <span className="ip-chip" title={log.ipAddress || '—'}>
+    {maskIP(log.ipAddress)}
+  </span>
+</td>
                     <td className="small-body-text timestamp-cell" data-label="Timestamp">
                       <div className="timestamp-wrapper">
                         <Icon icon="mdi:clock-time-four-outline" className="clock-icon" />
