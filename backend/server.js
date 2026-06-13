@@ -54,10 +54,10 @@ const app = express()
 app.set('trust proxy', 1)
 
 // Ensure uploads folder exists
-const uploadDir = path.join(__dirname, 'uploads')
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir)
-}
+// const uploadDir = path.join(__dirname, 'uploads')
+// if (!fs.existsSync(uploadDir)) {
+//   fs.mkdirSync(uploadDir)
+// }
 
 // middleware
 app.use(express.json({ limit: "10mb" }))
@@ -155,7 +155,7 @@ const authLimiter = rateLimit({
 
 
 // serve uploaded images
-app.use('/uploads', express.static(uploadDir))
+// app.use('/uploads', express.static(uploadDir))
 
 // API routes
 app.use('/api/auth', authLimiter, authRoutes)
@@ -222,12 +222,25 @@ const connectDB = require('./config/db');
 //     });
 // });
 
-
 connectDB().then(() => {
   const server = http.createServer(app)
-  socket.init(server)
+  const io = socket.init(server)
 
   server.listen(process.env.PORT, () => {
     console.log(`🚀  Server running on port ${process.env.PORT} [${process.env.NODE_ENV}]`)
+    if (process.send) process.send('ready')
   })
+
+  const shutdown = (signal) => {
+    console.log(`\n${signal} — shutting down worker ${process.pid}`)
+    io.close()
+    server.close(() => {
+      console.log('All connections closed. Exiting.')
+      process.exit(0)
+    })
+    setTimeout(() => process.exit(1), 7000)
+  }
+
+  process.on('SIGINT',  () => shutdown('SIGINT'))
+  process.on('SIGTERM', () => shutdown('SIGTERM'))
 })
