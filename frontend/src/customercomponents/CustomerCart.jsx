@@ -17,6 +17,38 @@ export default function CustomerCart() {
     const [selectedItems, setSelectedItems] = useState([]);
 
     const [loading, setLoading] = useState(true);
+    const [eventsData, setEventsData] = useState({});
+
+    useEffect(() => {
+        const fetchLatestEventsData = async () => {
+            const uniqueEventIds = [...new Set(cartItems.map(item => item.event?._id || item.event?.id).filter(Boolean))];
+            const newEventsData = { ...eventsData };
+            let hasNewData = false;
+
+            await Promise.all(uniqueEventIds.map(async (id) => {
+                if (!newEventsData[id]) {
+                    try {
+                        const token = user ? user.token : null;
+                        const fullEvent = await eventsService.getEvent(id, token);
+                        if (fullEvent) {
+                            newEventsData[id] = fullEvent;
+                            hasNewData = true;
+                        }
+                    } catch (err) {
+                        console.error('Error fetching event data', err);
+                    }
+                }
+            }));
+
+            if (hasNewData) {
+                setEventsData(newEventsData);
+            }
+        };
+
+        if (cartItems.length > 0) {
+            fetchLatestEventsData();
+        }
+    }, [cartItems, user, eventsData]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -92,9 +124,12 @@ export default function CustomerCart() {
     const groupedItems = cartItems.reduce((acc, item) => {
         const eventId = item.event?._id || item.event?.id;
         if (!eventId) return acc;
+
+        const actualEvent = eventsData[eventId] || item.event;
+
         if (!acc[eventId]) {
             acc[eventId] = {
-                event: item.event,
+                event: actualEvent,
                 items: []
             };
         }
@@ -177,15 +212,56 @@ export default function CustomerCart() {
                             <div className="cart-event-card" key={event?._id || event?.id}>
                                 <div className="event-card-header" onClick={() => navigate(`/customer/event-details/${event?._id}`)} style={{ cursor: 'pointer' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <img 
-                                        src={event?.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                        <img
+                                            src={event?.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
                                             alt={event?.title || 'Event'}
                                             style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }}
                                             onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
                                         />
                                         <h4>{event?.title || 'Unknown Event'}</h4>
                                     </div>
-                                    <span className="live-badge">Live</span>
+                                    {(() => {
+                                        if (!event || !event.startDate) return <span className="live-badge">TBA</span>;
+
+                                        const now = new Date();
+                                        const startDate = new Date(event.startDate);
+                                        const endDate = event.endDate ? new Date(event.endDate) : new Date(startDate);
+
+                                        if (event.startTime) {
+                                            const [hours, minutes] = event.startTime.split(':').map(Number);
+                                            startDate.setHours(hours || 0, minutes || 0, 0, 0);
+                                        } else {
+                                            startDate.setHours(0, 0, 0, 0);
+                                        }
+
+                                        if (event.endTime) {
+                                            const [hours, minutes] = event.endTime.split(':').map(Number);
+                                            endDate.setHours(hours || 23, minutes || 59, 59, 999);
+                                        } else {
+                                            endDate.setHours(23, 59, 59, 999);
+                                        }
+
+                                        if (now > endDate) {
+                                            return <span className="live-badge ended-badge" style={{ backgroundColor: '#d41d1dff', color: '#fff' }}>Ended</span>;
+                                        } else if (now >= startDate && now <= endDate) {
+                                            return <span className="live-badge live-badge-active" style={{ backgroundColor: '#28a745', color: '#fff' }}>Live</span>;
+                                        } else {
+                                            const todayMidnight = new Date();
+                                            todayMidnight.setHours(0, 0, 0, 0);
+                                            const startMidnight = new Date(event.startDate);
+                                            startMidnight.setHours(0, 0, 0, 0);
+
+                                            const diffTime = startMidnight - todayMidnight;
+                                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                                            if (diffDays === 1) {
+                                                return <span className="live-badge upcoming-badge" style={{ backgroundColor: '#6c757d', color: '#fff' }}>Tomorrow</span>;
+                                            } else if (diffDays === 0) {
+                                                return <span className="live-badge upcoming-badge" style={{ backgroundColor: '#6c757d', color: '#fff' }}>Later Today</span>;
+                                            }
+                                            return <span className="live-badge upcoming-badge" style={{ backgroundColor: '#6c757d', color: '#fff' }}>In {diffDays} Days</span>;
+                                        }
+                                    })()}
                                 </div>
                                 <div className="ticket-list">
                                     {(() => {
@@ -276,17 +352,18 @@ export default function CustomerCart() {
                                                             <div className="ticket-type-info">
                                                                 <h5>{showItem.label}</h5>
                                                                 <p>
-                                                                    <Icon icon="mdi:map-marker-outline" width="16" /> {event?.venue?.name || 'Venue TBA'}
+                                                                    <Icon icon="mdi:map-marker-outline" width="16" /> {event?.venue ? `${event.venue.name || ''}, ${event.venue.address || ''}, ${event.venue.city || ''}, ${event.venue.zipCode || ''}`.replace(/(, )+/g, ', ').replace(/^, |, $/g, '') : 'Location Unavailable'}
                                                                 </p>
                                                             </div>
                                                             <div className="ticket-meta">
                                                                 <div className="ticket-meta-item">
                                                                     <Icon icon="mdi:calendar-blank-outline" width="16" />
-                                                                    <span>{event?.startDate ? new Date(event.startDate).toLocaleDateString() : 'Date TBA'}</span>
+                                                                    <span>{event?.startDate ? new Date(event.startDate).toLocaleDateString() : 'Start Date TBA'}</span>
                                                                 </div>
+
                                                                 <div className="ticket-meta-item">
                                                                     <Icon icon="mdi:clock-outline" width="16" />
-                                                                    <span>{event?.startTime || 'TBA'}</span>
+                                                                    <span>{event?.startTime || 'TBA'} - {event?.endTime || 'TBA'}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
