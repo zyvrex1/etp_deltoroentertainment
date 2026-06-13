@@ -411,7 +411,7 @@ const Payments = () => {
         eventId: res.event?._id || res.event,
         category: isBooth ? 'Booth' : (isGA ? 'Ticket' : 'Seated Ticket'),
         amountVal: res.amount?.total || 0,
-        status: res.status === 'confirmed' ? 'completed'
+        status: res.status === 'confirmed' ? 'confirmed'
           : res.status === 'rejected' ? 'rejected'
             : res.status,
         dateStr: res.createdAt

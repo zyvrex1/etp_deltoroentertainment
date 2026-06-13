@@ -382,11 +382,12 @@ eventSchema.virtual("totalBooths").get(function () {
     this.eventType === "Reservation";
 
   if (isExhibition) {
-    if (this.layoutData && Array.isArray(this.layoutData.items)) {
-      const layoutBooths = this.layoutData.items.filter(
+    const items = (this.layoutData && this.layoutData.items) || (this.venueMap && this.venueMap.items) || [];
+    if (Array.isArray(items) && items.length > 0) {
+      const layoutBooths = items.filter(
         (i) => (i.type || "").toLowerCase() === "booth"
       );
-      return layoutBooths.length;
+      if (layoutBooths.length > 0) return layoutBooths.length;
     }
     return (this.booths || []).length;
   }
@@ -402,10 +403,12 @@ eventSchema.virtual("boothsSold").get(function () {
     this.eventType === "Reservation";
 
   if (isExhibition) {
-    if (this.layoutData && Array.isArray(this.layoutData.items)) {
-      return this.layoutData.items.filter(
+    const items = (this.layoutData && this.layoutData.items) || (this.venueMap && this.venueMap.items) || [];
+    if (Array.isArray(items) && items.length > 0) {
+      const soldBooths = items.filter(
         (i) => (i.type || "").toLowerCase() === "booth" && i.status === "sold"
       ).length;
+      if (soldBooths > 0) return soldBooths;
     }
     return (this.booths || []).filter(b => b.status === "sold").length;
   }
@@ -414,8 +417,9 @@ eventSchema.virtual("boothsSold").get(function () {
 });
 
 eventSchema.virtual("boothsReserved").get(function () {
-  if (this.layoutData && Array.isArray(this.layoutData.items)) {
-    const layoutBooths = this.layoutData.items.filter(
+  const items = (this.layoutData && this.layoutData.items) || (this.venueMap && this.venueMap.items) || [];
+  if (Array.isArray(items) && items.length > 0) {
+    const layoutBooths = items.filter(
       (i) => (i.type || "").toLowerCase() === "booth"
     );
     if (layoutBooths.length > 0) {
@@ -432,17 +436,18 @@ eventSchema.virtual("totalTickets").get(function () {
     this.eventType === "Reservation";
 
   if (isSeated) {
-    // 1. Strictly use layoutData if it exists
-    if (this.layoutData && Array.isArray(this.layoutData.items)) {
-      return this.layoutData.items.filter(
-        (i) => (i.type || "").toLowerCase() === "seat"
-      ).length;
+    // 1. Strictly use layoutData or venueMap items if it exists
+    const items = (this.layoutData && this.layoutData.items) || (this.venueMap && this.venueMap.items) || [];
+    if (Array.isArray(items) && items.length > 0) {
+      const seats = items.filter((i) => (i.type || "").toLowerCase() === "seat").length;
+      if (seats > 0) return seats;
     }
 
     // 2. Fallback to legacy seatMap only
-    if (this.seatMap && Array.isArray(this.seatMap.sections)) {
+    const seatMap = this.seatMap || (this.venueMap && this.venueMap.seatMap);
+    if (seatMap && Array.isArray(seatMap.sections)) {
       let total = 0;
-      this.seatMap.sections.forEach((s) => {
+      seatMap.sections.forEach((s) => {
         (s.seats || []).forEach((seat) => {
           total += seat.seatCount || 1;
         });
@@ -464,16 +469,18 @@ eventSchema.virtual("totalTickets").get(function () {
 eventSchema.virtual("ticketsReserved").get(function () {
   let reservedCount = 0;
 
-  // 1. Count from layoutData
-  if (this.layoutData && Array.isArray(this.layoutData.items)) {
-    reservedCount = this.layoutData.items.filter(
+  // 1. Count from layoutData or venueMap items
+  const items = (this.layoutData && this.layoutData.items) || (this.venueMap && this.venueMap.items) || [];
+  if (Array.isArray(items) && items.length > 0) {
+    reservedCount = items.filter(
       (item) => (item.type || "").toLowerCase() === "seat" && item.status === "reserved"
     ).length;
   }
 
   // 2. Count from legacy seatMap
-  if (this.seatMap && Array.isArray(this.seatMap.sections)) {
-    this.seatMap.sections.forEach((s) => {
+  const seatMap = this.seatMap || (this.venueMap && this.venueMap.seatMap);
+  if (seatMap && Array.isArray(seatMap.sections)) {
+    seatMap.sections.forEach((s) => {
       (s.seats || []).forEach((seat) => {
         if (seat.status === "reserved") {
           reservedCount += seat.seatCount || 1;
@@ -492,17 +499,22 @@ eventSchema.virtual("ticketsSold").get(function () {
     this.eventType === "Reservation";
 
   if (isSeated) {
-    // 1. Strictly use layoutData if it exists
-    if (this.layoutData && Array.isArray(this.layoutData.items)) {
-      return this.layoutData.items.filter(
-        (item) => (item.type || "").toLowerCase() === "seat" && item.status === "sold"
+    let soldCount = 0;
+    
+    // 1. Strictly use layoutData or venueMap items if it exists
+    const items = (this.layoutData && this.layoutData.items) || (this.venueMap && this.venueMap.items) || [];
+    if (Array.isArray(items) && items.length > 0) {
+      soldCount = items.filter(
+        (item) => (item.type || "").toLowerCase() === "seat" && (item.status === "sold" || item.status === "partially-sold")
       ).length;
+      return soldCount;
     }
 
     // 2. Count from legacy seatMap
-    if (this.seatMap && Array.isArray(this.seatMap.sections)) {
+    const seatMap = this.seatMap || (this.venueMap && this.venueMap.seatMap);
+    if (seatMap && Array.isArray(seatMap.sections)) {
       let legacySeatsSold = 0;
-      this.seatMap.sections.forEach((s) => {
+      seatMap.sections.forEach((s) => {
         (s.seats || []).forEach((seat) => {
           if (seat.status === "sold" || seat.status === "partially-sold") {
             legacySeatsSold += (seat.type === "Table" || seat.seatCount > 1)

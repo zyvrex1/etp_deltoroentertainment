@@ -1,42 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import axios from 'axios';
 import './ViewReportModal.css';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../../utils/pdfExport';
+import { useAuthContext } from '../../hooks/useAuthContext';
 
 const ViewReportModal = ({ isOpen, onClose }) => {
+    const { user } = useAuthContext();
+    const [reportStats, setReportStats] = useState([]);
+    const [miniStats, setMiniStats] = useState([]);
+    const [topSponsors, setTopSponsors] = useState([]);
+    const [topPromoters, setTopPromoters] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (isOpen && user) {
+            const fetchDashboardReport = async () => {
+                try {
+                    setLoading(true);
+                    const response = await axios.get('http://localhost:4000/api/analytics/dashboard-report', {
+                        headers: { 'Authorization': `Bearer ${user.token}` }
+                    });
+                    setReportStats(response.data.reportStats || []);
+                    setMiniStats(response.data.miniStats || []);
+                    setTopSponsors(response.data.topSponsors || []);
+                    setTopPromoters(response.data.topPromoters || []);
+                } catch (error) {
+                    console.error('Error fetching dashboard report:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchDashboardReport();
+        }
+    }, [isOpen, user]);
+
     if (!isOpen) return null;
-
-    const reportStats = [
-        { label: 'Total Events', value: '156', change: '+12.5%' },
-        { label: 'Tickets Sold', value: '12,458', change: '+8.2%' },
-        { label: 'Total Revenue', value: '$458,920', change: '+15.3%' },
-        { label: 'Active Users', value: '8,542', change: '+5.8%' },
-    ];
-
-    const miniStats = [
-        { label: 'Pending Approvals', value: '8' },
-        { label: 'Booths Reserved', value: '342' },
-        { label: 'Pending Payouts', value: '$45,230' },
-        { label: 'Support Tickets', value: '12' },
-    ];
-
-    const topSponsors = [
-        { name: 'Global Tech', event: 'AI Summit 2026', type: 'Platinum' },
-        { name: 'Nexus Corp', event: 'Creator Expo', type: 'Gold' },
-        { name: 'Startup Hub', event: 'TechStart', type: 'Silver' },
-        { name: 'Startup Hub', event: 'TechStart', type: 'Silver' },
-        { name: 'Startup Hub', event: 'TechStart', type: 'Silver' },
-    ];
-
-    const topPromoters = [
-        { name: 'TechStart Inc', email: 'contact@techstart.com', badge: 'Top Rated' },
-        { name: 'MusicFest LLC', email: 'info@musicfest.com', badge: 'Top Rated' },
-        { name: 'EventPro Solutions', email: 'hello@eventpro.com', badge: 'Top Rated' },
-        { name: 'EventPro Solutions', email: 'hello@eventpro.com', badge: 'Top Rated' },
-        { name: 'EventPro Solutions', email: 'hello@eventpro.com', badge: 'Top Rated' },
-        { name: 'EventPro Solutions', email: 'hello@eventpro.com', badge: 'Top Rated' },
-    ];
 
     const PAGE_TITLE = 'Dashboard Report';
 
@@ -63,7 +63,7 @@ const ViewReportModal = ({ isOpen, onClose }) => {
                     addReportHeader(pdf, PAGE_TITLE, logoData);
                     y = contentTop;
                 }
-                
+
                 y += 4;
                 pdf.setFontSize(12);
                 pdf.setTextColor(30, 60, 114);
@@ -94,7 +94,7 @@ const ViewReportModal = ({ isOpen, onClose }) => {
             pdf.setFont('helvetica', 'bold');
             pdf.text('Top Sponsors', MARGIN, y);
             y += 10;
-            
+
             const sponsorHeaders = ['Name', 'Event', 'Type'];
             const sponsorRows = topSponsors.map(s => [
                 s.name,
@@ -110,7 +110,7 @@ const ViewReportModal = ({ isOpen, onClose }) => {
             pdf.setFont('helvetica', 'bold');
             pdf.text('Top Promoters', MARGIN, y);
             y += 10;
-            
+
             const promoterHeaders = ['Name', 'Email', 'Badge'];
             const promoterRows = topPromoters.map(p => [
                 p.name,
@@ -148,62 +148,70 @@ const ViewReportModal = ({ isOpen, onClose }) => {
                     <div className="small-body-text">
 
                         <div className="report-text-content">
-                            <div className="report-section-text">
-                                <h3>Key Metrics</h3>
-                                {reportStats.map((stat, idx) => (
-                                    <div key={idx} className="report-text-item">
-                                        <span className="regular-body-text report-text-label">{stat.label}:</span>
-                                        <h4 className="report-text-value">{stat.value}</h4>
-                                        <span className="smaller-body-text report-text-change">({stat.change})</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="report-section-text">
-                                <h3>Additional Statistics</h3>
-                                {miniStats.map((stat, idx) => (
-                                    <div key={idx} className="report-text-item">
-                                        <span className="regular-body-text report-text-label">{stat.label}:</span>
-                                        <h4 className="report-text-value">{stat.value}</h4>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="report-section-text report-promoters-section">
-                                <h3>Top Sponsors</h3>
-                                <div className="report-promoters-list">
-                                    {topSponsors.map((sponsor, idx) => (
-                                        <div key={idx} className="report-promoter-item">
-                                            <div className="report-promoter-info">
-                                                <h6 className="report-promoter-name">{sponsor.name}</h6>
-                                                <span className="small-body-text report-promoter-email">{sponsor.event}</span>
-                                            </div>
-                                            <span className="button-label report-promoter-badge">{sponsor.type}</span>
-                                        </div>
-                                    ))}
+                            {loading ? (
+                                <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                                    <Icon icon="eos-icons:loading" width="32" height="32" color="#303c72" />
                                 </div>
-                            </div>
-
-                            <div className="report-section-text report-promoters-section">
-                                <h3>Top Promoters</h3>
-                                <div className="report-promoters-list">
-                                    {topPromoters.map((promoter, idx) => (
-                                        <div key={idx} className="report-promoter-item">
-                                            <div className="report-promoter-info">
-                                                <h6 className="report-promoter-name">{promoter.name}</h6>
-                                                <span className="small-body-text report-promoter-email">{promoter.email}</span>
+                            ) : (
+                                <>
+                                    <div className="report-section-text">
+                                        <h3>Key Metrics</h3>
+                                        {reportStats.map((stat, idx) => (
+                                            <div key={idx} className="report-text-item">
+                                                <span className="regular-body-text report-text-label">{stat.label}:</span>
+                                                <h4 className="report-text-value">{stat.value}</h4>
+                                                <span className="smaller-body-text report-text-change">({stat.change})</span>
                                             </div>
-                                            <span className="button-label report-promoter-badge">{promoter.badge}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                                        ))}
+                                    </div>
 
-                            <div className="report-section-text">
-                                <p className="report-text-description">
-                                    Report generated from dashboard data. Use the main dashboard for real-time updates.
-                                </p>
-                            </div>
+                                    <div className="report-section-text">
+                                        <h3>Additional Statistics</h3>
+                                        {miniStats.map((stat, idx) => (
+                                            <div key={idx} className="report-text-item">
+                                                <span className="regular-body-text report-text-label">{stat.label}:</span>
+                                                <h4 className="report-text-value">{stat.value}</h4>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="report-section-text report-promoters-section">
+                                        <h3>Top Sponsors</h3>
+                                        <div className="report-promoters-list">
+                                            {topSponsors.map((sponsor, idx) => (
+                                                <div key={idx} className="report-promoter-item">
+                                                    <div className="report-promoter-info">
+                                                        <h6 className="report-promoter-name">{sponsor.name}</h6>
+                                                        <span className="small-body-text report-promoter-email">{sponsor.event}</span>
+                                                    </div>
+                                                    <span className="button-label report-promoter-badge">{sponsor.type}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="report-section-text report-promoters-section">
+                                        <h3>Top Promoters</h3>
+                                        <div className="report-promoters-list">
+                                            {topPromoters.map((promoter, idx) => (
+                                                <div key={idx} className="report-promoter-item">
+                                                    <div className="report-promoter-info">
+                                                        <h6 className="report-promoter-name">{promoter.name}</h6>
+                                                        <span className="small-body-text report-promoter-email">{promoter.email}</span>
+                                                    </div>
+                                                    <span className="button-label report-promoter-badge">{promoter.badge}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="report-section-text">
+                                        <p className="report-text-description">
+                                            Report generated from dashboard data. Use the main dashboard for real-time updates.
+                                        </p>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 

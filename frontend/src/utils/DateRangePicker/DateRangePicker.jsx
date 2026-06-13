@@ -254,11 +254,16 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
 
     const currentStart = rangeStart || getInitialRange().start;
     const currentEnd = rangeEnd || getInitialRange().end;
-    const buttonLabel = value?.presetLabel && value?.start && value?.end
-        ? value.preset === 'all'
-            ? 'All time'
-            : `${value.presetLabel}: ${formatDateLabel(new Date(value.start))} - ${formatDateLabel(new Date(value.end))}`
-        : placeholder;
+    let buttonLabel = placeholder;
+    if (value?.start && value?.end) {
+        if (value.preset === 'all') {
+            buttonLabel = 'All time';
+        } else if (value.presetLabel) {
+            buttonLabel = `${value.presetLabel}: ${formatDateLabel(new Date(value.start))} - ${formatDateLabel(new Date(value.end))}`;
+        } else {
+            buttonLabel = `${formatDateLabel(new Date(value.start))} - ${formatDateLabel(new Date(value.end))}`;
+        }
+    }
 
     const modalContent = isOpen ? (
         <div className="general-modal-overlay" onClick={handleClose}>

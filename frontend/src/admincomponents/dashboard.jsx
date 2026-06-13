@@ -47,13 +47,13 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function Dashboard() {
-        const { user } = useAuthContext();
-        const { notifications } = useNotificationsContext();
-        const navigate = useNavigate();
-        const [isModalOpen, setIsModalOpen] = useState(false);
-        const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-        const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-        const [showAllNotifs, setShowAllNotifs] = useState(false);
+    const { user } = useAuthContext();
+    const { notifications } = useNotificationsContext();
+    const navigate = useNavigate();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    const [showAllNotifs, setShowAllNotifs] = useState(false);
 
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -92,7 +92,7 @@ export default function Dashboard() {
 
         try {
             // Fetch events, users, and concerns in parallel
-          const [events, users, concerns, reservations, payouts] = await Promise.all([
+            const [events, users, concerns, reservations, payouts] = await Promise.all([
                 eventsService.getEvents(user.token),
                 adminService.getUsers(user.token),
                 concernService.getAdminConcerns(user.token),
@@ -101,11 +101,11 @@ export default function Dashboard() {
             ]);
 
             // Filter out cancelled reservations for all metrics
-      const activeReservations = reservations.filter(
-    res => res.status === 'confirmed'
-);
+            const activeReservations = reservations.filter(
+                res => res.status === 'confirmed'
+            );
 
-             const pendingPayoutsCount = (Array.isArray(payouts) ? payouts : [])
+            const pendingPayoutsCount = (Array.isArray(payouts) ? payouts : [])
                 .filter(p => p.status === 'pending' || p.status === 'requested').length;
 
             const pendingCount = events.filter(e => e.status === 'pending').length;
@@ -229,7 +229,7 @@ export default function Dashboard() {
                 const seatRevenue = monthReservations
                     .filter(res => res.type === 'seat')
                     .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
-                
+
                 return { month, total, boothRevenue, seatRevenue };
             });
 
@@ -259,8 +259,8 @@ export default function Dashboard() {
                             totalBooths++;
                         }
                     });
-                } 
-                
+                }
+
                 // 2. Fallback to legacy seatMap if no seats found
                 if (totalSeats === 0 && e.seatMap && e.seatMap.sections) {
                     e.seatMap.sections.forEach(sec => {
@@ -279,7 +279,7 @@ export default function Dashboard() {
                 // Exception: General Admission events use priceLevels, but ONLY if no items of that category are on the map
                 const isGA = e.eventType === "General Admission";
                 const hasPlacedItems = totalSeats > 0 || totalBooths > 0;
-                
+
                 if (totalSeats === 0 && (isGA ? totalBooths === 0 : !hasPlacedItems) && Array.isArray(e.priceLevels)) {
                     totalSeats = e.priceLevels
                         .filter(p => !p.name?.toLowerCase().includes('booth') && !p.isBooth)
@@ -342,7 +342,7 @@ export default function Dashboard() {
             events.forEach(e => {
                 if (!e.createdBy || e.createdBy.role !== 'promoter') return;
                 const promoterId = String(e.createdBy._id || e.createdBy);
-                
+
                 const eventRes = activeReservations.filter(res => String(res.event?._id || res.event) === String(e._id));
                 const totalSalesCount = eventRes.length; // Count of individual reservations
 
@@ -398,7 +398,7 @@ export default function Dashboard() {
                 boothTrend,
                 revenueTrend,
                 ticketTrend,
-                pendingPayoutsCount: pendingPayoutsCount, 
+                pendingPayoutsCount: pendingPayoutsCount,
                 loading: false
             });
 
@@ -549,12 +549,12 @@ export default function Dashboard() {
                     <p>System overview and key metrics.</p>
                 </div>
                 <div className="header-actions">
-                    {/* <button className="outlined-button view-report-btn" onClick={() => setIsReportModalOpen(true)}>
+                    <button className="primary-button create-btn" onClick={() => setIsReportModalOpen(true)}>
                         View Report
-                    </button> */}
-                    <button className="primary-button create-btn" onClick={() => setIsModalOpen(true)}>
-                        Create Event
                     </button>
+                    {/* <button className="primary-button create-btn" onClick={() => setIsModalOpen(true)}>
+                        Create Event
+                    </button> */}
                 </div>
             </div>
 
@@ -580,7 +580,7 @@ export default function Dashboard() {
                             <h3>{stats.loading ? "..." : stats.pendingApprovals}</h3>
                         </div>
                     </div>
-                   <div className="dashboard-stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon red"><Icon icon="mdi:currency-usd" width="24" /></span>
                             <span className="trend hidden"></span>
@@ -590,7 +590,7 @@ export default function Dashboard() {
                             <h3>{stats.loading ? "..." : stats.pendingPayoutsCount}</h3>
                         </div>
                     </div>
-                     <div className="dashboard-stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon yellow"><Icon icon="mdi:alert-outline" width="24" /></span>
                             <span className="trend hidden"></span>
@@ -602,13 +602,13 @@ export default function Dashboard() {
                             <span className="view-details" onClick={() => navigate('/admin/support')}>
                                 View details <Icon icon="mdi:arrow-right" />
                             </span>
-                        </div>       
+                        </div>
                     </div>
                     <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon purple"><Icon icon="mdi:account-group-outline" width="24" /></span>
                             <span className={`trend ${stats.userTrend >= 0 ? 'up' : 'down'}`}>
-                                <Icon icon={stats.userTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                <Icon icon={stats.userTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} />
                                 {stats.loading ? "0%" : `${Math.abs(stats.userTrend).toFixed(1)}%`}
                             </span>
                         </div>
@@ -624,7 +624,7 @@ export default function Dashboard() {
                         <div className="upper-stats">
                             <span className="icon orange"><Icon icon="mdi:map-marker-outline" width="24" /></span>
                             <span className={`trend ${stats.boothTrend >= 0 ? 'up' : 'down'}`}>
-                                <Icon icon={stats.boothTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                <Icon icon={stats.boothTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} />
                                 {stats.loading ? "0%" : `${Math.abs(stats.boothTrend).toFixed(1)}%`}
                             </span>
                         </div>
@@ -634,11 +634,11 @@ export default function Dashboard() {
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                     <div className="dashboard-stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon blue"><Icon icon="mdi:ticket-outline" width="24" /></span>
                             <span className={`trend ${stats.ticketTrend >= 0 ? 'up' : 'down'}`}>
-                                <Icon icon={stats.ticketTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                <Icon icon={stats.ticketTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} />
                                 {stats.loading ? "0%" : `${Math.abs(stats.ticketTrend).toFixed(1)}%`}
                             </span>
                         </div>
@@ -648,11 +648,11 @@ export default function Dashboard() {
                             <p className="smaller-body-text left-aligned">vs last month</p>
                         </div>
                     </div>
-                     <div className="dashboard-stat-card">
+                    <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon green"><Icon icon="mdi:currency-usd" width="24" /></span>
                             <span className={`trend ${stats.revenueTrend >= 0 ? 'up' : 'down'}`}>
-                                <Icon icon={stats.revenueTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} /> 
+                                <Icon icon={stats.revenueTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} />
                                 {stats.loading ? "0%" : `${Math.abs(stats.revenueTrend).toFixed(1)}%`}
                             </span>
                         </div>
@@ -692,14 +692,14 @@ export default function Dashboard() {
                                             tick={{ fontSize: isMobile ? 9 : 11 }}
                                         />
                                         <RechartsTooltip content={<CustomTooltip />} />
-                                        
-                                         {/* Booths Bar Stack */}
-                                         <Bar dataKey="boothsAvailable" stackId="booths" name="Booths Available" fill="#ffe0cc" radius={[4, 4, 0, 0]} />
-                                         <Bar dataKey="boothsSold" stackId="booths" name="Booths Sold" fill="#ff6b00" radius={[0, 0, 0, 0]} />
-                                         
-                                         {/* Tickets (Seats) Bar Stack */}
-                                         <Bar dataKey="seatsAvailable" stackId="tickets" name="Seats Available" fill="#e6e6e6" radius={[4, 4, 0, 0]} />
-                                         <Bar dataKey="seatsSold" stackId="tickets" name="Seats Sold" fill="#0059ff" radius={[0, 0, 0, 0]} />
+
+                                        {/* Booths Bar Stack */}
+                                        <Bar dataKey="boothsAvailable" stackId="booths" name="Booths Available" fill="#ffe0cc" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="boothsSold" stackId="booths" name="Booths Sold" fill="#ff6b00" radius={[0, 0, 0, 0]} />
+
+                                        {/* Tickets (Seats) Bar Stack */}
+                                        <Bar dataKey="seatsAvailable" stackId="tickets" name="Seats Available" fill="#e6e6e6" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="seatsSold" stackId="tickets" name="Seats Sold" fill="#0059ff" radius={[0, 0, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                                 <div className="chart-legend sales-legend">
@@ -775,9 +775,9 @@ export default function Dashboard() {
                                         tickFormatter={(val) => `$${val / 1000}k`}
                                     />
 
-                                     <RechartsTooltip content={<CustomTooltip />} />
+                                    <RechartsTooltip content={<CustomTooltip />} />
 
-                                     <Area
+                                    <Area
                                         type="monotone"
                                         dataKey="seatRevenue"
                                         stackId="1"
@@ -838,7 +838,7 @@ export default function Dashboard() {
                                         tickFormatter={(val) => val >= 1000 ? `${val / 1000}k` : val}
                                     />
 
-                                     <RechartsTooltip content={<CustomTooltip />} />
+                                    <RechartsTooltip content={<CustomTooltip />} />
 
                                     <Line
                                         type="monotone"

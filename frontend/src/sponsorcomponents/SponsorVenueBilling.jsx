@@ -307,7 +307,7 @@ const itemTotal = Math.max(0, itemSubtotal + (item.processingFee || 0) + (item.e
                     const response = await axios.post(
                         `${BACKEND_URL}/api/events/${eventId}/reserve-booth`,
                         {
-                            boothId,
+                            boothId: boothLabel || boothId,
                             batchId: sharedBatchId,   // ← same ID for every booth in this order
                             billingAddress: {
                                 companyName: billingInfo.companyName,
