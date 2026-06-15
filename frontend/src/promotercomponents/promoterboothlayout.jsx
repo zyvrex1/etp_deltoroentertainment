@@ -689,11 +689,19 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
     };
 
     const totalPlaced = placedItems.length;
+    const totalPlaceableQuantity = categories
+        .filter(c => c.type !== "General Fee")
+        .reduce((sum, c) => sum + (c.quantity || 0), 0);
     const potentialRevenue = categories.reduce((sum, c) => sum + (c.price * c.quantity), 0);
     const currentRevenue = placedItems.reduce((sum, item) => {
-        const cat = categories.find(c => c.id === item.categoryId);
-        return sum + (cat ? cat.price : 0);
-    }, 0);
+        if (item.status === 'sold') {
+            const cat = categories.find(c => c.id === item.categoryId);
+            return sum + (cat ? cat.price : 0);
+        }
+        return sum;
+    }, 0) + categories
+        .filter(c => c.type === "General Fee")
+        .reduce((sum, c) => sum + ((c.sold || 0) * c.price), 0);
 
     // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Y = redo, Escape = deselect
     useEffect(() => {
@@ -1042,7 +1050,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                         <div className="summary-list">
                             <div className="summary-item">
                                 <span className="label">Placed Units</span>
-                                <span className="value">{totalPlaced} / {categories.reduce((a, b) => a + b.quantity, 0)}</span>
+                                <span className="value">{totalPlaced} / {totalPlaceableQuantity}</span>
                             </div>
                             <div className="summary-item">
                                 <span className="label">Current Revenue</span>
