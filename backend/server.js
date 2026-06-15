@@ -14,6 +14,7 @@ for (const key of REQUIRED_ENV) {
 }
 
 const express = require('express')
+
 const dns = require('dns')
 dns.setServers(['8.8.8.8', '8.8.4.4'])
 
@@ -23,6 +24,11 @@ const fs = require('fs')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
 const compression = require('compression')
+
+const { appLogger } = require('./config/logger')
+const requestLogger = require('./middleware/requestLogger')
+const { onRateLimitExceeded } = require('./middleware/securityLogger')
+const SecurityEvents = require('./utils/securityEvents')
 
 // Routes
 const authRoutes = require('./routes/authRoutes')
@@ -46,12 +52,14 @@ const payoutRoutes = require('./routes/payoutRoutes');
 const digitalgiftsRoutes = require('./routes/digitalgiftsRoutes');
 const auditLogRoutes = require('./routes/auditlogRoutes')
 const uploadRoutes = require('./routes/uploadRoutes');
-const errorHandler = require('./middleware/errorHandler') 
+const errorHandler = require('./middleware/errorHandler')
 
 const app = express()
 
 // ✅ STEP 13: Trust proxy for accurate client IP detection behind reverse proxies
 app.set('trust proxy', 1)
+
+app.use(requestLogger)
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, 'uploads')
@@ -107,13 +115,13 @@ app.use((req, res, next) => {
   next()
 })
 
-// Single dev-only logger
-if (process.env.NODE_ENV !== 'production') {
-  app.use((req, res, next) => {
-    console.log(req.method, req.path)
-    next()
-  })
-}
+// // Single dev-only logger
+// if (process.env.NODE_ENV !== 'production') {
+//   app.use((req, res, next) => {
+//     console.log(req.method, req.path)
+//     next()
+//   })
+// }
 
 // helmet sets secure HTTP headers (XSS, clickjacking, MIME sniff, etc.)
 const allowedImgSrc = process.env.NODE_ENV === 'production'
@@ -141,7 +149,8 @@ app.use(rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later.' }
+  message: { error: 'Too many requests, please try again later.' },
+  handler: onRateLimitExceeded   // ← ADD THIS LINE
 }))
 
 // Auth limiter — stricter for login/logout endpoints
@@ -150,7 +159,8 @@ const authLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later.' }
+  message: { error: 'Too many requests, please try again later.' },
+  handler: onRateLimitExceeded   // ← ADD THIS LINE
 })
 
 // Upload limiter — generous since uploads are intentional user actions,
@@ -238,7 +248,7 @@ connectDB().then(() => {
   const io = socket.init(server)
 
   server.listen(process.env.PORT, () => {
-    console.log(`🚀  Server running on port ${process.env.PORT} [${process.env.NODE_ENV}]`)
+    appLogger.info('ETP server started', { port: process.env.PORT, env: process.env.NODE_ENV })
     if (process.send) process.send('ready')
   })
 
@@ -252,6 +262,6 @@ connectDB().then(() => {
     setTimeout(() => process.exit(1), 7000)
   }
 
-  process.on('SIGINT',  () => shutdown('SIGINT'))
+  process.on('SIGINT', () => shutdown('SIGINT'))
   process.on('SIGTERM', () => shutdown('SIGTERM'))
 })

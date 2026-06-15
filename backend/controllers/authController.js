@@ -9,6 +9,7 @@ const crypto = require('crypto')
 const { emitUpdate } = require('../socket')
 const { recordAuditLog, emitAuditSocketEvents } = require('./auditlogController')
 const { getJwtSecret } = require('../utils/jwt')
+const SecurityEvents = require('../utils/securityEvents')
 
 const createToken = (user) => {
   return jwt.sign(
@@ -92,6 +93,7 @@ const ip =
         userAgent: ua,
         details:   `New ${user.role} account self-registered`,
       });
+      SecurityEvents.successfulLogin({ ip, userId: user._id })
     } catch (e) {
       console.error('AuditLog write error:', e.message);
       emitAuditSocketEvents('USER_SIGNUP');
@@ -157,6 +159,8 @@ const loginUser = async (req, res) => {
       details:   'User logged in successfully',
     });
 
+    SecurityEvents.successfulLogin({ ip, userId: user._id })
+
     res.status(200).json({
       _id:            user._id,
       email:          user.email,
@@ -193,6 +197,9 @@ const loginUser = async (req, res) => {
         userAgent: ua,
         details:   err.message,
       });
+
+      SecurityEvents.failedLogin({ ip, userId: email, reason: err.message })
+
     } catch (auditErr) {
       console.error('AuditLog write error:', auditErr.message);
       emitAuditSocketEvents('LOGIN_FAILED');
