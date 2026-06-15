@@ -170,10 +170,16 @@ const autoHealEvents = async (eventsArr) => {
       }
 
       // 4. AUTO-HEAL Mismatched Event Types
-      // If it's GA but has layout items, we MUST flip it so virtuals work correctly
+      // If it's GA but has reservable layout items (seats or booths), flip it so virtuals work correctly
       if (event.eventType === "General Admission" && event.layoutData && event.layoutData.items && event.layoutData.items.length > 0) {
-        event.eventType = "Reservation";
-        changed = true;
+        const hasReservableItems = event.layoutData.items.some(item => {
+          const t = (item.type || "").toLowerCase();
+          return t === "seat";
+        });
+        if (hasReservableItems) {
+          event.eventType = "Reservation";
+          changed = true;
+        }
       }
 
       // 5. Persist corrections using findByIdAndUpdate
@@ -792,12 +798,28 @@ const deleteEvent = async (req, res) => {
 
   // 3. Cascade delete associated records
   try {
+    // Delete event image
+    if (event.image) {
+      removeEventImage(event.image);
+    }
+
     // Delete all reservations for this event
     await Reservation.deleteMany({ event: id });
 
     // Delete all merchandise/products for this event
     // Note: Merchandise eventId is a string in the model
     await Merchandise.deleteMany({ eventId: id.toString() });
+
+    // Delete venue map and its background image
+    if (event.venueMap) {
+      const venueMap = await VenueMap.findById(event.venueMap);
+      if (venueMap) {
+        if (venueMap.backgroundImage) {
+          removeEventImage(venueMap.backgroundImage);
+        }
+        await VenueMap.findByIdAndDelete(event.venueMap);
+      }
+    }
 
     console.log(`Cascade delete completed for event: ${id}`);
   } catch (cascadeError) {
@@ -1211,6 +1233,7 @@ const removeEventImage = (filename) => {
   if (!filename) return;
 
   const filePath = path.join(__dirname, "../uploads/", filename);
+  const tempPath = `${filePath}.tmp`;
 
   // Check if file exists before trying to delete
   fs.access(filePath, fs.constants.F_OK, (err) => {
@@ -1218,6 +1241,16 @@ const removeEventImage = (filename) => {
       fs.unlink(filePath, (err) => {
         if (err) console.error("Error deleting file:", err);
         else console.log("Old image deleted from server:", filename);
+      });
+    }
+  });
+
+  // Check if temp file exists before trying to delete
+  fs.access(tempPath, fs.constants.F_OK, (err) => {
+    if (!err) {
+      fs.unlink(tempPath, (err) => {
+        if (err) console.error("Error deleting temp file:", err);
+        else console.log("Old temp image deleted from server:", `${filename}.tmp`);
       });
     }
   });

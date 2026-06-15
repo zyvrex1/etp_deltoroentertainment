@@ -168,9 +168,8 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
   // Initial load when category changes
   useEffect(() => {
     if (selectedCategoryId && selectedCategory) {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
       const eventImgUrl = selectedEvent?.image && selectedEvent.image !== "null"
-        ? `${backendUrl}/uploads/${selectedEvent.image}`
+        ? `/uploads/${selectedEvent.image}`
         : "/assets/eventbg.jpg";
 
       const existingLayout = selectedEvent?.ticketLayouts?.find(l =>
@@ -260,9 +259,8 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
     const eventDate = formatDate(selectedEvent?.startDate);
     const eventTime = formatTime(selectedEvent?.startTime);
     const venueStr = `${selectedEvent?.venue?.name || 'Venue'} - ${selectedEvent?.venue?.address || 'Address'}`;
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
     const eventImgUrl = selectedEvent?.image && selectedEvent.image !== "null"
-      ? `${backendUrl}/uploads/${selectedEvent.image}`
+      ? `/uploads/${selectedEvent.image}`
       : "/assets/eventbg.jpg";
 
     setTicketItems(prev => prev.map(item => {
@@ -390,7 +388,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
           const eventTime = formatTime(data.startTime);
           const venueStr = `${data.venue?.name || 'Venue'} - ${data.venue?.address || 'Address'}`;
           const eventImgUrl = data.image && data.image !== "null"
-            ? `${backendUrl}/uploads/${data.image}`
+            ? `/uploads/${data.image}`
             : "/assets/eventbg.jpg";
 
           setTicketItems(prev => prev.map(item => {

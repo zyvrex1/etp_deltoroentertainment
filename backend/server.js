@@ -54,10 +54,10 @@ const app = express()
 app.set('trust proxy', 1)
 
 // Ensure uploads folder exists
-// const uploadDir = path.join(__dirname, 'uploads')
-// if (!fs.existsSync(uploadDir)) {
-//   fs.mkdirSync(uploadDir)
-// }
+const uploadDir = path.join(__dirname, 'uploads')
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir)
+}
 
 // middleware
 app.use(express.json({ limit: "10mb" }))
@@ -133,29 +133,40 @@ app.use(helmet({
     }
   }
 }))
-// ─── STEP 13: Rate limiting ────────────────────────────────────
-// Limits each IP to 100 requests per 15 minutes on all routes
+// ─── Rate limiting ─────────────────────────────────────────────
+// Global limiter — raised to 300 req/15min to accommodate admin
+// tools (LayoutBuilder, EventSelection) that make many API calls.
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' }
 }))
 
-// General limiter for other auth endpoints (profile check, updates, logout)
+// Auth limiter — stricter for login/logout endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 60, // Relaxed from 20 to 60 for general routing; strict login/signup routes use the 5-limit instead
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' }
 })
 
+// Upload limiter — generous since uploads are intentional user actions,
+// not the kind of traffic rate limiting is designed to stop.
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Upload limit reached. Please wait before uploading again.' }
+})
+
 
 
 // serve uploaded images
-// app.use('/uploads', express.static(uploadDir))
+app.use('/uploads', express.static(uploadDir))
 
 // API routes
 app.use('/api/auth', authLimiter, authRoutes)
@@ -179,7 +190,7 @@ app.use('/api/orders', orderRoutes)
 app.use('/api/payouts', payoutRoutes)
 app.use('/api/digital-gifts', digitalgiftsRoutes)
 app.use('/api/audit-logs', auditLogRoutes)
-app.use('/api/uploads', uploadRoutes)
+app.use('/api/uploads', uploadLimiter, uploadRoutes)
 
 app.get('/api/test-error', (req, res, next) => {
   const err = new Error('Test error - delete this route after')

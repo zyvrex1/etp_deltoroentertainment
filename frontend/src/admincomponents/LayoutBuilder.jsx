@@ -641,7 +641,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
     const hasSeats = placedItems.some(i => i.type === 'seat' || i.isSeat);
     const hasBooths = placedItems.some(i => i.type === 'booth' || i.isBooth);
 
-    if (hasSeats || hasBooths) {
+    if (hasSeats) {
       autoEventType = "Reservation";
     }
 
