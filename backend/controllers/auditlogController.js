@@ -65,8 +65,7 @@ async function recordAuditLog(entry) {
 // ─────────────────────────────────────────────────────────────────────────────
 const getAuditLogs = async (req, res) => {
   try {
-    const page      = Math.max(1, parseInt(req.query.page)  || 1)
-    const limit     = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10))
+   const { page, limit, skip } = req.pagination;
     const search    = (req.query.search || '').trim()
     const startDate = req.query.startDate ? new Date(req.query.startDate) : null
     const endDate   = req.query.endDate   ? new Date(req.query.endDate)   : null
@@ -104,7 +103,7 @@ const getAuditLogs = async (req, res) => {
     }
 
    const [logs, total, totalStored] = await Promise.all([
-  AuditLog.find(baseFilter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+  AuditLog.find(baseFilter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
   AuditLog.countDocuments(baseFilter),
   page === 1 ? AuditLog.countDocuments() : Promise.resolve(null),
 ])
@@ -128,8 +127,10 @@ const getAuditLogs = async (req, res) => {
       timestamp: log.createdAt,
     }))
 
-    res.status(200).json({
-      logs:        shaped,
+     res.status(200).json({
+
+    logs: shaped,
+pagination: { page,totalPages: Math.ceil( total/limit), total,totalStored, isSearching: !!search},
       currentPage: page,
       totalPages:  Math.ceil(total / limit),
       totalShown:  total,       // records in the current visible pool (≤100 unless searching)

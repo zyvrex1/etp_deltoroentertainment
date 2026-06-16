@@ -9,12 +9,21 @@ const getAuthHeaders = (token) => ({
   headers: { Authorization: `Bearer ${token}` }
 });
 
-export const getNotifications = (token) => API.get('/', getAuthHeaders(token));
-export const markAllAsRead = (token) => API.patch('/read-all', {}, getAuthHeaders(token));
-export const markAsRead = (id, token) => API.patch(`/${id}/read`, {}, getAuthHeaders(token));
-
-export default {
-  getNotifications,
-  markAllAsRead,
-  markAsRead
-};
+export const getNotifications = (token, { cursor, limit } = {}) =>
+  API.get('/', {
+    ...getAuthHeaders(token),
+    params: {
+      ...(cursor ? { cursor } : {}),   // omit cursor on first load
+      ...(limit  ? { limit  } : {}),
+    },
+  })
+ 
+// ── PATCH /api/notifications/read-all ────────────────────────────────────────
+export const markAllAsRead = (token) =>
+  API.patch('/read-all', {}, getAuthHeaders(token))
+ 
+// ── PATCH /api/notifications/:id/read ────────────────────────────────────────
+export const markAsRead = (id, token) =>
+  API.patch(`/${id}/read`, {}, getAuthHeaders(token))
+ 
+export default { getNotifications, markAllAsRead, markAsRead }

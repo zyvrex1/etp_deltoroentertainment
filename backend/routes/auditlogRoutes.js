@@ -1,11 +1,17 @@
-const express = require('express')
-const router  = express.Router()
-
-const { getAuditLogs } = require('../controllers/auditlogController')
-const requireAuth      = require('../middleware/requireAuth')   // your existing auth middleware
-const requireRole      = require('../middleware/requireRole')   // your existing role middleware
-
-// Admin-only — adjust middleware names to match your project
-router.get('/', requireAuth, requireRole('admin'), getAuditLogs)
-
+const express  = require('express')
+const router   = express.Router()
+const { getAuditLogs }        = require('../controllers/auditlogController')
+const requireAuth             = require('../middleware/requireAuth')
+const requireRole             = require('../middleware/requireRole')
+const paginate                = require('../middleware/paginate')
+const { validateOffsetQuery } = require('../middleware/validateSchemas')
+ 
+router.get('/',
+  requireAuth,
+  requireRole('admin'),
+  validateOffsetQuery,   // ← Zod: validates page, limit, sort, order, search
+  paginate,              // ← sets req.pagination (page, skip, limit, sort, order)
+  getAuditLogs
+)
+ 
 module.exports = router

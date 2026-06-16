@@ -144,8 +144,28 @@ const updateMerchandiseSchema = z.object({
   status:      z.enum(['active', 'inactive', 'draft']).optional()
 }).strict()
 
+// ─── Pagination ──────────────────────────────
+const offsetPaginationSchema = z.object({
+  page:   z.coerce.number().int().min(1).optional(),
+  limit:  z.coerce.number().int().min(1).max(100).optional(),
+  sort:   z.string().trim().optional(),
+  order:  z.enum(['asc','desc']).optional(),
+  search: z.string().trim().optional()
+})
+
+const cursorPaginationSchema = z.object({
+  cursor: z.string().trim().optional(),
+  limit:  z.coerce.number().int().min(1).max(100).optional(),
+  sort:   z.string().trim().optional(),
+  order:  z.enum(['asc','desc']).optional()
+})
+
 // ─── Exports ─────────────────────────────────────────────────
 module.exports = {
+
+  validateOffsetQuery: validateQuery(offsetPaginationSchema),
+validateCursorQuery: validateQuery(cursorPaginationSchema),
+
   // Orders
   validateCreateOrder:        validate(createOrderSchema),
   validateUpdateOrder:        validate(updateOrderSchema),
