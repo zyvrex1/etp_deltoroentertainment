@@ -12,6 +12,7 @@ import adminService from "../services/adminService";
 const UserManagement = () => {
   const { user } = useAuthContext();
   const [allUsers, setAllUsers] = useState([]);
+  const [userCounts, setUserCounts] = useState({ all: 0, admins: 0, promoters: 0, sponsors: 0, customers: 0 });
 
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isViewUserModalOpen, setIsViewUserModalOpen] = useState(false);
@@ -39,8 +40,19 @@ const UserManagement = () => {
     setIsLoading(true);
 
     try {
-      const json = await adminService.getUsers(user.token);
-      setAllUsers(json);
+      const response = await adminService.getUsers(user.token, {
+        page,
+        limit: itemsPerPage,
+        search: searchQuery,
+        role: activeTab
+      });
+      setAllUsers(response.data || []);
+      if (response.counts) {
+        setUserCounts(response.counts);
+      }
+      if (response.pagination) {
+        setTotal(response.pagination);
+      }
     } catch (err) {
       console.error("Error fetching users:", err);
     } finally {
@@ -49,32 +61,33 @@ const UserManagement = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, [user]);
-
-  const usersExcludingCurrent = allUsers.filter(u => u._id !== user._id);
+    const timeoutId = setTimeout(() => {
+      fetchUsers();
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [user, page, searchQuery, activeTab]);
 
   const tabs = [
-    { id: "all-users", label: "All Users", count: usersExcludingCurrent.length },
+    { id: "all-users", label: "All Users", count: userCounts.all },
     {
       id: "admins",
       label: "Admins",
-      count: usersExcludingCurrent.filter((u) => u.role === "admin").length,
+      count: userCounts.admins,
     },
     {
       id: "promoters",
       label: "Promoters",
-      count: usersExcludingCurrent.filter((u) => u.role === "promoter").length,
+      count: userCounts.promoters,
     },
     {
       id: "sponsors",
       label: "Sponsors",
-      count: usersExcludingCurrent.filter((u) => u.role === "sponsor").length,
+      count: userCounts.sponsors,
     },
     {
       id: "customers",
       label: "Customers",
-      count: usersExcludingCurrent.filter((u) => u.role === "customer").length,
+      count: userCounts.customers,
     },
   ];
 
@@ -142,45 +155,7 @@ const UserManagement = () => {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  const getTableData = () => {
-    // Filter out the logged-in user first
-    let usersExcludingCurrent = allUsers.filter(u => u._id !== user._id);
-
-    // Sort by createdAt descending (recently created first)
-    usersExcludingCurrent.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    switch (activeTab) {
-      case "all-users":
-        return usersExcludingCurrent;
-      case "admins":
-        return usersExcludingCurrent.filter((u) => u.role === "admin");
-      case "customers":
-        return usersExcludingCurrent.filter((u) => u.role === "customer");
-      case "promoters":
-        return usersExcludingCurrent.filter((u) => u.role === "promoter");
-      case "sponsors":
-        return usersExcludingCurrent.filter((u) => u.role === "sponsor");
-      default:
-        return [];
-    }
-  };
-
-  const filteredData = getTableData().filter((item) => {
-    const searchStr = searchQuery.toLowerCase();
-    return (
-      `${item.firstName || ""} ${item.lastName || ""}`
-        .toLowerCase()
-        .includes(searchStr) ||
-      (item.email && item.email.toLowerCase().includes(searchStr))
-    );
-  });
-
-  useEffect(() => {
-    setTotal({
-      total: filteredData.length,
-      totalPages: Math.ceil(filteredData.length / itemsPerPage) || 1
-    });
-  }, [filteredData.length, setTotal]);
+  const paginatedData = allUsers;
 
   useEffect(() => {
     setExpandedRow(null);
@@ -188,12 +163,6 @@ const UserManagement = () => {
       topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [page]);
-
-  const startIndex = (page - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + itemsPerPage,
-  );
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);

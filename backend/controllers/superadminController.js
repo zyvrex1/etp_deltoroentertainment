@@ -137,23 +137,75 @@ const createUser = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const isRequesterAdmin = req.user.role === 'admin';
+    const { page, limit, skip } = req.pagination || { page: 1, limit: 10, skip: 0 };
+    const search = (req.query.search || '').trim();
+    const roleFilter = req.query.role || 'all-users';
 
-    // 1. Include phone and companyName in the selection
-    const adminFilter = isRequesterAdmin 
-      ? { role: { $ne: 'superadmin' } } 
-      : {}; 
+    // 1. Build Filter for Paginated Query
+    const filter = { _id: { $ne: req.user._id } }; // Exclude current user
+    if (isRequesterAdmin) {
+      filter.role = { $ne: 'superadmin' };
+    }
+
+    if (roleFilter !== 'all-users') {
+       const roleMap = { admins: 'admin', promoters: 'promoter', sponsors: 'sponsor', customers: 'customer' };
+       if (roleMap[roleFilter]) {
+           // If they are an admin, ensure they still can't query superadmin via roleFilter
+           if (isRequesterAdmin && roleMap[roleFilter] === 'superadmin') {
+             filter.role = 'none'; // invalid filter
+           } else {
+             filter.role = roleMap[roleFilter];
+           }
+       }
+    }
+
+    if (search) {
+      filter.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // 2. Fetch counts for tabs (unaffected by search)
+    const countFilter = isRequesterAdmin ? { role: { $ne: 'superadmin' }, _id: { $ne: req.user._id } } : { _id: { $ne: req.user._id } };
     
-    const users = await User.find(adminFilter)
-      .select('firstName lastName email role phone companyName lastLogin createdAt updatedAt avatar')
-      .lean();
+    const roleCountsAggr = await User.aggregate([
+       { $match: countFilter },
+       { $group: { _id: "$role", count: { $sum: 1 } } }
+    ]);
+    
+    let totalUsersCount = 0;
+    const counts = { admins: 0, promoters: 0, sponsors: 0, customers: 0, all: 0 };
+    roleCountsAggr.forEach(r => {
+        if (r._id === 'admin') counts.admins = r.count;
+        if (r._id === 'promoter') counts.promoters = r.count;
+        if (r._id === 'sponsor') counts.sponsors = r.count;
+        if (r._id === 'customer') counts.customers = r.count;
+        totalUsersCount += r.count;
+    });
+    counts.all = totalUsersCount;
 
-    // 2. Fetch all profile data (for extra fields like industry, tickets, etc.)
+    // 3. Fetch Paginated Users
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select('firstName lastName email role phone companyName lastLogin createdAt updatedAt avatar')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      User.countDocuments(filter)
+    ]);
+
+    // 4. Fetch profile data ONLY for the users on the current page
+    const userIds = users.map(u => u._id);
+    
     const [customers, promoters, sponsors, sponsorStats] = await Promise.all([
-      Customer.find().lean(),
-      Promoter.find().lean(),
-      Sponsor.find().lean(),
+      Customer.find({ userId: { $in: userIds } }).lean(),
+      Promoter.find({ userId: { $in: userIds } }).lean(),
+      Sponsor.find({ userId: { $in: userIds } }).lean(),
       Reservation.aggregate([
-        { $match: { status: 'confirmed' } },
+        { $match: { user: { $in: userIds }, status: 'confirmed' } },
         { $group: { 
             _id: '$user', 
             totalSpent: { $sum: '$amount.total' },
@@ -170,7 +222,7 @@ const getAllUsers = async (req, res) => {
       };
     });
 
-    // 3. Create maps for quick lookup
+    // 5. Create maps for quick lookup
     const profileMap = {};
     
     customers.forEach(c => {
@@ -205,19 +257,27 @@ const getAllUsers = async (req, res) => {
       };
     });
 
-    // 4. Merge data
+    // 6. Merge data
     const allUsers = users.map(u => {
       const profile = profileMap[u._id.toString()];
       
       return {
         ...u,
-        // Basic phone/company info is now in the base object 'u'
         roleDetails: profile ? profile.details : {},
         roleType: profile ? profile.type : (['admin', 'superadmin'].includes(u.role) ? 'staff' : u.role)
       };
     });
 
-    res.status(200).json(allUsers);
+    res.status(200).json({
+      data: allUsers,
+      counts,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (err) {
     console.error("Error in getAllUsers:", err);
     res.status(500).json({ error: 'Server error', details: err.message });

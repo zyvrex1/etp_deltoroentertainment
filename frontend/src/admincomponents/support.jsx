@@ -24,12 +24,25 @@ const SupportDisputes = () => {
         reset: resetPage,
     } = usePagination({ limit: itemsPerPage });
 
+    const [searchQuery, setSearchQuery] = useState("");
+    const [activeFilter, setActiveFilter] = useState("all");
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
     const fetchTickets = async () => {
         if (!user?.token) return;
         setLoading(true);
         try {
-            const data = await concernService.getAdminConcerns(user.token);
-            setTickets(data);
+            const response = await concernService.getAdminConcerns({
+                page,
+                limit: itemsPerPage,
+                search: searchQuery,
+                status: activeFilter
+            });
+            setTickets(response.data || []);
+            if (response.pagination) {
+                setTotal(response.pagination);
+            }
         } catch (error) {
             console.error("Error fetching tickets:", error);
         } finally {
@@ -38,8 +51,11 @@ const SupportDisputes = () => {
     };
 
     useEffect(() => {
-        fetchTickets();
-    }, [user]);
+        const timeoutId = setTimeout(() => {
+            fetchTickets();
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [user, page, searchQuery, activeFilter]);
 
     useEffect(() => {
         if (!user?.token) return;
@@ -65,11 +81,6 @@ const SupportDisputes = () => {
                 return <span className="button-label">{status}</span>;
         }
     };
-
-    const [searchQuery, setSearchQuery] = useState("");
-    const [activeFilter, setActiveFilter] = useState("all");
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const dropdownRef = useRef(null);
 
     const filterOptions = [
         { value: "all", label: "All Status" },
@@ -105,34 +116,7 @@ const SupportDisputes = () => {
         setIsDropdownOpen(false);
     };
 
-    const filteredTickets = useMemo(() => {
-        const q = searchQuery.toLowerCase();
-
-        return tickets.filter((tx) => {
-            const matchesFilter =
-                activeFilter === "all" ? true : tx.status === activeFilter;
-
-            if (!matchesFilter) return false;
-
-            if (!q) return true;
-
-            return (
-                (tx.sponsorName?.toLowerCase().includes(q) || false) ||
-                (tx.subject?.toLowerCase().includes(q) || false) ||
-                (tx._id?.toLowerCase().includes(q) || false)
-            );
-        });
-    }, [tickets, searchQuery, activeFilter]);
-
-    useEffect(() => {
-        setTotal({
-            total: filteredTickets.length,
-            totalPages: Math.ceil(filteredTickets.length / itemsPerPage) || 1
-        });
-    }, [filteredTickets.length, setTotal]);
-
-    const startIndex = (page - 1) * itemsPerPage;
-    const paginatedTickets = filteredTickets.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedTickets = tickets;
 
     const [expandedRow, setExpandedRow] = useState(null);
     const toggleRow = (id) => {

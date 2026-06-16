@@ -4,9 +4,9 @@ const authHeaders = (token) =>
   token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
 const adminService = {
-  getUsers: async (token) => {
+  getUsers: async (token, params = {}) => {
     try {
-      const response = await api.get('/admin/users', authHeaders(token));
+      const response = await api.get('/admin/users', { ...authHeaders(token), params });
       return response.data;
     } catch (error) {
       console.error("Error in getUsers service:", error);

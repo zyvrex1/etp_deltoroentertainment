@@ -6,13 +6,13 @@ const concernService = {
     return response.data;
   },
 
-  getMyConcerns: async () => {
-    const response = await api.get('/concerns/my-concerns');
+  getMyConcerns: async (params = {}) => {
+    const response = await api.get('/concerns/my-concerns', { params });
     return response.data;
   },
 
-  getAdminConcerns: async () => {
-    const response = await api.get('/concerns/admin');
+  getAdminConcerns: async (params = {}) => {
+    const response = await api.get('/concerns/admin', { params });
     return response.data;
   },
 

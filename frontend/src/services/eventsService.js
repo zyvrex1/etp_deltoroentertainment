@@ -3,9 +3,20 @@ import api from './api';
 const eventsService = {
   getAuthHeaders: (token) => token ? { headers: { "Authorization": `Bearer ${token}` } } : {},
 
-  getEvents: async (token, status = "") => {
-    const url = status ? `/events/?status=${status}` : `/events/`;
-    const response = await api.get(url, eventsService.getAuthHeaders(token));
+  getEvents: async (token, params = {}) => {
+    // If a string was passed for legacy 'status' param, migrate it
+    if (typeof params === 'string') {
+      params = { status: params };
+    }
+    const response = await api.get('/events/', { ...eventsService.getAuthHeaders(token), params });
+    // Always return an array for backwards compatibility
+    const data = response.data;
+    return Array.isArray(data) ? data : (data.data || []);
+  },
+
+  // Use this for paginated table views — returns { data, pagination, counts }
+  getEventsPaginated: async (token, params = {}) => {
+    const response = await api.get('/events/', { ...eventsService.getAuthHeaders(token), params });
     return response.data;
   },
 

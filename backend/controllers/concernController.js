@@ -74,9 +74,32 @@ const createConcern = async (req, res) => {
 const getSponsorConcerns = async (req, res) => {
   const user = req.user;
   try {
-    const concerns = await Concern.find({ sponsorId: user._id })
-      .select('-internalNotes')
-      .sort({ lastMessageAt: -1 });
+    const { page, limit, skip } = req.pagination || { page: 1, limit: 1000, skip: 0 };
+    const search = (req.query.search || '').trim();
+    const status = req.query.status || 'All';
+
+    const filter = { sponsorId: user._id };
+    if (status !== 'All') {
+      filter.status = status.toLowerCase();
+    }
+    if (search) {
+      filter.$or = [
+        { subject: { $regex: search, $options: 'i' } }
+      ];
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(search)) {
+        filter.$or.push({ _id: search });
+      }
+    }
+
+    const [concerns, total] = await Promise.all([
+      Concern.find(filter)
+        .select('-internalNotes')
+        .sort({ lastMessageAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Concern.countDocuments(filter)
+    ]);
 
     // Mask admin names for privacy
     const maskedConcerns = concerns.map(c => {
@@ -98,7 +121,15 @@ const getSponsorConcerns = async (req, res) => {
       return obj;
     });
 
-    res.status(200).json(maskedConcerns);
+    res.status(200).json({
+      data: maskedConcerns,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -108,7 +139,36 @@ const getSponsorConcerns = async (req, res) => {
 // @route   GET /api/concerns/admin
 const getAdminConcerns = async (req, res) => {
   try {
-    const concerns = await Concern.find({}).sort({ createdAt: -1 });
+    const { page, limit, skip } = req.pagination || { page: 1, limit: 1000, skip: 0 };
+    const search = (req.query.search || '').trim();
+    const status = req.query.status || 'All';
+    const roleFilter = req.query.role || 'All'; // e.g., if admin wants to filter by customer/sponsor
+
+    const filter = {};
+    if (status !== 'All') {
+      filter.status = status.toLowerCase();
+    }
+    if (roleFilter !== 'All') {
+      filter.userRole = roleFilter.toLowerCase();
+    }
+    if (search) {
+      filter.$or = [
+        { subject: { $regex: search, $options: 'i' } },
+        { sponsorName: { $regex: search, $options: 'i' } }
+      ];
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(search)) {
+        filter.$or.push({ _id: search });
+      }
+    }
+
+    const [concerns, total] = await Promise.all([
+      Concern.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Concern.countDocuments(filter)
+    ]);
 
     // Fallback for legacy "undefined" names
     const sanitizedConcerns = concerns.map(c => {
@@ -119,7 +179,15 @@ const getAdminConcerns = async (req, res) => {
       return obj;
     });
 
-    res.status(200).json(sanitizedConcerns);
+    res.status(200).json({
+      data: sanitizedConcerns,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

@@ -11,6 +11,7 @@ import PaginationBar from "../components/PaginationBar";
 
 import { useEventsContext } from "../hooks/useEventsContext";
 import { useAuthContext } from "../hooks/useAuthContext";
+import eventsService from "../services/eventsService";
 
 import {
   showDeleteConfirmAlert,
@@ -74,6 +75,7 @@ const EventManagement = () => {
 
   const allEvents = events || [];
   const [searchQuery, setSearchQuery] = useState("");
+  const [eventCounts, setEventCounts] = useState({ all: 0, pending: 0, approved: 0, rejected: 0, cancelled: 0, completed: 0 });
   const itemsPerPage = 7;
   const {
     page, totalPages, total,
@@ -96,49 +98,52 @@ const EventManagement = () => {
     setExpandedRow(null);
   };
 
-  useEffect(() => {
+  const fetchEvents = async () => {
     if (!user?.token) return;
-
-    const fetchEvents = async () => {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-      setIsLoading(true); 
-      try {
-        const response = await fetch(`${backendUrl}/api/events`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
-
-        const json = await response.json();
-
-        if (response.ok) {
-          dispatch({ type: "SET_EVENTS", payload: json });
-        } else {
-          console.error("Failed to fetch events:", json);
-        }
-      } catch (err) {
-        console.error("Error fetching events:", err);
-      } finally {
-        setIsLoading(false);
+    setIsLoading(true); 
+    try {
+      const response = await eventsService.getEventsPaginated(user.token, {
+        page,
+        limit: itemsPerPage,
+        search: searchQuery,
+        status: activeTab === 'all-events' ? 'All' : activeTab
+      });
+      
+      dispatch({ type: "SET_EVENTS", payload: response });
+      
+      if (response.counts) {
+        setEventCounts(response.counts);
       }
-    };
+      if (response.pagination) {
+        setTotal(response.pagination);
+      }
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchEvents();
-  }, [user, dispatch]);
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchEvents();
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [user, dispatch, page, searchQuery, activeTab]);
 
   useEffect(() => {
     if (!user?.token) return;
     const fetchPromoters = async () => {
       try {
-        const response = await fetch("/api/admin/users", {
+        const response = await fetch("/api/admin/users?role=promoters&limit=500", {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
         });
         const json = await response.json();
         if (response.ok) {
-          setPromoters(json.filter((u) => u.role === "promoter"));
+          const users = json.data || json;
+          setPromoters(Array.isArray(users) ? users.filter((u) => u.role === "promoter") : []);
         }
       } catch (err) {
         console.error("Error fetching promoters:", err);
@@ -333,90 +338,15 @@ const EventManagement = () => {
     }
   };
 
-  const getTableData = () => {
-    switch (activeTab) {
-      case "all-events":
-        return allEvents;
-
-      case "pending-events":
-        return allEvents.filter((e) => e.status === "pending");
-
-      case "approved-events":
-        return allEvents.filter((e) => e.status === "approved");
-
-      case "rejected-events":
-        return allEvents.filter((e) => e.status === "rejected");
-
-      case "cancelled-events":
-        return allEvents.filter((e) => e.status === "cancelled");
-
-      case "completed-events":
-        return allEvents.filter((e) => e.status === "completed");
-
-      default:
-        return [];
-    }
-  };
-
-  const filteredData = getTableData().filter((item) => {
-    const searchStr = searchQuery.toLowerCase();
-    const promoterName = item.createdBy 
-  ? `${item.createdBy.firstName || ''} ${item.createdBy.lastName || ''}` 
-  : "Unknown Promoter";
-    
-    return (
-      (item.title || "").toLowerCase().includes(searchStr) ||
-      (item.category || "").toLowerCase().includes(searchStr) ||
-      promoterName.toLowerCase().includes(searchStr) ||
-      (item.venue?.name || "").toLowerCase().includes(searchStr)
-    );
-  });
-
-  useEffect(() => {
-    setTotal({
-      total: filteredData.length,
-      totalPages: Math.ceil(filteredData.length / itemsPerPage) || 1
-    });
-  }, [filteredData.length, setTotal]);
-
-  const startIndex = (page - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + itemsPerPage,
-  );
+  const paginatedData = allEvents;
 
   const eventTabs = [
-    { id: "all-events", label: "All Events", count: allEvents.length },
-
-    {
-      id: "pending-events",
-      label: "Pending",
-      count: allEvents.filter((e) => e.status === "pending").length,
-    },
-
-    {
-      id: "approved-events",
-      label: "Approved",
-      count: allEvents.filter((e) => e.status === "approved").length,
-    },
-
-    {
-      id: "rejected-events",
-      label: "Rejected",
-      count: allEvents.filter((e) => e.status === "rejected").length,
-    },
-
-    {
-      id: "cancelled-events",
-      label: "Cancelled",
-      count: allEvents.filter((e) => e.status === "cancelled").length,
-    },
-
-    {
-      id: "completed-events",
-      label: "Completed",
-      count: allEvents.filter((e) => e.status === "completed").length,
-    },
+    { id: "all-events", label: "All Events", count: eventCounts.all },
+    { id: "pending",   label: "Pending",    count: eventCounts.pending },
+    { id: "approved",  label: "Approved",   count: eventCounts.approved },
+    { id: "rejected",  label: "Rejected",   count: eventCounts.rejected },
+    { id: "cancelled", label: "Cancelled",  count: eventCounts.cancelled },
+    { id: "completed", label: "Completed",  count: eventCounts.completed },
   ];
 
   const renderTable = () => {

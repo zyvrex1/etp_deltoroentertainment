@@ -30,19 +30,43 @@ const getMyReservations = async (req, res) => {
 // Fetch all reservations for admin view
 const getAllReservations = async (req, res) => {
   try {
-    console.log("Admin Reservations: Fetching...");
+    const { page, limit, skip } = req.pagination || { page: 1, limit: 10000, skip: 0 };
+    const search = (req.query.search || '').trim();
+    const statusFilter = req.query.status;
+    
+    const filter = {};
+    if (statusFilter && statusFilter !== 'all') {
+      filter.status = statusFilter;
+    }
+    if (search) {
+      filter.$or = [
+        { boothCode: { $regex: search, $options: 'i' } }
+      ];
+    }
 
-    const reservations = await Reservation.find({})
-      .populate({ path: 'user', select: 'firstName lastName email companyName' })
-      .populate({ path: 'event', select: 'title startDate' })
-      .populate({ path: 'appliedGift', select: 'name type value valueType' })  // ← add this
-      .sort({ createdAt: -1 })
-      .lean();
+    const [reservations, total] = await Promise.all([
+      Reservation.find(filter)
+        .populate({ path: 'user', select: 'firstName lastName email companyName' })
+        .populate({ path: 'event', select: 'title startDate' })
+        .populate({ path: 'appliedGift', select: 'name type value valueType' })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Reservation.countDocuments(filter)
+    ]);
 
     const validReservations = reservations.filter(r => r.event !== null);
 
-    console.log(`Admin Reservations: Successfully fetched ${validReservations.length} records.`);
-    res.status(200).json(validReservations);
+    res.status(200).json({
+      data: validReservations,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error("CRITICAL ADMIN RESERVATIONS ERROR:", error);
     res.status(500).json({ error: error.message || "Internal Server Error" });

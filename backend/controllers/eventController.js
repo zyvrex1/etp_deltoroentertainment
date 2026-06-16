@@ -207,97 +207,116 @@ const autoHealEvents = async (eventsArr) => {
 const getEvents = async (req, res) => {
   try {
     const user = req.user;
-    let eventsQuery;
+    const { page, limit, skip } = req.pagination || { page: 1, limit: 1000, skip: 0 };
+    const search = (req.query.search || '').trim();
+    const filter = {};
 
     if (user) {
       const role = user.role?.toLowerCase();
-      console.log("Decoded user role:", role);
-
       if (role === "superadmin" || role === "admin") {
-        const { status } = req.query;
-        const filter = status ? { status } : {};
-        eventsQuery = Event.find(filter).sort({ createdAt: -1 });
+        if (req.query.status && req.query.status !== 'All') {
+          filter.status = req.query.status;
+        }
       } else if (role === "promoter") {
-        eventsQuery = Event.find({
-          $or: [
-            { createdBy: user._id },
-            { assignedPromoters: user._id, status: "approved" },
-          ],
-        }).sort({
-          createdAt: -1,
-        });
+        filter.$or = [
+          { createdBy: user._id },
+          { assignedPromoters: user._id, status: "approved" },
+        ];
       } else if (role === "customer" || role === "sponsor") {
-        eventsQuery = Event.find({ status: "approved" }).sort({
-          createdAt: -1,
-        });
+        filter.status = "approved";
       } else {
         return res.status(403).json({ error: "Unauthorized role" });
       }
     } else {
-      // Public access: Allow both approved (live) and completed (past) events
-      const { status } = req.query;
+      // Public access
       const allowedPublicStatus = ["approved", "completed"];
-
-      if (status && allowedPublicStatus.includes(status)) {
-        eventsQuery = Event.find({ status }).sort({ createdAt: -1 });
+      if (req.query.status && allowedPublicStatus.includes(req.query.status)) {
+        filter.status = req.query.status;
       } else {
-        eventsQuery = Event.find({ status: { $in: allowedPublicStatus } }).sort(
-          { createdAt: -1 },
-        );
+        filter.status = { $in: allowedPublicStatus };
       }
     }
 
-    // Mark past due approved events as completed
+    if (search) {
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { title: { $regex: search, $options: 'i' } }];
+        delete filter.$or;
+      } else {
+        filter.title = { $regex: search, $options: 'i' };
+      }
+    }
+
+    const baseCountFilter = { ...filter };
+    delete baseCountFilter.status;
+    const statusCountsAggr = await Event.aggregate([
+      { $match: baseCountFilter },
+      { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+    
+    let totalEventsCount = 0;
+    const counts = { pending: 0, approved: 0, rejected: 0, cancelled: 0, completed: 0, all: 0 };
+    statusCountsAggr.forEach(r => {
+      if (counts.hasOwnProperty(r._id)) {
+        counts[r._id] = r.count;
+      }
+      totalEventsCount += r.count;
+    });
+    counts.all = totalEventsCount;
+
+    const [eventsData, total] = await Promise.all([
+      Event.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate([
+          {
+            path: "createdBy",
+            select: "firstName lastName role email avatar companyName lastActive",
+          },
+          {
+            path: "assignedPromoters",
+            select: "firstName lastName email avatar lastActive",
+          },
+          {
+            path: "venueMap",
+          },
+        ]),
+      Event.countDocuments(filter)
+    ]);
+
+    // Fast inline auto-update for past due approved events in current page
     const now = new Date();
-
-    // Fetch all approved events and check their times in memory
-    const approvedEvents = await Event.find({ status: "approved" });
-
-    const completedIds = [];
-    for (const event of approvedEvents) {
-      if (event.endDate && event.endTime) {
-        const [hours, minutes] = event.endTime.split(":").map(Number);
-        const endDateTime = new Date(event.endDate);
-        endDateTime.setHours(hours, minutes, 0, 0);
-
-        if (endDateTime < now) {
-          completedIds.push(event._id);
+    let requiresHeal = false;
+    for (let event of eventsData) {
+      if (event.status === "approved") {
+        if (event.endDate && event.endTime) {
+          const [hours, minutes] = event.endTime.split(":").map(Number);
+          const endDateTime = new Date(event.endDate);
+          endDateTime.setHours(hours, minutes, 0, 0);
+          if (endDateTime < now) {
+             event.status = "completed";
+             Event.updateOne({ _id: event._id }, { status: "completed" }).exec().catch(()=>{});
+          }
+        } else if (event.endDate && new Date(event.endDate) < now) {
+          event.status = "completed";
+          Event.updateOne({ _id: event._id }, { status: "completed" }).exec().catch(()=>{});
         }
-      } else if (event.endDate && event.endDate < now) {
-        // Fallback for events without specific times
-        completedIds.push(event._id);
       }
     }
 
-    if (completedIds.length > 0) {
-      await Event.updateMany(
-        { _id: { $in: completedIds } },
-        { status: "completed" },
-      );
-    }
+    let events = eventsData.map(event => mapVenueMapToEvent(event));
+    events = await autoHealEvents(events);
 
-    // Re-run the filter if it was a public/approved query to ensure completed items don't show up
-    // Or just re-fetch the query to be safe
- let events = await eventsQuery.populate([
-    {
-        path: "createdBy",
-        select: "firstName lastName role email avatar companyName lastActive",
-    },
-    {
-        path: "assignedPromoters",
-        select: "firstName lastName email avatar lastActive",
-    },
-    {
-        path: "venueMap",  // ← add this
-    },
-]);
-
-// ← add this: map venueMap → layoutData for every event, same as getEvent does
-events = events.map(event => mapVenueMapToEvent(event));
-
-events = await autoHealEvents(events);
-
-return res.status(200).json(events);
+    return res.status(200).json({
+      data: events,
+      counts,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
