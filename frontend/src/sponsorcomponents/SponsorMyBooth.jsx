@@ -38,7 +38,19 @@ export default function SponsorMyBooth() {
                 });
                 // Expand seat type reservations to display one card per seat
                 const expanded = [];
+                const ONE_HOUR_MS = 60 * 60 * 1000;
+                const now = Date.now();
+
                 response.data.forEach((res) => {
+                    let finalStatus = res.status;
+                    if (res.status === 'pending') {
+                        const resTime = new Date(res.createdAt).getTime();
+                        if (now - resTime > ONE_HOUR_MS) {
+                            finalStatus = 'expired';
+                        }
+                    }
+                    res.status = finalStatus;
+
                     if (res.type === 'seat' && res.seatIds) {
                         const isBXGY = res.appliedGift?.valueType === 'bxgy' && res.seatIds.length > 1;
                         res.seatIds.forEach((sid, idx) => {
@@ -101,7 +113,7 @@ export default function SponsorMyBooth() {
 
         if (statusFilter !== "All") {
             result = result.filter(res => {
-                const payStatus = res.status === 'confirmed' ? 'Paid' : (res.status === 'pending' ? 'Pending' : (res.status === 'rejected' ? 'Rejected' : (res.status === 'refunded' ? 'Refunded' : 'Pending')));
+                const payStatus = res.status === 'confirmed' ? 'Paid' : (res.status === 'pending' ? 'Pending' : (res.status === 'rejected' ? 'Rejected' : (res.status === 'refunded' ? 'Refunded' : (res.status === 'expired' ? 'Expired' : 'Pending'))));
                 return payStatus === statusFilter;
             });
         }
@@ -196,6 +208,7 @@ export default function SponsorMyBooth() {
                                 <option value="Pending">Pending</option>
                                 <option value="Rejected">Rejected</option>
                                 <option value="Refunded">Refunded</option>
+                                <option value="Expired">Expired</option>
                             </select>
                         </div>
                         <div className="filter-dropdown-wrapper">
@@ -237,7 +250,7 @@ export default function SponsorMyBooth() {
                     ) : paginatedBooths.length > 0 ? (
                         paginatedBooths.map(res => {
                             const payStatusLabel = res.status === 'confirmed' ? 'Paid' : (res.status?.charAt(0).toUpperCase() + res.status?.slice(1) || 'Pending');
-                            const payStatusClass = res.status === 'confirmed' ? 'live' : (res.status === 'pending' ? 'upcoming' : (res.status === 'rejected' || res.status === 'refunded' ? 'rejected' : 'upcoming'));
+                            const payStatusClass = res.status === 'confirmed' ? 'live' : (res.status === 'pending' ? 'upcoming' : (res.status === 'rejected' || res.status === 'refunded' || res.status === 'expired' ? 'rejected' : 'upcoming'));
                             return (
                                 <div key={res._id} className="booth-card-new">
                                     <div className="booth-card-top">

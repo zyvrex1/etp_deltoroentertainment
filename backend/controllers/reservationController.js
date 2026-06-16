@@ -823,6 +823,127 @@ const updateReservationStatus = async (req, res) => {
     }
 };
 
+const expireOldReservations = async () => {
+    try {
+        const ONE_HOUR = 60 * 60 * 1000;
+        const expirationTime = new Date(Date.now() - ONE_HOUR);
+
+        const oldReservations = await Reservation.find({
+            status: 'pending',
+            createdAt: { $lt: expirationTime }
+        });
+
+        if (oldReservations.length === 0) return;
+
+        console.log(`[Job] Found ${oldReservations.length} expired pending reservations. Processing...`);
+
+        for (const reservation of oldReservations) {
+            reservation.status = 'expired';
+            await reservation.save();
+
+            const event = await Event.findById(reservation.event);
+            if (event) {
+                let changed = false;
+
+                if (reservation.type === 'booth') {
+                    let boothIndex = event.booths.findIndex(b => b._id.toString() === (reservation.boothId || "").toString());
+                    if (boothIndex === -1) {
+                        boothIndex = event.booths.findIndex(b => b.code === reservation.boothCode || b.label === reservation.boothCode);
+                    }
+
+                    if (boothIndex !== -1) {
+                        event.booths[boothIndex].status = "available";
+                        event.booths[boothIndex].reservedBy = "";
+                        event.booths[boothIndex].reservedByEmail = "";
+                        event.booths[boothIndex].reservedByPO = "";
+                        changed = true;
+
+                        const booth = event.booths[boothIndex];
+                        if (booth.priceLevelId && booth.priceLevelId !== "none") {
+                            const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === booth.priceLevelId.toString());
+                            if (plIndex !== -1) {
+                                event.priceLevels[plIndex].quantitySold = Math.max(0, event.priceLevels[plIndex].quantitySold - 1);
+                            }
+                        }
+                    }
+
+                    // Adjust booth revenue
+                    const saleTotal = reservation.amount?.total || 0;
+                    if (saleTotal > 0) {
+                        event.boothRevenue = Math.max(0, (event.boothRevenue || 0) - saleTotal);
+                    }
+
+                    if (event.layoutData && event.layoutData.items) {
+                        const identifier = (reservation.boothId || "").toString();
+                        const layoutItemIndex = event.layoutData.items.findIndex(item =>
+                            (item._id?.toString() === identifier ||
+                                item.id?.toString() === identifier ||
+                                item.code === reservation.boothCode ||
+                                item.label === reservation.boothCode) &&
+                            (item.type || "").toLowerCase() === 'booth'
+                        );
+                        if (layoutItemIndex !== -1) {
+                            event.layoutData.items[layoutItemIndex].status = "available";
+                            event.layoutData.items[layoutItemIndex].reservedBy = "";
+                            event.layoutData.items[layoutItemIndex].reservedByEmail = "";
+                            event.layoutData.items[layoutItemIndex].reservedByPO = "";
+                            event.markModified('layoutData');
+                            changed = true;
+                        }
+                    }
+                } else if (reservation.type === 'seat') {
+                    const seatIds = reservation.seatIds || [];
+                    const seatLabels = reservation.seatLabels || [];
+
+                    // Adjust seat revenue
+                    const saleTotal = reservation.amount?.total || 0;
+                    if (saleTotal > 0) {
+                        event.seatRevenue = Math.max(0, (event.seatRevenue || 0) - saleTotal);
+                    }
+
+                    if (event.layoutData && event.layoutData.items) {
+                        event.layoutData.items.forEach((item, index) => {
+                            const type = (item.type || "").toLowerCase();
+                            const idStr = (item._id || item.id || "").toString();
+
+                            if (type === "seat") {
+                                const isThisSeat = seatIds.includes(idStr) || seatLabels.includes(item.label) || seatLabels.includes(item.code);
+
+                                if (isThisSeat) {
+                                    event.layoutData.items[index].status = "available";
+                                    event.layoutData.items[index].reservedBy = "";
+                                    event.layoutData.items[index].reservedByEmail = "";
+                                    event.layoutData.items[index].reservedByPO = "";
+                                    event.layoutData.items[index].ticketId = "";
+
+                                    const priceLevelId = item.categoryId || item.priceLevelId;
+                                    if (priceLevelId && priceLevelId !== "none") {
+                                        const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === priceLevelId.toString());
+                                        if (plIndex !== -1) {
+                                            event.priceLevels[plIndex].quantitySold = Math.max(0, event.priceLevels[plIndex].quantitySold - 1);
+                                        }
+                                    }
+                                    changed = true;
+                                }
+                            }
+                        });
+                        if (changed) event.markModified('layoutData');
+                    }
+                }
+
+                if (changed) {
+                    event.markModified('booths');
+                    event.markModified('priceLevels');
+                    await event.save();
+                }
+            }
+        }
+        console.log(`[Job] Successfully expired ${oldReservations.length} reservations and released locks.`);
+    } catch (err) {
+        console.error("[Job] Error expiring old reservations:", err);
+    }
+};
+
 module.exports = {
     getMyReservations,
     getAllReservations,
@@ -834,6 +955,7 @@ module.exports = {
     getEventSalesForPromoter,
     checkInReservation,
     updateStoreSettings,
-    updateReservationStatus
+    updateReservationStatus,
+    expireOldReservations
 };
 

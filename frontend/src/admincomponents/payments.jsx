@@ -133,7 +133,13 @@ const Payments = () => {
   }, [isFilterDropdownOpen]);
 
   const getReservationData = () => {
-    const pendingReservations = reservations.filter(res => res.status === 'pending');
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const now = Date.now();
+    const pendingReservations = reservations.filter(res => {
+      if (res.status !== 'pending') return false;
+      const resTime = new Date(res.createdAt).getTime();
+      return (now - resTime) <= ONE_HOUR_MS;
+    });
 
     // Group by batchId first (booths booked together), then map
     const boothGroups = new Map();
@@ -233,7 +239,7 @@ const Payments = () => {
         promoter: promoterName,
         event: res.event?.title || 'Unknown Event',
         eventId: res.event?._id || res.event,
-        category: isGA ? 'Ticket' : 'Seated Ticket',
+        category: isGA ? 'Ticket' : 'Ticket',
         amountVal: res.amount?.total || 0,
         booth: isGA
           ? `Tickets (${res.seatIds?.length || 1})`
@@ -372,9 +378,9 @@ const Payments = () => {
       // Only actionable statuses remain in this tab
       return ["All Status", "Pending", "Processing"];
     } else if (activeTab === "booth-reservations") {
-      return ["All", "Booth", "Seated Ticket", "Ticket"];
+      return ["All", "Booth", "Ticket"];
     } else if (activeTab === "transactions") {
-      return ["All", "Booth", "Seated Ticket", "Ticket", "Payout"];
+      return ["All", "Booth", "Ticket", "Payout"];
     }
     return ["All"];
   };
@@ -383,7 +389,6 @@ const Payments = () => {
     const mapping = {
       "All": "all",
       "Booth": "booth",
-      "Seated Ticket": "seated-ticket",
       "Ticket": "ticket",
       "Payout": "payout"
     };
@@ -399,11 +404,20 @@ const Payments = () => {
   // ============================================================
 
   const getTransactionList = () => {
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const now = Date.now();
 
-    // ── 1. Filter: only resolved reservations (not pending) ──
-    const resolvedReservations = (reservations || []).filter(
-      res => res.status !== 'pending'
-    );
+    // ── 1. Filter: only resolved reservations (not pending) or expired ──
+    const resolvedReservations = (reservations || []).filter(res => {
+      if (res.status !== 'pending') return true;
+      const resTime = new Date(res.createdAt).getTime();
+      if ((now - resTime) > ONE_HOUR_MS) {
+        // Create a copy or mutate? Mutating the local state copy is okay here for display
+        res.status = 'expired';
+        return true;
+      }
+      return false;
+    });
 
     // ── 2. Map raw reservations → flat objects ────────────────
     //    Added: batchId, boothCode, seatLabels  ← NEW FIELDS
@@ -421,16 +435,19 @@ const Payments = () => {
         user: name,
         event: res.event?.title || 'Unknown Event',
         eventId: res.event?._id || res.event,
-        category: isBooth ? 'Booth' : (isGA ? 'Ticket' : 'Seated Ticket'),
+        category: isBooth ? 'Booth' : 'Ticket',
+        isGA: isGA,
+        isSeat: !isGA && !isBooth,
         amountVal: res.amount?.total || 0,
         status: res.status === 'confirmed' ? 'confirmed'
           : res.status === 'rejected' ? 'rejected'
+          : res.status === 'expired' ? 'expired'
             : res.status,
         dateStr: res.createdAt
           ? new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
           : 'N/A',
         createdAtTime: res.createdAt ? new Date(res.createdAt).getTime() : 0,
-        filterType: isBooth ? 'booth' : (isGA ? 'ticket' : 'seated-ticket'),
+        filterType: isBooth ? 'booth' : 'ticket',
         rawDate: res.createdAt ? new Date(res.createdAt) : new Date(0),
         paymentMethod: formatPaymentMethod(res.paymentMethod),
         quantity: res.seatIds?.length || 1,
@@ -516,7 +533,7 @@ const Payments = () => {
     });
 
     mappedReservations.forEach(item => {
-      if (item.category !== 'Seated Ticket') return;
+      if (!item.isSeat) return;
       const key = item.batchId?.toString();
       if (key) {
         if (seatBatchMap.has(key)) {
@@ -534,11 +551,11 @@ const Payments = () => {
           allResIds: [item.resId],
           promoter: item.user,
           event: item.event,
-          category: 'Seated Ticket',
+          category: 'Ticket',
           amount: `$${item.amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
           status: item.status,
           date: item.dateStr,
-          filterType: 'seated-ticket',
+          filterType: 'ticket',
           rawDate: item.rawDate,
           paymentMethod: item.paymentMethod,
           quantity: item.quantity,
@@ -559,11 +576,11 @@ const Payments = () => {
         allResIds: g.allItems.map((i) => i.resId),
         promoter: first.user,
         event: first.event,
-        category: 'Seated Ticket',
+        category: 'Ticket',
         amount: `$${g.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
         status: first.status,
         date: first.dateStr,
-        filterType: 'seated-ticket',
+        filterType: 'ticket',
         rawDate: first.rawDate,
         paymentMethod: first.paymentMethod,
         quantity: g.quantity,
@@ -574,7 +591,7 @@ const Payments = () => {
     });
 
     mappedReservations.forEach(item => {
-      if (item.category === 'Booth' || item.category === 'Seated Ticket') return;
+      if (item.category === 'Booth' || item.isSeat) return;
       const userIdStr = item.userId?.toString() || '';
       const eventIdStr = item.eventId?.toString() || '';
       const existingGroup = gaGroups.find(g =>
@@ -843,7 +860,7 @@ const Payments = () => {
     if (status === "paid" || status === "confirmed") return "button-label pay-status-paid";
     if (status === "pending") return "button-label pay-status-pending";
     if (status === "processing") return "button-label pay-status-processing";
-    if (status === "rejected" || status === "reject" || status === "refunded") return "button-label pay-status-rejected";
+    if (status === "rejected" || status === "reject" || status === "refunded" || status === "expired") return "button-label pay-status-rejected";
     return "button-label";
   };
 
@@ -1209,7 +1226,7 @@ const Payments = () => {
                           </td> */}
                           <td data-label="Category">
                             <span className={getCategoryClass(row.category)}>
-                              {row.category === 'Seats' ? 'Seated Ticket' : row.category}
+                              {row.category}
                             </span>
                           </td>
                           <td data-label="Amount" className="pay-amount regular-body-text">{row.amount}</td>

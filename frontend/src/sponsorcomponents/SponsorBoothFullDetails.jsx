@@ -928,6 +928,7 @@ const exportInvoiceToPDF = async () => {
                         <img
                             src={getImageUrl(reservation.event?.image)}
                             alt="Event Cover"
+                            onError={(e) => { e.target.src = "/assets/eventbg.jpg"; }}
                         />
                         <div className="booth-details-cover-overlay">
                             <h3>{reservation.event?.title || 'Unknown Event'}</h3>

@@ -10,7 +10,7 @@ import usePagination from "../hooks/usePagination";
 import PaginationBar from "../components/PaginationBar";
 import "./SponsorStore.css";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 
 const SponsorStore = () => {
   const { user } = useAuthContext();
