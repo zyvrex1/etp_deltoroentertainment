@@ -1573,6 +1573,16 @@ Object.assign(event, mappedEvent);
       return res.status(404).json({ error: `Seats not found: ${notFound.join(", ")}` });
     }
 
+    // Determine correct Reservation type
+    let reservationType = 'seat';
+    if (gaSeatIds.length > 0 && physicalSeatIds.length === 0) {
+      reservationType = 'general-fee';
+    } else if (gaSeatIds.length === 0 && physicalSeatIds.length > 0) {
+      reservationType = 'seat';
+    } else if (gaSeatIds.length > 0 && physicalSeatIds.length > 0) {
+      reservationType = 'mixed-ticket';
+    }
+
     // Create a single Reservation record for all seats
     try {
       const seatIdsArr = purchasedSeats.map(seat => String(seat._id || seat.id));
@@ -1581,7 +1591,7 @@ Object.assign(event, mappedEvent);
         _id: reservationId,
         user: req.user._id,
         event: id,
-        type: 'seat',
+        type: reservationType,
         seatIds: seatIdsArr,
         seatLabels: seatLabelsArr,
         amount: {

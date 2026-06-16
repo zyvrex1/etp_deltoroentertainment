@@ -255,7 +255,7 @@ export default function CustomerCart() {
                                             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
                                             if (diffDays === 1) {
-                                                return <span className="live-badge upcoming-badge" style={{ backgroundColor: '#6c757d', color: '#fff' }}>Tomorrow</span>;
+                                                return <span className="live-badge upcoming-badge" style={{ backgroundColor: '#c27d15ff', color: '#fff' }}>Tomorrow</span>;
                                             } else if (diffDays === 0) {
                                                 return <span className="live-badge upcoming-badge" style={{ backgroundColor: '#6c757d', color: '#fff' }}>Later Today</span>;
                                             }

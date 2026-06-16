@@ -81,14 +81,17 @@ export default function PromoterDashboard() {
         activeReservations.forEach(r => {
           const eventId = String(r.event?._id || r.event);
           if (!eventSoldMap[eventId]) eventSoldMap[eventId] = { seats: 0, booths: 0 };
-          if (r.type === 'seat') eventSoldMap[eventId].seats += (r.seatIds?.length || 1);
-          else if (r.type === 'booth') eventSoldMap[eventId].booths += 1;
+          if (r.type === 'seat' || r.type === 'general-fee' || r.type === 'mixed-ticket') {
+            eventSoldMap[eventId].seats += (r.seatIds?.length || 1);
+          } else if (r.type === 'booth') {
+            eventSoldMap[eventId].booths += 1;
+          }
         });
         setEventSoldMap(eventSoldMap);
 
         // --- Total confirmed sold counts ---
         const totalConfirmedSeats = activeReservations
-          .filter(r => r.type === 'seat')
+          .filter(r => r.type === 'seat' || r.type === 'general-fee' || r.type === 'mixed-ticket')
           .reduce((sum, r) => sum + (r.seatIds?.length || 1), 0);
         const totalConfirmedBooths = activeReservations
           .filter(r => r.type === 'booth').length;
@@ -143,7 +146,7 @@ export default function PromoterDashboard() {
           .map(r => ({
             customer: r.user?.companyName || (r.user ? `${r.user.firstName} ${r.user.lastName}` : r.billingAddress?.companyName || 'Guest'),
             amount: `$${(r.amount?.total || 0).toLocaleString()}`,
-            type: r.type || 'ticket',
+            type: (r.type === 'booth' || r.type === 'sponsorship') ? r.type : 'ticket',
             event: r.event?.title || 'Unknown Event',
             status: r.status || 'completed'
           }));

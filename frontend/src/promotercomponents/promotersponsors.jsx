@@ -859,9 +859,8 @@ const PromoterSponsors = ({ selectedEvent }) => {
                         <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                           {row.nextAction ? (
                             <button
-                              className={`action-btn action-checkin-btn ${
-                                row.nextAction.startsWith("Exit") ? "action-exit" : "action-enter"
-                              }`}
+                              className={`action-btn action-checkin-btn ${row.nextAction.startsWith("Exit") ? "action-exit" : "action-enter"
+                                }`}
                               title={`Manual: ${row.nextAction}`}
                               onClick={() => handleManualCheckIn(row.id)}
                             >

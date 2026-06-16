@@ -31,7 +31,7 @@ const reservationSchema = new mongoose.Schema({
     }],
     type: {
         type: String,
-        enum: ['booth', 'seat'],
+        enum: ['booth', 'seat', 'general-fee', 'mixed-ticket', 'sponsorship'],
         default: 'booth'
     },
     amount: {
