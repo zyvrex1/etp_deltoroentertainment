@@ -636,13 +636,20 @@ const LayoutBuilder = ({ selectedEvent }) => {
         };
       });
 
-    // Determine eventType based on placed items
-    let autoEventType = selectedEvent?.eventType || "Seating Arrangement";
-    const hasSeats = placedItems.some(i => i.type === 'seat' || i.isSeat);
-    const hasBooths = placedItems.some(i => i.type === 'booth' || i.isBooth);
+    // Determine eventType based on category types and placed items
+    // - "General Admission": only General Fee (and/or Booth) categories exist — no seat categories placed
+    // - "Reservation": seat-type categories exist or seats are physically placed on canvas
+    const hasSeatsPlaced = placedItems.some(i => i.type === 'seat' || i.isSeat);
+    const hasGeneralFeeCategory = categories.some(c => (c.type || "").toLowerCase() === "general fee");
+    const hasSeatCategory = categories.some(c => (c.type || "").toLowerCase().includes("seat"));
 
-    if (hasSeats) {
+    let autoEventType;
+    if (hasSeatsPlaced || hasSeatCategory) {
       autoEventType = "Reservation";
+    } else if (hasGeneralFeeCategory) {
+      autoEventType = "General Admission";
+    } else {
+      autoEventType = selectedEvent?.eventType || "General Admission";
     }
 
     // 4. Assemble the lightweight JSON payload (no mega base64 string bloating this!)

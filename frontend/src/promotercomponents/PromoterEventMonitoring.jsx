@@ -18,6 +18,22 @@ const PromoterEventMonitoring = () => {
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("sales");
+
+    // Derived visibility flags based on ticket category types
+    const hasAttendeesTab = React.useMemo(() => {
+        if (!selectedEvent) return false;
+        const levels = selectedEvent.priceLevels || [];
+        return levels.some(pl => {
+            const t = (pl.type || "").toLowerCase();
+            return t.includes("general fee") || t.includes("seat");
+        });
+    }, [selectedEvent]);
+
+    const hasSponsorsTab = React.useMemo(() => {
+        if (!selectedEvent) return false;
+        const levels = selectedEvent.priceLevels || [];
+        return levels.some(pl => (pl.type || "").toLowerCase().includes("booth"));
+    }, [selectedEvent]);
     const [searchQuery, setSearchQuery] = useState("");
     const [sortFilter, setSortFilter] = useState("Recently Added");
     const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
@@ -189,7 +205,7 @@ const PromoterEventMonitoring = () => {
                                             <div
                                                 key={event._id}
                                                 className="pmon-event-card"
-                                                onClick={() => setSelectedEvent(event)}
+                                                onClick={() => { setSelectedEvent(event); setActiveTab("sales"); }}
                                             >
                                                 <div className="pmon-card-image-wrap">
                                                     <img src={imageUrl} onError={(e) => { e.target.src = "/assets/eventbg.jpg" }} alt={event.title} />
@@ -250,18 +266,22 @@ const PromoterEventMonitoring = () => {
                         <button className={`pmon-tab large-body-text ${activeTab === "sales" ? "active" : ""}`} onClick={() => setActiveTab("sales")}>
                             Sales Overview
                         </button>
-                        <button className={`pmon-tab large-body-text ${activeTab === "attendees" ? "active" : ""}`} onClick={() => setActiveTab("attendees")}>
-                            Attendees
-                        </button>
-                        <button className={`pmon-tab large-body-text ${activeTab === "sponsors" ? "active" : ""}`} onClick={() => setActiveTab("sponsors")}>
-                            Sponsors
-                        </button>
+                        {hasAttendeesTab && (
+                            <button className={`pmon-tab large-body-text ${activeTab === "attendees" ? "active" : ""}`} onClick={() => setActiveTab("attendees")}>
+                                Attendees
+                            </button>
+                        )}
+                        {hasSponsorsTab && (
+                            <button className={`pmon-tab large-body-text ${activeTab === "sponsors" ? "active" : ""}`} onClick={() => setActiveTab("sponsors")}>
+                                Sponsors
+                            </button>
+                        )}
                     </div>
 
                     <div className="pmon-main-content">
                         {activeTab === "sales" && <PromoterSales selectedEvent={selectedEvent} />}
-                        {activeTab === "attendees" && <PromoterAttendees selectedEvent={selectedEvent} />}
-                        {activeTab === "sponsors" && <PromoterSponsors selectedEvent={selectedEvent} />}
+                        {activeTab === "attendees" && hasAttendeesTab && <PromoterAttendees selectedEvent={selectedEvent} />}
+                        {activeTab === "sponsors" && hasSponsorsTab && <PromoterSponsors selectedEvent={selectedEvent} />}
                     </div>
                 </div>
             )}

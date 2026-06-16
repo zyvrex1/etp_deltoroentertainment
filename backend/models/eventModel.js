@@ -392,7 +392,15 @@ eventSchema.virtual("totalBooths").get(function () {
     return (this.booths || []).length;
   }
 
-  // For General Admission or other types, we might not have booths at all
+  // For General Admission: use booth-type price level quantities as capacity
+  // This avoids double-counting when totalTickets already excludes booth price levels
+  const boothPriceLevelTotal = (this.priceLevels || [])
+    .filter(p => (p.type || "").toLowerCase().includes("booth"))
+    .reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
+
+  if (boothPriceLevelTotal > 0) return boothPriceLevelTotal;
+
+  // Fallback: count actual booth documents
   return (this.booths || []).length;
 });
 
@@ -413,6 +421,12 @@ eventSchema.virtual("boothsSold").get(function () {
     return (this.booths || []).filter(b => b.status === "sold").length;
   }
 
+  // For General Admission: use booth-type price level quantitySold
+  const boothPriceLevelSold = (this.priceLevels || [])
+    .filter(p => (p.type || "").toLowerCase().includes("booth"))
+    .reduce((sum, p) => sum + (p.quantitySold || 0), 0);
+
+  if (boothPriceLevelSold > 0) return boothPriceLevelSold;
   return (this.booths || []).filter(b => b.status === "sold").length;
 });
 
@@ -459,11 +473,12 @@ eventSchema.virtual("totalTickets").get(function () {
     return 0;
   }
 
-  // 3. For General Admission, use price level quantities
-  return (this.priceLevels || []).reduce(
-    (sum, p) => sum + (p.quantityAvailable || 0),
-    0
-  );
+  // 3. For General Admission: only count non-booth price levels (General Fee types).
+  //    Booth-type price levels are counted separately by the totalBooths virtual
+  //    to avoid double-counting in the sold progress display.
+  return (this.priceLevels || [])
+    .filter(p => !(p.type || "").toLowerCase().includes("booth"))
+    .reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
 });
 
 eventSchema.virtual("ticketsReserved").get(function () {
