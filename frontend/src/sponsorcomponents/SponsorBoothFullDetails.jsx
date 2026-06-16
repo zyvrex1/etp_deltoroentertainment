@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useParams } from 'react-router-dom';
+import { getImageUrl } from '../utils/imageUrl';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
 import { useAuthContext } from '../hooks/useAuthContext';
@@ -925,7 +926,7 @@ const exportInvoiceToPDF = async () => {
                 <div className="booth-details-main">
                     <div className="booth-details-cover">
                         <img
-                            src={reservation.event?.image ? `/uploads/${reservation.event.image}` : "/assets/eventbg.jpg"}
+                            src={getImageUrl(reservation.event?.image)}
                             alt="Event Cover"
                             onError={(e) => { e.target.src = "/assets/eventbg.jpg"; }}
                         />

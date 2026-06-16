@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import { getImageUrl } from '../utils/imageUrl';
 import { useCustomerCart } from '../context/CustomerCartContext';
 import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
@@ -213,7 +214,7 @@ export default function CustomerCart() {
                                 <div className="event-card-header" onClick={() => navigate(`/customer/event-details/${event?._id}`)} style={{ cursor: 'pointer' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <img
-                                            src={event?.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                            src={event?.image ? getImageUrl(event.image) : "/assets/eventbg.jpg"}
                                             alt={event?.title || 'Event'}
                                             style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }}
                                             onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}

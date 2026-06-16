@@ -34,39 +34,9 @@ const getNotifications = async (req, res) => {
             };
         }
 
-        let notifications = await Notification.find({
-            $and: [
-                query,
-                {
-                    $or: [
-                        { userId: user._id },
-                        { createdBy: { $ne: user._id } }
-                    ]
-                }
-            ]
-        }).sort({ createdAt: -1 }).limit(50);
+        const notifications = await Notification.find(query).sort({ createdAt: -1 });
 
-        // Filter based on user preferences
-        const filteredNotifications = notifications.filter(notif => {
-            // 1. Reservations or about payments
-            if ((notif.type === 'payment' || notif.type === 'reservation') && preferences.paymentReminders === false) return false;
-            
-            // 2. Concerns
-            if (notif.type === 'concern' && preferences.supportMessages === false) return false;
-            
-            // 3. Event Updates (New/Modified Events)
-            if (notif.type === 'event' && preferences.userUpdates === false) return false;
-
-            // 4. Platform Updates (Policies/Announcements)
-            if (['update', 'announcement', 'policy'].includes(notif.type) && preferences.announcements === false) return false;
-
-            // 5. User management notifications are admin-only
-            if (!isAdmin && notif.type === 'user') return false;
-            
-            return true;
-        });
-
-        res.status(200).json(filteredNotifications);
+        res.status(200).json(notifications);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -90,7 +60,7 @@ const markAllAsRead = async (req, res) => {
     try {
         const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
         const isPromoter = req.user.role === 'promoter';
-        
+
         let query;
         if (isAdmin) {
             query = { unread: true, $or: [{ userId: null, targetRole: { $in: [null, 'admin', 'all'] } }, { userId: req.user._id }] };

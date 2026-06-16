@@ -3,23 +3,18 @@ const Promoter = require('../models/promoterModel');
 const Sponsor = require('../models/sponsorModel');
 const bcrypt = require('bcrypt');
 const multer = require('multer');
-const path = require('path');
-const { optimizeImage } = require("../utils/imageOptimizer");
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${req.user._id}-${Date.now()}${ext}`);
-  },
-});
+const { optimizeImageBuffer } = require("../utils/imageOptimizer");
+const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { s3Client } = require("../config/s3Client");
+const { v4: uuidv4 } = require("uuid");
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) return cb(new Error('Only images allowed'), false);
     cb(null, true);
   },
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 const getUserById = async (req, res) => {
@@ -92,10 +87,19 @@ const updateProfile = async (req, res) => {
 
     // Handle avatar upload
     if (req.file) {
-      const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
-      await optimizeImage(filePath, 70, 400); // Smaller size for avatars
-      user.avatar = `/uploads/${req.file.filename}`;
-    }
+  const { buffer, contentType, ext } = await optimizeImageBuffer(
+    req.file.buffer, req.file.mimetype, 75, 400
+  );
+  const key = `avatars/${uuidv4()}${ext}`;
+  await s3Client.send(new PutObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+    CacheControl: 'public, max-age=31536000, immutable',
+  }));
+  user.avatar = `${process.env.CDN_BASE_URL}/${key}`;
+}
 
     await user.save();
 

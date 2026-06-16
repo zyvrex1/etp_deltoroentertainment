@@ -82,6 +82,7 @@ const createOrder = async (req, res) => {
 // Get Orders (for Sponsor or Admin)
 const getOrders = async (req, res) => {
     const { sponsorId, eventId, boothCode, status } = req.query;
+    const { page, limit, skip } = req.pagination || { page: 1, limit: 10000, skip: 0 };
     const filter = {};
 
     const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
@@ -91,9 +92,6 @@ const getOrders = async (req, res) => {
     if (boothCode) filter.boothCode = boothCode;
     if (status) filter.status = status;
 
-    // Object-level auth enforced here in lieu of middleware —
-    // non-admins are restricted to their own orders at the query level.
-    // Do not remove this block.
     if (!isAdmin) {
         filter.customerId = req.user._id;
     } else if (req.query.customerId) {
@@ -101,13 +99,26 @@ const getOrders = async (req, res) => {
     }
 
     try {
-        const orders = await Order.find(filter)
-            .populate('customerId', 'firstName lastName email')
-            .populate('sponsorId', 'companyName')
-            .populate('eventId', 'title')
-            .populate('items.productId')
-            .sort({ createdAt: -1 });
-        res.status(200).json(orders);
+        const [orders, total] = await Promise.all([
+            Order.find(filter)
+                .populate('customerId', 'firstName lastName email')
+                .populate('sponsorId', 'companyName')
+                .populate('eventId', 'title')
+                .populate('items.productId')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
+            Order.countDocuments(filter)
+        ]);
+        res.status(200).json({
+            data: orders,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

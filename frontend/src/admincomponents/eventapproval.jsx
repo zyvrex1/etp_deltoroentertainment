@@ -6,6 +6,8 @@ import EventReviewModal from './Modal/EventReviewModal';
 import EventRejectionModal from './Modal/EventRejectionModal';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 import { useAuthContext } from '../hooks/useAuthContext';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 
 const EventApproval = () => {
     const { user } = useAuthContext();
@@ -24,8 +26,12 @@ const EventApproval = () => {
     const dropdownRef = useRef(null);
 
     // PAGINATION
-    const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 7;
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
 
     const filterOptions = [
         { value: "all", label: "All Status" },
@@ -78,7 +84,7 @@ const EventApproval = () => {
 
     const handleFilterChange = (filter) => {
         setActiveFilter(filter);
-        setCurrentPage(1);
+        resetPage();
         setIsDropdownOpen(false);
     };
 
@@ -104,16 +110,16 @@ const EventApproval = () => {
         });
     }, [events, searchQuery, activeFilter]);
 
-    // PAGINATION BASED ON FILTERED EVENTS
-    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage) || 1;
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedEvents = filteredEvents.slice(startIndex, startIndex + itemsPerPage);
+    useEffect(() => {
+        setTotal({
+            total: filteredEvents.length,
+            totalPages: Math.ceil(filteredEvents.length / itemsPerPage) || 1
+        });
+    }, [filteredEvents.length, setTotal]);
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+    // PAGINATION BASED ON FILTERED EVENTS
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedEvents = filteredEvents.slice(startIndex, startIndex + itemsPerPage);
 
     const toggleRow = (id) => {
         setExpandedRow(expandedRow === id ? null : id);
@@ -207,7 +213,7 @@ const EventApproval = () => {
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
-                                    setCurrentPage(1);
+                                    resetPage();
                                 }}
                                 className="small-body-text"
                             />
@@ -381,29 +387,14 @@ const EventApproval = () => {
                     )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="pagination">
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
-
-                        <span className="pagination-info">
-                            Page {currentPage} of {totalPages}
-                        </span>
-
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={prev}
+                    onNext={next}
+                    onGoTo={goTo}
+                />
             </div>
 
             {showReviewModal && selectedEvent && (

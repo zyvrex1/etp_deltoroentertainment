@@ -1,9 +1,6 @@
 require('dotenv').config()
 
 // ─── Validate required env vars before anything else ────────
-// If any of these are missing the server crashes immediately
-// with a clear message instead of a cryptic runtime error later.
-
 const REQUIRED_ENV = ['PORT', 'MONGO_URI', 'JWT_SECRET', 'CLIENT_URL']
 for (const key of REQUIRED_ENV) {
   if (!process.env[key]) {
@@ -56,37 +53,31 @@ const errorHandler = require('./middleware/errorHandler')
 
 const app = express()
 
-// ✅ STEP 13: Trust proxy for accurate client IP detection behind reverse proxies
+// ✅ Trust proxy for accurate client IP detection behind reverse proxies
 app.set('trust proxy', 1)
 
 app.use(requestLogger)
 
-// Ensure uploads folder exists
+// Ensure uploads folder exists (used by floorplan local uploads)
 const uploadDir = path.join(__dirname, 'uploads')
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir)
 }
 
-// middleware
-app.use(express.json({ limit: "10mb" }))
-app.use(express.json({
-  limit: '10kb'
-}))
-app.use(express.urlencoded({
-  limit: '10kb',
-  extended: true
-}))
+// ─── Body parsers ─────────────────────────────────────────────
+// One express.json() call — 10mb limit covers multipart metadata.
+// Actual file bytes go through multer, not JSON, so this is safe.
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ limit: '10mb', extended: true }))
 
-// Single cors block — reads from .env
-const allowedOrigins =
-  process.env.CLIENT_URL.split(',').map(o => o.trim())
+// ─── CORS ────────────────────────────────────────────────────
+const allowedOrigins = process.env.CLIENT_URL.split(',').map(o => o.trim())
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true)
     } else {
-      callback(new Error(
-        `CORS: origin ${origin} not allowed`))
+      callback(new Error(`CORS: origin ${origin} not allowed`))
     }
   },
   credentials: true
@@ -98,41 +89,41 @@ app.use(compression())
 const mongoSanitize = require('express-mongo-sanitize')
 
 app.use((req, res, next) => {
-  // If it's a websocket handshake request, bypass mongo-sanitize to prevent crashes
   if (req.headers.upgrade && req.headers.upgrade.toLowerCase() === 'websocket') {
     return next()
   }
-
-  // In Express 5, req.query is a getter-only property. 
-  // express-mongo-sanitize middleware crashes when trying to reassign it.
-  // We manually sanitize the properties instead.
   ['body', 'params', 'headers', 'query'].forEach((key) => {
     if (req[key]) {
       mongoSanitize.sanitize(req[key]);
     }
   });
-
   next()
 })
 
-// // Single dev-only logger
-// if (process.env.NODE_ENV !== 'production') {
-//   app.use((req, res, next) => {
-//     console.log(req.method, req.path)
-//     next()
-//   })
-// }
+// ─── Helmet / CSP ─────────────────────────────────────────────
+// imgSrc includes:
+//   - R2 public CDN domain (serves optimised webp — Step 11 & 12)
+//   - Cloudflare R2 storage domain (fallback / dev)
+// connectSrc includes R2 domain so fetch() calls to the CDN aren't blocked.
+const R2_CDN = process.env.CDN_BASE_URL || ''          // e.g. https://pub-xxx.r2.dev
+const R2_STORAGE = `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
 
-// helmet sets secure HTTP headers (XSS, clickjacking, MIME sniff, etc.)
 const allowedImgSrc = process.env.NODE_ENV === 'production'
-  ? ["'self'", "data:", "blob:"]
-  : ["'self'", "data:", "blob:", "http://localhost:4000", "http://127.0.0.1:4000", "http://192.168.18.6:4000"];
+  ? ["'self'", "data:", "blob:", R2_CDN, R2_STORAGE]
+  : ["'self'", "data:", "blob:", R2_CDN, R2_STORAGE,
+     "http://localhost:4000", "http://127.0.0.1:4000", "http://192.168.18.6:4000"]
+
+const allowedConnectSrc = process.env.NODE_ENV === 'production'
+  ? ["'self'", R2_CDN, "https://api.iconify.design", "https://api.simplesvg.com", "https://api.unisvg.com"]
+  : ["'self'", R2_CDN, R2_STORAGE,
+     "http://localhost:4000", "ws://localhost:4000",
+     "https://api.iconify.design", "https://api.simplesvg.com", "https://api.unisvg.com"]
 
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "http://localhost:4000", "ws://localhost:4000", "https://api.iconify.design", "https://api.simplesvg.com", "https://api.unisvg.com"],
+      connectSrc: allowedConnectSrc,
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
@@ -141,30 +132,26 @@ app.use(helmet({
     }
   }
 }))
+
 // ─── Rate limiting ─────────────────────────────────────────────
-// Global limiter — raised to 300 req/15min to accommodate admin
-// tools (LayoutBuilder, EventSelection) that make many API calls.
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
-  handler: onRateLimitExceeded   // ← ADD THIS LINE
+  handler: onRateLimitExceeded
 }))
 
-// Auth limiter — stricter for login/logout endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
-  handler: onRateLimitExceeded   // ← ADD THIS LINE
+  handler: onRateLimitExceeded
 })
 
-// Upload limiter — generous since uploads are intentional user actions,
-// not the kind of traffic rate limiting is designed to stop.
 const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
@@ -173,14 +160,11 @@ const uploadLimiter = rateLimit({
   message: { error: 'Upload limit reached. Please wait before uploading again.' }
 })
 
-
-
-// serve uploaded images
+// Serve local floorplan uploads (legacy path — R2 images use CDN URL directly)
 app.use('/uploads', express.static(uploadDir))
 
-// API routes
+// ─── API routes ───────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes)
-// app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/promoter', promoterRoutes)
@@ -200,7 +184,7 @@ app.use('/api/orders', orderRoutes)
 app.use('/api/payouts', payoutRoutes)
 app.use('/api/digital-gifts', digitalgiftsRoutes)
 app.use('/api/audit-logs', auditLogRoutes)
-app.use('/api/uploads', uploadLimiter, uploadRoutes)
+app.use('/api/uploads', uploadLimiter, uploadRoutes)  // POST /image, DELETE /image, POST /floorplan
 
 app.get('/api/test-error', (req, res, next) => {
   const err = new Error('Test error - delete this route after')
@@ -208,40 +192,25 @@ app.get('/api/test-error', (req, res, next) => {
   next(err)
 })
 
-
-// NEW - works in Express 5
+// 404 for unmatched API routes
 app.use('/api/{*path}', (req, res) => {
   res.status(404).json({ error: `API route not found: ${req.originalUrl}` })
 })
 
-
+// Serve React SPA
 const DIST = path.join(__dirname, '../frontend/dist')
 console.log('DIST path:', DIST)
 app.use(express.static(DIST))
-
 app.get('{*path}', (req, res) => {
   res.sendFile(path.join(DIST, 'index.html'))
 })
 
-
-
 // Global error handler
 app.use(errorHandler)
-
 
 const http = require('http');
 const socket = require('./socket');
 const connectDB = require('./config/db');
-
-// connect to db
-// connectDB().then(() => {
-//     const server = http.createServer(app);
-//     socket.init(server);
-
-//     server.listen(process.env.PORT, () => {
-//         console.log('Server running on port', process.env.PORT)
-//     });
-// });
 
 const { expireOldReservations } = require('./controllers/reservationController')
 

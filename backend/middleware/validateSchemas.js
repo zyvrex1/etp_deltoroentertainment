@@ -124,28 +124,48 @@ const updatePayoutStatusSchema = z.object({
 const createMerchandiseSchema = z.object({
   name:        z.string().trim().min(1, 'name is required'),
   description: z.string().trim().optional(),
-  price:       z.number().finite().positive('price must be greater than 0'),
+  price:       z.number().finite().nonnegative('price must be 0 or greater'),
   category:    z.string().trim().min(1, 'category is required'),
   stock:       z.number().int().nonnegative().optional(),
-  image:       z.string().trim().optional(),
+  image:       z.string().trim().optional().nullable(),
   eventId:     z.string().trim().min(1, 'eventId is required'),
   boothCode:   z.string().trim().optional(),
-  status:      z.enum(['active', 'inactive', 'draft']).optional()
-}).strict()
+  status:      z.enum(['Available', 'Out of Stock', 'Hidden']).optional()
+})
 
 const updateMerchandiseSchema = z.object({
   name:        z.string().trim().min(1).optional(),
   description: z.string().trim().optional(),
-  price:       z.number().finite().positive().optional(),
+  price:       z.number().finite().nonnegative().optional(),
   category:    z.string().trim().optional(),
   stock:       z.number().int().nonnegative().optional(),
-  image:       z.string().trim().optional(),
+  image:       z.string().trim().optional().nullable(),
   boothCode:   z.string().trim().optional(),
-  status:      z.enum(['active', 'inactive', 'draft']).optional()
-}).strict()
+  status:      z.enum(['Available', 'Out of Stock', 'Hidden']).optional()
+})
+
+// ─── Pagination ──────────────────────────────
+const offsetPaginationSchema = z.object({
+  page:   z.coerce.number().int().min(1).optional(),
+  limit:  z.coerce.number().int().min(1).max(100).optional(),
+  sort:   z.string().trim().optional(),
+  order:  z.enum(['asc','desc']).optional(),
+  search: z.string().trim().optional()
+})
+
+const cursorPaginationSchema = z.object({
+  cursor: z.string().trim().optional(),
+  limit:  z.coerce.number().int().min(1).max(100).optional(),
+  sort:   z.string().trim().optional(),
+  order:  z.enum(['asc','desc']).optional()
+})
 
 // ─── Exports ─────────────────────────────────────────────────
 module.exports = {
+
+  validateOffsetQuery: validateQuery(offsetPaginationSchema),
+validateCursorQuery: validateQuery(cursorPaginationSchema),
+
   // Orders
   validateCreateOrder:        validate(createOrderSchema),
   validateUpdateOrder:        validate(updateOrderSchema),

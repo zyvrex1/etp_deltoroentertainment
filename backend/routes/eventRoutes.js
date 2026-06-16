@@ -26,8 +26,9 @@ const {
 } = require("../controllers/priceLevelController");
 const requireAuth = require('../middleware/requireAuth')
 const optionalAuth = require('../middleware/optionalAuth')
+const paginate = require('../middleware/paginate')
 
-router.get('/', optionalAuth, getEvents)
+router.get('/', optionalAuth, paginate, getEvents)
 router.get('/:id', optionalAuth, getEvent)
 router.get("/:eventId/price-levels", getPriceLevels);
 

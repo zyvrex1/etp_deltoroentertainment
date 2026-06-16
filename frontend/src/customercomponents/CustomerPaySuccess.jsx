@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Icon } from '@iconify/react';
+import { getImageUrl } from '../utils/imageUrl';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useCustomerCart } from '../context/CustomerCartContext';
@@ -137,7 +138,7 @@ const CustomerPaySuccess = () => {
                     <div className="cps-card">
                         <div className="cps-event-header">
                             <img
-                                src={event.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                src={event.image ? getImageUrl(event.image) : "/assets/eventbg.jpg"}
                                 alt={event.title}
                                 className="cps-event-img"
                                 onError={(e) => { e.target.src = "/assets/eventbg.jpg"; }}

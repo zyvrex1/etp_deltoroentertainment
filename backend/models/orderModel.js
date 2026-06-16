@@ -76,4 +76,8 @@ const orderSchema = new Schema({
     }
 }, { timestamps: true });
 
+orderSchema.index({ customerId: 1, status: 1, createdAt: -1 });
+orderSchema.index({ sponsorId: 1, eventId: 1, status: 1 });
+orderSchema.index({ eventId: 1, status: 1 });
+
 module.exports = mongoose.model('Order', orderSchema);

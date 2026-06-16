@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { getImageUrl } from '../utils/imageUrl';
 import { Icon } from "@iconify/react";
 import merchandiseService from "../services/merchandiseService";
 import reservationService from "../services/reservationService";
 import orderService from "../services/orderService";
 import { useAuthContext } from "../hooks/useAuthContext";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./SponsorStore.css";
 
 
@@ -15,12 +18,16 @@ const SponsorStore = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [merchandise, setMerchandise] = useState([]);
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState([]);
 
   const itemsPerPage = 8;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
   const dropdownRef = useRef(null);
 
   const getStatusClass = (status) => {
@@ -94,18 +101,8 @@ const SponsorStore = () => {
             const industry = storeSettings.industry || sponsorUser.industry || "Sponsor";
 
             // Logo/Image logic
-            let imageUrl = '/assets/eventbg.jpg';
-            if (storeSettings.logo) {
-              const logo = storeSettings.logo;
-              imageUrl = (logo.startsWith('http') || logo.startsWith('/assets/') || logo.startsWith('blob:') || logo.startsWith('data:'))
-                ? logo
-                : `/uploads/${logo.replace(/^(\/)?uploads\//, '')}`;
-            } else if (eventObj.image) {
-              const img = eventObj.image;
-              imageUrl = (img.startsWith('http') || img.startsWith('/assets/') || img.startsWith('blob:') || img.startsWith('data:'))
-                ? img
-                : `/uploads/${img.replace(/^(\/)?uploads\//, '')}`;
-            }
+            let imageUrl = storeSettings.logo ? storeSettings.logo : (eventObj.image || '/assets/eventbg.jpg');
+              imageUrl = getImageUrl(imageUrl);
 
             return {
                 id: res._id,
@@ -167,15 +164,15 @@ const SponsorStore = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredEvents.slice(startIndex, Math.min(startIndex + itemsPerPage, filteredEvents.length));
+  useEffect(() => {
+    setTotal({
+      total: filteredEvents.length,
+      totalPages: Math.ceil(filteredEvents.length / itemsPerPage) || 1,
+    });
+  }, [filteredEvents.length, setTotal]);
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedData = filteredEvents.slice(startIndex, Math.min(startIndex + itemsPerPage, filteredEvents.length));
 
   return (
     <div className="sponsor-store-container">
@@ -200,7 +197,7 @@ const SponsorStore = () => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1); // Reset to first page on search
+                  resetPage();
                 }}
                 className="small-body-text store-search-input"
               />
@@ -229,7 +226,7 @@ const SponsorStore = () => {
                       onClick={() => {
                         setStatusFilter(option);
                         setIsDropdownOpen(false);
-                        setCurrentPage(1); // Reset to first page on filter change
+                        resetPage();
                       }}
                     >
                       {option}
@@ -331,27 +328,14 @@ const SponsorStore = () => {
           )}
         </div>
 
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button
-              className="pagination-btn small-body-text"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span className="pagination-info small-body-text">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              className="pagination-btn small-body-text"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
     </div>
   );

@@ -6,6 +6,8 @@ import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tool
 import merchandiseService from "../services/merchandiseService";
 import orderService from "../services/orderService";
 import { useAuthContext } from "../hooks/useAuthContext";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./SponsorProductAnalytics.css";
 
 const PIE_COLORS = ['#c62828', '#ffdd66', '#0059ff'];
@@ -55,7 +57,6 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All Categories");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef(null);
 
   const [expandedRow, setExpandedRow] = useState(null);
@@ -64,6 +65,11 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
   };
 
   const itemsPerPage = 5;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
 
   const fetchAnalyticsData = async () => {
     if (!user) return;
@@ -210,15 +216,15 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
     return matchesSearch && matchesFilter;
   });
 
-  const totalPages = Math.ceil(filteredInventory.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredInventory.slice(startIndex, startIndex + itemsPerPage);
+  useEffect(() => {
+    setTotal({
+      total: filteredInventory.length,
+      totalPages: Math.ceil(filteredInventory.length / itemsPerPage) || 1,
+    });
+  }, [filteredInventory.length, setTotal]);
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedData = filteredInventory.slice(startIndex, startIndex + itemsPerPage);
 
   // Replaced dynamic stats array with the user provided static stats array in the component body
 
@@ -653,7 +659,7 @@ const exportToPDF = async () => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1);
+                  resetPage();
                 }}
                 className="small-body-text"
               />
@@ -681,7 +687,7 @@ const exportToPDF = async () => {
                       onClick={() => {
                         setFilterCategory(option);
                         setIsDropdownOpen(false);
-                        setCurrentPage(1);
+                        resetPage();
                       }}
                     >
                       {option}
@@ -759,27 +765,14 @@ const exportToPDF = async () => {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="spa-pagination">
-            <button
-              className="spa-pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span className="spa-pagination-info small-body-text">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              className="spa-pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
     </div>
   );

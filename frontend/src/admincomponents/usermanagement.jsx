@@ -5,11 +5,14 @@ import CreateUserModal from "./Modal/CreateUserModal";
 import ViewUserModal from "./Modal/ViewUserModal";
 import EditUserModal from "./Modal/EditUserModal";
 import { useAuthContext } from "../hooks/useAuthContext";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import adminService from "../services/adminService";
 
 const UserManagement = () => {
   const { user } = useAuthContext();
   const [allUsers, setAllUsers] = useState([]);
+  const [userCounts, setUserCounts] = useState({ all: 0, admins: 0, promoters: 0, sponsors: 0, customers: 0 });
 
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isViewUserModalOpen, setIsViewUserModalOpen] = useState(false);
@@ -18,8 +21,12 @@ const UserManagement = () => {
   const [selectedUserType, setSelectedUserType] = useState("");
   const [activeTab, setActiveTab] = useState("all-users");
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
   const [expandedRow, setExpandedRow] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const topRef = useRef(null);
@@ -33,8 +40,19 @@ const UserManagement = () => {
     setIsLoading(true);
 
     try {
-      const json = await adminService.getUsers(user.token);
-      setAllUsers(json);
+      const response = await adminService.getUsers(user.token, {
+        page,
+        limit: itemsPerPage,
+        search: searchQuery,
+        role: activeTab
+      });
+      setAllUsers(response.data || []);
+      if (response.counts) {
+        setUserCounts(response.counts);
+      }
+      if (response.pagination) {
+        setTotal(response.pagination);
+      }
     } catch (err) {
       console.error("Error fetching users:", err);
     } finally {
@@ -43,32 +61,33 @@ const UserManagement = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, [user]);
-
-  const usersExcludingCurrent = allUsers.filter(u => u._id !== user._id);
+    const timeoutId = setTimeout(() => {
+      fetchUsers();
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [user, page, searchQuery, activeTab]);
 
   const tabs = [
-    { id: "all-users", label: "All Users", count: usersExcludingCurrent.length },
+    { id: "all-users", label: "All Users", count: userCounts.all },
     {
       id: "admins",
       label: "Admins",
-      count: usersExcludingCurrent.filter((u) => u.role === "admin").length,
+      count: userCounts.admins,
     },
     {
       id: "promoters",
       label: "Promoters",
-      count: usersExcludingCurrent.filter((u) => u.role === "promoter").length,
+      count: userCounts.promoters,
     },
     {
       id: "sponsors",
       label: "Sponsors",
-      count: usersExcludingCurrent.filter((u) => u.role === "sponsor").length,
+      count: userCounts.sponsors,
     },
     {
       id: "customers",
       label: "Customers",
-      count: usersExcludingCurrent.filter((u) => u.role === "customer").length,
+      count: userCounts.customers,
     },
   ];
 
@@ -136,59 +155,18 @@ const UserManagement = () => {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  const getTableData = () => {
-    // Filter out the logged-in user first
-    let usersExcludingCurrent = allUsers.filter(u => u._id !== user._id);
+  const paginatedData = allUsers;
 
-    // Sort by createdAt descending (recently created first)
-    usersExcludingCurrent.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    switch (activeTab) {
-      case "all-users":
-        return usersExcludingCurrent;
-      case "admins":
-        return usersExcludingCurrent.filter((u) => u.role === "admin");
-      case "customers":
-        return usersExcludingCurrent.filter((u) => u.role === "customer");
-      case "promoters":
-        return usersExcludingCurrent.filter((u) => u.role === "promoter");
-      case "sponsors":
-        return usersExcludingCurrent.filter((u) => u.role === "sponsor");
-      default:
-        return [];
+  useEffect(() => {
+    setExpandedRow(null);
+    if (topRef.current) {
+      topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  };
-
-  const filteredData = getTableData().filter((item) => {
-    const searchStr = searchQuery.toLowerCase();
-    return (
-      `${item.firstName || ""} ${item.lastName || ""}`
-        .toLowerCase()
-        .includes(searchStr) ||
-      (item.email && item.email.toLowerCase().includes(searchStr))
-    );
-  });
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + itemsPerPage,
-  );
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      setExpandedRow(null);
-      if (topRef.current) {
-        topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-  };
+  }, [page]);
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    setCurrentPage(1);
+    resetPage();
     setSearchQuery("");
     setExpandedRow(null);
   };
@@ -802,7 +780,7 @@ const UserManagement = () => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1); // ✅ IMPORTANT (same as EventManagement)
+                  resetPage();
                 }}
                 className="small-body-text"
               />
@@ -814,29 +792,14 @@ const UserManagement = () => {
         {renderTable()}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-
-            <span className="pagination-info">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
       <CreateUserModal
         isOpen={isUserModalOpen}

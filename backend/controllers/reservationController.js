@@ -2,8 +2,10 @@ const Reservation = require('../models/reservationModel');
 const User = require('../models/userModel');
 const Event = require('../models/eventModel');
 const mongoose = require('mongoose');
-const path = require('path');
-const { optimizeImage } = require("../utils/imageOptimizer");
+const { optimizeImageBuffer } = require("../utils/imageOptimizer");
+const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { s3Client } = require("../config/s3Client");
+const { v4: uuidv4 } = require("uuid");
 
 // Fetch personal reservations for the sponsor
 const getMyReservations = async (req, res) => {
@@ -29,24 +31,48 @@ const getMyReservations = async (req, res) => {
 
 // Fetch all reservations for admin view
 const getAllReservations = async (req, res) => {
-  try {
-    console.log("Admin Reservations: Fetching...");
+    try {
+        const { page, limit, skip } = req.pagination || { page: 1, limit: 10000, skip: 0 };
+        const search = (req.query.search || '').trim();
+        const statusFilter = req.query.status;
 
-    const reservations = await Reservation.find({})
-      .populate({ path: 'user', select: 'firstName lastName email companyName' })
-      .populate({ path: 'event', select: 'title startDate' })
-      .populate({ path: 'appliedGift', select: 'name type value valueType' })  // ← add this
-      .sort({ createdAt: -1 })
-      .lean();
+        const filter = {};
+        if (statusFilter && statusFilter !== 'all') {
+            filter.status = statusFilter;
+        }
+        if (search) {
+            filter.$or = [
+                { boothCode: { $regex: search, $options: 'i' } }
+            ];
+        }
 
-    const validReservations = reservations.filter(r => r.event !== null);
+        const [reservations, total] = await Promise.all([
+            Reservation.find(filter)
+                .populate({ path: 'user', select: 'firstName lastName email companyName' })
+                .populate({ path: 'event', select: 'title startDate' })
+                .populate({ path: 'appliedGift', select: 'name type value valueType' })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Reservation.countDocuments(filter)
+        ]);
 
-    console.log(`Admin Reservations: Successfully fetched ${validReservations.length} records.`);
-    res.status(200).json(validReservations);
-  } catch (error) {
-    console.error("CRITICAL ADMIN RESERVATIONS ERROR:", error);
-    res.status(500).json({ error: error.message || "Internal Server Error" });
-  }
+        const validReservations = reservations.filter(r => r.event !== null);
+
+        res.status(200).json({
+            data: validReservations,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error("CRITICAL ADMIN RESERVATIONS ERROR:", error);
+        res.status(500).json({ error: error.message || "Internal Server Error" });
+    }
 };
 
 const deleteReservation = async (req, res) => {
@@ -316,11 +342,20 @@ const updateStoreSettings = async (req, res) => {
         if (description !== undefined) reservation.storeSettings.description = description;
 
         if (req.file) {
-            const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
-            await optimizeImage(filePath, 70, 400);
-            reservation.storeSettings.logo = `/uploads/${req.file.filename}`;
+            const { buffer, contentType, ext } = await optimizeImageBuffer(
+                req.file.buffer, req.file.mimetype, 75, 400
+            );
+            const key = `logos/${uuidv4()}${ext}`;
+            await s3Client.send(new PutObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: key,
+                Body: buffer,
+                ContentType: contentType,
+                CacheControl: 'public, max-age=31536000, immutable',
+            }));
+            reservation.storeSettings.logo = `${process.env.CDN_BASE_URL}/${key}`;
         }
-
+        
         // Mark modified since it's a nested object
         reservation.markModified('storeSettings');
         await reservation.save();
@@ -471,7 +506,7 @@ const updateReservationStatus = async (req, res) => {
             return res.status(404).json({ error: "Reservation not found" });
         }
 
-      const oldStatus = reservation.status;
+        const oldStatus = reservation.status;
         reservation.status = status;
         await reservation.save();
 
@@ -742,7 +777,7 @@ const updateReservationStatus = async (req, res) => {
 
                     const statusWord = status === 'refunded' ? 'refunded'
                         : status === 'rejected' ? 'rejected'
-                        : 'cancelled';
+                            : 'cancelled';
 
                     const notifTitle = `Reservation ${statusWord.charAt(0).toUpperCase() + statusWord.slice(1)}`;
                     const notifContent = `${buyerName}'s reservation for ${reservationInfo} in "${eventForNotif.title}" has been ${statusWord}.`;

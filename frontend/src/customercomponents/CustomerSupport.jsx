@@ -9,6 +9,8 @@ import concernService from '../services/concernService';
 import policyService from '../services/policyService';
 import jsPDF from 'jspdf';
 import './CustomerSupport.css';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import { 
     loadLogo, 
     addReportHeader, 
@@ -45,34 +47,67 @@ export default function CustomerSupport() {
         event: ''
     });
 
-    const fetchData = async () => {
+    const itemsPerPage = 7;
+    const {
+        page,
+        totalPages,
+        total,
+        setTotal,
+        prev: onPrev,
+        next: onNext,
+        goTo: onGoTo,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
+
+    const fetchPolicies = async () => {
+        try {
+            const policiesData = await policyService.getPolicies();
+            setPolicies(policiesData);
+        } catch (error) {
+            console.error("Error fetching policies:", error);
+        }
+    };
+
+    const fetchConcerns = async () => {
         if (!user?.token) return;
         setLoading(true);
         try {
-            const [concernsData, policiesData] = await Promise.all([
-                concernService.getMyConcerns(user.token),
-                policyService.getPolicies()
-            ]);
-            setConcerns(concernsData);
-            setPolicies(policiesData);
+            const response = await concernService.getMyConcerns({
+                page,
+                limit: itemsPerPage,
+                search: searchQuery,
+                status: selectedStatus
+            });
+            setConcerns(response.data || []);
+            if (response.pagination) {
+                setTotal(response.pagination);
+            }
         } catch (error) {
-            console.error("Error fetching support data:", error);
+            console.error("Error fetching concerns:", error);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchData();
-    }, [user]);
+        fetchPolicies();
+    }, []);
+
+    // Fetch concerns on mount and when dependencies change (with debounce for search)
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchConcerns();
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [user, page, searchQuery, selectedStatus]);
 
     // Socket for real-time updates to the list
     useEffect(() => {
         if (!user?.token) return;
         const socket = io(BACKEND_URL);
 
-        socket.on('newMessage', () => fetchData());
-        socket.on('statusUpdate', () => fetchData());
+        socket.on('newMessage', () => fetchConcerns());
+        socket.on('statusUpdate', () => fetchConcerns());
 
         return () => socket.disconnect();
     }, [user]);
@@ -256,12 +291,11 @@ const exportDocumentToPDF = async (doc) => {
         setSelectedConcern(null);
     };
 
-    const filteredTickets = concerns.filter(ticket => {
-        const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             ticket._id.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = selectedStatus === "All" || ticket.status.toLowerCase() === selectedStatus.toLowerCase();
-        return matchesSearch && matchesStatus;
-    });
+    useEffect(() => {
+        resetPage();
+    }, [searchQuery, selectedStatus, resetPage]);
+
+    const paginatedTickets = concerns;
 
     if (selectedConcern) {
         return (
@@ -325,13 +359,13 @@ const exportDocumentToPDF = async (doc) => {
                                 </div>
                             ))}
                         </>
-                    ) : filteredTickets.length === 0 ? (
+                    ) : paginatedTickets.length === 0 ? (
                         <div className="empty-state">
                             <Icon icon="mdi:comment-alert-outline" width="48" />
                             <p>No concerns found.</p>
                         </div>
                     ) : (
-                        filteredTickets.map(ticket => (
+                        paginatedTickets.map(ticket => (
                             <div key={ticket._id} className="ticket-card">
                                 <div className="ticket-header">
                                     <span className="ticket-id">#{ticket._id.slice(-6).toUpperCase()}</span>
@@ -360,6 +394,14 @@ const exportDocumentToPDF = async (doc) => {
                         ))
                     )}
                 </div>
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={onPrev}
+                    onNext={onNext}
+                    onGoTo={onGoTo}
+                />
             </div>
         </div>
     );
@@ -398,7 +440,7 @@ const exportDocumentToPDF = async (doc) => {
                         });
                         setSelectedFiles([]);
                         setActiveTab('My Concerns');
-                        fetchData();
+                        fetchConcerns();
                     } catch (error) {
                         showErrorAlert("Error", error.message);
                     } finally {

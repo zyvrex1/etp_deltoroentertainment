@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
+import { getImageUrl } from '../utils/imageUrl';
 import { Icon } from '@iconify/react';
 import SponsorEnlargeQR from './SponsorModal/SponsorEnlargeQR';
 import SponsorRequestRefund from './SponsorModal/SponsorRequestRefund';
@@ -8,6 +9,8 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import axios from 'axios';
 import GiftRestoredNotice from '../components/GiftRestoredNotice';
 import { shouldShowGiftRestoredNotice } from '../utils/giftNoticeUtils';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import './SponsorMyBooth.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -126,17 +129,26 @@ export default function SponsorMyBooth() {
         return result;
     }, [reservations, searchQuery, statusFilter, sortFilter]);
 
-    const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
-    const totalPages = Math.ceil(filteredAndSortedReservations.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedBooths = filteredAndSortedReservations.slice(startIndex, startIndex + itemsPerPage);
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+    useEffect(() => {
+        setTotal({
+            total: filteredAndSortedReservations.length,
+            totalPages: Math.ceil(filteredAndSortedReservations.length / itemsPerPage) || 1,
+        });
+    }, [filteredAndSortedReservations.length, setTotal]);
+
+    useEffect(() => {
+        resetPage();
+    }, [searchQuery, statusFilter, sortFilter, resetPage]);
+
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedBooths = filteredAndSortedReservations.slice(startIndex, startIndex + itemsPerPage);
 
     const handleOpenQR = (booth) => {
         setSelectedBooth(booth);
@@ -250,7 +262,9 @@ export default function SponsorMyBooth() {
                                     <div className="booth-card-body">
                                         <div className="booth-image-container">
                                             <img
-                                                src={res.event?.image ? `/uploads/${res.event.image}` : "/assets/eventbg.jpg"}
+                                                src={res.event?.image ?
+                                                    getImageUrl(res.event.image)
+                                                    : "/assets/eventbg.jpg"}
                                                 alt={res.event?.title}
                                                 onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
                                             />
@@ -316,29 +330,14 @@ export default function SponsorMyBooth() {
                     )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="pagination">
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
-
-                        <span className="pagination-info">
-                            Page {currentPage} of {totalPages}
-                        </span>
-
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={prev}
+                    onNext={next}
+                    onGoTo={goTo}
+                />
             </div>
 
             <SponsorEnlargeQR

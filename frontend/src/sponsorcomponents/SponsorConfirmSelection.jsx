@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getImageUrl } from '../utils/imageUrl';
 import { useSponsorCartContext } from '../context/SponsorCartContext';
 import { showSuccessAlert } from '../utils/sweetAlert';
 import './SponsorConfirmSelection.css';
@@ -123,7 +124,7 @@ const SponsorConfirmSelection = () => {
                         <hr className="scs-divider mx-0 my-0" />
                         <div className="scs-event-details">
                             <img
-                                src={event.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                src={getImageUrl(event.image)}
                                 alt="Event Thumbnail"
                                 className="scs-event-thumb"
                             />

@@ -13,12 +13,22 @@ const orderService = {
 
   getOrders: async (token, filters = {}) => {
     try {
-      const queryParams = new URLSearchParams(filters).toString();
-      const url = queryParams ? `/orders/?${queryParams}` : '/orders/';
-      const response = await api.get(url);
-      return response.data;
+      const response = await api.get('/orders/', { params: filters });
+      // Return array for backwards compat
+      const data = response.data;
+      return data?.data || data;
     } catch (error) {
       console.error("Error in getOrders service:", error);
+      throw error;
+    }
+  },
+
+  getOrdersPaginated: async (token, params = {}) => {
+    try {
+      const response = await api.get('/orders/', { params });
+      return response.data;
+    } catch (error) {
+      console.error("Error in getOrdersPaginated service:", error);
       throw error;
     }
   },

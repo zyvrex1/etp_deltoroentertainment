@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getImageUrl } from '../utils/imageUrl';
 import { Icon } from "@iconify/react";
 import merchandiseService from "../services/merchandiseService";
 import orderService from "../services/orderService";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useCustomerStoreCart } from "../context/CustomerStoreCartContext";
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../utils/sweetAlert";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./CustomerStoreProducts.css";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -88,10 +91,14 @@ const CustomerStoreProducts = () => {
   const [filterCategory, setFilterCategory] = useState("All Categories");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef(null);
 
   const itemsPerPage = 8;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -129,20 +136,18 @@ const CustomerStoreProducts = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  useEffect(() => {
+    setTotal({
+      total: filteredProducts.length,
+      totalPages: Math.ceil(filteredProducts.length / itemsPerPage) || 1,
+    });
+  }, [filteredProducts.length, setTotal]);
+
+  const startIndex = (page - 1) * itemsPerPage;
   const paginatedData = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
-
   const getProductImage = (image) => {
-    if (!image) return "/assets/eventbg.jpg";
-    if (image.startsWith("http") || image.startsWith("data:")) return image;
-    return `${BACKEND_URL}/uploads/${image}`;
+    return getImageUrl(image, "/assets/eventbg.jpg");
   };
 
   const handleCheckout = () => {
@@ -183,7 +188,7 @@ const CustomerStoreProducts = () => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1);
+                  resetPage();
                 }}
                 className="small-body-text"
               />
@@ -208,7 +213,7 @@ const CustomerStoreProducts = () => {
                       onClick={() => {
                         setFilterCategory(option);
                         setIsDropdownOpen(false);
-                        setCurrentPage(1);
+                        resetPage();
                       }}
                     >
                       {option}
@@ -246,7 +251,7 @@ const CustomerStoreProducts = () => {
               return (
                 <div key={product._id || product.id} className="csp-card">
                   <div className="csp-card-img-wrap">
-                     <img src={product.image || CATEGORY_DEFAULT_IMAGES[product.category?.toLowerCase()] || '/assets/eventbg.jpg'} onError={(e) => {
+                     <img src={getImageUrl(product.image, CATEGORY_DEFAULT_IMAGES[product.category?.toLowerCase()] || '/assets/eventbg.jpg')} onError={(e) => {
                     e.target.onerror = null;
                     const category = product.category?.toLowerCase();
                     e.target.src = CATEGORY_DEFAULT_IMAGES[category] || '/assets/eventbg.jpg';
@@ -306,27 +311,14 @@ const CustomerStoreProducts = () => {
           )}
         </div>
 
-        {totalPages > 1 && (
-          <div className="csp-pagination">
-            <button
-              className="csp-pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span className="csp-pagination-info small-body-text">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              className="csp-pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
 
       {getTotalItems() > 0 && (

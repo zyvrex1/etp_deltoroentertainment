@@ -55,4 +55,8 @@ const merchandiseSchema = new Schema({
   }
 }, { timestamps: true });
 
+merchandiseSchema.index({ eventId: 1, status: 1 });
+merchandiseSchema.index({ sponsorId: 1, eventId: 1 });
+merchandiseSchema.index({ category: 1, status: 1 });
+
 module.exports = mongoose.model('Merchandise', merchandiseSchema);

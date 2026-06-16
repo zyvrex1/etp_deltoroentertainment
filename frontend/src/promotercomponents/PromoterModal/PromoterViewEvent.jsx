@@ -1,5 +1,6 @@
 import React from "react";
 import { Icon } from "@iconify/react";
+import { getImageUrl } from "../../utils/imageUrl";
 import "./PromoterViewEvent.css";
 
 const PromoterViewEvent = ({ isOpen, onClose, event }) => {
@@ -21,9 +22,7 @@ const PromoterViewEvent = ({ isOpen, onClose, event }) => {
     ? `${event.venue.name}, ${event.venue.address}, ${event.venue.city}, ${event.venue.zipCode}`
     : "TBA";
 
-  const imageUrl = event.image
-    ? `/uploads/${event.image}`
-    : "/assets/eventbg.jpg";
+  const imageUrl = getImageUrl(event.image);
 
   return (
     <div className="promoter-view-event-overlay">

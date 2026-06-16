@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
+import { getImageUrl } from "../utils/imageUrl";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./PromoterEventMonitoring.css";
 
 import PromoterSales from "./promotersales.jsx";
@@ -35,8 +38,12 @@ const PromoterEventMonitoring = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortFilter, setSortFilter] = useState("Recently Added");
     const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
     const eventDropdownRef = useRef(null);
 
     useEffect(() => {
@@ -84,15 +91,15 @@ const PromoterEventMonitoring = () => {
 
     const filteredAndSortedEvents = sortEvents(filteredEvents);
 
-    const totalPages = Math.ceil(filteredAndSortedEvents.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedData = filteredAndSortedEvents.slice(startIndex, Math.min(startIndex + itemsPerPage, filteredAndSortedEvents.length));
+    useEffect(() => {
+        setTotal({
+            total: filteredAndSortedEvents.length,
+            totalPages: Math.ceil(filteredAndSortedEvents.length / itemsPerPage) || 1,
+        });
+    }, [filteredAndSortedEvents.length, setTotal]);
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedData = filteredAndSortedEvents.slice(startIndex, Math.min(startIndex + itemsPerPage, filteredAndSortedEvents.length));
 
     return (
         <div className="pmon-container">
@@ -191,9 +198,7 @@ const PromoterEventMonitoring = () => {
                                         const eventLocation = event.venue
                                             ? `${event.venue.name}, ${event.venue.city}`
                                             : "TBA";
-                                        const imageUrl = event.image
-                                            ? `/uploads/${event.image}`
-                                            : "/assets/eventbg.jpg";
+                                        const imageUrl = getImageUrl(event.image);
 
                                         return (
                                             <div
@@ -235,27 +240,14 @@ const PromoterEventMonitoring = () => {
                             </div>
                         )}
 
-                        {totalPages > 1 && (
-                            <div className="pagination">
-                                <button
-                                    className="pagination-btn"
-                                    onClick={() => handlePageChange(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                >
-                                    Previous
-                                </button>
-                                <span className="pagination-info">
-                                    Page {currentPage} of {totalPages}
-                                </span>
-                                <button
-                                    className="pagination-btn"
-                                    onClick={() => handlePageChange(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        )}
+                        <PaginationBar
+                            page={page}
+                            totalPages={totalPages}
+                            total={total}
+                            onPrev={prev}
+                            onNext={next}
+                            onGoTo={goTo}
+                        />
                     </div>
                 </div>
             ) : (

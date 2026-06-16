@@ -1,8 +1,9 @@
 const Concern = require('../models/concernModel');
 const socket = require('../socket');
-const { optimizeImage } = require("../utils/imageOptimizer");
-const path = require('path');
-const fs = require('fs');
+const { optimizeImageBuffer } = require("../utils/imageOptimizer");
+const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { s3Client } = require("../config/s3Client");
+const { v4: uuidv4 } = require("uuid");
 
 // @desc    Submit a new concern (Sponsor)
 // @route   POST /api/concerns
@@ -12,17 +13,37 @@ const createConcern = async (req, res) => {
 
   try {
     const attachments = req.files ? await Promise.all(req.files.map(async file => {
-      const isImage = ['.jpg', '.jpeg', '.png', '.webp'].includes(path.extname(file.originalname).toLowerCase());
-      if (isImage) {
-        await optimizeImage(file.path, 70, 1200);
-      }
-      
-      return {
-        name: file.originalname,
-        path: file.path.replace(/\\/g, '/'),
-        size: (fs.statSync(file.path).size / 1024).toFixed(1) + ' KB'
-      };
-    })) : [];
+  const ext = file.originalname.split('.').pop().toLowerCase();
+  const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes(ext);
+
+  let filePath, fileSize;
+
+  if (isImage) {
+    const { buffer, contentType, ext: outExt } = await optimizeImageBuffer(file.buffer, file.mimetype);
+    const key = `concerns/${uuidv4()}${outExt}`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+      CacheControl: 'public, max-age=31536000, immutable',
+    }));
+    filePath = `${process.env.CDN_BASE_URL}/${key}`;
+    fileSize = (buffer.length / 1024).toFixed(1) + ' KB';
+  } else {
+    const key = `concerns/${uuidv4()}-${file.originalname}`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    }));
+    filePath = `${process.env.CDN_BASE_URL}/${key}`;
+    fileSize = (file.buffer.length / 1024).toFixed(1) + ' KB';
+  }
+
+  return { name: file.originalname, path: filePath, size: fileSize };
+})) : [];
 
     const sponsorName = `${user.firstName} ${user.lastName}`;
 
@@ -74,9 +95,32 @@ const createConcern = async (req, res) => {
 const getSponsorConcerns = async (req, res) => {
   const user = req.user;
   try {
-    const concerns = await Concern.find({ sponsorId: user._id })
-      .select('-internalNotes')
-      .sort({ lastMessageAt: -1 });
+    const { page, limit, skip } = req.pagination || { page: 1, limit: 1000, skip: 0 };
+    const search = (req.query.search || '').trim();
+    const status = req.query.status || 'All';
+
+    const filter = { sponsorId: user._id };
+    if (status.toLowerCase() !== 'all') {
+      filter.status = status.toLowerCase();
+    }
+    if (search) {
+      filter.$or = [
+        { subject: { $regex: search, $options: 'i' } }
+      ];
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(search)) {
+        filter.$or.push({ _id: search });
+      }
+    }
+
+    const [concerns, total] = await Promise.all([
+      Concern.find(filter)
+        .select('-internalNotes')
+        .sort({ lastMessageAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Concern.countDocuments(filter)
+    ]);
 
     // Mask admin names for privacy
     const maskedConcerns = concerns.map(c => {
@@ -98,7 +142,15 @@ const getSponsorConcerns = async (req, res) => {
       return obj;
     });
 
-    res.status(200).json(maskedConcerns);
+    res.status(200).json({
+      data: maskedConcerns,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -108,18 +160,56 @@ const getSponsorConcerns = async (req, res) => {
 // @route   GET /api/concerns/admin
 const getAdminConcerns = async (req, res) => {
   try {
-    const concerns = await Concern.find({}).sort({ createdAt: -1 });
+    const { page, limit, skip } = req.pagination || { page: 1, limit: 1000, skip: 0 };
+    const search = (req.query.search || '').trim();
+    const status = req.query.status || 'All';
+    const roleFilter = req.query.role || 'All'; // e.g., if admin wants to filter by customer/sponsor
+
+    const filter = {};
+    if (status.toLowerCase() !== 'all') {
+      filter.status = status.toLowerCase();
+    }
+    if (roleFilter.toLowerCase() !== 'all') {
+      filter.userRole = roleFilter.toLowerCase();
+    }
+    if (search) {
+      filter.$or = [
+        { subject: { $regex: search, $options: 'i' } },
+        { sponsorName: { $regex: search, $options: 'i' } }
+      ];
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(search)) {
+        filter.$or.push({ _id: search });
+      }
+    }
+
+    const [concerns, total] = await Promise.all([
+      Concern.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Concern.countDocuments(filter)
+    ]);
 
     // Fallback for legacy "undefined" names
     const sanitizedConcerns = concerns.map(c => {
       const obj = c.toObject();
-      if (!obj.sponsorName || obj.sponsorName.includes('undefined')) {
-        obj.sponsorName = `Sponsor #${obj.sponsorId.toString().slice(-4).toUpperCase()}`;
+      if (!obj.sponsorName || (typeof obj.sponsorName === 'string' && obj.sponsorName.includes('undefined'))) {
+        const fallbackId = obj.sponsorId ? obj.sponsorId.toString() : obj._id.toString();
+        obj.sponsorName = `User #${fallbackId.slice(-4).toUpperCase()}`;
       }
       return obj;
     });
 
-    res.status(200).json(sanitizedConcerns);
+    res.status(200).json({
+      data: sanitizedConcerns,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -168,8 +258,9 @@ const getConcernById = async (req, res) => {
     const concernObj = concern.toObject();
 
     // Fallback for legacy "undefined" names
-    if (!concernObj.sponsorName || concernObj.sponsorName.includes('undefined')) {
-      concernObj.sponsorName = `Sponsor #${concernObj.sponsorId.toString().slice(-4).toUpperCase()}`;
+    if (!concernObj.sponsorName || (typeof concernObj.sponsorName === 'string' && concernObj.sponsorName.includes('undefined'))) {
+      const fallbackId = concernObj.sponsorId ? concernObj.sponsorId.toString() : concernObj._id.toString();
+      concernObj.sponsorName = `User #${fallbackId.slice(-4).toUpperCase()}`;
     }
 
     // Mask admin names for privacy if the requester is not an admin
@@ -217,18 +308,43 @@ const addMessage = async (req, res) => {
       return res.status(404).json({ error: 'Concern not found' });
     }
 
-    const attachments = req.files ? await Promise.all(req.files.map(async file => {
-      const isImage = ['.jpg', '.jpeg', '.png', '.webp'].includes(path.extname(file.originalname).toLowerCase());
-      if (isImage) {
-        await optimizeImage(file.path, 70, 1200);
-      }
-      
-      return {
-        name: file.originalname,
-        path: file.path.replace(/\\/g, '/'),
-        size: (fs.statSync(file.path).size / 1024).toFixed(1) + ' KB'
-      };
-    })) : [];
+   const attachments = req.files ? await Promise.all(req.files.map(async file => {
+  const ext = file.originalname.split('.').pop().toLowerCase();
+  const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes(ext);
+
+  let filePath, fileSize;
+
+  if (isImage) {
+    const { buffer, contentType, ext: outExt } = await optimizeImageBuffer(file.buffer, file.mimetype);
+    const key = `concerns/${uuidv4()}${outExt}`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+      CacheControl: 'public, max-age=31536000, immutable',
+    }));
+    filePath = `${process.env.CDN_BASE_URL}/${key}`;
+    fileSize = (buffer.length / 1024).toFixed(1) + ' KB';
+  } else {
+    // Non-image files: still upload to R2 as-is
+    const key = `concerns/${uuidv4()}-${file.originalname}`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    }));
+    filePath = `${process.env.CDN_BASE_URL}/${key}`;
+    fileSize = (file.buffer.length / 1024).toFixed(1) + ' KB';
+  }
+
+  return {
+    name: file.originalname,
+    path: filePath,
+    size: fileSize
+  };
+})) : [];
 
     const senderName = (user.role === 'admin' || user.role === 'superadmin') ? 'Admin' : `${user.firstName} ${user.lastName}`;
 

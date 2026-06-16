@@ -9,6 +9,8 @@ import { shouldShowGiftRestoredNotice } from '../utils/giftNoticeUtils';
 import DateRangePicker from '../utils/DateRangePicker';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import './SponsorEventHistory.css';
 
 export default function SponsorEventHistory() {
@@ -705,26 +707,28 @@ export default function SponsorEventHistory() {
         return matchesStatus && matchesSearch && matchesDate;
     });
 
-    // Pagination Logic
-    const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
 
     const handleDateRangeChange = (newRange) => {
         setDateRange(newRange);
-        setCurrentPage(1);
+        resetPage();
     };
 
-    const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
+    useEffect(() => {
+        setTotal({
+            total: filteredHistory.length,
+            totalPages: Math.ceil(filteredHistory.length / itemsPerPage) || 1,
+        });
+    }, [filteredHistory.length, setTotal]);
+
+    const startIndex = (page - 1) * itemsPerPage;
     const paginatedHistory = filteredHistory.slice(startIndex, startIndex + itemsPerPage);
     const totalResults = filteredHistory.length;
-
-
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
 
 
 
@@ -752,7 +756,7 @@ export default function SponsorEventHistory() {
                             value={searchQuery}
                             onChange={(e) => {
                                 setSearchQuery(e.target.value);
-                                setCurrentPage(1);
+                                resetPage();
                             }}
                         />
                     </div>
@@ -783,7 +787,7 @@ export default function SponsorEventHistory() {
                                             className={`sh-dropdown-item ${selectedStatus === option ? "active" : ""}`}
                                             onClick={() => {
                                                 setSelectedStatus(option);
-                                                setCurrentPage(1); // reset to first page
+                                                resetPage(); // reset to first page
                                                 setIsStatusDropdownOpen(false);
                                             }}
                                         >
@@ -885,29 +889,14 @@ export default function SponsorEventHistory() {
                 </div>
 
                 <div className="sh-table-footer">
-                    {totalPages > 1 && (
-                        <div className="pagination">
-                            <button
-                                className="pagination-btn"
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                disabled={currentPage === 1}
-                            >
-                                Previous
-                            </button>
-
-                            <span className="pagination-info">
-                                Page {currentPage} of {totalPages}
-                            </span>
-
-                            <button
-                                className="pagination-btn"
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    )}
+                    <PaginationBar
+                        page={page}
+                        totalPages={totalPages}
+                        total={total}
+                        onPrev={prev}
+                        onNext={next}
+                        onGoTo={goTo}
+                    />
                 </div>
             </div>
             <SponsorViewFullHistory

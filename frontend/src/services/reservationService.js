@@ -5,9 +5,11 @@ const reservationService = {
     headers: { Authorization: `Bearer ${token}` }
   }),
 
-  getAdminReservations: async (token) => {
-    const response = await api.get('/reservations/admin', reservationService.getAuthHeaders(token));
-    return response.data;
+  getAdminReservations: async (token, params = {}) => {
+    const response = await api.get('/reservations/admin', { ...reservationService.getAuthHeaders(token), params });
+    // Return array for backwards compat; paginated consumers get full response
+    const data = response.data;
+    return data?.data || data;
   },
 
   getMyReservations: async (token) => {

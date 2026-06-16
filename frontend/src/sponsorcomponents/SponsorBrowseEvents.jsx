@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import { getImageUrl } from '../utils/imageUrl';
 import DateRangePicker from '../utils/DateRangePicker';
 import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import './SponsorBrowseEvents.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -14,8 +17,12 @@ const SponsorBrowseEvents = () => {
 
     const [allEvents, setAllEvents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
     const [searchQuery, setSearchQuery] = useState("");
 
     const [dateRange, setDateRange] = useState(() => ({
@@ -48,7 +55,7 @@ const SponsorBrowseEvents = () => {
 
     const handleDateRangeChange = (newRange) => {
         setDateRange(newRange);
-        setCurrentPage(1);
+        resetPage();
     };
 
     const filteredEvents = allEvents.filter((event) => {
@@ -63,15 +70,15 @@ const SponsorBrowseEvents = () => {
         return matchesSearch && matchesDate;
     });
 
-    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedEvents = filteredEvents.slice(startIndex, startIndex + itemsPerPage);
+    useEffect(() => {
+        setTotal({
+            total: filteredEvents.length,
+            totalPages: Math.ceil(filteredEvents.length / itemsPerPage) || 1,
+        });
+    }, [filteredEvents.length, setTotal]);
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedEvents = filteredEvents.slice(startIndex, startIndex + itemsPerPage);
 
     const handleEventClick = (eventId) => {
         navigate(`/sponsor/sponsor-event/${eventId}`);
@@ -100,7 +107,7 @@ const SponsorBrowseEvents = () => {
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
-                                    setCurrentPage(1);
+                                    resetPage();
                                 }}
                                 className="small-body-text sbe-search-input"
                             />
@@ -141,7 +148,7 @@ const SponsorBrowseEvents = () => {
                             <div key={event._id} className="sbe-event-card" onClick={() => handleEventClick(event._id)}>
                                 <div className="sbe-card-image-wrap">
                                     <img
-                                        src={event.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                        src={getImageUrl(event.image)}
                                         alt={event.title}
                                         className="ticket-image"
                                         onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}
@@ -210,27 +217,14 @@ const SponsorBrowseEvents = () => {
                     )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="pagination">
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
-                        <span className="pagination-info">
-                            Page {currentPage} of {totalPages}
-                        </span>
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={prev}
+                    onNext={next}
+                    onGoTo={goTo}
+                />
             </div>
         </div>
     );

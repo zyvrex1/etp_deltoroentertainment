@@ -10,10 +10,11 @@ const { verifyOrderOwner } = require('../middleware/verifyOwnership');
 const {validateCreateOrder,validateUpdateOrder} = require('../middleware/validateSchemas');
 
 const router = express.Router();
+const paginate = require('../middleware/paginate');
 router.use(requireAuth);
 
 router.post('/', validateCreateOrder, createOrder);
-router.get('/', getOrders);
+router.get('/', paginate, getOrders);
 
 router.patch('/:id', validateObjectId, verifyOrderOwner, validateUpdateOrder, updateOrder);
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import './SponsorInvoice.css';
 import SponsorViewInvoiceReceipt from './SponsorModal/SponsorViewInvoiceReceipt';
 import DateRangePicker from '../utils/DateRangePicker';
@@ -375,9 +377,12 @@ const discountAmt = isBXGY_check
         setSelectedInvoice(null);
     };
 
-    // Pagination Logic
-    const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
 
     const [dateRange, setDateRange] = useState(() => ({
         preset: 'all',
@@ -388,7 +393,7 @@ const discountAmt = isBXGY_check
 
     const handleDateRangeChange = (newRange) => {
         setDateRange(newRange);
-        setCurrentPage(1);
+        resetPage();
     };
     const filteredInvoices = allInvoices.filter(item => {
         if (!item?.title || !item?.invoiceRef) return false;
@@ -399,15 +404,15 @@ const discountAmt = isBXGY_check
         return matchesSearch && matchesDate;
     });
 
-    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + itemsPerPage);
+    useEffect(() => {
+        setTotal({
+            total: filteredInvoices.length,
+            totalPages: Math.ceil(filteredInvoices.length / itemsPerPage) || 1,
+        });
+    }, [filteredInvoices.length, setTotal]);
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + itemsPerPage);
 
     return (
         <div className="sponsor-invoice-wrapper">
@@ -426,7 +431,7 @@ const discountAmt = isBXGY_check
                         value={searchQuery}
                         onChange={(e) => {
                             setSearchQuery(e.target.value);
-                            setCurrentPage(1);
+                            resetPage();
                         }}
                     />
                 </div>
@@ -524,29 +529,14 @@ const discountAmt = isBXGY_check
                 )}
             </div>
 
-            {totalPages > 1 && (
-                <div className="pagination invoice-pagination">
-                    <button
-                        className="pagination-btn"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                    >
-                        Previous
-                    </button>
-
-                    <span className="pagination-info">
-                        Page {currentPage} of {totalPages}
-                    </span>
-
-                    <button
-                        className="pagination-btn"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                    >
-                        Next
-                    </button>
-                </div>
-            )}
+            <PaginationBar
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                onPrev={prev}
+                onNext={next}
+                onGoTo={goTo}
+            />
 
             <SponsorViewInvoiceReceipt
                 isOpen={isInvoiceModalOpen}

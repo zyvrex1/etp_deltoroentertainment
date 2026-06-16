@@ -16,6 +16,7 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import priceLevelService from "../services/priceLevelService";
 import { showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 import brandLogo from "../assets/Logo1.png";
+import { getImageUrl } from '../utils/imageUrl';
 
 
 const TICKET_WIDTH = 2047;
@@ -169,7 +170,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
   useEffect(() => {
     if (selectedCategoryId && selectedCategory) {
       const eventImgUrl = selectedEvent?.image && selectedEvent.image !== "null"
-        ? `/uploads/${selectedEvent.image}`
+        ? getImageUrl(selectedEvent.image)
         : "/assets/eventbg.jpg";
 
       const existingLayout = selectedEvent?.ticketLayouts?.find(l =>
@@ -260,7 +261,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
     const eventTime = formatTime(selectedEvent?.startTime);
     const venueStr = `${selectedEvent?.venue?.name || 'Venue'} - ${selectedEvent?.venue?.address || 'Address'}`;
     const eventImgUrl = selectedEvent?.image && selectedEvent.image !== "null"
-      ? `/uploads/${selectedEvent.image}`
+      ? getImageUrl(selectedEvent.image)
       : "/assets/eventbg.jpg";
 
     setTicketItems(prev => prev.map(item => {
@@ -388,7 +389,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
           const eventTime = formatTime(data.startTime);
           const venueStr = `${data.venue?.name || 'Venue'} - ${data.venue?.address || 'Address'}`;
           const eventImgUrl = data.image && data.image !== "null"
-            ? `/uploads/${data.image}`
+            ? getImageUrl(data.image)
             : "/assets/eventbg.jpg";
 
           setTicketItems(prev => prev.map(item => {

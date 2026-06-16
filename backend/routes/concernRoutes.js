@@ -3,6 +3,7 @@ const concernController = require('../controllers/concernController');
 const requireAuth = require('../middleware/requireAuth');
 const requireRole = require('../middleware/requireRole');
 const concernUpload = require('../middleware/concernUpload');
+const paginate = require('../middleware/paginate');
 
 const router = express.Router();
 
@@ -11,10 +12,10 @@ router.use(requireAuth);
 
 // User (Sponsor/Customer/Promoter) routes
 router.post('/', requireRole('sponsor', 'customer', 'promoter'), concernUpload.array('attachments', 5), concernController.createConcern);
-router.get('/my-concerns', requireRole('sponsor', 'customer', 'promoter'), concernController.getSponsorConcerns);
+router.get('/my-concerns', requireRole('sponsor', 'customer', 'promoter'), paginate, concernController.getSponsorConcerns);
 
 // Admin routes
-router.get('/admin', requireRole('admin'), concernController.getAdminConcerns);
+router.get('/admin', requireRole('admin'), paginate, concernController.getAdminConcerns);
 router.get('/admin/unread-count', requireRole('admin'), concernController.getAdminUnreadCount);
 router.patch('/:id/status', requireRole('admin'), concernController.updateStatus);
 router.patch('/:id/priority', requireRole('admin'), concernController.updatePriority);

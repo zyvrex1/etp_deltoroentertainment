@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
+import { getImageUrl } from "../../utils/imageUrl";
 import "./SponsorEditProduct.css";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const getProductImage = (image) => {
   if (!image) return null;
-  if (image.startsWith("data:image") || image.startsWith("http")) return image;
-  return `${BACKEND_URL}/uploads/${image}`;
+  return getImageUrl(image);
 };
 
 const SponsorEditProduct = ({ isOpen, onClose, product, onSave }) => {

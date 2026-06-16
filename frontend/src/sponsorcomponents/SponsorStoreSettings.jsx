@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import { getImageUrl } from '../utils/imageUrl';
 import { useAuthContext } from '../hooks/useAuthContext';
 import reservationService from '../services/reservationService';
 import { showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
@@ -34,9 +35,9 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                 });
 
                 if (settings.logo) {
-                    setPreviewUrl(settings.logo.startsWith('/') ? settings.logo : `/uploads/${settings.logo}`);
+                    setPreviewUrl(getImageUrl(settings.logo, ''));
                 } else if (reservation.user?.avatar) {
-                    setPreviewUrl(reservation.user.avatar.startsWith('/') ? reservation.user.avatar : `/uploads/${reservation.user.avatar}`);
+                    setPreviewUrl(getImageUrl(reservation.user.avatar, ''));
                 }
 
                 // Determine if user is only an exhibitor (not the owner and not an admin)

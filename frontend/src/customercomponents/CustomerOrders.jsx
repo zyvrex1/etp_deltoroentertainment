@@ -5,6 +5,8 @@ import { QRCodeCanvas } from 'qrcode.react';
 import CustomerOrderQrModal from './Modal/CustomerOrderQrModal';
 import orderService from '../services/orderService';
 import { useAuthContext } from '../hooks/useAuthContext';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import './CustomerOrders.css';
 
 const CustomerOrders = () => {
@@ -87,17 +89,26 @@ const CustomerOrders = () => {
         return result;
     }, [orders, searchQuery, statusFilter, sortFilter]);
 
-    const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
-    const totalPages = Math.ceil(filteredAndSortedOrders.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedOrders = filteredAndSortedOrders.slice(startIndex, startIndex + itemsPerPage);
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+    useEffect(() => {
+        setTotal({
+            total: filteredAndSortedOrders.length,
+            totalPages: Math.ceil(filteredAndSortedOrders.length / itemsPerPage) || 1
+        });
+    }, [filteredAndSortedOrders.length, setTotal]);
+
+    useEffect(() => {
+        resetPage();
+    }, [searchQuery, statusFilter, sortFilter, resetPage]);
+
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedOrders = filteredAndSortedOrders.slice(startIndex, startIndex + itemsPerPage);
 
     const getStatusBadgeClass = (status) => {
         switch (status) {
@@ -278,29 +289,14 @@ const CustomerOrders = () => {
                     )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="pagination">
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
-
-                        <span className="pagination-info">
-                            Page {currentPage} of {totalPages}
-                        </span>
-
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={prev}
+                    onNext={next}
+                    onGoTo={goTo}
+                />
             </div>
 
             <CustomerOrderQrModal

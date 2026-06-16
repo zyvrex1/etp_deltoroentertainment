@@ -8,6 +8,8 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import concernService from '../services/concernService';
 import jsPDF from 'jspdf';
 import './SponsorSupport.css';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import { 
     loadLogo, 
     addReportHeader, 
@@ -43,12 +45,32 @@ export default function SponsorSupport() {
         event: ''
     });
 
+    const itemsPerPage = 7;
+    const {
+        page,
+        totalPages,
+        total,
+        setTotal,
+        onPrev,
+        onNext,
+        onGoTo,
+        setPage,
+    } = usePagination({ limit: itemsPerPage });
+
     const fetchConcerns = async () => {
         if (!user?.token) return;
         setLoading(true);
         try {
-            const data = await concernService.getMyConcerns(user.token);
-            setConcerns(data);
+            const response = await concernService.getMyConcerns({
+                page,
+                limit: itemsPerPage,
+                search: searchQuery,
+                status: selectedStatus
+            }, user.token);
+            setConcerns(response.data || []);
+            if (response.pagination) {
+                setTotal(response.pagination);
+            }
         } catch (error) {
             console.error("Error fetching concerns:", error);
         } finally {
@@ -56,9 +78,13 @@ export default function SponsorSupport() {
         }
     };
 
+    // Fetch concerns on mount and when dependencies change (with debounce for search)
     useEffect(() => {
-        fetchConcerns();
-    }, [user]);
+        const timeoutId = setTimeout(() => {
+            fetchConcerns();
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [user, page, searchQuery, selectedStatus]);
 
     // Socket for real-time updates to the list
     useEffect(() => {
@@ -550,13 +576,6 @@ const exportDocumentToPDF = async (doc) => {
         setSelectedConcern(null);
     };
 
-    const filteredTickets = concerns.filter(ticket => {
-        const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             ticket._id.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = selectedStatus === "All" || ticket.status.toLowerCase() === selectedStatus.toLowerCase();
-        return matchesSearch && matchesStatus;
-    });
-
     if (selectedConcern) {
         return (
             <SponsorViewConcern 
@@ -600,13 +619,13 @@ const exportDocumentToPDF = async (doc) => {
                         Array.from({ length: 4 }).map((_, i) => (
                             <div key={i} className="ticket-card skeleton" style={{ minHeight: '140px', border: 'none', marginBottom: '16px' }}></div>
                         ))
-                    ) : filteredTickets.length === 0 ? (
+                    ) : concerns.length === 0 ? (
                         <div className="empty-state">
                             <Icon icon="mdi:comment-alert-outline" width="48" />
                             <p>No concerns found.</p>
                         </div>
                     ) : (
-                        filteredTickets.map(ticket => (
+                        concerns.map(ticket => (
                             <div key={ticket._id} className="ticket-card">
                                 <div className="ticket-header">
                                     <span className="ticket-id">#{ticket._id.slice(-6).toUpperCase()}</span>
@@ -635,6 +654,14 @@ const exportDocumentToPDF = async (doc) => {
                         ))
                     )}
                 </div>
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={onPrev}
+                    onNext={onNext}
+                    onGoTo={onGoTo}
+                />
             </div>
         </div>
     );

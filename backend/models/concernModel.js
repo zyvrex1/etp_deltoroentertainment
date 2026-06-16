@@ -99,4 +99,9 @@ const concernSchema = new Schema({
   }
 }, { timestamps: true })
 
-module.exports = mongoose.model('Concern', concernSchema)
+concernSchema.index({ sponsorId: 1, status: 1 });
+concernSchema.index({ status: 1, priority: 1, lastMessageAt: -1 });
+concernSchema.index({ assignedTo: 1, status: 1 });
+concernSchema.index({ lastMessageAt: -1 });
+
+module.exports = mongoose.model('Concern', concernSchema);

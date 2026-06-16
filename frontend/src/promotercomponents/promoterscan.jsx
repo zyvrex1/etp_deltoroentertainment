@@ -3,6 +3,8 @@ import { Icon } from "@iconify/react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import Swal from "sweetalert2";
 import QRScannerModal from "./QRScannerModal";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./promoterscan.css";
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -82,10 +84,13 @@ const PromoterScan = ({ selectedEvent }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
     const [isKindDropdownOpen, setIsKindDropdownOpen] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
-
     const itemsPerPage = 8;
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
     const filterRef = useRef(null);
     const kindRef = useRef(null);
 
@@ -177,13 +182,19 @@ const PromoterScan = ({ selectedEvent }) => {
         );
     });
 
-    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+    useEffect(() => {
+        setTotal({
+            total: filteredData.length,
+            totalPages: Math.ceil(filteredData.length / itemsPerPage) || 1,
+        });
+    }, [filteredData.length, setTotal]);
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) setCurrentPage(page);
-    };
+    useEffect(() => {
+        resetPage();
+    }, [searchQuery, activeFilter, kindFilter, resetPage]);
+
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
     /* ── check-in logic ── */
     const handleManualCheckIn = async (reservationId) => {
@@ -259,7 +270,7 @@ const PromoterScan = ({ selectedEvent }) => {
             time: formatDateTime(r.checkInTime)
         }));
 
-    const manualCheckins = filteredData.map(r => ({
+    const manualCheckins = paginatedData.map(r => ({
         id: r.id,
         initials: r.initials,
         name: r.name,
@@ -447,6 +458,14 @@ const PromoterScan = ({ selectedEvent }) => {
                                         ))
                                     )}
                                 </div>
+                                <PaginationBar
+                                    page={page}
+                                    totalPages={totalPages}
+                                    total={total}
+                                    onPrev={prev}
+                                    onNext={next}
+                                    onGoTo={goTo}
+                                />
                             </div>
 
                             {/* Ticket Type Stats Card */}

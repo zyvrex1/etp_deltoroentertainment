@@ -3,6 +3,8 @@ const { createUser, getAllUsers, getUser, updateUser, deleteUser } = require('..
 const requireAuth = require('../middleware/requireAuth')
 const requireRole = require('../middleware/requireRole')
 
+const paginate = require('../middleware/paginate')
+
 const router = express.Router()
 
 router.use(requireAuth)
@@ -16,6 +18,7 @@ router.post(
 router.get(
   '/users',
   requireRole('admin', 'superadmin'),
+  paginate,
   getAllUsers
 )
 

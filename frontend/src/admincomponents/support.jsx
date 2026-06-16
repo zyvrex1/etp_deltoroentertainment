@@ -6,6 +6,8 @@ import AssignAdmin from './Modal/AssignAdmin';
 import { useAuthContext } from '../hooks/useAuthContext';
 import concernService from '../services/concernService';
 import { io } from 'socket.io-client';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import { showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -15,12 +17,32 @@ const SupportDisputes = () => {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const itemsPerPage = 7;
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
+
+    const [searchQuery, setSearchQuery] = useState("");
+    const [activeFilter, setActiveFilter] = useState("all");
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
     const fetchTickets = async () => {
         if (!user?.token) return;
         setLoading(true);
         try {
-            const data = await concernService.getAdminConcerns(user.token);
-            setTickets(data);
+            const response = await concernService.getAdminConcerns({
+                page,
+                limit: itemsPerPage,
+                search: searchQuery,
+                status: activeFilter
+            });
+            setTickets(response.data || []);
+            if (response.pagination) {
+                setTotal(response.pagination);
+            }
         } catch (error) {
             console.error("Error fetching tickets:", error);
         } finally {
@@ -29,8 +51,11 @@ const SupportDisputes = () => {
     };
 
     useEffect(() => {
-        fetchTickets();
-    }, [user]);
+        const timeoutId = setTimeout(() => {
+            fetchTickets();
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [user, page, searchQuery, activeFilter]);
 
     useEffect(() => {
         if (!user?.token) return;
@@ -56,11 +81,6 @@ const SupportDisputes = () => {
                 return <span className="button-label">{status}</span>;
         }
     };
-
-    const [searchQuery, setSearchQuery] = useState("");
-    const [activeFilter, setActiveFilter] = useState("all");
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const dropdownRef = useRef(null);
 
     const filterOptions = [
         { value: "all", label: "All Status" },
@@ -92,45 +112,15 @@ const SupportDisputes = () => {
 
     const handleFilterChange = (filter) => {
         setActiveFilter(filter);
-        setCurrentPage(1);
+        resetPage();
         setIsDropdownOpen(false);
     };
 
-    const filteredTickets = useMemo(() => {
-        const q = searchQuery.toLowerCase();
-
-        return tickets.filter((tx) => {
-            const matchesFilter =
-                activeFilter === "all" ? true : tx.status === activeFilter;
-
-            if (!matchesFilter) return false;
-
-            if (!q) return true;
-
-            return (
-                (tx.sponsorName?.toLowerCase().includes(q) || false) ||
-                (tx.subject?.toLowerCase().includes(q) || false) ||
-                (tx._id?.toLowerCase().includes(q) || false)
-            );
-        });
-    }, [tickets, searchQuery, activeFilter]);
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 7;
-
-    const totalPages = Math.ceil(filteredTickets.length / itemsPerPage) || 1;
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedTickets = filteredTickets.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedTickets = tickets;
 
     const [expandedRow, setExpandedRow] = useState(null);
     const toggleRow = (id) => {
         setExpandedRow(expandedRow === id ? null : id);
-    };
-
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
     };
 
     // View State
@@ -348,7 +338,7 @@ const SupportDisputes = () => {
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
-                                    setCurrentPage(1);
+                                    resetPage();
                                 }}
                                 className="small-body-text"
                             />
@@ -477,29 +467,14 @@ const SupportDisputes = () => {
                     )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="pagination">
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
-
-                        <span className="pagination-info">
-                            Page {currentPage} of {totalPages}
-                        </span>
-
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={prev}
+                    onNext={next}
+                    onGoTo={goTo}
+                />
             </div>
 
             <AssignAdmin

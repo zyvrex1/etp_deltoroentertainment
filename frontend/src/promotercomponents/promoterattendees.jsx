@@ -13,6 +13,8 @@ import {
 import { useAuthContext } from "../hooks/useAuthContext";
 import Swal from "sweetalert2";
 import QRScannerModal from "./QRScannerModal";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./promoterattendees.css";
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -118,11 +120,15 @@ const PromoterAttendees = ({ selectedEvent }) => {
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const itemsPerPage = 5;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
   const filterDropdownRef = useRef(null);
 
   const fetchAttendees = useCallback(async () => {
@@ -226,17 +232,19 @@ const PromoterAttendees = ({ selectedEvent }) => {
     );
   });
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  useEffect(() => {
+    setTotal({
+      total: filteredData.length,
+      totalPages: Math.ceil(filteredData.length / itemsPerPage) || 1,
+    });
+  }, [filteredData.length, setTotal]);
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
-    setCurrentPage(1);
+    resetPage();
   };
 
   const toggleRow = (index) =>
@@ -676,7 +684,7 @@ const PromoterAttendees = ({ selectedEvent }) => {
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    setCurrentPage(1);
+                    resetPage();
                   }}
                   className="small-body-text"
                 />
@@ -916,27 +924,14 @@ const PromoterAttendees = ({ selectedEvent }) => {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                className="pagination-btn"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </button>
-              <span className="pagination-info">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                className="pagination-btn"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
-            </div>
-          )}
+          <PaginationBar
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPrev={prev}
+            onNext={next}
+            onGoTo={goTo}
+          />
         </div>
       </div>
       {/* QR Scanner Modal */}

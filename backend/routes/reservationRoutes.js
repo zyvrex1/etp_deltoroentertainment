@@ -18,6 +18,7 @@ const requireAuth = require('../middleware/requireAuth');
 const { verifyReservationOwner } = require('../middleware/verifyOwnership');   // already here ✓
 const validateObjectId = require('../middleware/validateObjectId');
 const requireRole = require('../middleware/requireRole');
+const paginate = require('../middleware/paginate');
 const {
   validateReservationStatus,
   validateAddExhibitors,
@@ -26,7 +27,7 @@ const {
 
 router.use(requireAuth);
 
-router.get('/admin', requireRole('admin', 'superadmin'), getAllReservations);
+router.get('/admin', requireRole('admin', 'superadmin'), paginate, getAllReservations);
 router.get('/my-booths', getMyReservations);
 router.get('/event/:eventId/booths', getEventBoothReservations);
 router.get('/event/:eventId/sales', getEventSalesForPromoter);

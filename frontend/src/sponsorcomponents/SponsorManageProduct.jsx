@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
+import { getImageUrl } from "../utils/imageUrl";
 import { showDeleteConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./SponsorManageProduct.css";
 import SponsorAddProduct from "./SponsorModal/SponsorAddProduct";
 import SponsorEditProduct from "./SponsorModal/SponsorEditProduct";
@@ -23,7 +26,6 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All Categories");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef(null);
 
   const CATEGORY_DEFAULT_IMAGES = {
@@ -37,6 +39,11 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const itemsPerPage = 8;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
 
   const fetchProducts = async () => {
     if (!user) return;
@@ -61,8 +68,7 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
 
   const getProductImage = (image) => {
     if (!image) return "/assets/eventbg.jpg";
-    if (image.startsWith("http") || image.startsWith("data:") || image.startsWith("/assets/")) return image;
-    return `${BACKEND_URL}/uploads/${image}`;
+    return getImageUrl(image);
   };
 
   const updateStats = (items) => {
@@ -100,15 +106,15 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
     return matchesSearch && matchesFilter;
   });
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  useEffect(() => {
+    setTotal({
+      total: filteredProducts.length,
+      totalPages: Math.ceil(filteredProducts.length / itemsPerPage) || 1,
+    });
+  }, [filteredProducts.length, setTotal]);
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedData = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   const handleAddProduct = async (newProductData) => {
     try {
@@ -223,7 +229,7 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1);
+                  resetPage();
                 }}
                 className="small-body-text"
               />
@@ -248,7 +254,7 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
                       onClick={() => {
                         setFilterCategory(option);
                         setIsDropdownOpen(false);
-                        setCurrentPage(1);
+                        resetPage();
                       }}
                     >
                       {option}
@@ -327,27 +333,14 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
           )}
         </div>
 
-        {totalPages > 1 && (
-          <div className="smp-pagination">
-            <button
-              className="smp-pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span className="smp-pagination-info small-body-text">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              className="smp-pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
 
       <SponsorAddProduct

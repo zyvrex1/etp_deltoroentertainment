@@ -17,53 +17,46 @@ const Reservation = require("../models/reservationModel");
 const Merchandise = require("../models/merchandiseModel");
 const { toObjectId } = require("../utils/helpers");
 
-const fs = require("fs");
-const path = require("path");
-const multer = require("multer");
 const { emitUpdate } = require("../socket");
-const { optimizeImage } = require("../utils/imageOptimizer");
+const multer = require("multer");
+const { optimizeImageBuffer } = require("../utils/imageOptimizer");
+const { PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { s3Client } = require("../config/s3Client");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    const originalName = path.parse(file.originalname).name;
-    const cleanName = originalName.replace(/\s+/g, "-").toLowerCase();
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, "uploads/");
+//   },
+//   filename: (req, file, cb) => {
+//     const originalName = path.parse(file.originalname).name;
+//     const cleanName = originalName.replace(/\s+/g, "-").toLowerCase();
 
-    const now = new Date();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    const yy = String(now.getFullYear()).slice(-2);
-    const hh = String(now.getHours()).padStart(2, "0");
-    const min = String(now.getMinutes()).padStart(2, "0");
+//     const now = new Date();
+//     const mm = String(now.getMonth() + 1).padStart(2, "0");
+//     const dd = String(now.getDate()).padStart(2, "0");
+//     const yy = String(now.getFullYear()).slice(-2);
+//     const hh = String(now.getHours()).padStart(2, "0");
+//     const min = String(now.getMinutes()).padStart(2, "0");
 
-    const timestamp = `${mm}${dd}${yy}${hh}${min}`;
+//     const timestamp = `${mm}${dd}${yy}${hh}${min}`;
 
-    cb(null, `${cleanName}-${timestamp}${path.extname(file.originalname)}`);
-  },
-});
+//     cb(null, `${cleanName}-${timestamp}${path.extname(file.originalname)}`);
+//   },
+// });
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|webp/;
-  const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase(),
-  );
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
-  } else {
-    cb(new Error("Only image files are allowed (JPG, PNG, WEBP)"));
-  }
+  const ext = file.originalname.split('.').pop().toLowerCase();
+  const validExt = allowedTypes.test(ext);
+  const validMime = allowedTypes.test(file.mimetype);
+  if (validExt && validMime) return cb(null, true);
+  cb(new Error("Only image files are allowed (JPG, PNG, WEBP)"));
 };
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5 Megabytes in bytes
-  },
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 const autoHealEvents = async (eventsArr) => {
@@ -207,97 +200,116 @@ const autoHealEvents = async (eventsArr) => {
 const getEvents = async (req, res) => {
   try {
     const user = req.user;
-    let eventsQuery;
+    const { page, limit, skip } = req.pagination || { page: 1, limit: 1000, skip: 0 };
+    const search = (req.query.search || '').trim();
+    const filter = {};
 
     if (user) {
       const role = user.role?.toLowerCase();
-      console.log("Decoded user role:", role);
-
       if (role === "superadmin" || role === "admin") {
-        const { status } = req.query;
-        const filter = status ? { status } : {};
-        eventsQuery = Event.find(filter).sort({ createdAt: -1 });
+        if (req.query.status && req.query.status !== 'All') {
+          filter.status = req.query.status;
+        }
       } else if (role === "promoter") {
-        eventsQuery = Event.find({
-          $or: [
-            { createdBy: user._id },
-            { assignedPromoters: user._id, status: "approved" },
-          ],
-        }).sort({
-          createdAt: -1,
-        });
+        filter.$or = [
+          { createdBy: user._id },
+          { assignedPromoters: user._id, status: "approved" },
+        ];
       } else if (role === "customer" || role === "sponsor") {
-        eventsQuery = Event.find({ status: "approved" }).sort({
-          createdAt: -1,
-        });
+        filter.status = "approved";
       } else {
         return res.status(403).json({ error: "Unauthorized role" });
       }
     } else {
-      // Public access: Allow both approved (live) and completed (past) events
-      const { status } = req.query;
+      // Public access
       const allowedPublicStatus = ["approved", "completed"];
-
-      if (status && allowedPublicStatus.includes(status)) {
-        eventsQuery = Event.find({ status }).sort({ createdAt: -1 });
+      if (req.query.status && allowedPublicStatus.includes(req.query.status)) {
+        filter.status = req.query.status;
       } else {
-        eventsQuery = Event.find({ status: { $in: allowedPublicStatus } }).sort(
-          { createdAt: -1 },
-        );
+        filter.status = { $in: allowedPublicStatus };
       }
     }
 
-    // Mark past due approved events as completed
+    if (search) {
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { title: { $regex: search, $options: 'i' } }];
+        delete filter.$or;
+      } else {
+        filter.title = { $regex: search, $options: 'i' };
+      }
+    }
+
+    const baseCountFilter = { ...filter };
+    delete baseCountFilter.status;
+    const statusCountsAggr = await Event.aggregate([
+      { $match: baseCountFilter },
+      { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+    
+    let totalEventsCount = 0;
+    const counts = { pending: 0, approved: 0, rejected: 0, cancelled: 0, completed: 0, all: 0 };
+    statusCountsAggr.forEach(r => {
+      if (counts.hasOwnProperty(r._id)) {
+        counts[r._id] = r.count;
+      }
+      totalEventsCount += r.count;
+    });
+    counts.all = totalEventsCount;
+
+    const [eventsData, total] = await Promise.all([
+      Event.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate([
+          {
+            path: "createdBy",
+            select: "firstName lastName role email avatar companyName lastActive",
+          },
+          {
+            path: "assignedPromoters",
+            select: "firstName lastName email avatar lastActive",
+          },
+          {
+            path: "venueMap",
+          },
+        ]),
+      Event.countDocuments(filter)
+    ]);
+
+    // Fast inline auto-update for past due approved events in current page
     const now = new Date();
-
-    // Fetch all approved events and check their times in memory
-    const approvedEvents = await Event.find({ status: "approved" });
-
-    const completedIds = [];
-    for (const event of approvedEvents) {
-      if (event.endDate && event.endTime) {
-        const [hours, minutes] = event.endTime.split(":").map(Number);
-        const endDateTime = new Date(event.endDate);
-        endDateTime.setHours(hours, minutes, 0, 0);
-
-        if (endDateTime < now) {
-          completedIds.push(event._id);
+    let requiresHeal = false;
+    for (let event of eventsData) {
+      if (event.status === "approved") {
+        if (event.endDate && event.endTime) {
+          const [hours, minutes] = event.endTime.split(":").map(Number);
+          const endDateTime = new Date(event.endDate);
+          endDateTime.setHours(hours, minutes, 0, 0);
+          if (endDateTime < now) {
+             event.status = "completed";
+             Event.updateOne({ _id: event._id }, { status: "completed" }).exec().catch(()=>{});
+          }
+        } else if (event.endDate && new Date(event.endDate) < now) {
+          event.status = "completed";
+          Event.updateOne({ _id: event._id }, { status: "completed" }).exec().catch(()=>{});
         }
-      } else if (event.endDate && event.endDate < now) {
-        // Fallback for events without specific times
-        completedIds.push(event._id);
       }
     }
 
-    if (completedIds.length > 0) {
-      await Event.updateMany(
-        { _id: { $in: completedIds } },
-        { status: "completed" },
-      );
-    }
+    let events = eventsData.map(event => mapVenueMapToEvent(event));
+    events = await autoHealEvents(events);
 
-    // Re-run the filter if it was a public/approved query to ensure completed items don't show up
-    // Or just re-fetch the query to be safe
- let events = await eventsQuery.populate([
-    {
-        path: "createdBy",
-        select: "firstName lastName role email avatar companyName lastActive",
-    },
-    {
-        path: "assignedPromoters",
-        select: "firstName lastName email avatar lastActive",
-    },
-    {
-        path: "venueMap",  // ← add this
-    },
-]);
-
-// ← add this: map venueMap → layoutData for every event, same as getEvent does
-events = events.map(event => mapVenueMapToEvent(event));
-
-events = await autoHealEvents(events);
-
-return res.status(200).json(events);
+    return res.status(200).json({
+      data: events,
+      counts,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
@@ -396,34 +408,44 @@ const getEvent = async (req, res) => {
   }
 };
 
-const createEvent = async (req, res) => {
+const uploadImageToR2 = async (file) => {
+  const { buffer, contentType, ext } = await optimizeImageBuffer(
+    file.buffer,
+    file.mimetype
+  );
+  const key = `uploads/${uuidv4()}${ext}`;
+  await s3Client.send(new PutObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+    CacheControl: "public, max-age=31536000, immutable",
+  }));
+  console.log(`✅ Event image uploaded to R2: ${key}`);
+  return `${process.env.CDN_BASE_URL}/${key}`;
+};
+
+// Shared helper: delete old R2 image when replacing/deleting
+const deleteImageFromR2 = async (imageUrl) => {
+  if (!imageUrl || !imageUrl.startsWith("http")) return; // skip legacy local paths
   try {
-    let {
-      title,
+    const key = imageUrl.replace(`${process.env.CDN_BASE_URL}/`, "");
+    if (!key.startsWith("uploads/")) return;
+    await s3Client.send(new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+    }));
+    console.log(`🗑️ Deleted old R2 image: ${key}`);
+  } catch (err) {
+    console.warn("R2 delete failed (non-fatal):", err.message);
+  }
+};
 
-      description,
+const createEvent = async (req, res) => {
 
-      category,
-
-      venue,
-
-      startDate,
-
-      endDate,
-
-      startTime,
-
-      endTime,
-
-      priceLevels = [],
-
-      seatMap = null,
-
-      booths = [],
-
-      isFeatured = false,
-      eventType,
-    } = req.body;
+  console.log('🔍 req.file:', req.file ? `${req.file.originalname} | buffer: ${!!req.file.buffer} | size: ${req.file.size}` : 'NO FILE');
+  try {
+    let {title, description, category, venue, startDate, endDate, startTime, endTime, priceLevels = [], seatMap = null, booths = [], isFeatured = false, eventType,} = req.body;
 
     if (typeof venue === "string") venue = JSON.parse(venue);
 
@@ -433,15 +455,7 @@ const createEvent = async (req, res) => {
 
     if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
 
-    const image = req.file ? req.file.filename : null;
-
-    // Optimize image if uploaded
-
-    if (req.file) {
-      const filePath = path.join(__dirname, "..", "uploads", req.file.filename);
-
-      await optimizeImage(filePath);
-    }
+   const image = req.file ? await uploadImageToR2(req.file) : null;
 
     const requiredFields = [
       "title",
@@ -799,9 +813,7 @@ const deleteEvent = async (req, res) => {
   // 3. Cascade delete associated records
   try {
     // Delete event image
-    if (event.image) {
-      removeEventImage(event.image);
-    }
+ await deleteImageFromR2(event.image);
 
     // Delete all reservations for this event
     await Reservation.deleteMany({ event: id });
@@ -814,9 +826,9 @@ const deleteEvent = async (req, res) => {
     if (event.venueMap) {
       const venueMap = await VenueMap.findById(event.venueMap);
       if (venueMap) {
-        if (venueMap.backgroundImage) {
-          removeEventImage(venueMap.backgroundImage);
-        }
+       if (venueMap.backgroundImage) {
+  await deleteImageFromR2(venueMap.backgroundImage);
+}
         await VenueMap.findByIdAndDelete(event.venueMap);
       }
     }
@@ -940,13 +952,20 @@ const updateEvent = async (req, res) => {
     /* =========================
         DATA PROCESSING
     ========================= */
-    image = req.file ? req.file.filename : image || existingEvent.image;
-    const finalVenue = venue || existingEvent.venue;
-    let finalPriceLevels = Array.isArray(priceLevels)
-      ? priceLevels
-      : existingEvent.priceLevels || [];
-    let finalSeatMap = seatMap !== undefined ? seatMap : existingEvent.seatMap;
-    let finalBooths =
+    let finalImage = existingEvent.image;
+    if (req.file) {
+      finalImage = await uploadImageToR2(req.file);
+      await deleteImageFromR2(existingEvent.image); // clean up old R2 image
+    } else if (req.body.image === "" || req.body.image === null) {
+      finalImage = null;
+  await deleteImageFromR2(existingEvent.image);
+}
+const finalVenue = venue || existingEvent.venue;
+let finalPriceLevels = Array.isArray(priceLevels)
+  ? priceLevels
+  : existingEvent.priceLevels || [];
+let finalSeatMap = seatMap !== undefined ? seatMap : existingEvent.seatMap;
+let finalBooths =
       booths !== undefined ? booths : existingEvent.booths || [];
 
     // Map to track input IDs and names to final ObjectIds
@@ -1071,17 +1090,7 @@ const updateEvent = async (req, res) => {
       });
     }
 
-    // Image Cleanup
-    let finalImage = existingEvent.image;
-    if (req.file) {
-      finalImage = req.file.filename;
-      const filePath = path.join(__dirname, "..", "uploads", req.file.filename);
-      await optimizeImage(filePath);
-      removeEventImage(existingEvent.image);
-    } else if (req.body.image === "" || req.body.image === null) {
-      finalImage = null;
-      removeEventImage(existingEvent.image);
-    }
+
 
     /* =========================
         STATUS LOGIC
@@ -1229,32 +1238,32 @@ const updateEvent = async (req, res) => {
   }
 };
 
-const removeEventImage = (filename) => {
-  if (!filename) return;
+// const removeEventImage = (filename) => {
+//   if (!filename) return;
 
-  const filePath = path.join(__dirname, "../uploads/", filename);
-  const tempPath = `${filePath}.tmp`;
+//   const filePath = path.join(__dirname, "../uploads/", filename);
+//   const tempPath = `${filePath}.tmp`;
 
-  // Check if file exists before trying to delete
-  fs.access(filePath, fs.constants.F_OK, (err) => {
-    if (!err) {
-      fs.unlink(filePath, (err) => {
-        if (err) console.error("Error deleting file:", err);
-        else console.log("Old image deleted from server:", filename);
-      });
-    }
-  });
+//   // Check if file exists before trying to delete
+//   fs.access(filePath, fs.constants.F_OK, (err) => {
+//     if (!err) {
+//       fs.unlink(filePath, (err) => {
+//         if (err) console.error("Error deleting file:", err);
+//         else console.log("Old image deleted from server:", filename);
+//       });
+//     }
+//   });
 
-  // Check if temp file exists before trying to delete
-  fs.access(tempPath, fs.constants.F_OK, (err) => {
-    if (!err) {
-      fs.unlink(tempPath, (err) => {
-        if (err) console.error("Error deleting temp file:", err);
-        else console.log("Old temp image deleted from server:", `${filename}.tmp`);
-      });
-    }
-  });
-};
+//   // Check if temp file exists before trying to delete
+//   fs.access(tempPath, fs.constants.F_OK, (err) => {
+//     if (!err) {
+//       fs.unlink(tempPath, (err) => {
+//         if (err) console.error("Error deleting temp file:", err);
+//         else console.log("Old temp image deleted from server:", `${filename}.tmp`);
+//       });
+//     }
+//   });
+// };
 
 const saveVenueLayout = async (req, res) => {
   const { id } = req.params;
