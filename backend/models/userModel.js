@@ -167,4 +167,7 @@ userSchema.statics.login = async function (email, password) {
   return user
 }
 
-module.exports = mongoose.model('User', userSchema)
+userSchema.index({ role: 1, lastActive: -1 });
+userSchema.index({ role: 1, createdAt: -1 });
+
+module.exports = mongoose.model('User', userSchema);

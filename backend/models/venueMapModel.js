@@ -22,4 +22,6 @@ const venueMapSchema = new Schema(
   { timestamps: true }
 );
 
+venueMapSchema.index({ eventId: 1 });
+
 module.exports = mongoose.model("VenueMap", venueMapSchema);

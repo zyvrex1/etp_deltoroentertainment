@@ -111,4 +111,12 @@ reservationSchema.pre('save', function (next) {
     next();
 });
 
+reservationSchema.index({ user: 1, event: 1 });
+reservationSchema.index({ event: 1, status: 1 });
+reservationSchema.index({ event: 1, type: 1, status: 1 });
+reservationSchema.index(
+  { checkedIn: 1, event: 1 },
+  { partialFilterExpression: { checkedIn: true } }
+);
+
 module.exports = mongoose.model('Reservation', reservationSchema);
