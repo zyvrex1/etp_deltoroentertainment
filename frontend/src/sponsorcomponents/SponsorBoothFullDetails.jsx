@@ -925,10 +925,9 @@ const exportInvoiceToPDF = async () => {
                 <div className="booth-details-main">
                     <div className="booth-details-cover">
                         <img
-                            src={reservation.event?.image ?
-                                (reservation.event.image.startsWith('http') ? reservation.event.image : `${BACKEND_URL}/uploads/${reservation.event.image}`)
-                                : "/assets/eventbg.jpg"}
+                            src={reservation.event?.image ? `/uploads/${reservation.event.image}` : "/assets/eventbg.jpg"}
                             alt="Event Cover"
+                            onError={(e) => { e.target.src = "/assets/eventbg.jpg"; }}
                         />
                         <div className="booth-details-cover-overlay">
                             <h3>{reservation.event?.title || 'Unknown Event'}</h3>

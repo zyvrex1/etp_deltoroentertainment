@@ -243,6 +243,8 @@ const connectDB = require('./config/db');
 //     });
 // });
 
+const { expireOldReservations } = require('./controllers/reservationController')
+
 connectDB().then(() => {
   const server = http.createServer(app)
   const io = socket.init(server)
@@ -250,6 +252,11 @@ connectDB().then(() => {
   server.listen(process.env.PORT, () => {
     appLogger.info('ETP server started', { port: process.env.PORT, env: process.env.NODE_ENV })
     if (process.send) process.send('ready')
+
+    // Start background job to expire old reservations (every 5 minutes)
+    setInterval(() => {
+        expireOldReservations()
+    }, 5 * 60 * 1000)
   })
 
   const shutdown = (signal) => {

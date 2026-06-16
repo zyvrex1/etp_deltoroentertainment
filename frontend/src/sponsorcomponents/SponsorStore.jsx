@@ -7,7 +7,7 @@ import orderService from "../services/orderService";
 import { useAuthContext } from "../hooks/useAuthContext";
 import "./SponsorStore.css";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 
 const SponsorStore = () => {
   const { user } = useAuthContext();
@@ -94,9 +94,17 @@ const SponsorStore = () => {
             const industry = storeSettings.industry || sponsorUser.industry || "Sponsor";
 
             // Logo/Image logic
-            let imageUrl = storeSettings.logo ? storeSettings.logo : (eventObj.image || '/assets/eventbg.jpg');
-            if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/assets/') && !imageUrl.startsWith('blob:') && !imageUrl.startsWith('data:')) {
-              imageUrl = `${BACKEND_URL}/uploads/${imageUrl.replace('/uploads/', '')}`;
+            let imageUrl = '/assets/eventbg.jpg';
+            if (storeSettings.logo) {
+              const logo = storeSettings.logo;
+              imageUrl = (logo.startsWith('http') || logo.startsWith('/assets/') || logo.startsWith('blob:') || logo.startsWith('data:'))
+                ? logo
+                : `/uploads/${logo.replace(/^(\/)?uploads\//, '')}`;
+            } else if (eventObj.image) {
+              const img = eventObj.image;
+              imageUrl = (img.startsWith('http') || img.startsWith('/assets/') || img.startsWith('blob:') || img.startsWith('data:'))
+                ? img
+                : `/uploads/${img.replace(/^(\/)?uploads\//, '')}`;
             }
 
             return {
