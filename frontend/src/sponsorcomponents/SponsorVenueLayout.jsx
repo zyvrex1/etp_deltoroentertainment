@@ -8,6 +8,7 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import { useSponsorCartContext } from '../context/SponsorCartContext';
 import { showSuccessAlert } from '../utils/sweetAlert';
 import eventsService from '../services/eventsService';
+import axios from 'axios';
 import './SponsorVenueLayout.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -187,6 +188,16 @@ const SponsorVenueLayout = () => {
             }
             setIsLoading(true);
             try {
+                // Sync booth/seat status first so expired pending reservations
+                // are released before we render the map.
+                try {
+                    await axios.post(`/api/events/${id}/sync-booths`, {}, {
+                        headers: { Authorization: `Bearer ${user.token}` }
+                    });
+                } catch (syncErr) {
+                    console.warn('[SponsorVenueLayout] sync-booths failed (non-fatal):', syncErr.message);
+                }
+
                 const data = await eventsService.getEvent(id, user.token);
                 if (!data) {
                     setIsLoading(false);
@@ -491,7 +502,7 @@ const SponsorVenueLayout = () => {
                                                         listening={isBooth ? true : false}
                                                         onMouseEnter={(e) => {
                                                             const stage = e.target.getStage();
-                                                            if (item.status === 'available') {
+                                                            if (item.status === 'available' || item.status === 'expired') {
                                                                 stage.container().style.cursor = 'pointer';
                                                             }
                                                         }}
@@ -499,10 +510,10 @@ const SponsorVenueLayout = () => {
                                                             e.target.getStage().container().style.cursor = 'default';
                                                         }}
                                                         onClick={() => {
-                                                            if (isBooth && item.status === 'available') toggleSelection(item.id);
+                                                            if (isBooth && (item.status === 'available' || item.status === 'expired')) toggleSelection(item.id);
                                                         }}
                                                         onTap={() => {
-                                                            if (isBooth && item.status === 'available') toggleSelection(item.id);
+                                                            if (isBooth && (item.status === 'available' || item.status === 'expired')) toggleSelection(item.id);
                                                         }}
                                                     >
                                                         {isBooth ? (
@@ -511,7 +522,7 @@ const SponsorVenueLayout = () => {
                                                                 y={-boothH / 2}
                                                                 width={boothW}
                                                                 height={boothH}
-                                                                fill={selectedIds.includes(item.id) ? "#2563EB" : (item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (cat?.color || "#e0e0e0"))}
+                                                                fill={selectedIds.includes(item.id) ? "#2563EB" : ((item.status === 'sold' || item.status === 'reserved') ? '#22c55e' : (cat?.color || "#e0e0e0"))}
                                                                 stroke="#fff"
                                                                 strokeWidth={1}
                                                                 strokeScaleEnabled={false}
