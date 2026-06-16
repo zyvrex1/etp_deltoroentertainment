@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { getImageUrl } from '../utils/imageUrl';
 import { Icon } from '@iconify/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Stage, Layer, Rect, Circle, Text, Group, Line, Image as KonvaImage } from 'react-konva';
@@ -13,7 +14,7 @@ import './SponsorVenueLayout.css';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const BackgroundImage = ({ item, onClick }) => {
-    const [img] = useImage(item.imageUrl?.startsWith('http') ? item.imageUrl : `${BACKEND_URL}/uploads/${item.imageUrl}`);
+    const [img] = useImage(getImageUrl(item.imageUrl));
     const isBg = item.isBackground || item.type === "background" || item.subType === "Image";
     const w = item.width || (isBg ? 400 : 45);
     const h = item.height || (isBg ? 300 : 45);

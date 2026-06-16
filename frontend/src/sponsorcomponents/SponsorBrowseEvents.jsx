@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import { getImageUrl } from '../utils/imageUrl';
 import DateRangePicker from '../utils/DateRangePicker';
 import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
@@ -147,7 +148,7 @@ const SponsorBrowseEvents = () => {
                             <div key={event._id} className="sbe-event-card" onClick={() => handleEventClick(event._id)}>
                                 <div className="sbe-card-image-wrap">
                                     <img
-                                        src={event.image ? `/uploads/${event.image}` : "/assets/eventbg.jpg"}
+                                        src={getImageUrl(event.image)}
                                         alt={event.title}
                                         className="ticket-image"
                                         onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
+import { getImageUrl } from '../utils/imageUrl';
 import { Icon } from '@iconify/react';
 import SponsorEnlargeQR from './SponsorModal/SponsorEnlargeQR';
 import SponsorRequestRefund from './SponsorModal/SponsorRequestRefund';
@@ -249,7 +250,7 @@ export default function SponsorMyBooth() {
                                         <div className="booth-image-container">
                                             <img
                                                 src={res.event?.image ?
-                                                    (res.event.image.startsWith('http') ? res.event.image : `${BACKEND_URL}/uploads/${res.event.image}`)
+                                                    getImageUrl(res.event.image)
                                                     : "/assets/eventbg.jpg"}
                                                 alt={res.event?.title}
                                                 onError={(e) => { e.target.src = "/assets/eventbg.jpg" }}

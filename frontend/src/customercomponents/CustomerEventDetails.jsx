@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
+import { getImageUrl } from '../utils/imageUrl';
 import './CustomerEventDetails.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -30,7 +31,7 @@ const CustomerEventDetails = () => {
                 setEvent(data);
                 // Set initial hero image and validate it
                 if (data?.image) {
-                    const imgUrl = `/uploads/${data.image}`;
+                    const imgUrl = getImageUrl(data.image);
                     setHeroImage(imgUrl);
                     const img = new Image();
                     img.src = imgUrl;
@@ -165,7 +166,7 @@ const CustomerEventDetails = () => {
 
                 <div 
                     className={displayEvent ? "sed-hero-banner" : "sed-hero-banner skeleton"} 
-                    style={displayEvent && stateEvent?.image ? { backgroundImage: `url(/uploads/${stateEvent.image})` } : { background: '#eee' }}
+                    style={displayEvent && stateEvent?.image ? { backgroundImage: `url(${getImageUrl(stateEvent.image)})` } : { background: '#eee' }}
                 >
                     {displayEvent && (
                         <>

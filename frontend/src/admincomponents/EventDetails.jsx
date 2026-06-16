@@ -1,10 +1,12 @@
+import { getImageUrl } from '../utils/imageUrl';
+
 const EventDetails = ({ event }) => {
     if (!event) return <p>Loading event details...</p>;
 
     return (
         <div className="event-details">
             <img 
-                src={event.image ? `/uploads/${event.image}` : '/assets/eventbg.jpg'} 
+                src={event.image ? getImageUrl(event.image) : '/assets/eventbg.jpg'} 
                 alt={event.title} 
                 style={{ width: '100%', borderRadius: '8px' }}
                 onError={(e) => { e.target.src = '/assets/eventbg.jpg'; }}

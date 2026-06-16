@@ -34,23 +34,9 @@ const getNotifications = async (req, res) => {
             };
         }
 
-        const { cursor, limit } = req.pagination;
+        const notifications = await Notification.find(query).sort({ createdAt: -1 });
 
-        // keyset clause on _id
-        const cursorClause = cursor ? { _id: { $lt: cursor } } : {};
-        // fetch limit+1 to probe
-        const raw = await Notification.find({$and: [baseQuery, visClause, cursorClause]}).sort({ createdAt: -1 }).limit(limit + 1);
-        const hasNextPage = raw.length > limit;
-        if (hasNextPage) raw.pop();
-        const nextCursor = hasNextPage && raw.length ? raw.at(-1)._id.toString(): null;
-
-
-        // returns envelope
-        res.status(200).json({
-            notifications: filtered,
-            pagination: { nextCursor, hasNextPage, limit }
-
-        });
+        res.status(200).json(notifications);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }

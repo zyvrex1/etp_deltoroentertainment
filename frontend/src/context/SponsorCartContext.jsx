@@ -57,8 +57,12 @@ export const SponsorCartProvider = ({ children }) => {
                 console.error("Error saving user cart locally", e);
             }
 
-            updateCartAPI(leanItems, currentUser.token).then(() => {
-                const updatedUser = { ...currentUser, cart: leanItems };
+            const currentDbCart = currentUser.cart || [];
+            const nonBoothItems = currentDbCart.filter(item => !item?.booth?.id && !item?.booth?._id);
+            const mergedCart = [...nonBoothItems, ...leanItems];
+
+            updateCartAPI(mergedCart, currentUser.token).then(() => {
+                const updatedUser = { ...currentUser, cart: mergedCart };
                 try {
                     localStorage.setItem('user', JSON.stringify(updatedUser));
                 } catch (e) { }
@@ -72,7 +76,9 @@ export const SponsorCartProvider = ({ children }) => {
     useEffect(() => {
         if (user) {
             // Check if user has cart items in their profile (from DB)
-            const dbItems = (user.cart && Array.isArray(user.cart)) ? user.cart : [];
+            const dbItems = (user.cart && Array.isArray(user.cart)) 
+                ? user.cart.filter(item => item?.booth?.id || item?.booth?._id) 
+                : [];
 
             // Fallback to localStorage if we need to merge guest cart
             const savedCart = localStorage.getItem(`sponsorCart_${user.email}`);
@@ -80,9 +86,9 @@ export const SponsorCartProvider = ({ children }) => {
 
             let localItems = [];
             if (savedCart) {
-                try { localItems = JSON.parse(savedCart); } catch (e) { }
+                try { localItems = JSON.parse(savedCart).filter(item => item?.booth?.id || item?.booth?._id); } catch (e) { }
             } else if (guestCart) {
-                try { localItems = JSON.parse(guestCart); } catch (e) { }
+                try { localItems = JSON.parse(guestCart).filter(item => item?.booth?.id || item?.booth?._id); } catch (e) { }
             }
 
             // Merge DB cart and Local cart based on booth ID
@@ -109,7 +115,7 @@ export const SponsorCartProvider = ({ children }) => {
             let parsedCart = [];
             if (guestCart) {
                 try {
-                    parsedCart = JSON.parse(guestCart) || [];
+                    parsedCart = (JSON.parse(guestCart) || []).filter(item => item?.booth?.id || item?.booth?._id);
                 } catch (e) { }
             }
             setCartItems(parsedCart);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
+import { getImageUrl } from "../utils/imageUrl";
 import usePagination from "../hooks/usePagination";
 import PaginationBar from "../components/PaginationBar";
 import "./promotereventmanagement.css";
@@ -192,9 +193,7 @@ const PromoterEventManagement = () => {
                     const eventLocation = event.venue
                       ? `${event.venue.name}, ${event.venue.city}`
                       : "TBA";
-                    const imageUrl = event.image
-                      ? `/uploads/${event.image}`
-                      : "/assets/eventbg.jpg";
+                    const imageUrl = getImageUrl(event.image);
 
 
                     return (

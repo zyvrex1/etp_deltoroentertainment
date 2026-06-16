@@ -29,7 +29,7 @@ const merchandiseService = {
       return response.data;
     } catch (error) {
       console.error("Error in createMerchandise service:", error);
-      throw error;
+      throw new Error(error.response?.data?.error || error.message);
     }
   },
 
@@ -39,7 +39,7 @@ const merchandiseService = {
       return response.data;
     } catch (error) {
       console.error("Error in updateMerchandise service:", error);
-      throw error;
+      throw new Error(error.response?.data?.error || error.message);
     }
   },
 
@@ -49,7 +49,7 @@ const merchandiseService = {
       return response.data;
     } catch (error) {
       console.error("Error in deleteMerchandise service:", error);
-      throw error;
+      throw new Error(error.response?.data?.error || error.message);
     }
   }
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import SponsorKit from './SponsorModal/SponsorKit';
+import { getImageUrl } from '../utils/imageUrl';
 import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
 import './SponsorEventDetails.css';
@@ -30,7 +31,7 @@ const SponsorEventDetails = () => {
                 
                 // Handle hero image validation
                 if (data?.image) {
-                    const imgUrl = `/uploads/${data.image}`;
+                    const imgUrl = getImageUrl(data.image);
                     setHeroImage(imgUrl);
                     const img = new Image();
                     img.src = imgUrl;

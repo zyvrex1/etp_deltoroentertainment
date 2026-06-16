@@ -4,6 +4,8 @@ import { Icon } from "@iconify/react";
 import { useEventsContext } from "../hooks/useEventsContext";
 import { useAuthContext } from "../hooks/useAuthContext";
 
+import { getImageUrl } from '../utils/imageUrl';
+
 const EventSelection = ({ setSelectedEvent }) => {
   const { events, dispatch } = useEventsContext();
   const { user } = useAuthContext();
@@ -174,7 +176,7 @@ const EventSelection = ({ setSelectedEvent }) => {
                   <img
                     src={
                       event.image
-                        ? `/uploads/${event.image}`
+                        ? getImageUrl(event.image)
                         : "/assets/eventbg.jpg"
                     }
                     alt={event.title}

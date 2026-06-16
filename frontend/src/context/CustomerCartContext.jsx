@@ -49,7 +49,12 @@ export const CustomerCartProvider = ({ children }) => {
     const saveCustomerCart = (newItems, currentUser = user) => {
         localStorage.setItem('customerCart', JSON.stringify(newItems));
         if (currentUser && currentUser.token && currentUser.role) {
-            userService.updateCart(newItems, currentUser.token).then(updatedCart => {
+            // Preserve existing non-seat items (like booths) from the user's cart in the DB
+            const currentDbCart = currentUser.cart || [];
+            const nonSeatItems = currentDbCart.filter(item => !item?.seat?.id && !item?.seat?._id);
+            const mergedCart = [...nonSeatItems, ...newItems];
+
+            userService.updateCart(mergedCart, currentUser.token).then(updatedCart => {
                 const updatedUser = { ...currentUser, cart: updatedCart };
                 dispatch({ type: 'LOGIN', payload: updatedUser });
                 localStorage.setItem('user', JSON.stringify(updatedUser));

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Icon } from "@iconify/react";
+import { getImageUrl } from "../utils/imageUrl";
 import usePagination from "../hooks/usePagination";
 import PaginationBar from "../components/PaginationBar";
 import "./promoterevents.css";
@@ -364,7 +365,7 @@ const PromoterEvents = () => {
               });
 
               const eventLocation = evt.venue ? `${evt.venue.name}, ${evt.venue.city}` : "TBA";
-              const imageUrl = evt.image ? `/uploads/${evt.image}` : "/assets/eventbg.jpg";
+              const imageUrl = getImageUrl(evt.image);
 
               return (
                 <div key={evt._id} className="pe-card"

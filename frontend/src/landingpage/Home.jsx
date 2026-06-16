@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { getImageUrl } from '../utils/imageUrl';
 import './Home.css';
 import { Icon } from "@iconify/react";
 import announcementService from '../services/announcementService';
@@ -172,11 +173,7 @@ useEffect(() => {
         if (data && Array.isArray(data)) {
           // Helper for image URL
           const getImg = (evt) => {
-            const rawImage = evt.image || evt.eventImage;
-            if (!rawImage) return '/assets/eventbg.jpg';
-            if (rawImage.startsWith('http')) return rawImage;
-            const cleanPath = rawImage.replace(/^(\/)?uploads\//, '');
-            return `/uploads/${cleanPath}`;
+            return getImageUrl(evt.image || evt.eventImage);
           };
 
           // 1. Live/Upcoming Events (Status: approved)

@@ -53,10 +53,10 @@ export default function CustomerSupport() {
         totalPages,
         total,
         setTotal,
-        onPrev,
-        onNext,
-        onGoTo,
-        setPage,
+        prev: onPrev,
+        next: onNext,
+        goTo: onGoTo,
+        reset: resetPage,
     } = usePagination({ limit: itemsPerPage });
 
     const fetchPolicies = async () => {
@@ -292,8 +292,8 @@ const exportDocumentToPDF = async (doc) => {
     };
 
     useEffect(() => {
-        setPage(1);
-    }, [searchQuery, selectedStatus]);
+        resetPage();
+    }, [searchQuery, selectedStatus, resetPage]);
 
     const paginatedTickets = concerns;
 

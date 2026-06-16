@@ -203,7 +203,7 @@ export default function CustomerViewConcern({ concern: initialConcern, onBack })
                                 <div className="cvc-files-list">
                                     {allAttachments.map((file, idx) => {
                                         const isPDF = file.name?.toLowerCase().endsWith('.pdf');
-                                        const downloadUrl = `${BACKEND_URL}/${file.path}`;
+                                        const downloadUrl = file.path?.startsWith('http') ? file.path : `${BACKEND_URL}/${file.path}`;
                                         return (
                                             <div key={idx} className="cvc-file-card">
                                                 <div className="cvc-file-icon-wrap">
@@ -286,7 +286,7 @@ export default function CustomerViewConcern({ concern: initialConcern, onBack })
                                                             <span className="cvc-att-name smaller-body-text">{att.name}</span>
                                                             <span className="cvc-att-size smaller-body-text text-tertiary">{att.size}</span>
                                                         </div>
-                                                        <a href={`${BACKEND_URL}/${att.path}`} target="_blank" rel="noopener noreferrer" className="cvc-att-download-btn">
+                                                        <a href={att.path?.startsWith('http') ? att.path : `${BACKEND_URL}/${att.path}`} target="_blank" rel="noopener noreferrer" className="cvc-att-download-btn">
                                                             <Icon icon="mdi:download-outline" />
                                                         </a>
                                                     </div>

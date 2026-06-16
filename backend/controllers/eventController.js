@@ -17,53 +17,46 @@ const Reservation = require("../models/reservationModel");
 const Merchandise = require("../models/merchandiseModel");
 const { toObjectId } = require("../utils/helpers");
 
-const fs = require("fs");
-const path = require("path");
-const multer = require("multer");
 const { emitUpdate } = require("../socket");
-const { optimizeImage } = require("../utils/imageOptimizer");
+const multer = require("multer");
+const { optimizeImageBuffer } = require("../utils/imageOptimizer");
+const { PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { s3Client } = require("../config/s3Client");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    const originalName = path.parse(file.originalname).name;
-    const cleanName = originalName.replace(/\s+/g, "-").toLowerCase();
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, "uploads/");
+//   },
+//   filename: (req, file, cb) => {
+//     const originalName = path.parse(file.originalname).name;
+//     const cleanName = originalName.replace(/\s+/g, "-").toLowerCase();
 
-    const now = new Date();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    const yy = String(now.getFullYear()).slice(-2);
-    const hh = String(now.getHours()).padStart(2, "0");
-    const min = String(now.getMinutes()).padStart(2, "0");
+//     const now = new Date();
+//     const mm = String(now.getMonth() + 1).padStart(2, "0");
+//     const dd = String(now.getDate()).padStart(2, "0");
+//     const yy = String(now.getFullYear()).slice(-2);
+//     const hh = String(now.getHours()).padStart(2, "0");
+//     const min = String(now.getMinutes()).padStart(2, "0");
 
-    const timestamp = `${mm}${dd}${yy}${hh}${min}`;
+//     const timestamp = `${mm}${dd}${yy}${hh}${min}`;
 
-    cb(null, `${cleanName}-${timestamp}${path.extname(file.originalname)}`);
-  },
-});
+//     cb(null, `${cleanName}-${timestamp}${path.extname(file.originalname)}`);
+//   },
+// });
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|webp/;
-  const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase(),
-  );
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
-  } else {
-    cb(new Error("Only image files are allowed (JPG, PNG, WEBP)"));
-  }
+  const ext = file.originalname.split('.').pop().toLowerCase();
+  const validExt = allowedTypes.test(ext);
+  const validMime = allowedTypes.test(file.mimetype);
+  if (validExt && validMime) return cb(null, true);
+  cb(new Error("Only image files are allowed (JPG, PNG, WEBP)"));
 };
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5 Megabytes in bytes
-  },
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 const autoHealEvents = async (eventsArr) => {
@@ -415,34 +408,44 @@ const getEvent = async (req, res) => {
   }
 };
 
-const createEvent = async (req, res) => {
+const uploadImageToR2 = async (file) => {
+  const { buffer, contentType, ext } = await optimizeImageBuffer(
+    file.buffer,
+    file.mimetype
+  );
+  const key = `uploads/${uuidv4()}${ext}`;
+  await s3Client.send(new PutObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+    CacheControl: "public, max-age=31536000, immutable",
+  }));
+  console.log(`✅ Event image uploaded to R2: ${key}`);
+  return `${process.env.CDN_BASE_URL}/${key}`;
+};
+
+// Shared helper: delete old R2 image when replacing/deleting
+const deleteImageFromR2 = async (imageUrl) => {
+  if (!imageUrl || !imageUrl.startsWith("http")) return; // skip legacy local paths
   try {
-    let {
-      title,
+    const key = imageUrl.replace(`${process.env.CDN_BASE_URL}/`, "");
+    if (!key.startsWith("uploads/")) return;
+    await s3Client.send(new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+    }));
+    console.log(`🗑️ Deleted old R2 image: ${key}`);
+  } catch (err) {
+    console.warn("R2 delete failed (non-fatal):", err.message);
+  }
+};
 
-      description,
+const createEvent = async (req, res) => {
 
-      category,
-
-      venue,
-
-      startDate,
-
-      endDate,
-
-      startTime,
-
-      endTime,
-
-      priceLevels = [],
-
-      seatMap = null,
-
-      booths = [],
-
-      isFeatured = false,
-      eventType,
-    } = req.body;
+  console.log('🔍 req.file:', req.file ? `${req.file.originalname} | buffer: ${!!req.file.buffer} | size: ${req.file.size}` : 'NO FILE');
+  try {
+    let {title, description, category, venue, startDate, endDate, startTime, endTime, priceLevels = [], seatMap = null, booths = [], isFeatured = false, eventType,} = req.body;
 
     if (typeof venue === "string") venue = JSON.parse(venue);
 
@@ -452,15 +455,7 @@ const createEvent = async (req, res) => {
 
     if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
 
-    const image = req.file ? req.file.filename : null;
-
-    // Optimize image if uploaded
-
-    if (req.file) {
-      const filePath = path.join(__dirname, "..", "uploads", req.file.filename);
-
-      await optimizeImage(filePath);
-    }
+   const image = req.file ? await uploadImageToR2(req.file) : null;
 
     const requiredFields = [
       "title",
@@ -818,9 +813,7 @@ const deleteEvent = async (req, res) => {
   // 3. Cascade delete associated records
   try {
     // Delete event image
-    if (event.image) {
-      removeEventImage(event.image);
-    }
+ await deleteImageFromR2(event.image);
 
     // Delete all reservations for this event
     await Reservation.deleteMany({ event: id });
@@ -833,9 +826,9 @@ const deleteEvent = async (req, res) => {
     if (event.venueMap) {
       const venueMap = await VenueMap.findById(event.venueMap);
       if (venueMap) {
-        if (venueMap.backgroundImage) {
-          removeEventImage(venueMap.backgroundImage);
-        }
+       if (venueMap.backgroundImage) {
+  await deleteImageFromR2(venueMap.backgroundImage);
+}
         await VenueMap.findByIdAndDelete(event.venueMap);
       }
     }
@@ -959,13 +952,20 @@ const updateEvent = async (req, res) => {
     /* =========================
         DATA PROCESSING
     ========================= */
-    image = req.file ? req.file.filename : image || existingEvent.image;
-    const finalVenue = venue || existingEvent.venue;
-    let finalPriceLevels = Array.isArray(priceLevels)
-      ? priceLevels
-      : existingEvent.priceLevels || [];
-    let finalSeatMap = seatMap !== undefined ? seatMap : existingEvent.seatMap;
-    let finalBooths =
+    let finalImage = existingEvent.image;
+    if (req.file) {
+      finalImage = await uploadImageToR2(req.file);
+      await deleteImageFromR2(existingEvent.image); // clean up old R2 image
+    } else if (req.body.image === "" || req.body.image === null) {
+      finalImage = null;
+  await deleteImageFromR2(existingEvent.image);
+}
+const finalVenue = venue || existingEvent.venue;
+let finalPriceLevels = Array.isArray(priceLevels)
+  ? priceLevels
+  : existingEvent.priceLevels || [];
+let finalSeatMap = seatMap !== undefined ? seatMap : existingEvent.seatMap;
+let finalBooths =
       booths !== undefined ? booths : existingEvent.booths || [];
 
     // Map to track input IDs and names to final ObjectIds
@@ -1090,17 +1090,7 @@ const updateEvent = async (req, res) => {
       });
     }
 
-    // Image Cleanup
-    let finalImage = existingEvent.image;
-    if (req.file) {
-      finalImage = req.file.filename;
-      const filePath = path.join(__dirname, "..", "uploads", req.file.filename);
-      await optimizeImage(filePath);
-      removeEventImage(existingEvent.image);
-    } else if (req.body.image === "" || req.body.image === null) {
-      finalImage = null;
-      removeEventImage(existingEvent.image);
-    }
+
 
     /* =========================
         STATUS LOGIC
@@ -1248,32 +1238,32 @@ const updateEvent = async (req, res) => {
   }
 };
 
-const removeEventImage = (filename) => {
-  if (!filename) return;
+// const removeEventImage = (filename) => {
+//   if (!filename) return;
 
-  const filePath = path.join(__dirname, "../uploads/", filename);
-  const tempPath = `${filePath}.tmp`;
+//   const filePath = path.join(__dirname, "../uploads/", filename);
+//   const tempPath = `${filePath}.tmp`;
 
-  // Check if file exists before trying to delete
-  fs.access(filePath, fs.constants.F_OK, (err) => {
-    if (!err) {
-      fs.unlink(filePath, (err) => {
-        if (err) console.error("Error deleting file:", err);
-        else console.log("Old image deleted from server:", filename);
-      });
-    }
-  });
+//   // Check if file exists before trying to delete
+//   fs.access(filePath, fs.constants.F_OK, (err) => {
+//     if (!err) {
+//       fs.unlink(filePath, (err) => {
+//         if (err) console.error("Error deleting file:", err);
+//         else console.log("Old image deleted from server:", filename);
+//       });
+//     }
+//   });
 
-  // Check if temp file exists before trying to delete
-  fs.access(tempPath, fs.constants.F_OK, (err) => {
-    if (!err) {
-      fs.unlink(tempPath, (err) => {
-        if (err) console.error("Error deleting temp file:", err);
-        else console.log("Old temp image deleted from server:", `${filename}.tmp`);
-      });
-    }
-  });
-};
+//   // Check if temp file exists before trying to delete
+//   fs.access(tempPath, fs.constants.F_OK, (err) => {
+//     if (!err) {
+//       fs.unlink(tempPath, (err) => {
+//         if (err) console.error("Error deleting temp file:", err);
+//         else console.log("Old temp image deleted from server:", `${filename}.tmp`);
+//       });
+//     }
+//   });
+// };
 
 const saveVenueLayout = async (req, res) => {
   const { id } = req.params;

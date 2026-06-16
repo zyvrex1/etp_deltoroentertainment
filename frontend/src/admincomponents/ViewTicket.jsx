@@ -260,7 +260,7 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onUpdatePriority, o
                                         <span className="small-body-text fw-600">{file.name}</span>
                                         <span className="smaller-body-text">{file.size || 'Unknown size'}</span>
                                     </div>
-                                    <a href={`${BACKEND_URL}/${file.path}`} target="_blank" rel="noopener noreferrer" className="vt-download-icon">
+                                    <a href={file.path?.startsWith('http') ? file.path : `${BACKEND_URL}/${file.path}`} target="_blank" rel="noopener noreferrer" className="vt-download-icon">
                                         <Icon icon="mdi:download-outline" />
                                     </a>
                                 </div>
@@ -302,7 +302,7 @@ const ViewTicket = ({ ticket: initialTicket, onUpdateStatus, onUpdatePriority, o
                                                                 className={`vt-att-file-icon ${att.name.toLowerCase().endsWith('.pdf') ? 'text-red' : 'text-blue'}`} 
                                                             />
                                                             <span className="smaller-body-text">{att.name}</span>
-                                                            <a href={`${BACKEND_URL}/${att.path}`} target="_blank" rel="noopener noreferrer" className="vt-att-link">
+                                                            <a href={att.path?.startsWith('http') ? att.path : `${BACKEND_URL}/${att.path}`} target="_blank" rel="noopener noreferrer" className="vt-att-link">
                                                                 <Icon icon="mdi:eye-outline" />
                                                             </a>
                                                         </div>

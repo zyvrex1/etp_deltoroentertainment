@@ -8,6 +8,7 @@ import {
   showErrorAlert,
   showCreateConfirmAlert,
 } from "../../utils/sweetAlert";
+import { getImageUrl } from "../../utils/imageUrl";
 
 const EditEventModal = ({ isOpen, onClose, event }) => {
   const { user } = useAuthContext();
@@ -70,7 +71,7 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
         },
         eventType: event.eventType || "General Admission",
         imageFile: null,
-        imagePreviewUrl: event.image ? `/uploads/${event.image}` : null,
+        imagePreviewUrl: event.image ? getImageUrl(event.image) : null,
         seatMap: event.seatMap || null,
         booths: event.booths || [],
         assignedPromoter: event.assignedPromoter?._id || event.assignedPromoter || null,

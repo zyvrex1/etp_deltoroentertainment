@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { getImageUrl } from '../utils/imageUrl';
 import { Icon } from "@iconify/react";
 import merchandiseService from "../services/merchandiseService";
 import reservationService from "../services/reservationService";
@@ -101,9 +102,7 @@ const SponsorStore = () => {
 
             // Logo/Image logic
             let imageUrl = storeSettings.logo ? storeSettings.logo : (eventObj.image || '/assets/eventbg.jpg');
-            if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/assets/') && !imageUrl.startsWith('blob:') && !imageUrl.startsWith('data:')) {
-              imageUrl = `${BACKEND_URL}/uploads/${imageUrl.replace('/uploads/', '')}`;
-            }
+              imageUrl = getImageUrl(imageUrl);
 
             return {
                 id: res._id,

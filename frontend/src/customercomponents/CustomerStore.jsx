@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { getImageUrl } from '../utils/imageUrl';
 import { Icon } from "@iconify/react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useCustomerCart } from "../context/CustomerCartContext";
@@ -106,7 +107,7 @@ const CustomerStore = () => {
             location: event.venue?.name || "Unknown Location",
             price: priceRange,
             category: event.category,
-            image: event.image ? `/uploads/${event.image}` : '/assets/eventbg.jpg',
+            image: event.image ? getImageUrl(event.image) : '/assets/eventbg.jpg',
             time: `${event.startTime} - ${event.endTime}`,
             availability: (event.totalTickets || 0) - (event.ticketsSold || 0),
             products: boothCountMap[event._id] || 0, // ✅ from real API

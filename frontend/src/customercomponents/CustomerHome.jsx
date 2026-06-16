@@ -8,6 +8,7 @@ import announcementService from '../services/announcementService';
 import policyService from '../services/policyService';
 import eventsService from '../services/eventsService';
 import HomeViewFullContent from '../landingpage/HomeViewFullContent';
+import { getImageUrl } from '../utils/imageUrl';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -256,7 +257,7 @@ export default function CustomerHome() {
                             <div className={`ch-event-card-v2 ch-glass reveal stagger-${(idx % 4) + 1}`} key={evt._id || idx}>
                                 <div className="ch-v2-image-area">
                                     <img
-                                        src={evt.image ? `/uploads/${evt.image}` : '/assets/eventbg.jpg'}
+                                        src={getImageUrl(evt.image)}
                                         alt={evt.title}
                                         className="ch-v2-img"
                                         onError={(e) => {

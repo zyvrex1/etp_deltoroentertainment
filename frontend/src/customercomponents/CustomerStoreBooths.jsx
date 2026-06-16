@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getImageUrl } from '../utils/imageUrl';
 import { Icon } from "@iconify/react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import reservationService from "../services/reservationService";
@@ -46,7 +47,7 @@ const CustomerStoreBooths = () => {
             storeName: res.storeSettings?.companyName || res.user?.companyName || `${res.user?.firstName} ${res.user?.lastName}`,
             industry: res.storeSettings?.industry || res.user?.industry || "Sponsor",
             products: boothProducts.length,
-            logo: res.storeSettings?.logo ? (res.storeSettings.logo.startsWith('/') ? res.storeSettings.logo : `/uploads/${res.storeSettings.logo}`) : (res.user?.avatar ? (res.user.avatar.startsWith('/') ? res.user.avatar : `/uploads/${res.user.avatar}`) : '/assets/eTicketsPro.png'),
+            logo: getImageUrl(res.storeSettings?.logo || res.user?.avatar, '/assets/eTicketsPro.png'),
             description: res.storeSettings?.description || "there is no description"
           };
         });

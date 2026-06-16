@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getImageUrl } from '../utils/imageUrl';
 import { Icon } from "@iconify/react";
 import merchandiseService from "../services/merchandiseService";
 import orderService from "../services/orderService";
@@ -146,9 +147,7 @@ const CustomerStoreProducts = () => {
   const paginatedData = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   const getProductImage = (image) => {
-    if (!image) return "/assets/eventbg.jpg";
-    if (image.startsWith("http") || image.startsWith("data:")) return image;
-    return `${BACKEND_URL}/uploads/${image}`;
+    return getImageUrl(image, "/assets/eventbg.jpg");
   };
 
   const handleCheckout = () => {
@@ -252,7 +251,7 @@ const CustomerStoreProducts = () => {
               return (
                 <div key={product._id || product.id} className="csp-card">
                   <div className="csp-card-img-wrap">
-                     <img src={product.image || CATEGORY_DEFAULT_IMAGES[product.category?.toLowerCase()] || '/assets/eventbg.jpg'} onError={(e) => {
+                     <img src={getImageUrl(product.image, CATEGORY_DEFAULT_IMAGES[product.category?.toLowerCase()] || '/assets/eventbg.jpg')} onError={(e) => {
                     e.target.onerror = null;
                     const category = product.category?.toLowerCase();
                     e.target.src = CATEGORY_DEFAULT_IMAGES[category] || '/assets/eventbg.jpg';

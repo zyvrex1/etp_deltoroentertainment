@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
+import { getImageUrl } from "../utils/imageUrl";
 import { showDeleteConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 import usePagination from "../hooks/usePagination";
 import PaginationBar from "../components/PaginationBar";
@@ -67,8 +68,7 @@ const SponsorManageProduct = ({ eventId, boothCode, isCompleted }) => {
 
   const getProductImage = (image) => {
     if (!image) return "/assets/eventbg.jpg";
-    if (image.startsWith("http") || image.startsWith("data:") || image.startsWith("/assets/")) return image;
-    return `${BACKEND_URL}/uploads/${image}`;
+    return getImageUrl(image);
   };
 
   const updateStats = (items) => {
