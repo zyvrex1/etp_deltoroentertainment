@@ -6,6 +6,8 @@ import EditEventModal from "./Modal/EditEventModal";
 import EventRejectionModal from "./Modal/EventRejectionModal";
 import EventCancellationModal from "./Modal/EventCancellationModal";
 import AddPromoterModal from "./Modal/AddPromoterModal";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 
 import { useEventsContext } from "../hooks/useEventsContext";
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -72,8 +74,12 @@ const EventManagement = () => {
 
   const allEvents = events || [];
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
   const [activeTab, setActiveTab] = useState("all-events");
   const [expandedRow, setExpandedRow] = useState(null);
   const [promoters, setPromoters] = useState([]);
@@ -85,7 +91,7 @@ const EventManagement = () => {
   };
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    setCurrentPage(1);
+    resetPage();
     setSearchQuery("");
     setExpandedRow(null);
   };
@@ -366,18 +372,18 @@ const EventManagement = () => {
     );
   });
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  useEffect(() => {
+    setTotal({
+      total: filteredData.length,
+      totalPages: Math.ceil(filteredData.length / itemsPerPage) || 1
+    });
+  }, [filteredData.length, setTotal]);
+
+  const startIndex = (page - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(
     startIndex,
     startIndex + itemsPerPage,
   );
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
 
   const eventTabs = [
     { id: "all-events", label: "All Events", count: allEvents.length },
@@ -776,7 +782,7 @@ const EventManagement = () => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1);
+                  resetPage();
                 }}
                 className="small-body-text"
               />
@@ -786,29 +792,14 @@ const EventManagement = () => {
 
         {renderTable()}
 
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-
-            <span className="pagination-info">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
       <CreateEventModal
         isOpen={isModalOpen}

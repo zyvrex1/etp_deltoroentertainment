@@ -4,6 +4,8 @@ import { Icon } from "@iconify/react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import reservationService from "../services/reservationService";
 import merchandiseService from "../services/merchandiseService";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./CustomerStoreBooths.css";
 
 
@@ -13,7 +15,6 @@ const CustomerStoreBooths = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
 
   const { eventId, eventName } = location.state || {
     eventId: null,
@@ -62,6 +63,11 @@ const CustomerStoreBooths = () => {
   }, [eventId, user?.token]);
 
   const itemsPerPage = 8;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
 
   const filteredBooths = boothData.filter((booth) => {
     return booth.storeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -69,15 +75,15 @@ const CustomerStoreBooths = () => {
       booth.boothNumber.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  const totalPages = Math.ceil(filteredBooths.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredBooths.slice(startIndex, Math.min(startIndex + itemsPerPage, filteredBooths.length));
+  useEffect(() => {
+    setTotal({
+      total: filteredBooths.length,
+      totalPages: Math.ceil(filteredBooths.length / itemsPerPage) || 1,
+    });
+  }, [filteredBooths.length, setTotal]);
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedData = filteredBooths.slice(startIndex, Math.min(startIndex + itemsPerPage, filteredBooths.length));
 
   return (
     <div className="csb-container">
@@ -109,7 +115,7 @@ const CustomerStoreBooths = () => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1);
+                  resetPage();
                 }}
                 className="small-body-text"
               />
@@ -199,27 +205,14 @@ const CustomerStoreBooths = () => {
           )}
         </div>
 
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span className="pagination-info">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
     </div>
   );

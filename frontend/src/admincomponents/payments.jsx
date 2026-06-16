@@ -7,6 +7,8 @@ import PaymentRejectionModal from "./Modal/PaymentRejectionModal";
 import ViewTransactionModal from "./Modal/ViewTransactionModal";
 import TransactionMonitoring from "./transaction";
 import axios from "axios";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import { useAuthContext } from "../hooks/useAuthContext";
 import reservationService from "../services/reservationService";
 import payoutService from "../services/payoutService";
@@ -41,8 +43,12 @@ const formatReservationTxId = (res) => {
 const Payments = () => {
   const { user } = useAuthContext();
   const [activeTab, setActiveTab] = useState("payout-requests");
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -334,8 +340,18 @@ const Payments = () => {
     filteredData = filteredData.filter(item => item.category === statusFilter);
   }
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  useEffect(() => {
+    setTotal({
+      total: filteredData.length,
+      totalPages: Math.ceil(filteredData.length / itemsPerPage) || 1
+    });
+  }, [filteredData.length, setTotal]);
+
+  useEffect(() => {
+    resetPage();
+  }, [searchQuery, statusFilter, resetPage]);
+
+  const startIndex = (page - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
   const [expandedRow, setExpandedRow] = useState(null);
@@ -343,13 +359,9 @@ const Payments = () => {
     setExpandedRow(expandedRow === id ? null : id);
   };
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
-
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    setCurrentPage(1);
+    resetPage();
     setSearchQuery("");
     setStatusFilter(tab === "payout-requests" ? "All Status" : "All");
     setExpandedRow(null);
@@ -916,7 +928,7 @@ const Payments = () => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1);
+                  resetPage();
                 }}
                 className="small-body-text"
               />
@@ -1277,26 +1289,15 @@ const Payments = () => {
           </div>
         )}
 
-        {activeTab !== "transactions" && totalPages > 1 && (
-          <div className="pagination">
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span className="pagination-info">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
+        {activeTab !== "transactions" && (
+          <PaginationBar
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPrev={prev}
+            onNext={next}
+            onGoTo={goTo}
+          />
         )}
       </div>
 

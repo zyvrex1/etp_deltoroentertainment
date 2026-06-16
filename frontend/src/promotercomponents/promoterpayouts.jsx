@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Icon } from "@iconify/react";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./promoterpayouts.css";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -250,25 +252,29 @@ const PromoterPayouts = () => {
   }, []);
 
 
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
 
-  const totalPages = Math.ceil(sortedAndFilteredPayouts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  useEffect(() => {
+    setTotal({
+      total: sortedAndFilteredPayouts.length,
+      totalPages: Math.ceil(sortedAndFilteredPayouts.length / itemsPerPage) || 1,
+    });
+  }, [sortedAndFilteredPayouts.length, setTotal]);
+
+  const startIndex = (page - 1) * itemsPerPage;
   const paginatedData = sortedAndFilteredPayouts.slice(
     startIndex,
     startIndex + itemsPerPage
   );
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
-
   useEffect(() => {
-    setCurrentPage(1);
-  }, [statusFilter, sortFilter]);
+    resetPage();
+  }, [statusFilter, sortFilter, resetPage]);
 
   const handleViewDetails = async (payout) => {
     setSelectedPayout(payout);
@@ -845,28 +851,15 @@ const exportReport = async () => {
             </div>
 
             {/* Pagination */}
-            {!loading && totalPages > 1 && (
-              <div className="pagination">
-                <button
-                  className="pagination-btn"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-
-                <span className="pagination-info">
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                <button
-                  className="pagination-btn"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
-              </div>
+            {!loading && (
+              <PaginationBar
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                onPrev={prev}
+                onNext={next}
+                onGoTo={goTo}
+              />
             )}
           </div>
         </div>

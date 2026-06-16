@@ -4,13 +4,19 @@ import "./transaction.css";
 import ViewTransactionModal from "./Modal/ViewTransactionModal";
 import jsPDF from "jspdf";
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 
 const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", externalFilter = "all", data = null, onRefund = null }) => {
   const [internalSearchQuery, setInternalSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 7;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
   const [internalFilter, setInternalFilter] = useState("all");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const itemsPerPage = 7;
 
   const filterOptions = [
     { value: "all", label: "All Transactions" },
@@ -88,22 +94,26 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
     });
   }, [transactions, internalSearchQuery, internalFilter, isTab, externalSearchQuery, externalFilter]);
 
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  useEffect(() => {
+    setTotal({
+      total: filteredTransactions.length,
+      totalPages: Math.ceil(filteredTransactions.length / itemsPerPage) || 1
+    });
+  }, [filteredTransactions.length, setTotal]);
+
+  useEffect(() => {
+    resetPage();
+  }, [internalSearchQuery, internalFilter, externalSearchQuery, externalFilter, resetPage]);
+
+  const startIndex = (page - 1) * itemsPerPage;
   const paginatedTransactions = filteredTransactions.slice(
     startIndex,
     startIndex + itemsPerPage
   );
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
-
   const handleFilterChange = (filter) => {
     setInternalFilter(filter);
-    setCurrentPage(1);
+    resetPage();
     setIsDropdownOpen(false);
   };
 
@@ -206,7 +216,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
                   value={internalSearchQuery}
                   onChange={(e) => {
                     setInternalSearchQuery(e.target.value);
-                    setCurrentPage(1);
+                    resetPage();
                   }}
                 />
               </div>
@@ -329,29 +339,14 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
           )}
         </div>
 
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-
-            <span className="pagination-info">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
       <ViewTransactionModal
         isOpen={isModalOpen}

@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import DateRangePicker from '../utils/DateRangePicker';
 import { useAuthContext } from '../hooks/useAuthContext';
 import eventsService from '../services/eventsService';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import './CustomerBrowseEvent.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -14,9 +16,13 @@ const CustomerBrowseEvent = () => {
 
     const [allEvents, setAllEvents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState("");
     const itemsPerPage = 8;
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
 
     const [dateRange, setDateRange] = useState(() => ({
         preset: 'all',
@@ -44,7 +50,7 @@ const CustomerBrowseEvent = () => {
 
     const handleDateRangeChange = (newRange) => {
         setDateRange(newRange);
-        setCurrentPage(1);
+        resetPage();
     };
 
     const filteredEvents = allEvents.filter((event) => {
@@ -59,15 +65,15 @@ const CustomerBrowseEvent = () => {
         return matchesSearch && matchesDate;
     });
 
-    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedEvents = filteredEvents.slice(startIndex, startIndex + itemsPerPage);
+    useEffect(() => {
+        setTotal({
+            total: filteredEvents.length,
+            totalPages: Math.ceil(filteredEvents.length / itemsPerPage) || 1,
+        });
+    }, [filteredEvents.length, setTotal]);
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedEvents = filteredEvents.slice(startIndex, startIndex + itemsPerPage);
 
     const handleEventClick = (eventObj) => {
         navigate(`/customer/event-details/${eventObj._id}`, { state: { event: eventObj } });
@@ -168,7 +174,7 @@ const CustomerBrowseEvent = () => {
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
-                                    setCurrentPage(1);
+                                    resetPage();
                                 }}
                                 className="small-body-text"
                             />
@@ -262,27 +268,14 @@ const CustomerBrowseEvent = () => {
                     )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="pagination">
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
-                        <span className="pagination-info">
-                            Page {currentPage} of {totalPages}
-                        </span>
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={prev}
+                    onNext={next}
+                    onGoTo={goTo}
+                />
             </div>
             <style>{`
                 .skeleton-box {

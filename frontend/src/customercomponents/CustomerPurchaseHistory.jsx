@@ -6,6 +6,8 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import DateRangePicker from '../utils/DateRangePicker';
 import jsPDF from 'jspdf';
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from '../utils/pdfExport';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import './CustomerPurchaseHistory.css';
 import CustomerHistoryViewReceipt from './Modal/CustomerHistoryViewReceipt';
 import GiftRestoredNotice from '../components/GiftRestoredNotice';
@@ -31,7 +33,6 @@ export default function CustomerPurchaseHistory() {
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]);
     const [activeTab, setActiveTab] = useState('all');
-    const [currentPage, setCurrentPage] = useState(1);
     const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
     const [selectedReceipt, setSelectedReceipt] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -42,6 +43,11 @@ export default function CustomerPurchaseHistory() {
         end: new Date(2100, 11, 31),
     }));
     const itemsPerPage = 5;
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
 
     useEffect(() => {
         let isMounted = true;
@@ -261,25 +267,27 @@ export default function CustomerPurchaseHistory() {
 
     const handleDateRangeChange = (newRange) => {
         setDateRange(newRange);
-        setCurrentPage(1);
+        resetPage();
     };
 
     const handleSearchChange = (e) => {
         setSearchQuery(e.target.value);
-        setCurrentPage(1);
+        resetPage();
     };
 
-    const totalPages = Math.ceil(filteredPurchases.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
+    useEffect(() => {
+        setTotal({
+            total: filteredPurchases.length,
+            totalPages: Math.ceil(filteredPurchases.length / itemsPerPage) || 1,
+        });
+    }, [filteredPurchases.length, setTotal]);
+
+    const startIndex = (page - 1) * itemsPerPage;
     const paginatedPurchases = filteredPurchases.slice(startIndex, startIndex + itemsPerPage);
-
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) setCurrentPage(page);
-    };
 
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
-        setCurrentPage(1);
+        resetPage();
     };
 
     const getIconForType = (type, items = []) => {
@@ -749,19 +757,14 @@ export default function CustomerPurchaseHistory() {
                             </div>
                         ))}
 
-                        {totalPages > 1 && (
-                            <div className="history-pagination">
-                                <button className="pagination-btn" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
-                                    Previous
-                                </button>
-                                <span className="pagination-info regular-body-text">
-                                    Page {currentPage} of {totalPages}
-                                </span>
-                                <button className="pagination-btn" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
-                                    Next
-                                </button>
-                            </div>
-                        )}
+                        <PaginationBar
+                            page={page}
+                            totalPages={totalPages}
+                            total={total}
+                            onPrev={prev}
+                            onNext={next}
+                            onGoTo={goTo}
+                        />
                     </>
                 ) : (
                     <div className="no-history-state">

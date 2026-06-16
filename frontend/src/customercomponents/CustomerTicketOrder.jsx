@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useCustomerCart } from '../context/CustomerCartContext';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import './CustomerTicketOrder.css';
 import CustomerEnlargeQr from './Modal/CustomerEnlargeQr';
 import CustomerRequestRefund from './Modal/CustomerRequestRefund';
@@ -104,17 +106,26 @@ const CustomerTicketOrder = () => {
         return result;
     }, [activeTickets, searchQuery, statusFilter, sortFilter]);
 
-    const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
-    const totalPages = Math.ceil(filteredAndSortedTickets.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedTickets = filteredAndSortedTickets.slice(startIndex, startIndex + itemsPerPage);
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+    useEffect(() => {
+        setTotal({
+            total: filteredAndSortedTickets.length,
+            totalPages: Math.ceil(filteredAndSortedTickets.length / itemsPerPage) || 1,
+        });
+    }, [filteredAndSortedTickets.length, setTotal]);
+
+    useEffect(() => {
+        resetPage();
+    }, [searchQuery, statusFilter, sortFilter, resetPage]);
+
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedTickets = filteredAndSortedTickets.slice(startIndex, startIndex + itemsPerPage);
 
     return (
         <div className="customer-ticket-order-wrapper">
@@ -245,28 +256,15 @@ const CustomerTicketOrder = () => {
                     </div>
                 )}
 
-                {totalPages > 1 && !loading && (
-                    <div className="pagination">
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
-
-                        <span className="pagination-info">
-                            Page {currentPage} of {totalPages}
-                        </span>
-
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
+                {!loading && (
+                    <PaginationBar
+                        page={page}
+                        totalPages={totalPages}
+                        total={total}
+                        onPrev={prev}
+                        onNext={next}
+                        onGoTo={goTo}
+                    />
                 )}
             </div>
 

@@ -25,6 +25,8 @@ import GiftFormModal from "./Modal/GiftFormModal";
 import AssignGiftModal from "./Modal/AssignGiftModal";
 import GiftDetailModal from "./Modal/GiftDetailModal";
 import { useAuthContext } from "../hooks/useAuthContext";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import digitalgiftsService from "../services/digitalgiftsService";
 import adminService from "../services/adminService";
 import {
@@ -83,7 +85,11 @@ export default function DigitalGifts() {
     const [assignForm, setAssignForm] = useState({ userId: "", userLabel: "", giftId: "", userRole: "", userEmail: "" });
     const [copiedCode, setCopiedCode] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: ITEMS_PER_PAGE });
 
     const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
     const filterDropdownRef = useRef(null);
@@ -141,28 +147,21 @@ export default function DigitalGifts() {
         return matchFilter && matchSearch;
     }), [gifts, filter, search]);
 
-    const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+    useEffect(() => {
+        setTotal({
+            total: filtered.length,
+            totalPages: Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+        });
+    }, [filtered.length, setTotal]);
 
     const paginatedGifts = useMemo(() => {
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const startIndex = (page - 1) * ITEMS_PER_PAGE;
         return filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [filtered, currentPage]);
+    }, [filtered, page]);
 
     useEffect(() => {
-        setCurrentPage(1);
-    }, [filter, search]);
-
-    useEffect(() => {
-        if (currentPage > totalPages) {
-            setCurrentPage(totalPages);
-        }
-    }, [currentPage, totalPages]);
-
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
+        resetPage();
+    }, [filter, search, resetPage]);
 
     const handleOpenCreate = () => {
         setEditingId(null);
@@ -509,27 +508,14 @@ export default function DigitalGifts() {
                             {paginatedGifts.map((gift) => renderGiftCard(gift))}
                         </div>
 
-                        {totalPages > 1 && (
-                            <div className="dg-pagination pagination">
-                                <button
-                                    className="pagination-btn"
-                                    onClick={() => handlePageChange(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                >
-                                    Previous
-                                </button>
-                                <span className="pagination-info regular-body-text">
-                                    Page {currentPage} of {totalPages}
-                                </span>
-                                <button
-                                    className="pagination-btn"
-                                    onClick={() => handlePageChange(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        )}
+                        <PaginationBar
+                            page={page}
+                            totalPages={totalPages}
+                            total={total}
+                            onPrev={prev}
+                            onNext={next}
+                            onGoTo={goTo}
+                        />
                     </>
                 )}
             </div>

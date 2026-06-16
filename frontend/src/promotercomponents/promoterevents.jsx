@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Icon } from "@iconify/react";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./promoterevents.css";
 import PromoterCreateEventModal from "./PromoterModal/PromoterCreateEventModal.jsx";
 import PromoterEditEventModal from "./PromoterModal/PromoterEditEventModal.jsx";
@@ -58,8 +60,12 @@ const PromoterEvents = () => {
   const sortDropdownRef = useRef(null);
 
   // Pagination & Sorting state
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
   const [sortFilter, setSortFilter] = useState("Recently Added");
 
   const filterOptions = [
@@ -108,8 +114,8 @@ const PromoterEvents = () => {
 
   // Reset to page 1 when search or filter changes
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, activeFilter]);
+    resetPage();
+  }, [searchQuery, activeFilter, resetPage]);
 
   // Filter & Sort computing optimized with useMemo
   const processedEvents = useMemo(() => {
@@ -147,24 +153,29 @@ const PromoterEvents = () => {
   }, [events, user?._id, searchQuery, activeFilter, sortFilter]);
 
   // Pagination Calculations
-  const totalItems = processedEvents.length + 1; // +1 includes the static Create Card 
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const totalItems = processedEvents.length + 1;
+
+  useEffect(() => {
+    setTotal({
+      total: totalItems,
+      totalPages: Math.ceil(totalItems / itemsPerPage) || 1,
+    });
+  }, [totalItems, setTotal]);
 
   const paginatedEvents = useMemo(() => {
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    // We only take up to itemsPerPage - 1 if the create card is on this page to leave room
-    const isLastPage = currentPage === totalPages;
+    const startIdx = (page - 1) * itemsPerPage;
+    const isLastPage = page === totalPages;
     const sliceCount = isLastPage ? itemsPerPage - 1 : itemsPerPage;
 
     return processedEvents.slice(startIdx, startIdx + sliceCount);
-  }, [processedEvents, currentPage, totalPages, itemsPerPage]);
+  }, [processedEvents, page, totalPages, itemsPerPage]);
 
-  const showCreateCardOnThisPage = currentPage === totalPages;
+  const showCreateCardOnThisPage = page === totalPages;
 
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleGoTo = (p) => { goTo(p); scrollToTop(); };
+  const handlePrev = () => { prev(); scrollToTop(); };
+  const handleNext = () => { next(); scrollToTop(); };
 
   const handleDeleteEvent = async (evt) => {
     const result = await showConfirmAlert(
@@ -465,36 +476,15 @@ const PromoterEvents = () => {
         )}
 
         {/* Pagination UI */}
-        {!loading && totalPages > 1 && (
-          <div className="pe-pagination">
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              <Icon icon="mdi:chevron-left" />
-              Previous
-            </button>
-            <div className="pagination-numbers">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
-                <button
-                  key={num}
-                  className={`pagination-number ${currentPage === num ? "active" : ""}`}
-                  onClick={() => handlePageChange(num)}
-                >
-                  {num}
-                </button>
-              ))}
-            </div>
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-              <Icon icon="mdi:chevron-right" />
-            </button>
-          </div>
+        {!loading && (
+          <PaginationBar
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onGoTo={handleGoTo}
+          />
         )}
       </div>
 

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import jsPDF from "jspdf";
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "../utils/pdfExport";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./SponsorManageOrder.css";
 import SponsorViewOrder from "./SponsorModal/SponsorViewOrder";
 import orderService from "../services/orderService";
@@ -15,7 +17,6 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef(null);
 
   const [expandedRow, setExpandedRow] = useState(null);
@@ -27,6 +28,11 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   const itemsPerPage = 7;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
 
   const fetchOrders = async () => {
     try {
@@ -102,15 +108,15 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
     return matchesSearch && matchesFilter;
   });
 
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
+  useEffect(() => {
+    setTotal({
+      total: filteredOrders.length,
+      totalPages: Math.ceil(filteredOrders.length / itemsPerPage) || 1,
+    });
+  }, [filteredOrders.length, setTotal]);
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedData = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -472,7 +478,7 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1);
+                  resetPage();
                 }}
                 className="small-body-text"
               />
@@ -500,7 +506,7 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
                       onClick={() => {
                         setFilterStatus(option);
                         setIsDropdownOpen(false);
-                        setCurrentPage(1);
+                        resetPage();
                       }}
                     >
                       {option}
@@ -622,27 +628,14 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="smo-pagination">
-            <button
-              className="smo-pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span className="smo-pagination-info small-body-text">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              className="smo-pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
 
       <SponsorViewOrder

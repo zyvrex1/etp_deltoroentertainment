@@ -11,6 +11,8 @@ import {
   finalizeReport,
 } from "../utils/pdfExport";
 import { useAuthContext } from "../hooks/useAuthContext";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./promotersales.css";
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -21,13 +23,17 @@ const PromoterSales = ({ selectedEvent }) => {
   const [activeFilter, setActiveFilter] = useState("All Sales");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState(null);
   const [salesData, setSalesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const itemsPerPage = 5;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
   const filterDropdownRef = useRef(null);
 
   const toggleRow = (index) => {
@@ -187,20 +193,22 @@ const PromoterSales = ({ selectedEvent }) => {
     );
   });
 
-  const totalPages = Math.ceil(filteredSalesData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  useEffect(() => {
+    setTotal({
+      total: filteredSalesData.length,
+      totalPages: Math.ceil(filteredSalesData.length / itemsPerPage) || 1,
+    });
+  }, [filteredSalesData.length, setTotal]);
+
+  const startIndex = (page - 1) * itemsPerPage;
   const paginatedData = filteredSalesData.slice(
     startIndex,
     startIndex + itemsPerPage
   );
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
-
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
-    setCurrentPage(1);
+    resetPage();
   };
 
   // ─── Event banner helpers ─────────────────────────────────────────────────
@@ -712,29 +720,14 @@ const exportReport = async () => {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                className="pagination-btn"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </button>
-
-              <span className="pagination-info">
-                Page {currentPage} of {totalPages}
-              </span>
-
-              <button
-                className="pagination-btn"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
-            </div>
-          )}
+          <PaginationBar
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPrev={prev}
+            onNext={next}
+            onGoTo={goTo}
+          />
         </div>
       </div>
     </div>

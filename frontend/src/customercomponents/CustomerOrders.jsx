@@ -5,8 +5,8 @@ import { QRCodeCanvas } from 'qrcode.react';
 import CustomerOrderQrModal from './Modal/CustomerOrderQrModal';
 import orderService from '../services/orderService';
 import { useAuthContext } from '../hooks/useAuthContext';
-import usePagination from '../hooks/usePagination'         // ← NEW
-import PaginationBar from '../components/PaginationBar'
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import './CustomerOrders.css';
 
 const CustomerOrders = () => {
@@ -289,29 +289,14 @@ const CustomerOrders = () => {
                     )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="pagination">
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
-
-                        <span className="pagination-info">
-                            Page {currentPage} of {totalPages}
-                        </span>
-
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={prev}
+                    onNext={next}
+                    onGoTo={goTo}
+                />
             </div>
 
             <CustomerOrderQrModal

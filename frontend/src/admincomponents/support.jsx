@@ -6,6 +6,8 @@ import AssignAdmin from './Modal/AssignAdmin';
 import { useAuthContext } from '../hooks/useAuthContext';
 import concernService from '../services/concernService';
 import { io } from 'socket.io-client';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import { showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -14,6 +16,13 @@ const SupportDisputes = () => {
     const { user } = useAuthContext();
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const itemsPerPage = 7;
+    const {
+        page, totalPages, total,
+        setTotal, goTo, next, prev,
+        reset: resetPage,
+    } = usePagination({ limit: itemsPerPage });
 
     const fetchTickets = async () => {
         if (!user?.token) return;
@@ -92,7 +101,7 @@ const SupportDisputes = () => {
 
     const handleFilterChange = (filter) => {
         setActiveFilter(filter);
-        setCurrentPage(1);
+        resetPage();
         setIsDropdownOpen(false);
     };
 
@@ -115,22 +124,19 @@ const SupportDisputes = () => {
         });
     }, [tickets, searchQuery, activeFilter]);
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 7;
+    useEffect(() => {
+        setTotal({
+            total: filteredTickets.length,
+            totalPages: Math.ceil(filteredTickets.length / itemsPerPage) || 1
+        });
+    }, [filteredTickets.length, setTotal]);
 
-    const totalPages = Math.ceil(filteredTickets.length / itemsPerPage) || 1;
-    const startIndex = (currentPage - 1) * itemsPerPage;
+    const startIndex = (page - 1) * itemsPerPage;
     const paginatedTickets = filteredTickets.slice(startIndex, startIndex + itemsPerPage);
 
     const [expandedRow, setExpandedRow] = useState(null);
     const toggleRow = (id) => {
         setExpandedRow(expandedRow === id ? null : id);
-    };
-
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
     };
 
     // View State
@@ -348,7 +354,7 @@ const SupportDisputes = () => {
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
-                                    setCurrentPage(1);
+                                    resetPage();
                                 }}
                                 className="small-body-text"
                             />
@@ -477,29 +483,14 @@ const SupportDisputes = () => {
                     )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="pagination">
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </button>
-
-                        <span className="pagination-info">
-                            Page {currentPage} of {totalPages}
-                        </span>
-
-                        <button
-                            className="pagination-btn"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={prev}
+                    onNext={next}
+                    onGoTo={goTo}
+                />
             </div>
 
             <AssignAdmin

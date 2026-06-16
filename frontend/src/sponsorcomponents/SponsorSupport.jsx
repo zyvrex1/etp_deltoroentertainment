@@ -8,6 +8,8 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import concernService from '../services/concernService';
 import jsPDF from 'jspdf';
 import './SponsorSupport.css';
+import usePagination from '../hooks/usePagination';
+import PaginationBar from '../components/PaginationBar';
 import { 
     loadLogo, 
     addReportHeader, 
@@ -557,6 +559,28 @@ const exportDocumentToPDF = async (doc) => {
         return matchesSearch && matchesStatus;
     });
 
+    const itemsPerPage = 7;
+    const {
+        page,
+        totalPages,
+        total,
+        setTotal,
+        onPrev,
+        onNext,
+        onGoTo,
+        setPage,
+    } = usePagination({ limit: itemsPerPage });
+
+    useEffect(() => {
+        setTotal(filteredTickets.length);
+    }, [filteredTickets.length]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, selectedStatus]);
+
+    const paginatedTickets = filteredTickets.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
     if (selectedConcern) {
         return (
             <SponsorViewConcern 
@@ -606,7 +630,7 @@ const exportDocumentToPDF = async (doc) => {
                             <p>No concerns found.</p>
                         </div>
                     ) : (
-                        filteredTickets.map(ticket => (
+                        paginatedTickets.map(ticket => (
                             <div key={ticket._id} className="ticket-card">
                                 <div className="ticket-header">
                                     <span className="ticket-id">#{ticket._id.slice(-6).toUpperCase()}</span>
@@ -635,6 +659,14 @@ const exportDocumentToPDF = async (doc) => {
                         ))
                     )}
                 </div>
+                <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={onPrev}
+                    onNext={onNext}
+                    onGoTo={onGoTo}
+                />
             </div>
         </div>
     );

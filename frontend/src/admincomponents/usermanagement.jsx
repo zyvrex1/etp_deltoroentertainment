@@ -5,6 +5,8 @@ import CreateUserModal from "./Modal/CreateUserModal";
 import ViewUserModal from "./Modal/ViewUserModal";
 import EditUserModal from "./Modal/EditUserModal";
 import { useAuthContext } from "../hooks/useAuthContext";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import adminService from "../services/adminService";
 
 const UserManagement = () => {
@@ -18,8 +20,12 @@ const UserManagement = () => {
   const [selectedUserType, setSelectedUserType] = useState("");
   const [activeTab, setActiveTab] = useState("all-users");
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
   const [expandedRow, setExpandedRow] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const topRef = useRef(null);
@@ -169,26 +175,29 @@ const UserManagement = () => {
     );
   });
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  useEffect(() => {
+    setTotal({
+      total: filteredData.length,
+      totalPages: Math.ceil(filteredData.length / itemsPerPage) || 1
+    });
+  }, [filteredData.length, setTotal]);
+
+  useEffect(() => {
+    setExpandedRow(null);
+    if (topRef.current) {
+      topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [page]);
+
+  const startIndex = (page - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(
     startIndex,
     startIndex + itemsPerPage,
   );
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      setExpandedRow(null);
-      if (topRef.current) {
-        topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-  };
-
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    setCurrentPage(1);
+    resetPage();
     setSearchQuery("");
     setExpandedRow(null);
   };
@@ -802,7 +811,7 @@ const UserManagement = () => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1); // ✅ IMPORTANT (same as EventManagement)
+                  resetPage();
                 }}
                 className="small-body-text"
               />
@@ -814,29 +823,14 @@ const UserManagement = () => {
         {renderTable()}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-
-            <span className="pagination-info">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
       <CreateUserModal
         isOpen={isUserModalOpen}

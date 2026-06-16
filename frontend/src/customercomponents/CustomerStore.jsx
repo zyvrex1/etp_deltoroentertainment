@@ -4,6 +4,8 @@ import { Icon } from "@iconify/react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useCustomerCart } from "../context/CustomerCartContext";
 import eventsService from "../services/eventsService";
+import usePagination from "../hooks/usePagination";
+import PaginationBar from "../components/PaginationBar";
 import "./CustomerStore.css";
 
 
@@ -15,11 +17,15 @@ const CustomerStore = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [eventData, setEventData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const itemsPerPage = 8;
+  const {
+    page, totalPages, total,
+    setTotal, goTo, next, prev,
+    reset: resetPage,
+  } = usePagination({ limit: itemsPerPage });
   const dropdownRef = useRef(null);
 
   const getStatusClass = (status) => {
@@ -139,15 +145,15 @@ const CustomerStore = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredEvents.slice(startIndex, Math.min(startIndex + itemsPerPage, filteredEvents.length));
+  useEffect(() => {
+    setTotal({
+      total: filteredEvents.length,
+      totalPages: Math.ceil(filteredEvents.length / itemsPerPage) || 1,
+    });
+  }, [filteredEvents.length, setTotal]);
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedData = filteredEvents.slice(startIndex, Math.min(startIndex + itemsPerPage, filteredEvents.length));
 
   return (
     <div className="customer-store-container">
@@ -172,7 +178,7 @@ const CustomerStore = () => {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1);
+                  resetPage();
                 }}
                 className="small-body-text cs-search-input"
               />
@@ -201,7 +207,7 @@ const CustomerStore = () => {
                       onClick={() => {
                         setStatusFilter(option);
                         setIsDropdownOpen(false);
-                        setCurrentPage(1);
+                        resetPage();
                       }}
                     >
                       {option}
@@ -288,27 +294,14 @@ const CustomerStore = () => {
           )}
         </div>
 
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span className="pagination-info">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={goTo}
+        />
       </div>
     </div>
   );
