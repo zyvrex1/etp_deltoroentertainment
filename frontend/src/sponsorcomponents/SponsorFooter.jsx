@@ -1,8 +1,35 @@
 import { Icon } from "@iconify/react";
 import './SponsorFooter.css';
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import policyService from '../services/policyService';
+import HomeViewFullContent from '../landingpage/HomeViewFullContent';
+
 
 export default function SponsorFooter() {
+
+    
+ const [modalData, setModalData] = useState(null);
+
+  const openPolicyModal = async (keyword) => {
+        try {
+            const policies = await policyService.getPolicies();
+            const match = policies.find(p =>
+                p.title.toLowerCase().includes(keyword.toLowerCase())
+            );
+            if (match) {
+                setModalData({
+                    ...match,
+                    date: new Date(match.updatedAt || match.date).toLocaleDateString("en-US", {
+                        month: "short", day: "numeric", year: "numeric"
+                    }),
+                    icon: "mdi:file-document-outline"
+                });
+            }
+        } catch (err) {
+            console.error("Error fetching policy:", err);
+        }
+    };
     return (
         <footer className="sf-footer" role="contentinfo">
             <div className="sf-footer-container">
@@ -49,17 +76,22 @@ export default function SponsorFooter() {
                     <nav className="sf-footer-col" aria-label="Sponsor navigation">
                         <h4>Manage</h4>
                         <NavLink to="/sponsor/sponsor-events">Events</NavLink>
-                        <NavLink to="/sponsor/my-booths">My Booths</NavLink>
-                        <NavLink to="/sponsor/sponsor-history">History</NavLink>
-                        <NavLink to="/sponsor/sponsor-analytics">Analytics</NavLink>
+                        <NavLink to="/sponsor/sponsor-my-booths">My Booths</NavLink>
+                        <NavLink to="/sponsor/sponsor-history">Purchase History</NavLink>
+                        <NavLink to="/sponsor/store">Store</NavLink>
                     </nav>
 
                     <nav className="sf-footer-col" aria-label="Support links">
                         <h4>Support</h4>
-                        <NavLink to="/sponsor/sponsor-support">Help Center</NavLink>
-                        <NavLink to="/sponsor/sponsor-support">Contact Support</NavLink>
-                        <NavLink to="/sponsor/sponsor-settings">Settings</NavLink>
-                        <NavLink to="/sponsor/sponsor-settings">Privacy</NavLink>
+                        <NavLink to="/sponsor/support" state={{ tab: 'Help Center' }}>Help Center</NavLink>
+                        <NavLink to="/sponsor/support">Contact Support</NavLink>
+                        <NavLink to="/sponsor/settings">Settings</NavLink>
+                        <button className="ch-footer-link-btn" onClick={() => openPolicyModal('refund')}>
+                            Refund Policy
+                        </button>
+                        <button className="ch-footer-link-btn" onClick={() => openPolicyModal('privacy')}>
+                            Privacy Policy
+                        </button>
                     </nav>
 
                     <div className="sf-footer-col">
@@ -83,6 +115,12 @@ export default function SponsorFooter() {
                     <p>© 2026 Deltoro Entertainment. All rights reserved. Sponsor Portal</p>
                 </div>
             </div>
+        <HomeViewFullContent
+                isOpen={!!modalData}
+                onClose={() => setModalData(null)}
+                item={modalData}
+                type="policy"
+            />
         </footer>
     );
 }

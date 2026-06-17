@@ -1,8 +1,33 @@
 import { Icon } from "@iconify/react";
 import './CustomerFooter.css';
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import policyService from '../services/policyService';
+import HomeViewFullContent from '../landingpage/HomeViewFullContent';
 
 export default function CustomerFooter() {
+    const [modalData, setModalData] = useState(null);
+
+    const openPolicyModal = async (keyword) => {
+        try {
+            const policies = await policyService.getPolicies();
+            const match = policies.find(p =>
+                p.title.toLowerCase().includes(keyword.toLowerCase())
+            );
+            if (match) {
+                setModalData({
+                    ...match,
+                    date: new Date(match.updatedAt || match.date).toLocaleDateString("en-US", {
+                        month: "short", day: "numeric", year: "numeric"
+                    }),
+                    icon: "mdi:file-document-outline"
+                });
+            }
+        } catch (err) {
+            console.error("Error fetching policy:", err);
+        }
+    };
+
     return (
         <footer className="ch-footer" role="contentinfo">
             <div className="ch-footer-container">
@@ -47,19 +72,24 @@ export default function CustomerFooter() {
                     </div>
 
                     <nav className="ch-footer-col" aria-label="Quick links">
-                        <h4>Discover</h4>
-                        <NavLink to="/customer/browse-events">Concerts</NavLink>
-                        <NavLink to="/customer/browse-events">Sports</NavLink>
-                        <NavLink to="/customer/browse-events">Theater</NavLink>
-                        <NavLink to="/customer/browse-events">Festivals</NavLink>
+                        <h4>Manage</h4>
+                        <NavLink to="/customer/browse-events">Events</NavLink>
+                        <NavLink to="/customer/my-ticketsorder">My Seats</NavLink>
+                        <NavLink to="/customer/history">Purchase History</NavLink>
+                        <NavLink to="/customer/store">Store</NavLink>
                     </nav>
 
                     <nav className="ch-footer-col" aria-label="Support links">
                         <h4>Support</h4>
-                        <NavLink to="/customer/support">Help Center</NavLink>
-                        <NavLink to="/customer/support">Contact Us</NavLink>
-                        <NavLink to="/customer/settings">Refund Policy</NavLink>
-                        <NavLink to="/customer/settings">Privacy Policy</NavLink>
+                        <NavLink to="/customer/support" state={{ tab: 'Help Center' }}>Help Center</NavLink>
+                        <NavLink to="/customer/support">Contact Support</NavLink>
+                        <NavLink to="/customer/settings">Settings</NavLink>
+                        <button className="ch-footer-link-btn" onClick={() => openPolicyModal('refund')}>
+                            Refund Policy
+                        </button>
+                        <button className="ch-footer-link-btn" onClick={() => openPolicyModal('privacy')}>
+                            Privacy Policy
+                        </button>
                     </nav>
 
                     <div className="ch-footer-col">
@@ -83,6 +113,12 @@ export default function CustomerFooter() {
                     <p>© 2026 Deltoro Entertainment. All rights reserved.</p>
                 </div>
             </div>
+            <HomeViewFullContent
+                isOpen={!!modalData}
+                onClose={() => setModalData(null)}
+                item={modalData}
+                type="policy"
+            />
         </footer>
     );
 }
