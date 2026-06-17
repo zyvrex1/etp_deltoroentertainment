@@ -557,3 +557,11 @@
 .pvc-hint{
     color: var(--color-black-secondary);
 }
+
+.pvc-file-size{
+    color: var(--color-black-tertiary);
+}
+
+.pvc-att-label{
+    color: var(--color-black-secondary);
+}

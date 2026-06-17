@@ -3,6 +3,8 @@ import { Icon } from "@iconify/react";
 import "./AssignAdmin.css";
 import { useAuthContext } from "../../hooks/useAuthContext";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 const AssignAdmin = ({ isOpen, onClose, onAssign, ticket }) => {
   const { user: currentUser } = useAuthContext();
   const [admins, setAdmins] = useState([]);
@@ -14,21 +16,33 @@ const AssignAdmin = ({ isOpen, onClose, onAssign, ticket }) => {
       if (!currentUser?.token) return;
       setLoading(true);
       try {
-        const response = await fetch("/api/admin/users", {
-          headers: {
-            "Authorization": `Bearer ${currentUser.token}`,
-          },
-        });
-        const json = await response.json();
-        if (response.ok) {
-          // Filter for admins and superadmins
-          const adminUsers = json.filter(u => u.role === "admin" || u.role === "superadmin");
-          setAdmins(adminUsers);
-          
-          if (adminUsers.length > 0) {
-            setSelectedAdmin(prev => prev || adminUsers[0]._id);
-          }
-        }
+      const response = await fetch(`${BACKEND_URL}/api/admin/users?role=admins`, {
+    headers: {
+        "Authorization": `Bearer ${currentUser.token}`,
+    },
+});
+const json = await response.json();
+if (response.ok) {
+    const users = json.data || [];
+
+    // Add yourself if not already in the list
+    const alreadyIncluded = users.some(u => u._id === currentUser._id);
+    const isSelf = ['admin', 'superadmin'].includes(currentUser.role);
+    const finalList = alreadyIncluded || !isSelf
+        ? users
+        : [{ 
+            _id: currentUser._id, 
+            firstName: currentUser.firstName, 
+            lastName: currentUser.lastName, 
+            role: currentUser.role 
+          }, ...users];
+
+    setAdmins(finalList);
+
+    if (finalList.length > 0) {
+        setSelectedAdmin(prev => prev || finalList[0]._id);
+    }
+}
       } catch (err) {
         console.error("Error fetching admins:", err);
       } finally {

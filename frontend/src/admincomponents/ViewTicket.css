@@ -56,23 +56,6 @@
 
     /* Badges */
     /* Priority Badges & Dropdowns */
-    .vt-badge-low {
-        background-color: var(--color-bg-light);
-        color: var(--color-black-secondary);
-        border: 1px solid var(--color-black-quaternary);
-    }
-
-    .vt-badge-medium {
-        background-color: var(--color-yellow-quaternary);
-        color: var(--color-yellow-primary);
-        border: 1px solid #faecd8;
-    }
-
-    .vt-badge-high {
-        background-color: var(--color-red-quaternary);
-        color: var(--color-red-primary);
-        border: 1px solid var(--color-red-tertiary);
-    }
 
     .vt-select-priority {
         appearance: none;
@@ -93,7 +76,23 @@
         display: inline-flex;
         align-items: center;
         transition: opacity 0.2s;
+
+       
     }
+     .vt-badge-medium{
+            color: var(--color-yellow-primary);
+            background-color: var(--color-yellow-tertiary);
+        }
+
+          .vt-badge-low{
+            color: var(--color-red-primary);
+            background-color: var(--color-red-tertiary);
+        }
+
+          .vt-badge-high{
+            color: var(--color-red-primary);
+            background-color: var(--color-red-tertiary);
+        }
 
     .vt-select-priority:hover {
         opacity: 0.8;
@@ -294,6 +293,26 @@
         display: inline-flex;
         align-items: center;
         transition: opacity 0.2s;
+
+       
+    }
+
+    .vt-badge-open{
+        background-color: var(--color-red-quaternary);
+        color: var(--color-red-primary);
+        border: 1px solid var(--color-red-tertiary);
+    }
+
+    .vt-badge-in-progress{
+        background-color: var(--color-yellow-quaternary);
+        color: var(--color-yellow-primary);
+        border: 1px solid var(--color-yellow-tertiary);
+    }
+
+    .vt-badge-resolved{
+        background-color: var(--color-green-quaternary);
+        color: var(--color-green-primary);
+        border: 1px solid var(--color-green-tertiary);
     }
 
     .vt-select-status:hover:not(:disabled) {

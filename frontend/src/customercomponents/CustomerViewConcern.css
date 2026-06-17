@@ -559,3 +559,11 @@
 .cvc-hint{
     color: var(--color-black-secondary);
 }
+
+.cvc-file-size{
+    color: var(--color-black-tertiary);
+}
+
+.cvc-att-label{
+    color: var(--color-black-secondary);
+}

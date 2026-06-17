@@ -48,16 +48,15 @@ export default function PromoterSupport() {
     });
 
     const itemsPerPage = 7;
-    const {
-        page,
-        totalPages,
-        total,
-        setTotal,
-        onPrev,
-        onNext,
-        onGoTo,
-        setPage,
-    } = usePagination({ limit: itemsPerPage });
+  const {
+    page,
+    totalPages,
+    total,
+    setTotal,
+    prev,
+    next,
+    goTo,
+} = usePagination({ limit: itemsPerPage });
 
     const fetchPolicies = async () => {
         try {
@@ -290,9 +289,9 @@ export default function PromoterSupport() {
         setSelectedConcern(null);
     };
 
-    useEffect(() => {
-        setPage(1);
-    }, [searchQuery, selectedStatus]);
+  useEffect(() => {
+    goTo(1);
+}, [searchQuery, selectedStatus]);
 
     const paginatedTickets = concerns;
 
@@ -393,14 +392,14 @@ export default function PromoterSupport() {
                         ))
                     )}
                 </div>
-                <PaginationBar
-                    page={page}
-                    totalPages={totalPages}
-                    total={total}
-                    onPrev={onPrev}
-                    onNext={onNext}
-                    onGoTo={onGoTo}
-                />
+              <PaginationBar
+    page={page}
+    totalPages={totalPages}
+    total={total}
+    onPrev={prev}
+    onNext={next}
+    onGoTo={goTo}
+/>
             </div>
         </div>
     );

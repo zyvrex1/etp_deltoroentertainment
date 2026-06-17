@@ -571,3 +571,11 @@
 .svc-hint{
     color: var(--color-black-secondary);
 }
+
+.svc-file-size{
+    color: var(--color-black-tertiary);
+}
+
+.svc-att-label{
+    color: var(--color-black-secondary);
+}

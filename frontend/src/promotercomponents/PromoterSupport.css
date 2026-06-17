@@ -813,3 +813,31 @@
     height: 32px;
     border-radius: 6px;
 }
+
+
+.file-preview-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--color-bg-light);
+    border: 1px solid var(--color-black-quaternary);
+    border-radius: 8px;
+
+    button {
+        border: none;
+        background: none;
+        color: var(--color-red-primary);
+        font-weight: 600;
+         padding: 0;
+    }
+
+    .truncate-text{
+        color: var(--color-black-secondary);
+    }
+
+    svg{
+        color: var(--color-black-secondary);
+    }
+}
