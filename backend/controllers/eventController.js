@@ -2072,7 +2072,7 @@ const syncBoothStatus = async (req, res) => {
         } else if (type === "seat") {
           const res = reservations.find(
             (r) =>
-              r.type === 'seat' && (
+              ['seat', 'general-fee', 'mixed-ticket'].includes(r.type) && (
                 (r.seatIds && r.seatIds.includes(idStr)) ||
                 (r.seatLabels && (r.seatLabels.includes(item.label) || r.seatLabels.includes(item.code)))
               )
@@ -2117,6 +2117,88 @@ const syncBoothStatus = async (req, res) => {
           }
         }
       });
+    }
+
+    // 3.5. Sync seatMap elements (legacy booths) and sections (legacy seats)
+    if (event.seatMap) {
+      if (Array.isArray(event.seatMap.elements)) {
+        event.seatMap.elements.forEach((element, index) => {
+          const type = (element.type || "").toLowerCase();
+          const idStr = (element._id || element.id || "").toString();
+
+          if (type === "booth") {
+            const res = reservations.find(
+              (r) =>
+                r.type === 'booth' && (
+                  (r.boothId && r.boothId.toString() === idStr) ||
+                  r.boothCode === element.code ||
+                  r.boothCode === element.label
+                )
+            );
+            const isReserved = !!res;
+            const buyerName = res && res.user ? res.user.companyName || `${res.user.firstName} ${res.user.lastName}` : "";
+            const buyerEmail = res && res.user ? res.user.email : res?.billingAddress?.email || "";
+            const buyerPO = res ? res.poNumber || "" : "";
+
+            if (isReserved) {
+              if (element.status !== "sold" || element.reservedBy !== buyerName || element.reservedByEmail !== buyerEmail) {
+                event.seatMap.elements[index].status = "sold";
+                event.seatMap.elements[index].reservedBy = buyerName;
+                event.seatMap.elements[index].reservedByEmail = buyerEmail;
+                event.seatMap.elements[index].reservedByPO = buyerPO;
+                changed = true;
+                event.markModified("seatMap");
+              }
+            } else if (element.status !== "available") {
+              event.seatMap.elements[index].status = "available";
+              event.seatMap.elements[index].reservedBy = "";
+              event.seatMap.elements[index].reservedByEmail = "";
+              event.seatMap.elements[index].reservedByPO = "";
+              changed = true;
+              event.markModified("seatMap");
+            }
+          }
+        });
+      }
+
+      if (Array.isArray(event.seatMap.sections)) {
+        event.seatMap.sections.forEach((section, sIndex) => {
+          if (Array.isArray(section.seats)) {
+            section.seats.forEach((seat, seatIndex) => {
+              const idStr = (seat._id || seat.id || "").toString();
+              const res = reservations.find(
+                (r) =>
+                  ['seat', 'general-fee', 'mixed-ticket'].includes(r.type) && (
+                    (r.seatIds && r.seatIds.includes(idStr)) ||
+                    (r.seatLabels && (r.seatLabels.includes(seat.label) || r.seatLabels.includes(seat.code)))
+                  )
+              );
+              const isReserved = !!res;
+              const buyerName = res && res.user ? res.user.companyName || `${res.user.firstName} ${res.user.lastName}` : "";
+              const buyerEmail = res && res.user ? res.user.email : res?.billingAddress?.email || "";
+              const buyerPO = res ? res.poNumber || "" : "";
+
+              if (isReserved) {
+                if (seat.status !== "sold" || seat.reservedBy !== buyerName || seat.reservedByEmail !== buyerEmail) {
+                  event.seatMap.sections[sIndex].seats[seatIndex].status = "sold";
+                  event.seatMap.sections[sIndex].seats[seatIndex].reservedBy = buyerName;
+                  event.seatMap.sections[sIndex].seats[seatIndex].reservedByEmail = buyerEmail;
+                  event.seatMap.sections[sIndex].seats[seatIndex].reservedByPO = buyerPO;
+                  changed = true;
+                  event.markModified("seatMap");
+                }
+              } else if (seat.status === "sold" && !seat.ticketId) {
+                event.seatMap.sections[sIndex].seats[seatIndex].status = "available";
+                event.seatMap.sections[sIndex].seats[seatIndex].reservedBy = "";
+                event.seatMap.sections[sIndex].seats[seatIndex].reservedByEmail = "";
+                event.seatMap.sections[sIndex].seats[seatIndex].reservedByPO = "";
+                changed = true;
+                event.markModified("seatMap");
+              }
+            });
+          }
+        });
+      }
     }
 
     // 4. Recalculate quantitySold for price levels

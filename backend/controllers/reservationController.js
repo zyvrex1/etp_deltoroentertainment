@@ -891,7 +891,26 @@ const expireOldReservations = async () => {
                             changed = true;
                         }
                     }
-                } else if (reservation.type === 'seat') {
+
+                    if (event.seatMap && Array.isArray(event.seatMap.elements)) {
+                        const identifier = (reservation.boothId || "").toString();
+                        const elementIndex = event.seatMap.elements.findIndex(item =>
+                            (item._id?.toString() === identifier ||
+                                item.id?.toString() === identifier ||
+                                item.code === reservation.boothCode ||
+                                item.label === reservation.boothCode) &&
+                            (item.type || "").toLowerCase() === 'booth'
+                        );
+                        if (elementIndex !== -1) {
+                            event.seatMap.elements[elementIndex].status = "available";
+                            event.seatMap.elements[elementIndex].reservedBy = "";
+                            event.seatMap.elements[elementIndex].reservedByEmail = "";
+                            event.seatMap.elements[elementIndex].reservedByPO = "";
+                            event.markModified('seatMap');
+                            changed = true;
+                        }
+                    }
+                } else if (reservation.type === 'seat' || reservation.type === 'general-fee' || reservation.type === 'mixed-ticket') {
                     const seatIds = reservation.seatIds || [];
                     const seatLabels = reservation.seatLabels || [];
 
@@ -900,6 +919,20 @@ const expireOldReservations = async () => {
                     if (saleTotal > 0) {
                         event.seatRevenue = Math.max(0, (event.seatRevenue || 0) - saleTotal);
                     }
+
+                    // Process GA/General Fee ticket types
+                    const gaSeatIds = seatIds.filter(sid => sid.startsWith("GA-"));
+                    gaSeatIds.forEach(sid => {
+                        const parts = sid.split('-');
+                        const catId = parts[1];
+                        if (catId) {
+                            const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === catId);
+                            if (plIndex !== -1) {
+                                event.priceLevels[plIndex].quantitySold = Math.max(0, event.priceLevels[plIndex].quantitySold - 1);
+                                changed = true;
+                            }
+                        }
+                    });
 
                     if (event.layoutData && event.layoutData.items) {
                         event.layoutData.items.forEach((item, index) => {
@@ -928,6 +961,35 @@ const expireOldReservations = async () => {
                             }
                         });
                         if (changed) event.markModified('layoutData');
+                    }
+
+                    if (event.seatMap && Array.isArray(event.seatMap.sections)) {
+                        event.seatMap.sections.forEach((section, sIndex) => {
+                            if (Array.isArray(section.seats)) {
+                                section.seats.forEach((seat, seatIndex) => {
+                                    const idStr = (seat._id || seat.id || "").toString();
+                                    const isThisSeat = seatIds.includes(idStr) || seatLabels.includes(seat.label) || seatLabels.includes(seat.code);
+
+                                    if (isThisSeat) {
+                                        event.seatMap.sections[sIndex].seats[seatIndex].status = "available";
+                                        event.seatMap.sections[sIndex].seats[seatIndex].reservedBy = "";
+                                        event.seatMap.sections[sIndex].seats[seatIndex].reservedByEmail = "";
+                                        event.seatMap.sections[sIndex].seats[seatIndex].reservedByPO = "";
+                                        event.seatMap.sections[sIndex].seats[seatIndex].ticketId = "";
+
+                                        const priceLevelId = seat.priceLevelId;
+                                        if (priceLevelId && priceLevelId !== "none") {
+                                            const plIndex = event.priceLevels.findIndex(pl => pl._id.toString() === priceLevelId.toString());
+                                            if (plIndex !== -1) {
+                                                event.priceLevels[plIndex].quantitySold = Math.max(0, event.priceLevels[plIndex].quantitySold - 1);
+                                            }
+                                        }
+                                        event.markModified('seatMap');
+                                        changed = true;
+                                    }
+                                });
+                            }
+                        });
                     }
                 }
 

@@ -51,7 +51,7 @@ const reservationSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'confirmed', 'cancelled', 'rejected', 'refunded'],
+        enum: ['pending', 'confirmed', 'cancelled', 'rejected', 'refunded', 'expired'],
         default: 'confirmed' // Defaulting to confirmed for the sample payment flow
     },
     paymentMethod: {
