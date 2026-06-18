@@ -47,7 +47,7 @@ const PromoterEditEventModal = ({ isOpen, onClose, event }) => {
         booths: [],
         assignedPromoter: null,
     });
-    const [promoters, setPromoters] = useState([]);
+    // const [promoters, setPromoters] = useState([]);
 
     // Sync data when event prop changes
     useEffect(() => {
@@ -79,23 +79,23 @@ const PromoterEditEventModal = ({ isOpen, onClose, event }) => {
         }
     }, [event, today]);
 
-    useEffect(() => {
-        if (!user?.token) return;
-        const fetchPromoters = async () => {
-            try {
-                const response = await fetch('/api/admin/users', {
-                    headers: { Authorization: `Bearer ${user.token}` }
-                });
-                const json = await response.json();
-                if (response.ok) {
-                    setPromoters(json.data ? json.data.filter(u => u.role === 'promoter') : json.filter(u => u.role === 'promoter'));
-                }
-            } catch (err) {
-                console.error("Error fetching promoters:", err);
-            }
-        };
-        fetchPromoters();
-    }, [user]);
+    // useEffect(() => {
+    //     if (!user?.token) return;
+    //     const fetchPromoters = async () => {
+    //         try {
+    //             const response = await fetch('/api/admin/users', {
+    //                 headers: { Authorization: `Bearer ${user.token}` }
+    //             });
+    //             const json = await response.json();
+    //             if (response.ok) {
+    //                 setPromoters(json.data ? json.data.filter(u => u.role === 'promoter') : json.filter(u => u.role === 'promoter'));
+    //             }
+    //         } catch (err) {
+    //             console.error("Error fetching promoters:", err);
+    //         }
+    //     };
+    //     fetchPromoters();
+    // }, [user]);
 
     // 1. Handle Drag Events (Prevent default to allow drop)
     const handleImageDrag = (e) => {
@@ -229,10 +229,19 @@ const PromoterEditEventModal = ({ isOpen, onClose, event }) => {
 
     if (!isOpen) return null;
 
-    const isReadOnly =
-        event?.status === "cancelled" ||
-        event?.status === "completed" ||
-        (event?.status === "rejected" && (user?.role === "admin" || user?.role === "superadmin"));
+    // const isReadOnly =
+    //     event?.status === "cancelled" ||
+    //     event?.status === "completed" ||
+    //     (event?.status === "rejected" && (user?.role === "admin" || user?.role === "superadmin"));
+
+    const creatorId = event?.createdBy?._id || event?.createdBy;
+const isOwner = String(creatorId) === String(user?._id);
+
+const isReadOnly =
+    !isOwner ||
+    event?.status === "cancelled" ||
+    event?.status === "completed" ||
+    event?.status === "rejected";
 
     return (
         <div className="general-modal-overlay">
