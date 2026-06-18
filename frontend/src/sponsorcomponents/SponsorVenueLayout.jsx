@@ -244,11 +244,14 @@ const SponsorVenueLayout = () => {
                     if (ld.backgroundImage) {
                         setBgOpacity(ld.bgOpacity ?? 0.4);
                         const img = new window.Image();
-                        img.src = ld.backgroundImage;
+                        img.src = getImageUrl(ld.backgroundImage);   // ← wrap with getImageUrl
                         img.onload = () => {
                             setBgKonvaImage(img);
                             setBgWidth(ld.bgWidth || cw);
                             setBgHeight(ld.bgHeight || ch);
+                        };
+                        img.onerror = () => {                         // ← optional: silent fallback
+                            setBgKonvaImage(null);
                         };
                     } else {
                         setBgKonvaImage(null);

@@ -279,7 +279,8 @@
 
         .empty-state {
             padding: 60px;
-            text-align: left;
+            grid-column: 1 / -1; 
+            text-align: center; 
             color: var(--color-black-tertiary);
             background: var(--color-white-primary);
             border-radius: 12px;

@@ -290,9 +290,9 @@ export default function SponsorHome() {
                                     </div>
 
                                     <div className="sh-v2-footer">
-                                        <NavLink to="/sponsor/sponsor-events" className="sh-v2-btn">
-                                            View Details
-                                        </NavLink>
+                                       <NavLink to={`/sponsor/sponsor-event/${evt._id}`} className="sh-v2-btn">
+    View Details
+</NavLink>
                                     </div>
                                 </div>
                             </div>

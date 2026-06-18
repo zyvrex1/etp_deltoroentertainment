@@ -38,6 +38,7 @@ export const SponsorCartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
     const [isInitialized, setIsInitialized] = useState(false);
     const hasHealedRef = useRef(false);
+const socketRef = useRef(null);
 
     // Explicitly save to storage and backend
     const saveCart = (newItems, currentUser = user) => {
@@ -156,30 +157,48 @@ export const SponsorCartProvider = ({ children }) => {
     }, [user]);
 
     // Listen to WebSocket for cross-device/browser sync
-    useEffect(() => {
-        if (!user) return;
+  useEffect(() => {
+    if (!user) {
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+            socketRef.current = null;
+        }
+        return;
+    }
 
-        const socket = io(import.meta.env.VITE_BACKEND_URL, {
-            withCredentials: true,
-            transports: ['websocket', 'polling']
-        });
+    if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+    }
 
-        socket.on('cartUpdate', (data) => {
-            if (data.userId && String(data.userId) === String(user._id)) {
-                setCartItems(prev => {
-                    const newValue = data.cart || [];
-                    const prevIds = prev.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
-                    const newIds = newValue.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
-                    if (prevIds !== newIds || prev.length !== newValue.length) {
-                        return newValue;
-                    }
-                    return prev;
-                });
-            }
-        });
+   const socket = io(import.meta.env.VITE_BACKEND_URL, {
+    withCredentials: true,
+    transports: ['polling', 'websocket'],  // polling first, upgrade later
+    upgrade: false,                         // disables the upgrade that causes the warning
+    reconnectionAttempts: 3,
+});
 
-        return () => socket.disconnect();
-    }, [user]);
+    socketRef.current = socket;
+
+    socket.on('cartUpdate', (data) => {
+        if (data.userId && String(data.userId) === String(user._id)) {
+            setCartItems(prev => {
+                const newValue = data.cart || [];
+                const prevIds = prev.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
+                const newIds = newValue.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
+                if (prevIds !== newIds || prev.length !== newValue.length) {
+                    return newValue;
+                }
+                return prev;
+            });
+        }
+    });
+
+    return () => {
+        socket.disconnect();
+        socketRef.current = null;
+    };
+}, [user]);
 
     const addToCart = (item) => {
         if (!item || !item.booth) return;
