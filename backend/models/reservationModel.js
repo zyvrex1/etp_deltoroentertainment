@@ -82,7 +82,13 @@ const reservationSchema = new mongoose.Schema({
         companyName: String,
         industry: String,
         description: String,
-        logo: String
+        logo: String,
+        paymentMethods: [{
+            provider: String,
+            accountName: String,
+            accountNumber: String,
+            qrCodeUrl: String
+        }]
     },
 
     // Check-in tracking (set when QR code is scanned)

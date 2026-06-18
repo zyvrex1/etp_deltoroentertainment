@@ -1,6 +1,6 @@
 import "./Dashboard.css";
 import { Icon } from "@iconify/react";
-import CreateEventModal from './Modal/CreateEventModal';
+// import CreateEventModal from './Modal/CreateEventModal';
 import ViewReportModal from './Modal/ViewReportModal';
 import AddUserModal from './Modal/CreateUserModal';
 import ViewNotif from './Modal/ViewNotif';

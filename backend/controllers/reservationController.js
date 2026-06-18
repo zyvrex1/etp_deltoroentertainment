@@ -306,7 +306,7 @@ const getEventBoothReservations = async (req, res) => {
             type: 'booth',
             status: 'confirmed'
         })
-            .populate('user', 'firstName lastName email companyName phone avatar industry description logo')
+            .populate('user', 'firstName lastName email companyName phone avatar industry description logo paymentMethods')
             .sort({ createdAt: -1 });
 
         res.status(200).json(reservations);
@@ -318,7 +318,7 @@ const getEventBoothReservations = async (req, res) => {
 
 const updateStoreSettings = async (req, res) => {
     const { id } = req.params;
-    const { companyName, industry, description } = req.body;
+    const { companyName, industry, description, paymentMethods } = req.body;
 
     try {
         const reservation = await Reservation.findById(id);
@@ -340,6 +340,14 @@ const updateStoreSettings = async (req, res) => {
         if (companyName !== undefined) reservation.storeSettings.companyName = companyName;
         if (industry !== undefined) reservation.storeSettings.industry = industry;
         if (description !== undefined) reservation.storeSettings.description = description;
+        
+        if (paymentMethods !== undefined) {
+            try {
+                reservation.storeSettings.paymentMethods = JSON.parse(paymentMethods);
+            } catch (e) {
+                console.error("Failed to parse paymentMethods:", e);
+            }
+        }
 
         if (req.file) {
             const { buffer, contentType, ext } = await optimizeImageBuffer(

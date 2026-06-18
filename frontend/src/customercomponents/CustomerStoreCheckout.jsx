@@ -9,6 +9,7 @@ import orderService from '../services/orderService';
 import * as authService from '../services/authService';
 import digitalgiftsService from '../services/digitalgiftsService';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
+import reservationService from '../services/reservationService';
 import './CustomerCheckout.css'; // Reusing the same CSS
 
 const CustomerStoreCheckout = () => {
@@ -22,6 +23,7 @@ const CustomerStoreCheckout = () => {
 
     // Store/booth information passed from state
     const { storeName, boothName } = location.state || { storeName: "Store", boothName: "Booth" };
+    const [sponsorPaymentMethods, setSponsorPaymentMethods] = useState([]);
 
     // Pull and format phone number
     const [phoneNumber, setPhoneNumber] = useState(() => {
@@ -56,6 +58,39 @@ const CustomerStoreCheckout = () => {
         };
         fetchPhone();
     }, [user]);
+
+    useEffect(() => {
+        const fetchSponsorSettings = async () => {
+            const eventId = cartItems[0]?.eventId?._id || cartItems[0]?.eventId;
+            if (!eventId || !user?.token || !boothName) return;
+            try {
+                const booths = await reservationService.getEventBooths(eventId, user.token);
+                // getEventBooths might return { data: booths } or just booths
+                const boothList = Array.isArray(booths) ? booths : booths.data || [];
+                const booth = boothList.find(b => b.boothNumber === boothName || b.boothCode === boothName || b._id === boothName);
+                if (booth) {
+                    let methods = [];
+                    // Get from Store Settings
+                    if (booth.storeSettings && booth.storeSettings.paymentMethods) {
+                        methods = [...methods, ...booth.storeSettings.paymentMethods];
+                    }
+                    // Get from User Profile
+                    if (booth.user && booth.user.paymentMethods) {
+                        const userMethods = booth.user.paymentMethods.map(pm => ({
+                            provider: pm.methodType === 'PayPal' ? 'PayPal' : pm.methodType === 'UPI' ? 'UPI' : (pm.type || 'Card'),
+                            accountName: pm.cardHolder || pm.accountHolder || booth.user.firstName + ' ' + booth.user.lastName,
+                            accountNumber: pm.cardNumber || pm.accountNumber || pm.paypalEmail || pm.last4 || ''
+                        }));
+                        methods = [...methods, ...userMethods];
+                    }
+                    setSponsorPaymentMethods(methods);
+                }
+            } catch (error) {
+                console.error("Error fetching sponsor payment methods:", error);
+            }
+        };
+        fetchSponsorSettings();
+    }, [cartItems, user, boothName]);
 
     const subtotal = getTotalAmount();
 
@@ -113,7 +148,7 @@ const CustomerStoreCheckout = () => {
                     boothCode: cartItems[0]?.boothName || boothName,
                     storeName: storeName,
                     totalAmount: total,
-                    paymentMethod: paymentMethod === 'card' ? 'Credit Card' : paymentMethod === 'saved' ? 'Saved Card' : 'Invoice / Bank Transfer',
+                    paymentMethod: paymentMethod === 'card' ? 'Credit Card' : paymentMethod === 'saved' ? 'Saved Card' : paymentMethod === 'invoice' ? 'Invoice / Bank Transfer' : 'Direct to Sponsor',
                     appliedGift: selectedGift ? selectedGift.giftId : null,
                     giftCode: selectedGift ? selectedGift.code : ""
                 };
@@ -300,6 +335,49 @@ const CustomerStoreCheckout = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Direct to Sponsor Option */}
+                            {sponsorPaymentMethods.length > 0 && (
+                                <div
+                                    className={`cc-payment-option mb-3 ${paymentMethod === 'direct' ? 'selected' : ''}`}
+                                    onClick={() => setPaymentMethod('direct')}
+                                >
+                                    <div className="cc-payment-header">
+                                        <div className="cc-radio-group">
+                                            <input
+                                                type="radio"
+                                                checked={paymentMethod === 'direct'}
+                                                readOnly
+                                                className="cc-radio"
+                                            />
+                                            <div>
+                                                <div className="cc-flex-align-center mb-1">
+                                                    <Icon icon="mdi:bank-transfer" className="mr-2 icon-font-size" />
+                                                    <h5 className="m-0 text-black">Direct Payment to Sponsor</h5>
+                                                </div>
+                                                <span className="smaller-body-text text-secondary cc-block">Pay using sponsor's payment methods</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {paymentMethod === 'direct' && (
+                                        <div className="cc-payment-body mt-3">
+                                            <div className="cc-info-alert mb-3">
+                                                <Icon icon="mdi:information-outline" className="cc-info-icon" />
+                                                <span className="smaller-body-text">
+                                                    <strong>Instructions:</strong> Please send the payment of ${total.toFixed(2)} to one of the following accounts. The sponsor will confirm your payment.
+                                                </span>
+                                            </div>
+                                            {sponsorPaymentMethods.map((pm, idx) => (
+                                                <div key={idx} className="mb-3 p-3" style={{ border: '1px solid var(--color-black-tertiary)', borderRadius: '8px', background: '#f8f9fa' }}>
+                                                    <h6 className="mb-2 text-black">{pm.provider}</h6>
+                                                    <div className="smaller-body-text"><strong>Account Name:</strong> {pm.accountName}</div>
+                                                    <div className="smaller-body-text"><strong>Account Number:</strong> {pm.accountNumber}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Credit Card Option */}
                             <div

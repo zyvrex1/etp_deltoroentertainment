@@ -39,7 +39,7 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
       setLoading(true);
       const data = await orderService.getOrders(user?.token, { eventId, boothCode });
       console.log("Order sample:", data[0]);
-      
+
       const formattedOrders = data.map(order => ({
         id: order.orderId,
         _id: order._id,
@@ -53,7 +53,7 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
         status: order.status,
         fullItems: order.items
       }));
-      
+
       setOrders(formattedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -88,13 +88,13 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
       if (field === 'payment') updateData.paymentStatus = value;
 
       await orderService.updateOrder(orderToUpdate._id, updateData, user.token);
-      
+
       setOrders(prev => prev.map(order => order.id === id ? { ...order, [field]: value } : order));
-      
+
       if (selectedOrder && selectedOrder.id === id) {
         setSelectedOrder(prev => ({ ...prev, [field]: value }));
       }
-      
+
       showSuccessAlert("Updated!", `Order ${field} has been updated.`);
     } catch (error) {
       showErrorAlert("Update Failed", error.message);
@@ -171,16 +171,16 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
       };
 
       // ── pre-compute values ─────────────────────────────────────────────
-      const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      const totalRevenue = filteredOrders.filter(o => o.payment === 'Paid').reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
-      const paidOrders    = filteredOrders.filter(o => o.payment === 'Paid');
-      const unpaidOrders  = filteredOrders.filter(o => o.payment === 'Unpaid');
+      const paidOrders = filteredOrders.filter(o => o.payment === 'Paid');
+      const unpaidOrders = filteredOrders.filter(o => o.payment === 'Unpaid');
       const pendingOrders = filteredOrders.filter(o => o.status === 'Pending');
       const completedOrders = filteredOrders.filter(o => o.status === 'Completed');
       const preparingOrders = filteredOrders.filter(o => o.status === 'Preparing');
-      const readyOrders   = filteredOrders.filter(o => o.status === 'Ready for Pickup');
+      const readyOrders = filteredOrders.filter(o => o.status === 'Ready for Pickup');
 
-      const paidRevenue   = paidOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
+      const paidRevenue = paidOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
       const unpaidRevenue = unpaidOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
 
       const filterLabel = filterStatus === 'All' ? 'All Statuses' : filterStatus;
@@ -234,20 +234,20 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
 
       const metricCards = [
         {
-          label: 'Paid Orders',
-          value: `$${paidRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-          sub: `${paidOrders.length} order${paidOrders.length !== 1 ? 's' : ''}`,
-          color: [22, 163, 74],
-          bg: [235, 255, 245],
-          border: [180, 235, 210],
-        },
-        {
           label: 'Unpaid Orders',
           value: `$${unpaidRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
           sub: `${unpaidOrders.length} order${unpaidOrders.length !== 1 ? 's' : ''}`,
           color: [217, 119, 6],
           bg: [255, 251, 235],
           border: [245, 220, 160],
+        },
+        {
+          label: 'Paid Orders',
+          value: `$${paidRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          sub: `${paidOrders.length} order${paidOrders.length !== 1 ? 's' : ''}`,
+          color: [22, 163, 74],
+          bg: [235, 255, 245],
+          border: [180, 235, 210],
         },
         {
           label: 'Completed Orders',
@@ -433,16 +433,6 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
       <div className="smo-content-card">
         <div className="smo-metrics-section">
           <div className="smo-metrics-grid">
-            <div className="smo-metric-card metric-paid">
-              <div className="smo-metric-header">
-                <span className="metric-dot dot-paid"></span>
-                <span className="metric-label small-body-text">Paid Orders</span>
-              </div>
-              <div className="smo-metric-footer">
-                <span className="metric-value text-paid">${paidRevenue.toFixed(2)}</span>
-                <span className="metric-sub smaller-body-text">{paidOrdersList.length} order{paidOrdersList.length !== 1 ? 's' : ''}</span>
-              </div>
-            </div>
 
             <div className="smo-metric-card metric-unpaid">
               <div className="smo-metric-header">
@@ -452,6 +442,17 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
               <div className="smo-metric-footer">
                 <span className="metric-value text-unpaid">${unpaidRevenue.toFixed(2)}</span>
                 <span className="metric-sub smaller-body-text">{unpaidOrdersList.length} order{unpaidOrdersList.length !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+
+            <div className="smo-metric-card metric-paid">
+              <div className="smo-metric-header">
+                <span className="metric-dot dot-paid"></span>
+                <span className="metric-label small-body-text">Paid Orders</span>
+              </div>
+              <div className="smo-metric-footer">
+                <span className="metric-value text-paid">${paidRevenue.toFixed(2)}</span>
+                <span className="metric-sub smaller-body-text">{paidOrdersList.length} order{paidOrdersList.length !== 1 ? 's' : ''}</span>
               </div>
             </div>
 
@@ -587,6 +588,7 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
                         >
                           <option value="Paid">Paid</option>
                           <option value="Unpaid">Unpaid</option>
+                          <option value="Pending Confirmation">Pending Confirmation</option>
                         </select>
                       </div>
                     </td>
@@ -606,10 +608,19 @@ const SponsorManageOrder = ({ eventId, boothCode, isCompleted }) => {
                       </div>
                     </td>
                     <td data-label="ACTIONS">
-                      <div className="smo-actions-col">
+                      <div className="smo-actions-col" style={{ display: 'flex', gap: '8px' }}>
                         <button className="smo-view-btn regular-body-text" onClick={() => openViewModal(order)}>
                           <Icon icon="mdi:eye-outline" /> View
                         </button>
+                        {(order.payment === 'Pending Confirmation' || order.payment === 'Unpaid') && (
+                          <button
+                            className="smo-view-btn regular-body-text"
+                            style={{ background: 'var(--color-green-primary)', color: 'white', border: 'none', padding: '6px 12px' }}
+                            onClick={() => handleOrderChange(order.id, 'payment', 'Paid')}
+                          >
+                            <Icon icon="mdi:check-circle-outline" /> Confirm Payment
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

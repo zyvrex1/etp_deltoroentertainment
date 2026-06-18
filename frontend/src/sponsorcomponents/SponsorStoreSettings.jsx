@@ -13,7 +13,8 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
         companyName: '',
         industry: '',
         description: '',
-        logo: null
+        logo: null,
+        paymentMethods: []
     });
     const [previewUrl, setPreviewUrl] = useState(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
@@ -31,7 +32,8 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                     companyName: settings.companyName || reservation.user?.companyName || `${reservation.user?.firstName || ''} ${reservation.user?.lastName || ''}`.trim(),
                     industry: settings.industry || reservation.user?.industry || '',
                     description: settings.description || '',
-                    logo: null
+                    logo: null,
+                    paymentMethods: settings.paymentMethods || []
                 });
 
                 if (settings.logo) {
@@ -81,6 +83,7 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
             data.append('companyName', formData.companyName);
             data.append('industry', formData.industry);
             data.append('description', formData.description);
+            data.append('paymentMethods', JSON.stringify(formData.paymentMethods));
             if (formData.logo) {
                 data.append('avatar', formData.logo);
             }
@@ -216,6 +219,60 @@ const SponsorStoreSettings = ({ reservationId, boothCode }) => {
                                     <p className="smaller-body-text">Recommended: Square image, min 200x200px</p>
                                 </div>
                             </div>
+                        </div>
+
+                        <div className="sss-form-group full-width mt-4">
+                            <h5 className="mb-2 text-black">Receive Payment Methods</h5>
+                            <p className="smaller-body-text sss-desc mb-3">Add accounts where customers can pay you directly (e.g. GCash, Bank Transfer).</p>
+                            
+                            {formData.paymentMethods.map((method, index) => (
+                                <div key={index} className="cc-card mb-3 p-3" style={{ border: '1px solid var(--color-black-tertiary)', borderRadius: '8px' }}>
+                                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <label className="smaller-body-text">Provider (e.g., GCash)</label>
+                                            <input type="text" className="cc-input mt-1" value={method.provider || ''} onChange={(e) => {
+                                                const newMethods = [...formData.paymentMethods];
+                                                newMethods[index].provider = e.target.value;
+                                                setFormData({ ...formData, paymentMethods: newMethods });
+                                            }} disabled={isReadOnly} />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <label className="smaller-body-text">Account Name</label>
+                                            <input type="text" className="cc-input mt-1" value={method.accountName || ''} onChange={(e) => {
+                                                const newMethods = [...formData.paymentMethods];
+                                                newMethods[index].accountName = e.target.value;
+                                                setFormData({ ...formData, paymentMethods: newMethods });
+                                            }} disabled={isReadOnly} />
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <label className="smaller-body-text">Account Number</label>
+                                            <input type="text" className="cc-input mt-1" value={method.accountNumber || ''} onChange={(e) => {
+                                                const newMethods = [...formData.paymentMethods];
+                                                newMethods[index].accountNumber = e.target.value;
+                                                setFormData({ ...formData, paymentMethods: newMethods });
+                                            }} disabled={isReadOnly} />
+                                        </div>
+                                        {!isReadOnly && (
+                                            <button type="button" className="ss-icon-btn" style={{ padding: '10px', background: 'var(--color-red-light)', color: 'var(--color-red-primary)', borderRadius: '6px', border: 'none', cursor: 'pointer' }} onClick={() => {
+                                                const newMethods = formData.paymentMethods.filter((_, i) => i !== index);
+                                                setFormData({ ...formData, paymentMethods: newMethods });
+                                            }}>
+                                                <Icon icon="mdi:trash-can-outline" width="20" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            
+                            {!isReadOnly && (
+                                <button type="button" className="outlined-button mt-2" onClick={() => {
+                                    setFormData({ ...formData, paymentMethods: [...formData.paymentMethods, { provider: '', accountName: '', accountNumber: '' }] });
+                                }}>
+                                    <Icon icon="mdi:plus" /> Add Payment Method
+                                </button>
+                            )}
                         </div>
 
                         {!isReadOnly && (

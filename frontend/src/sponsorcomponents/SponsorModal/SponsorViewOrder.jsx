@@ -5,7 +5,7 @@ import "./SponsorViewOrder.css";
 const SponsorViewOrder = ({ isOpen, onClose, order, onStatusChange, onPaymentChange }) => {
   if (!isOpen || !order) return null;
 
-  const isUnpaid = order.payment === "Unpaid";
+  const isUnpaid = order.payment === "Unpaid" || order.payment === "Pending Confirmation";
   const items = order.fullItems || [];
 
   return (
@@ -46,21 +46,16 @@ const SponsorViewOrder = ({ isOpen, onClose, order, onStatusChange, onPaymentCha
             <div className="svo-payment-alert">
               <div className="svo-alert-header">
                 <Icon icon="mdi:alert-circle-outline" className="svo-alert-icon" />
-                <strong>Payment not yet collected</strong>
+                <strong>Payment not yet collected / confirmed</strong>
               </div>
-              <p>Collect payment from the customer on-site, then mark as paid:</p>
+              <p>Verify payment from the customer, then mark as paid:</p>
               <div className="svo-alert-buttons">
                 <button 
                   className="svo-btn-cash"
+                  style={{ background: 'var(--color-green-primary)', color: 'white', border: 'none' }}
                   onClick={() => onPaymentChange(order.id, "Paid")}
                 >
-                  <Icon icon="mdi:cash" /> Paid with Cash
-                </button>
-                <button 
-                  className="svo-btn-card"
-                  onClick={() => onPaymentChange(order.id, "Paid")}
-                >
-                  <Icon icon="mdi:credit-card-outline" /> Paid with Card
+                  <Icon icon="mdi:check-circle-outline" /> Confirm Payment Received
                 </button>
               </div>
             </div>

@@ -27,7 +27,7 @@ const createOrder = async (req, res) => {
             totalAmount,
             paymentMethod,
             status: 'Pending',
-            paymentStatus: isInvoice ? 'Pending' : 'Paid',
+            paymentStatus: paymentMethod === 'Direct to Sponsor' ? 'Pending Confirmation' : (isInvoice ? 'Pending' : 'Paid'),
             appliedGift: req.body.appliedGift || null,
             giftCode: req.body.giftCode || ""
         });
