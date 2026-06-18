@@ -272,7 +272,7 @@ const CustomerBrowseEvent = () => {
                                             handleGetTickets(event);
                                         }}
                                     >
-                                        Get Seats <Icon icon="mdi:arrow-right" />
+                                        {event.eventType === "General Admission" ? "Get Tickets" : "Get Seats"} <Icon icon="mdi:arrow-right" />
                                     </button>
                                 </div>
                             </div>
