@@ -373,7 +373,13 @@ useEffect(() => {
             <h3>Live & Upcoming Events</h3>
             <p className="nft-subheading">Secure your spot at the hottest events in town.</p>
           </div>
-          <a href="#events" className="nft-link">View All</a>
+         <button
+  className="nft-link"
+  onClick={(e) => { e.preventDefault(); openAuthModal('login'); }}
+  aria-label="Log in to view all events"
+>
+  View All
+</button>
         </div>
 
         {liveEvents.length > 0 ? (
@@ -408,8 +414,13 @@ useEffect(() => {
                     <div className="nft-v2-countdown">
                       <span>{evt.daysLeft > 0 ? `${evt.daysLeft} days left` : 'Starting soon'}</span>
                     </div>
-                    <button className="nft-v2-btn" aria-label={`Get tickets for ${evt.title}`}>Get Tickets</button>
-                  </div>
+<button
+  className="nft-v2-btn"
+  onClick={() => openAuthModal('login')}
+  aria-label={`Get tickets for ${evt.title}`}
+>
+  Get Tickets
+</button>                  </div>
                 </div>
               </div>
             ))}

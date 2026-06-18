@@ -42,6 +42,8 @@ html {
     text-decoration: none;
     transition: color 0.3s ease;
     font-size: 14px;
+    background-color: transparent;
+    border: none;
 }
 
 .nft-link:hover {

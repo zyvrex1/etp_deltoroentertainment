@@ -141,7 +141,20 @@ const AuditLogs = () => {
     socket.on('auditUserCreated', liveRefresh)
     socket.on('connect_error', (err) => console.error('Audit socket error:', err.message))
 
-    return () => socket.disconnect()
+    return () => {
+      socket.off('auditLogUpdate',   liveRefresh)
+      socket.off('auditLoginFailed', liveRefresh)
+      socket.off('auditUserSignup',  liveRefresh)
+      socket.off('auditUserCreated', liveRefresh)
+      // Defer disconnect so the socket can finish its handshake first.
+      // Calling disconnect() on a still-connecting socket causes the
+      // "WebSocket closed before connection established" warning.
+      if (socket.connected) {
+        socket.disconnect()
+      } else {
+        socket.on('connect', () => socket.disconnect())
+      }
+    }
   }, [user?.token, resetPage])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -178,7 +191,7 @@ const AuditLogs = () => {
         log.user,
         log.email,
         log.role,
-        log.ipAddress,
+        maskIP(log.ipAddress),  // ← masked just like the table column
         new Date(log.timestamp).toLocaleString(),
       ])
 

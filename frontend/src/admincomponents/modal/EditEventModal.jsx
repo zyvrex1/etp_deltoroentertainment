@@ -229,10 +229,14 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
 
   if (!isOpen) return null;
 
-  const isReadOnly =
-    event?.status === "cancelled" ||
-    event?.status === "completed" ||
-    (event?.status === "rejected" && (user?.role === "admin" || user?.role === "superadmin"));
+const creatorId = event?.createdBy?._id || event?.createdBy;
+const isOwner = String(creatorId) === String(user?._id);
+
+const isReadOnly =
+  !isOwner ||                          // not your event → always view-only
+  event?.status === "cancelled" ||
+  event?.status === "completed" ||
+  event?.status === "rejected";
 
   return (
     <div className="general-modal-overlay">

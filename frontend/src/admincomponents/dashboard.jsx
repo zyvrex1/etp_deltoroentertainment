@@ -92,13 +92,20 @@ export default function Dashboard() {
 
         try {
             // Fetch events, users, and concerns in parallel
-            const [events, users, concerns, reservations, payouts] = await Promise.all([
-                eventsService.getEvents(user.token),
-                adminService.getUsers(user.token),
-                concernService.getAdminConcerns(user.token),
-                reservationService.getAdminReservations(user.token),
-                payoutService.getPayouts(user.token).catch(() => [])
-            ]);
+         const [eventsRaw, usersRaw, concernsRaw, reservationsRaw, payoutsRaw] = await Promise.all([
+    eventsService.getEvents(user.token).catch(() => []),
+    adminService.getUsers(user.token).catch(() => []),
+    concernService.getAdminConcerns().catch(() => []),
+    reservationService.getAdminReservations(user.token).catch(() => []),
+    payoutService.getPayouts(user.token).catch(() => [])
+]);
+
+// Normalize all responses to arrays
+const events       = Array.isArray(eventsRaw)       ? eventsRaw       : (eventsRaw?.data       ?? eventsRaw?.events       ?? []);
+const users        = Array.isArray(usersRaw)         ? usersRaw        : (usersRaw?.data         ?? usersRaw?.users         ?? []);
+const concerns     = Array.isArray(concernsRaw)      ? concernsRaw     : (concernsRaw?.data      ?? concernsRaw?.concerns   ?? []);
+const reservations = Array.isArray(reservationsRaw)  ? reservationsRaw : (reservationsRaw?.data  ?? reservationsRaw?.reservations ?? []);
+const payouts      = Array.isArray(payoutsRaw)       ? payoutsRaw      : (payoutsRaw?.data       ?? payoutsRaw?.payouts     ?? []);
 
             // Filter out cancelled reservations for all metrics
             const activeReservations = reservations.filter(
