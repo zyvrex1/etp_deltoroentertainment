@@ -16,33 +16,35 @@ const AssignAdmin = ({ isOpen, onClose, onAssign, ticket }) => {
       if (!currentUser?.token) return;
       setLoading(true);
       try {
-      const response = await fetch(`${BACKEND_URL}/api/admin/users?role=admins`, {
-    headers: {
-        "Authorization": `Bearer ${currentUser.token}`,
-    },
-});
-const json = await response.json();
-if (response.ok) {
-    const users = json.data || [];
+        // Combined Fix: Using BACKEND_URL and handling backend queries
+        const response = await fetch(`${BACKEND_URL}/api/admin/users?role=admins`, {
+          headers: {
+            "Authorization": `Bearer ${currentUser.token}`,
+          },
+        });
+        const json = await response.json();
 
-    // Add yourself if not already in the list
-    const alreadyIncluded = users.some(u => u._id === currentUser._id);
-    const isSelf = ['admin', 'superadmin'].includes(currentUser.role);
-    const finalList = alreadyIncluded || !isSelf
-        ? users
-        : [{ 
-            _id: currentUser._id, 
-            firstName: currentUser.firstName, 
-            lastName: currentUser.lastName, 
-            role: currentUser.role 
-          }, ...users];
+        if (response.ok) {
+          const users = json.data || [];
 
-    setAdmins(finalList);
+          // Add yourself if you are an admin but not already returned in the list
+          const alreadyIncluded = users.some(u => u._id === currentUser._id);
+          const isSelf = ['admin', 'superadmin'].includes(currentUser.role);
+          const finalList = alreadyIncluded || !isSelf
+            ? users
+            : [{
+              _id: currentUser._id,
+              firstName: currentUser.firstName,
+              lastName: currentUser.lastName,
+              role: currentUser.role
+            }, ...users];
 
-    if (finalList.length > 0) {
-        setSelectedAdmin(prev => prev || finalList[0]._id);
-    }
-}
+          setAdmins(finalList);
+
+          if (finalList.length > 0) {
+            setSelectedAdmin(prev => prev || finalList[0]._id);
+          }
+        }
       } catch (err) {
         console.error("Error fetching admins:", err);
       } finally {

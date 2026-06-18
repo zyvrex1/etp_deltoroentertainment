@@ -88,7 +88,7 @@ const EditEventModal = ({ isOpen, onClose, event }) => {
         });
         const json = await response.json();
         if (response.ok) {
-          setPromoters(json.filter(u => u.role === 'promoter'));
+          setPromoters(json.data ? json.data.filter(u => u.role === 'promoter') : json.filter(u => u.role === 'promoter'));
         }
       } catch (err) {
         console.error("Error fetching promoters:", err);

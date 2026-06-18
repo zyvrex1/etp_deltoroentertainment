@@ -19,10 +19,10 @@ const CustomerStoreCheckout = () => {
     const [paymentMethod, setPaymentMethod] = useState('card');
     const [poNumber, setPoNumber] = useState(`PO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
     const [apEmail, setApEmail] = useState(user?.email || "");
-    
+
     // Store/booth information passed from state
     const { storeName, boothName } = location.state || { storeName: "Store", boothName: "Booth" };
-    
+
     // Pull and format phone number
     const [phoneNumber, setPhoneNumber] = useState(() => {
         let phone = user?.phone || "";
@@ -108,8 +108,8 @@ const CustomerStoreCheckout = () => {
                         quantity: item.quantity,
                         image: item.image
                     })),
-                    sponsorId: cartItems[0]?.sponsorId, 
-                    eventId: cartItems[0]?.eventId,
+                    sponsorId: cartItems[0]?.sponsorId?._id || cartItems[0]?.sponsorId,
+                    eventId: cartItems[0]?.eventId?._id || cartItems[0]?.eventId,
                     boothCode: cartItems[0]?.boothName || boothName,
                     storeName: storeName,
                     totalAmount: total,
@@ -118,7 +118,7 @@ const CustomerStoreCheckout = () => {
                     giftCode: selectedGift ? selectedGift.code : ""
                 };
 
-                await orderService.createOrder(orderData, user.token);
+                await orderService.createOrder(orderData);
 
                 // Redeem the gift card assignment upon successful purchase
                 if (selectedGift) {
@@ -386,21 +386,21 @@ const CustomerStoreCheckout = () => {
 
                                         <div className="cc-form-group mb-3">
                                             <label>Purchase Order Number (Optional)</label>
-                                            <input 
-                                                type="text" 
-                                                value={poNumber} 
+                                            <input
+                                                type="text"
+                                                value={poNumber}
                                                 onChange={(e) => setPoNumber(e.target.value)}
-                                                className="cc-input" 
+                                                className="cc-input"
                                             />
                                         </div>
 
                                         <div className="cc-form-group">
                                             <label>Accounts Payable Email</label>
-                                            <input 
-                                                type="email" 
-                                                value={apEmail} 
+                                            <input
+                                                type="email"
+                                                value={apEmail}
                                                 onChange={(e) => setApEmail(e.target.value)}
-                                                className="cc-input" 
+                                                className="cc-input"
                                             />
                                         </div>
                                     </div>

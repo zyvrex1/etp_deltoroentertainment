@@ -179,19 +179,19 @@ export default function Dashboard() {
             // Calculate Ticket Trends (using activeReservations)
             const ticketsThisMonth = activeReservations.filter(res => {
                 const d = new Date(res.createdAt);
-                const isTicket = res.type === 'seat';
+                const isTicket = ['seat', 'general-fee', 'mixed-ticket'].includes(res.type);
                 return isTicket && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
             }).reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
 
             const ticketsLastMonth = activeReservations.filter(res => {
                 const d = new Date(res.createdAt);
-                const isTicket = res.type === 'seat';
+                const isTicket = ['seat', 'general-fee', 'mixed-ticket'].includes(res.type);
                 return isTicket && d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
             }).reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
 
             const ticketTrend = calculateTrend(ticketsThisMonth, ticketsLastMonth);
 
-            const totalTicketsSold = activeReservations.filter(res => res.type === 'seat')
+            const totalTicketsSold = activeReservations.filter(res => ['seat', 'general-fee', 'mixed-ticket'].includes(res.type))
                 .reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
 
             const usersThisYear = users.filter(u => {
@@ -227,7 +227,7 @@ export default function Dashboard() {
                     .filter(res => res.type === 'booth')
                     .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
                 const seatRevenue = monthReservations
-                    .filter(res => res.type === 'seat')
+                    .filter(res => ['seat', 'general-fee', 'mixed-ticket'].includes(res.type))
                     .reduce((sum, res) => sum + (res.amount?.total || 0), 0);
 
                 return { month, total, boothRevenue, seatRevenue };
@@ -293,7 +293,7 @@ export default function Dashboard() {
 
                 // 5. Actual sales from reservations (TRUSTED SOURCE)
                 const eventRes = activeReservations.filter(res => String(res.event?._id || res.event) === String(e._id));
-                const seatsSold = eventRes.filter(res => res.type === 'seat').reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
+                const seatsSold = eventRes.filter(res => ['seat', 'general-fee', 'mixed-ticket'].includes(res.type)).reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
                 const boothsSold = eventRes.filter(res => res.type === 'booth').length;
 
                 // 6. Calculate Available (Remaining)

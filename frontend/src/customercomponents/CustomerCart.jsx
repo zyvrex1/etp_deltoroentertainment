@@ -26,6 +26,8 @@ export default function CustomerCart() {
             const newEventsData = { ...eventsData };
             let hasNewData = false;
 
+            const invalidCartIds = [];
+
             await Promise.all(uniqueEventIds.map(async (id) => {
                 if (!newEventsData[id]) {
                     try {
@@ -36,10 +38,21 @@ export default function CustomerCart() {
                             hasNewData = true;
                         }
                     } catch (err) {
-                        console.error('Error fetching event data', err);
+                        if (err.response && err.response.status === 404) {
+                            console.warn(`Event ${id} not found, marking associated cart items for removal.`);
+                            const itemsToRemove = cartItems.filter(item => (item.event?._id || item.event?.id) === id);
+                            itemsToRemove.forEach(item => invalidCartIds.push(item.cartId));
+                        } else {
+                            console.error('Error fetching event data', err);
+                        }
                     }
                 }
             }));
+
+            if (invalidCartIds.length > 0) {
+                invalidCartIds.forEach(cartId => removeFromCart(cartId));
+                showErrorAlert("Event Unavailable", "One or more events in your cart have been removed or are no longer available. Their tickets have been removed from your cart.");
+            }
 
             if (hasNewData) {
                 setEventsData(newEventsData);

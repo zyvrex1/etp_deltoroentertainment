@@ -50,7 +50,7 @@ export const CustomerCartProvider = ({ children }) => {
         localStorage.setItem('customerCart', JSON.stringify(newItems));
         if (currentUser && currentUser.token && currentUser.role) {
             // Preserve existing non-seat items (like booths) from the user's cart in the DB
-            const currentDbCart = currentUser.cart || [];
+            const currentDbCart = Array.isArray(currentUser.cart) ? currentUser.cart : [];
             const nonSeatItems = currentDbCart.filter(item => !item?.seat?.id && !item?.seat?._id);
             const mergedCart = [...nonSeatItems, ...newItems];
 
@@ -183,7 +183,7 @@ export const CustomerCartProvider = ({ children }) => {
                 const orderGift = res.appliedGift || null;
                 const orderGiftCode = res.giftCode || res.appliedGift?.code || null;
 
-                if (res.type === 'seat' && res.seatIds) {
+                if (['seat', 'general-fee', 'mixed-ticket'].includes(res.type) && res.seatIds) {
                     const pricePerSeat = res.amount.subtotal / res.seatIds.length;
                     const { resolvedGift, resolvedDiscount } = resolveDiscount(res);
 

@@ -92,10 +92,23 @@ const getOrders = async (req, res) => {
     if (boothCode) filter.boothCode = boothCode;
     if (status) filter.status = status;
 
+    const queryCustomerId = req.query.customerId;
+
     if (!isAdmin) {
-        filter.customerId = req.user._id;
-    } else if (req.query.customerId) {
-        filter.customerId = req.query.customerId;
+        if (queryCustomerId && queryCustomerId === req.user._id.toString()) {
+            filter.customerId = queryCustomerId;
+        } else if (req.user.role === 'sponsor' || req.user.role === 'promoter') {
+            const sponsor = await Sponsor.findOne({ userId: req.user._id });
+            if (sponsor) {
+                filter.sponsorId = sponsor._id;
+            } else {
+                filter.customerId = req.user._id;
+            }
+        } else {
+            filter.customerId = req.user._id;
+        }
+    } else if (queryCustomerId) {
+        filter.customerId = queryCustomerId;
     }
 
     try {

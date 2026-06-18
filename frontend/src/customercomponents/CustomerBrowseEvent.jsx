@@ -99,15 +99,14 @@ const CustomerBrowseEvent = () => {
     };
 
     const getAvailableSeats = (event) => {
-    let availableCount = 0;
+        let availableCount = 0;
+        let layout = event.layoutData;
 
-    let layout = event.layoutData;
-    
-    // TEMPORARY DEBUG - remove after fixing
-    console.log(`[${event.title}] layoutData:`, layout);
-    console.log(`[${event.title}] priceLevels:`, event.priceLevels);
-    
-    if (typeof layout === 'string') {
+        // TEMPORARY DEBUG - remove after fixing
+        console.log(`[${event.title}] layoutData:`, layout);
+        console.log(`[${event.title}] priceLevels:`, event.priceLevels);
+
+        if (typeof layout === 'string') {
             try {
                 layout = JSON.parse(layout);
             } catch (e) {
@@ -115,38 +114,56 @@ const CustomerBrowseEvent = () => {
             }
         }
 
+        // 1. Layout Data Check (Visual Seat Maps)
         if (layout && Array.isArray(layout.items)) {
-           layout.items.forEach(item => {
-    const type = (item.type || "").toLowerCase();
-    const status = (item.status || "available").toLowerCase(); // ← normalize case
+            layout.items.forEach(item => {
+                const type = (item.type || "").toLowerCase();
+                const status = (item.status || "available").toLowerCase();
 
-    const isCircle = type === 'seat';  // ← only trust explicit type
-    const isAvailable = status === 'available';
+                const isCircle = type === 'seat';
+                const isAvailable = status === 'available';
 
-    if (isCircle && isAvailable) {
-        availableCount++;
-    }
-});
-        } else if (event.seatMap && event.seatMap.sections) {
+                // CRITICAL: Ensure it is a standard seat and NOT a booth element
+                if (isCircle && isAvailable && type !== 'booth') {
+                    availableCount++;
+                }
+            });
+        }
+        // 2. Section/Row Based Map Check
+        else if (event.seatMap && event.seatMap.sections) {
             event.seatMap.sections.forEach(sec => {
+                // Optional: Skip the entire section if it's explicitly named a booth section
+                const sectionName = (sec.name || "").toLowerCase();
+                if (sectionName.includes("booth")) return;
+
                 (sec.seats || []).forEach(seat => {
                     const isAvailable = !seat.status || seat.status === 'available';
-                    if (isAvailable) {
+                    const isBoothSeat = (seat.type || "").toLowerCase() === 'booth';
+
+                    // Only count seats that are available and not categorized as a booth
+                    if (isAvailable && !isBoothSeat) {
                         availableCount += seat.seatCount || 1;
                     }
                 });
             });
         }
 
-        // Check for General Admission or General Fee categories
+        // 3. General Admission / Price Levels Check
         if (event.priceLevels && Array.isArray(event.priceLevels)) {
             event.priceLevels.forEach(pl => {
-    const plType = (pl.type || "").toLowerCase(); // ← normalize
-    if ((event.eventType || "").toLowerCase() === "general admission" || plType === "general fee") {
-        const availableQty = Math.max(0, (pl.quantityAvailable || 0) - (pl.quantitySold || 0));
-        availableCount += availableQty;
-    }
-});
+                const plType = (pl.type || "").toLowerCase();
+                const plName = (pl.name || "").toLowerCase();
+
+                // Skip this tier entirely if its name or type contains 'booth'
+                if (plName.includes('booth') || plType.includes('booth')) {
+                    return;
+                }
+
+                if ((event.eventType || "").toLowerCase() === "general admission" || plType === "general fee") {
+                    const availableQty = Math.max(0, (pl.quantityAvailable || 0) - (pl.quantitySold || 0));
+                    availableCount += availableQty;
+                }
+            });
         }
 
         return availableCount;
@@ -248,7 +265,7 @@ const CustomerBrowseEvent = () => {
                                         </div>
                                     </div>
 
-                                    <button 
+                                    <button
                                         className="primary-button cbe-view-btn"
                                         onClick={(e) => {
                                             e.stopPropagation();

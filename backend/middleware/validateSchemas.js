@@ -34,18 +34,29 @@ function validateQuery(schema) {
 
 // ─── Order ───────────────────────────────────────────────────
 const createOrderSchema = z.object({
-  reservationId: z.string().trim().min(1, 'reservationId is required'),
-  amount:        z.number().finite().positive('amount must be greater than 0'),
-  paymentMethod: z.string().trim().min(1).optional().default('invoice'),
-  notes: z.string().trim().max(500).optional()
-}).strict()
+  items: z.array(
+    z.object({
+      productId: z.string().trim().min(1),
+      name: z.string().optional(),
+      price: z.number().optional(),
+      quantity: z.number().int().min(1),
+      image: z.string().optional()
+    })
+  ).min(1, 'At least one item is required'),
+  sponsorId: z.string().trim().min(1),
+  eventId: z.string().trim().min(1),
+  boothCode: z.string().trim().min(1),
+  storeName: z.string().trim().min(1),
+  totalAmount: z.number().min(0),
+  paymentMethod: z.string().trim().optional(),
+  appliedGift: z.string().trim().optional().nullable(),
+  giftCode: z.string().trim().optional()
+});
 
 const updateOrderSchema = z.object({
-  status: z.enum(['pending', 'confirmed', 'cancelled', 'rejected', 'refunded'], {
-    required_error: 'status is required'
-  }),
-  notes: z.string().trim().max(500).optional()
-}).strict()
+  status: z.enum(['Pending', 'Preparing', 'Ready for Pickup', 'Completed', 'Cancelled']).optional(),
+  paymentStatus: z.enum(['Unpaid', 'Paid', 'Refunded', 'Pending']).optional()
+});
 
 // ─── Reservation ─────────────────────────────────────────────
 const updateReservationStatusSchema = z.object({
@@ -124,9 +135,9 @@ const updatePayoutStatusSchema = z.object({
 const createMerchandiseSchema = z.object({
   name:        z.string().trim().min(1, 'name is required'),
   description: z.string().trim().optional(),
-  price:       z.number().finite().nonnegative('price must be 0 or greater'),
+  price:       z.coerce.number().finite().nonnegative('price must be 0 or greater'),
   category:    z.string().trim().min(1, 'category is required'),
-  stock:       z.number().int().nonnegative().optional(),
+  stock:       z.coerce.number().nonnegative().transform(v => Math.floor(v)).optional(),
   image:       z.string().trim().optional().nullable(),
   eventId:     z.string().trim().min(1, 'eventId is required'),
   boothCode:   z.string().trim().optional(),
@@ -136,9 +147,9 @@ const createMerchandiseSchema = z.object({
 const updateMerchandiseSchema = z.object({
   name:        z.string().trim().min(1).optional(),
   description: z.string().trim().optional(),
-  price:       z.number().finite().nonnegative().optional(),
+  price:       z.coerce.number().finite().nonnegative().optional(),
   category:    z.string().trim().optional(),
-  stock:       z.number().int().nonnegative().optional(),
+  stock:       z.coerce.number().nonnegative().transform(v => Math.floor(v)).optional(),
   image:       z.string().trim().optional().nullable(),
   boothCode:   z.string().trim().optional(),
   status:      z.enum(['Available', 'Out of Stock', 'Hidden']).optional()

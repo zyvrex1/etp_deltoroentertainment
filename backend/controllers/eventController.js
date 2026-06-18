@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 const Event = require("../models/eventModel");
@@ -413,6 +415,18 @@ const uploadImageToR2 = async (file) => {
     file.buffer,
     file.mimetype
   );
+  
+  if (!process.env.R2_BUCKET_NAME) {
+    const filename = `${uuidv4()}${ext}`;
+    const uploadDir = path.join(__dirname, '..', 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    await fs.promises.writeFile(path.join(uploadDir, filename), buffer);
+    console.log(`✅ Event image uploaded locally: ${filename}`);
+    return `/uploads/${filename}`;
+  }
+
   const key = `uploads/${uuidv4()}${ext}`;
   await s3Client.send(new PutObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME,
@@ -427,15 +441,32 @@ const uploadImageToR2 = async (file) => {
 
 // Shared helper: delete old R2 image when replacing/deleting
 const deleteImageFromR2 = async (imageUrl) => {
-  if (!imageUrl || !imageUrl.startsWith("http")) return; // skip legacy local paths
+  if (!imageUrl) return;
+  if (!imageUrl.startsWith("http")) {
+    // Local image deletion fallback
+    try {
+      const localPath = path.join(__dirname, '..', imageUrl);
+      if (fs.existsSync(localPath)) {
+        fs.unlinkSync(localPath);
+        console.log(`🗑️ Deleted local image: ${imageUrl}`);
+      }
+    } catch (err) {
+      console.warn("Local delete failed:", err.message);
+    }
+    return;
+  }
+  
   try {
     const key = imageUrl.replace(`${process.env.CDN_BASE_URL}/`, "");
     if (!key.startsWith("uploads/")) return;
-    await s3Client.send(new DeleteObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: key,
-    }));
-    console.log(`🗑️ Deleted old R2 image: ${key}`);
+    
+    if (process.env.R2_BUCKET_NAME) {
+      await s3Client.send(new DeleteObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key,
+      }));
+      console.log(`🗑️ Deleted old R2 image: ${key}`);
+    }
   } catch (err) {
     console.warn("R2 delete failed (non-fatal):", err.message);
   }

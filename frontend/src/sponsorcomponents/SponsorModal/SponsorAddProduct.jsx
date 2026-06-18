@@ -62,11 +62,11 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
       alert("File too large. Max 5MB.");
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onloadend = () => {
-      setProductData({ 
-        ...productData, 
+      setProductData({
+        ...productData,
         image: reader.result,
         fileName: file.name,
         fileSize: file.size
@@ -85,15 +85,15 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
       // Import missing alert if needed, but SponsorManageProduct usually handles errors.
       // However, we want immediate feedback before calling onAdd.
       alert("Please fill in all required fields (Name, Price, and Stock).");
-      return; 
+      return;
     }
 
     setIsSubmitting(true);
     try {
       const cleanData = {
         ...productData,
-        price: Number(productData.price) || 0,
-        stock: Number(productData.stock) || 0
+        price: parseFloat(productData.price) || 0,
+        stock: Math.floor(Number(productData.stock) || 0)
       }
       await onAdd(cleanData);
       // Parent handles closing if success
@@ -113,7 +113,7 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
             <Icon icon="mdi:close" />
           </button>
         </div>
-        
+
         <div className="sap-modal-body">
           <div className="sap-form-group">
             <label>Product Name *</label>
@@ -156,6 +156,7 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
                 type="number"
                 name="stock"
                 min="0"
+                step="1"
                 placeholder="0"
                 value={productData.stock}
                 onChange={handleChange}
@@ -180,7 +181,7 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
 
           <div className="sap-form-group">
             <label>Product Image</label>
-            <div 
+            <div
               className={`upload-area ${imageDragActive ? "drag-active" : ""}`}
               onDragEnter={handleImageDrag}
               onDragLeave={handleImageDrag}
@@ -188,14 +189,14 @@ const SponsorAddProduct = ({ isOpen, onClose, onAdd }) => {
               onDrop={handleImageDrop}
               onClick={() => document.getElementById("sap-photo-upload")?.click()}
             >
-              <input 
-                type="file" 
-                id="sap-photo-upload" 
-                hidden 
+              <input
+                type="file"
+                id="sap-photo-upload"
+                hidden
                 accept="image/*"
                 onChange={handlePhotoChange}
               />
-              
+
               {productData.image ? (
                 <div className="file-preview">
                   <img src={productData.image} alt="preview" className="preview-image" />

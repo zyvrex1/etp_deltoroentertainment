@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const requireAuth = require('../middleware/requireAuth');
@@ -72,6 +73,17 @@ router.post('/floorplan', memoryUpload.single('file'), async (req, res) => {
 
     const key = `floorplans/${uuidv4()}${ext}`;
 
+    if (!process.env.R2_BUCKET_NAME) {
+      const filename = `${uuidv4()}${ext}`;
+      const uploadDir = path.join(__dirname, '..', 'uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      await fs.promises.writeFile(path.join(uploadDir, filename), buffer);
+      console.log(`✅ Uploaded floorplan locally: ${filename}`);
+      return res.status(200).json({ url: `/uploads/${filename}`, key: `uploads/${filename}` });
+    }
+
     await s3Client.send(
       new PutObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME,
@@ -125,6 +137,17 @@ router.post('/image', memoryUpload.single('file'), async (req, res) => {
     // Step 11: PUT directly to R2 — server pushes the buffer, not the client
     const key = `uploads/${uuidv4()}${ext}`; // e.g. uploads/abc-123.webp
 
+    if (!process.env.R2_BUCKET_NAME) {
+      const filename = `${uuidv4()}${ext}`;
+      const uploadDir = path.join(__dirname, '..', 'uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      await fs.promises.writeFile(path.join(uploadDir, filename), buffer);
+      console.log(`✅ Uploaded optimized image locally: ${filename}`);
+      return res.status(200).json({ url: `/uploads/${filename}`, key: `uploads/${filename}` });
+    }
+
     await s3Client.send(
       new PutObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME,
@@ -161,8 +184,19 @@ router.delete('/image', async (req, res) => {
   try {
     const { key } = req.body;
 
-    if (!key || typeof key !== 'string' || !key.startsWith('uploads/')) {
+    if (!key || typeof key !== 'string' || (!key.startsWith('uploads/') && !key.startsWith('floorplans/'))) {
       return res.status(400).json({ error: 'Invalid or missing image key.' });
+    }
+
+    if (!process.env.R2_BUCKET_NAME) {
+      // Local file deletion fallback
+      const filename = path.basename(key);
+      const localPath = path.join(__dirname, '..', 'uploads', filename);
+      if (fs.existsSync(localPath)) {
+        fs.unlinkSync(localPath);
+        console.log(`🗑️ Deleted local image: ${filename}`);
+      }
+      return res.status(200).json({ message: 'Local image deleted successfully.' });
     }
 
     await s3Client.send(

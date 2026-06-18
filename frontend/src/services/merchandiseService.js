@@ -29,7 +29,11 @@ const merchandiseService = {
       return response.data;
     } catch (error) {
       console.error("Error in createMerchandise service:", error);
-      throw new Error(error.response?.data?.error || error.message);
+      const serverMsg = error.response?.data?.error
+        || error.response?.data?.message
+        || (error.response?.data?.errors ? JSON.stringify(error.response.data.errors) : null)
+        || error.message;
+      throw new Error(serverMsg);
     }
   },
 

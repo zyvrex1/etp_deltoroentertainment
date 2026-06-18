@@ -86,6 +86,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const [canRedo, setCanRedo] = useState(false);
 
   const [bgFile, setBgFile] = useState(null);
+  const [bgImageKey, setBgImageKey] = useState(null); // key returned by upload endpoint for deletion
 
   const pushHistory = useCallback((snapshot) => {
     historyStack.current.push(snapshot);
@@ -231,7 +232,9 @@ const LayoutBuilder = ({ selectedEvent }) => {
       setCanvasHeight(ch); setCanvasHInput(ch);
 
       const savedBg = fullEvent.layoutData.backgroundImage || null;
+      const savedBgKey = fullEvent.layoutData.bgImageKey || null;
       setBackgroundImage(savedBg);
+      setBgImageKey(savedBgKey);
       setBgOpacity(fullEvent.layoutData.bgOpacity ?? 0.4);
       if (savedBg) {
         const img = new window.Image();
@@ -559,6 +562,25 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
     // Fall back to the existing image string (or null) if no new file has been staged
     let finalBgImageUrl = backgroundImage;
+    let finalBgImageKey = bgImageKey;
+
+    // If replacing, delete the old image from backend first
+    if (bgFile && bgImageKey) {
+      try {
+        await fetch(`${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/api/uploads/image`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ key: bgImageKey }),
+        });
+        setBgImageKey(null);
+        finalBgImageKey = null;
+      } catch (err) {
+        console.warn("Could not delete old floor plan image:", err.message);
+      }
+    }
 
     // 2. Upload the raw binary file to your dedicated storage endpoint if it exists
     if (bgFile) {
@@ -580,6 +602,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
         const uploadData = await uploadResponse.json();
         finalBgImageUrl = uploadData.url; // Use the optimized image URL from S3/Cloudinary/etc.
+        finalBgImageKey = uploadData.key || null;
         setBgFile(null);                  // Clear the staged file state since it's uploaded
       } catch (err) {
         console.error("Image upload pipeline error:", err);
@@ -665,7 +688,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
         items: placedItems,
         canvasWidth,
         canvasHeight,
-        backgroundImage: finalBgImageUrl, // Small text string URL reference point
+        backgroundImage: finalBgImageUrl,
+        bgImageKey: finalBgImageKey,
         bgOpacity,
         bgWidth: bgWidth || null,
         bgHeight: bgHeight || null,
@@ -826,11 +850,41 @@ const LayoutBuilder = ({ selectedEvent }) => {
     setBgHeight(h);
   };
 
-  const handleRemoveBgImage = () => {
+  const handleRemoveBgImage = async () => {
+    // Resolve the storage key — prefer explicit key, fall back to deriving it from the URL
+    // (handles images uploaded before bgImageKey tracking was added)
+    let deleteKey = bgImageKey;
+    if (!deleteKey && backgroundImage && backgroundImage.startsWith('/uploads/')) {
+      // Local path like /uploads/uuid.webp → key is uploads/uuid.webp
+      deleteKey = backgroundImage.slice(1); // strip leading "/"
+    } else if (!deleteKey && backgroundImage && backgroundImage.includes('/uploads/')) {
+      // CDN URL like https://cdn.example.com/uploads/uuid.webp
+      const match = backgroundImage.match(/(uploads\/.+)$/);
+      if (match) deleteKey = match[1];
+    }
+
+    if (deleteKey) {
+      try {
+        await fetch(`${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/api/uploads/image`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ key: deleteKey }),
+        });
+        console.log(`🗑️ Floor plan deleted from backend: ${deleteKey}`);
+      } catch (err) {
+        console.warn("Could not delete floor plan from backend:", err.message);
+      }
+    }
+
     setBackgroundImage(null);
+    setBgImageKey(null);
     setBgKonvaImage(null);
     setBgWidth(null);
     setBgHeight(null);
+    setBgFile(null);
   };
 
   const applyCanvasSize = () => {

@@ -33,11 +33,11 @@ const verifyReservationOwner = async (req, res, next) => {
   }
 };
 
-// Merchandise / food order → owner field: order.customerId
+// Merchandise / food order → owner field: order.customerId or order.sponsorId (via Sponsor lookup)
 const verifyOrderOwner = async (req, res, next) => {
   try {
     const doc = await Order
-      .findById(req.params.id).select('customerId');
+      .findById(req.params.id).select('customerId sponsorId');
 
     if (!doc) return res.status(404)
       .json({ message: 'Order not found.' });
@@ -47,11 +47,20 @@ const verifyOrderOwner = async (req, res, next) => {
 
     if (isAdmin(req.user)) return next();
 
-    if (!isSameUser(doc.customerId, req.user._id))
-      return res.status(403)
-        .json({ message: 'Access denied. Not your order.' });
+    // Check if user is the customer
+    if (isSameUser(doc.customerId, req.user._id)) return next();
 
-    next();
+    // Check if user is the sponsor
+    if (req.user.role === 'sponsor' || req.user.role === 'promoter') {
+      const Sponsor = require('../models/sponsorModel');
+      const sponsor = await Sponsor.findOne({ userId: req.user._id });
+      if (sponsor && isSameUser(doc.sponsorId, sponsor._id)) {
+        return next();
+      }
+    }
+
+    return res.status(403)
+      .json({ message: 'Access denied. Not your order.' });
   } catch (e) {
     res.status(500).json({ message: 'Server error.' });
   }
