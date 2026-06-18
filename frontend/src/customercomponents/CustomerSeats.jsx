@@ -5,6 +5,7 @@ import { Icon } from '@iconify/react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { useCustomerCart } from '../context/CustomerCartContext';
+import { getImageUrl } from '../utils/imageUrl';
 import eventsService from '../services/eventsService';
 import { showAddToCartConfirmAlert, showSuccessAlert, showQuestionAlert } from '../utils/sweetAlert';
 import './CustomerSeats.css';
@@ -63,14 +64,14 @@ const CustomerSeats = () => {
                     const ld = data.layoutData;
                     setCanvasSize({ w: ld.canvasWidth || 1400, h: ld.canvasHeight || 900 });
 
-                    if (ld.backgroundImage) {
-                        setBgConfig({
-                            imageUrl: ld.backgroundImage,
-                            opacity: ld.bgOpacity ?? 0.4,
-                            width: ld.bgWidth || ld.canvasWidth,
-                            height: ld.bgHeight || ld.canvasHeight
-                        });
-                    }
+                  if (ld.backgroundImage) {
+    setBgConfig({
+        imageUrl: getImageUrl(ld.backgroundImage),   // ← wrap with getImageUrlf
+        opacity: ld.bgOpacity ?? 0.4,
+        width: ld.bgWidth || ld.canvasWidth,
+        height: ld.bgHeight || ld.canvasHeight
+    });
+}
 
                     // Normalize Items
                     const items = (ld.items || []).map(item => ({

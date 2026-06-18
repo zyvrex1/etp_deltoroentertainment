@@ -161,10 +161,10 @@ export default function CustomerHome() {
                                 });
                             }}
                         >
-                            Browse Events
+                            View Upcoming Events
                         </button>
                         <NavLink to="/customer/browse-events" className="ch-btn ch-btn-secondary">
-                            View Categories
+                            Browse Events
                         </NavLink>
                     </div>
 
@@ -296,15 +296,9 @@ export default function CustomerHome() {
                                     </div>
 
                                     <div className="ch-v2-footer">
-                                        <button className="ch-v2-btn" onClick={() => setEventDetailsModal({
-                                            ...evt,
-                                            tag: evt.category,
-                                            date: `${new Date(evt.startDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} • ${evt.startTime}`,
-                                            location: `${evt.venue?.name}, ${evt.venue?.city}`,
-                                            price: getPriceRange(evt.priceLevels)
-                                        })}>
-                                            View Details
-                                        </button>
+                                        <NavLink to={`/customer/event-details/${evt._id}`} className="ch-v2-btn">
+                                          View Details
+                                      </NavLink>
                                     </div>
                                 </div>
                             </div>

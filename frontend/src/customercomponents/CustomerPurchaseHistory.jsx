@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { io } from 'socket.io-client';
 import { useCustomerCart } from '../context/CustomerCartContext';
@@ -69,27 +69,46 @@ export default function CustomerPurchaseHistory() {
         return () => { isMounted = false; };
     }, [user]);
 
-    useEffect(() => {
-        if (!user?.token) return;
+const socketRef = useRef(null);   // ← add this near other state declarations
 
-        const socket = io(import.meta.env.VITE_BACKEND_URL, {
-            withCredentials: true,
-            transports: ['websocket', 'polling'],
-        });
+useEffect(() => {
+    if (!user?.token) {
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+            socketRef.current = null;
+        }
+        return;
+    }
 
-        socket.on('newNotification', (notification) => {
-            const title = (notification?.title || '').toLowerCase();
-            if (
-                title.includes('gift restored') ||
-                title.includes('payment rejected') ||
-                title.includes('reservation rejected')
-            ) {
-                refreshHistory?.();
-            }
-        });
+    if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+    }
 
-        return () => socket.disconnect();
-    }, [user?.token, refreshHistory]);
+    const socket = io(import.meta.env.VITE_BACKEND_URL, {
+        withCredentials: true,
+        transports: ['polling', 'websocket'],
+        upgrade: false,
+    });
+
+    socketRef.current = socket;
+
+    socket.on('newNotification', (notification) => {
+        const title = (notification?.title || '').toLowerCase();
+        if (
+            title.includes('gift restored') ||
+            title.includes('payment rejected') ||
+            title.includes('reservation rejected')
+        ) {
+            refreshHistory?.();
+        }
+    });
+
+    return () => {
+        socket.disconnect();
+        socketRef.current = null;
+    };
+}, [user?.token, refreshHistory]);
 
     const tabs = [
         { id: 'all', label: 'All Purchases' },

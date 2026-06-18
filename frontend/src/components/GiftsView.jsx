@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { io } from "socket.io-client";
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -52,27 +52,47 @@ export default function GiftsView({ role = "customer" }) {
     }
   };
 
-  useEffect(() => {
-    if (!user?.token) return;
+const socketRef = useRef(null);   // ← add this near other state declarations
+
+useEffect(() => {
+    if (!user?.token) {
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+            socketRef.current = null;
+        }
+        return;
+    }
+
+    if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+    }
 
     const socket = io(import.meta.env.VITE_BACKEND_URL, {
-      withCredentials: true,
-      transports: ["websocket", "polling"],
+        withCredentials: true,
+        transports: ["polling", "websocket"],
+        upgrade: false,
     });
+
+    socketRef.current = socket;
 
     socket.on("newNotification", (notification) => {
-      const title = (notification?.title || "").toLowerCase();
-      if (
-        title.includes("gift restored") ||
-        title.includes("gift returned") ||
-        title.includes("payment rejected")
-      ) {
-        fetchMyGifts();
-      }
+        const title = (notification?.title || "").toLowerCase();
+        if (
+            title.includes("gift restored") ||
+            title.includes("gift returned") ||
+            title.includes("payment rejected")
+        ) {
+            fetchMyGifts();
+        }
     });
 
-    return () => socket.disconnect();
-  }, [user?.token, fetchMyGifts]);
+    return () => {
+        socket.disconnect();
+        socketRef.current = null;
+    };
+}, [user?.token, fetchMyGifts]);
+
 
   const handleClaim = async (e) => {
     e.preventDefault();

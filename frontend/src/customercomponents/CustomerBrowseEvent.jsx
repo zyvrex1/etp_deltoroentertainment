@@ -102,9 +102,9 @@ const CustomerBrowseEvent = () => {
         let availableCount = 0;
         let layout = event.layoutData;
 
-        // TEMPORARY DEBUG - remove after fixing
-        console.log(`[${event.title}] layoutData:`, layout);
-        console.log(`[${event.title}] priceLevels:`, event.priceLevels);
+        // // TEMPORARY DEBUG - remove after fixing
+        // console.log(`[${event.title}] layoutData:`, layout);
+        // console.log(`[${event.title}] priceLevels:`, event.priceLevels);
 
         if (typeof layout === 'string') {
             try {
