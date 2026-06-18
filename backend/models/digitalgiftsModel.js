@@ -69,7 +69,8 @@ const digitalGiftSchema = new Schema(
     {
         timestamps: true,
         toJSON: { virtuals: true },
-        toObject: { virtuals: true },
+        toObject: { virtuals: true }
+        // shardKey: { code: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
     }
 );
 

@@ -228,6 +228,7 @@ const eventSchema = new Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
+    // shardKey: { _id: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
   }
 );
 

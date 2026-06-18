@@ -74,7 +74,10 @@ const orderSchema = new Schema({
         type: String,
         required: false
     }
-}, { timestamps: true });
+}, { 
+    timestamps: true
+    // shardKey: { eventId: 1, _id: 1 } // Uncomment when upgrading to M10+ dedicated cluster
+});
 
 orderSchema.index({ customerId: 1, status: 1, createdAt: -1 });
 orderSchema.index({ sponsorId: 1, eventId: 1, status: 1 });

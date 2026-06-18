@@ -37,7 +37,10 @@ const notificationSchema = new mongoose.Schema({
         enum: ['admin', 'promoter', 'sponsor', 'customer', 'all'],
         required: false
     }
-}, { timestamps: true });
+}, { 
+    timestamps: true
+    // shardKey: { _id: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
+});
 
 notificationSchema.index({ userId: 1, unread: 1, createdAt: -1 });
 notificationSchema.index({ targetRole: 1, unread: 1, createdAt: -1 });

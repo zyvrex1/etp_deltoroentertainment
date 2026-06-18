@@ -21,6 +21,7 @@ const auditLogSchema = new mongoose.Schema({
   details:   { type: String, default: '' },
 }, {
   timestamps: true
+  // shardKey: { email: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
 })
 
 // ── Performance indexes ───────────────────────────────────────────────────────

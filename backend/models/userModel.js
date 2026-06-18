@@ -97,7 +97,10 @@ const userSchema = new Schema({
     paypalEmail: { type: String }
   }]
 
-}, { timestamps: true })
+}, { 
+  timestamps: true
+  // shardKey: { email: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
+})
 
 // ================= SIGNUP =================
 userSchema.statics.signup = async function (

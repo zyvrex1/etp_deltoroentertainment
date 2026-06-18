@@ -101,7 +101,10 @@ const reservationSchema = new mongoose.Schema({
             type: { type: String, enum: ['checkin', 'exit'] }
         }
     ]
-}, { timestamps: true });
+}, { 
+    timestamps: true
+    // shardKey: { event: 1, _id: 1 } // Uncomment when upgrading to M10+ dedicated cluster
+});
 
 // Auto-generate qrData before saving
 reservationSchema.pre('save', function (next) {
