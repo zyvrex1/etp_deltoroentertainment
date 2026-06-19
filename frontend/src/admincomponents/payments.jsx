@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Icon } from "@iconify/react";
 import "./payments.css";
 import Swal from "sweetalert2";
@@ -122,15 +122,41 @@ const Payments = () => {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const filterDropdownRef = useRef(null);
 
+  // Event filter
+  const [eventFilter, setEventFilter] = useState("All Events");
+  const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
+  const eventDropdownRef = useRef(null);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
         setIsFilterDropdownOpen(false);
       }
+      if (eventDropdownRef.current && !eventDropdownRef.current.contains(event.target)) {
+        setIsEventDropdownOpen(false);
+      }
     };
-    if (isFilterDropdownOpen) document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isFilterDropdownOpen]);
+  }, []);
+
+  // Derive unique event names for the event filter dropdown
+  const eventOptions = useMemo(() => {
+    const names = new Set();
+    reservations.forEach(r => {
+      const title = r.event?.title;
+      if (title) names.add(title);
+    });
+    payoutRequests.forEach(p => {
+      if (p.events) {
+        p.events.split(',').forEach(e => {
+          const t = e.trim();
+          if (t && t !== 'All Events') names.add(t);
+        });
+      }
+    });
+    return ["All Events", ...Array.from(names).sort()];
+  }, [reservations, payoutRequests]);
 
   const getReservationData = () => {
     const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -340,6 +366,15 @@ const Payments = () => {
     );
   }
 
+  if (eventFilter !== "All Events") {
+    filteredData = filteredData.filter(item => {
+      if (activeTab === "payout-requests") {
+        return item.events?.includes(eventFilter);
+      }
+      return item.event === eventFilter;
+    });
+  }
+
   if (activeTab === "payout-requests" && statusFilter !== "All Status") {
     filteredData = filteredData.filter(item => item.status.toLowerCase() === statusFilter.toLowerCase());
   } else if (activeTab === "booth-reservations" && statusFilter !== "All") {
@@ -355,7 +390,7 @@ const Payments = () => {
 
   useEffect(() => {
     resetPage();
-  }, [searchQuery, statusFilter, resetPage]);
+  }, [searchQuery, statusFilter, eventFilter, resetPage]);
 
   const startIndex = (page - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
@@ -370,6 +405,7 @@ const Payments = () => {
     resetPage();
     setSearchQuery("");
     setStatusFilter(tab === "payout-requests" ? "All Status" : "All");
+    setEventFilter("All Events");
     setExpandedRow(null);
   };
 
@@ -441,8 +477,8 @@ const Payments = () => {
         amountVal: res.amount?.total || 0,
         status: res.status === 'confirmed' ? 'confirmed'
           : res.status === 'rejected' ? 'rejected'
-          : res.status === 'expired' ? 'expired'
-            : res.status,
+            : res.status === 'expired' ? 'expired'
+              : res.status,
         dateStr: res.createdAt
           ? new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
           : 'N/A',
@@ -952,8 +988,39 @@ const Payments = () => {
             </div>
           </div>
 
-          <div className="pay-toolbar-right">
-            <div className="pay-filter-dropdown" ref={filterDropdownRef}>
+          {/* Event Filter */}
+          <div className="pay-toolbar-right" ref={eventDropdownRef}>
+            <div className="pay-filter-dropdown">
+              <button
+                className="pay-filter-dropdown-btn small-body-text"
+                onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
+              >
+                <span className="truncate-text">{eventFilter}</span>
+                <Icon icon="mdi:chevron-down" className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`} />
+              </button>
+              {isEventDropdownOpen && (
+                <div className="pay-filter-dropdown-menu">
+                  {eventOptions.map((option) => (
+                    <button
+                      key={option}
+                      className={`pay-filter-dropdown-item small-body-text ${eventFilter === option ? "active" : ""}`}
+                      onClick={() => {
+                        setEventFilter(option);
+                        resetPage();
+                        setIsEventDropdownOpen(false);
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div className="pay-toolbar-right" ref={filterDropdownRef}>
+            <div className="pay-filter-dropdown">
               <button
                 className="pay-filter-dropdown-btn small-body-text"
                 onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
@@ -969,7 +1036,7 @@ const Payments = () => {
                       className={`pay-filter-dropdown-item small-body-text ${statusFilter === option ? "active" : ""}`}
                       onClick={() => {
                         setStatusFilter(option);
-                        setCurrentPage(1);
+                        resetPage();
                         setIsFilterDropdownOpen(false);
                       }}
                     >
@@ -1027,6 +1094,7 @@ const Payments = () => {
             isTab={true}
             externalSearchQuery={searchQuery}
             externalFilter={getTransactionFilterValue(statusFilter)}
+            externalEventFilter={eventFilter}
             data={getTransactionList()}
             onRefund={handleTxRefund}
           />

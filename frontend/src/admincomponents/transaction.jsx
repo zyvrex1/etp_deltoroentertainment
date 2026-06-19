@@ -7,7 +7,7 @@ import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExpo
 import usePagination from "../hooks/usePagination";
 import PaginationBar from "../components/PaginationBar";
 
-const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", externalFilter = "all", data = null, onRefund = null }) => {
+const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", externalFilter = "all", externalEventFilter = "All Events", data = null, onRefund = null }) => {
   const [internalSearchQuery, setInternalSearchQuery] = useState("");
   const itemsPerPage = 7;
   const {
@@ -18,6 +18,13 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
   const [internalFilter, setInternalFilter] = useState("all");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // Event filter (standalone mode only)
+  const [eventFilter, setEventFilter] = useState("All Events");
+  const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
+  const eventDropdownRef = useRef(null);
+
+  const dropdownRef = useRef(null);
+
   const filterOptions = [
     { value: "all", label: "All Transactions" },
     { value: "payout", label: "Payout" },
@@ -26,23 +33,21 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
     { value: "seated-ticket", label: "Seated Ticket" },
   ];
 
-  const dropdownRef = useRef(null);
-
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
+      if (eventDropdownRef.current && !eventDropdownRef.current.contains(event.target)) {
+        setIsEventDropdownOpen(false);
+      }
     };
 
-    if (isDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isDropdownOpen]);
+  }, []);
 
   const getFilterLabel = () => {
     const currentFilter = isTab ? externalFilter : internalFilter;
@@ -75,6 +80,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
   const filteredTransactions = useMemo(() => {
     const activeSearchQuery = isTab ? externalSearchQuery : internalSearchQuery;
     const activeFilter = isTab ? externalFilter : internalFilter;
+    const activeEventFilter = isTab ? externalEventFilter : eventFilter;
     const q = activeSearchQuery.toLowerCase();
 
     return displayTransactions.filter((tx) => {
@@ -82,6 +88,9 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
         activeFilter === "all" ? true : tx.filterType === activeFilter;
 
       if (!matchesFilter) return false;
+
+      // Event filter — applied in both tab and standalone modes
+      if (activeEventFilter !== "All Events" && tx.event !== activeEventFilter) return false;
 
       if (!q) return true;
 
@@ -92,7 +101,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
         (tx.type?.toLowerCase().includes(q) || false)
       );
     });
-  }, [transactions, internalSearchQuery, internalFilter, isTab, externalSearchQuery, externalFilter]);
+  }, [transactions, internalSearchQuery, internalFilter, isTab, externalSearchQuery, externalFilter, externalEventFilter, eventFilter]);
 
   useEffect(() => {
     setTotal({
@@ -103,7 +112,7 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
 
   useEffect(() => {
     resetPage();
-  }, [internalSearchQuery, internalFilter, externalSearchQuery, externalFilter, resetPage]);
+  }, [internalSearchQuery, internalFilter, externalSearchQuery, externalFilter, externalEventFilter, eventFilter, resetPage]);
 
   const startIndex = (page - 1) * itemsPerPage;
   const paginatedTransactions = filteredTransactions.slice(
@@ -116,6 +125,15 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
     resetPage();
     setIsDropdownOpen(false);
   };
+
+  // Derive unique event names for the event filter dropdown
+  const eventOptions = useMemo(() => {
+    const names = new Set();
+    displayTransactions.forEach(tx => {
+      if (tx.event) names.add(tx.event);
+    });
+    return ["All Events", ...Array.from(names).sort()];
+  }, [displayTransactions]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -177,6 +195,10 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
     if (status === "confirmed" || status === "paid") return "button-label tx-status-completed";
     if (status === "pending") return "button-label tx-status-pending";
     if (status === "refunded" || status === "rejected" || status === "reject") return "button-label tx-status-refunded";
+
+    // Separate line for expired
+    if (status === "expired") return "button-label tx-status-expired";
+
     return "button-label tx-status";
   };
 
@@ -222,8 +244,42 @@ const TransactionMonitoring = ({ isTab = false, externalSearchQuery = "", extern
               </div>
             </div>
 
-            <div className="tx-toolbar-right">
-              <div className="tx-filter-dropdown" ref={dropdownRef}>
+            {/* Event Filter */}
+            <div className="tx-toolbar-right" ref={eventDropdownRef}>
+              <div className="tx-filter-dropdown">
+                <button
+                  className="tx-filter-dropdown-btn"
+                  onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
+                >
+                  <span className="truncate-text">{eventFilter}</span>
+                  <Icon
+                    icon="mdi:chevron-down"
+                    className={`dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
+                  />
+                </button>
+                {isEventDropdownOpen && (
+                  <div className="tx-filter-dropdown-menu">
+                    {eventOptions.map((option) => (
+                      <button
+                        key={option}
+                        className={`tx-filter-dropdown-item ${eventFilter === option ? "active" : ""}`}
+                        onClick={() => {
+                          setEventFilter(option);
+                          resetPage();
+                          setIsEventDropdownOpen(false);
+                        }}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Type Filter */}
+            <div className="tx-toolbar-right" ref={dropdownRef}>
+              <div className="tx-filter-dropdown">
                 <button
                   className="tx-filter-dropdown-btn"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
