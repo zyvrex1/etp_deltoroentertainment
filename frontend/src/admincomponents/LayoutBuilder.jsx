@@ -13,6 +13,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
   const { user } = useAuthContext();
   const { dispatch } = useEventsContext();
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
+  const [mobileTab, setMobileTab] = useState("map"); // 'categories' | 'map'
   const [categories, setCategories] = useState([]);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -903,8 +904,26 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
   return (
     <div className="layout-builder-container unified-view">
+      {/* Mobile Tab Navigation */}
+      <div className="mobile-builder-tabs">
+        <button
+          className={`mobile-tab-btn ${mobileTab === 'categories' ? 'active' : ''}`}
+          onClick={() => setMobileTab('categories')}
+        >
+          <Icon icon="mdi:ticket-outline" />
+          <span>Categories</span>
+        </button>
+        <button
+          className={`mobile-tab-btn ${mobileTab === 'map' ? 'active' : ''}`}
+          onClick={() => setMobileTab('map')}
+        >
+          <Icon icon="mdi:map-outline" />
+          <span>Map Editor</span>
+        </button>
+      </div>
+
       <div className="builder-main">
-        <div className="builder-sidebar">
+        <div className={`builder-sidebar ${mobileTab === 'categories' ? 'mobile-visible' : 'mobile-hidden'}`}>
           <div className="sidebar-card categories-card">
             <div className="sidebar-header">
               <h4 className="bt-section-title-layout">Ticket Categories</h4>
@@ -1008,6 +1027,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
             const anyLocked = selItems.some(i => i.status === 'sold' || i.status === 'reserved');
             return (
               <div className="sidebar-card inspector-card">
+                <div className="mobile-sheet-handle" />
                 <div className="sidebar-header">
                   <h4 className="bt-section-title-layout">
                     {isSingle ? 'Shape Inspector' : `${selArray.length} Selected`}
@@ -1134,119 +1154,142 @@ const LayoutBuilder = ({ selectedEvent }) => {
           </div>
         </div>
 
-        <div className="canvas-area">
-          <div className="canvas-toolbar">
-            <h4 className="canvas-title"></h4>
-            <div className="toolbar-actions">
-              <button
-                className="bt-btn"
-                onClick={handleUndo}
-                disabled={!canUndo}
-                title="Undo (Ctrl+Z)"
-              >
-                <Icon icon="mdi:undo" /> <span>Undo</span>
-              </button>
-              <button
-                className="bt-btn"
-                onClick={handleRedo}
-                disabled={!canRedo}
-                title="Redo (Ctrl+Y)"
-              >
-                <Icon icon="mdi:redo" /> <span>Redo</span>
-              </button>
+        <div className={`canvas-area ${mobileTab === 'map' ? 'mobile-visible' : 'mobile-hidden'}`}>
+<div className="canvas-toolbar">
+  {/* History */}
+  <div className="toolbar-group">
+    <button
+      className="bt-btn icon-only"
+      onClick={handleUndo}
+      disabled={!canUndo}
+      title="Undo (Ctrl+Z)"
+    >
+     <Icon icon="mdi:undo" />
 
-              <input
-                ref={bgFileInputRef}
-                type="file" accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleBgImageUpload}
-              />
+    </button>
+    <button
+      className="bt-btn icon-only"
+      onClick={handleRedo}
+      disabled={!canRedo}
+      title="Redo (Ctrl+Y)"
+    >
+      <Icon icon="mdi:redo" />
+    </button>
+  </div>
 
-              <button
-                className={`bt-btn${backgroundImage ? ' bg-loaded' : ''}`}
-                onClick={() => backgroundImage ? setBgModalOpen(true) : bgFileInputRef.current?.click()}
-                title={backgroundImage ? 'Floor plan loaded — click to edit' : 'Upload floor plan image'}
-              >
-                <Icon icon={backgroundImage ? 'mdi:image-check-outline' : 'mdi:image-plus-outline'} />
-                <span>Floor Plan</span>
-              </button>
+  <div className="toolbar-divider" />
 
-              <button
-                className={`bt-btn ${snapToGrid ? 'active' : ''}`}
-                onClick={() => setSnapToGrid(!snapToGrid)}
-                title="Toggle Snap to Grid"
-              >
-                <Icon icon="mdi:grid" /> <span>Snap</span>
-              </button>
+  {/* Floor plan */}
+  <div className="toolbar-group">
+    <input
+      ref={bgFileInputRef}
+      type="file"
+      accept="image/*"
+      style={{ display: 'none' }}
+      onChange={handleBgImageUpload}
+    />
+    <button
+      className={`floorplan-btn ${backgroundImage ? 'loaded' : 'empty'}`}
+      onClick={() => backgroundImage ? setBgModalOpen(true) : bgFileInputRef.current?.click()}
+      title={backgroundImage ? 'Floor plan loaded — click to edit' : 'Upload floor plan image'}
+    >
+      {backgroundImage && <span className="floorplan-dot" />}
+      <Icon icon={backgroundImage ? 'mdi:image-check-outline' : 'mdi:image-plus-outline'} />
+      <span>Floor plan</span>
+    </button>
+  </div>
 
-              <div className="zoom-controls">
-                {/* <button
-                  className={`bt-btn sync-btn-small ${isSyncing ? 'spinning' : ''}`}
-                  onClick={handleSyncBooths}
-                  disabled={isSyncing}
-                  title="Sync Booth Status with Database"
-                  style={{ marginRight: '10px', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', height: 'auto' }}
-                >
-                  <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
-                  <span style={{ fontSize: '11px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
-                </button> */}
-                <button className="bt-btn" onClick={() => {
-                  setZoom(z => {
-                    const next = Math.max(z - 0.1, fitScale * 0.3);
-                    return next;
-                  });
-                }} title="Zoom Out">
-                  <Icon icon="mdi:minus" />
-                </button>
-                <span
-                  className="zoom-value"
-                  title="Click to reset to fit"
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    setZoom(fitScale);
-                    if (containerRef.current) {
-                      const { clientWidth, clientHeight } = containerRef.current;
-                      setStagePos({
-                        x: (clientWidth - canvasWidth * fitScale) / 2,
-                        y: (clientHeight - canvasHeight * fitScale) / 2,
-                      });
-                    }
-                  }}
-                >
-                  {Math.round((zoom / fitScale) * 100)}%
-                </span>
-                <button className="bt-btn" onClick={() => {
-                  setZoom(z => Math.min(z + 0.1, fitScale * 4));
-                }} title="Zoom In">
-                  <Icon icon="mdi:plus" />
-                </button>
-              </div>
+  <div className="toolbar-divider" />
 
-              <button className="bt-btn clear" onClick={async () => {
-                const result = await showDeleteConfirmAlert(
-                  "Clear Map?",
-                  "This will remove ALL shapes from the canvas. You will have to re-place items from the sidebar. This cannot be undone."
-                );
-                if (result.isConfirmed) {
-                  pushHistory([...placedItems]);
-                  setPlacedItems([]);
-                  showSuccessAlert("Cleared", "The map has been cleared.");
-                }
-              }} title="Clear All Items">
-                <Icon icon="mdi:layers-off" /> <span>Clear</span>
-              </button>
+  {/* Snap */}
+  <div className="toolbar-group">
+    <div
+      className="snap-pill"
+      onClick={() => setSnapToGrid(!snapToGrid)}
+      title="Toggle snap to grid"
+      role="button"
+      aria-pressed={snapToGrid}
+    >
+      <span className="snap-pill-label">
+        <Icon icon="mdi:grid" style={{ fontSize: 14 }} /> Snap
+      </span>
+      <span className={`snap-pill-state ${snapToGrid ? 'on' : 'off'}`}>
+        {snapToGrid ? 'On' : 'Off'}
+      </span>
+    </div>
+  </div>
 
-              <button
-                className={`bt-btn primary save-layout-btn${isSaving ? ' saving' : ''}`}
-                onClick={handleSaveLayout}
-                disabled={isSaving}
-                title="Save Venue Layout"
-              >
-                <Icon icon={isSaving ? "mdi:loading" : "mdi:check-circle-outline"} className={isSaving ? "spin" : ""} />
-                <span>{isSaving ? 'Saving...' : 'Save Layout'}</span>
-              </button>
-            </div>
-          </div>
+  <div className="toolbar-divider" />
+
+  {/* Zoom */}
+  <div className="toolbar-group">
+    <div className="zoom-group">
+      <button
+        className="zoom-btn"
+        onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))}
+        title="Zoom out"
+      >
+        <Icon icon="mdi:minus" />
+      </button>
+      <span
+        className="zoom-value"
+        title="Click to reset to fit"
+        onClick={() => {
+          setZoom(fitScale);
+          if (containerRef.current) {
+            const { clientWidth, clientHeight } = containerRef.current;
+            setStagePos({
+              x: (clientWidth - canvasWidth * fitScale) / 2,
+              y: (clientHeight - canvasHeight * fitScale) / 2,
+            });
+          }
+        }}
+      >
+        {Math.round((zoom / fitScale) * 100)}%
+      </span>
+      <button
+        className="zoom-btn"
+        onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))}
+        title="Zoom in"
+      >
+        <Icon icon="mdi:plus" />
+      </button>
+    </div>
+  </div>
+
+  <div className="toolbar-spacer" />
+
+  {/* Destructive + primary */}
+  <div className="toolbar-group left">
+    <button
+      className="bt-btn clear icon-only"
+      onClick={async () => {
+        const result = await showDeleteConfirmAlert(
+          "Clear Map?",
+          "This will remove ALL shapes from the canvas. This cannot be undone."
+        );
+        if (result.isConfirmed) {
+          pushHistory([...placedItems]);
+          setPlacedItems([]);
+          showSuccessAlert("Cleared", "The map has been cleared.");
+        }
+      }}
+      title="Clear all items from canvas"
+    >
+      <Icon icon="mdi:layers-off" />
+    </button>
+
+    <button
+      className={`bt-btn save${isSaving ? ' saving' : ''}`}
+      onClick={handleSaveLayout}
+      disabled={isSaving}
+      title="Save venue layout"
+    >
+      <Icon icon={isSaving ? "mdi:loading" : "mdi:device-floppy"} className={isSaving ? "spin" : ""} />
+      <span>{isSaving ? 'Saving…' : 'Save layout'}</span>
+    </button>
+  </div>
+</div>
 
           {/* Fast inline save toast */}
           {saveToast && (
@@ -1258,7 +1301,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
 
           <div className="konva-container" ref={containerRef}>
-            <Stage
+            {containerSize.w > 0 && containerSize.h > 0 && (
+              <Stage
               width={containerSize.w}
               height={containerSize.h}
               ref={stageRef}
@@ -1513,6 +1557,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
                 )}
               </Layer>
             </Stage>
+            )}
           </div>
         </div>
       </div>

@@ -17,6 +17,7 @@ import priceLevelService from "../services/priceLevelService";
 import { showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 import brandLogo from "../assets/Logo1.png";
 import { getImageUrl } from '../utils/imageUrl';
+import "./LayoutBuilder.css";
 
 
 const TICKET_WIDTH = 2047;
@@ -80,6 +81,7 @@ const TicketDesigner = ({ selectedEvent }) => {
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
   const [containerSize, setContainerSize] = useState({ w: 800, h: 600 });
   const [isStageDraggable, setIsStageDraggable] = useState(false);
+  const [mobileTab, setMobileTab] = useState("map"); // 'categories' | 'map'
 
   const containerRef = useRef(null);
   const stageRef = useRef(null);
@@ -463,11 +465,30 @@ const TicketDesigner = ({ selectedEvent }) => {
 
   return (
     <div className="layout-builder-container unified-view">
+      {/* Mobile Tab Navigation */}
+      <div className="mobile-builder-tabs">
+        <button
+          className={`mobile-tab-btn ${mobileTab === 'categories' ? 'active' : ''}`}
+          onClick={() => setMobileTab('categories')}
+        >
+          <Icon icon="mdi:palette-outline" />
+          <span>Designer Tools</span>
+        </button>
+        <button
+          className={`mobile-tab-btn ${mobileTab === 'map' ? 'active' : ''}`}
+          onClick={() => setMobileTab('map')}
+        >
+          <Icon icon="mdi:file-image-outline" />
+          <span>Ticket Preview</span>
+        </button>
+      </div>
+
       <div className="builder-main">
-        <div className="builder-sidebar">
+        <div className={`builder-sidebar ${mobileTab === 'categories' ? 'mobile-visible' : 'mobile-hidden'}`}>
           <div className="sidebar-card categories-card">
-            <div className="sidebar-header">
+            <div className="sidebar-header" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start' }}>
               <h4 className="bt-section-title-layout">Ticket Categories</h4>
+              <p className="small-body-text" style={{ color: 'var(--color-black-secondary)' }}>Select a category to design</p>
             </div>
             <div className="sidebar-categories-list" style={{ marginTop: '15px' }}>
               {priceLevels.length === 0 ? (
@@ -477,7 +498,10 @@ const TicketDesigner = ({ selectedEvent }) => {
                   <div
                     key={cat._id}
                     className={`sidebar-cat-item ${selectedCategoryId === cat._id ? 'active' : ''}`}
-                    onClick={() => setSelectedCategoryId(cat._id)}
+                    onClick={() => {
+                      setSelectedCategoryId(cat._id);
+                      setMobileTab('map');
+                    }}
                     style={{
                       padding: '12px',
                       cursor: 'pointer',
@@ -643,24 +667,24 @@ const TicketDesigner = ({ selectedEvent }) => {
               </div>
             </div>
           )}
-        </div>
+      </div>
 
-        <div className="canvas-area" style={{ background: '#f5f5f5' }}>
+        <div className={`canvas-area ${mobileTab === 'map' ? 'mobile-visible' : 'mobile-hidden'}`} style={{ background: '#f5f5f5' }}>
           <div className="canvas-toolbar">
-            <h4 className="canvas-title">
-              {selectedCategory ? `Designing: ${selectedCategory.priceName}` : "Select a category to design"}
-            </h4>
-            <div className="zoom-controls">
+            <div className="toolbar-spacer" />
+            <div className="toolbar-group">
               <button
                 className={`bt-btn sync-btn-small ${isSyncing ? 'spinning' : ''}`}
                 onClick={handleSyncData}
                 disabled={isSyncing}
                 title="Sync Event Data with Database"
-                style={{ marginRight: '10px', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', height: 'auto' }}
               >
                 <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
-                <span style={{ fontSize: '11px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+                <span>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
               </button>
+            </div>
+            <div className="toolbar-divider" />
+            <div className="toolbar-group">
               <button
                 className={`bt-btn ${isStageDraggable ? 'active' : ''}`}
                 onClick={() => setIsStageDraggable(!isStageDraggable)}
@@ -671,18 +695,23 @@ const TicketDesigner = ({ selectedEvent }) => {
               <button className="bt-btn" onClick={handleFitToScreen} title="Fit to Screen">
                 <Icon icon="mdi:fullscreen-exit" />
               </button>
-              <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.05, 0.01))}>
-                <Icon icon="mdi:minus" />
-              </button>
-              <span className="zoom-value">{Math.round(zoom * 100)}%</span>
-              <button className="bt-btn" onClick={() => setZoom(z => Math.min(z + 0.05, 2))}>
-                <Icon icon="mdi:plus" />
-              </button>
+            </div>
+            <div className="toolbar-divider" />
+            <div className="toolbar-group">
+              <div className="zoom-group">
+                <button className="zoom-btn" onClick={() => setZoom(z => Math.max(z - 0.05, 0.01))}>
+                  <Icon icon="mdi:minus" />
+                </button>
+                <span className="zoom-value">{Math.round(zoom * 100)}%</span>
+                <button className="zoom-btn" onClick={() => setZoom(z => Math.min(z + 0.05, 2))}>
+                  <Icon icon="mdi:plus" />
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="konva-container" ref={containerRef} style={{ overflow: 'hidden' }}>
-            {selectedCategoryId ? (
+            {selectedCategoryId && containerSize.w > 0 && containerSize.h > 0 ? (
               <Stage
                 width={containerSize.w}
                 height={containerSize.h}
@@ -800,7 +829,8 @@ const TicketDesigner = ({ selectedEvent }) => {
                   )}
                 </Layer>
               </Stage>
-            ) : (
+            ) : null}
+            {!selectedCategoryId && (
               <div style={{
                 height: '100%',
                 display: 'flex',
@@ -814,6 +844,110 @@ const TicketDesigner = ({ selectedEvent }) => {
               </div>
             )}
           </div>
+
+          {selectedId && selectedItem && (
+            <div className="sidebar-card inspector-card properties-bottom-sheet" style={{ zIndex: 3000 }}>
+              <div className="mobile-sheet-handle" />
+              <div className="sidebar-header">
+                <h4 className="bt-section-title-layout">Edit Element</h4>
+                <button className="close-btn" onClick={() => setSelectedId(null)}>
+                  <Icon icon="mdi:close" />
+                </button>
+              </div>
+              <div className="inspector-body" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                {selectedItem.type === 'text' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Text Content</label>
+                      <textarea
+                        style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
+                        value={selectedItem.text}
+                        onChange={e => updateItem(selectedId, { text: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Font Size</label>
+                        <input
+                          type="number"
+                          style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
+                          value={selectedItem.fontSize}
+                          onChange={e => updateItem(selectedId, { fontSize: parseInt(e.target.value) || 10 })}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Font Style</label>
+                        <select
+                          style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
+                          value={selectedItem.fontStyle || 'normal'}
+                          onChange={e => updateItem(selectedId, { fontStyle: e.target.value })}
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="bold">Bold</option>
+                          <option value="italic">Italic</option>
+                          <option value="bold italic">Bold Italic</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Color</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          type="color"
+                          style={{ width: '45px', height: '35px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                          value={selectedItem.fill}
+                          onChange={e => updateItem(selectedId, { fill: e.target.value })}
+                        />
+                        <input
+                          type="text"
+                          style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
+                          value={selectedItem.fill}
+                          onChange={e => updateItem(selectedId, { fill: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {selectedItem.type === 'rect' && (
+                  <div>
+                    <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Color</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="color"
+                        style={{ width: '45px', height: '35px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                        value={selectedItem.fill}
+                        onChange={e => updateItem(selectedId, { fill: e.target.value })}
+                      />
+                      <input
+                        type="text"
+                        style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
+                        value={selectedItem.fill}
+                        onChange={e => updateItem(selectedId, { fill: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                  <button
+                    className="outlined-button text-red"
+                    style={{ color: 'var(--color-red-primary)', flex: 1 }}
+                    onClick={handleDeleteItem}
+                    disabled={['bg-border', 'bg-main', 'left-stripe'].includes(selectedId)}
+                  >
+                    <Icon icon="mdi:delete-outline" /> Delete
+                  </button>
+                  <button
+                    className="primary-button"
+                    style={{ backgroundColor: 'var(--color-red-primary)', color: 'white', flex: 1 }}
+                    onClick={() => setSelectedId(null)}
+                  >
+                    <Icon icon="mdi:check" /> Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

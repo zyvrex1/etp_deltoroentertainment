@@ -101,6 +101,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
   const [priceLevels, setPriceLevels] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
+  const [mobileTab, setMobileTab] = useState("map"); // 'categories' | 'map'
   const [zoom, setZoom] = useState(1);
   const [fitScale, setFitScale] = useState(1);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
@@ -310,8 +311,26 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
 
   return (
     <div className="layout-builder-container unified-view">
+      {/* Mobile Tab Navigation */}
+      <div className="mobile-builder-tabs">
+        <button
+          className={`mobile-tab-btn ${mobileTab === 'categories' ? 'active' : ''}`}
+          onClick={() => setMobileTab('categories')}
+        >
+          <Icon icon="mdi:ticket-outline" />
+          <span>Categories</span>
+        </button>
+        <button
+          className={`mobile-tab-btn ${mobileTab === 'map' ? 'active' : ''}`}
+          onClick={() => setMobileTab('map')}
+        >
+          <Icon icon="mdi:map-outline" />
+          <span>Map View</span>
+        </button>
+      </div>
+
       <div className="builder-main">
-        <div className="builder-sidebar" >
+        <div className={`builder-sidebar ${mobileTab === 'categories' ? 'mobile-visible' : 'mobile-hidden'}`} >
           {/* Ticket Categories Sidebar Area */}
           <div className="sidebar-card categories-card" style={{ borderBottom: '1px solid #eee', background: 'transparent' }}>
             <div className="sidebar-header">
@@ -387,6 +406,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
           {/* Inspector Card Area */}
           {selectedId && (
             <div className="sidebar-card inspector-card" style={{ borderBottom: '1px solid #eee', background: 'transparent' }}>
+              <div className="mobile-sheet-handle" />
               <div className="sidebar-header">
                 <h4 className="bt-section-title-layout">Shape Inspector</h4>
                 <button className="close-btn" onClick={() => setSelectedId(null)}>
@@ -473,52 +493,56 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
             </div>
           </div>
         </div>
-
-        <div className="canvas-area">
+        <div className={`canvas-area ${mobileTab === 'map' ? 'mobile-visible' : 'mobile-hidden'}`}>
           <div className="canvas-toolbar">
-            <h4 className="canvas-title">{selectedEvent?.venue?.name || "Venue Map"}</h4>
-            <div className="zoom-controls">
+
+            <div className="toolbar-spacer" />
+            <div className="toolbar-group">
               <button
-                className={`bt-btn sync-btn ${isSyncing ? 'spinning' : ''}`}
+                className={`bt-btn sync-btn-small ${isSyncing ? 'spinning' : ''}`}
                 onClick={handleSyncBooths}
                 disabled={isSyncing}
                 title="Sync Booth Status with Database"
-                style={{ marginRight: '10px' }}
               >
                 <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
-                <span style={{ marginLeft: '5px', fontSize: '12px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+                <span>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
               </button>
-              <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))} title="Zoom Out">
-                <Icon icon="mdi:minus" />
-              </button>
-              <span
-                className="zoom-value"
-                title="Click to reset to fit"
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  setZoom(fitScale);
-                  if (containerRef.current) {
-                    const { clientWidth, clientHeight } = containerRef.current;
-                    setStagePos({
-                      x: (clientWidth - canvasWidth * fitScale) / 2,
-                      y: (clientHeight - canvasHeight * fitScale) / 2,
-                    });
-                  }
-                }}
-              >
-                {Math.round((zoom / fitScale) * 100)}%
-              </span>
-              <button className="bt-btn" onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))} title="Zoom In">
-                <Icon icon="mdi:plus" />
-              </button>
+            </div>
+            <div className="toolbar-divider" />
+            <div className="toolbar-group">
+              <div className="zoom-group">
+                <button className="zoom-btn" onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))} title="Zoom Out">
+                  <Icon icon="mdi:minus" />
+                </button>
+                <span
+                  className="zoom-value"
+                  title="Click to reset to fit"
+                  onClick={() => {
+                    setZoom(fitScale);
+                    if (containerRef.current) {
+                      const { clientWidth, clientHeight } = containerRef.current;
+                      setStagePos({
+                        x: (clientWidth - canvasWidth * fitScale) / 2,
+                        y: (clientHeight - canvasHeight * fitScale) / 2,
+                      });
+                    }
+                  }}
+                >
+                  {Math.round((zoom / fitScale) * 100)}%
+                </span>
+                <button className="zoom-btn" onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))} title="Zoom In">
+                  <Icon icon="mdi:plus" />
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="konva-container" ref={containerRef}>
-            <Stage
-              width={containerSize.w}
-              height={containerSize.h}
-              ref={stageRef}
+            {containerSize.w > 0 && containerSize.h > 0 && (
+              <Stage
+                width={containerSize.w}
+                height={containerSize.h}
+                ref={stageRef}
               scaleX={zoom}
               scaleY={zoom}
               x={stagePos.x}
@@ -667,6 +691,7 @@ const SeatAndBoothMap = ({ selectedEvent }) => {
                 ))}
               </Layer>
             </Stage>
+            )}
           </div>
         </div>
       </div>

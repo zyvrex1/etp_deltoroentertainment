@@ -297,8 +297,7 @@
 }
 
 .cs-qty-btn {
-    width: 26px;
-    height: 26px;
+
     border-radius: 6px;
     border: 1px solid var(--color-black-quaternary);
     background: var(--color-bg-light);
