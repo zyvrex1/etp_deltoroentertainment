@@ -1136,7 +1136,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
 
         <div className="canvas-area">
           <div className="canvas-toolbar">
-            <h4 className="canvas-title">{selectedEvent?.venue?.name || "Venue Map"}</h4>
+            <h4 className="canvas-title"></h4>
             <div className="toolbar-actions">
               <button
                 className="bt-btn"
