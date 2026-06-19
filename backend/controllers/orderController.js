@@ -5,7 +5,8 @@ const mongoose = require("mongoose");
 
 // Create Order
 const createOrder = async (req, res) => {
-    const { items, sponsorId, eventId, boothCode, storeName, totalAmount, paymentMethod } = req.body;
+    console.log("createOrder body:", req.body);
+    let { items, sponsorId, eventId, boothCode, storeName, totalAmount, paymentMethod } = req.body;
     const customerId = req.user._id;
 
     if (!items || items.length === 0 || !sponsorId || !eventId) {
@@ -13,6 +14,23 @@ const createOrder = async (req, res) => {
     }
 
     try {
+        // The frontend passes the sponsor's User._id (not the Sponsor document _id).
+        // Resolve to the actual Sponsor document so the order ref is correct.
+        let sponsorDoc = null;
+        if (mongoose.Types.ObjectId.isValid(sponsorId)) {
+            // Try direct lookup first (in case a Sponsor _id was passed)
+            sponsorDoc = await Sponsor.findById(sponsorId);
+            // If not found, it's likely a User _id — look up by userId
+            if (!sponsorDoc) {
+                sponsorDoc = await Sponsor.findOne({ userId: sponsorId });
+            }
+        }
+        if (!sponsorDoc) {
+            return res.status(400).json({ error: "Sponsor not found. Cannot create order." });
+        }
+        // Use the resolved Sponsor document _id going forward
+        sponsorId = sponsorDoc._id;
+
         const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
         
         const isInvoice = paymentMethod && paymentMethod.toLowerCase().includes('invoice');

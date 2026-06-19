@@ -38,7 +38,9 @@ export const SponsorCartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
     const [isInitialized, setIsInitialized] = useState(false);
     const hasHealedRef = useRef(false);
-const socketRef = useRef(null);
+    const socketRef = useRef(null);
+    // Track how many saves are in-flight so we can ignore our own WebSocket echoes
+    const pendingSavesRef = useRef(0);
 
     // Explicitly save to storage and backend
     const saveCart = (newItems, currentUser = user) => {
@@ -58,57 +60,94 @@ const socketRef = useRef(null);
                 console.error("Error saving user cart locally", e);
             }
 
-            const currentDbCart = currentUser.cart || [];
-            const nonBoothItems = currentDbCart.filter(item => !item?.booth?.id && !item?.booth?._id);
+            // IMPORTANT: Do NOT merge with currentUser.cart here — that is a stale
+            // login-time snapshot and will resurrect deleted booths. We only keep
+            // non-booth items (e.g. ticket cart items from other contexts) from the
+            // persisted 'user' object, which is more up-to-date than auth context.
+            let nonBoothItems = [];
+            try {
+                const persistedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const persistedCart = persistedUser?.cart || [];
+                nonBoothItems = persistedCart.filter(item => !item?.booth?.id && !item?.booth?._id);
+            } catch (e) { }
+
             const mergedCart = [...nonBoothItems, ...leanItems];
 
+            // Track in-flight saves so the WebSocket echo is ignored
+            pendingSavesRef.current += 1;
             updateCartAPI(mergedCart, currentUser.token).then(() => {
-                const updatedUser = { ...currentUser, cart: mergedCart };
+                // Update the persisted user snapshot so future saves have fresh non-booth items
                 try {
+                    const persistedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                    const updatedUser = { ...persistedUser, cart: mergedCart };
                     localStorage.setItem('user', JSON.stringify(updatedUser));
                 } catch (e) { }
             }).catch(err => {
                 console.error("Failed to sync cart with backend", err);
+            }).finally(() => {
+                // Decrement after a short delay so the WS echo (which arrives
+                // shortly after the API response) is still suppressed
+                setTimeout(() => {
+                    pendingSavesRef.current = Math.max(0, pendingSavesRef.current - 1);
+                }, 1500);
             });
         }
     };
 
     // Load cart from user object or localStorage on mount or when user changes
+    // Load cart from user object or localStorage on mount or when the logged-in user actually changes
     useEffect(() => {
         if (user) {
-            // Check if user has cart items in their profile (from DB)
-            const dbItems = (user.cart && Array.isArray(user.cart)) 
-                ? user.cart.filter(item => item?.booth?.id || item?.booth?._id) 
-                : [];
+            const savedCartKey = `sponsorCart_${user.email}`;
+            const savedCart = localStorage.getItem(savedCartKey);
 
-            // Fallback to localStorage if we need to merge guest cart
-            const savedCart = localStorage.getItem(`sponsorCart_${user.email}`);
-            const guestCart = localStorage.getItem('guestCart');
+            if (savedCart !== null) {
+                // We've already established a local cart for this user, and every
+                // add/remove/clear keeps it perfectly in sync. Trust it instead of
+                // re-merging with user.cart, which can be a stale snapshot (we
+                // never dispatch cart updates back into the auth context) and
+                // would otherwise resurrect deleted items.
+                let localItems = [];
+                try {
+                    localItems = JSON.parse(savedCart).filter(item => item?.booth?.id || item?.booth?._id);
+                } catch (e) { }
+                setCartItems(localItems);
+            } else {
+                // First time we've seen this user in this browser (fresh login /
+                // new device) — merge their DB cart with any guest cart so nothing
+                // gets lost, then persist that as the new local baseline.
+                const dbItems = (user.cart && Array.isArray(user.cart))
+                    ? user.cart.filter(item => item?.booth?.id || item?.booth?._id)
+                    : [];
 
-            let localItems = [];
-            if (savedCart) {
-                try { localItems = JSON.parse(savedCart).filter(item => item?.booth?.id || item?.booth?._id); } catch (e) { }
-            } else if (guestCart) {
-                try { localItems = JSON.parse(guestCart).filter(item => item?.booth?.id || item?.booth?._id); } catch (e) { }
-            }
-
-            // Merge DB cart and Local cart based on booth ID
-            const mergedItems = [...dbItems];
-            let didMerge = false;
-            localItems.forEach(localItem => {
-                const localId = String(localItem.booth?._id || localItem.booth?.id);
-                if (!mergedItems.some(dbItem => String(dbItem.booth?._id || dbItem.booth?.id) === localId)) {
-                    mergedItems.push(localItem);
-                    didMerge = true;
+                const guestCart = localStorage.getItem('guestCart');
+                let guestItems = [];
+                if (guestCart) {
+                    try { guestItems = JSON.parse(guestCart).filter(item => item?.booth?.id || item?.booth?._id); } catch (e) { }
                 }
-            });
 
-            setCartItems(mergedItems);
+                const mergedItems = [...dbItems];
+                let didMerge = false;
+                guestItems.forEach(localItem => {
+                    const localId = String(localItem.booth?._id || localItem.booth?.id);
+                    if (!mergedItems.some(dbItem => String(dbItem.booth?._id || dbItem.booth?.id) === localId)) {
+                        mergedItems.push(localItem);
+                        didMerge = true;
+                    }
+                });
 
-            // Sync merged cart to DB ONLY if we added guest items that weren't in the DB
-            // OR if DB is empty but we found items locally.
-            if (didMerge || (dbItems.length === 0 && mergedItems.length > 0)) {
-                saveCart(mergedItems, user);
+                setCartItems(mergedItems);
+
+                if (didMerge) {
+                    // New guest items found — persist locally AND to the backend
+                    saveCart(mergedItems, user);
+                } else {
+                    // Nothing new to push to the backend, but still establish the
+                    // local baseline so future renders trust localStorage.
+                    try {
+                        localStorage.setItem(savedCartKey, JSON.stringify(getLeanCartItems(mergedItems)));
+                    } catch (e) { }
+                }
             }
         } else {
             // User is a guest or just logged out
@@ -122,7 +161,7 @@ const socketRef = useRef(null);
             setCartItems(parsedCart);
         }
         setIsInitialized(true);
-    }, [user]); // <-- FIXED: Added the missing closure block right here!
+    }, [user?.email]); // only re-sync when the logged-in user actually changes, not on every user object reference change
 
     // Listen for cross-window storage changes to sync cart in real-time (for same browser)
     useEffect(() => {
@@ -157,48 +196,60 @@ const socketRef = useRef(null);
     }, [user]);
 
     // Listen to WebSocket for cross-device/browser sync
-  useEffect(() => {
-    if (!user) {
+    useEffect(() => {
+        if (!user) {
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current = null;
+            }
+            return;
+        }
+
         if (socketRef.current) {
             socketRef.current.disconnect();
             socketRef.current = null;
         }
-        return;
-    }
 
-    if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-    }
+        const socket = io(import.meta.env.VITE_BACKEND_URL, {
+            withCredentials: true,
+            transports: ['polling', 'websocket'],  // polling first, upgrade later
+            upgrade: false,                         // disables the upgrade that causes the warning
+            reconnectionAttempts: 3,
+        });
 
-   const socket = io(import.meta.env.VITE_BACKEND_URL, {
-    withCredentials: true,
-    transports: ['polling', 'websocket'],  // polling first, upgrade later
-    upgrade: false,                         // disables the upgrade that causes the warning
-    reconnectionAttempts: 3,
-});
+        socketRef.current = socket;
 
-    socketRef.current = socket;
-
-    socket.on('cartUpdate', (data) => {
-        if (data.userId && String(data.userId) === String(user._id)) {
-            setCartItems(prev => {
-                const newValue = data.cart || [];
-                const prevIds = prev.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
-                const newIds = newValue.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
-                if (prevIds !== newIds || prev.length !== newValue.length) {
-                    return newValue;
+        socket.on('cartUpdate', (data) => {
+            if (data.userId && String(data.userId) === String(user._id)) {
+                // If we have an in-flight save, this WebSocket event is likely the
+                // echo from our own updateCartAPI call. Ignore it to prevent
+                // ghost-booth resurrection (the backend sends back the pre-removal
+                // snapshot before our write lands).
+                if (pendingSavesRef.current > 0) {
+                    return;
                 }
-                return prev;
-            });
-        }
-    });
 
-    return () => {
-        socket.disconnect();
-        socketRef.current = null;
-    };
-}, [user]);
+                setCartItems(prev => {
+                    // Only apply WS update if it comes from another device/tab.
+                    // Filter to booth-only items so we compare apples to apples.
+                    const newBoothItems = (data.cart || []).filter(
+                        i => i?.booth?.id || i?.booth?._id
+                    );
+                    const prevIds = prev.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
+                    const newIds = newBoothItems.map(i => String(i.booth?._id || i.booth?.id)).sort().join(',');
+                    if (prevIds !== newIds || prev.length !== newBoothItems.length) {
+                        return newBoothItems;
+                    }
+                    return prev;
+                });
+            }
+        });
+
+        return () => {
+            socket.disconnect();
+            socketRef.current = null;
+        };
+    }, [user]);
 
     const addToCart = (item) => {
         if (!item || !item.booth) return;

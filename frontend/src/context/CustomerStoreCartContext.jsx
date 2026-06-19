@@ -38,7 +38,7 @@ export const CustomerStoreCartProvider = ({ children }) => {
                 category: product.category,
                 boothName: boothInfo.boothName,
                 sponsorName: boothInfo.sponsorName,
-                sponsorId: product.sponsorId?._id || product.sponsorId,
+                sponsorId: boothInfo.sponsorId || product.sponsorId?._id || product.sponsorId,
                 eventId: boothInfo.eventId || product.eventId?._id || product.eventId,
                 quantity: 1 
             }];

@@ -698,7 +698,9 @@ const CustomerSeats = () => {
                                                 <div className="cs-cat-top">
                                                     <span className="cs-cat-name">
                                                         {cat.priceName === 'General Fee' ? 'Entrance Fee' : cat.priceName}
+                                                        <span className="smaller-body-text" style={{ color: 'var(--color-green-primary)', backgroundColor: 'var(--color-green-quaternary)', border: '1px solid var(--color-green-secondary)', borderRadius: '4px', padding: '1px 6px', fontWeight: 600, fontSize: '10px' }}>General Fee</span>
                                                     </span>
+                                                    
                                                     {catType === "Booth (Square)" ? (
                                                         // ← Replaces "Select on map" for booths
                                                         <span

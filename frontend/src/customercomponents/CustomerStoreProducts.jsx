@@ -153,7 +153,7 @@ const CustomerStoreProducts = () => {
   const handleCheckout = () => {
     if (cartItems.length === 0) return;
     setIsCartModalOpen(false);
-    navigate("/customer/store/checkout", { state: { storeName, boothName } });
+    navigate("/customer/store/checkout", { state: { storeName, boothName, sponsorId, eventId } });
   };
 
   return (
@@ -294,7 +294,7 @@ const CustomerStoreProducts = () => {
                       <button 
                         className="csp-add-btn" 
                         disabled={product.stock <= 0}
-                        onClick={() => addToCart(product, { eventId, eventName, sponsorName: storeName, boothName })}
+                        onClick={() => addToCart(product, { eventId, eventName, sponsorName: storeName, boothName, sponsorId })}
                       >
                         <Icon icon="mdi:cart-plus" /> Add to Order
                       </button>

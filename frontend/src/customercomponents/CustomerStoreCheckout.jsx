@@ -22,7 +22,7 @@ const CustomerStoreCheckout = () => {
     const [apEmail, setApEmail] = useState(user?.email || "");
 
     // Store/booth information passed from state
-    const { storeName, boothName } = location.state || { storeName: "Store", boothName: "Booth" };
+    const { storeName, boothName, sponsorId: stateSponsorId, eventId: stateEventId } = location.state || { storeName: "Store", boothName: "Booth" };
     const [sponsorPaymentMethods, setSponsorPaymentMethods] = useState([]);
 
     // Pull and format phone number
@@ -135,19 +135,28 @@ const CustomerStoreCheckout = () => {
 
         if (result.isConfirmed) {
             try {
+                // Resolve sponsorId and eventId with fallbacks to location.state
+                const resolvedSponsorId = cartItems[0]?.sponsorId?._id || cartItems[0]?.sponsorId || stateSponsorId;
+                const resolvedEventId = cartItems[0]?.eventId?._id || cartItems[0]?.eventId || stateEventId;
+
+                if (!resolvedSponsorId || !resolvedEventId) {
+                    showErrorAlert('Missing Order Info', 'Could not determine the sponsor or event for this order. Please go back and try again.');
+                    return;
+                }
+
                 const orderData = {
                     items: cartItems.map(item => ({
                         productId: item.id,
                         name: item.name,
-                        price: item.price,
-                        quantity: item.quantity,
+                        price: Number(item.price),
+                        quantity: Number(item.quantity),
                         image: item.image
                     })),
-                    sponsorId: cartItems[0]?.sponsorId?._id || cartItems[0]?.sponsorId,
-                    eventId: cartItems[0]?.eventId?._id || cartItems[0]?.eventId,
+                    sponsorId: resolvedSponsorId,
+                    eventId: resolvedEventId,
                     boothCode: cartItems[0]?.boothName || boothName,
                     storeName: storeName,
-                    totalAmount: total,
+                    totalAmount: Number(total),
                     paymentMethod: paymentMethod === 'card' ? 'Credit Card' : paymentMethod === 'saved' ? 'Saved Card' : paymentMethod === 'invoice' ? 'Invoice / Bank Transfer' : 'Direct to Sponsor',
                     appliedGift: selectedGift ? selectedGift.giftId : null,
                     giftCode: selectedGift ? selectedGift.code : ""
@@ -173,7 +182,26 @@ const CustomerStoreCheckout = () => {
                 navigate('/customer/my-orders');
             } catch (error) {
                 console.error("Payment Error:", error);
-                showErrorAlert('Payment Failed', error.message || 'There was an error processing your payment.');
+                let errorMessage = 'There was an error processing your payment.';
+                if (error.response?.data) {
+                    const data = error.response.data;
+                    if (data.error) {
+                        errorMessage = data.error;
+                    } else if (data.message) {
+                        errorMessage = data.message;
+                        if (data.errors) {
+                            const fieldErrors = Object.entries(data.errors)
+                                .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+                                .join('\n');
+                            if (fieldErrors) {
+                                errorMessage += `:\n${fieldErrors}`;
+                            }
+                        }
+                    }
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                showErrorAlert('Payment Failed', errorMessage);
             }
         }
     };

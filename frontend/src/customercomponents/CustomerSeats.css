@@ -383,6 +383,9 @@
     white-space: nowrap;
     flex: 1;
     min-width: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 /* Price + units row (mirrors .cat-meta) */

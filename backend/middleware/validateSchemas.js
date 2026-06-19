@@ -6,6 +6,7 @@ function validate(schema) {
   return (req, res, next) => {
     const result = schema.safeParse(req.body)
     if (!result.success) {
+      console.log("Zod Validation Failed:", JSON.stringify(result.error.flatten().fieldErrors, null, 2), "on body:", req.body);
       return res.status(400).json({
         status: 'error',
         message: 'Invalid request data',
@@ -40,7 +41,7 @@ const createOrderSchema = z.object({
       name: z.string().optional(),
       price: z.number().optional(),
       quantity: z.number().int().min(1),
-      image: z.string().optional()
+      image: z.string().optional().nullable()
     })
   ).min(1, 'At least one item is required'),
   sponsorId: z.string().trim().min(1),
