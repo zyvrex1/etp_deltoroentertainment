@@ -431,7 +431,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
       if (spacing < GRID_SIZE) spacing = GRID_SIZE;
     }
 
-    const prefix = category.name.length > 5 ? category.name.substring(0, 3).toUpperCase() : category.name;
+    const prefix = category.name.substring(0, 3).toUpperCase();
     const newItems = [];
     for (let i = 0; i < count; i++) {
       const labelNum = Number(batchLabelStart) + i;

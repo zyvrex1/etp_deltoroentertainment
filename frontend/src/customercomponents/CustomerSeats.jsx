@@ -696,9 +696,11 @@ const CustomerSeats = () => {
                                             {/* Details */}
                                             <div className="cs-cat-details">
                                                 <div className="cs-cat-top">
-                                                    <span className="cs-cat-name">
+                                                    <span className="cs-cat-name" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                         {cat.priceName === 'General Fee' ? 'Entrance Fee' : cat.priceName}
-                                                        <span className="smaller-body-text" style={{ color: 'var(--color-green-primary)', backgroundColor: 'var(--color-green-quaternary)', border: '1px solid var(--color-green-secondary)', borderRadius: '4px', padding: '1px 6px', fontWeight: 600, fontSize: '10px' }}>General Fee</span>
+                                                        {catType === 'General Fee' && (
+                                                            <span className="smaller-body-text" style={{ color: 'var(--color-green-primary)', backgroundColor: 'var(--color-green-quaternary)', border: '1px solid var(--color-green-secondary)', borderRadius: '4px', padding: '1px 6px', fontWeight: 600, fontSize: '10px' }}>General Fee</span>
+                                                        )}
                                                     </span>
                                                     
                                                     {catType === "Booth (Square)" ? (

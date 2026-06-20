@@ -279,30 +279,30 @@ const SponsorVenueBilling = () => {
                 }
 
                 // Distribute discount proportionally
-              // After
-let itemDiscount = 0;
-if (discount > 0 && selectedGift) {
-    if (selectedGift.valueType === 'bxgy') {
-        const sortedPrices = [...selectedItems].sort((a, b) => (a.facePrice || 0) - (b.facePrice || 0));
-        const cheapestBoothId = sortedPrices[0].booth?._id || sortedPrices[0].booth?.id;
-        const thisBoothId = item.booth?._id || item.booth?.id;
-        if (String(thisBoothId) === String(cheapestBoothId)) {
-            itemDiscount = item.facePrice || 0;
-        }
-    } else {
-        if (idx === itemCount - 1) {
-            itemDiscount = remainingDiscount;
-        } else {
-            itemDiscount = Math.round(((item.facePrice / subtotalGrand) * discount) * 100) / 100;
-            remainingDiscount -= itemDiscount;
-        }
-    }
-}
+                // After
+                let itemDiscount = 0;
+                if (discount > 0 && selectedGift) {
+                    if (selectedGift.valueType === 'bxgy') {
+                        const sortedPrices = [...selectedItems].sort((a, b) => (a.facePrice || 0) - (b.facePrice || 0));
+                        const cheapestBoothId = sortedPrices[0].booth?._id || sortedPrices[0].booth?.id;
+                        const thisBoothId = item.booth?._id || item.booth?.id;
+                        if (String(thisBoothId) === String(cheapestBoothId)) {
+                            itemDiscount = item.facePrice || 0;
+                        }
+                    } else {
+                        if (idx === itemCount - 1) {
+                            itemDiscount = remainingDiscount;
+                        } else {
+                            itemDiscount = Math.round(((item.facePrice / subtotalGrand) * discount) * 100) / 100;
+                            remainingDiscount -= itemDiscount;
+                        }
+                    }
+                }
 
-// After
-const itemOriginalPrice = item.facePrice || 0;
-const itemSubtotal = itemOriginalPrice - itemDiscount;  // ← post-discount subtotal stored on the reservation
-const itemTotal = Math.max(0, itemSubtotal + (item.processingFee || 0) + (item.estimatedTax || 0));
+                // After
+                const itemOriginalPrice = item.facePrice || 0;
+                const itemSubtotal = itemOriginalPrice - itemDiscount;  // ← post-discount subtotal stored on the reservation
+                const itemTotal = Math.max(0, itemSubtotal + (item.processingFee || 0) + (item.estimatedTax || 0));
                 try {
                     const response = await axios.post(
                         `${BACKEND_URL}/api/events/${eventId}/reserve-booth`,
@@ -316,15 +316,15 @@ const itemTotal = Math.max(0, itemSubtotal + (item.processingFee || 0) + (item.e
                                 zipCode: billingInfo.postalCode,
                                 email: billingInfo.apEmail || user.email
                             },
-                           // After
-amount: {
-    total: itemTotal,
-    subtotal: itemSubtotal,       // post-discount: what the sponsor actually pays for this booth
-    discount: itemDiscount,       // the deduction amount (used to reconstruct original price)
-    discountLabel: selectedGift?.name || '',
-    fee: item.processingFee || 0,
-    tax: item.estimatedTax || 0
-},
+                            // After
+                            amount: {
+                                total: itemTotal,
+                                subtotal: itemSubtotal,       // post-discount: what the sponsor actually pays for this booth
+                                discount: itemDiscount,       // the deduction amount (used to reconstruct original price)
+                                discountLabel: selectedGift?.name || '',
+                                fee: item.processingFee || 0,
+                                tax: item.estimatedTax || 0
+                            },
                             paymentMethod: resolveApiPaymentMethod(),
                             poNumber: billingInfo.poNumber,
                             appliedGift: selectedGift ? selectedGift.giftId : null,
@@ -532,9 +532,9 @@ amount: {
                                         {availableGifts.map(g => (
                                             <option key={g.giftId} value={g.giftId}>
                                                 {g.code} - {g.name} ({
-                                                // After
-g.valueType === 'fixed' ? `$${(g.value ?? 0).toFixed(2)} off` :
-g.valueType === 'percent' ? `${g.value ?? 0}% off` :
+                                                    // After
+                                                    g.valueType === 'fixed' ? `$${(g.value ?? 0).toFixed(2)} off` :
+                                                        g.valueType === 'percent' ? `${g.value ?? 0}% off` :
                                                             g.valueType === 'bxgy' ? 'Buy 1 Get 1 Free' :
                                                                 'Promo'
                                                 })                                            </option>
@@ -558,7 +558,7 @@ g.valueType === 'percent' ? `${g.value ?? 0}% off` :
                     <div className="svb-card mb-4">
                         <div className="svb-card-body">
                             <h4 className="mb-4">Payment Method</h4>
-                            {savedMethods.map((method) => {
+                            {/* {savedMethods.map((method) => {
                                 const methodId = method._id || method.id;
                                 const isSelected = paymentMethod === methodId;
                                 return (
@@ -592,7 +592,7 @@ g.valueType === 'percent' ? `${g.value ?? 0}% off` :
                                         </div>
                                     </div>
                                 );
-                            })}
+                            })} */}
 
                             {/* Credit Card Option */}
                             <div

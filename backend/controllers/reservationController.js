@@ -49,7 +49,7 @@ const getAllReservations = async (req, res) => {
         const [reservations, total] = await Promise.all([
             Reservation.find(filter)
                 .populate({ path: 'user', select: 'firstName lastName email companyName' })
-                .populate({ path: 'event', select: 'title startDate' })
+                .populate({ path: 'event', select: 'title startDate endDate startTime endTime image venue priceLevels ticketLayouts' })
                 .populate({ path: 'appliedGift', select: 'name type value valueType' })
                 .sort({ createdAt: -1 })
                 .skip(skip)
@@ -1014,6 +1014,60 @@ const expireOldReservations = async () => {
     }
 };
 
+const sendTicketEmail = async (req, res) => {
+    const { id } = req.params;
+    const { tickets } = req.body;
+
+    if (!tickets || !Array.isArray(tickets) || tickets.length === 0) {
+        return res.status(400).json({ error: "No tickets provided." });
+    }
+
+    try {
+        const reservation = await Reservation.findById(id).populate('user', 'email firstName lastName').populate('event', 'title');
+        
+        if (!reservation) {
+            return res.status(404).json({ error: "Reservation not found" });
+        }
+
+        const attachments = tickets.map(ticket => {
+            const isPdf = ticket.base64Data.startsWith('data:application/pdf');
+            const base64Content = ticket.base64Data.split(';base64,').pop();
+            return {
+                filename: ticket.filename || (isPdf ? 'ticket.pdf' : 'ticket.png'),
+                content: base64Content,
+                encoding: 'base64'
+            };
+        });
+
+        const { sendEmail } = require('../utils/email');
+        const subject = `Your Tickets for ${reservation.event.title}`;
+        const text = `Hi ${reservation.user.firstName},\n\nYour payment has been approved! Attached are your tickets for ${reservation.event.title}.\n\nThank you,\neTicketsPro`;
+        const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+                <h2 style="color: #333;">Your Tickets are Ready!</h2>
+                <p>Hi ${reservation.user.firstName},</p>
+                <p>Your payment has been approved! Attached are your tickets for <strong>${reservation.event.title}</strong>.</p>
+                <p>Please present these tickets (printed or on your phone) at the venue.</p>
+                <br/>
+                <p>Thank you,<br/><strong>eTicketsPro</strong></p>
+            </div>
+        `;
+
+        await sendEmail({
+            to: reservation.user.email,
+            subject,
+            text,
+            html,
+            attachments
+        });
+
+        res.status(200).json({ message: "Tickets emailed successfully." });
+    } catch (error) {
+        console.error("SEND TICKET EMAIL ERROR:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getMyReservations,
     getAllReservations,
@@ -1026,6 +1080,7 @@ module.exports = {
     checkInReservation,
     updateStoreSettings,
     updateReservationStatus,
-    expireOldReservations
+    expireOldReservations,
+    sendTicketEmail
 };
 

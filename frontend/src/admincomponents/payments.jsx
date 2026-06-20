@@ -6,7 +6,7 @@ import { showSuccessAlert, showErrorAlert, showApproveConfirmAlert, showRejectCo
 import PaymentRejectionModal from "./Modal/PaymentRejectionModal";
 import ViewTransactionModal from "./Modal/ViewTransactionModal";
 import TransactionMonitoring from "./transaction";
-import axios from "axios";
+import api from "../services/api";
 import usePagination from "../hooks/usePagination";
 import PaginationBar from "../components/PaginationBar";
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -22,6 +22,7 @@ import {
   finalizeReport,
   generatePayoutInvoicePDF
 } from "../utils/pdfExport";
+import { generateTicketsForReservations } from "../utils/ticketRenderer";
 import "../promotercomponents/PromoterModal/PromoterViewPayout.css";
 
 const formatPaymentMethod = (method) => {
@@ -841,15 +842,30 @@ const Payments = () => {
     const confirmResult = await showApproveConfirmAlert(promoter, amount);
     if (!confirmResult.isConfirmed) return;
 
-    // If allResIds passed (grouped booths), update all of them; otherwise just the one
     const idsToUpdate = (allResIds && allResIds.length > 0) ? allResIds : [id];
 
     try {
+      showExportToast();
       await Promise.all(
         idsToUpdate.map(rid =>
           reservationService.updateReservationStatus(rid, "confirmed", user.token)
         )
       );
+
+      const approvedRes = reservations.filter(r => idsToUpdate.map(String).includes(String(r._id)));
+      const payloads = await generateTicketsForReservations(approvedRes);
+      
+      if (payloads.length > 0) {
+         try {
+             await api.post(`/reservations/${id}/send-tickets`, { tickets: payloads });
+         } catch (emailErr) {
+             console.error("Error sending ticket email:", emailErr);
+             await showErrorAlert('Email Error', 'Reservation approved, but failed to send the ticket email.');
+         }
+      } else {
+         console.warn("No payloads generated for tickets. Layout might be missing.");
+      }
+
       setReservations(prev =>
         prev.map(res =>
           idsToUpdate.map(String).includes(String(res._id))
@@ -857,8 +873,10 @@ const Payments = () => {
             : res
         )
       );
-      await showSuccessAlert('Reservation Approved', 'The reservation invoice has been approved.');
+      removeExportToast();
+      await showSuccessAlert('Reservation Approved', 'The reservation has been approved and tickets emailed.');
     } catch (error) {
+      removeExportToast();
       console.error('Error approving reservation:', error);
       await showErrorAlert('Error', error.response?.data?.error || 'Failed to approve reservation.');
     }

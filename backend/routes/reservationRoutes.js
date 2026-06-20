@@ -11,7 +11,8 @@ const {
     deleteReservation,
     updateStoreSettings,
     checkInReservation,
-    updateReservationStatus
+    updateReservationStatus,
+    sendTicketEmail
 } = require('../controllers/reservationController');
 const { upload } = require('../controllers/userController');
 const requireAuth = require('../middleware/requireAuth');
@@ -45,6 +46,8 @@ router.delete('/:id/exhibitors/:userId', requireRole('sponsor'), validateObjectI
 router.delete('/:id', requireRole('admin'), validateObjectId, deleteReservation);
 
 router.put('/:id/status', requireRole('admin'), validateObjectId, validateReservationStatus, updateReservationStatus);
+
+router.post('/:id/send-tickets', requireRole('admin'), validateObjectId, sendTicketEmail);
 
 router.put('/:id/store-settings', validateObjectId, verifyReservationOwner, upload.single('avatar'), validateStoreSettings, updateStoreSettings);
 

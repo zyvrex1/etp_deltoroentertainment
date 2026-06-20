@@ -1627,6 +1627,15 @@ Object.assign(event, mappedEvent);
     try {
       const seatIdsArr = purchasedSeats.map(seat => String(seat._id || seat.id));
       const seatLabelsArr = purchasedSeats.map(seat => seat.label || seat.code);
+
+      // Derive priceLevelId: for GA tickets, get from first GA seat; for physical, from first purchased seat
+      let reservationPriceLevelId = null;
+      if (purchasedSeats.length > 0) {
+        const firstSeat = purchasedSeats[0];
+        reservationPriceLevelId = (firstSeat.categoryId || firstSeat.priceLevelId || null);
+        if (reservationPriceLevelId) reservationPriceLevelId = reservationPriceLevelId.toString();
+      }
+
       const reservationObject = {
         _id: reservationId,
         user: req.user._id,
@@ -1634,6 +1643,7 @@ Object.assign(event, mappedEvent);
         type: reservationType,
         seatIds: seatIdsArr,
         seatLabels: seatLabelsArr,
+        priceLevelId: reservationPriceLevelId,
         amount: {
           total: amount.total || 0,
           subtotal: amount.subtotal || 0,
@@ -1841,6 +1851,7 @@ const reserveBooth = async (req, res) => {
       type: "booth",
       boothId: booth._id,
       boothCode: booth.label || booth.code,
+      priceLevelId: booth.priceLevelId && booth.priceLevelId !== 'none' ? booth.priceLevelId : null,
       batchId: batchId || uuidv4(),
       amount: {
         total: amount?.total || 0,

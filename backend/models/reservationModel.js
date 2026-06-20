@@ -23,6 +23,11 @@ const reservationSchema = new mongoose.Schema({
         type: String, // e.g., "B01"
         required: false
     },
+    priceLevelId: {
+        type: mongoose.Schema.Types.Mixed, // The price level category for this reservation
+        required: false,
+        default: null
+    },
     seatIds: [{
         type: String
     }],

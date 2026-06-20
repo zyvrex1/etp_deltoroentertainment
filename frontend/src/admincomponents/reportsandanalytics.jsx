@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { AuthContext } from "../context/AuthContext";
 import analyticsService from "../services/analyticsService";
 import reservationService from "../services/reservationService";
@@ -66,6 +66,20 @@ export default function ReportsAnalytics() {
     const [topEvents, setTopEvents] = useState([]);
     const [allEventsList, setAllEventsList] = useState([]);
     const [selectedEventId, setSelectedEventId] = useState("all");
+
+    // Event filter dropdown
+    const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
+    const eventDropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (eventDropdownRef.current && !eventDropdownRef.current.contains(e.target)) {
+                setIsEventDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
     const [overviewStats, setOverviewStats] = useState({
         grossRevenue: 0,
         netRevenue: 0,
@@ -85,9 +99,12 @@ export default function ReportsAnalytics() {
             if (!user?.token) return;
             try {
                 const res = await api.get('/events', {
-                    headers: { "Authorization": `Bearer ${user.token}` }
+                    headers: { "Authorization": `Bearer ${user.token}` },
+                    params: { limit: 100 }
                 });
-                const validEvents = (res.data || []).filter(ev => ['approved', 'completed'].includes(ev.status));
+                // The endpoint returns { data: [...], counts, pagination }
+                const eventsArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+                const validEvents = eventsArray.filter(ev => ['approved', 'completed'].includes(ev.status));
                 setAllEventsList(validEvents);
             } catch (error) {
                 console.error("Error fetching all events for filter:", error);
@@ -502,16 +519,42 @@ export default function ReportsAnalytics() {
                     <p className="large-body-text">Platform performance and revenue insights.</p>
                 </div>
                 <div className="reports-actions">
-                    <select
-                        className="outlined-button filter-button"
-                        value={selectedEventId}
-                        onChange={e => setSelectedEventId(e.target.value)}
-                    >
-                        <option value="all">All Events</option>
-                        {allEventsList.map(ev => (
-                            <option key={ev._id || ev.id} value={ev._id || ev.id}>{ev.title}</option>
-                        ))}
-                    </select>
+                    {/* Events Filter Dropdown */}
+                    <div className="ra-filter-dropdown" ref={eventDropdownRef}>
+                        <button
+                            className="ra-filter-dropdown-btn small-body-text"
+                            onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
+                        >
+                            <span className="ra-truncate-text">
+                                {selectedEventId === "all"
+                                    ? "All Events"
+                                    : allEventsList.find(ev => (ev._id || ev.id) === selectedEventId)?.title || "All Events"}
+                            </span>
+                            <Icon
+                                icon="mdi:chevron-down"
+                                className={`ra-dropdown-icon ${isEventDropdownOpen ? "open" : ""}`}
+                            />
+                        </button>
+                        {isEventDropdownOpen && (
+                            <div className="ra-filter-dropdown-menu">
+                                <button
+                                    className={`ra-filter-dropdown-item small-body-text ${selectedEventId === "all" ? "active" : ""}`}
+                                    onClick={() => { setSelectedEventId("all"); setIsEventDropdownOpen(false); }}
+                                >
+                                    All Events
+                                </button>
+                                {allEventsList.map(ev => (
+                                    <button
+                                        key={ev._id || ev.id}
+                                        className={`ra-filter-dropdown-item small-body-text ${selectedEventId === (ev._id || ev.id) ? "active" : ""}`}
+                                        onClick={() => { setSelectedEventId(ev._id || ev.id); setIsEventDropdownOpen(false); }}
+                                    >
+                                        {ev.title}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     <DateRangePicker
                         value={dateRange}
                         onChange={setDateRange}

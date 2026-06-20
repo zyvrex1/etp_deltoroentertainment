@@ -88,6 +88,93 @@
                     text-align: left;
                 }
             }
+
+            /* Custom Events Filter Dropdown — matches payments.jsx style */
+            .ra-filter-dropdown {
+                position: relative;
+
+                .ra-filter-dropdown-btn {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background-color: var(--color-white-primary);
+                    border: 1px solid var(--color-black-tertiary);
+                    border-radius: 8px;
+                    padding: 10px 16px;
+                    color: var(--color-black-secondary);
+                    cursor: pointer;
+                    min-width: 200px;
+                    transition: border-color 0.2s;
+                    font-family: 'Poppins', sans-serif;
+                    font-weight: 600;
+                    font-size: 14px;
+                    gap: 8px;
+
+                    &:hover {
+                        border-color: var(--color-black-secondary);
+                    }
+
+                    .ra-truncate-text {
+                        flex: 1;
+                        text-align: left;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        max-width: 160px;
+                    }
+
+                    .ra-dropdown-icon {
+                        transition: transform 0.2s ease;
+                        font-size: 18px;
+                        flex-shrink: 0;
+
+                        &.open {
+                            transform: rotate(180deg);
+                        }
+                    }
+                }
+
+                .ra-filter-dropdown-menu {
+                    position: absolute;
+                    top: calc(100% + 4px);
+                    right: 0;
+                    left: 0;
+                    background-color: var(--color-white-primary);
+                    border: 1px solid var(--color-black-tertiary);
+                    border-radius: 8px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    z-index: 100;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    max-height: 260px;
+                    overflow-y: auto;
+
+                    .ra-filter-dropdown-item {
+                        padding: 10px 16px;
+                        background: none;
+                        border: none;
+                        text-align: left;
+                        color: var(--color-black-secondary);
+                        cursor: pointer;
+                        border-radius: 0;
+                        transition: background 0.2s ease;
+                        font-family: 'Poppins', sans-serif;
+                        font-weight: 500;
+
+                        &:hover {
+                            background: var(--color-red-primary);
+                            color: var(--color-white-primary);
+                        }
+
+                        &.active {
+                            background: var(--color-red-quaternary);
+                            color: var(--color-red-primary);
+                            font-weight: 600;
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -531,6 +618,11 @@
 
             .filter-button,
             .export-btn {
+                width: 100%;
+            }
+
+            .ra-filter-dropdown,
+            .ra-filter-dropdown-btn {
                 width: 100%;
             }
         }
