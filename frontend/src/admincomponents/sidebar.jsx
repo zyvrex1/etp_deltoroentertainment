@@ -21,6 +21,9 @@ import "./sidebar.css";
 import { useAuthContext } from "../hooks/useAuthContext";
 import concernService from "../services/concernService";
 import eventsService from "../services/eventsService";
+import adminService from "../services/adminService";
+import reservationService from "../services/reservationService";
+import payoutService from "../services/payoutService";
 import { io } from "socket.io-client";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -29,6 +32,9 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
   const { user } = useAuthContext();
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingEventsCount, setPendingEventsCount] = useState(0);
+  const [pendingUsersCount, setPendingUsersCount] = useState(0);
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
+  const [pendingPayoutsCount, setPendingPayoutsCount] = useState(0);
 
   const fetchSidebarCounts = async () => {
     if (!user?.token) return;
@@ -41,6 +47,28 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
       if (user.role === 'admin' || user.role === 'superadmin') {
         const events = await eventsService.getEvents(user.token, 'pending');
         setPendingEventsCount(events.length);
+
+        // Fetch users to count pending users (never logged in)
+        const usersRes = await adminService.getUsers(user.token, { limit: 100 });
+        const users = usersRes.data || [];
+        const pendingUsers = users.filter(u => !u.lastLogin).length;
+        setPendingUsersCount(pendingUsers);
+
+        // Fetch reservations to count pending payments (offline payments/invoices under 1 hour)
+        const reservations = await reservationService.getAdminReservations(user.token);
+        const now = Date.now();
+        const ONE_HOUR_MS = 60 * 60 * 1000;
+        const pendingPayments = reservations.filter(res => {
+          if (res.status !== 'pending') return false;
+          const resTime = new Date(res.createdAt).getTime();
+          return (now - resTime) <= ONE_HOUR_MS;
+        }).length;
+        setPendingPaymentsCount(pendingPayments);
+
+        // Fetch payouts to count pending payouts
+        const payouts = await payoutService.getPayouts(user.token);
+        const pendingPayouts = payouts.filter(p => p.status === 'pending' || p.status === 'requested').length;
+        setPendingPayoutsCount(pendingPayouts);
       }
     } catch (error) {
       console.error("Error fetching sidebar counts:", error);
@@ -124,7 +152,12 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
             <p className="section-title">OPERATIONS</p>
 
             <NavLink to="/admin/users" className="sidebar-item" onClick={handleLinkClick}>
-              <MdPeople className="icon" />
+              <div className="icon-with-badge">
+                <MdPeople className="icon" />
+                {pendingUsersCount > 0 && (
+                  <span className="sidebar-pending-badge">{pendingUsersCount}</span>
+                )}
+              </div>
               <span>User Management</span>
             </NavLink>
 
@@ -139,7 +172,12 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
             </NavLink>
 
             <NavLink to="/admin/payments" className="sidebar-item" onClick={handleLinkClick}>
-              <MdPayment className="icon" />
+              <div className="icon-with-badge">
+                <MdPayment className="icon" />
+                {(pendingPaymentsCount + pendingPayoutsCount) > 0 && (
+                  <span className="sidebar-pending-badge">{pendingPaymentsCount + pendingPayoutsCount}</span>
+                )}
+              </div>
               <span>Payments & Payouts</span>
             </NavLink>
 
