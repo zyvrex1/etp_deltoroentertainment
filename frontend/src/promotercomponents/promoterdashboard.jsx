@@ -26,6 +26,7 @@ export default function PromoterDashboard() {
   const [confirmedSeatsSold, setConfirmedSeatsSold] = useState(0);
   const [confirmedBoothsSold, setConfirmedBoothsSold] = useState(0);
   const [confirmedTotalRevenue, setConfirmedTotalRevenue] = useState(0);
+  const [selectedTicketSalesEvent, setSelectedTicketSalesEvent] = useState("All Events");
 
   const navigate = useNavigate();
 
@@ -67,8 +68,11 @@ export default function PromoterDashboard() {
 
         // 3. Aggregate all active reservations across all approved events
         const allReservations = [];
-        salesResults.forEach(res => {
+        salesResults.forEach((res, index) => {
           if (res && Array.isArray(res.reservations)) {
+            res.reservations.forEach(r => {
+              r.resolvedEventTitle = approvedEvts[index]?.title;
+            });
             allReservations.push(...res.reservations);
           }
         });
@@ -114,7 +118,7 @@ export default function PromoterDashboard() {
           if (!sponsorMap[sponsorId]) {
             sponsorMap[sponsorId] = {
               sponsor: res.user.companyName || `${res.user.firstName} ${res.user.lastName}`,
-              event: res.event?.title || 'Multiple Events',
+              event: res.event?.title || res.resolvedEventTitle || 'Multiple Events',
               boothCount: 0,
               totalAmount: 0
             };
@@ -147,7 +151,7 @@ export default function PromoterDashboard() {
             customer: r.user?.companyName || (r.user ? `${r.user.firstName} ${r.user.lastName}` : r.billingAddress?.companyName || 'Guest'),
             amount: `$${(r.amount?.total || 0).toLocaleString()}`,
             type: (r.type === 'booth' || r.type === 'sponsorship') ? r.type : 'ticket',
-            event: r.event?.title || 'Unknown Event',
+            event: r.event?.title || r.resolvedEventTitle || 'Unknown Event',
             status: r.status || 'completed'
           }));
         setTransactions(txs);
@@ -211,7 +215,7 @@ export default function PromoterDashboard() {
         amount: `$ ${totalRevenue.toLocaleString()}`,
         statusLabel: evt.status === "completed" ? "Completed" : "Active",
         statusColor: evt.status === "completed" ? "gray" : "green",
-        soldText: `${totalSold} / ${totalCapacity} Seats sold`,
+        soldText: `${totalSold} / ${totalCapacity} Tickets sold`,
         progress: progress,
         subStats: [
           `${evt.ticketsSold || totalSold} checked in`,
@@ -290,7 +294,7 @@ export default function PromoterDashboard() {
       isNeutral: true,
     },
     {
-      label: "Seats Sold",
+      label: "Ticket Sold",
       value: confirmedSeatsSold.toLocaleString(),
       delta: "+8.2%",
       icon: "mdi:ticket-confirmation-outline",
@@ -392,9 +396,11 @@ export default function PromoterDashboard() {
       }
     }
 
+    const generalTicketsTotal = (e.priceLevels || []).reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
     if (e.eventType === "General Admission") {
-      const gaSeatsTotal = (e.priceLevels || []).reduce((sum, p) => sum + (p.quantityAvailable || 0), 0);
-      if (gaSeatsTotal > 0) totalSeats = gaSeatsTotal;
+      if (generalTicketsTotal > 0) totalSeats = generalTicketsTotal;
+    } else {
+      totalSeats += generalTicketsTotal;
     }
 
     // ✅ Sold counts from confirmed reservations only
@@ -403,13 +409,18 @@ export default function PromoterDashboard() {
     const boothsSold = soldData.booths;
 
     return {
+      rawId: e._id,
       name: e.title.length > 10 ? e.title.substring(0, 10) + '...' : e.title,
-      seatsSold,
-      seatsAvailable: Math.max(0, totalSeats - seatsSold),
+      ticketsSold: seatsSold,
+      ticketsAvailable: Math.max(0, totalSeats - seatsSold),
       boothsSold,
       boothsAvailable: Math.max(0, totalBooths - boothsSold)
     };
   });
+
+  const filteredTicketSalesData = selectedTicketSalesEvent === "All Events"
+    ? ticketSalesData
+    : ticketSalesData.filter(d => d.rawId === selectedTicketSalesEvent);
 
 
 
@@ -510,7 +521,7 @@ export default function PromoterDashboard() {
     <div className="promoter-dashboard">
       <div className="pd-topbar">
         <div className="pd-title">
-          <h1>Welcome back, {user?.firstName || "Alex"}</h1>
+          <h1>Dashboard</h1>
           <p className="small-body-text">
             Here's what's happening with your events today.
           </p>
@@ -564,17 +575,30 @@ export default function PromoterDashboard() {
       <div className="pd-main-content-grid">
         <div className="pd-left-panel">
           <div className="pd-charts-row">
-            {/* Ticket Sales by Event */}
+            {/* Ticket Sales */}
             <div className="pd-card graph-card bar-chart-card">
-              <div className="pd-card-header">
+              <div className="pd-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div className="header-text">
-                  <h3 className="left-aligned">Ticket Sales by Event</h3>
+                  <h3 className="left-aligned">Ticket Sales</h3>
+                </div>
+                <div className="header-filter">
+                  <select
+                    value={selectedTicketSalesEvent}
+                    onChange={(e) => setSelectedTicketSalesEvent(e.target.value)}
+                    className="regular-body-text"
+                    style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #e0e0e0', outline: 'none', cursor: 'pointer', backgroundColor: '#fff' }}
+                  >
+                    <option value="All Events">All Events</option>
+                    {approvedEvents.map(evt => (
+                      <option key={evt._id} value={evt._id}>{evt.title}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="chart-placeholder">
                 <ResponsiveContainer width="100%" height={isMobile ? 160 : 220}>
                   <BarChart
-                    data={ticketSalesData}
+                    data={filteredTicketSalesData}
                     maxBarSize={isMobile ? 14 : 30}
                     margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                   >
@@ -595,17 +619,17 @@ export default function PromoterDashboard() {
                     <RechartsTooltip />
                     <Bar dataKey="boothsAvailable" stackId="booths" name="Booths Available" fill="#ffe0cc" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="boothsSold" stackId="booths" name="Booths Sold" fill="#ff6b00" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="seatsAvailable" stackId="tickets" name="Seats Available" fill="#e6e6e6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="seatsSold" stackId="tickets" name="Seats Sold" fill="#0059ff" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="ticketsAvailable" stackId="tickets" name="Tickets Available" fill="#e6e6e6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="ticketsSold" stackId="tickets" name="Tickets Sold" fill="#0059ff" radius={[0, 0, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
                 <div className="pd-chart-legend" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
                   <div style={{ display: 'flex', gap: '16px' }}>
-                    <span className="legend-item"><span className="dot blue"></span>Seats Sold</span>
-                    <span className="legend-item"><span className="dot gray"></span>Seats Available</span>
+                    <span className="legend-item"><span className="dot" style={{ backgroundColor: '#0059ff' }}></span>Tickets Sold</span>
+                    <span className="legend-item"><span className="dot" style={{ backgroundColor: '#e6e6e6' }}></span>Tickets Available</span>
                   </div>
                   <div style={{ display: 'flex', gap: '16px' }}>
-                    <span className="legend-item"><span className="dot orange"></span>Booths Sold</span>
+                    <span className="legend-item"><span className="dot" style={{ backgroundColor: '#ff6b00' }}></span>Booths Sold</span>
                     <span className="legend-item"><span className="dot" style={{ backgroundColor: '#ffe0cc' }}></span>Booths Available</span>
                   </div>
                 </div>
@@ -656,7 +680,7 @@ export default function PromoterDashboard() {
           <div className="pd-card">
             <div className="pd-card-header" style={{ marginBottom: 0 }}>
               <h3 className="left-aligned">Active Events</h3>
-              <a href="/promoter/promoter-events">View all <Icon icon="mdi:arrow-right" /></a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate("/promoter/promoter-eventmanagement"); }}>View all <Icon icon="mdi:arrow-right" /></a>
             </div>
 
             <div className="pd-events">
@@ -722,7 +746,7 @@ export default function PromoterDashboard() {
           <div className="pd-card">
             <div className="pd-card-header">
               <h3 className="left-aligned">Top Sponsors</h3>
-              <a href="/promoter/promoter-sales">View all</a>
+              {/* <a href="#" onClick={(e) => { e.preventDefault(); navigate("/promoter/promoter-sales"); }}>View all</a> */}
             </div>
             <div className="pd-sponsors">
               <p className="smaller-body-text left-aligned" style={{ paddingBottom: '16px', color: 'var(--color-black-tertiary)' }}>Highest contributing partners</p>
@@ -789,9 +813,9 @@ export default function PromoterDashboard() {
           <div className="pd-card recent-activity-card">
             <div className="pd-card-header">
               <h4 className="left-aligned">Recent Transaction</h4>
-              <a href="/promoter/promoter-sales" style={{ color: 'var(--color-red-primary)', fontSize: '13px', fontWeight: '500', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {/* <a href="#" onClick={(e) => { e.preventDefault(); navigate("/promoter/promoter-sales"); }} style={{ color: 'var(--color-red-primary)', fontSize: '13px', fontWeight: '500', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 View all <Icon icon="mdi:arrow-right" />
-              </a>
+              </a> */}
             </div>
             <div className="activity-list" style={{ maxHeight: '585px' }}>
               {transactions.map((t, i) => (

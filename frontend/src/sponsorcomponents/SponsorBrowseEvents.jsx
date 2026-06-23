@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 import { getImageUrl } from '../utils/imageUrl';
@@ -24,6 +24,22 @@ const SponsorBrowseEvents = () => {
         reset: resetPage,
     } = usePagination({ limit: itemsPerPage });
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+    const categoryDropdownRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+                setIsCategoryDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const categories = ["All", ...new Set(allEvents.map(evt => evt.category).filter(Boolean))];
 
     const [dateRange, setDateRange] = useState(() => ({
         preset: 'all',
@@ -32,7 +48,7 @@ const SponsorBrowseEvents = () => {
         end: new Date(2100, 11, 31),
     }));
 
-      const handleGetBooths = (eventObj) => {
+    const handleGetBooths = (eventObj) => {
         navigate(`/sponsor/sponsor-venue-layout/${eventObj._id}`, { state: { event: eventObj } });
     };
     useEffect(() => {
@@ -67,7 +83,9 @@ const SponsorBrowseEvents = () => {
         const eventDate = new Date(event.startDate);
         const matchesDate = eventDate >= dateRange.start && eventDate <= dateRange.end;
 
-        return matchesSearch && matchesDate;
+        const matchesCategory = selectedCategory === "All" || event.category === selectedCategory;
+
+        return matchesSearch && matchesDate && matchesCategory;
     });
 
     useEffect(() => {
@@ -103,7 +121,7 @@ const SponsorBrowseEvents = () => {
                             <Icon icon="mdi:magnify" />
                             <input
                                 type="text"
-                                placeholder="Search events, artist or venue"
+                                placeholder="Search events"
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
@@ -113,9 +131,39 @@ const SponsorBrowseEvents = () => {
                             />
                         </div>
                     </div>
-
                     <div className="sbe-toolbar-right">
-                        <div className="sbe-filters">
+                        <div className="sbe-filters" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <div className="sbe-filter-dropdown" ref={categoryDropdownRef}>
+                                <button
+                                    className="sbe-filter-dropdown-btn small-body-text"
+                                    onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                                >
+                                    <span className="truncate-text">{selectedCategory}</span>
+                                    <Icon
+                                        icon="mdi:chevron-down"
+                                        className={`dropdown-icon ${isCategoryDropdownOpen ? "open" : ""}`}
+                                    />
+                                </button>
+
+                                {isCategoryDropdownOpen && (
+                                    <div className="sbe-filter-dropdown-menu">
+                                        {categories.map((option) => (
+                                            <button
+                                                key={option}
+                                                className={`sbe-filter-dropdown-item small-body-text ${selectedCategory === option ? "active" : ""}`}
+                                                onClick={() => {
+                                                    setSelectedCategory(option);
+                                                    setIsCategoryDropdownOpen(false);
+                                                    resetPage();
+                                                }}
+                                            >
+                                                {option}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
                             <DateRangePicker
                                 value={dateRange}
                                 onChange={handleDateRangeChange}
@@ -167,11 +215,11 @@ const SponsorBrowseEvents = () => {
                                                 const start = new Date(event.startDate);
                                                 const end = event.endDate ? new Date(event.endDate) : null;
                                                 const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                                                
+
                                                 if (!end || start.toDateString() === end.toDateString()) {
                                                     return startStr;
                                                 }
-                                                
+
                                                 const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                                                 return `${startStr} - ${endStr}`;
                                             })()}
@@ -194,9 +242,9 @@ const SponsorBrowseEvents = () => {
                                     </div>
 
                                     <button className="primary-button sbe-view-btn" onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleGetBooths(event);
-                                        }}>
+                                        e.stopPropagation();
+                                        handleGetBooths(event);
+                                    }}>
                                         Get Booths <Icon icon="mdi:arrow-right" />
                                     </button>
                                 </div>

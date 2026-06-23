@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 import { getImageUrl } from '../utils/imageUrl';
@@ -18,12 +18,28 @@ const CustomerBrowseEvent = () => {
     const [allEvents, setAllEvents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+    const categoryDropdownRef = useRef(null);
     const itemsPerPage = 8;
     const {
         page, totalPages, total,
         setTotal, goTo, next, prev,
         reset: resetPage,
     } = usePagination({ limit: itemsPerPage });
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+                setIsCategoryDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const categories = ["All", ...new Set(allEvents.map(evt => evt.category).filter(Boolean))];
 
     const [dateRange, setDateRange] = useState(() => ({
         preset: 'all',
@@ -63,7 +79,9 @@ const CustomerBrowseEvent = () => {
         const eventDate = new Date(event.startDate);
         const matchesDate = eventDate >= dateRange.start && eventDate <= dateRange.end;
 
-        return matchesSearch && matchesDate;
+        const matchesCategory = selectedCategory === "All" || event.category === selectedCategory;
+
+        return matchesSearch && matchesDate && matchesCategory;
     });
 
     useEffect(() => {
@@ -200,7 +218,38 @@ const CustomerBrowseEvent = () => {
                     </div>
 
                     <div className="cbe-toolbar-right">
-                        <div className="cbe-filters">
+                        <div className="cbe-filters" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <div className="cbe-filter-dropdown" ref={categoryDropdownRef}>
+                                <button
+                                    className="cbe-filter-dropdown-btn small-body-text"
+                                    onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                                >
+                                    <span className="truncate-text">{selectedCategory}</span>
+                                    <Icon
+                                        icon="mdi:chevron-down"
+                                        className={`dropdown-icon ${isCategoryDropdownOpen ? "open" : ""}`}
+                                    />
+                                </button>
+
+                                {isCategoryDropdownOpen && (
+                                    <div className="cbe-filter-dropdown-menu">
+                                        {categories.map((option) => (
+                                            <button
+                                                key={option}
+                                                className={`cbe-filter-dropdown-item small-body-text ${selectedCategory === option ? "active" : ""}`}
+                                                onClick={() => {
+                                                    setSelectedCategory(option);
+                                                    setIsCategoryDropdownOpen(false);
+                                                    resetPage();
+                                                }}
+                                            >
+                                                {option}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
                             <DateRangePicker
                                 value={dateRange}
                                 onChange={handleDateRangeChange}

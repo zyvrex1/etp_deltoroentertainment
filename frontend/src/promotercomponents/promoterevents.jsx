@@ -70,7 +70,7 @@ const PromoterEvents = () => {
   const [sortFilter, setSortFilter] = useState("Recently Added");
 
   const filterOptions = [
-    { value: "all", label: "All Events" },
+    { value: "all", label: "All Status" },
     { value: "active", label: "Active" },
     { value: "pending", label: "Pending" },
     { value: "rejected", label: "Rejected" },
@@ -239,7 +239,7 @@ const PromoterEvents = () => {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
                 <span className="truncate-text">
-                  {filterOptions.find(opt => opt.value === activeFilter)?.label || "All Events"}
+                  {filterOptions.find(opt => opt.value === activeFilter)?.label || "All Status"}
                 </span>
                 <Icon
                   icon="mdi:chevron-down"

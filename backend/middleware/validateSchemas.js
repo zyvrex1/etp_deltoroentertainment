@@ -122,7 +122,7 @@ const buySeatsSchema = z.object({
 const createPayoutSchema = z.object({
   amount:        z.number().finite().positive('amount must be greater than 0'),
   method:        z.string().trim().min(1, 'method is required'),
-  methodDetails: z.string().trim().optional(),
+  methodDetails: z.any().optional(),
   reference:     z.string().trim().optional(),
   eventIds:      z.array(z.string().trim().min(1)).optional()
 }).strict()
