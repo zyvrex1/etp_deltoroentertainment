@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import jsPDF from "jspdf";
 import { loadLogo, addReportHeader, addReportFooter, showExportToast, removeExportToast, drawTable, finalizeReport } from "../utils/pdfExport";
-import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, Legend } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell, Legend } from 'recharts';
 import merchandiseService from "../services/merchandiseService";
 import orderService from "../services/orderService";
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -25,7 +25,7 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [analyticsStats, setAnalyticsStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -78,12 +78,12 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
       const filters = {};
       if (eventId) filters.eventId = eventId;
       if (boothCode) filters.boothCode = boothCode;
-      
+
       const [merchData, ordersData] = await Promise.all([
         merchandiseService.getMerchandises(user.token, filters),
         orderService.getOrders(user.token, filters)
       ]);
-      
+
       setProducts(merchData);
       setOrders(ordersData);
       processAnalytics(merchData, ordersData);
@@ -99,15 +99,15 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
     let pastTotalRevenue = 0;
     let currentTotalOrders = ordersData.length;
     let pastTotalOrders = 0;
-    
+
     let todayOrdersCount = 0;
     let yesterdayOrdersCount = 0;
-    
+
     const todayStr = new Date().toDateString();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toDateString();
-    
+
     const salesMap = {};
     const categoryMap = { Drinks: 0, Food: 0, Merch: 0 };
     const dailyRevMap = {};
@@ -115,38 +115,44 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
     ordersData.forEach(order => {
       const orderTotal = order.totalAmount || 0;
       currentTotalRevenue += orderTotal;
-      
+
       const orderDate = new Date(order.createdAt || new Date());
       const orderDateStr = orderDate.toDateString();
-      
+
       if (orderDateStr === todayStr) {
         todayOrdersCount++;
       } else {
         pastTotalRevenue += orderTotal;
         pastTotalOrders++;
-        
+
         if (orderDateStr === yesterdayStr) {
           yesterdayOrdersCount++;
         }
       }
-      
+
       const dayKey = orderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       dailyRevMap[dayKey] = (dailyRevMap[dayKey] || 0) + orderTotal;
 
       if (order.items && Array.isArray(order.items)) {
         order.items.forEach(item => {
           const qty = item.quantity || 1;
-          const productId = item.productId || item.product;
-          
+          // Backend populates item.productId into a full object — extract the _id string
+          const rawProductId = item.productId || item.product;
+          const productId = rawProductId?._id
+            ? rawProductId._id.toString()
+            : rawProductId?.toString?.() ?? rawProductId;
+
           salesMap[productId] = (salesMap[productId] || 0) + qty;
-          
-          const matchedProduct = merch.find(m => m._id === productId || m.id === productId);
+
+          const matchedProduct = merch.find(m =>
+            m._id?.toString() === productId || m.id?.toString() === productId
+          );
           if (matchedProduct) {
             const cat = matchedProduct.category;
             if (categoryMap[cat] !== undefined) {
-               categoryMap[cat] += qty;
+              categoryMap[cat] += qty;
             } else {
-               categoryMap[cat] = qty;
+              categoryMap[cat] = qty;
             }
           }
         });
@@ -174,10 +180,10 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
 
     setProductSales(salesMap);
 
-    const sortedDays = Object.keys(dailyRevMap).sort((a,b) => new Date(a) - new Date(b));
+    const sortedDays = Object.keys(dailyRevMap).sort((a, b) => new Date(a) - new Date(b));
     const newChartData = sortedDays.map(day => ({
-       day,
-       total: dailyRevMap[day]
+      day,
+      total: dailyRevMap[day]
     }));
     if (newChartData.length > 0) setChartData(newChartData);
 
@@ -185,9 +191,9 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
       .filter(([_, val]) => val > 0)
       .map(([name, value]) => ({ name, value }));
     if (newPieData.length > 0) {
-        setPieChartData(newPieData);
+      setPieChartData(newPieData);
     } else {
-        setPieChartData([{ name: 'No Data', value: 1 }]);
+      setPieChartData([{ name: 'No Data', value: 1 }]);
     }
   };
 
@@ -228,309 +234,309 @@ const SponsorProductAnalytics = ({ eventId, boothCode }) => {
 
   // Replaced dynamic stats array with the user provided static stats array in the component body
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DROP-IN REPLACEMENT for the exportToPDF function in SponsorProductAnalytics
-// Matches the visual style used in SponsorEventHistory (Code 1)
-// ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DROP-IN REPLACEMENT for the exportToPDF function in SponsorProductAnalytics
+  // Matches the visual style used in SponsorEventHistory (Code 1)
+  // ─────────────────────────────────────────────────────────────────────────────
 
-const exportToPDF = async () => {
-  const loadingToast = showExportToast();
-  const REPORT_TITLE = "Product Analytics Report";
+  const exportToPDF = async () => {
+    const loadingToast = showExportToast();
+    const REPORT_TITLE = "Product Analytics Report";
 
-  try {
-    const logoData = await loadLogo();
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth  = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const MARGIN        = 15;
-    const FOOTER_HEIGHT = 15;
-    let y = 45;
+    try {
+      const logoData = await loadLogo();
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const MARGIN = 15;
+      const FOOTER_HEIGHT = 15;
+      let y = 45;
 
-    addReportHeader(pdf, REPORT_TITLE, logoData);
+      addReportHeader(pdf, REPORT_TITLE, logoData);
 
-    // ── helpers ──────────────────────────────────────────────────────────────
-    const newPageIfNeeded = (needed) => {
-      if (y + needed > pdfHeight - FOOTER_HEIGHT - 5) {
-        addReportFooter(pdf);
-        pdf.addPage();
-        addReportHeader(pdf, REPORT_TITLE, logoData);
-        y = 45;
-      }
-    };
+      // ── helpers ──────────────────────────────────────────────────────────────
+      const newPageIfNeeded = (needed) => {
+        if (y + needed > pdfHeight - FOOTER_HEIGHT - 5) {
+          addReportFooter(pdf);
+          pdf.addPage();
+          addReportHeader(pdf, REPORT_TITLE, logoData);
+          y = 45;
+        }
+      };
 
-    const sectionHeading = (title) => {
-      newPageIfNeeded(14);
+      const sectionHeading = (title) => {
+        newPageIfNeeded(14);
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 60, 114);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(title, MARGIN, y);
+        pdf.setDrawColor(30, 60, 114);
+        pdf.setLineWidth(0.4);
+        pdf.line(MARGIN, y + 2, pdfWidth - MARGIN, y + 2);
+        y += 10;
+      };
+
+      // ── pre-compute values ───────────────────────────────────────────────────
+      const activeProducts = filteredInventory.filter(i => i.stock > 0);
+      const outOfStockProducts = filteredInventory.filter(i => i.stock === 0);
+
+      const totalProductRevenue = filteredInventory.reduce((sum, item) => {
+        return sum + (item.price * (productSales[item._id] || 0));
+      }, 0);
+
+      const activeRevenue = activeProducts.reduce((s, i) => s + (i.price * (productSales[i._id] || 0)), 0);
+      const outOfStockRevenue = outOfStockProducts.reduce((s, i) => s + (i.price * (productSales[i._id] || 0)), 0);
+      const totalSalesUnits = filteredInventory.reduce((s, i) => s + (productSales[i._id] || 0), 0);
+
+      const filterLabel = filterCategory === 'All Categories' ? 'All Categories' : filterCategory;
+
+      // ══════════════════════════════════════════════════════════════════════════
+      // BANNER
+      // ══════════════════════════════════════════════════════════════════════════
+      pdf.setFillColor(235, 240, 255);
+      pdf.setDrawColor(180, 200, 245);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 22, 3, 3, 'FD');
+
+      // Left — filter label
       pdf.setFontSize(11);
       pdf.setTextColor(30, 60, 114);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(title, MARGIN, y);
-      pdf.setDrawColor(30, 60, 114);
-      pdf.setLineWidth(0.4);
-      pdf.line(MARGIN, y + 2, pdfWidth - MARGIN, y + 2);
-      y += 10;
-    };
+      pdf.text(filterLabel, MARGIN + 4, y + 8);
 
-    // ── pre-compute values ───────────────────────────────────────────────────
-    const activeProducts    = filteredInventory.filter(i => i.stock > 0);
-    const outOfStockProducts = filteredInventory.filter(i => i.stock === 0);
-
-    const totalProductRevenue = filteredInventory.reduce((sum, item) => {
-      return sum + (item.price * (productSales[item._id] || 0));
-    }, 0);
-
-    const activeRevenue    = activeProducts.reduce((s, i) => s + (i.price * (productSales[i._id] || 0)), 0);
-    const outOfStockRevenue = outOfStockProducts.reduce((s, i) => s + (i.price * (productSales[i._id] || 0)), 0);
-    const totalSalesUnits   = filteredInventory.reduce((s, i) => s + (productSales[i._id] || 0), 0);
-
-    const filterLabel = filterCategory === 'All Categories' ? 'All Categories' : filterCategory;
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // BANNER
-    // ══════════════════════════════════════════════════════════════════════════
-    pdf.setFillColor(235, 240, 255);
-    pdf.setDrawColor(180, 200, 245);
-    pdf.setLineWidth(0.3);
-    pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 22, 3, 3, 'FD');
-
-    // Left — filter label
-    pdf.setFontSize(11);
-    pdf.setTextColor(30, 60, 114);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(filterLabel, MARGIN + 4, y + 8);
-
-    pdf.setFontSize(8);
-    pdf.setTextColor(80, 90, 130);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(
-      `Product Analytics Report  •  ${filteredInventory.length} product${filteredInventory.length !== 1 ? 's' : ''}`,
-      MARGIN + 4, y + 15
-    );
-
-    // Right — total revenue badge
-    const badgeX = pdfWidth - MARGIN - 50;
-    pdf.setFillColor(30, 60, 114);
-    pdf.roundedRect(badgeX, y + 4, 46, 14, 2, 2, 'F');
-    pdf.setFontSize(7.5);
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text('Total Revenue', badgeX + 23, y + 10, { align: 'center' });
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(
-      `$${totalProductRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-      badgeX + 23, y + 16, { align: 'center' }
-    );
-
-    y += 30;
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // KEY METRICS — 3-col cards
-    // ══════════════════════════════════════════════════════════════════════════
-    sectionHeading('Key Metrics');
-
-    const cardW = (pdfWidth - MARGIN * 2 - 12) / 3;
-    const cardH = 22;
-
-    const metricCards = [
-      {
-        label: 'Total Orders',
-        value: analyticsStats.totalOrders.toString(),
-        sub: `$${totalProductRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })} revenue`,
-        color: [22, 163, 74],
-        bg: [235, 255, 245],
-        border: [180, 235, 210],
-      },
-      {
-        label: 'Average Order Value',
-        value: `$${analyticsStats.avgOrderValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-        sub: `across ${analyticsStats.totalOrders} order${analyticsStats.totalOrders !== 1 ? 's' : ''}`,
-        color: [217, 119, 6],
-        bg: [255, 251, 235],
-        border: [245, 220, 160],
-      },
-      {
-        label: 'Orders Today',
-        value: analyticsStats.ordersToday.toString(),
-        sub: `${analyticsStats.ordersToday !== 1 ? 'orders' : 'order'} placed today`,
-        color: [30, 60, 114],
-        bg: [235, 240, 255],
-        border: [180, 200, 245],
-      },
-    ];
-
-    metricCards.forEach((m, i) => {
-      const cx = MARGIN + i * (cardW + 6);
-      const cy = y;
-
-      pdf.setFillColor(...m.bg);
-      pdf.setDrawColor(...m.border);
-      pdf.setLineWidth(0.3);
-      pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, 'FD');
-
-      // Dot
-      pdf.setFillColor(...m.color);
-      pdf.circle(cx + 5, cy + 6, 2, 'F');
-
-      // Label
       pdf.setFontSize(8);
-      pdf.setTextColor(100, 100, 100);
+      pdf.setTextColor(80, 90, 130);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(m.label, cx + 10, cy + 7);
-
-      // Value
-      pdf.setFontSize(11);
-      pdf.setTextColor(...m.color);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(m.value, cx + 5, cy + 16);
-
-      // Sub
-      pdf.setFontSize(7);
-      pdf.setTextColor(130, 130, 130);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(m.sub, cx + cardW - 4, cy + 16, { align: 'right' });
-    });
-
-    y += cardH + 10;
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // SALES BREAKDOWN BARS (by category)
-    // ══════════════════════════════════════════════════════════════════════════
-    sectionHeading('Sales Breakdown by Category');
-
-    // Build category-level revenue from filteredInventory + productSales
-    const categoryRevMap = {};
-    filteredInventory.forEach(item => {
-      const rev = item.price * (productSales[item._id] || 0);
-      categoryRevMap[item.category] = (categoryRevMap[item.category] || 0) + rev;
-    });
-
-    const breakdownItems = Object.entries(categoryRevMap).map(([cat, rev]) => {
-      const colorMap = {
-        Drinks: [22, 163, 74],
-        Food:   [217, 119, 6],
-        Merch:  [30, 100, 200],
-      };
-      return {
-        label: cat,
-        value: rev,
-        count: filteredInventory.filter(i => i.category === cat).length,
-        countLabel: 'products',
-        color: colorMap[cat] || [100, 100, 180],
-      };
-    });
-
-    // Fallback if no category data
-    if (breakdownItems.length === 0) {
-      breakdownItems.push({
-        label: 'No Data',
-        value: 0,
-        count: 0,
-        countLabel: 'products',
-        color: [200, 200, 200],
-      });
-    }
-
-    const maxBreakdown = Math.max(...breakdownItems.map(b => b.value), 1);
-    const barMaxW      = pdfWidth - MARGIN * 2 - 65;
-
-    breakdownItems.forEach((item) => {
-      newPageIfNeeded(14);
-      const fillW = (item.value / maxBreakdown) * barMaxW;
-
-      pdf.setFontSize(8.5);
-      pdf.setTextColor(50, 50, 50);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(item.label, MARGIN, y + 4.5);
-
-      // Track
-      pdf.setFillColor(235, 235, 235);
-      pdf.roundedRect(MARGIN + 43, y, barMaxW, 6, 1, 1, 'F');
-
-      // Fill
-      if (fillW > 0) {
-        pdf.setFillColor(...item.color);
-        pdf.roundedRect(MARGIN + 43, y, fillW, 6, 1, 1, 'F');
-      }
-
-      // Right label
-      pdf.setFontSize(7.5);
-      pdf.setTextColor(80, 80, 80);
       pdf.text(
-        `$${item.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}  (${item.count} ${item.countLabel})`,
-        MARGIN + 43 + barMaxW + 2, y + 4.5
+        `Product Analytics Report  •  ${filteredInventory.length} product${filteredInventory.length !== 1 ? 's' : ''}`,
+        MARGIN + 4, y + 15
       );
 
-      y += 11;
-    });
+      // Right — total revenue badge
+      const badgeX = pdfWidth - MARGIN - 50;
+      pdf.setFillColor(30, 60, 114);
+      pdf.roundedRect(badgeX, y + 4, 46, 14, 2, 2, 'F');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Total Revenue', badgeX + 23, y + 10, { align: 'center' });
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(
+        `$${totalProductRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        badgeX + 23, y + 16, { align: 'center' }
+      );
 
-    // Summary strip
-    y += 2;
-    newPageIfNeeded(12);
-    pdf.setFillColor(248, 248, 255);
-    pdf.setDrawColor(210, 210, 240);
-    pdf.setLineWidth(0.3);
-    pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 10, 2, 2, 'FD');
-    pdf.setFontSize(8);
-    pdf.setTextColor(60, 60, 120);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(
-      `Total Revenue: $${totalProductRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}   |   Products: ${filteredInventory.length}   |   Filter: ${filterLabel}`,
-      pdfWidth / 2, y + 6.5, { align: 'center' }
-    );
-    y += 16;
+      y += 30;
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // PRODUCT INVENTORY TABLE
-    // ══════════════════════════════════════════════════════════════════════════
-    newPageIfNeeded(20);
-    sectionHeading('Product Inventory');
+      // ══════════════════════════════════════════════════════════════════════════
+      // KEY METRICS — 3-col cards
+      // ══════════════════════════════════════════════════════════════════════════
+      sectionHeading('Key Metrics');
 
-    const headers = ['Product', 'Category', 'Stock', 'Price', 'Sales', 'Revenue', 'Status'];
-    const rows = filteredInventory.map((item) => [
-      item.name,
-      item.category,
-      item.stock.toString(),
-      formatCurrency(item.price),
-      (productSales[item._id] || 0).toString(),
-      formatCurrency(item.price * (productSales[item._id] || 0)),
-      item.stock > 0 ? 'Active' : 'Out of Stock',
-    ]);
+      const cardW = (pdfWidth - MARGIN * 2 - 12) / 3;
+      const cardH = 22;
 
-    y = drawTable(
-      pdf, y, headers, rows,
-      MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT,
-      12, 5, logoData, REPORT_TITLE
-    );
+      const metricCards = [
+        {
+          label: 'Total Orders',
+          value: analyticsStats.totalOrders.toString(),
+          sub: `$${totalProductRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })} revenue`,
+          color: [22, 163, 74],
+          bg: [235, 255, 245],
+          border: [180, 235, 210],
+        },
+        {
+          label: 'Average Order Value',
+          value: `$${analyticsStats.avgOrderValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          sub: `across ${analyticsStats.totalOrders} order${analyticsStats.totalOrders !== 1 ? 's' : ''}`,
+          color: [217, 119, 6],
+          bg: [255, 251, 235],
+          border: [245, 220, 160],
+        },
+        {
+          label: 'Orders Today',
+          value: analyticsStats.ordersToday.toString(),
+          sub: `${analyticsStats.ordersToday !== 1 ? 'orders' : 'order'} placed today`,
+          color: [30, 60, 114],
+          bg: [235, 240, 255],
+          border: [180, 200, 245],
+        },
+      ];
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // FOOTER STRIP
-    // ══════════════════════════════════════════════════════════════════════════
-    y += 8;
-    newPageIfNeeded(16);
-    pdf.setFillColor(245, 247, 255);
-    pdf.setDrawColor(210, 218, 245);
-    pdf.setLineWidth(0.3);
-    pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 14, 2, 2, 'FD');
-    pdf.setFontSize(8);
-    pdf.setTextColor(80, 90, 130);
-    pdf.setFont('helvetica', 'italic');
-    pdf.text(
-      `Product analytics export  •  Generated by eTicketsPro`,
-      pdfWidth / 2, y + 9, { align: 'center' }
-    );
+      metricCards.forEach((m, i) => {
+        const cx = MARGIN + i * (cardW + 6);
+        const cy = y;
 
-    finalizeReport(pdf);
+        pdf.setFillColor(...m.bg);
+        pdf.setDrawColor(...m.border);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, 'FD');
 
-    const fileName = `product_analytics_report_${new Date().toISOString().slice(0, 10)}.pdf`;
-    pdf.save(fileName);
+        // Dot
+        pdf.setFillColor(...m.color);
+        pdf.circle(cx + 5, cy + 6, 2, 'F');
 
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    alert('Failed to generate PDF. Please try again.');
-  } finally {
-    removeExportToast(loadingToast);
-  }
-};
+        // Label
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(m.label, cx + 10, cy + 7);
+
+        // Value
+        pdf.setFontSize(11);
+        pdf.setTextColor(...m.color);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(m.value, cx + 5, cy + 16);
+
+        // Sub
+        pdf.setFontSize(7);
+        pdf.setTextColor(130, 130, 130);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(m.sub, cx + cardW - 4, cy + 16, { align: 'right' });
+      });
+
+      y += cardH + 10;
+
+      // ══════════════════════════════════════════════════════════════════════════
+      // SALES BREAKDOWN BARS (by category)
+      // ══════════════════════════════════════════════════════════════════════════
+      sectionHeading('Sales Breakdown by Category');
+
+      // Build category-level revenue from filteredInventory + productSales
+      const categoryRevMap = {};
+      filteredInventory.forEach(item => {
+        const rev = item.price * (productSales[item._id] || 0);
+        categoryRevMap[item.category] = (categoryRevMap[item.category] || 0) + rev;
+      });
+
+      const breakdownItems = Object.entries(categoryRevMap).map(([cat, rev]) => {
+        const colorMap = {
+          Drinks: [22, 163, 74],
+          Food: [217, 119, 6],
+          Merch: [30, 100, 200],
+        };
+        return {
+          label: cat,
+          value: rev,
+          count: filteredInventory.filter(i => i.category === cat).length,
+          countLabel: 'products',
+          color: colorMap[cat] || [100, 100, 180],
+        };
+      });
+
+      // Fallback if no category data
+      if (breakdownItems.length === 0) {
+        breakdownItems.push({
+          label: 'No Data',
+          value: 0,
+          count: 0,
+          countLabel: 'products',
+          color: [200, 200, 200],
+        });
+      }
+
+      const maxBreakdown = Math.max(...breakdownItems.map(b => b.value), 1);
+      const barMaxW = pdfWidth - MARGIN * 2 - 65;
+
+      breakdownItems.forEach((item) => {
+        newPageIfNeeded(14);
+        const fillW = (item.value / maxBreakdown) * barMaxW;
+
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(50, 50, 50);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(item.label, MARGIN, y + 4.5);
+
+        // Track
+        pdf.setFillColor(235, 235, 235);
+        pdf.roundedRect(MARGIN + 43, y, barMaxW, 6, 1, 1, 'F');
+
+        // Fill
+        if (fillW > 0) {
+          pdf.setFillColor(...item.color);
+          pdf.roundedRect(MARGIN + 43, y, fillW, 6, 1, 1, 'F');
+        }
+
+        // Right label
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(80, 80, 80);
+        pdf.text(
+          `$${item.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}  (${item.count} ${item.countLabel})`,
+          MARGIN + 43 + barMaxW + 2, y + 4.5
+        );
+
+        y += 11;
+      });
+
+      // Summary strip
+      y += 2;
+      newPageIfNeeded(12);
+      pdf.setFillColor(248, 248, 255);
+      pdf.setDrawColor(210, 210, 240);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 10, 2, 2, 'FD');
+      pdf.setFontSize(8);
+      pdf.setTextColor(60, 60, 120);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(
+        `Total Revenue: $${totalProductRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}   |   Products: ${filteredInventory.length}   |   Filter: ${filterLabel}`,
+        pdfWidth / 2, y + 6.5, { align: 'center' }
+      );
+      y += 16;
+
+      // ══════════════════════════════════════════════════════════════════════════
+      // PRODUCT INVENTORY TABLE
+      // ══════════════════════════════════════════════════════════════════════════
+      newPageIfNeeded(20);
+      sectionHeading('Product Inventory');
+
+      const headers = ['Product', 'Category', 'Available', 'Sold', 'Price', 'Sales', 'Status'];
+      const rows = filteredInventory.map((item) => [
+        item.name,
+        item.category,
+        item.stock.toString(),
+        (productSales[item._id] || 0).toString(),
+        formatCurrency(item.price),
+        formatCurrency(item.price * (productSales[item._id] || 0)),
+        item.stock > 0 ? 'Active' : 'Out of Stock',
+      ]);
+
+      y = drawTable(
+        pdf, y, headers, rows,
+        MARGIN, pdfWidth, pdfHeight, FOOTER_HEIGHT,
+        12, 5, logoData, REPORT_TITLE
+      );
+
+      // ══════════════════════════════════════════════════════════════════════════
+      // FOOTER STRIP
+      // ══════════════════════════════════════════════════════════════════════════
+      y += 8;
+      newPageIfNeeded(16);
+      pdf.setFillColor(245, 247, 255);
+      pdf.setDrawColor(210, 218, 245);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(MARGIN, y, pdfWidth - MARGIN * 2, 14, 2, 2, 'FD');
+      pdf.setFontSize(8);
+      pdf.setTextColor(80, 90, 130);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text(
+        `Product analytics export  •  Generated by eTicketsPro`,
+        pdfWidth / 2, y + 9, { align: 'center' }
+      );
+
+      finalizeReport(pdf);
+
+      const fileName = `product_analytics_report_${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdf.save(fileName);
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      removeExportToast(loadingToast);
+    }
+  };
   return (
     <div className="spa-container">
       <div className="spa-header-section">
@@ -538,7 +544,7 @@ const exportToPDF = async () => {
           <h1>Analytics & Reports</h1>
           <p className="regular-body-text">Track your store's performance, sales, and customer engagement.</p>
         </div>
-        
+
       </div>
 
       {loading ? (
@@ -583,34 +589,80 @@ const exportToPDF = async () => {
           <div className="spa-chart-card">
             <h4 className="left-aligned">Sales Overview</h4>
             <div className="spa-chart-placeholder">
-              <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  {!isMobile && (
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
-                  )}
-                  <XAxis
-                    dataKey="day"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--color-black-tertiary)' }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--color-black-tertiary)' }}
-                    tickFormatter={(val) => `$${val}`}
-                  />
-                  <RechartsTooltip formatter={(value) => `$${value}`} />
-                  <Area
-                    type="monotone"
-                    dataKey="total"
-                    stroke="var(--color-red-primary)"
-                    strokeWidth={3}
-                    fillOpacity={0.1}
-                    fill="var(--color-red-primary)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {(() => {
+                const barChartData = products.map((p) => ({
+                  name: p.name.length > 14 ? p.name.slice(0, 14) + '…' : p.name,
+                  fullName: p.name,
+                  Available: p.stock,
+                  Sold: productSales[p._id] || 0,
+                }));
+
+                const CustomTooltip = ({ active, payload, label }) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const entry = barChartData.find(d => d.name === label);
+                  return (
+                    <div style={{
+                      background: 'var(--color-white, #fff)',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      padding: '10px 14px',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+                      minWidth: '150px'
+                    }}>
+                      <p style={{ margin: '0 0 6px', fontWeight: 700, fontSize: 13 }}>{entry ? entry.fullName : label}</p>
+                      {payload.map((pl, i) => (
+                        <p key={i} style={{ margin: '2px 0', fontSize: 12, color: pl.fill }}>
+                          <span style={{ fontWeight: 600 }}>{pl.name}:</span> {pl.value}
+                        </p>
+                      ))}
+                    </div>
+                  );
+                };
+
+                if (barChartData.length === 0) {
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: isMobile ? 220 : 300, color: 'var(--color-black-tertiary)' }}>
+                      <p className="regular-body-text">No product data available.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <>
+                    <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
+                      <BarChart
+                        data={barChartData}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                        barCategoryGap={barChartData.length <= 2 ? '35%' : '20%'}
+                        barGap={4}
+                      >
+                        {!isMobile && (
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                        )}
+                        <XAxis
+                          dataKey="name"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--color-black-tertiary)' }}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          allowDecimals={false}
+                          tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--color-black-tertiary)' }}
+                        />
+                        <RechartsTooltip content={<CustomTooltip />} />
+                        <Bar dataKey="Available" name="Available" fill="#4f8ef7" radius={[4, 4, 0, 0]} maxBarSize={barChartData.length <= 2 ? 60 : 40} />
+                        <Bar dataKey="Sold" name="Sold" fill="var(--color-red-primary, #c62828)" radius={[4, 4, 0, 0]} maxBarSize={barChartData.length <= 2 ? 60 : 40} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="spa-chart-legend multi" style={{ marginTop: 8 }}>
+                      <span className="spa-legend-item"><span className="dot" style={{ background: '#4f8ef7' }}></span>Available</span>
+                      <span className="spa-legend-item"><span className="dot red"></span>Sold</span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
 
@@ -637,9 +689,9 @@ const exportToPDF = async () => {
               </ResponsiveContainer>
 
               <div className="spa-chart-legend multi">
-                <span className="spa-legend-item"><span className="dot red"></span>Drinks</span>
-                <span className="spa-legend-item"><span className="dot blue"></span>Merch</span>
-                <span className="spa-legend-item"><span className="dot yellow"></span>Food</span>
+                <span className="spa-legend-item"><span className="dot red"></span>Food</span>
+                <span className="spa-legend-item"><span className="dot blue"></span>Drink</span>
+                <span className="spa-legend-item"><span className="dot yellow"></span>Merch</span>
               </div>
             </div>
           </div>
@@ -699,8 +751,8 @@ const exportToPDF = async () => {
           </div>
 
           <button className="primary-button spa-export-btn" onClick={exportToPDF}>
-          <Icon icon="mdi:download" /> Export to PDF
-        </button>
+            <Icon icon="mdi:download" /> Export to PDF
+          </button>
         </div>
 
         <div className="spa-table-wrapper-full">
@@ -709,7 +761,8 @@ const exportToPDF = async () => {
               <tr>
                 <th className="smaller-body-text">PRODUCT</th>
                 <th className="smaller-body-text">CATEGORY</th>
-                <th className="smaller-body-text">AVAILABLESTOCK</th>
+                <th className="smaller-body-text">AVAILABLE</th>
+                <th className="smaller-body-text">SOLD</th>
                 <th className="smaller-body-text">PRICE</th>
                 <th className="smaller-body-text">SALES</th>
                 <th className="smaller-body-text">STATUS</th>
@@ -722,6 +775,7 @@ const exportToPDF = async () => {
                     <td><div className="skeleton skeleton-text title" style={{ margin: 0, width: '80%' }}></div></td>
                     <td><div className="skeleton skeleton-text" style={{ margin: 0 }}></div></td>
                     <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '40%' }}></div></td>
+                    <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '35%' }}></div></td>
                     <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '50%' }}></div></td>
                     <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '40%' }}></div></td>
                     <td><div className="skeleton skeleton-text" style={{ margin: 0, width: '60%' }}></div></td>
@@ -741,9 +795,10 @@ const exportToPDF = async () => {
                     <td data-label="CATEGORY">
                       <span className={`spa-cat-badge button-label ${item.category.toLowerCase()}`}>{item.category}</span>
                     </td>
-                    <td className="small-body-text"data-label="AVAILABLESTOCK">{item.stock}</td>
+                    <td className="small-body-text" data-label="AVAILABLESTOCK">{item.stock}</td>
+                    <td className="small-body-text" data-label="SOLD QTY">{productSales[item._id] || 0}</td>
                     <td className="small-body-text" data-label="PRICE">{formatCurrency(item.price)}</td>
-                    <td className="small-body-text" data-label="SALES">{productSales[item._id] || 0}</td>
+                    <td className="small-body-text" data-label="SALES">{formatCurrency((productSales[item._id] || 0) * item.price)}</td>
                     <td data-label="STATUS">
                       <span className={`spa-status-badge button-label ${item.stock > 0 ? 'active' : 'inactive'}`}>
                         {item.stock > 0 ? 'Active' : 'Out of Stock'}
