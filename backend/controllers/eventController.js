@@ -73,7 +73,7 @@ const autoHealEvents = async (eventsArr) => {
     const reservations = await Reservation.find({
       event: { $in: eventIds },
       status: { $in: ['pending', 'confirmed'] }
-    });
+    }).populate('user', 'firstName lastName email');
 
     for (let event of events) {
       let changed = false;
@@ -101,18 +101,36 @@ const autoHealEvents = async (eventsArr) => {
       if (event.booths && event.booths.length > 0) {
         event.booths.forEach((booth, index) => {
           const idStr = (booth._id || "").toString();
-          const isReserved =
-            reservedBoothIds.includes(idStr) ||
-            reservedBoothCodes.includes(booth.code) ||
-            reservedBoothCodes.includes(booth.label);
+          const resObj = eventReservations.find(r => 
+            r.type === "booth" && 
+            (r.boothId?.toString() === idStr || r.boothCode === booth.code || r.boothCode === booth.label)
+          );
+          const isReserved = !!resObj;
 
           if (booth.status === "sold" && !isReserved) {
             event.booths[index].status = "available";
             event.booths[index].reservedBy = "";
+            event.booths[index].reservedByEmail = "";
+            event.booths[index].reservedByPO = "";
             changed = true;
           } else if (booth.status === "available" && isReserved) {
             event.booths[index].status = "sold";
+            let buyerName = resObj.user ? `${resObj.user.firstName} ${resObj.user.lastName}`.trim() : (resObj.billingAddress?.companyName || "Reserved Buyer");
+            let buyerEmail = resObj.user?.email || resObj.billingAddress?.email || "";
+            event.booths[index].reservedBy = buyerName;
+            event.booths[index].reservedByEmail = buyerEmail;
+            event.booths[index].reservedByPO = resObj.poNumber || "";
             changed = true;
+          } else if (isReserved) {
+            let buyerName = resObj.user ? `${resObj.user.firstName} ${resObj.user.lastName}`.trim() : (resObj.billingAddress?.companyName || "Reserved Buyer");
+            let buyerEmail = resObj.user?.email || resObj.billingAddress?.email || "";
+            let buyerPO = resObj.poNumber || "";
+            if (booth.reservedBy !== buyerName || booth.reservedByEmail !== buyerEmail || booth.reservedByPO !== buyerPO) {
+              event.booths[index].reservedBy = buyerName;
+              event.booths[index].reservedByEmail = buyerEmail;
+              event.booths[index].reservedByPO = buyerPO;
+              changed = true;
+            }
           }
         });
       }
@@ -124,27 +142,46 @@ const autoHealEvents = async (eventsArr) => {
           const idStr = (item._id || item.id || "").toString();
 
           if (type === "booth") {
-            const isReserved =
-              reservedBoothIds.includes(idStr) ||
-              reservedBoothCodes.includes(item.code) ||
-              reservedBoothCodes.includes(item.label);
+            const resObj = eventReservations.find(r => 
+              r.type === "booth" && 
+              (r.boothId?.toString() === idStr || r.boothCode === item.code || r.boothCode === item.label)
+            );
+            const isReserved = !!resObj;
 
             if (item.status === "sold" && !isReserved) {
               event.layoutData.items[index].status = "available";
               event.layoutData.items[index].reservedBy = "";
+              event.layoutData.items[index].reservedByEmail = "";
+              event.layoutData.items[index].reservedByPO = "";
               changed = true;
             } else if (
               (item.status === "available" || !item.status) &&
               isReserved
             ) {
               event.layoutData.items[index].status = "sold";
+              let buyerName = resObj.user ? `${resObj.user.firstName} ${resObj.user.lastName}`.trim() : (resObj.billingAddress?.companyName || "Reserved Buyer");
+              let buyerEmail = resObj.user?.email || resObj.billingAddress?.email || "";
+              event.layoutData.items[index].reservedBy = buyerName;
+              event.layoutData.items[index].reservedByEmail = buyerEmail;
+              event.layoutData.items[index].reservedByPO = resObj.poNumber || "";
               changed = true;
+            } else if (isReserved) {
+              let buyerName = resObj.user ? `${resObj.user.firstName} ${resObj.user.lastName}`.trim() : (resObj.billingAddress?.companyName || "Reserved Buyer");
+              let buyerEmail = resObj.user?.email || resObj.billingAddress?.email || "";
+              let buyerPO = resObj.poNumber || "";
+              if (item.reservedBy !== buyerName || item.reservedByEmail !== buyerEmail || item.reservedByPO !== buyerPO) {
+                event.layoutData.items[index].reservedBy = buyerName;
+                event.layoutData.items[index].reservedByEmail = buyerEmail;
+                event.layoutData.items[index].reservedByPO = buyerPO;
+                changed = true;
+              }
             }
           } else if (type === "seat") {
-            const isReserved =
-              reservedSeatIds.includes(idStr) ||
-              reservedSeatLabels.includes(item.label) ||
-              reservedSeatLabels.includes(item.code);
+            const resObj = eventReservations.find(r => 
+              r.type === "seat" && 
+              (r.seatIds?.map(id => id.toString()).includes(idStr) || r.seatLabels?.includes(item.label) || r.seatLabels?.includes(item.code))
+            );
+            const isReserved = !!resObj;
 
             if (item.status === "sold" && !isReserved) {
               // Only reset if it's not actually reserved anymore
@@ -158,7 +195,22 @@ const autoHealEvents = async (eventsArr) => {
               isReserved
             ) {
               event.layoutData.items[index].status = "sold";
+              let buyerName = resObj.user ? `${resObj.user.firstName} ${resObj.user.lastName}`.trim() : (resObj.billingAddress?.companyName || "Reserved Buyer");
+              let buyerEmail = resObj.user?.email || resObj.billingAddress?.email || "";
+              event.layoutData.items[index].reservedBy = buyerName;
+              event.layoutData.items[index].reservedByEmail = buyerEmail;
+              event.layoutData.items[index].reservedByPO = resObj.poNumber || "";
               changed = true;
+            } else if (isReserved) {
+              let buyerName = resObj.user ? `${resObj.user.firstName} ${resObj.user.lastName}`.trim() : (resObj.billingAddress?.companyName || "Reserved Buyer");
+              let buyerEmail = resObj.user?.email || resObj.billingAddress?.email || "";
+              let buyerPO = resObj.poNumber || "";
+              if (item.reservedBy !== buyerName || item.reservedByEmail !== buyerEmail || item.reservedByPO !== buyerPO) {
+                event.layoutData.items[index].reservedBy = buyerName;
+                event.layoutData.items[index].reservedByEmail = buyerEmail;
+                event.layoutData.items[index].reservedByPO = buyerPO;
+                changed = true;
+              }
             }
           }
         });
@@ -181,7 +233,6 @@ const autoHealEvents = async (eventsArr) => {
       if (changed) {
         const updatePayload = {};
         if (event.booths) updatePayload.booths = event.booths;
-        if (event.layoutData) updatePayload.layoutData = event.layoutData;
         updatePayload.eventType = event.eventType;
 
         await Event.findByIdAndUpdate(
@@ -189,6 +240,15 @@ const autoHealEvents = async (eventsArr) => {
           { $set: updatePayload },
           { new: true }
         ).catch((err) => console.error("Auto-heal update failed:", err.message));
+
+        // Persist the VenueMap items changes to the VenueMap collection
+        if (event.venueMap && event.venueMap._id) {
+          const vmItems = event.layoutData?.items || event.venueMap.items || [];
+          await VenueMap.findByIdAndUpdate(
+            event.venueMap._id,
+            { $set: { items: vmItems } }
+          ).catch((err) => console.error("Auto-heal VenueMap update failed:", err.message));
+        }
       }
     }
   } catch (error) {

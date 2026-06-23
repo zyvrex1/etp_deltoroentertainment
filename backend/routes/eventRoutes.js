@@ -26,6 +26,7 @@ const {
 } = require("../controllers/priceLevelController");
 const requireAuth = require('../middleware/requireAuth')
 const optionalAuth = require('../middleware/optionalAuth')
+const requireRole = require('../middleware/requireRole')
 const paginate = require('../middleware/paginate')
 
 router.get('/', optionalAuth, paginate, getEvents)
@@ -34,20 +35,20 @@ router.get("/:eventId/price-levels", getPriceLevels);
 
 router.use(requireAuth) // Everything below this requires a login
 
-router.post('/', upload.single('image'), createEvent)
-router.delete('/:id', deleteEvent)
-router.patch('/:id', upload.single('image'), updateEvent)
+router.post('/', requireRole('promoter', 'admin', 'superadmin'), upload.single('image'), createEvent)
+router.delete('/:id', requireRole('promoter', 'admin', 'superadmin'), deleteEvent)
+router.patch('/:id', requireRole('promoter', 'admin', 'superadmin'), upload.single('image'), updateEvent)
 
 // Venue Configuration Routes
-router.put('/:id/layout', saveVenueLayout)
-router.put('/:id/assign-prices', assignPriceLevels)
+router.put('/:id/layout', requireRole('promoter', 'admin', 'superadmin'), saveVenueLayout)
+router.put('/:id/assign-prices', requireRole('promoter', 'admin', 'superadmin'), assignPriceLevels)
 router.post('/:id/reserve-booth', validateReserveBooth, reserveBooth)
 router.post('/:id/sync-booths', syncBoothStatus)
 router.post('/:id/buy-seats', validateBuySeats, buySeats)
 
 // Price Level Management
-router.post("/:eventId/price-levels", addPriceLevels);
-router.patch("/:eventId/price-levels/:priceLevelId", updatePriceLevel);
-router.delete("/:eventId/price-levels/:priceLevelId", deletePriceLevel);
+router.post("/:eventId/price-levels", requireRole('promoter', 'admin', 'superadmin'), addPriceLevels);
+router.patch("/:eventId/price-levels/:priceLevelId", requireRole('promoter', 'admin', 'superadmin'), updatePriceLevel);
+router.delete("/:eventId/price-levels/:priceLevelId", requireRole('promoter', 'admin', 'superadmin'), deletePriceLevel);
 
 module.exports = router

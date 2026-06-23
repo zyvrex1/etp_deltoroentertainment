@@ -8,6 +8,7 @@ const {
   deletePolicy,
 } = require("../controllers/policyController");
 const requireAuth = require('../middleware/requireAuth');
+const requireRole = require('../middleware/requireRole');
 
 // Single policy
 router.get("/:policyKey", getPolicy);
@@ -17,6 +18,7 @@ router.get("/", getPolicies);
 
 // Protected routes
 router.use(requireAuth);
+router.use(requireRole('admin', 'superadmin'));
 
 // Create
 router.post("/", createPolicy);

@@ -11,9 +11,11 @@ const {
 router.get("/", getAnnouncements);
 
 const requireAuth = require('../middleware/requireAuth')
+const requireRole = require('../middleware/requireRole')
 
 // Protect other routes
 router.use(requireAuth)
+router.use(requireRole('admin', 'superadmin'))
 
 router.post("/", createAnnouncement);
 router.patch("/:id", updateAnnouncement);

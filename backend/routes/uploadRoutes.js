@@ -6,6 +6,7 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const requireAuth = require('../middleware/requireAuth');
+const requireRole = require('../middleware/requireRole');
 const { optimizeImage, optimizeImageBuffer } = require('../utils/imageOptimizer');
 const { s3Client } = require('../config/s3Client');
 
@@ -60,7 +61,7 @@ const memoryUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
-router.post('/floorplan', memoryUpload.single('file'), async (req, res) => {
+router.post('/floorplan', requireRole('admin', 'superadmin'), memoryUpload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided.' });
@@ -122,7 +123,7 @@ router.post('/floorplan', memoryUpload.single('file'), async (req, res) => {
 //   frontend with zero extra round-trips.
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.post('/image', memoryUpload.single('file'), async (req, res) => {
+router.post('/image', requireRole('admin', 'superadmin', 'sponsor', 'promoter'), memoryUpload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided.' });
@@ -180,7 +181,7 @@ router.post('/image', memoryUpload.single('file'), async (req, res) => {
 // not the full CDN URL.  The key validation prevents deleting arbitrary
 // bucket objects outside the uploads/ prefix.
 // ─────────────────────────────────────────────────────────────────────────────
-router.delete('/image', async (req, res) => {
+router.delete('/image', requireRole('admin', 'superadmin', 'sponsor', 'promoter'), async (req, res) => {
   try {
     const { key } = req.body;
 
@@ -224,7 +225,7 @@ router.delete('/image', async (req, res) => {
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const ALLOWED_PRESIGN_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-router.post('/presign', async (req, res, next) => {
+router.post('/presign', requireRole('admin', 'superadmin', 'sponsor', 'promoter'), async (req, res, next) => {
   try {
     const { fileName, fileType } = req.body;
 
