@@ -72,7 +72,7 @@ const SponsorViewInvoiceReceipt = ({ isOpen, onClose, invoiceItem, onDownload })
                                 <span className="small-body-text text-black"><p className="font-medium inline-block m-0" style={{ display: 'inline-block' }}>Booth Number:</p> {item.booth}</span>
                             </div>
                         </div>
-                        \
+                        
                         {/* Promo/Gift Badge */}
                         {(item.giftCode || item.appliedGift) && (
                             <div style={{

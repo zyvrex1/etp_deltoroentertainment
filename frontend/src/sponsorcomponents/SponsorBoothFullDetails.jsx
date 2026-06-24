@@ -533,6 +533,11 @@ const exportInvoiceToPDF = async () => {
         taxId: 'N/A'
     };
 
+    const isPromoterEvent = reservation.event?.createdBy?.role === 'promoter';
+    const organizerName = isPromoterEvent
+        ? (reservation.event?.createdBy?.companyName || `${reservation.event?.createdBy?.firstName || ''} ${reservation.event?.createdBy?.lastName || ''}`.trim() || 'Deltoro Entertainment Events LLC.')
+        : 'Deltoro Entertainment Events LLC.';
+
     const documents = [
         {
             id: 1,
@@ -550,14 +555,14 @@ const exportInvoiceToPDF = async () => {
 
                             <ul className="sd-list small-body-text text-secondary">
                                 <li>Sponsor: {reservation.user?.companyName || (reservation.user?.firstName + ' ' + reservation.user?.lastName)}</li>
-                                <li>Organizer: Deltoro Entertainment Events LLC.</li>
+                                <li>Organizer: {organizerName}</li>
                             </ul>
                         </div>
                     ),
                     pdfContent: [
                         'This Sponsorship Agreement ("Agreement") is entered into between:',
                         `• Sponsor: ${reservation.user?.companyName || (reservation.user?.firstName + ' ' + reservation.user?.lastName)}`,
-                        '• Organizer: Deltoro Entertainment Events LLC.'
+                        `• Organizer: ${organizerName}`
                     ]
                 },
                 {

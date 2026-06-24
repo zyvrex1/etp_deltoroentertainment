@@ -7,6 +7,7 @@ import { io } from 'socket.io-client';
 import { useAuthContext } from '../hooks/useAuthContext';
 import concernService from '../services/concernService';
 import jsPDF from 'jspdf';
+import axios from 'axios';
 import './SponsorSupport.css';
 import usePagination from '../hooks/usePagination';
 import PaginationBar from '../components/PaginationBar';
@@ -30,7 +31,32 @@ export default function SponsorSupport() {
     const [openFaq, setOpenFaq] = useState(0);
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
+    const [latestReservation, setLatestReservation] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
+
+    useEffect(() => {
+        const fetchLatestReservation = async () => {
+            if (!user?.token) return;
+            try {
+                const response = await axios.get(`${BACKEND_URL}/api/reservations/my-booths`, {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                const reservations = response.data || [];
+                if (reservations.length > 0) {
+                    const latest = reservations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+                    setLatestReservation(latest);
+                }
+            } catch (error) {
+                console.error("Error fetching latest reservation in SponsorSupport:", error);
+            }
+        };
+        fetchLatestReservation();
+    }, [user]);
+
+    const isPromoterEvent = latestReservation?.event?.createdBy?.role === 'promoter';
+    const organizerName = isPromoterEvent
+        ? (latestReservation?.event?.createdBy?.companyName || `${latestReservation?.event?.createdBy?.firstName || ''} ${latestReservation?.event?.createdBy?.lastName || ''}`.trim() || 'Deltoro Entertainment Events LLC.')
+        : 'Deltoro Entertainment Events LLC.';
     const [selectedStatus, setSelectedStatus] = useState("All");
     const [concerns, setConcerns] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -253,14 +279,14 @@ const exportDocumentToPDF = async (doc) => {
 
                             <ul className="sd-list small-body-text text-secondary">
                                 <li>Sponsor: The participating company or individual</li>
-                                <li>Organizer: Event Platform Events LLC.</li>
+                                <li>Organizer: Deltoro Entertainment Events LLC.</li>
                             </ul>
                         </div>
                     ),
                     pdfContent: [
                         'This Sponsorship Agreement ("Agreement") is entered into between:',
                         '• Sponsor: The participating company or individual',
-                        '• Organizer: Event Platform Events LLC.'
+                        '• Organizer: Deltoro Entertainment Events LLC.'
                     ]
                 },
                 {
