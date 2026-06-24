@@ -7,23 +7,23 @@ const createAdmins = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
 
-    // Check if Super Admin exists
-    const superAdminExists = await User.findOne({ role: "superadmin" });
-    if (!superAdminExists) {
+    // Create Joey Del Toro (Admin)
+    const joeyExists = await User.findOne({ email: "joey@deltoroentertainment.com" });
+    if (!joeyExists) {
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash("SuperAdmin123!", salt);
+      const hashedPassword = await bcrypt.hash("Admin123!", salt);
 
       await User.create({
         firstName: "Joey",
         lastName: "Del Toro",
         email: "joey@deltoroentertainment.com",
         password: hashedPassword,
-        role: "superadmin",
+        role: "admin",
       });
 
-      console.log("Super Admin created successfully");
+      console.log("Admin Joey created successfully");
     } else {
-      console.log("Super Admin already exists");
+      console.log("Admin Joey already exists");
     }
 
     // Create first admin (Ehdsell)
