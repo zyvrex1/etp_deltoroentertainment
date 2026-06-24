@@ -13,7 +13,7 @@ for (const key of REQUIRED_ENV) {
 const express = require('express')
 
 const dns = require('dns')
-dns.setServers(['8.8.8.8', '8.8.4.4'])
+dns.setServers(['1.1.1.1', '8.8.8.8'])
 
 const cors = require('cors')
 const path = require('path')
