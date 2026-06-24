@@ -16,7 +16,7 @@ const createAdmins = async () => {
       await User.create({
         firstName: "Joey",
         lastName: "Del Toro",
-        email: "superadmin@gmail.com",
+        email: "joey@deltoroentertainment.com",
         password: hashedPassword,
         role: "superadmin",
       });
@@ -27,7 +27,7 @@ const createAdmins = async () => {
     }
 
     // Create first admin (Ehdsell)
-    const admin1Exists = await User.findOne({ email: "admin@gmail.com" });
+    const admin1Exists = await User.findOne({ email: "ehdsell@deltoroentertainment.com" });
     if (!admin1Exists) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash("Admin123!", salt);
@@ -35,7 +35,7 @@ const createAdmins = async () => {
       await User.create({
         firstName: "Ehdsell",
         lastName: "Apan",
-        email: "admin@gmail.com",
+        email: "ehdsell@deltoroentertainment.com",
         password: hashedPassword,
         role: "admin",
       });
@@ -46,7 +46,7 @@ const createAdmins = async () => {
     }
 
     // Create second admin (Zyvrex Perez)
-    const admin2Exists = await User.findOne({ email: "admin2@gmail.com" });
+    const admin2Exists = await User.findOne({ email: "zyvrex@deltoroentertainment.com" });
     if (!admin2Exists) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash("Admin123!", salt);
@@ -54,7 +54,7 @@ const createAdmins = async () => {
       await User.create({
         firstName: "Zyvrex",
         lastName: "Perez",
-        email: "admin2@gmail.com",
+        email: "zyvrex@deltoroentertainment.com",
         password: hashedPassword,
         role: "admin",
       });
