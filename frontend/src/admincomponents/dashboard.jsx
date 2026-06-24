@@ -83,6 +83,7 @@ export default function Dashboard() {
         boothTrend: 0,
         revenueTrend: 0,
         ticketTrend: 0,
+        eventTrend: 0,
         pendingPayoutsCount: 0,
         loading: true
     });
@@ -197,6 +198,19 @@ export default function Dashboard() {
             }).reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
 
             const ticketTrend = calculateTrend(ticketsThisMonth, ticketsLastMonth);
+
+            // Calculate Event Trends
+            const eventsThisMonth = events.filter(e => {
+                const d = new Date(e.createdAt);
+                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            }).length;
+
+            const eventsLastMonth = events.filter(e => {
+                const d = new Date(e.createdAt);
+                return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+            }).length;
+
+            const eventTrend = calculateTrend(eventsThisMonth, eventsLastMonth);
 
             const totalTicketsSold = activeReservations.filter(res => ['seat', 'general-fee', 'mixed-ticket'].includes(res.type))
                 .reduce((sum, res) => sum + (res.seatIds?.length || 1), 0);
@@ -405,6 +419,7 @@ export default function Dashboard() {
                 boothTrend,
                 revenueTrend,
                 ticketTrend,
+                eventTrend,
                 pendingPayoutsCount: pendingPayoutsCount,
                 loading: false
             });
@@ -570,7 +585,10 @@ export default function Dashboard() {
                     <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon red"><Icon icon="mdi:calendar-blank" width="24" /></span>
-                            <span className="trend up"><Icon icon="mdi:trending-up" /> 12.5%</span>
+                            <span className={`trend ${stats.eventTrend >= 0 ? 'up' : 'down'}`}>
+                                <Icon icon={stats.eventTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} />
+                                {stats.loading ? "0%" : `${Math.abs(stats.eventTrend).toFixed(1)}%`}
+                            </span>
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Total Events</p>
@@ -605,7 +623,7 @@ export default function Dashboard() {
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Pending Tickets</p>
                             <h3>{stats.loading ? "..." : stats.pendingTickets}</h3>
-                            <p className="smaller-body-text left-aligned">assigned to you</p>
+                            {/* <p className="smaller-body-text left-aligned">assigned to you</p> */}
                             <span className="view-details" onClick={() => navigate('/admin/support')}>
                                 View details <Icon icon="mdi:arrow-right" />
                             </span>
@@ -614,17 +632,17 @@ export default function Dashboard() {
                     <div className="dashboard-stat-card">
                         <div className="upper-stats">
                             <span className="icon purple"><Icon icon="mdi:account-group-outline" width="24" /></span>
-                            <span className={`trend ${stats.userTrend >= 0 ? 'up' : 'down'}`}>
+                            {/* <span className={`trend ${stats.userTrend >= 0 ? 'up' : 'down'}`}>
                                 <Icon icon={stats.userTrend >= 0 ? "mdi:trending-up" : "mdi:trending-down"} />
                                 {stats.loading ? "0%" : `${Math.abs(stats.userTrend).toFixed(1)}%`}
-                            </span>
+                            </span> */}
                         </div>
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Total Users this {stats.currentMonthName}</p>
                             <h3>{stats.loading ? "..." : stats.newUsersThisMonth}</h3>
-                            <p className="smaller-body-text left-aligned">
+                            {/* <p className="smaller-body-text left-aligned">
                                 {stats.loading ? "Calculating..." : `The total created accounts is ${stats.totalUsers} `}
-                            </p>
+                            </p> */}
                         </div>
                     </div>
                     <div className="dashboard-stat-card">
@@ -638,7 +656,7 @@ export default function Dashboard() {
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Booths Sold</p>
                             <h3>{stats.loading ? "..." : stats.totalBoothsReserved}</h3>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
+                            {/* <p className="smaller-body-text left-aligned">vs last month</p> */}
                         </div>
                     </div>
                     <div className="dashboard-stat-card">
@@ -650,9 +668,9 @@ export default function Dashboard() {
                             </span>
                         </div>
                         <div className="bottom-stats">
-                            <p className="regular-body-text left-aligned">Seats Sold</p>
+                            <p className="regular-body-text left-aligned">Tickets Sold</p>
                             <h3>{stats.loading ? "..." : stats.totalTicketsSold}</h3>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
+                            {/* <p className="smaller-body-text left-aligned">vs last month</p> */}
                         </div>
                     </div>
                     <div className="dashboard-stat-card">
@@ -666,7 +684,7 @@ export default function Dashboard() {
                         <div className="bottom-stats">
                             <p className="regular-body-text left-aligned">Total Revenue</p>
                             <h3>${stats.loading ? "..." : stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
-                            <p className="smaller-body-text left-aligned">vs last month</p>
+                            {/* <p className="smaller-body-text left-aligned">vs last month</p> */}
                         </div>
                     </div>
                 </div>
@@ -758,7 +776,9 @@ export default function Dashboard() {
                     <div className="chart-card wide area">
                         <div className="chart-card-header">
                             <h4 className="left-aligned">Revenue Overview</h4>
-                            <span className="button-label green">+15.3%</span>
+                            <span className={`button-label ${stats.revenueTrend >= 0 ? 'green' : 'red'}`}>
+                                {stats.loading ? "0%" : `${stats.revenueTrend >= 0 ? '+' : ''}${stats.revenueTrend.toFixed(1)}%`}
+                            </span>
                         </div>
                         <div className="chart-placeholder area-placeholder">
                             <ResponsiveContainer width="100%" height={isMobile ? 180 : 250}>
