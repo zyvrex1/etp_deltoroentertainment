@@ -1021,7 +1021,7 @@ const LayoutBuilder = ({ selectedEvent }) => {
           {selectedIds.size > 0 && (() => {
             const selArray = [...selectedIds];
             const selItems = placedItems.filter(i => selectedIds.has(i.id));
-            const isSingle = selArray.length === 1;
+            const isSingle = selArray.length === 1 && selItems.length === 1;
             const singleItem = isSingle ? selItems[0] : null;
             const singleCat = singleItem ? categories.find(c => c.id === singleItem.categoryId) : null;
             const anyLocked = selItems.some(i => i.status === 'sold' || i.status === 'reserved');
@@ -1271,6 +1271,8 @@ const LayoutBuilder = ({ selectedEvent }) => {
         if (result.isConfirmed) {
           pushHistory([...placedItems]);
           setPlacedItems([]);
+          setSelectedIds(new Set());
+          lastClickedIdRef.current = null;
           showSuccessAlert("Cleared", "The map has been cleared.");
         }
       }}

@@ -126,7 +126,7 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
             return { start: new Date(value.start), end: new Date(value.end) };
         }
         if (value?.preset === 'all') {
-            return { start: new Date(2000, 0, 1), end: new Date(2100, 11, 31) };
+            return { start: new Date(2000, 0, 1), end: new Date(9999, 11, 31) };
         }
         return getPresetRange(value?.preset || 'last90') || { start: new Date(), end: new Date() };
     };
@@ -164,7 +164,7 @@ export default function DateRangePicker({ value, onChange, buttonClassName, plac
         if (preset === 'all') {
             setActivePreset('all');
             const farPast = new Date(2000, 0, 1);
-            const farFuture = new Date(2100, 11, 31);
+            const farFuture = new Date(9999, 11, 31);
             setRangeStart(farPast);
             setRangeEnd(farFuture);
             return;

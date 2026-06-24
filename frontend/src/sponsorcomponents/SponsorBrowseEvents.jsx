@@ -45,7 +45,7 @@ const SponsorBrowseEvents = () => {
         preset: 'all',
         presetLabel: 'All time',
         start: new Date(2000, 0, 1),
-        end: new Date(2100, 11, 31),
+        end: new Date(9999, 11, 31),
     }));
 
     const handleGetBooths = (eventObj) => {
