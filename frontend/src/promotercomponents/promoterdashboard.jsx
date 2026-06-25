@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
@@ -26,7 +26,12 @@ export default function PromoterDashboard() {
   const [confirmedSeatsSold, setConfirmedSeatsSold] = useState(0);
   const [confirmedBoothsSold, setConfirmedBoothsSold] = useState(0);
   const [confirmedTotalRevenue, setConfirmedTotalRevenue] = useState(0);
+  const [revenueTrend, setRevenueTrend] = useState(0);
+  const [ticketTrend, setTicketTrend] = useState(0);
+  const [boothTrend, setBoothTrend] = useState(0);
   const [selectedTicketSalesEvent, setSelectedTicketSalesEvent] = useState("All Events");
+  const [isTicketDropdownOpen, setIsTicketDropdownOpen] = useState(false);
+  const ticketDropdownRef = useRef(null);
 
   const navigate = useNavigate();
 
@@ -42,6 +47,17 @@ export default function PromoterDashboard() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Close ticket dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ticketDropdownRef.current && !ticketDropdownRef.current.contains(e.target)) {
+        setIsTicketDropdownOpen(false);
+      }
+    };
+    if (isTicketDropdownOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isTicketDropdownOpen]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -106,6 +122,41 @@ export default function PromoterDashboard() {
         const totalRevFromConfirmed = activeReservations
           .reduce((sum, r) => sum + (r.amount?.total || 0), 0);
         setConfirmedTotalRevenue(totalRevFromConfirmed);
+
+        // --- Calculate month-over-month trends ---
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear2 = now.getFullYear();
+        const lastMonthDate = new Date(currentYear2, currentMonth - 1, 1);
+        const lastMonth = lastMonthDate.getMonth();
+        const lastMonthYear = lastMonthDate.getFullYear();
+
+        const calcTrend = (cur, prev) => {
+          if (prev === 0) return cur > 0 ? 100 : 0;
+          return ((cur - prev) / prev) * 100;
+        };
+
+        const revThisMonth = activeReservations
+          .filter(r => { const d = new Date(r.createdAt); return d.getMonth() === currentMonth && d.getFullYear() === currentYear2; })
+          .reduce((sum, r) => sum + (r.amount?.total || 0), 0);
+        const revLastMonth = activeReservations
+          .filter(r => { const d = new Date(r.createdAt); return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear; })
+          .reduce((sum, r) => sum + (r.amount?.total || 0), 0);
+        setRevenueTrend(calcTrend(revThisMonth, revLastMonth));
+
+        const ticketsThisMonth = activeReservations
+          .filter(r => { const d = new Date(r.createdAt); return ['seat', 'general-fee', 'mixed-ticket'].includes(r.type) && d.getMonth() === currentMonth && d.getFullYear() === currentYear2; })
+          .reduce((sum, r) => sum + (r.seatIds?.length || 1), 0);
+        const ticketsLastMonth = activeReservations
+          .filter(r => { const d = new Date(r.createdAt); return ['seat', 'general-fee', 'mixed-ticket'].includes(r.type) && d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear; })
+          .reduce((sum, r) => sum + (r.seatIds?.length || 1), 0);
+        setTicketTrend(calcTrend(ticketsThisMonth, ticketsLastMonth));
+
+        const boothsThisMonth = activeReservations
+          .filter(r => { const d = new Date(r.createdAt); return r.type === 'booth' && d.getMonth() === currentMonth && d.getFullYear() === currentYear2; }).length;
+        const boothsLastMonth = activeReservations
+          .filter(r => { const d = new Date(r.createdAt); return r.type === 'booth' && d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear; }).length;
+        setBoothTrend(calcTrend(boothsThisMonth, boothsLastMonth));
 
         // --- Calculate Top Sponsors ---
         const sponsorMap = {};
@@ -281,7 +332,8 @@ export default function PromoterDashboard() {
     {
       label: "Total Revenue",
       value: `$${confirmedTotalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      delta: "+12.5%",
+      delta: loading ? "0%" : `${revenueTrend >= 0 ? '+' : ''}${revenueTrend.toFixed(1)}%`,
+      trendUp: revenueTrend >= 0,
       icon: "mdi:currency-usd",
       color: "green",
     },
@@ -294,16 +346,18 @@ export default function PromoterDashboard() {
       isNeutral: true,
     },
     {
-      label: "Ticket Sold",
+      label: "Tickets Sold",
       value: confirmedSeatsSold.toLocaleString(),
-      delta: "+8.2%",
+      delta: loading ? "0%" : `${ticketTrend >= 0 ? '+' : ''}${ticketTrend.toFixed(1)}%`,
+      trendUp: ticketTrend >= 0,
       icon: "mdi:ticket-confirmation-outline",
       color: "blue",
     },
     {
-      label: "Booth Sold",
+      label: "Booths Sold",
       value: confirmedBoothsSold.toLocaleString(),
-      delta: "+5.0%",
+      delta: loading ? "0%" : `${boothTrend >= 0 ? '+' : ''}${boothTrend.toFixed(1)}%`,
+      trendUp: boothTrend >= 0,
       icon: "mdi:storefront-outline",
       color: "orange",
     },
@@ -541,8 +595,8 @@ export default function PromoterDashboard() {
             <div key={s.label} className="dashboard-stat-card">
               <div className="upper-stats">
                 <span className={`icon ${s.color}`}><Icon icon={s.icon} width="24" /></span>
-                <span className={s.isNeutral ? "trend hidden" : "trend up"} style={s.isNeutral ? { display: 'none' } : undefined}>
-                  <Icon icon="mdi:trending-up" /> {s.delta}
+                <span className={s.isNeutral ? "trend hidden" : `trend ${s.trendUp ? 'up' : 'down'}`} style={s.isNeutral ? { display: 'none' } : undefined}>
+                  <Icon icon={s.trendUp ? "mdi:trending-up" : "mdi:trending-down"} /> {s.delta}
                 </span>
               </div>
               <div className="bottom-stats">
@@ -582,17 +636,41 @@ export default function PromoterDashboard() {
                   <h3 className="left-aligned">Ticket Sales</h3>
                 </div>
                 <div className="header-filter">
-                  <select
-                    value={selectedTicketSalesEvent}
-                    onChange={(e) => setSelectedTicketSalesEvent(e.target.value)}
-                    className="regular-body-text"
-                    style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #e0e0e0', outline: 'none', cursor: 'pointer', backgroundColor: '#fff' }}
-                  >
-                    <option value="All Events">All Events</option>
-                    {approvedEvents.map(evt => (
-                      <option key={evt._id} value={evt._id}>{evt.title}</option>
-                    ))}
-                  </select>
+                  <div className="pmon-filter-dropdown" ref={ticketDropdownRef}>
+                    <button
+                      className="pmon-filter-dropdown-btn small-body-text"
+                      onClick={() => setIsTicketDropdownOpen(!isTicketDropdownOpen)}
+                    >
+                      <span className="truncate-text">
+                        {selectedTicketSalesEvent === "All Events"
+                          ? "All Events"
+                          : approvedEvents.find(e => e._id === selectedTicketSalesEvent)?.title || "All Events"}
+                      </span>
+                      <Icon
+                        icon="mdi:chevron-down"
+                        className={`dropdown-icon ${isTicketDropdownOpen ? "open" : ""}`}
+                      />
+                    </button>
+                    {isTicketDropdownOpen && (
+                      <div className="pmon-filter-dropdown-menu">
+                        <button
+                          className={`pmon-filter-dropdown-item small-body-text ${selectedTicketSalesEvent === "All Events" ? "active" : ""}`}
+                          onClick={() => { setSelectedTicketSalesEvent("All Events"); setIsTicketDropdownOpen(false); }}
+                        >
+                          All Events
+                        </button>
+                        {approvedEvents.map(evt => (
+                          <button
+                            key={evt._id}
+                            className={`pmon-filter-dropdown-item small-body-text ${selectedTicketSalesEvent === evt._id ? "active" : ""}`}
+                            onClick={() => { setSelectedTicketSalesEvent(evt._id); setIsTicketDropdownOpen(false); }}
+                          >
+                            {evt.title}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="chart-placeholder">
