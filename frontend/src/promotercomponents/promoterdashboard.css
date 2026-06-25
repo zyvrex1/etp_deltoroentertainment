@@ -254,6 +254,85 @@
         color: var(--color-green-primary);
         font-weight: 600;
       }
+      .header-filter {
+        flex-shrink: 0;
+
+        .pmon-filter-dropdown {
+          position: relative;
+
+          .pmon-filter-dropdown-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--color-white-primary);
+            border: 1px solid var(--color-black-tertiary);
+            border-radius: 8px;
+            padding: 10px 16px;
+            color: var(--color-black-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            min-width: 180px;
+            gap: 8px;
+          }
+
+          .truncate-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            max-width: 90%;
+          }
+
+          .dropdown-icon {
+            font-size: 18px;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+          }
+
+          .dropdown-icon.open {
+            transform: rotate(180deg);
+          }
+
+          .pmon-filter-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            min-width: 100%;
+            background-color: var(--color-white-primary);
+            border: 1px solid var(--color-black-tertiary);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+
+            .pmon-filter-dropdown-item {
+              padding: 10px 16px;
+              background: none;
+              border: none;
+              text-align: left;
+              font-size: 14px;
+              color: var(--color-black-secondary);
+              cursor: pointer;
+              border-radius: 0;
+              transition: background 0.2s ease;
+              white-space: nowrap;
+
+              &:hover {
+                background: var(--color-red-primary);
+                color: var(--color-white-primary);
+              }
+
+              &.active {
+                background: var(--color-red-quaternary);
+                color: var(--color-red-primary);
+                font-weight: 500;
+              }
+            }
+          }
+        }
+      }
     }
 
     .chart-placeholder {
