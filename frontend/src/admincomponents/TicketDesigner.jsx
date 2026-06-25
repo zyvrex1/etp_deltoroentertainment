@@ -137,12 +137,19 @@ const TicketDesigner = ({ selectedEvent }) => {
   };
 
   const formatTime = (timeStr) => {
+  const formatTime = (timeStr) => {
     if (!timeStr) return '7:00 PM';
     const [hours, minutes] = timeStr.split(':');
     const h = parseInt(hours);
     const ampm = h >= 12 ? 'PM' : 'AM';
     const displayH = h % 12 || 12;
     return `${displayH}:${minutes} ${ampm}`;
+  };
+
+  const formatTimeSpan = (startTimeStr, endTimeStr) => {
+    if (!startTimeStr && !endTimeStr) return '7:00 PM';
+    if (!endTimeStr) return formatTime(startTimeStr);
+    return `${formatTime(startTimeStr)} - ${formatTime(endTimeStr)}`;
   };
 
   const priceLevels = useMemo(() => selectedEvent?.priceLevels || [], [selectedEvent]);
@@ -209,22 +216,22 @@ const TicketDesigner = ({ selectedEvent }) => {
           },
 
           // Middle Content
-          { id: 'event-title', type: 'text', x: 800, y: 100, text: selectedEvent?.title || 'Event Title', fontSize: 70, fontStyle: 'bold', width: 1000 },
+          { id: 'event-title', type: 'text', x: 700, y: 100, text: selectedEvent?.title || 'Event Title', fontSize: 70, fontStyle: 'bold', width: 1150 },
 
           // Date & Time
           { id: 'date-label', type: 'text', x: 700, y: 220, text: formatDate(selectedEvent?.startDate).dayName, fontSize: 50 },
           { id: 'day-text', type: 'text', x: 700, y: 280, text: formatDate(selectedEvent?.startDate).day, fontSize: 100, fontStyle: 'bold' },
           { id: 'month-year', type: 'text', x: 700, y: 400, text: formatDate(selectedEvent?.startDate).monthYear, fontSize: 50 },
-          { id: 'time-text', type: 'text', x: 700, y: 460, text: formatTime(selectedEvent?.startTime), fontSize: 50 },
+          { id: 'time-text', type: 'text', x: 700, y: 460, text: formatTimeSpan(selectedEvent?.startTime, selectedEvent?.endTime), fontSize: 50 },
 
           // Vertical Divider
-          { id: 'divider-1', type: 'rect', x: 950, y: 220, width: 2, height: 300, fill: '#000' },
+          { id: 'divider-1', type: 'rect', x: 1150, y: 220, width: 2, height: 300, fill: '#000' },
 
           // Seat Info
-          { id: 'category-name', type: 'text', x: 1000, y: 220, text: selectedCategory.priceName || 'Category', fontSize: 70, fontStyle: 'bold' },
-          { id: 'category-sub', type: 'text', x: 1000, y: 330, text: selectedCategory.type?.startsWith('Seat') ? 'Seat' : (selectedCategory.type?.startsWith('Booth') ? 'Booth' : 'Ticket'), fontSize: 50, color: '#666' },
-          { id: 'seat-label', type: 'text', x: 1000, y: 400, text: '1', fontSize: 60, fontStyle: 'bold' },
-          { id: 'price-text', type: 'text', x: 1000, y: 470, text: selectedCategory.facePrice > 0 ? `$${selectedCategory.facePrice}` : 'FREE', fontSize: 60, fontStyle: 'bold' },
+          { id: 'category-name', type: 'text', x: 1200, y: 220, text: selectedCategory.priceName || 'Category', fontSize: 70, fontStyle: 'bold' },
+          { id: 'category-sub', type: 'text', x: 1200, y: 330, text: selectedCategory.type?.startsWith('Seat') ? 'Seat' : (selectedCategory.type?.startsWith('Booth') ? 'Booth' : 'Ticket'), fontSize: 50, color: '#666' },
+          { id: 'seat-label', type: 'text', x: 1200, y: 400, text: '1', fontSize: 60, fontStyle: 'bold' },
+          { id: 'price-text', type: 'text', x: 1200, y: 470, text: selectedCategory.facePrice > 0 ? `$${selectedCategory.facePrice}` : 'FREE', fontSize: 60, fontStyle: 'bold' },
 
           // Venue
           { id: 'venue-name', type: 'text', x: 400, y: 800, width: 1400, text: `${selectedEvent?.venue?.name || 'Venue'} - ${selectedEvent?.venue?.address || 'Address'}`, fontSize: 50, align: 'center', fontStyle: 'bold' },
@@ -252,7 +259,7 @@ const TicketDesigner = ({ selectedEvent }) => {
     if (!selectedCategoryId || ticketItems.length === 0) return;
 
     const eventDate = formatDate(selectedEvent?.startDate);
-    const eventTime = formatTime(selectedEvent?.startTime);
+    const eventTime = formatTimeSpan(selectedEvent?.startTime, selectedEvent?.endTime);
     const venueStr = `${selectedEvent?.venue?.name || 'Venue'} - ${selectedEvent?.venue?.address || 'Address'}`;
     const eventImgUrl = selectedEvent?.image && selectedEvent.image !== "null"
       ? getImageUrl(selectedEvent.image)
@@ -392,7 +399,7 @@ const TicketDesigner = ({ selectedEvent }) => {
 
         if (updatedCat) {
           const eventDate = formatDate(data.startDate);
-          const eventTime = formatTime(data.startTime);
+          const eventTime = formatTimeSpan(data.startTime, data.endTime);
           const venueStr = `${data.venue?.name || 'Venue'} - ${data.venue?.address || 'Address'}`;
           const eventImgUrl = data.image && data.image !== "null"
             ? getImageUrl(data.image)
@@ -845,109 +852,7 @@ const TicketDesigner = ({ selectedEvent }) => {
             )}
           </div>
 
-          {selectedId && selectedItem && (
-            <div className="sidebar-card inspector-card properties-bottom-sheet" style={{ zIndex: 3000 }}>
-              <div className="mobile-sheet-handle" />
-              <div className="sidebar-header">
-                <h4 className="bt-section-title-layout">Edit Element</h4>
-                <button className="close-btn" onClick={() => setSelectedId(null)}>
-                  <Icon icon="mdi:close" />
-                </button>
-              </div>
-              <div className="inspector-body" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
-                {selectedItem.type === 'text' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div>
-                      <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Text Content</label>
-                      <textarea
-                        style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
-                        value={selectedItem.text}
-                        onChange={e => updateItem(selectedId, { text: e.target.value })}
-                        rows={2}
-                      />
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div>
-                        <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Font Size</label>
-                        <input
-                          type="number"
-                          style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
-                          value={selectedItem.fontSize}
-                          onChange={e => updateItem(selectedId, { fontSize: parseInt(e.target.value) || 10 })}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Font Style</label>
-                        <select
-                          style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
-                          value={selectedItem.fontStyle || 'normal'}
-                          onChange={e => updateItem(selectedId, { fontStyle: e.target.value })}
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="bold">Bold</option>
-                          <option value="italic">Italic</option>
-                          <option value="bold italic">Bold Italic</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Color</label>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input
-                          type="color"
-                          style={{ width: '45px', height: '35px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                          value={selectedItem.fill}
-                          onChange={e => updateItem(selectedId, { fill: e.target.value })}
-                        />
-                        <input
-                          type="text"
-                          style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
-                          value={selectedItem.fill}
-                          onChange={e => updateItem(selectedId, { fill: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {selectedItem.type === 'rect' && (
-                  <div>
-                    <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Color</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <input
-                        type="color"
-                        style={{ width: '45px', height: '35px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
-                        value={selectedItem.fill}
-                        onChange={e => updateItem(selectedId, { fill: e.target.value })}
-                      />
-                      <input
-                        type="text"
-                        style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
-                        value={selectedItem.fill}
-                        onChange={e => updateItem(selectedId, { fill: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                  <button
-                    className="outlined-button text-red"
-                    style={{ color: 'var(--color-red-primary)', flex: 1 }}
-                    onClick={handleDeleteItem}
-                    disabled={['bg-border', 'bg-main', 'left-stripe'].includes(selectedId)}
-                  >
-                    <Icon icon="mdi:delete-outline" /> Delete
-                  </button>
-                  <button
-                    className="primary-button"
-                    style={{ backgroundColor: 'var(--color-red-primary)', color: 'white', flex: 1 }}
-                    onClick={() => setSelectedId(null)}
-                  >
-                    <Icon icon="mdi:check" /> Done
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
     </div>

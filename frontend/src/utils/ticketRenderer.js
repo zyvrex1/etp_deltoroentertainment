@@ -4,8 +4,8 @@ import brandLogo from "../assets/Logo1.png";
 import jsPDF from "jspdf";
 
 // Inline date/time formatters
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const formatDate = (dateStr) => {
     if (!dateStr) return { dayName: '', day: '', monthYear: '' };
@@ -22,7 +22,13 @@ const formatTime = (timeStr) => {
     const [h, m] = timeStr.split(':').map(Number);
     const period = h >= 12 ? 'PM' : 'AM';
     const hour = h % 12 || 12;
-    return `${hour}:${String(m).padStart(2,'0')} ${period}`;
+    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+};
+
+const formatTimeSpan = (startTimeStr, endTimeStr) => {
+    if (!startTimeStr && !endTimeStr) return '7:00 PM';
+    if (!endTimeStr) return formatTime(startTimeStr);
+    return `${formatTime(startTimeStr)} - ${formatTime(endTimeStr)}`;
 };
 
 const TICKET_WIDTH = 2047;
@@ -44,8 +50,16 @@ export const generateTicketsForReservations = async (reservationsToProcess) => {
 
         let categoryId = res.priceLevelId ? String(res.priceLevelId) : null;
 
-        if (res.event && res.event.ticketLayouts && res.event.ticketLayouts.length > 0) {
-            // Try to match to the specific price level layout, fallback to first
+        // 1. Try to get layout from the specific priceLevel's ticketDesign
+        if (categoryId && res.event?.priceLevels) {
+            const pl = res.event.priceLevels.find(p => String(p._id) === categoryId);
+            if (pl && pl.ticketDesign && pl.ticketDesign.length > 0) {
+                layoutItems = pl.ticketDesign;
+            }
+        }
+
+        // 2. Fallback to legacy event.ticketLayouts
+        if (layoutItems.length === 0 && res.event && res.event.ticketLayouts && res.event.ticketLayouts.length > 0) {
             const layoutObj = (
                 categoryId
                     ? res.event.ticketLayouts.find(l => String(l.priceLevelId?._id || l.priceLevelId) === categoryId)
@@ -77,7 +91,7 @@ export const generateTicketsForReservations = async (reservationsToProcess) => {
                 if (!imageCache[item.url]) {
                     let urlToLoad = item.url;
                     if (urlToLoad.startsWith('/api/') || urlToLoad.startsWith('uploads/')) {
-                         urlToLoad = getImageUrl(urlToLoad);
+                        urlToLoad = getImageUrl(urlToLoad);
                     }
                     imageCache[item.url] = await loadImage(urlToLoad);
                 }
@@ -86,9 +100,9 @@ export const generateTicketsForReservations = async (reservationsToProcess) => {
 
         // Setup dynamic variables
         const eventDate = formatDate(res.event?.startDate);
-        const eventTime = formatTime(res.event?.startTime);
+        const eventTime = formatTimeSpan(res.event?.startTime, res.event?.endTime);
         const venueStr = `${res.event?.venue?.name || 'Venue'} - ${res.event?.venue?.address || 'Address'}`;
-        const eventImgUrl = res.event?.image ? getImageUrl(res.event.image) : "/assets/eventbg.jpg";
+        const eventImgUrl = res.event?.image && res.event.image !== "null" ? getImageUrl(res.event.image) : "/assets/eventbg.jpg";
 
         let priceName = 'Ticket';
         let priceFace = 'FREE';
@@ -133,11 +147,11 @@ export const generateTicketsForReservations = async (reservationsToProcess) => {
                 seatLabel: res.boothCode || (res.type === 'sponsorship' ? 'Sponsor' : 'GEN AD')
             });
         }
-        
+
         for (const ticketInfo of ticketsToGenerate) {
             const qrUrl = `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=${ticketInfo.uniqueId}&scale=5`;
             const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${ticketInfo.uniqueId}&includetext=false&rotate=R&scale=3`;
-            
+
             const qrImg = await loadImage(qrUrl);
             const barcodeImg = await loadImage(barcodeUrl);
 
@@ -145,7 +159,7 @@ export const generateTicketsForReservations = async (reservationsToProcess) => {
 
             for (const item of layoutItems) {
                 const nodeProps = { ...item };
-                
+
                 if (item.type === 'rect') {
                     const rect = new Konva.Rect(nodeProps);
                     layer.add(rect);
@@ -166,7 +180,7 @@ export const generateTicketsForReservations = async (reservationsToProcess) => {
                     layer.add(textNode);
                 } else if (item.type === 'image') {
                     let imgObj = imageCache[item.url];
-                    
+
                     if (item.id === 'brand-text' || item.id === 'brand-logo') imgObj = brandImg;
                     if (item.id === 'event-img') {
                         if (!imageCache[eventImgUrl]) {
@@ -174,7 +188,7 @@ export const generateTicketsForReservations = async (reservationsToProcess) => {
                         }
                         imgObj = imageCache[eventImgUrl] || imgObj;
                     }
-                    
+
                     if (item.id === 'qr-code' || item.id === 'qr-placeholder') {
                         imgObj = qrImg;
                     }
@@ -196,7 +210,7 @@ export const generateTicketsForReservations = async (reservationsToProcess) => {
 
             // Render to jpeg
             const dataUrl = stage.toDataURL({ mimeType: 'image/jpeg', quality: 0.8 });
-            
+
             const pdf = new jsPDF({
                 orientation: 'landscape',
                 unit: 'px',
@@ -220,25 +234,25 @@ export const generateTicketsForReservations = async (reservationsToProcess) => {
 
 const createDefaultTemplate = (event) => {
     return [
-      { id: 'bg-border', type: 'rect', x: 0, y: 0, width: TICKET_WIDTH, height: TICKET_HEIGHT, fill: '#D32F2F', cornerRadius: 40 },
-      { id: 'bg-main', type: 'rect', x: 20, y: 20, width: TICKET_WIDTH - 40, height: TICKET_HEIGHT - 40, fill: '#FFFFFF', cornerRadius: 30 },
-      { id: 'left-stripe', type: 'rect', x: 20, y: 20, width: 220, height: TICKET_HEIGHT - 40, fill: '#D32F2F', cornerRadius: { tl: 30, bl: 30 } },
-      { id: 'brand-text', type: 'image', x: 30, y: 750, width: 500, height: 200, url: brandLogo, rotation: -90 },
-      { id: 'qr-code', type: 'image', x: 300, y: 60, width: 350, height: 350, dynamicField: 'qrData' },
-      { id: 'event-img', type: 'image', x: 300, y: 430, width: 350, height: 350, url: "/assets/eventbg.jpg" },
-      { id: 'event-title', type: 'text', x: 800, y: 100, text: 'Event Title', fontSize: 70, fontStyle: 'bold', width: 1000 },
-      { id: 'date-label', type: 'text', x: 700, y: 220, text: 'Date', fontSize: 50 },
-      { id: 'day-text', type: 'text', x: 700, y: 280, text: '00', fontSize: 100, fontStyle: 'bold' },
-      { id: 'month-year', type: 'text', x: 700, y: 400, text: 'Month, Year', fontSize: 50 },
-      { id: 'time-text', type: 'text', x: 700, y: 460, text: 'Time', fontSize: 50 },
-      { id: 'divider-1', type: 'rect', x: 950, y: 220, width: 2, height: 300, fill: '#000' },
-      { id: 'category-name', type: 'text', x: 1000, y: 220, text: 'Ticket', fontSize: 70, fontStyle: 'bold' },
-      { id: 'category-sub', type: 'text', x: 1000, y: 330, text: 'Booth', fontSize: 50, color: '#666' },
-      { id: 'seat-label', type: 'text', x: 1000, y: 400, text: '1', fontSize: 60, fontStyle: 'bold' },
-      { id: 'price-text', type: 'text', x: 1000, y: 470, text: '$0', fontSize: 60, fontStyle: 'bold' },
-      { id: 'venue-name', type: 'text', x: 400, y: 800, width: 1400, text: 'Venue - Address', fontSize: 50, align: 'center', fontStyle: 'bold' },
-      { id: 'disclaimer', type: 'text', x: 400, y: 870, width: 1400, text: 'Print this e-Ticket in color or black/white or show it on your phone. You will not get admitted without this ticket.', fontSize: 30, align: 'center' },
-      { id: 'barcode-img', type: 'image', x: 1880, y: 150, width: 100, height: 700, dynamicField: 'qrData' }
+        { id: 'bg-border', type: 'rect', x: 0, y: 0, width: TICKET_WIDTH, height: TICKET_HEIGHT, fill: '#D32F2F', cornerRadius: 40 },
+        { id: 'bg-main', type: 'rect', x: 20, y: 20, width: TICKET_WIDTH - 40, height: TICKET_HEIGHT - 40, fill: '#FFFFFF', cornerRadius: 30 },
+        { id: 'left-stripe', type: 'rect', x: 20, y: 20, width: 220, height: TICKET_HEIGHT - 40, fill: '#D32F2F', cornerRadius: { tl: 30, bl: 30 } },
+        { id: 'brand-text', type: 'image', x: 30, y: 750, width: 500, height: 200, url: brandLogo, rotation: -90 },
+        { id: 'qr-code', type: 'image', x: 300, y: 60, width: 350, height: 350, dynamicField: 'qrData' },
+        { id: 'event-img', type: 'image', x: 300, y: 430, width: 350, height: 350, url: "/assets/eventbg.jpg" },
+        { id: 'event-title', type: 'text', x: 700, y: 100, text: 'Event Title', fontSize: 70, fontStyle: 'bold', width: 1150 },
+        { id: 'date-label', type: 'text', x: 700, y: 220, text: 'Date', fontSize: 50 },
+        { id: 'day-text', type: 'text', x: 700, y: 280, text: '00', fontSize: 100, fontStyle: 'bold' },
+        { id: 'month-year', type: 'text', x: 700, y: 400, text: 'Month, Year', fontSize: 50 },
+        { id: 'time-text', type: 'text', x: 700, y: 460, text: 'Time', fontSize: 50 },
+        { id: 'divider-1', type: 'rect', x: 1150, y: 220, width: 2, height: 300, fill: '#000' },
+        { id: 'category-name', type: 'text', x: 1200, y: 220, text: 'Ticket', fontSize: 70, fontStyle: 'bold' },
+        { id: 'category-sub', type: 'text', x: 1200, y: 330, text: 'Booth', fontSize: 50, color: '#666' },
+        { id: 'seat-label', type: 'text', x: 1200, y: 400, text: '1', fontSize: 60, fontStyle: 'bold' },
+        { id: 'price-text', type: 'text', x: 1200, y: 470, text: '$0', fontSize: 60, fontStyle: 'bold' },
+        { id: 'venue-name', type: 'text', x: 400, y: 800, width: 1400, text: 'Venue - Address', fontSize: 50, align: 'center', fontStyle: 'bold' },
+        { id: 'disclaimer', type: 'text', x: 400, y: 870, width: 1400, text: 'Print this e-Ticket in color or black/white or show it on your phone. You will not get admitted without this ticket.', fontSize: 30, align: 'center' },
+        { id: 'barcode-img', type: 'image', x: 1880, y: 150, width: 100, height: 700, dynamicField: 'qrData' }
     ];
 };
 
@@ -251,6 +265,18 @@ const loadImage = (url) => {
             console.error("Failed to load image for ticket:", url);
             resolve(null);
         };
-        img.src = url;
+        let finalUrl = url;
+        if (finalUrl.startsWith('/uploads/')) {
+            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+            finalUrl = `${backendUrl}${finalUrl}`;
+        }
+
+        if (finalUrl.startsWith('http') && !finalUrl.includes('/api/proxy-image') && !finalUrl.includes('bwipjs-api')) {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+            const baseUrl = apiUrl.replace(/\/api$/, '');
+            img.src = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(finalUrl)}`;
+        } else {
+            img.src = finalUrl;
+        }
     });
 };

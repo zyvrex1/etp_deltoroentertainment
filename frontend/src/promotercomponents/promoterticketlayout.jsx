@@ -143,6 +143,12 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
     return `${displayH}:${minutes} ${ampm}`;
   };
 
+  const formatTimeSpan = (startTimeStr, endTimeStr) => {
+    if (!startTimeStr && !endTimeStr) return '7:00 PM';
+    if (!endTimeStr) return formatTime(startTimeStr);
+    return `${formatTime(startTimeStr)} - ${formatTime(endTimeStr)}`;
+  };
+
   const priceLevels = useMemo(() => selectedEvent?.priceLevels || [], [selectedEvent]);
   const selectedCategory = useMemo(() =>
     priceLevels.find(pl => pl._id === selectedCategoryId),
@@ -215,22 +221,22 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
           },
 
           // Middle Content
-          { id: 'event-title', type: 'text', x: 800, y: 100, text: selectedEvent?.title || 'Event Title', fontSize: 70, fontStyle: 'bold', width: 1000 },
+          { id: 'event-title', type: 'text', x: 700, y: 100, text: selectedEvent?.title || 'Event Title', fontSize: 70, fontStyle: 'bold', width: 1150 },
 
           // Date & Time
           { id: 'date-label', type: 'text', x: 700, y: 220, text: formatDate(selectedEvent?.startDate).dayName, fontSize: 50 },
           { id: 'day-text', type: 'text', x: 700, y: 280, text: formatDate(selectedEvent?.startDate).day, fontSize: 100, fontStyle: 'bold' },
           { id: 'month-year', type: 'text', x: 700, y: 400, text: formatDate(selectedEvent?.startDate).monthYear, fontSize: 50 },
-          { id: 'time-text', type: 'text', x: 700, y: 460, text: formatTime(selectedEvent?.startTime), fontSize: 50 },
+          { id: 'time-text', type: 'text', x: 700, y: 460, text: formatTimeSpan(selectedEvent?.startTime, selectedEvent?.endTime), fontSize: 50 },
 
           // Vertical Divider
-          { id: 'divider-1', type: 'rect', x: 950, y: 220, width: 2, height: 300, fill: '#000' },
+          { id: 'divider-1', type: 'rect', x: 1150, y: 220, width: 2, height: 300, fill: '#000' },
 
           // Seat Info
-          { id: 'category-name', type: 'text', x: 1000, y: 220, text: selectedCategory.priceName || 'Category', fontSize: 70, fontStyle: 'bold' },
-          { id: 'category-sub', type: 'text', x: 1000, y: 330, text: selectedCategory.type?.startsWith('Seat') ? 'Seat' : (selectedCategory.type?.startsWith('Booth') ? 'Booth' : 'Ticket'), fontSize: 50, color: '#666' },
-          { id: 'seat-label', type: 'text', x: 1000, y: 400, text: '1', fontSize: 60, fontStyle: 'bold' },
-          { id: 'price-text', type: 'text', x: 1000, y: 470, text: selectedCategory.facePrice > 0 ? `$${selectedCategory.facePrice}` : 'FREE', fontSize: 60, fontStyle: 'bold' },
+          { id: 'category-name', type: 'text', x: 1200, y: 220, text: selectedCategory.priceName || 'Category', fontSize: 70, fontStyle: 'bold' },
+          { id: 'category-sub', type: 'text', x: 1200, y: 330, text: selectedCategory.type?.startsWith('Seat') ? 'Seat' : (selectedCategory.type?.startsWith('Booth') ? 'Booth' : 'Ticket'), fontSize: 50, color: '#666' },
+          { id: 'seat-label', type: 'text', x: 1200, y: 400, text: '1', fontSize: 60, fontStyle: 'bold' },
+          { id: 'price-text', type: 'text', x: 1200, y: 470, text: selectedCategory.facePrice > 0 ? `$${selectedCategory.facePrice}` : 'FREE', fontSize: 60, fontStyle: 'bold' },
 
           // Venue
           { id: 'venue-name', type: 'text', x: 400, y: 800, width: 1400, text: `${selectedEvent?.venue?.name || 'Venue'} - ${selectedEvent?.venue?.address || 'Address'}`, fontSize: 50, align: 'center', fontStyle: 'bold' },
@@ -258,7 +264,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
     if (!selectedCategoryId || ticketItems.length === 0) return;
 
     const eventDate = formatDate(selectedEvent?.startDate);
-    const eventTime = formatTime(selectedEvent?.startTime);
+    const eventTime = formatTimeSpan(selectedEvent?.startTime, selectedEvent?.endTime);
     const venueStr = `${selectedEvent?.venue?.name || 'Venue'} - ${selectedEvent?.venue?.address || 'Address'}`;
     const eventImgUrl = selectedEvent?.image && selectedEvent.image !== "null"
       ? getImageUrl(selectedEvent.image)
