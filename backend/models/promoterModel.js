@@ -28,6 +28,9 @@ const promoterSchema = new Schema({
     type: Number,
     default: 0
   }
-}, { timestamps: true });
+}, { 
+  timestamps: true
+  // shardKey: { userId: 1 }
+});
 
 module.exports = mongoose.model('Promoter', promoterSchema)
