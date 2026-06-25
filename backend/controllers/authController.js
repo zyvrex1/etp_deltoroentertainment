@@ -2,21 +2,56 @@ const User = require('../models/userModel')
 const Promoter = require('../models/promoterModel')
 const Sponsor = require('../models/sponsorModel')
 const Customer = require('../models/customerModel')
-const jwt = require('jsonwebtoken')
+const RefreshToken = require('../models/refreshTokenModel')
 const bcrypt = require('bcrypt')
-const { sendEmail } = require('../utils/email')
 const crypto = require('crypto')
+const { sendEmail } = require('../utils/email')
 const { emitUpdate } = require('../socket')
 const { recordAuditLog, emitAuditSocketEvents } = require('./auditlogController')
-const { getJwtSecret } = require('../utils/jwt')
 const SecurityEvents = require('../utils/securityEvents')
+const {
+  createAccessToken,
+  createRefreshToken,
+  verifyRefreshToken,
+  hashToken,
+  refreshCookieOptions,
+} = require('../utils/jwt')
 
-const createToken = (user) => {
-  return jwt.sign(
-    { _id: user._id, role: user.role },
-    getJwtSecret(),
-    { expiresIn: process.env.JWT_EXPIRES_IN || '3d' }
-  )
+// ─── Helpers ──────────────────────────────────────────────────
+
+// Parses the refresh token expiry string (e.g. "7d", "30d") into a JS Date
+function refreshExpiresAt() {
+  const raw  = process.env.JWT_REFRESH_EXPIRES_IN || '7d'
+  const days = parseInt(raw)                        // "7d" → 7
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+}
+
+// Issues both tokens, persists the hashed refresh token, sets the cookie.
+// Pass `family` when rotating; omit it for a fresh login (new family created).
+async function issueTokens(user, res, family = null) {
+  const accessToken   = createAccessToken(user)
+  const rawRefresh    = createRefreshToken(user)
+  const tokenHash     = hashToken(rawRefresh)
+  const tokenFamily   = family || crypto.randomUUID()
+
+  await RefreshToken.create({
+    tokenHash,
+    userId:    user._id,
+    family:    tokenFamily,
+    expiresAt: refreshExpiresAt(),
+  })
+
+  res.cookie('refreshToken', rawRefresh, refreshCookieOptions())
+
+  return accessToken
+}
+
+// ─── IP / UA helper ───────────────────────────────────────────
+function getClientMeta(req) {
+  return {
+    ip: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || '',
+    ua: req.headers['user-agent'] || '',
+  }
 }
 
 // ================= SIGNUP =================
@@ -27,16 +62,8 @@ const signupUser = async (req, res) => {
     if (!role || !email || !password || !confirmPassword) throw Error('Required fields missing')
     if (!['customer', 'sponsor'].includes(role)) throw Error('Invalid role for public signup')
 
-    const user = await User.signup(
-      email,
-      password,
-      confirmPassword,
-      role,
-      firstName,
-      lastName
-    )
+    const user = await User.signup(email, password, confirmPassword, role, firstName, lastName)
 
-    // Save phone
     user.phone = phone || ''
     await user.save()
 
@@ -49,37 +76,31 @@ const signupUser = async (req, res) => {
       if (!firstName || !lastName || !phone || !companyName || !industry) throw Error('Missing sponsor fields')
       await Sponsor.create({ userId: user._id, phone, companyName, industry })
 
-      // Create Notification for admin
-      const notificationController = require('./notificationController');
+      const notificationController = require('./notificationController')
       const notification = await notificationController.createNotification({
-        title: `New sponsor registered: ${firstName} ${lastName}`,
-        content: `from ${companyName}`,
-        type: 'user',
-        path: '/admin/users',
-        unread: true,
-        createdBy: user._id,
-        targetRole: 'admin'
-      });
-      emitUpdate('newNotification', notification);
+        title:      `New sponsor registered: ${firstName} ${lastName}`,
+        content:    `from ${companyName}`,
+        type:       'user',
+        path:       '/admin/users',
+        unread:     true,
+        createdBy:  user._id,
+        targetRole: 'admin',
+      })
+      emitUpdate('newNotification', notification)
 
-      // Also notify the sponsor themselves of successful registration
       const selfNotification = await notificationController.createNotification({
-        title: `Welcome to eTicketsPro!`,
-        content: `Your sponsor account has been successfully created.`,
-        type: 'user',
-        path: '/sponsor/settings',
-        unread: true,
-        userId: user._id,
-        createdBy: user._id
-      });
-      emitUpdate('newNotification', selfNotification);
+        title:     'Welcome to eTicketsPro!',
+        content:   'Your sponsor account has been successfully created.',
+        type:      'user',
+        path:      '/sponsor/settings',
+        unread:    true,
+        userId:    user._id,
+        createdBy: user._id,
+      })
+      emitUpdate('newNotification', selfNotification)
     }
 
-const ip =
-      req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-      req.socket?.remoteAddress ||
-      '';
-    const ua = req.headers['user-agent'] || '';
+    const { ip, ua } = getClientMeta(req)
 
     try {
       await recordAuditLog({
@@ -92,25 +113,27 @@ const ip =
         ipAddress: ip,
         userAgent: ua,
         details:   `New ${user.role} account self-registered`,
-      });
+      })
       SecurityEvents.successfulLogin({ ip, userId: user._id })
     } catch (e) {
-      console.error('AuditLog write error:', e.message);
-      emitAuditSocketEvents('USER_SIGNUP');
+      console.error('AuditLog write error:', e.message)
+      emitAuditSocketEvents('USER_SIGNUP')
     }
 
-    const token = createToken(user)
-    emitUpdate('dashboardUpdate');
-    
-    res.status(201).json({
-      _id: user._id,
-      message: 'User created successfully',
-      email: user.email,
+    // ── Issue tokens ──
+    const accessToken = await issueTokens(user, res)
+
+    emitUpdate('dashboardUpdate')
+
+    return res.status(201).json({
+      _id:       user._id,
+      message:   'User created successfully',
+      email:     user.email,
       firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      avatar: user.avatar,
-      token
+      lastName:  user.lastName,
+      role:      user.role,
+      avatar:    user.avatar,
+      token:     accessToken,        // short-lived access token only
     })
 
   } catch (error) {
@@ -120,33 +143,24 @@ const ip =
 
 // ================= LOGIN =================
 const loginUser = async (req, res) => {
-  const { email, password, role } = req.body;
+  const { email, password, role } = req.body
 
   if (!email || !password) {
-    return res.status(400).json({ error: 'All fields must be filled' });
+    return res.status(400).json({ error: 'All fields must be filled' })
   }
 
-  // Grab real IP even behind a proxy
-  const ip =
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.socket?.remoteAddress ||
-    '';
-  const ua = req.headers['user-agent'] || '';
+  const { ip, ua } = getClientMeta(req)
 
   try {
-    const user = await User.login(email, password);
+    const user = await User.login(email, password)
 
-    // Role verification
     if (role && user.role !== role) {
-      throw Error(`Unauthorized. This account is registered as a ${user.role}.`);
+      throw Error(`Unauthorized. This account is registered as a ${user.role}.`)
     }
 
-    const token = createToken(user);
+    user.lastLogin = new Date()
+    await user.save()
 
-    user.lastLogin = new Date();
-    await user.save();
-
-    // ✅ Record successful login
     await recordAuditLog({
       action:    'LOGIN_SUCCESS',
       userId:    user._id,
@@ -157,11 +171,13 @@ const loginUser = async (req, res) => {
       ipAddress: ip,
       userAgent: ua,
       details:   'User logged in successfully',
-    });
-
+    })
     SecurityEvents.successfulLogin({ ip, userId: user._id })
 
-    res.status(200).json({
+    // ── Issue tokens ──
+    const accessToken = await issueTokens(user, res)
+
+    return res.status(200).json({
       _id:            user._id,
       email:          user.email,
       firstName:      user.firstName,
@@ -173,18 +189,17 @@ const loginUser = async (req, res) => {
       notifications:  user.notifications,
       cart:           user.cart           || [],
       paymentMethods: user.paymentMethods || [],
-      token,
-    });
+      token:          accessToken,         // short-lived access token only
+    })
 
   } catch (err) {
-    console.error('Login error:', err.message, 'for email:', email);
+    console.error('Login error:', err.message, 'for email:', email)
 
-    // ❌ Record failed login attempt — always emit socket events even if DB write fails
     try {
       const existingUser = await User
         .findOne({ email: email.toLowerCase().trim() })
         .lean()
-        .catch(() => null);
+        .catch(() => null)
 
       await recordAuditLog({
         action:    'LOGIN_FAILED',
@@ -196,19 +211,104 @@ const loginUser = async (req, res) => {
         ipAddress: ip,
         userAgent: ua,
         details:   err.message,
-      });
-
+      })
       SecurityEvents.failedLogin({ ip, userId: email, reason: err.message })
-
     } catch (auditErr) {
-      console.error('AuditLog write error:', auditErr.message);
-      emitAuditSocketEvents('LOGIN_FAILED');
+      console.error('AuditLog write error:', auditErr.message)
+      emitAuditSocketEvents('LOGIN_FAILED')
     }
 
-    res.status(401).json({ error: err.message });
+    return res.status(401).json({ error: err.message })
   }
-};
+}
 
+// ================= REFRESH TOKEN =================
+const refreshToken = async (req, res) => {
+  const raw = req.cookies?.refreshToken
+
+  if (!raw) {
+    return res.status(401).json({ error: 'No refresh token' })
+  }
+
+  let payload
+  try {
+    payload = verifyRefreshToken(raw)
+  } catch {
+    // Expired or tampered — clear the cookie and bail
+    res.clearCookie('refreshToken', refreshCookieOptions())
+    return res.status(401).json({ error: 'Refresh token invalid or expired' })
+  }
+
+  const tokenHash = hashToken(raw)
+  const stored    = await RefreshToken.findOne({ tokenHash })
+
+  if (!stored) {
+    // Token not in DB at all — clear cookie
+    res.clearCookie('refreshToken', refreshCookieOptions())
+    return res.status(401).json({ error: 'Refresh token not recognised' })
+  }
+
+  // ── Reuse / replay attack detection ──────────────────────────
+  if (stored.used) {
+    // This token was already rotated — someone is replaying an old token.
+    // Invalidate the entire family to force re-login on all devices that
+    // shared this lineage.
+    console.warn(`[SECURITY] Refresh token reuse detected — invalidating family ${stored.family}`)
+    await RefreshToken.deleteMany({ family: stored.family })
+    res.clearCookie('refreshToken', refreshCookieOptions())
+    return res.status(401).json({ error: 'Token reuse detected. Please log in again.' })
+  }
+
+  // ── Rotate ────────────────────────────────────────────────────
+  // Mark old token as used (keep it briefly so replay above works)
+  stored.used = true
+  await stored.save()
+
+  const user = await User.findById(payload._id).select('_id role')
+  if (!user) {
+    res.clearCookie('refreshToken', refreshCookieOptions())
+    return res.status(401).json({ error: 'User no longer exists' })
+  }
+
+  // Issue new tokens in the same family
+  const accessToken = await issueTokens(user, res, stored.family)
+
+  return res.status(200).json({ token: accessToken })
+}
+
+// ================= LOGOUT =================
+const logoutUser = async (req, res) => {
+  const raw = req.cookies?.refreshToken
+
+  if (raw) {
+    const tokenHash = hashToken(raw)
+    await RefreshToken.deleteOne({ tokenHash }).catch(() => {})
+  }
+
+  res.clearCookie('refreshToken', refreshCookieOptions())
+
+  // ✅ audit trail consistent with LOGIN_SUCCESS / LOGIN_FAILED
+  try {
+    const { ip, ua } = getClientMeta(req)
+    const userId = req.user?._id || null  // may be absent if access token already expired
+
+    await recordAuditLog({
+      action:    'LOGOUT',
+      userId,
+      email:     req.user?.email     || '',
+      firstName: req.user?.firstName || '',
+      lastName:  req.user?.lastName  || '',
+      role:      req.user?.role      || '',
+      ipAddress: ip,
+      userAgent: ua,
+      details:   'User logged out',
+    })
+  } catch (e) {
+    console.error('AuditLog write error on logout:', e.message)
+  }
+
+  return res.status(200).json({ message: 'Logged out successfully' })
+}
 
 // ================= PROFILE =================
 const getProfile = async (req, res) => {
@@ -216,43 +316,38 @@ const getProfile = async (req, res) => {
 
   try {
     const user = await User.findById(_id).select('-password')
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' })
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' })
 
     let profileData = {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      avatar: user.avatar,
-      notifications: user.notifications,
-      twoFactor: user.twoFactor,
-      cart: user.cart || [],
-      paymentMethods: user.paymentMethods || []
+      firstName:      user.firstName,
+      lastName:       user.lastName,
+      email:          user.email,
+      phone:          user.phone,
+      avatar:         user.avatar,
+      notifications:  user.notifications,
+      twoFactor:      user.twoFactor,
+      cart:           user.cart           || [],
+      paymentMethods: user.paymentMethods || [],
     }
 
-    // Attach promoter-specific data if needed
     if (user.role === 'promoter') {
       const promoter = await Promoter.findOne({ userId: _id })
       if (promoter) {
         profileData.companyName = promoter.companyName
-        profileData.industry = promoter.industry
-        // Pull phone from promoter record if available (source of truth for promoters)
+        profileData.industry    = promoter.industry
         if (promoter.phone) profileData.phone = promoter.phone
       }
     }
 
-    // 🔥 Attach sponsor-specific data if needed
     if (user.role === 'sponsor') {
       const sponsor = await Sponsor.findOne({ userId: _id })
       if (sponsor) {
-        profileData.companyName = sponsor.companyName
-        profileData.industry = sponsor.industry
+        profileData.companyName    = sponsor.companyName
+        profileData.industry       = sponsor.industry
         if (sponsor.phone) profileData.phone = sponsor.phone
-        profileData.streetAddress = sponsor.streetAddress
-        profileData.city = sponsor.city
-        profileData.zipCode = sponsor.zipCode
+        profileData.streetAddress  = sponsor.streetAddress
+        profileData.city           = sponsor.city
+        profileData.zipCode        = sponsor.zipCode
       }
     }
 
@@ -268,13 +363,10 @@ const updateProfile = async (req, res) => {
 
   try {
     const user = await User.findById(_id)
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' })
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' })
 
-    // Update user generic fields
     if (firstName) user.firstName = firstName
-    if (lastName) user.lastName = lastName
+    if (lastName)  user.lastName  = lastName
     if (email) {
       const emailExists = await User.findOne({ email, _id: { $ne: _id } })
       if (emailExists) throw Error('Email already in use')
@@ -285,63 +377,50 @@ const updateProfile = async (req, res) => {
     if (notifications) {
       user.notifications = {
         ...user.notifications?.toObject?.() || user.notifications,
-        ...notifications
+        ...notifications,
       }
     }
-
     await user.save()
 
-    // Update promoter-specific fields if applicable
     if (user.role === 'promoter') {
       const promoter = await Promoter.findOne({ userId: _id })
       if (promoter) {
         if (companyName) promoter.companyName = companyName
-        if (industry) promoter.industry = industry
-        if (phone) promoter.phone = phone
+        if (industry)    promoter.industry    = industry
+        if (phone)       promoter.phone       = phone
         await promoter.save()
       }
     }
 
-    // 🔥 Update sponsor-specific fields if applicable
     if (user.role === 'sponsor') {
       let sponsor = await Sponsor.findOne({ userId: _id })
-
       if (sponsor) {
-        if (companyName) sponsor.companyName = companyName
-        if (industry) sponsor.industry = industry
-        if (phone) sponsor.phone = phone
+        if (companyName)              sponsor.companyName    = companyName
+        if (industry)                 sponsor.industry       = industry
+        if (phone)                    sponsor.phone          = phone
         if (streetAddress !== undefined) sponsor.streetAddress = streetAddress
-        if (city !== undefined) sponsor.city = city
-        if (zipCode !== undefined) sponsor.zipCode = zipCode
+        if (city !== undefined)       sponsor.city           = city
+        if (zipCode !== undefined)    sponsor.zipCode        = zipCode
         await sponsor.save()
       } else if (companyName && industry) {
-        // Create it if it doesn't exist yet but form data is provided
-        await Sponsor.create({
-          userId: _id,
-          companyName,
-          industry,
-          phone: phone || user.phone,
-          streetAddress,
-          city,
-          zipCode
-        })
+        await Sponsor.create({ userId: _id, companyName, industry, phone: phone || user.phone, streetAddress, city, zipCode })
       }
     }
 
     res.status(200).json({
       message: 'Profile updated successfully',
       user: {
-        _id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone,
-        avatar: user.avatar,
-        role: user.role,
-        twoFactor: user.twoFactor,
-        notifications: user.notifications,
-        paymentMethods: user.paymentMethods || []
-      }
+        _id:            user._id,
+        firstName:      user.firstName,
+        lastName:       user.lastName,
+        email:          user.email,
+        phone:          user.phone,
+        avatar:         user.avatar,
+        role:           user.role,
+        twoFactor:      user.twoFactor,
+        notifications:  user.notifications,
+        paymentMethods: user.paymentMethods || [],
+      },
     })
   } catch (err) {
     res.status(400).json({ error: err.message })
@@ -354,51 +433,27 @@ const updatePassword = async (req, res) => {
   const { currentPassword, newPassword, confirmNewPassword } = req.body || {}
 
   try {
-    if (!currentPassword || !newPassword || !confirmNewPassword) {
-      throw Error('All fields are required')
-    }
-
-    if (newPassword !== confirmNewPassword) {
-      throw Error('New passwords do not match')
-    }
+    if (!currentPassword || !newPassword || !confirmNewPassword) throw Error('All fields are required')
+    if (newPassword !== confirmNewPassword) throw Error('New passwords do not match')
 
     const user = await User.findById(_id)
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' })
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' })
 
     const match = await bcrypt.compare(currentPassword, user.password)
-    if (!match) {
-      throw Error('Incorrect current password')
-    }
+    if (!match) throw Error('Incorrect current password')
 
-    // Check if new password is strong
-    const validator = require('validator') // Keeping it here is fine too but I'll add a log
+    const validator = require('validator')
     if (!validator.isStrongPassword(newPassword)) {
       throw Error('New password is not strong enough (min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol)')
     }
 
-//     const salt = await bcrypt.genSalt(10)
-//     const hash = await bcrypt.hash(newPassword, salt)
-
-//     user.password = hash
-//     await user.save()
-
-//     res.status(200).json({ message: 'Password updated successfully' })
-//   } catch (err) {
-//     console.error('Update Password Error:', err.message)
-//     res.status(400).json({ error: err.message })
-//   }
-// }
-
- // CHANGED: hardcoded genSalt(10) → reads BCRYPT_ROUNDS from .env
     const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10
     const salt   = await bcrypt.genSalt(rounds)
     const hash   = await bcrypt.hash(newPassword, salt)
- 
+
     user.password = hash
     await user.save()
- 
+
     res.status(200).json({ message: 'Password updated successfully' })
   } catch (err) {
     console.error('Update Password Error:', err.message)
@@ -408,58 +463,26 @@ const updatePassword = async (req, res) => {
 
 // ================= FORGOT PASSWORD =================
 const forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  const { email } = req.body
 
-  if (!email) {
-    return res.status(400).json({ error: 'Please provide your email address' });
-  }
+  if (!email) return res.status(400).json({ error: 'Please provide your email address' })
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email })
 
     if (!user) {
-      // For security reasons, don't reveal if a user exists or not
-      return res.status(200).json({ message: `If an account is associated with ${email}, a temporary password has been sent.` });
+      return res.status(200).json({ message: `If an account is associated with ${email}, a temporary password has been sent.` })
     }
 
-    // Generate a random temporary password
-    const tempPassword = crypto.randomBytes(4).toString('hex'); // 8 characters
+    const tempPassword = crypto.randomBytes(4).toString('hex')
 
-    // Hash the temporary password
-  //   const salt = await bcrypt.genSalt(10);
-  //   const hash = await bcrypt.hash(tempPassword, salt);
-
-  //   // Update user's password in database
-  //   user.password = hash;
-  //   await user.save();
-
-  //   // Send the email
-  //   await sendEmail({
-  //     to: email,
-  //     subject: 'Temporary Password - eTicketsPro',
-  //     text: `Hello ${user.firstName || 'User'},\n\nYour temporary password is: ${tempPassword}\n\nPlease log in and change your password immediately for security reasons.\n\nBest regards,\neTicketsPro Team`,
-  //     html: `
-  //       <h3>Hello ${user.firstName || 'User'},</h3>
-  //       <p>Your temporary password is: <strong>${tempPassword}</strong></p>
-  //       <p>Please log in and change your password immediately for security reasons.</p>
-  //       <br/>
-  //       <p>Best regards,<br/>eTicketsPro Team</p>
-  //     `
-  //   });
-
-  //   res.status(200).json({ message: `A temporary password has been sent to ${email}` });
-
-  // } catch (err) {
-  //   console.error('Forgot Password Error:', err.message);
-  //   res.status(500).json({ error: 'Something went wrong while resetting your password.' }
-   // CHANGED: hardcoded genSalt(10) → reads BCRYPT_ROUNDS from .env
     const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10
     const salt   = await bcrypt.genSalt(rounds)
     const hash   = await bcrypt.hash(tempPassword, salt)
- 
+
     user.password = hash
     await user.save()
- 
+
     await sendEmail({
       to:      email,
       subject: 'Temporary Password - eTicketsPro',
@@ -470,16 +493,14 @@ const forgotPassword = async (req, res) => {
         <p>Please log in and change your password immediately for security reasons.</p>
         <br/>
         <p>Best regards,<br/>eTicketsPro Team</p>
-      `
+      `,
     })
- 
+
     res.status(200).json({ message: `A temporary password has been sent to ${email}` })
- 
   } catch (err) {
     console.error('Forgot Password Error:', err.message)
     res.status(500).json({ error: 'Something went wrong while resetting your password.' })
   }
 }
 
-
-module.exports = { signupUser, loginUser, getProfile, updateProfile, updatePassword, forgotPassword }
+module.exports = { signupUser, loginUser, refreshToken, logoutUser, getProfile, updateProfile, updatePassword, forgotPassword }

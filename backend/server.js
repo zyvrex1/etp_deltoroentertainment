@@ -1,7 +1,7 @@
 require('dotenv').config()
 
 // ─── Validate required env vars before anything else ────────
-const REQUIRED_ENV = ['PORT', 'MONGO_URI', 'JWT_SECRET', 'CLIENT_URL']
+const REQUIRED_ENV = ['PORT', 'MONGO_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'CLIENT_URL']  // ✅ added
 for (const key of REQUIRED_ENV) {
   if (!process.env[key]) {
     console.error(`❌  Missing required environment variable: ${key}`)
@@ -53,6 +53,8 @@ const errorHandler = require('./middleware/errorHandler')
 
 const app = express()
 
+const cookieParser = require('cookie-parser')
+
 // ✅ Trust proxy for accurate client IP detection behind reverse proxies
 app.set('trust proxy', 1)
 
@@ -63,6 +65,8 @@ const uploadDir = path.join(__dirname, 'uploads')
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir)
 }
+
+
 
 // ─── Body parsers ─────────────────────────────────────────────
 // One express.json() call — 10mb limit covers multipart metadata.
@@ -111,13 +115,13 @@ const R2_STORAGE = `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.co
 const allowedImgSrc = process.env.NODE_ENV === 'production'
   ? ["'self'", "data:", "blob:", R2_CDN, R2_STORAGE]
   : ["'self'", "data:", "blob:", R2_CDN, R2_STORAGE,
-     "http://localhost:4000", "http://127.0.0.1:4000", "http://192.168.18.6:4000"]
+    "http://localhost:4000", "http://127.0.0.1:4000", "http://192.168.18.6:4000"]
 
 const allowedConnectSrc = process.env.NODE_ENV === 'production'
   ? ["'self'", R2_CDN, "https://api.iconify.design", "https://api.simplesvg.com", "https://api.unisvg.com"]
   : ["'self'", R2_CDN, R2_STORAGE,
-     "http://localhost:4000", "ws://localhost:4000",
-     "https://api.iconify.design", "https://api.simplesvg.com", "https://api.unisvg.com"]
+    "http://localhost:4000", "ws://localhost:4000",
+    "https://api.iconify.design", "https://api.simplesvg.com", "https://api.unisvg.com"]
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -186,6 +190,7 @@ app.use('/api/digital-gifts', digitalgiftsRoutes)
 app.use('/api/audit-logs', auditLogRoutes)
 app.use('/api/uploads', uploadLimiter, uploadRoutes)  // POST /image, DELETE /image, POST /floorplan
 
+
 app.get('/api/test-error', (req, res, next) => {
   const err = new Error('Test error - delete this route after')
   err.status = 500
@@ -223,8 +228,15 @@ connectDB().then(() => {
     if (process.send) process.send('ready')
 
     // Start background job to expire old reservations (every 5 minutes)
+    const { cleanupUsedRefreshTokens } = require('./utils/cleanupUsedRefreshTokens')
+
     setInterval(() => {
-        expireOldReservations()
+      expireOldReservations()
+    }, 5 * 60 * 1000)
+
+    // ✅ Prune used refresh tokens every 5 minutes
+    setInterval(() => {
+      cleanupUsedRefreshTokens()
     }, 5 * 60 * 1000)
   })
 

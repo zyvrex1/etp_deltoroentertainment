@@ -1,36 +1,34 @@
 import { useState } from 'react'
 import { useAuthContext } from './useAuthContext'
-import api from '../services/api'  // ← import your axios instance
+import api, { setAccessToken } from '../services/api'
 
 export const useLogin = () => {
-    const [error, setError] = useState(null)
-    const [isLoading, setIsLoading] = useState(false)
-    const { dispatch } = useAuthContext()
+  const [error, setError]       = useState(null)
+  const [isLoading, setLoading] = useState(false)
+  const { dispatch, scheduleProactiveRefresh } = useAuthContext()  // ✅
 
-    const login = async (email, password, role) => {
-        setIsLoading(true)
-        setError(null)
+  const login = async (email, password, role) => {
+    setLoading(true)
+    setError(null)
 
-        try {
-            const response = await api.post('/auth/login', { email, password, role })
-            const data = response.data
+    try {
+      const { data } = await api.post('/auth/login', { email, password, role })
 
-            // Check if the user's role matches the selected portal role
-            if (role && data.role !== role) {
-                throw new Error(`This account is authorized for ${data.role} access only.`)
-            }
+      if (role && data.role !== role) {
+        throw new Error(`This account is authorized for ${data.role} access only.`)
+      }
 
-            localStorage.setItem('user', JSON.stringify(data))
-            dispatch({ type: 'LOGIN', payload: data })
+      setAccessToken(data.token)
+      dispatch({ type: 'LOGIN', payload: data })
+      scheduleProactiveRefresh(data.token)  // ✅ start timer on fresh login
 
-        } catch (err) {
-            // axios wraps errors differently — extract the message correctly
-            const message = err.response?.data?.error || err.message || 'Login failed'
-            setError(message)
-        } finally {
-            setIsLoading(false)
-        }
+    } catch (err) {
+      const message = err.response?.data?.error || err.message || 'Login failed'
+      setError(message)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    return { login, isLoading, error }
+  return { login, isLoading, error }
 }
