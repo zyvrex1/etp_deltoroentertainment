@@ -18,6 +18,12 @@ const ResetPassword = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    const hasLength = newPassword.length >= 8;
+    const hasUppercase = /[A-Z]/.test(newPassword);
+    const hasLowercase = /[a-z]/.test(newPassword);
+    const hasNumber = /\d/.test(newPassword);
+    const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -36,8 +42,8 @@ const ResetPassword = () => {
             return;
         }
 
-        if (newPassword.length < 8) {
-            showErrorAlert("Validation Error", "Password must be at least 8 characters long.");
+        if (!hasLength || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
+            showErrorAlert("Validation Error", "Password does not meet all strength requirements.");
             return;
         }
 
@@ -84,7 +90,7 @@ const ResetPassword = () => {
 
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                     <div className="auth-input-group">
-                        <label style={{ display: "block", color: "#d1d5db", marginBottom: "8px", fontSize: "14px" }}>New Password</label>
+                        <label style={{ display: "block", color: "#d1d5db", marginBottom: "8px", fontSize: "14px", textAlign: "left" }}>New Password</label>
                         <div style={{ position: "relative" }}>
                             <input
                                 type={showNewPassword ? "text" : "password"}
@@ -124,8 +130,40 @@ const ResetPassword = () => {
                         </div>
                     </div>
 
+                    <div style={{
+                        background: "rgba(255, 255, 255, 0.02)",
+                        border: "1px solid rgba(255, 255, 255, 0.05)",
+                        borderRadius: "8px",
+                        padding: "16px",
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "12px",
+                        textAlign: "left"
+                    }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: hasLength ? "#10b981" : "#4b5563", fontSize: "13px" }}>
+                            <Icon icon={hasLength ? "mdi:check-circle" : "mdi:circle-outline"} width="16" style={{ transition: "all 0.3s ease" }} />
+                            <span>At least 8 characters</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: hasUppercase ? "#10b981" : "#4b5563", fontSize: "13px" }}>
+                            <Icon icon={hasUppercase ? "mdi:check-circle" : "mdi:circle-outline"} width="16" style={{ transition: "all 0.3s ease" }} />
+                            <span>One uppercase letter</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: hasLowercase ? "#10b981" : "#4b5563", fontSize: "13px" }}>
+                            <Icon icon={hasLowercase ? "mdi:check-circle" : "mdi:circle-outline"} width="16" style={{ transition: "all 0.3s ease" }} />
+                            <span>One lowercase letter</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: hasNumber ? "#10b981" : "#4b5563", fontSize: "13px" }}>
+                            <Icon icon={hasNumber ? "mdi:check-circle" : "mdi:circle-outline"} width="16" style={{ transition: "all 0.3s ease" }} />
+                            <span>One number</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: hasSpecial ? "#10b981" : "#4b5563", fontSize: "13px", gridColumn: "1 / span 2" }}>
+                            <Icon icon={hasSpecial ? "mdi:check-circle" : "mdi:circle-outline"} width="16" style={{ transition: "all 0.3s ease" }} />
+                            <span>One special character</span>
+                        </div>
+                    </div>
+
                     <div className="auth-input-group">
-                        <label style={{ display: "block", color: "#d1d5db", marginBottom: "8px", fontSize: "14px" }}>Confirm New Password</label>
+                        <label style={{ display: "block", color: "#d1d5db", marginBottom: "8px", fontSize: "14px", textAlign: "left" }}>Confirm New Password</label>
                         <div style={{ position: "relative" }}>
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
