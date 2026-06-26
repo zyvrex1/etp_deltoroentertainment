@@ -137,7 +137,6 @@ const TicketDesigner = ({ selectedEvent }) => {
   };
 
   const formatTime = (timeStr) => {
-  const formatTime = (timeStr) => {
     if (!timeStr) return '7:00 PM';
     const [hours, minutes] = timeStr.split(':');
     const h = parseInt(hours);
