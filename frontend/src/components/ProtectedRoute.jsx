@@ -7,11 +7,11 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   if (loading) return null; // wait for localStorage to load
 
   if (!user) {
-    return <Navigate to="/login" replace />; // not logged in → go to login (no session_expired)
+    return <Navigate to="/" replace />; // not logged in → go to landing page
   }
 
   if (allowedRole && user.role !== allowedRole) {
-    return <Navigate to="/login" replace />; // wrong role → go to login
+    return <Navigate to="/" replace />; // wrong role → go to landing page
   }
 
   return children;

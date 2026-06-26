@@ -4,6 +4,11 @@ import api from '../services/api'
 
 export const AuthContext = createContext()
 
+// Module-level flag — survives React StrictMode's unmount→remount cycle
+// (unlike useRef, which resets on remount). Prevents two concurrent
+// /auth/refresh calls that would trigger token reuse detection → 401.
+let _sessionRestored = false
+
 function msUntilExpiry(token) {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
@@ -63,7 +68,21 @@ export const AuthContextProvider = ({ children }) => {
   // Instead of reading from localStorage, we call /auth/refresh.
   // The HttpOnly cookie is sent automatically and — if valid —
   // returns a fresh access token so the user stays logged in.
+  //
+  // IMPORTANT: React StrictMode double-invokes useEffect in development.
+  // A module-level flag (not a useRef) is used here because useRef resets
+  // on StrictMode's unmount→remount cycle, causing two simultaneous
+  // /auth/refresh calls. The second call trips reuse-detection and deletes
+  // the entire token family → 401 on every subsequent page refresh.
+  //
+  // A module-level variable persists for the entire JS module lifetime,
+  // so the second effect invocation sees true and bails immediately.
+
   useEffect(() => {
+    // Prevent double-invocation in React StrictMode
+    if (_sessionRestored) return
+    _sessionRestored = true
+
     const restoreSession = async () => {
       try {
         const { data } = await api.post('/auth/refresh')
@@ -86,6 +105,8 @@ export const AuthContextProvider = ({ children }) => {
 
     restoreSession()
   }, [])
+
+
 
   // ── Global session-expired handler ────────────────────────────
   // api.js fires 'auth:sessionExpired' when both the access token and

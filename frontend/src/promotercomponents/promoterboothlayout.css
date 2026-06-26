@@ -482,31 +482,24 @@
 
 /* Clear — subdued danger */
 .bt-btn.clear {
-  border-color: var(--color-red-secondary);
-  color: var(--color-red-primary);
   display: flex;
   align-items: center;
 }
 
-.bt-btn.clear:hover { background: #fef2f2; }
+.bt-btn.clear:hover { background: var(--color-bg-light); }
 
 /* Save — primary action */
 .bt-btn.save {
-  background: #1d4ed8;
-  color: white;
-  border-color: #1d4ed8;
   font-weight: 600;
   padding: 0 16px;
 }
 
-.bt-btn.save:hover { background: #1e40af; border-color: #1e40af; }
+.bt-btn.save:hover { background: var(--color-bg-light); }
 
 .bt-btn.save:disabled,
 .bt-btn.save.saving {
-  background: #9ca3af;
-  border-color: #9ca3af;
+  opacity: 0.6;
   cursor: not-allowed;
-  opacity: 1;
 }
 
 

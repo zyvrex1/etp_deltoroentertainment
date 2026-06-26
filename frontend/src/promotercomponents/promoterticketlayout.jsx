@@ -255,7 +255,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
           { id: 'bg-main', type: 'rect', x: 20, y: 20, width: TICKET_WIDTH - 40, height: TICKET_HEIGHT - 40, fill: '#FFFFFF', cornerRadius: 30 },
 
           // Left Stripe
-          { id: 'left-stripe', type: 'rect', x: 20, y: 20, width: 220, height: TICKET_HEIGHT - 40, fill: '#D32F2F', cornerRadius: { tl: 30, bl: 30 } },
+          { id: 'left-stripe', type: 'rect', x: 20, y: 20, width: 220, height: TICKET_HEIGHT - 40, fill: '#D32F2F', cornerRadius: [30, 0, 0, 30] },
           { id: 'brand-text', type: 'image', x: 30, y: 750, width: 500, height: 200, url: brandLogo, draggable: true, rotation: -90, fontStyle: 'bold' },
 
           // QR Code Area
@@ -760,18 +760,18 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
               <>
                 <div className="toolbar-divider" />
                 <div className="toolbar-group">
-                  <button 
-                    className="bt-btn" 
-                    onClick={handleUndo} 
-                    disabled={!canUndo} 
+                  <button
+                    className="bt-btn"
+                    onClick={handleUndo}
+                    disabled={!canUndo}
                     title="Undo"
                   >
                     <Icon icon="mdi:undo" />
                   </button>
-                  <button 
-                    className="bt-btn" 
-                    onClick={handleRedo} 
-                    disabled={!canRedo} 
+                  <button
+                    className="bt-btn"
+                    onClick={handleRedo}
+                    disabled={!canRedo}
                     title="Redo"
                   >
                     <Icon icon="mdi:redo" />

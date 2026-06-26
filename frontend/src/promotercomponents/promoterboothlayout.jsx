@@ -1192,6 +1192,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
 
 
                     <div className="konva-container" ref={containerRef}>
+                        {containerSize.w > 0 && containerSize.h > 0 && (
                         <Stage
                             width={containerSize.w}
                             height={containerSize.h}
@@ -1448,6 +1449,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                                 )}
                             </Layer>
                         </Stage>
+                        )}
                     </div>
                 </div>
             </div>

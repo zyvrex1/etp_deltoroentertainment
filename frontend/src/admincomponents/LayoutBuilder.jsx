@@ -1155,143 +1155,143 @@ const LayoutBuilder = ({ selectedEvent }) => {
         </div>
 
         <div className={`canvas-area ${mobileTab === 'map' ? 'mobile-visible' : 'mobile-hidden'}`}>
-<div className="canvas-toolbar">
-  {/* History */}
-  <div className="toolbar-group">
-    <button
-      className="bt-btn icon-only"
-      onClick={handleUndo}
-      disabled={!canUndo}
-      title="Undo (Ctrl+Z)"
-    >
-     <Icon icon="mdi:undo" />
+          <div className="canvas-toolbar">
+            {/* History */}
+            <div className="toolbar-group">
+              <button
+                className="bt-btn icon-only"
+                onClick={handleUndo}
+                disabled={!canUndo}
+                title="Undo (Ctrl+Z)"
+              >
+                <Icon icon="mdi:undo" />
 
-    </button>
-    <button
-      className="bt-btn icon-only"
-      onClick={handleRedo}
-      disabled={!canRedo}
-      title="Redo (Ctrl+Y)"
-    >
-      <Icon icon="mdi:redo" />
-    </button>
-  </div>
+              </button>
+              <button
+                className="bt-btn icon-only"
+                onClick={handleRedo}
+                disabled={!canRedo}
+                title="Redo (Ctrl+Y)"
+              >
+                <Icon icon="mdi:redo" />
+              </button>
+            </div>
 
-  <div className="toolbar-divider" />
+            <div className="toolbar-divider" />
 
-  {/* Floor plan */}
-  <div className="toolbar-group">
-    <input
-      ref={bgFileInputRef}
-      type="file"
-      accept="image/*"
-      style={{ display: 'none' }}
-      onChange={handleBgImageUpload}
-    />
-    <button
-      className={`floorplan-btn ${backgroundImage ? 'loaded' : 'empty'}`}
-      onClick={() => backgroundImage ? setBgModalOpen(true) : bgFileInputRef.current?.click()}
-      title={backgroundImage ? 'Floor plan loaded — click to edit' : 'Upload floor plan image'}
-    >
-      {backgroundImage && <span className="floorplan-dot" />}
-      <Icon icon={backgroundImage ? 'mdi:image-check-outline' : 'mdi:image-plus-outline'} />
-      <span>Floor plan</span>
-    </button>
-  </div>
+            {/* Floor plan */}
+            <div className="toolbar-group">
+              <input
+                ref={bgFileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleBgImageUpload}
+              />
+              <button
+                className={`floorplan-btn ${backgroundImage ? 'loaded' : 'empty'}`}
+                onClick={() => backgroundImage ? setBgModalOpen(true) : bgFileInputRef.current?.click()}
+                title={backgroundImage ? 'Floor plan loaded — click to edit' : 'Upload floor plan image'}
+              >
+                {backgroundImage && <span className="floorplan-dot" />}
+                <Icon icon={backgroundImage ? 'mdi:image-check-outline' : 'mdi:image-plus-outline'} />
+                <span>Floor plan</span>
+              </button>
+            </div>
 
-  <div className="toolbar-divider" />
+            <div className="toolbar-divider" />
 
-  {/* Snap */}
-  <div className="toolbar-group">
-    <div
-      className="snap-pill"
-      onClick={() => setSnapToGrid(!snapToGrid)}
-      title="Toggle snap to grid"
-      role="button"
-      aria-pressed={snapToGrid}
-    >
-      <span className="snap-pill-label">
-        <Icon icon="mdi:grid" style={{ fontSize: 14 }} /> Snap
-      </span>
-      <span className={`snap-pill-state ${snapToGrid ? 'on' : 'off'}`}>
-        {snapToGrid ? 'On' : 'Off'}
-      </span>
-    </div>
-  </div>
+            {/* Snap */}
+            <div className="toolbar-group">
+              <div
+                className="snap-pill"
+                onClick={() => setSnapToGrid(!snapToGrid)}
+                title="Toggle snap to grid"
+                role="button"
+                aria-pressed={snapToGrid}
+              >
+                <span className="snap-pill-label">
+                  <Icon icon="mdi:grid" style={{ fontSize: 14 }} /> Snap
+                </span>
+                <span className={`snap-pill-state ${snapToGrid ? 'on' : 'off'}`}>
+                  {snapToGrid ? 'On' : 'Off'}
+                </span>
+              </div>
+            </div>
 
-  <div className="toolbar-divider" />
+            <div className="toolbar-divider" />
 
-  {/* Zoom */}
-  <div className="toolbar-group">
-    <div className="zoom-group">
-      <button
-        className="zoom-btn"
-        onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))}
-        title="Zoom out"
-      >
-        <Icon icon="mdi:minus" />
-      </button>
-      <span
-        className="zoom-value"
-        title="Click to reset to fit"
-        onClick={() => {
-          setZoom(fitScale);
-          if (containerRef.current) {
-            const { clientWidth, clientHeight } = containerRef.current;
-            setStagePos({
-              x: (clientWidth - canvasWidth * fitScale) / 2,
-              y: (clientHeight - canvasHeight * fitScale) / 2,
-            });
-          }
-        }}
-      >
-        {Math.round((zoom / fitScale) * 100)}%
-      </span>
-      <button
-        className="zoom-btn"
-        onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))}
-        title="Zoom in"
-      >
-        <Icon icon="mdi:plus" />
-      </button>
-    </div>
-  </div>
+            {/* Zoom */}
+            <div className="toolbar-group">
+              <div className="zoom-group">
+                <button
+                  className="zoom-btn"
+                  onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))}
+                  title="Zoom out"
+                >
+                  <Icon icon="mdi:minus" />
+                </button>
+                <span
+                  className="zoom-value"
+                  title="Click to reset to fit"
+                  onClick={() => {
+                    setZoom(fitScale);
+                    if (containerRef.current) {
+                      const { clientWidth, clientHeight } = containerRef.current;
+                      setStagePos({
+                        x: (clientWidth - canvasWidth * fitScale) / 2,
+                        y: (clientHeight - canvasHeight * fitScale) / 2,
+                      });
+                    }
+                  }}
+                >
+                  {Math.round((zoom / fitScale) * 100)}%
+                </span>
+                <button
+                  className="zoom-btn"
+                  onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))}
+                  title="Zoom in"
+                >
+                  <Icon icon="mdi:plus" />
+                </button>
+              </div>
+            </div>
 
-  <div className="toolbar-spacer" />
+            <div className="toolbar-spacer" />
 
-  {/* Destructive + primary */}
-  <div className="toolbar-group left">
-    <button
-      className="bt-btn clear icon-only"
-      onClick={async () => {
-        const result = await showDeleteConfirmAlert(
-          "Clear Map?",
-          "This will remove ALL shapes from the canvas. This cannot be undone."
-        );
-        if (result.isConfirmed) {
-          pushHistory([...placedItems]);
-          setPlacedItems([]);
-          setSelectedIds(new Set());
-          lastClickedIdRef.current = null;
-          showSuccessAlert("Cleared", "The map has been cleared.");
-        }
-      }}
-      title="Clear all items from canvas"
-    >
-      <Icon icon="mdi:layers-off" />
-    </button>
+            {/* Destructive + primary */}
+            <div className="toolbar-group left">
+              <button
+                className="bt-btn clear icon-only"
+                onClick={async () => {
+                  const result = await showDeleteConfirmAlert(
+                    "Clear Map?",
+                    "This will remove ALL shapes from the canvas. This cannot be undone."
+                  );
+                  if (result.isConfirmed) {
+                    pushHistory([...placedItems]);
+                    setPlacedItems([]);
+                    setSelectedIds(new Set());
+                    lastClickedIdRef.current = null;
+                    showSuccessAlert("Cleared", "The map has been cleared.");
+                  }
+                }}
+                title="Clear all items from canvas"
+              >
+                <Icon icon="mdi:layers-off" />
+              </button>
 
-    <button
-      className={`bt-btn save${isSaving ? ' saving' : ''}`}
-      onClick={handleSaveLayout}
-      disabled={isSaving}
-      title="Save venue layout"
-    >
-      <Icon icon={isSaving ? "mdi:loading" : "mdi:device-floppy"} className={isSaving ? "spin" : ""} />
-      <span>{isSaving ? 'Saving…' : 'Save layout'}</span>
-    </button>
-  </div>
-</div>
+              <button
+                className={`bt-btn save${isSaving ? ' saving' : ''}`}
+                onClick={handleSaveLayout}
+                disabled={isSaving}
+                title="Save venue layout"
+              >
+                <Icon icon={isSaving ? "mdi:loading" : "mdi:device-floppy"} className={isSaving ? "spin" : ""} />
+                <span>{isSaving ? 'Saving…' : 'Save layout'}</span>
+              </button>
+            </div>
+          </div>
 
           {/* Fast inline save toast */}
           {saveToast && (
@@ -1305,260 +1305,260 @@ const LayoutBuilder = ({ selectedEvent }) => {
           <div className="konva-container" ref={containerRef}>
             {containerSize.w > 0 && containerSize.h > 0 && (
               <Stage
-              width={containerSize.w}
-              height={containerSize.h}
-              ref={stageRef}
-              scaleX={zoom}
-              scaleY={zoom}
-              x={stagePos.x}
-              y={stagePos.y}
-              onClick={(e) => {
-                if (e.target === e.target.getStage()) {
-                  setSelectedIds(new Set());
-                  lastClickedIdRef.current = null;
-                }
-              }}
-              onTap={(e) => {
-                if (e.target === e.target.getStage()) {
-                  setSelectedIds(new Set());
-                  lastClickedIdRef.current = null;
-                }
-              }}
-              onMouseDown={(e) => {
-                // Only pan when clicking the empty stage background — never when an item is clicked
-                if (e.target !== e.target.getStage()) return;
-                isPanningRef.current = true;
-                const pos = stageRef.current.getPointerPosition();
-                lastPointerRef.current = { x: pos.x, y: pos.y };
-                stageRef.current.container().style.cursor = 'grabbing';
-              }}
-              onMouseMove={(e) => {
-                if (!isPanningRef.current) return;
-                const stage = stageRef.current;
-                const pos = stage.getPointerPosition();
-                const dx = pos.x - lastPointerRef.current.x;
-                const dy = pos.y - lastPointerRef.current.y;
-                lastPointerRef.current = { x: pos.x, y: pos.y };
-                // Move stage imperatively — no re-render, no flicker
-                stage.x(stage.x() + dx);
-                stage.y(stage.y() + dy);
-                stage.batchDraw();
-              }}
-              onMouseUp={() => {
-                if (!isPanningRef.current) return;
-                isPanningRef.current = false;
-                stageRef.current.container().style.cursor = 'default';
-                // Sync React state once panning is done
-                setStagePos({
-                  x: stageRef.current.x(),
-                  y: stageRef.current.y(),
-                });
-              }}
-              onMouseLeave={() => {
-                if (!isPanningRef.current) return;
-                isPanningRef.current = false;
-                stageRef.current.container().style.cursor = 'default';
-                setStagePos({
-                  x: stageRef.current.x(),
-                  y: stageRef.current.y(),
-                });
-              }}
-              onWheel={(e) => {
-                e.evt.preventDefault();
-                const stage = stageRef.current;
-                const oldScale = zoom;
-                const pointer = stage.getPointerPosition();
-                const minScale = fitScale * 0.3;
-                const maxScale = fitScale * 4;
-                const direction = e.evt.deltaY > 0 ? -1 : 1;
-                const newScale = Math.min(maxScale, Math.max(minScale, oldScale + direction * 0.05));
-                const mousePointTo = {
-                  x: (pointer.x - stagePos.x) / oldScale,
-                  y: (pointer.y - stagePos.y) / oldScale,
-                };
-                const newPos = {
-                  x: pointer.x - mousePointTo.x * newScale,
-                  y: pointer.y - mousePointTo.y * newScale,
-                };
-                setZoom(newScale);
-                setStagePos(newPos);
-              }}
-            >
-              {bgKonvaImage && bgWidth && bgHeight && (
-                <Layer>
-                  <KonvaImage
-                    image={bgKonvaImage}
-                    x={0}
-                    y={0}
-                    width={bgWidth}
-                    height={bgHeight}
-                    opacity={bgOpacity}
-                    onClick={() => setBgModalOpen(true)}
-                    onTap={() => setBgModalOpen(true)}
-                  />
-                </Layer>
-              )}
-              <Layer>
-                {(() => {
-                  const lines = [];
-                  const extent = 5000;
-                  const MAJOR_GRID = 100;
-
-                  for (let i = -extent; i <= extent; i += GRID_SIZE) {
-                    const isMajor = i % MAJOR_GRID === 0;
-                    const isAxis = i === 0;
-
-                    const baseOpacity = snapToGrid ? 1 : 0.3;
-                    const strokeColor = isAxis ? "#94a3b8" : (isMajor ? "#cbd5e1" : "#e5e7eb");
-                    const strokeWidth = isAxis ? 1.5 : (isMajor ? 1 : 0.5);
-
-                    lines.push(
-                      <Line
-                        key={`v-${i}`}
-                        points={[i, -extent, i, extent]}
-                        stroke={strokeColor}
-                        strokeWidth={strokeWidth}
-                        opacity={baseOpacity}
-                        listening={false}
-                      />
-                    );
-                    lines.push(
-                      <Line
-                        key={`h-${i}`}
-                        points={[-extent, i, extent, i]}
-                        stroke={strokeColor}
-                        strokeWidth={strokeWidth}
-                        opacity={baseOpacity}
-                        listening={false}
-                      />
-                    );
+                width={containerSize.w}
+                height={containerSize.h}
+                ref={stageRef}
+                scaleX={zoom}
+                scaleY={zoom}
+                x={stagePos.x}
+                y={stagePos.y}
+                onClick={(e) => {
+                  if (e.target === e.target.getStage()) {
+                    setSelectedIds(new Set());
+                    lastClickedIdRef.current = null;
                   }
-                  return lines;
-                })()}
-                {placedItems.map(item => {
-                  const category = categories.find(c => c.id === item.categoryId);
-                  const isSelected = selectedIds.has(item.id);
-                  const isBooth = item.type === 'booth';
-                  const { w: boothW, h: boothH } = isBooth
-                    ? parseBoothSizePx(category?.boothSize)
-                    : { w: 40, h: 40 };
-
-                  return (
-                    <Group
-                      key={item.id}
-                      id={item.id}
-                      x={item.x}
-                      y={item.y}
-                      scaleX={item.scaleX}
-                      scaleY={item.scaleY}
-                      rotation={item.rotation}
-                      draggable
-                      onDragStart={() => {
-                        // Snapshot positions of all selected items at drag start
-                        const snap = {};
-                        placedItems.forEach(pi => {
-                          if (selectedIds.has(pi.id)) snap[pi.id] = { x: pi.x, y: pi.y };
-                        });
-                        // If dragging an unselected item, select only it
-                        if (!selectedIds.has(item.id)) {
-                          snap[item.id] = { x: item.x, y: item.y };
-                          setSelectedIds(new Set([item.id]));
-                          lastClickedIdRef.current = item.id;
-                        }
-                        dragStartPositions.current = snap;
-                      }}
-                      onDragMove={(e) => {
-                        const startPos = dragStartPositions.current[item.id];
-                        if (!startPos) return;
-
-                        let dx = e.target.x() - startPos.x;
-                        let dy = e.target.y() - startPos.y;
-
-                        // Real-time grid snapping
-                        if (snapToGrid) {
-                          dx = Math.round(dx / GRID_SIZE) * GRID_SIZE;
-                          dy = Math.round(dy / GRID_SIZE) * GRID_SIZE;
-                          // Update leader position to stay on grid increments
-                          e.target.x(startPos.x + dx);
-                          e.target.y(startPos.y + dy);
-                        }
-
-                        // Move all other selected nodes in real-time imperatively
-                        if (selectedIds.size > 1) {
-                          selectedIds.forEach(sid => {
-                            if (sid === item.id) return;
-                            const orig = dragStartPositions.current[sid];
-                            if (!orig) return;
-                            const node = stageRef.current?.findOne(`#${sid}`);
-                            if (node) { node.x(orig.x + dx); node.y(orig.y + dy); }
-                          });
-                        }
-                      }}
-                      onDragEnd={(e) => handleDragEnd(item.id, e.target.x(), e.target.y())}
-                      onClick={(e) => handleItemClick(item.id, e)}
-                      onTap={(e) => handleItemClick(item.id, e)}
-                    >
-                      {isBooth ? (
-                        <Rect
-                          x={-boothW / 2}
-                          y={-boothH / 2}
-                          width={boothW}
-                          height={boothH}
-                          fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
-                          stroke={'#000'}
-                          strokeWidth={1}
-                          strokeScaleEnabled={false}
-                          shadowBlur={isSelected ? 10 : 0}
-                          shadowColor="#000"
-                          shadowOpacity={0.2}
-                        />
-                      ) : (
-                        <Circle
-                          radius={20}
-                          fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
-                          stroke={'#fff'}
-                          strokeWidth={1}
-                          shadowBlur={isSelected ? 10 : 0}
-                          shadowColor="#000"
-                          shadowOpacity={0.2}
-                        />
-                      )}
-                      <Text
-                        text={item.label}
-                        fontSize={isBooth ? Math.max(8, Math.min(boothW, boothH) / 5) : 9}
-                        fontStyle="bold"
-                        fill="white"
-                        align="center"
-                        verticalAlign="middle"
-                        x={0}
-                        y={0}
-                        offsetX={isBooth ? boothW / 2 : 20}
-                        offsetY={isBooth ? boothH / 2 : 20}
-                        width={isBooth ? boothW : 40}
-                        height={isBooth ? boothH : 40}
-                        scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
-                        scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
-                        shadowColor="black"
-                        shadowBlur={2}
-                        shadowOpacity={0.8}
-                        shadowOffset={{ x: 1, y: 1 }}
-                      />
-                    </Group>
-                  );
-                })}
-                {selectedIds.size > 0 && (
-                  <Transformer
-                    ref={trRef}
-                    onTransformEnd={handleTransformEnd}
-                    rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
-                    boundBoxFunc={(oldBox, newBox) => {
-                      if (newBox.width < 10 || newBox.height < 10) return oldBox;
-                      return newBox;
-                    }}
-                  />
+                }}
+                onTap={(e) => {
+                  if (e.target === e.target.getStage()) {
+                    setSelectedIds(new Set());
+                    lastClickedIdRef.current = null;
+                  }
+                }}
+                onMouseDown={(e) => {
+                  // Only pan when clicking the empty stage background — never when an item is clicked
+                  if (e.target !== e.target.getStage()) return;
+                  isPanningRef.current = true;
+                  const pos = stageRef.current.getPointerPosition();
+                  lastPointerRef.current = { x: pos.x, y: pos.y };
+                  stageRef.current.container().style.cursor = 'grabbing';
+                }}
+                onMouseMove={(e) => {
+                  if (!isPanningRef.current) return;
+                  const stage = stageRef.current;
+                  const pos = stage.getPointerPosition();
+                  const dx = pos.x - lastPointerRef.current.x;
+                  const dy = pos.y - lastPointerRef.current.y;
+                  lastPointerRef.current = { x: pos.x, y: pos.y };
+                  // Move stage imperatively — no re-render, no flicker
+                  stage.x(stage.x() + dx);
+                  stage.y(stage.y() + dy);
+                  stage.batchDraw();
+                }}
+                onMouseUp={() => {
+                  if (!isPanningRef.current) return;
+                  isPanningRef.current = false;
+                  stageRef.current.container().style.cursor = 'default';
+                  // Sync React state once panning is done
+                  setStagePos({
+                    x: stageRef.current.x(),
+                    y: stageRef.current.y(),
+                  });
+                }}
+                onMouseLeave={() => {
+                  if (!isPanningRef.current) return;
+                  isPanningRef.current = false;
+                  stageRef.current.container().style.cursor = 'default';
+                  setStagePos({
+                    x: stageRef.current.x(),
+                    y: stageRef.current.y(),
+                  });
+                }}
+                onWheel={(e) => {
+                  e.evt.preventDefault();
+                  const stage = stageRef.current;
+                  const oldScale = zoom;
+                  const pointer = stage.getPointerPosition();
+                  const minScale = fitScale * 0.3;
+                  const maxScale = fitScale * 4;
+                  const direction = e.evt.deltaY > 0 ? -1 : 1;
+                  const newScale = Math.min(maxScale, Math.max(minScale, oldScale + direction * 0.05));
+                  const mousePointTo = {
+                    x: (pointer.x - stagePos.x) / oldScale,
+                    y: (pointer.y - stagePos.y) / oldScale,
+                  };
+                  const newPos = {
+                    x: pointer.x - mousePointTo.x * newScale,
+                    y: pointer.y - mousePointTo.y * newScale,
+                  };
+                  setZoom(newScale);
+                  setStagePos(newPos);
+                }}
+              >
+                {bgKonvaImage && bgWidth && bgHeight && (
+                  <Layer>
+                    <KonvaImage
+                      image={bgKonvaImage}
+                      x={0}
+                      y={0}
+                      width={bgWidth}
+                      height={bgHeight}
+                      opacity={bgOpacity}
+                      onClick={() => setBgModalOpen(true)}
+                      onTap={() => setBgModalOpen(true)}
+                    />
+                  </Layer>
                 )}
-              </Layer>
-            </Stage>
+                <Layer>
+                  {(() => {
+                    const lines = [];
+                    const extent = 5000;
+                    const MAJOR_GRID = 100;
+
+                    for (let i = -extent; i <= extent; i += GRID_SIZE) {
+                      const isMajor = i % MAJOR_GRID === 0;
+                      const isAxis = i === 0;
+
+                      const baseOpacity = snapToGrid ? 1 : 0.3;
+                      const strokeColor = isAxis ? "#94a3b8" : (isMajor ? "#cbd5e1" : "#e5e7eb");
+                      const strokeWidth = isAxis ? 1.5 : (isMajor ? 1 : 0.5);
+
+                      lines.push(
+                        <Line
+                          key={`v-${i}`}
+                          points={[i, -extent, i, extent]}
+                          stroke={strokeColor}
+                          strokeWidth={strokeWidth}
+                          opacity={baseOpacity}
+                          listening={false}
+                        />
+                      );
+                      lines.push(
+                        <Line
+                          key={`h-${i}`}
+                          points={[-extent, i, extent, i]}
+                          stroke={strokeColor}
+                          strokeWidth={strokeWidth}
+                          opacity={baseOpacity}
+                          listening={false}
+                        />
+                      );
+                    }
+                    return lines;
+                  })()}
+                  {placedItems.map(item => {
+                    const category = categories.find(c => c.id === item.categoryId);
+                    const isSelected = selectedIds.has(item.id);
+                    const isBooth = item.type === 'booth';
+                    const { w: boothW, h: boothH } = isBooth
+                      ? parseBoothSizePx(category?.boothSize)
+                      : { w: 40, h: 40 };
+
+                    return (
+                      <Group
+                        key={item.id}
+                        id={item.id}
+                        x={item.x}
+                        y={item.y}
+                        scaleX={item.scaleX}
+                        scaleY={item.scaleY}
+                        rotation={item.rotation}
+                        draggable
+                        onDragStart={() => {
+                          // Snapshot positions of all selected items at drag start
+                          const snap = {};
+                          placedItems.forEach(pi => {
+                            if (selectedIds.has(pi.id)) snap[pi.id] = { x: pi.x, y: pi.y };
+                          });
+                          // If dragging an unselected item, select only it
+                          if (!selectedIds.has(item.id)) {
+                            snap[item.id] = { x: item.x, y: item.y };
+                            setSelectedIds(new Set([item.id]));
+                            lastClickedIdRef.current = item.id;
+                          }
+                          dragStartPositions.current = snap;
+                        }}
+                        onDragMove={(e) => {
+                          const startPos = dragStartPositions.current[item.id];
+                          if (!startPos) return;
+
+                          let dx = e.target.x() - startPos.x;
+                          let dy = e.target.y() - startPos.y;
+
+                          // Real-time grid snapping
+                          if (snapToGrid) {
+                            dx = Math.round(dx / GRID_SIZE) * GRID_SIZE;
+                            dy = Math.round(dy / GRID_SIZE) * GRID_SIZE;
+                            // Update leader position to stay on grid increments
+                            e.target.x(startPos.x + dx);
+                            e.target.y(startPos.y + dy);
+                          }
+
+                          // Move all other selected nodes in real-time imperatively
+                          if (selectedIds.size > 1) {
+                            selectedIds.forEach(sid => {
+                              if (sid === item.id) return;
+                              const orig = dragStartPositions.current[sid];
+                              if (!orig) return;
+                              const node = stageRef.current?.findOne(`#${sid}`);
+                              if (node) { node.x(orig.x + dx); node.y(orig.y + dy); }
+                            });
+                          }
+                        }}
+                        onDragEnd={(e) => handleDragEnd(item.id, e.target.x(), e.target.y())}
+                        onClick={(e) => handleItemClick(item.id, e)}
+                        onTap={(e) => handleItemClick(item.id, e)}
+                      >
+                        {isBooth ? (
+                          <Rect
+                            x={-boothW / 2}
+                            y={-boothH / 2}
+                            width={boothW}
+                            height={boothH}
+                            fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
+                            stroke={'#000'}
+                            strokeWidth={1}
+                            strokeScaleEnabled={false}
+                            shadowBlur={isSelected ? 10 : 0}
+                            shadowColor="#000"
+                            shadowOpacity={0.2}
+                          />
+                        ) : (
+                          <Circle
+                            radius={20}
+                            fill={item.status === 'sold' || item.status === 'reserved' ? '#22c55e' : (category?.color || '#666666')}
+                            stroke={'#fff'}
+                            strokeWidth={1}
+                            shadowBlur={isSelected ? 10 : 0}
+                            shadowColor="#000"
+                            shadowOpacity={0.2}
+                          />
+                        )}
+                        <Text
+                          text={item.label}
+                          fontSize={isBooth ? Math.max(8, Math.min(boothW, boothH) / 5) : 9}
+                          fontStyle="bold"
+                          fill="white"
+                          align="center"
+                          verticalAlign="middle"
+                          x={0}
+                          y={0}
+                          offsetX={isBooth ? boothW / 2 : 20}
+                          offsetY={isBooth ? boothH / 2 : 20}
+                          width={isBooth ? boothW : 40}
+                          height={isBooth ? boothH : 40}
+                          scaleX={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleX || 1)}
+                          scaleY={Math.min(item.scaleX || 1, item.scaleY || 1) / (item.scaleY || 1)}
+                          shadowColor="black"
+                          shadowBlur={2}
+                          shadowOpacity={0.8}
+                          shadowOffset={{ x: 1, y: 1 }}
+                        />
+                      </Group>
+                    );
+                  })}
+                  {selectedIds.size > 0 && (
+                    <Transformer
+                      ref={trRef}
+                      onTransformEnd={handleTransformEnd}
+                      rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+                      boundBoxFunc={(oldBox, newBox) => {
+                        if (newBox.width < 10 || newBox.height < 10) return oldBox;
+                        return newBox;
+                      }}
+                    />
+                  )}
+                </Layer>
+              </Stage>
             )}
           </div>
         </div>

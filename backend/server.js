@@ -54,6 +54,7 @@ const errorHandler = require('./middleware/errorHandler')
 const app = express()
 
 const cookieParser = require('cookie-parser')
+app.use(cookieParser())
 
 // ✅ Trust proxy for accurate client IP detection behind reverse proxies
 app.set('trust proxy', 1)

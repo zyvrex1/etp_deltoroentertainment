@@ -236,9 +236,11 @@ const loginUser = async (req, res) => {
 
 // ================= REFRESH TOKEN =================
 const refreshToken = async (req, res) => {
+  console.log('[refreshToken] Route hit! Cookies:', req.cookies)
   const raw = req.cookies?.refreshToken
 
   if (!raw) {
+    console.log('[refreshToken] No refresh token found in cookies')
     return res.status(401).json({ error: 'No refresh token' })
   }
 
@@ -251,42 +253,76 @@ const refreshToken = async (req, res) => {
     return res.status(401).json({ error: 'Refresh token invalid or expired' })
   }
 
-  const tokenHash = hashToken(raw)
-  const stored    = await RefreshToken.findOne({ tokenHash })
+  try {
+    const tokenHash = hashToken(raw)
+    const stored    = await RefreshToken.findOne({ tokenHash })
 
-  if (!stored) {
-    // Token not in DB at all — clear cookie
+    if (!stored) {
+      // Token not in DB at all — clear cookie
+      res.clearCookie('refreshToken', refreshCookieOptions())
+      return res.status(401).json({ error: 'Refresh token not recognised' })
+    }
+
+    // ── Reuse / replay attack detection ──────────────────────────
+    if (stored.used) {
+      // Check if this token was just rotated within the last 5 seconds.
+      // A very recent rotation almost certainly means a concurrent same-client
+      // request (e.g. two tabs, or a dev double-mount) — NOT a real replay attack.
+      // In that case, find the child token in the same family and return its
+      // parent's access token instead of invalidating the whole family.
+      const fiveSecondsAgo = new Date(Date.now() - 5000)
+      const wasJustRotated = stored.updatedAt && stored.updatedAt > fiveSecondsAgo
+
+      if (wasJustRotated) {
+        // Find the newest unused token in this family (the child from the first call)
+        const child = await RefreshToken.findOne({
+          family: stored.family,
+          used:   false,
+        }).sort({ createdAt: -1 })
+
+        if (child) {
+          // Re-issue an access token for the same user — do NOT rotate again,
+          // and do NOT touch the cookie (the first concurrent response already set it)
+          const user = await User.findById(payload._id).select('_id role')
+          if (!user) {
+            res.clearCookie('refreshToken', refreshCookieOptions())
+            return res.status(401).json({ error: 'User no longer exists' })
+          }
+          const accessToken = createAccessToken(user)
+          return res.status(200).json({ token: accessToken })
+        }
+      }
+
+      // This token was already rotated outside the grace window — real replay attack.
+      console.warn(`[SECURITY] Refresh token reuse detected — invalidating family ${stored.family}`)
+      await RefreshToken.deleteMany({ family: stored.family })
+      res.clearCookie('refreshToken', refreshCookieOptions())
+      return res.status(401).json({ error: 'Token reuse detected. Please log in again.' })
+    }
+
+    // ── Rotate ────────────────────────────────────────────────────
+    // Mark old token as used (keep it briefly so replay above works)
+    stored.used = true
+    await stored.save()
+
+    const user = await User.findById(payload._id).select('_id role')
+    if (!user) {
+      res.clearCookie('refreshToken', refreshCookieOptions())
+      return res.status(401).json({ error: 'User no longer exists' })
+    }
+
+    // Issue new tokens in the same family
+    const accessToken = await issueTokens(user, res, stored.family)
+
+    return res.status(200).json({ token: accessToken })
+
+  } catch (err) {
+    console.error('[refreshToken] Unexpected error:', err.message)
     res.clearCookie('refreshToken', refreshCookieOptions())
-    return res.status(401).json({ error: 'Refresh token not recognised' })
+    return res.status(401).json({ error: 'Session expired. Please log in again.' })
   }
-
-  // ── Reuse / replay attack detection ──────────────────────────
-  if (stored.used) {
-    // This token was already rotated — someone is replaying an old token.
-    // Invalidate the entire family to force re-login on all devices that
-    // shared this lineage.
-    console.warn(`[SECURITY] Refresh token reuse detected — invalidating family ${stored.family}`)
-    await RefreshToken.deleteMany({ family: stored.family })
-    res.clearCookie('refreshToken', refreshCookieOptions())
-    return res.status(401).json({ error: 'Token reuse detected. Please log in again.' })
-  }
-
-  // ── Rotate ────────────────────────────────────────────────────
-  // Mark old token as used (keep it briefly so replay above works)
-  stored.used = true
-  await stored.save()
-
-  const user = await User.findById(payload._id).select('_id role')
-  if (!user) {
-    res.clearCookie('refreshToken', refreshCookieOptions())
-    return res.status(401).json({ error: 'User no longer exists' })
-  }
-
-  // Issue new tokens in the same family
-  const accessToken = await issueTokens(user, res, stored.family)
-
-  return res.status(200).json({ token: accessToken })
 }
+
 
 // ================= LOGOUT =================
 const logoutUser = async (req, res) => {
@@ -330,6 +366,8 @@ const getProfile = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' })
 
     let profileData = {
+      _id:            user._id,
+      role:           user.role,
       firstName:      user.firstName,
       lastName:       user.lastName,
       email:          user.email,
