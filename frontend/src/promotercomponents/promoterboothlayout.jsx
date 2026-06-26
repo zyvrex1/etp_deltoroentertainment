@@ -723,30 +723,7 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [handleUndo, handleRedo]);
 
-    const renderGrid = () => {
-        const lines = [];
-        for (let i = 0; i <= CANVAS_WIDTH / GRID_SIZE; i++) {
-            lines.push(
-                <Line
-                    key={`v-${i}`}
-                    points={[i * GRID_SIZE, 0, i * GRID_SIZE, CANVAS_HEIGHT]}
-                    stroke="#eee"
-                    strokeWidth={1}
-                />
-            );
-        }
-        for (let i = 0; i <= CANVAS_HEIGHT / GRID_SIZE; i++) {
-            lines.push(
-                <Line
-                    key={`h-${i}`}
-                    points={[0, i * GRID_SIZE, CANVAS_WIDTH, i * GRID_SIZE]}
-                    stroke="#eee"
-                    strokeWidth={1}
-                />
-            );
-        }
-        return lines;
-    };
+
 
     const computeFitDimensions = (img, cw = canvasWidth, ch = canvasHeight) => {
         const imgAspect = img.naturalWidth / img.naturalHeight;
@@ -1066,84 +1043,86 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
 
                 <div className="canvas-area">
                     <div className="canvas-toolbar">
-                        <h4 className="canvas-title">
-                            {/* {selectedEvent?.venue?.name || "Venue Map"} */}
-                        </h4>
-                        <div className="toolbar-actions">
-                            {isOwner && (
-                                <>
-                                    <button
-                                        className="bt-btn"
-                                        onClick={handleUndo}
-                                        disabled={!canUndo}
-                                        title="Undo (Ctrl+Z)"
-                                    >
-                                        <Icon icon="mdi:undo" /> <span>Undo</span>
-                                    </button>
-                                    <button
-                                        className="bt-btn"
-                                        onClick={handleRedo}
-                                        disabled={!canRedo}
-                                        title="Redo (Ctrl+Y)"
-                                    >
-                                        <Icon icon="mdi:redo" /> <span>Redo</span>
-                                    </button>
-                                </>
-                            )}
-
-                            {isOwner && (
-                                <>
-                                    <input
-                                        ref={bgFileInputRef}
-                                        type="file" accept="image/*"
-                                        style={{ display: 'none' }}
-                                        onChange={handleBgImageUpload}
-                                    />
-
-                                    <button
-                                        className={`bt-btn${backgroundImage ? ' bg-loaded' : ''}`}
-                                        onClick={() => backgroundImage ? setBgModalOpen(true) : bgFileInputRef.current?.click()}
-                                        title={backgroundImage ? 'Floor plan loaded — click to edit' : 'Upload floor plan image'}
-                                    >
-                                        <Icon icon={backgroundImage ? 'mdi:image-check-outline' : 'mdi:image-plus-outline'} />
-                                        <span>Floor Plan</span>
-                                    </button>
-                                </>
-                            )}
-
-                            {isOwner && (
+                        {/* History */}
+                        {isOwner && (
+                            <div className="toolbar-group">
                                 <button
-                                    className={`bt-btn ${snapToGrid ? 'active' : ''}`}
-                                    onClick={() => setSnapToGrid(!snapToGrid)}
-                                    title="Toggle Snap to Grid"
+                                    className="bt-btn icon-only"
+                                    onClick={handleUndo}
+                                    disabled={!canUndo}
+                                    title="Undo (Ctrl+Z)"
                                 >
-                                    <Icon icon="mdi:grid" /> <span>Snap</span>
+                                    <Icon icon="mdi:undo" />
                                 </button>
-                            )}
+                                <button
+                                    className="bt-btn icon-only"
+                                    onClick={handleRedo}
+                                    disabled={!canRedo}
+                                    title="Redo (Ctrl+Y)"
+                                >
+                                    <Icon icon="mdi:redo" />
+                                </button>
+                            </div>
+                        )}
+                        {isOwner && <div className="toolbar-divider" />}
 
-                            <div className="zoom-controls">
-                                {/* <button
-                  className={`bt-btn sync-btn-small ${isSyncing ? 'spinning' : ''}`}
-                  onClick={handleSyncBooths}
-                  disabled={isSyncing}
-                  title="Sync Booth Status with Database"
-                  style={{ marginRight: '10px', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', height: 'auto' }}
-                >
-                  <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
-                  <span style={{ fontSize: '11px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
-                </button> */}
-                                <button className="bt-btn" onClick={() => {
-                                    setZoom(z => {
-                                        const next = Math.max(z - 0.1, fitScale * 0.3);
-                                        return next;
-                                    });
-                                }} title="Zoom Out">
+                        {/* Floor plan */}
+                        {isOwner && (
+                            <div className="toolbar-group">
+                                <input
+                                    ref={bgFileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={handleBgImageUpload}
+                                />
+                                <button
+                                    className={`floorplan-btn ${backgroundImage ? 'loaded' : 'empty'}`}
+                                    onClick={() => backgroundImage ? setBgModalOpen(true) : bgFileInputRef.current?.click()}
+                                    title={backgroundImage ? 'Floor plan loaded — click to edit' : 'Upload floor plan image'}
+                                >
+                                    {backgroundImage && <span className="floorplan-dot" />}
+                                    <Icon icon={backgroundImage ? 'mdi:image-check-outline' : 'mdi:image-plus-outline'} />
+                                    <span>Floor plan</span>
+                                </button>
+                            </div>
+                        )}
+                        {isOwner && <div className="toolbar-divider" />}
+
+                        {/* Snap */}
+                        {isOwner && (
+                            <div className="toolbar-group">
+                                <div
+                                    className="snap-pill"
+                                    onClick={() => setSnapToGrid(!snapToGrid)}
+                                    title="Toggle snap to grid"
+                                    role="button"
+                                    aria-pressed={snapToGrid}
+                                >
+                                    <span className="snap-pill-label">
+                                        <Icon icon="mdi:grid" style={{ fontSize: 14 }} /> Snap
+                                    </span>
+                                    <span className={`snap-pill-state ${snapToGrid ? 'on' : 'off'}`}>
+                                        {snapToGrid ? 'On' : 'Off'}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                        {isOwner && <div className="toolbar-divider" />}
+
+                        {/* Zoom */}
+                        <div className="toolbar-group">
+                            <div className="zoom-group">
+                                <button
+                                    className="zoom-btn"
+                                    onClick={() => setZoom(z => Math.max(z - 0.1, fitScale * 0.3))}
+                                    title="Zoom out"
+                                >
                                     <Icon icon="mdi:minus" />
                                 </button>
                                 <span
                                     className="zoom-value"
                                     title="Click to reset to fit"
-                                    style={{ cursor: 'pointer' }}
                                     onClick={() => {
                                         setZoom(fitScale);
                                         if (containerRef.current) {
@@ -1157,16 +1136,24 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                                 >
                                     {Math.round((zoom / fitScale) * 100)}%
                                 </span>
-                                <button className="bt-btn" onClick={() => {
-                                    setZoom(z => Math.min(z + 0.1, fitScale * 4));
-                                }} title="Zoom In">
+                                <button
+                                    className="zoom-btn"
+                                    onClick={() => setZoom(z => Math.min(z + 0.1, fitScale * 4))}
+                                    title="Zoom in"
+                                >
                                     <Icon icon="mdi:plus" />
                                 </button>
                             </div>
+                        </div>
 
-                            {isOwner && (
-                                <>
-                                    <button className="bt-btn clear" onClick={async () => {
+                        <div className="toolbar-spacer" />
+
+                        {/* Destructive + primary */}
+                        {isOwner && (
+                            <div className="toolbar-group left">
+                                <button
+                                    className="bt-btn clear icon-only"
+                                    onClick={async () => {
                                         const result = await showDeleteConfirmAlert(
                                             "Clear Map?",
                                             "This will remove ALL shapes from the canvas. You will have to re-place items from the sidebar. This cannot be undone."
@@ -1176,22 +1163,23 @@ const PromoterBoothLayout = ({ selectedEvent }) => {
                                             setPlacedItems([]);
                                             showSuccessAlert("Cleared", "The map has been cleared.");
                                         }
-                                    }} title="Clear All Items">
-                                        <Icon icon="mdi:layers-off" /> <span>Clear</span>
-                                    </button>
+                                    }}
+                                    title="Clear all items from canvas"
+                                >
+                                    <Icon icon="mdi:layers-off" />
+                                </button>
 
-                                    <button
-                                        className={`bt-btn primary save-layout-btn${isSaving ? ' saving' : ''}`}
-                                        onClick={handleSaveLayout}
-                                        disabled={isSaving}
-                                        title="Save Venue Layout"
-                                    >
-                                        <Icon icon={isSaving ? "mdi:loading" : "mdi:check-circle-outline"} className={isSaving ? "spin" : ""} />
-                                        <span>{isSaving ? 'Saving...' : 'Save Layout'}</span>
-                                    </button>
-                                </>
-                            )}
-                        </div>
+                                <button
+                                    className={`bt-btn save${isSaving ? ' saving' : ''}`}
+                                    onClick={handleSaveLayout}
+                                    disabled={isSaving}
+                                    title="Save venue layout"
+                                >
+                                    <Icon icon={isSaving ? "mdi:loading" : "mdi:device-floppy"} className={isSaving ? "spin" : ""} />
+                                    <span>{isSaving ? 'Saving…' : 'Save layout'}</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Fast inline save toast */}

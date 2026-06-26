@@ -17,7 +17,7 @@ import priceLevelService from "../services/priceLevelService";
 import { showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
 import brandLogo from "../assets/Logo1.png";
 import { getImageUrl } from '../utils/imageUrl';
-
+import "../admincomponents/LayoutBuilder.css";
 
 const TICKET_WIDTH = 2047;
 const TICKET_HEIGHT = 1000;
@@ -81,6 +81,62 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
   const [containerSize, setContainerSize] = useState({ w: 800, h: 600 });
   const [isStageDraggable, setIsStageDraggable] = useState(false);
 
+  const historyStack = useRef([]);
+  const futureStack = useRef([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  const pushHistory = useCallback((snapshot) => {
+    historyStack.current.push(JSON.parse(JSON.stringify(snapshot)));
+    futureStack.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (historyStack.current.length === 0) return;
+    const prev = historyStack.current.pop();
+    futureStack.current.push(JSON.parse(JSON.stringify(ticketItems)));
+    setTicketItems(prev);
+    setCanUndo(historyStack.current.length > 0);
+    setCanRedo(true);
+  }, [ticketItems]);
+
+  const handleRedo = useCallback(() => {
+    if (futureStack.current.length === 0) return;
+    const next = futureStack.current.pop();
+    historyStack.current.push(JSON.parse(JSON.stringify(ticketItems)));
+    setTicketItems(next);
+    setCanUndo(true);
+    setCanRedo(futureStack.current.length > 0);
+  }, [ticketItems]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't intercept if user is typing in an input/textarea to allow default text undo
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea') return;
+
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key.toLowerCase() === 'z') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            if (canRedo) handleRedo();
+          } else {
+            if (canUndo) handleUndo();
+          }
+        }
+        if (e.key.toLowerCase() === 'y') {
+          e.preventDefault();
+          if (canRedo) handleRedo();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, handleUndo, handleRedo]);
+
   const containerRef = useRef(null);
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
@@ -103,6 +159,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
   }, [selectedId]);
 
   const handleAddText = () => {
+    pushHistory(ticketItems);
     const newId = `text-${Date.now()}`;
     const newItem = {
       id: newId,
@@ -120,6 +177,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
 
   const handleDeleteItem = () => {
     if (!selectedId) return;
+    pushHistory(ticketItems);
     setTicketItems(prev => prev.filter(i => i.id !== selectedId));
     setSelectedId(null);
   };
@@ -254,8 +312,16 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
         ];
         setTicketItems(defaultTemplate);
       }
+      historyStack.current = [];
+      futureStack.current = [];
+      setCanUndo(false);
+      setCanRedo(false);
     } else {
       setTicketItems([]);
+      historyStack.current = [];
+      futureStack.current = [];
+      setCanUndo(false);
+      setCanRedo(false);
     }
   }, [selectedCategoryId]);
 
@@ -449,10 +515,12 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
   };
 
   const handleDragEnd = (e, id) => {
+    pushHistory(ticketItems);
     updateItem(id, { x: e.target.x(), y: e.target.y() });
   };
 
   const handleTransformEnd = (e, id) => {
+    pushHistory(ticketItems);
     const node = e.target;
     updateItem(id, {
       x: node.x(),
@@ -544,6 +612,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                       type="color"
                       style={{ width: '45px', height: '35px', padding: '2px', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'transparent' }}
                       value={ticketItems.find(i => i.id === 'bg-border')?.fill || '#D32F2F'}
+                      onFocus={() => pushHistory(ticketItems)}
                       onChange={e => {
                         const themeColor = e.target.value;
                         setTicketItems(prev => prev.map(item =>
@@ -557,6 +626,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                       type="text"
                       style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-black-primary)', backgroundColor: 'var(--color-white-primary)', color: 'var(--color-black-primary)' }}
                       value={ticketItems.find(i => i.id === 'bg-border')?.fill || 'none'}
+                      onFocus={() => pushHistory(ticketItems)}
                       onChange={e => {
                         const themeColor = e.target.value;
                         setTicketItems(prev => prev.map(item =>
@@ -582,6 +652,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                           <textarea
                             style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd' }}
                             value={selectedItem.text}
+                            onFocus={() => pushHistory(ticketItems)}
                             onChange={e => updateItem(selectedId, { text: e.target.value })}
                             rows={2}
                           />
@@ -592,6 +663,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                             type="number"
                             style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd' }}
                             value={selectedItem.fontSize}
+                            onFocus={() => pushHistory(ticketItems)}
                             onChange={e => updateItem(selectedId, { fontSize: parseInt(e.target.value) || 10 })}
                           />
                         </div>
@@ -600,6 +672,7 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                           <select
                             style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd' }}
                             value={selectedItem.fontStyle || 'normal'}
+                            onFocus={() => pushHistory(ticketItems)}
                             onChange={e => updateItem(selectedId, { fontStyle: e.target.value })}
                           >
                             <option value="normal">Normal</option>
@@ -615,12 +688,14 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                               type="color"
                               style={{ width: '45px', height: '35px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }}
                               value={selectedItem.fill}
+                              onFocus={() => pushHistory(ticketItems)}
                               onChange={e => updateItem(selectedId, { fill: e.target.value })}
                             />
                             <input
                               type="text"
                               style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd' }}
                               value={selectedItem.fill}
+                              onFocus={() => pushHistory(ticketItems)}
                               onChange={e => updateItem(selectedId, { fill: e.target.value })}
                             />
                           </div>
@@ -636,12 +711,14 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
                             type="color"
                             style={{ width: '45px', height: '35px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }}
                             value={selectedItem.fill}
+                            onFocus={() => pushHistory(ticketItems)}
                             onChange={e => updateItem(selectedId, { fill: e.target.value })}
                           />
                           <input
                             type="text"
                             style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #ddd' }}
                             value={selectedItem.fill}
+                            onFocus={() => pushHistory(ticketItems)}
                             onChange={e => updateItem(selectedId, { fill: e.target.value })}
                           />
                         </div>
@@ -667,19 +744,43 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
 
         <div className="canvas-area" style={{ background: '#f5f5f5' }}>
           <div className="canvas-toolbar">
-            <h4 className="canvas-title">
-            </h4>
-            <div className="zoom-controls">
+            <div className="toolbar-spacer" />
+            <div className="toolbar-group">
               <button
                 className={`bt-btn sync-btn-small ${isSyncing ? 'spinning' : ''}`}
                 onClick={handleSyncData}
                 disabled={isSyncing}
                 title="Sync Event Data with Database"
-                style={{ marginRight: '10px', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', height: 'auto' }}
               >
                 <Icon icon={isSyncing ? "mdi:loading" : "mdi:sync"} className={isSyncing ? "spin" : ""} />
-                <span style={{ fontSize: '11px' }}>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+                <span>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
               </button>
+            </div>
+            {isEditable && (
+              <>
+                <div className="toolbar-divider" />
+                <div className="toolbar-group">
+                  <button 
+                    className="bt-btn" 
+                    onClick={handleUndo} 
+                    disabled={!canUndo} 
+                    title="Undo"
+                  >
+                    <Icon icon="mdi:undo" />
+                  </button>
+                  <button 
+                    className="bt-btn" 
+                    onClick={handleRedo} 
+                    disabled={!canRedo} 
+                    title="Redo"
+                  >
+                    <Icon icon="mdi:redo" />
+                  </button>
+                </div>
+              </>
+            )}
+            <div className="toolbar-divider" />
+            <div className="toolbar-group">
               <button
                 className={`bt-btn ${isStageDraggable ? 'active' : ''}`}
                 onClick={() => setIsStageDraggable(!isStageDraggable)}
@@ -690,13 +791,18 @@ const PromoterTicketLayout = ({ selectedEvent }) => {
               <button className="bt-btn" onClick={handleFitToScreen} title="Fit to Screen">
                 <Icon icon="mdi:fullscreen-exit" />
               </button>
-              <button className="bt-btn" onClick={() => setZoom(z => Math.max(z - 0.05, 0.01))}>
-                <Icon icon="mdi:minus" />
-              </button>
-              <span className="zoom-value">{Math.round(zoom * 100)}%</span>
-              <button className="bt-btn" onClick={() => setZoom(z => Math.min(z + 0.05, 2))}>
-                <Icon icon="mdi:plus" />
-              </button>
+            </div>
+            <div className="toolbar-divider" />
+            <div className="toolbar-group">
+              <div className="zoom-group">
+                <button className="zoom-btn" onClick={() => setZoom(z => Math.max(z - 0.05, 0.01))}>
+                  <Icon icon="mdi:minus" />
+                </button>
+                <span className="zoom-value">{Math.round(zoom * 100)}%</span>
+                <button className="zoom-btn" onClick={() => setZoom(z => Math.min(z + 0.05, 2))}>
+                  <Icon icon="mdi:plus" />
+                </button>
+              </div>
             </div>
           </div>
 

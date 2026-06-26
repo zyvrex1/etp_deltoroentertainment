@@ -545,11 +545,11 @@ eventSchema.virtual("ticketsSold").get(function () {
     return 0; // Seated event with no layout/seatMap = 0 sold
   }
 
-  // 3. For General Admission, use price level statistics
-  return (this.priceLevels || []).reduce(
-    (sum, p) => sum + (p.quantitySold || 0),
-    0
-  );
+  // 3. For General Admission, only count non-booth price level sales
+  //    (mirrors the totalTickets virtual which also excludes booth-type levels)
+  return (this.priceLevels || [])
+    .filter(p => !(p.type || '').toLowerCase().includes('booth'))
+    .reduce((sum, p) => sum + (p.quantitySold || 0), 0);
 });
 
 eventSchema.virtual("totalRevenue").get(function () {
