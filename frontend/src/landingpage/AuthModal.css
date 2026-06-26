@@ -885,3 +885,56 @@
 
 
 }
+
+
+/* ─── Step 27: Account Lockout Banner ──────────────────────────
+   Add these styles to your existing auth CSS file
+   (wherever .auth-form-container, .auth-error-msg etc. live).
+────────────────────────────────────────────────────────────── */
+
+.auth-lockout-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background-color: #fff3cd;          /* amber-50 */
+  border: 1px solid #ffc107;          /* amber-400 */
+  color: #856404;                     /* amber-800 */
+}
+
+.auth-lockout-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #d97706;                     /* amber-600 */
+}
+
+.auth-lockout-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.auth-lockout-text strong {
+  font-size: 0.875rem;
+}
+
+.auth-lockout-text p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+/* Monospace timer so digits don't jump */
+.auth-lockout-timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Disabled input style when locked */
+.auth-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

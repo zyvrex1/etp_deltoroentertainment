@@ -29,10 +29,10 @@ function refreshExpiresAt() {
 // Issues both tokens, persists the hashed refresh token, sets the cookie.
 // Pass `family` when rotating; omit it for a fresh login (new family created).
 async function issueTokens(user, res, family = null) {
-  const accessToken   = createAccessToken(user)
-  const rawRefresh    = createRefreshToken(user)
-  const tokenHash     = hashToken(rawRefresh)
-  const tokenFamily   = family || crypto.randomUUID()
+  const accessToken  = createAccessToken(user)
+  const rawRefresh   = createRefreshToken(user)
+  const tokenHash    = hashToken(rawRefresh)
+  const tokenFamily  = family || crypto.randomUUID()
 
   await RefreshToken.create({
     tokenHash,
@@ -133,7 +133,7 @@ const signupUser = async (req, res) => {
       lastName:  user.lastName,
       role:      user.role,
       avatar:    user.avatar,
-      token:     accessToken,        // short-lived access token only
+      token:     accessToken,
     })
 
   } catch (error) {
@@ -152,6 +152,8 @@ const loginUser = async (req, res) => {
   const { ip, ua } = getClientMeta(req)
 
   try {
+    // User.login() now handles lockout checks and failure tracking internally.
+    // It throws with err.code === 'ACCOUNT_LOCKED' when the account is locked.
     const user = await User.login(email, password)
 
     if (role && user.role !== role) {
@@ -189,11 +191,17 @@ const loginUser = async (req, res) => {
       notifications:  user.notifications,
       cart:           user.cart           || [],
       paymentMethods: user.paymentMethods || [],
-      token:          accessToken,         // short-lived access token only
+      token:          accessToken,
     })
 
   } catch (err) {
     console.error('Login error:', err.message, 'for email:', email)
+
+    // ── Step 27: Include lockout metadata in the response ─────
+    // remainingMs lets the frontend show an accurate countdown timer
+    // without the client needing to know the lock duration.
+    const isLockout  = err.code === 'ACCOUNT_LOCKED'
+    const statusCode = isLockout ? 423 : 401   // 423 Locked is the correct HTTP status
 
     try {
       const existingUser = await User
@@ -202,7 +210,7 @@ const loginUser = async (req, res) => {
         .catch(() => null)
 
       await recordAuditLog({
-        action:    'LOGIN_FAILED',
+        action:    isLockout ? 'ACCOUNT_LOCKED' : 'LOGIN_FAILED',
         userId:    existingUser?._id || null,
         email:     email.toLowerCase().trim(),
         firstName: existingUser?.firstName || '',
@@ -218,7 +226,11 @@ const loginUser = async (req, res) => {
       emitAuditSocketEvents('LOGIN_FAILED')
     }
 
-    return res.status(401).json({ error: err.message })
+    // Return the error payload — remainingMs only included on lockout
+    return res.status(statusCode).json({
+      error:       err.message,
+      ...(isLockout && { remainingMs: err.remainingMs }),
+    })
   }
 }
 
@@ -287,10 +299,9 @@ const logoutUser = async (req, res) => {
 
   res.clearCookie('refreshToken', refreshCookieOptions())
 
-  // ✅ audit trail consistent with LOGIN_SUCCESS / LOGIN_FAILED
   try {
     const { ip, ua } = getClientMeta(req)
-    const userId = req.user?._id || null  // may be absent if access token already expired
+    const userId = req.user?._id || null
 
     await recordAuditLog({
       action:    'LOGOUT',
@@ -342,12 +353,12 @@ const getProfile = async (req, res) => {
     if (user.role === 'sponsor') {
       const sponsor = await Sponsor.findOne({ userId: _id })
       if (sponsor) {
-        profileData.companyName    = sponsor.companyName
-        profileData.industry       = sponsor.industry
+        profileData.companyName   = sponsor.companyName
+        profileData.industry      = sponsor.industry
         if (sponsor.phone) profileData.phone = sponsor.phone
-        profileData.streetAddress  = sponsor.streetAddress
-        profileData.city           = sponsor.city
-        profileData.zipCode        = sponsor.zipCode
+        profileData.streetAddress = sponsor.streetAddress
+        profileData.city          = sponsor.city
+        profileData.zipCode       = sponsor.zipCode
       }
     }
 
@@ -395,12 +406,12 @@ const updateProfile = async (req, res) => {
     if (user.role === 'sponsor') {
       let sponsor = await Sponsor.findOne({ userId: _id })
       if (sponsor) {
-        if (companyName)              sponsor.companyName    = companyName
-        if (industry)                 sponsor.industry       = industry
-        if (phone)                    sponsor.phone          = phone
-        if (streetAddress !== undefined) sponsor.streetAddress = streetAddress
-        if (city !== undefined)       sponsor.city           = city
-        if (zipCode !== undefined)    sponsor.zipCode        = zipCode
+        if (companyName)                 sponsor.companyName    = companyName
+        if (industry)                    sponsor.industry       = industry
+        if (phone)                       sponsor.phone          = phone
+        if (streetAddress !== undefined) sponsor.streetAddress  = streetAddress
+        if (city !== undefined)          sponsor.city           = city
+        if (zipCode !== undefined)       sponsor.zipCode        = zipCode
         await sponsor.save()
       } else if (companyName && industry) {
         await Sponsor.create({ userId: _id, companyName, industry, phone: phone || user.phone, streetAddress, city, zipCode })
@@ -481,6 +492,13 @@ const forgotPassword = async (req, res) => {
     const hash   = await bcrypt.hash(tempPassword, salt)
 
     user.password = hash
+
+    // ── Step 27: Clear lockout on password reset ──────────────
+    // Resetting via email is proof of identity — unlock the account
+    // so the user can log in with the temporary password immediately.
+    user.failedLoginAttempts = 0
+    user.lockedUntil         = null
+
     await user.save()
 
     await sendEmail({
