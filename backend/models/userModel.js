@@ -115,7 +115,18 @@ const userSchema = new Schema({
     default: null,
   },
 
-}, {
+  passwordResetToken: {
+  type:    String,
+  default: null,
+},
+passwordResetExpires: {
+  type:    Date,
+  default: null,
+}
+
+}, 
+
+{
   timestamps: true
   // shardKey: { email: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
 })

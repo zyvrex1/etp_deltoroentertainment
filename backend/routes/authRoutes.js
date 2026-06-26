@@ -10,10 +10,11 @@ const {
   updateProfile,
   updatePassword,
   forgotPassword,
+  resetPassword,
 } = require('../controllers/authController')
 
 const requireAuth = require('../middleware/requireAuth')
-const { validateLogin, validateSignup, validateForgotPassword } = require('../middleware/validateAuth')
+const { validateLogin, validateSignup, validateResetPassword, validateForgotPassword } = require('../middleware/validateAuth')
 
 const router = express.Router()
 
@@ -49,6 +50,7 @@ const noCache = (req, res, next) => {
 router.post('/signup',          strictAuthLimiter, validateSignup,          signupUser)
 router.post('/login',           strictAuthLimiter, validateLogin,           loginUser)
 router.post('/forgot-password', strictAuthLimiter, validateForgotPassword,  forgotPassword)
+router.post('/reset-password',  strictAuthLimiter, validateResetPassword,  resetPassword)
 
 // Refresh — reads HttpOnly cookie, no auth header needed
 router.post('/refresh', refreshLimiter, noCache, refreshToken)

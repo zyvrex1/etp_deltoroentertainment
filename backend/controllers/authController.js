@@ -473,52 +473,185 @@ const updatePassword = async (req, res) => {
 }
 
 // ================= FORGOT PASSWORD =================
+function hashResetToken(raw) {
+  return crypto.createHash('sha256').update(raw).digest('hex')
+}
+ 
 const forgotPassword = async (req, res) => {
   const { email } = req.body
-
-  if (!email) return res.status(400).json({ error: 'Please provide your email address' })
-
+ 
+  if (!email) {
+    return res.status(400).json({ error: 'Please provide your email address' })
+  }
+ 
+  // Identical message for found/not-found — prevents email enumeration
+  const SAFE_MSG = `If an account is associated with ${email}, a password reset link has been sent.`
+ 
   try {
-    const user = await User.findOne({ email })
-
+    const user = await User.findOne({ email: email.toLowerCase().trim() })
+ 
     if (!user) {
-      return res.status(200).json({ message: `If an account is associated with ${email}, a temporary password has been sent.` })
+      // Small artificial delay so timing attacks can't detect user existence
+      await new Promise(r => setTimeout(r, 200 + Math.random() * 100))
+      return res.status(200).json({ message: SAFE_MSG })
     }
-
-    const tempPassword = crypto.randomBytes(4).toString('hex')
-
-    const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10
-    const salt   = await bcrypt.genSalt(rounds)
-    const hash   = await bcrypt.hash(tempPassword, salt)
-
-    user.password = hash
-
-    // ── Step 27: Clear lockout on password reset ──────────────
-    // Resetting via email is proof of identity — unlock the account
-    // so the user can log in with the temporary password immediately.
-    user.failedLoginAttempts = 0
-    user.lockedUntil         = null
-
+ 
+    // 1. Generate a high-entropy raw token (256 bits)
+    const rawToken  = crypto.randomBytes(32).toString('hex')        // ← 64-char hex, 256 bits
+    const tokenHash = hashResetToken(rawToken)                      // ← only the hash is stored
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)        // ← 15-minute hard expiry
+ 
+    // 2. Store hash + expiry — password is completely untouched
+    user.passwordResetToken   = tokenHash
+    user.passwordResetExpires = expiresAt
+    // user.password             ← NOT touched at all
     await user.save()
-
+ 
+    // 3. Build a one-time link with the raw token in the URL
+    // Dynamically use the request's origin (so it works automatically when hosted online), falling back to CLIENT_URL
+    const clientOrigin = req.headers.origin || (process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',')[0].trim() : 'http://localhost:5173')
+    const resetLink = `${clientOrigin}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`
+ 
+    // 4. Send the link (not a password) in the email
     await sendEmail({
-      to:      email,
-      subject: 'Temporary Password - eTicketsPro',
-      text:    `Hello ${user.firstName || 'User'},\n\nYour temporary password is: ${tempPassword}\n\nPlease log in and change your password immediately.\n\nBest regards,\neTicketsPro Team`,
+      to:      user.email,
+      subject: 'Password Reset Request — eTicketsPro',
+      text:    `Hello ${user.firstName || 'User'},\n\nClick the link below within 15 minutes to set a new password:\n${resetLink}\n\nIf you did not request this, your current password has NOT been changed.\n\nBest regards,\neTicketsPro Team`,
       html:    `
-        <h3>Hello ${user.firstName || 'User'},</h3>
-        <p>Your temporary password is: <strong>${tempPassword}</strong></p>
-        <p>Please log in and change your password immediately for security reasons.</p>
-        <br/>
-        <p>Best regards,<br/>eTicketsPro Team</p>
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: Arial, sans-serif; background:#f4f4f4; padding:20px;">
+          <div style="max-width:520px; margin:0 auto; background:#fff; border-radius:8px; overflow:hidden;">
+            <div style="background:#1a1a2e; padding:24px; text-align:center;">
+              <h2 style="color:#fff; margin:0;">eTicketsPro</h2>
+            </div>
+            <div style="padding:32px;">
+              <h3 style="margin-top:0;">Password Reset Request</h3>
+              <p>Hello <strong>${user.firstName || 'User'}</strong>,</p>
+              <p>Click the button below — this link expires in <strong>15 minutes</strong>.</p>
+              <div style="text-align:center; margin:32px 0;">
+                <a href="${resetLink}"
+                   style="background:#6c63ff; color:#fff; padding:14px 28px;
+                          border-radius:6px; text-decoration:none; font-weight:bold;
+                          display:inline-block;">
+                  Reset My Password
+                </a>
+              </div>
+              <p style="font-size:13px; color:#666;">
+                If the button doesn't work, paste this URL into your browser:<br/>
+                <a href="${resetLink}" style="color:#6c63ff; word-break:break-all;">${resetLink}</a>
+              </p>
+              <hr style="border:none; border-top:1px solid #eee; margin:24px 0;"/>
+              <p style="font-size:12px; color:#999; margin:0;">
+                If you did not request a password reset, you can safely ignore this email.
+                Your current password has <strong>not</strong> been changed.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
       `,
     })
-
-    res.status(200).json({ message: `A temporary password has been sent to ${email}` })
+ 
+    // 5. Audit log
+    const { ip, ua } = getClientMeta(req)
+    await recordAuditLog({
+      action:    'PASSWORD_RESET_REQUESTED',
+      userId:    user._id,
+      email:     user.email,
+      firstName: user.firstName || '',
+      lastName:  user.lastName  || '',
+      role:      user.role      || '',
+      ipAddress: ip,
+      userAgent: ua,
+      details:   'Password reset link generated and emailed',
+    }).catch(e => console.error('AuditLog write error:', e.message))
+ 
+    return res.status(200).json({ message: SAFE_MSG })
+ 
   } catch (err) {
     console.error('Forgot Password Error:', err.message)
-    res.status(500).json({ error: 'Something went wrong while resetting your password.' })
+    return res.status(500).json({ error: 'Something went wrong. Please try again later.' })
   }
 }
 
-module.exports = { signupUser, loginUser, refreshToken, logoutUser, getProfile, updateProfile, updatePassword, forgotPassword }
+const resetPassword = async (req, res) => {
+  const { token, email, newPassword, confirmNewPassword } = req.body || {}
+ 
+  if (!token || !email || !newPassword || !confirmNewPassword) {
+    return res.status(400).json({ error: 'All fields are required' })
+  }
+ 
+  if (newPassword !== confirmNewPassword) {
+    return res.status(400).json({ error: 'Passwords do not match' })
+  }
+ 
+  const validator = require('validator')
+  if (!validator.isStrongPassword(newPassword)) {
+    return res.status(400).json({
+      error: 'Password is not strong enough (min 8 chars, uppercase, lowercase, number, symbol)',
+    })
+  }
+ 
+  try {
+    // 1. Hash the incoming raw token to compare against the stored hash
+    const tokenHash = hashResetToken(token)
+ 
+    // 2. Find user — token must match AND not be expired
+    const user = await User.findOne({
+      email:                email.toLowerCase().trim(),
+      passwordResetToken:   tokenHash,
+      passwordResetExpires: { $gt: new Date() },    // expiry enforced at DB level
+    })
+ 
+    if (!user) {
+      // Covers: wrong token, wrong email, expired link
+      return res.status(400).json({
+        error: 'Reset link is invalid or has expired. Please request a new one.',
+      })
+    }
+ 
+    // 3. Hash the new password
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS, 10) || 10
+    const salt   = await bcrypt.genSalt(rounds)
+    const hash   = await bcrypt.hash(newPassword, salt)
+ 
+    // 4. Commit new password and burn the token (single-use)
+    user.password             = hash
+    user.passwordResetToken   = null   // ← burned — link can never be replayed
+    user.passwordResetExpires = null
+ 
+    // Step 27 compatibility: clear any active lockout
+    user.failedLoginAttempts = 0
+    user.lockedUntil         = null
+ 
+    await user.save()
+ 
+    // 5. Invalidate all active refresh tokens — forces re-login everywhere
+    await RefreshToken.deleteMany({ userId: user._id })
+ 
+    // 6. Audit log
+    const { ip, ua } = getClientMeta(req)
+    await recordAuditLog({
+      action:    'PASSWORD_RESET_SUCCESS',
+      userId:    user._id,
+      email:     user.email,
+      firstName: user.firstName || '',
+      lastName:  user.lastName  || '',
+      role:      user.role      || '',
+      ipAddress: ip,
+      userAgent: ua,
+      details:   'Password successfully reset via email link',
+    }).catch(e => console.error('AuditLog write error:', e.message))
+ 
+    return res.status(200).json({
+      message: 'Password reset successfully. You can now log in with your new password.',
+    })
+ 
+  } catch (err) {
+    console.error('Reset Password Error:', err.message)
+    return res.status(500).json({ error: 'Something went wrong. Please try again later.' })
+  }
+}
+
+module.exports = { signupUser, loginUser, refreshToken, logoutUser, getProfile, updateProfile, updatePassword, forgotPassword, resetPassword }

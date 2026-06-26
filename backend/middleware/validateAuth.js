@@ -51,8 +51,31 @@ function validate(schema) {
   }
 }
 
+const validateResetPassword = (req, res, next) => {
+  const { token, email, newPassword, confirmNewPassword } = req.body || {}
+ 
+  if (!token || typeof token !== 'string' || token.trim().length !== 64) {
+    return res.status(400).json({ error: 'Invalid or missing reset token' })
+  }
+ 
+  if (!email || typeof email !== 'string' || !email.includes('@')) {
+    return res.status(400).json({ error: 'A valid email is required' })
+  }
+ 
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters' })
+  }
+ 
+  if (newPassword !== confirmNewPassword) {
+    return res.status(400).json({ error: 'Passwords do not match' })
+  }
+ 
+  next()
+}
+ 
 module.exports = {
   validateLogin:          validate(loginSchema),
   validateSignup:         validate(signupSchema),
-  validateForgotPassword: validate(forgotPasswordSchema)
+  validateForgotPassword: validate(forgotPasswordSchema),
+  validateResetPassword,
 }

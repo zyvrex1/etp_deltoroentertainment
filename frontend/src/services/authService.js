@@ -19,6 +19,8 @@ export const updateProfile =
 export const updatePassword = (data) => api.put("/auth/update-password", data);
 
 export const forgotPassword = (email) => api.post("/auth/forgot-password", { email });
+ 
+export const resetPassword = (data) => api.post("/auth/reset-password", data)
 
 // Payment Methods
 export const addPaymentMethod = (data) => api.post("/user/payment-methods", data);

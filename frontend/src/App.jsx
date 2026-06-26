@@ -15,6 +15,7 @@ const CustomerLayout = lazy(() => import("./layouts/customerlayout.jsx"));
 // Landing Pages
 const Home = lazy(() => import("./landingpage/Home.jsx"));
 const Login = lazy(() => import("./landingpage/Login.jsx"));
+const ResetPassword = lazy(() => import("./landingpage/ResetPassword.jsx"));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import("./admincomponents/dashboard.jsx"));
@@ -157,6 +158,8 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
             </Route>
+
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route path="/admin" element={
               <ProtectedRoute allowedRole="admin">

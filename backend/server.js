@@ -1,7 +1,7 @@
 require('dotenv').config()
 
 // ─── Validate required env vars before anything else ────────
-const REQUIRED_ENV = ['PORT', 'MONGO_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'CLIENT_URL']  // ✅ added
+const REQUIRED_ENV = ['PORT', 'MONGO_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'CLIENT_URL']  // ✅ validated
 for (const key of REQUIRED_ENV) {
   if (!process.env[key]) {
     console.error(`❌  Missing required environment variable: ${key}`)

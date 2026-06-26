@@ -108,14 +108,14 @@ const Login = ({ role, onBack }) => {
 
         if (isForgotPassword) {
             if (!email) {
-                showErrorAlert("Input Required", "Please enter your email to receive a temporary password.");
+                showErrorAlert("Input Required", "Please enter your email to receive a password reset link.");
                 return;
             }
 
             setIsResetLoading(true);
             try {
                 const response = await forgotPassword(email);
-                showSuccessAlert("Success", response.data.message || `A temporary password has been sent to ${email}`);
+                showSuccessAlert("Success", response.data.message || `A password reset link has been sent to ${email}`);
                 setIsForgotPassword(false);
                 // ── Step 27: password reset clears server-side lock too ──
                 setLockoutMs(null);
@@ -271,7 +271,7 @@ const Login = ({ role, onBack }) => {
                             Locked — {formatCountdown(secondsLeft)}
                         </>
                     ) : isForgotPassword ? (
-                        "Send Temporary Password"
+                        "Send Reset Link"
                     ) : (
                         <>
                             Sign In <Icon icon="mdi:open-in-new" />
