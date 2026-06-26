@@ -14,7 +14,6 @@ const CustomerLayout = lazy(() => import("./layouts/customerlayout.jsx"));
 
 // Landing Pages
 const Home = lazy(() => import("./landingpage/Home.jsx"));
-const Login = lazy(() => import("./landingpage/Login.jsx"));
 const ResetPassword = lazy(() => import("./landingpage/ResetPassword.jsx"));
 
 // Admin Pages
@@ -156,7 +155,7 @@ function App() {
           <Routes>
             <Route element={<LandingLayout />}>
               <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
+              <Route path="/login" element={<Navigate to="/" replace />} />
             </Route>
 
             <Route path="/reset-password" element={<ResetPassword />} />

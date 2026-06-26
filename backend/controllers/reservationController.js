@@ -6,6 +6,8 @@ const { optimizeImageBuffer } = require("../utils/imageOptimizer");
 const { PutObjectCommand } = require("@aws-sdk/client-s3");
 const { s3Client } = require("../config/s3Client");
 const { v4: uuidv4 } = require("uuid");
+const path = require('path');
+const fs = require('fs');
 
 // Fetch personal reservations for the sponsor
 const getMyReservations = async (req, res) => {
@@ -354,7 +356,7 @@ const updateStoreSettings = async (req, res) => {
         if (companyName !== undefined) reservation.storeSettings.companyName = companyName;
         if (industry !== undefined) reservation.storeSettings.industry = industry;
         if (description !== undefined) reservation.storeSettings.description = description;
-        
+
         if (paymentMethods !== undefined) {
             try {
                 reservation.storeSettings.paymentMethods = JSON.parse(paymentMethods);
@@ -377,7 +379,7 @@ const updateStoreSettings = async (req, res) => {
             }));
             reservation.storeSettings.logo = `${process.env.CDN_BASE_URL}/${key}`;
         }
-        
+
         // Mark modified since it's a nested object
         reservation.markModified('storeSettings');
         await reservation.save();
@@ -1038,7 +1040,7 @@ const sendTicketEmail = async (req, res) => {
 
     try {
         const reservation = await Reservation.findById(id).populate('user', 'email firstName lastName').populate('event', 'title');
-        
+
         if (!reservation) {
             return res.status(404).json({ error: "Reservation not found" });
         }
@@ -1054,25 +1056,44 @@ const sendTicketEmail = async (req, res) => {
         });
 
         const { sendEmail } = require('../utils/email');
+        const logoPath = path.join(__dirname, '../public/logo/eTicketsProLogo2.png');
+        const logoExists = fs.existsSync(logoPath);
+
         const subject = `Your Tickets for ${reservation.event.title}`;
         const text = `Hi ${reservation.user.firstName},\n\nYour payment has been approved! Attached are your tickets for ${reservation.event.title}.\n\nThank you,\neTicketsPro`;
         const html = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
-                <h2 style="color: #333;">Your Tickets are Ready!</h2>
-                <p>Hi ${reservation.user.firstName},</p>
-                <p>Your payment has been approved! Attached are your tickets for <strong>${reservation.event.title}</strong>.</p>
-                <p>Please present these tickets (printed or on your phone) at the venue.</p>
-                <br/>
-                <p>Thank you,<br/><strong>eTicketsPro</strong></p>
+            <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0;">
+                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                    <tr>
+                        ${logoExists ? `<td style="vertical-align: top; padding-right: 24px; width: 160px;">
+                            <img src="cid:eticketspro-logo" alt="eTicketsPro" style="width: 150px; height: auto; display: block;" />
+                        </td>` : ''}
+                        <td style="vertical-align: top;">
+                            <h2 style="color: #333; margin: 0 0 12px 0;">Your Tickets are Ready!</h2>
+                            <p style="margin: 0 0 8px 0;">Hi ${reservation.user.firstName},</p>
+                            <p style="margin: 0 0 8px 0;">Your payment has been approved! Attached are your tickets for <strong>${reservation.event.title}</strong>.</p>
+                            <p style="margin: 0 0 8px 0;">Please present these tickets (printed or on your phone) at the venue.</p>
+                            <br/>
+                            <p style="margin: 0;">Thank you,<br/><strong>eTicketsPro</strong></p>
+                        </td>
+                    </tr>
+                </table>
             </div>
         `;
+
+        // Prepend the logo as a CID inline attachment (keeps HTML body small — prevents Gmail clipping)
+        const logoAttachment = logoExists ? [{
+            filename: 'eTicketsProLogo2.png',
+            path: logoPath,
+            cid: 'eticketspro-logo'
+        }] : [];
 
         await sendEmail({
             to: reservation.user.email,
             subject,
             text,
             html,
-            attachments
+            attachments: [...logoAttachment, ...attachments]
         });
 
         res.status(200).json({ message: "Tickets emailed successfully." });
