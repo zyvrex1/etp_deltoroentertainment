@@ -127,8 +127,8 @@ passwordResetExpires: {
 }, 
 
 {
-  timestamps: true
-  // shardKey: { email: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
+  timestamps: true,
+  shardKey: { email: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
 })
 
 // ─── Instance helper: is this account currently locked? ───────

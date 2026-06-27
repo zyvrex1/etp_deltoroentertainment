@@ -23,8 +23,8 @@ const customerSchema = new Schema({
     default: 0  // Initialize as 0
   }
 }, { 
-  timestamps: true
-  // shardKey: { userId: 1 } // Uncomment when upgrading to M10+ dedicated cluster
+  timestamps: true,
+  shardKey: { userId: 1 } // Uncomment when upgrading to M10+ dedicated cluster
 });
 
 module.exports = mongoose.model('Customer', customerSchema)

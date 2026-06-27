@@ -98,8 +98,8 @@ const concernSchema = new Schema({
     default: 0
   }
 }, { 
-  timestamps: true
-  // shardKey: { sponsorId: 1, _id: 1 } // Uncomment when upgrading to M10+ dedicated cluster
+  timestamps: true,
+  shardKey: { sponsorId: 1, _id: 1 } // Uncomment when upgrading to M10+ dedicated cluster
 })
 
 concernSchema.index({ sponsorId: 1, status: 1 });

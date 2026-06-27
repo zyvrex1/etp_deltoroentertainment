@@ -75,8 +75,8 @@ const orderSchema = new Schema({
         required: false
     }
 }, { 
-    timestamps: true
-    // shardKey: { eventId: 1, _id: 1 } // Uncomment when upgrading to M10+ dedicated cluster
+    timestamps: true,
+    shardKey: { eventId: 1, _id: 1 } // Uncomment when upgrading to M10+ dedicated cluster
 });
 
 orderSchema.index({ customerId: 1, status: 1, createdAt: -1 });
