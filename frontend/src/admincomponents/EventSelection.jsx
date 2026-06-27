@@ -92,7 +92,7 @@ const EventSelection = ({ setSelectedEvent }) => {
     <div className="bt-event-selection-container">
       <div className="bt-header">
         <div>
-          <h1>Booth & Ticket Control</h1>
+          <h1>Setup Events</h1>
           <p className="large-body-text">
             Select an event to manage venue layouts and ticket inventory.
           </p>
@@ -181,8 +181,8 @@ const EventSelection = ({ setSelectedEvent }) => {
                     }
                     alt={event.title}
                     onError={(e) => {
-                        e.target.src = '/assets/eventbg.jpg';
-                        e.target.onerror = null;
+                      e.target.src = '/assets/eventbg.jpg';
+                      e.target.onerror = null;
                     }}
                   />
                 </div>

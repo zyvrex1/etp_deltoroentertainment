@@ -214,7 +214,7 @@ const Signup = ({ role, onBack, onClose }) => {
         <div>
           <label className="auth-form-label">Phone Number</label>
           <PhoneInput
-            defaultCountry="ph"
+            defaultCountry="us"
             value={form.phone}
             onChange={(phone) => setForm((prev) => ({ ...prev, phone }))}
             inputClassName="auth-input"

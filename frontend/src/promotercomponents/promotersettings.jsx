@@ -439,7 +439,7 @@ const PromoterSettings = () => {
             <div className="ps-form-group">
               <label className="ps-label">Phone Number</label>
               <PhoneInput
-                defaultCountry="ph"
+                defaultCountry="us"
                 value={profile.phone || ""}
                 onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
                 inputClassName="ps-input"

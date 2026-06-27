@@ -144,14 +144,14 @@ const UserManagement = () => {
   const getStatusText = (lastLogin) => {
     const status = getUserStatus(lastLogin);
     if (!lastLogin) return "Inactive";
-    
+
     if (status === "inactive") {
       const lastLoginDate = new Date(lastLogin);
       const now = new Date();
       const diffInDays = Math.floor((now - lastLoginDate) / (1000 * 60 * 60 * 24));
       return `Inactive - ${diffInDays} days`;
     }
-    
+
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
@@ -320,7 +320,7 @@ const UserManagement = () => {
                     </td>
                     <td data-label="Status">
                       <span
-                         className={`button-label em-status-${getUserStatus(user.lastLogin)}`}
+                        className={`button-label em-status-${getUserStatus(user.lastLogin)}`}
 
                       >
                         {getStatusText(user.lastLogin)}
@@ -728,7 +728,7 @@ const UserManagement = () => {
     <div className="user-management">
       <div className="usermanagement-header" ref={topRef}>
         <div>
-          <h1>User Management</h1>
+          <h1>Manage Users</h1>
           <p>Manage all platform users in one place.</p>
         </div>
         <div className="dashboard-actions">

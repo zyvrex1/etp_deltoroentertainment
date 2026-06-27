@@ -354,7 +354,7 @@ export default function SponsorSettings() {
                         <div className="ss-form-group">
                             <label className="ss-label">Phone Number</label>
                             <PhoneInput
-                                defaultCountry="ph"
+                                defaultCountry="us"
                                 value={profile.phone || ""}
                                 onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
                                 inputClassName="ss-input"

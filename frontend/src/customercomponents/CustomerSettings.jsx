@@ -429,7 +429,7 @@ export default function CustomerSettings() {
                         <div className="cs-form-group">
                             <label className="cs-label">Phone Number</label>
                             <PhoneInput
-                                defaultCountry="ph"
+                                defaultCountry="us"
                                 value={profile.phone || ""}
                                 onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
                                 inputClassName="cs-input"

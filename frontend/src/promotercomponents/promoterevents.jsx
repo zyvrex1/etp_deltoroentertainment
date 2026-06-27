@@ -206,7 +206,14 @@ const PromoterEvents = () => {
   return (
     <div className="promoter-events-page">
       <div className="pe-header-row">
-        <h1>My Events</h1>
+        <div className="pem-header">
+          <div>
+            <h1>Create Events</h1>
+            <p className="large-body-text pem-title-desc">
+              Grow your event with powerful management tools
+            </p>
+          </div>
+        </div>
         <div className="pe-header-actions">
           <button
             type="button"

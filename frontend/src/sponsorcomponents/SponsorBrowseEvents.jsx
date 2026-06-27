@@ -110,7 +110,7 @@ const SponsorBrowseEvents = () => {
                     <h1>Browse Events</h1>
                 </div>
                 <p className="regular-body-text sbe-title-desc">
-                    Discover upcoming sponsorship opportunities and find the perfect event for your brand.
+                    Discover upcoming sponsorship opportunities, find the perfect event for your brand, and showcase your business at concerts, festivals, expos, and live events.
                 </p>
             </div>
 
@@ -245,7 +245,7 @@ const SponsorBrowseEvents = () => {
                                         e.stopPropagation();
                                         handleGetBooths(event);
                                     }}>
-                                        Get Booths <Icon icon="mdi:arrow-right" />
+                                        Reserve Exhibitor Booths <Icon icon="mdi:arrow-right" />
                                     </button>
                                 </div>
                             </div>

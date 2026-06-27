@@ -107,7 +107,7 @@ const PromoterEventMonitoring = () => {
                 <div className="pmon-event-selection-container">
                     <div className="pmon-header">
                         <div>
-                            <h1>Event Monitoring</h1>
+                            <h1>Manage Attendees</h1>
                             <p className="large-body-text pem-title-desc">
                                 Track People and Sales
                             </p>

@@ -268,7 +268,7 @@ const Settings = () => {
                     <div className="as-form-group">
                         <label className="as-label">Phone Number</label>
                         <PhoneInput
-                            defaultCountry="ph"
+                            defaultCountry="us"
                             value={profile.phone || ""}
                             onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
                             inputClassName="as-input"

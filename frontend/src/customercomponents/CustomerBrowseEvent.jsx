@@ -195,7 +195,7 @@ const CustomerBrowseEvent = () => {
                     <h1>Browse Events</h1>
                 </div>
                 <p className="regular-body-text cbe-title-desc">
-                    Discover upcoming events, find your favorites, and get your tickets today.
+                    Discover upcoming concerts, festivals, expos, and live events, find your favorites, and buy your tickets today.
                 </p>
             </div>
 

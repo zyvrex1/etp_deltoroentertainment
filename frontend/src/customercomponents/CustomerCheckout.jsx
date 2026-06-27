@@ -309,7 +309,7 @@ const seatIds = eventItems.map(item => item.seat?.id || item.seat?._id || item.i
                             <div className="cc-form-group mt-3">
                                 <label>Phone Number</label>
                                 <PhoneInput
-                                    defaultCountry="ph"
+                                    defaultCountry="us"
                                     value={phoneNumber}
                                     onChange={(phone) => setPhoneNumber(phone)}
                                     inputClassName="cc-input"

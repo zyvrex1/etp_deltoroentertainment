@@ -100,7 +100,7 @@ const EventManagement = () => {
 
   const fetchEvents = async () => {
     if (!user?.token) return;
-    setIsLoading(true); 
+    setIsLoading(true);
     try {
       const response = await eventsService.getEventsPaginated(user.token, {
         page,
@@ -108,9 +108,9 @@ const EventManagement = () => {
         search: searchQuery,
         status: activeTab === 'all-events' ? 'All' : activeTab
       });
-      
+
       dispatch({ type: "SET_EVENTS", payload: response });
-      
+
       if (response.counts) {
         setEventCounts(response.counts);
       }
@@ -242,13 +242,13 @@ const EventManagement = () => {
           status: "approved",
           assignedPromoters:
             event.createdBy?.role === "promoter" &&
-            !event.assignedPromoters?.some(
-              (ap) => ap._id === event.createdBy?._id,
-            )
+              !event.assignedPromoters?.some(
+                (ap) => ap._id === event.createdBy?._id,
+              )
               ? [
-                  ...(event.assignedPromoters?.map((ap) => ap._id) || []),
-                  event.createdBy._id,
-                ]
+                ...(event.assignedPromoters?.map((ap) => ap._id) || []),
+                event.createdBy._id,
+              ]
               : undefined,
         }),
       });
@@ -342,11 +342,11 @@ const EventManagement = () => {
 
   const eventTabs = [
     { id: "all-events", label: "All Events", count: eventCounts.all },
-    { id: "pending",   label: "Pending",    count: eventCounts.pending },
-    { id: "approved",  label: "Approved",   count: eventCounts.approved },
-    { id: "rejected",  label: "Rejected",   count: eventCounts.rejected },
-    { id: "cancelled", label: "Cancelled",  count: eventCounts.cancelled },
-    { id: "completed", label: "Completed",  count: eventCounts.completed },
+    { id: "pending", label: "Pending", count: eventCounts.pending },
+    { id: "approved", label: "Approved", count: eventCounts.approved },
+    { id: "rejected", label: "Rejected", count: eventCounts.rejected },
+    { id: "cancelled", label: "Cancelled", count: eventCounts.cancelled },
+    { id: "completed", label: "Completed", count: eventCounts.completed },
   ];
 
   const renderTable = () => {
@@ -404,10 +404,10 @@ const EventManagement = () => {
         ) : paginatedData.length === 0 ? (
           // Empty state outside table for mobile-friendly display
           <div className="empty-state">
-            <Icon 
+            <Icon
               icon={
-                activeTab === "pending-events" 
-                  ? "mdi:clock-outline" 
+                activeTab === "pending-events"
+                  ? "mdi:clock-outline"
                   : activeTab === "approved-events"
                     ? "mdi:check-circle-outline"
                     : activeTab === "rejected-events"
@@ -417,12 +417,12 @@ const EventManagement = () => {
                         : activeTab === "completed-events"
                           ? "mdi:flag-checkered"
                           : "mdi:calendar-multiple"
-              } 
-              style={{ fontSize: '48px', marginBottom: '16px' }} 
+              }
+              style={{ fontSize: '48px', marginBottom: '16px' }}
             />
             <h4>{searchQuery ? "No events found" : `No ${activeTab.split('-')[0]} events yet`}</h4>
             <p className="small-body-text">
-              {searchQuery 
+              {searchQuery
                 ? <>No events match "<strong>{searchQuery}</strong>".</>
                 : `There are currently no events in this category.`
               }
@@ -446,7 +446,7 @@ const EventManagement = () => {
               {paginatedData.map((event) => {
                 const totalOverall = (event.totalTickets || 0) + (event.totalBooths || 0);
                 const soldOverall = (event.ticketsSold || 0) + (event.boothsSold || 0);
-                
+
                 const salesPercent = totalOverall > 0
                   ? Math.round((soldOverall / totalOverall) * 100)
                   : 0;
@@ -604,44 +604,44 @@ const EventManagement = () => {
                     </td>
 
                     <td data-label="Actions">
-  <div className="em-actions">
-    <button
-      className="em-action-btn"
-      onClick={() => handleEditEvent(event)}
-      title={event.createdBy?._id === user?._id ? "Edit Event" : "View Event"}
-    >
-      <Icon 
-        icon={event.createdBy?._id === user?._id ? "mdi:square-edit-outline" : "mdi:eye-outline"} 
-      />
-    </button>
+                      <div className="em-actions">
+                        <button
+                          className="em-action-btn"
+                          onClick={() => handleEditEvent(event)}
+                          title={event.createdBy?._id === user?._id ? "Edit Event" : "View Event"}
+                        >
+                          <Icon
+                            icon={event.createdBy?._id === user?._id ? "mdi:square-edit-outline" : "mdi:eye-outline"}
+                          />
+                        </button>
 
-    {/* APPROVE/REJECT Logic */}
-    {event.status === "pending" && (event.createdBy?._id === user?._id || user.role === "admin" || user.role === "superadmin") && (
-      <>
-        <button className="em-action-btn approve-btn" onClick={() => handleApproveEvent(event)} title="Approve Event">
-          <Icon icon="mdi:check-circle-outline" />
-        </button>
-        <button className="em-action-btn reject-btn" onClick={() => handleRejectEvent(event)} title="Reject Event">
-          <Icon icon="mdi:close-circle-outline" />
-        </button>
-      </>
-    )}
+                        {/* APPROVE/REJECT Logic */}
+                        {event.status === "pending" && (event.createdBy?._id === user?._id || user.role === "admin" || user.role === "superadmin") && (
+                          <>
+                            <button className="em-action-btn approve-btn" onClick={() => handleApproveEvent(event)} title="Approve Event">
+                              <Icon icon="mdi:check-circle-outline" />
+                            </button>
+                            <button className="em-action-btn reject-btn" onClick={() => handleRejectEvent(event)} title="Reject Event">
+                              <Icon icon="mdi:close-circle-outline" />
+                            </button>
+                          </>
+                        )}
 
-    {/* CANCEL Logic */}
-    {event.status === "approved" && (event.createdBy?._id === user?._id || user.role === "admin" || user.role === "superadmin") && (
-      <button className="em-action-btn cancel-btn" onClick={() => handleCancelEvent(event)} title="Cancel Event">
-        <Icon icon="mdi:cancel" />
-      </button>
-    )}
+                        {/* CANCEL Logic */}
+                        {event.status === "approved" && (event.createdBy?._id === user?._id || user.role === "admin" || user.role === "superadmin") && (
+                          <button className="em-action-btn cancel-btn" onClick={() => handleCancelEvent(event)} title="Cancel Event">
+                            <Icon icon="mdi:cancel" />
+                          </button>
+                        )}
 
-    {/* DELETE Logic (Owner Only) */}
-    {event.createdBy?._id === user?._id && (
-      <button className="em-action-btn" onClick={() => handleDeleteEvent(event)} title="Delete Event">
-        <Icon icon="mdi:delete" />
-      </button>
-    )}
-  </div>
-</td>
+                        {/* DELETE Logic (Owner Only) */}
+                        {event.createdBy?._id === user?._id && (
+                          <button className="em-action-btn" onClick={() => handleDeleteEvent(event)} title="Delete Event">
+                            <Icon icon="mdi:delete" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -657,12 +657,12 @@ const EventManagement = () => {
 
       <div className="eventmanagement-header">
         <div>
-           <h1>Event Management</h1>
+          <h1>Manage Events</h1>
           <p>Manage all events, tickets, and booth layouts.</p>
         </div>
         <div className="dashboard-actions">
           <button
-           className="primary-button"
+            className="primary-button"
             onClick={() => setIsModalOpen(true)}
           >
             <Icon icon="mdi:plus" /> Create Event

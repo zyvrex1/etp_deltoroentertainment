@@ -111,7 +111,7 @@ const PromoterEventManagement = () => {
         <div className="pem-event-selection-container">
           <div className="pem-header">
             <div>
-              <h1>Event Management</h1>
+              <h1>Sell Tickets</h1>
               <p className="large-body-text pem-title-desc">
                 Select an event to manage venue layouts and ticket inventory.
               </p>

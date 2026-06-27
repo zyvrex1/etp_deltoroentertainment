@@ -149,7 +149,7 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
 
           {/* OPERATIONS */}
           <div className="sidebar-section">
-            <p className="section-title">OPERATIONS</p>
+            <p className="section-title">PLATFORM OPERATIONS</p>
 
             <NavLink to="/admin/users" className="sidebar-item" onClick={handleLinkClick}>
               <div className="icon-with-badge">
@@ -158,7 +158,7 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
                   <span className="sidebar-pending-badge">{pendingUsersCount}</span>
                 )}
               </div>
-              <span>User Management</span>
+              <span>Manage Users</span>
             </NavLink>
 
             <NavLink to="/admin/events" className="sidebar-item" onClick={handleLinkClick}>
@@ -168,7 +168,7 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
                   <span className="sidebar-pending-badge">{pendingEventsCount}</span>
                 )}
               </div>
-              <span>Event Management</span>
+              <span>Manage Events</span>
             </NavLink>
 
             <NavLink to="/admin/payments" className="sidebar-item" onClick={handleLinkClick}>
@@ -178,12 +178,12 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
                   <span className="sidebar-pending-badge">{pendingPaymentsCount + pendingPayoutsCount}</span>
                 )}
               </div>
-              <span>Payments & Payouts</span>
+              <span>Transactions</span>
             </NavLink>
 
             <NavLink to="/admin/booths-tickets" className="sidebar-item" onClick={handleLinkClick}>
               <MdConfirmationNumber className="icon" />
-              <span>Booth & Tickets</span>
+              <span>Setup Events</span>
             </NavLink>
           </div>
 
@@ -202,9 +202,9 @@ const Sidebar = ({ mobileExpanded, setMobileExpanded }) => {
             <p className="section-title">PLATFORM</p>
 
             <NavLink to="/admin/digital-gifts" className="sidebar-item" onClick={handleLinkClick}>
-  <MdCardGiftcard className="icon" />
-  <span>Digital Gifts</span>
-</NavLink>
+              <MdCardGiftcard className="icon" />
+              <span>Digital Gifts</span>
+            </NavLink>
 
             <NavLink to="/admin/content" className="sidebar-item" onClick={handleLinkClick}>
               <MdDescription className="icon" />

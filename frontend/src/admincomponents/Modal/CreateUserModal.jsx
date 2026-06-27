@@ -162,7 +162,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
       <div className={`add-user-form-group ${extraClass} ${errors.phone ? 'has-error' : ''}`}>
         <h6>Phone Number</h6>
         <PhoneInput
-          defaultCountry="ph"
+          defaultCountry="us"
           value={formData.phone || ""}
           onChange={handlePhoneChange}
           inputClassName="add-user-form-input"
