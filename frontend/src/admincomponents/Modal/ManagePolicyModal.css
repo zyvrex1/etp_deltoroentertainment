@@ -21,12 +21,13 @@
         max-width: min(880px, calc(100vw - 32px));
         max-height: 90vh;
         min-width: 0;
-        overflow: hidden;
+        overflow: visible;
         display: flex;
         flex-direction: column;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         animation: slideIn 0.3s ease-out;
         box-sizing: border-box;
+        border-radius: 12px;
     }
 }
 
@@ -84,7 +85,9 @@
 .modal-body {
     padding: 24px;
     overflow-y: auto;
+    overflow-x: visible;
     flex: 1;
+    border-radius: 0 0 12px 12px;
 
     .announcement-form-row {
         display: grid;
@@ -109,9 +112,35 @@
             }
 
             input,
-            textarea,
             select {
-                    height: 42px;
+                height: 42px;
+                padding: 10px 12px;
+                border: 1px solid var(--color-black-tertiary);
+                border-radius: 6px;
+                font-size: 14px;
+                color: var(--color-black-primary);
+                transition: border-color 0.2s;
+                font-family: inherit;
+                background-color: var(--color-white-primary);
+                position: relative;
+                z-index: 10;
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--color-black-primary);
+                }
+            }
+
+            input[type="date"] {
+                cursor: pointer;
+                position: relative;
+                z-index: 9999;
+            }
+
+            textarea {
+                resize: vertical;
+                min-height: 300px;
+                height: auto;
                 padding: 10px 12px;
                 border: 1px solid var(--color-black-tertiary);
                 border-radius: 6px;
@@ -126,13 +155,95 @@
                     border-color: var(--color-black-primary);
                 }
             }
-
-            textarea {
-                resize: vertical;
-                min-height: 120px;
-            }
         }
     }
+}
+
+/* Custom Dropdown Styles (matches reportsandanalytics events dropdown) */
+.modal-filter-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.modal-filter-dropdown-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-white-primary);
+    border: 1px solid var(--color-black-tertiary);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--color-black-primary);
+    cursor: pointer;
+    width: 100%;
+    height: 42px;
+    transition: border-color 0.2s;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    gap: 8px;
+}
+
+.modal-filter-dropdown-btn:hover {
+    border-color: var(--color-black-primary);
+}
+
+.modal-truncate-text {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.modal-dropdown-icon {
+    transition: transform 0.2s ease;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.modal-dropdown-icon.open {
+    transform: rotate(180deg);
+}
+
+.modal-filter-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    left: 0;
+    background-color: var(--color-white-primary);
+    border: 1px solid var(--color-black-tertiary);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.modal-filter-dropdown-item {
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    color: var(--color-black-secondary);
+    cursor: pointer;
+    border-radius: 0;
+    transition: background 0.2s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+}
+
+.modal-filter-dropdown-item:hover {
+    background: var(--color-red-primary);
+    color: var(--color-white-primary);
+}
+
+.modal-filter-dropdown-item.active {
+    background: var(--color-red-quaternary);
+    color: var(--color-red-primary);
+    font-weight: 600;
 }
 
 .general-announcement-modal-footer {

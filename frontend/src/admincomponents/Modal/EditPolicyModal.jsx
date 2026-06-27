@@ -7,6 +7,7 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [policyKey, setPolicyKey] = useState("");
+  const [updatedDate, setUpdatedDate] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   // Initialize form when modal opens
@@ -15,8 +16,34 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
       setTitle(policy.title || "");
       setContent(policy.content || "");
       setPolicyKey(policy.policyKey || "");
+
+      // Debug: log what date fields the policy object has
+      console.log('[EditPolicyModal] policy date fields:', {
+        date: policy.date,
+        publishDate: policy.publishDate,
+        createdAt: policy.createdAt,
+        updatedAt: policy.updatedAt,
+      });
+
+      // Try all possible date field names from the API
+      const raw = policy.date || policy.publishDate || policy.createdAt;
+
+      if (raw) {
+        const parsed = new Date(raw);
+        if (!isNaN(parsed.getTime())) {
+          const yyyy = parsed.getFullYear();
+          const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+          const dd = String(parsed.getDate()).padStart(2, '0');
+          setUpdatedDate(`${yyyy}-${mm}-${dd}`);
+          return;
+        }
+      }
+
+      // Fallback to today
+      const now = new Date();
+      setUpdatedDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
     }
-  }, [isOpen, policy]);
+  }, [isOpen, policy?.policyKey]);
 
   if (!isOpen) return null;
 
@@ -25,7 +52,7 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
     if (!policyKey || isSaving) return;
 
     try {
-      const updatedPolicy = { ...policy, title: title.trim(), content: content.trim() };
+      const updatedPolicy = { ...policy, title: title.trim(), content: content.trim(), publishDate: updatedDate };
 
       // Confirm update
       const result = await showUpdateConfirmAlert();
@@ -50,9 +77,13 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
   };
 
   const handleCancel = async () => {
+    const originalDate = policy?.date
+      ? new Date(policy.date).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0];
     const hasChanges =
       title.trim() !== (policy?.title || "").trim() ||
-      content.trim() !== (policy?.content || "").trim();
+      content.trim() !== (policy?.content || "").trim() ||
+      updatedDate !== originalDate;
 
     if (hasChanges) {
       const result = await showCancelConfirmAlert();
@@ -92,19 +123,14 @@ const EditPolicyModal = ({ isOpen, onClose, policy, onSave }) => {
                 <h6>Policy Key</h6>
                 <input type="text" value={policyLabel(policyKey)} disabled />
               </div>
-               <div className="announcement-form-group">
+              <div className="announcement-form-group">
                 <h6>Updated Date</h6>
                 <input
                   type="date"
-                  value={new Date().toISOString().split('T')[0]}
-                  readOnly
-                  disabled
-                  style={{
-                    backgroundColor: '#f5f5f5',
-                    cursor: 'not-allowed',
-                    color: '#666'
-                  }}
+                  value={updatedDate}
+                  onChange={(e) => setUpdatedDate(e.target.value)}
                   required
+                  style={{ cursor: 'pointer', pointerEvents: 'all', position: 'relative', zIndex: 9999 }}
                 />
               </div>
             </div>

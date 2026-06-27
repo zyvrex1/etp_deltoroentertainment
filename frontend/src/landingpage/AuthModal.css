@@ -938,3 +938,41 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* HTML Policy Content Styling */
+.policy-html-content {
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Inter', sans-serif;
+    text-align: left;
+    line-height: 1.6;
+}
+
+.policy-html-content h3 {
+    color: var(--color-white-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.policy-html-content h3:first-child {
+    margin-top: 0;
+}
+
+.policy-html-content p {
+    font-size: 15px;
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.policy-html-content ul {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    list-style-type: disc;
+}
+
+.policy-html-content li {
+    font-size: 15px;
+    margin-bottom: 0.5rem;
+    text-align: left;
+}

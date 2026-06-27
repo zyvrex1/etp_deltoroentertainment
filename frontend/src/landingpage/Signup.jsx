@@ -55,7 +55,7 @@ const Signup = ({ role, onBack, onClose }) => {
           item: {
             title: data.title,
             content: data.content,
-            date: new Date(data.updatedAt).toLocaleDateString("en-US", {
+            date: new Date(data.date || Date.now()).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
               year: "numeric",
@@ -65,8 +65,24 @@ const Signup = ({ role, onBack, onClose }) => {
         });
       }
     } catch (error) {
-      console.error("Failed to fetch policy:", error);
-      showErrorAlert("Error", "Failed to load policy. Please try again later.");
+      if (error.response && error.response.status === 404) {
+        setPolicyModal({
+          isOpen: true,
+          item: {
+            title: policyKey === "tos" ? "Terms of Service" : "Privacy Policy",
+            content: "This policy has not been published yet. Please check back later.",
+            date: new Date().toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+          },
+          type: policyKey,
+        });
+      } else {
+        console.error("Failed to fetch policy:", error);
+        showErrorAlert("Error", "Failed to load policy. Please try again later.");
+      }
     }
   };
 

@@ -18,6 +18,28 @@ const HomeViewFullContent = ({ isOpen, onClose, item, type }) => {
 
   if (!isOpen || !item) return null;
 
+  const stripHtmlForPdf = (html) => {
+    if (!html) return '';
+    let text = html;
+    // Replace <h3> with uppercase and newlines
+    text = text.replace(/<h3[^>]*>(.*?)<\/h3>/gi, (match, p1) => `\n\n${p1.toUpperCase()}\n\n`);
+    // Replace <p> with newlines
+    text = text.replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n');
+    // Replace <li> with bullets
+    text = text.replace(/<li[^>]*>(.*?)<\/li>/gi, '  • $1\n');
+    // Replace <ul>
+    text = text.replace(/<ul[^>]*>/gi, '\n');
+    text = text.replace(/<\/ul>/gi, '\n\n');
+    // Replace <br>
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+    // Strip remaining tags
+    text = text.replace(/<[^>]+>/g, '');
+    
+    // Decode HTML entities (like &nbsp;)
+    const doc = new DOMParser().parseFromString(text, 'text/html');
+    return (doc.documentElement.textContent || '').trim().replace(/\n{3,}/g, '\n\n');
+  };
+
   const downloadPDF = async () => {
     const loadingToast = showExportToast();
     const DOCUMENT_TITLE = type === 'announcement' ? 'Announcement' : 'Policy';
@@ -46,7 +68,8 @@ const HomeViewFullContent = ({ isOpen, onClose, item, type }) => {
         y += 8;
       }
       
-      y = drawLongText(pdf, y, item.content || '', margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 11, logoData, DOCUMENT_TITLE);
+      const formattedContent = stripHtmlForPdf(item.content);
+      y = drawLongText(pdf, y, formattedContent, margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 11, logoData, DOCUMENT_TITLE);
 
       finalizeReport(pdf);
       pdf.save(`${DOCUMENT_TITLE}_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -93,16 +116,23 @@ const HomeViewFullContent = ({ isOpen, onClose, item, type }) => {
           
           <div className="policy-text-content">
             {item.content ? (
-              item.content.split("\n\n").map((paragraph, index) => (
-                <p key={index} className="policy-paragraph">
-                  {paragraph.split("\n").map((line, lineIndex) => (
-                    <React.Fragment key={lineIndex}>
-                      {line}
-                      {lineIndex < paragraph.split("\n").length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
-                </p>
-              ))
+              item.content.includes("<p>") || item.content.includes("<h3>") || item.content.includes("<ul>") ? (
+                <div
+                  className="policy-html-content"
+                  dangerouslySetInnerHTML={{ __html: item.content }}
+                />
+              ) : (
+                item.content.split("\n\n").map((paragraph, index) => (
+                  <p key={index} className="policy-paragraph">
+                    {paragraph.split("\n").map((line, lineIndex) => (
+                      <React.Fragment key={lineIndex}>
+                        {line}
+                        {lineIndex < paragraph.split("\n").length - 1 && <br />}
+                      </React.Fragment>
+                    ))}
+                  </p>
+                ))
+              )
             ) : (
               <p className="no-content">No content available.</p>
             )}

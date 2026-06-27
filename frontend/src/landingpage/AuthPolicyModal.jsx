@@ -36,19 +36,21 @@ const AuthPolicyModal = ({ isOpen, onClose, item, type }) => {
               <Icon icon="mdi:clock-outline" /> Last updated: {item.date}
             </span>
           </div>
-          
+
           <div className="policy-text-content">
             {item.content ? (
-              item.content.split("\n\n").map((paragraph, index) => (
-                <p key={index} className="policy-paragraph">
-                  {paragraph.split("\n").map((line, lineIndex) => (
-                    <React.Fragment key={lineIndex}>
-                      {line}
-                      {lineIndex < paragraph.split("\n").length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
-                </p>
-              ))
+              item.content.includes("<p>") || item.content.includes("<h3>") || item.content.includes("<ul>") ? (
+                <div
+                  className="policy-html-content"
+                  dangerouslySetInnerHTML={{ __html: item.content }}
+                />
+              ) : (
+                item.content.split("\n\n").map((paragraph, index) => (
+                  <p key={index} className="policy-paragraph" style={{ whiteSpace: "pre-wrap" }}>
+                    {paragraph}
+                  </p>
+                ))
+              )
             ) : (
               <p className="no-content">No content available for this policy.</p>
             )}
@@ -56,8 +58,8 @@ const AuthPolicyModal = ({ isOpen, onClose, item, type }) => {
         </div>
 
         <div className="auth-footer" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", padding: "24px 32px" }}>
-          <button 
-            className="auth-submit-btn btn-customer" 
+          <button
+            className="auth-submit-btn btn-customer"
             onClick={onClose}
             style={{ marginTop: 0 }}
           >

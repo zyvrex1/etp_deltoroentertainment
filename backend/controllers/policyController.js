@@ -33,7 +33,7 @@ const getPolicy = async (req, res) => {
 // CREATE policy (optional but useful)
 const createPolicy = async (req, res) => {
   try {
-    const { policyKey, title, content } = req.body;
+    const { policyKey, title, content, publishDate } = req.body;
 
     if (!policyKey || !title || !content) {
       return res.status(400).json({ error: "All fields are required." });
@@ -50,6 +50,7 @@ const createPolicy = async (req, res) => {
       policyKey,
       title,
       content,
+      date: publishDate ? new Date(publishDate) : new Date(),
       lastUpdated: new Date(),
     });
 
@@ -119,15 +120,20 @@ const createPolicy = async (req, res) => {
 const updatePolicy = async (req, res) => {
   try {
     const { policyKey } = req.params;
-    const { title, content } = req.body;
+    const { title, content, publishDate } = req.body;
+
+    const updateData = {
+      title,
+      content,
+      lastUpdated: new Date(),
+    };
+    if (publishDate) {
+      updateData.date = new Date(publishDate);
+    }
 
     const updatedPolicy = await Policy.findOneAndUpdate(
       { policyKey },
-      {
-        title,
-        content,
-        lastUpdated: new Date(),
-      },
+      updateData,
       { new: true }
     );
 

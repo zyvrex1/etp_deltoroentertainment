@@ -12,8 +12,8 @@ import HomeViewFullContent from './HomeViewFullContent';
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "";
 
 const Home = () => {
-const { openAuthModal: _openAuthModal, isAuthOpen } = useOutletContext() || {};
-const autoTriggerTimer = useRef(null);
+  const { openAuthModal: _openAuthModal, isAuthOpen } = useOutletContext() || {};
+  const autoTriggerTimer = useRef(null);
 
   // Modal State for Policies & Announcements
   const [modalData, setModalData] = useState(null);
@@ -26,14 +26,14 @@ const autoTriggerTimer = useRef(null);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
 
-const openAuthModal = (...args) => {
-  if (autoTriggerTimer.current) {
-    clearTimeout(autoTriggerTimer.current);
-    autoTriggerTimer.current = null;
-  }
-  sessionStorage.setItem('signupModalShown', 'true');
-  _openAuthModal?.(...args);
-};
+  const openAuthModal = (...args) => {
+    if (autoTriggerTimer.current) {
+      clearTimeout(autoTriggerTimer.current);
+      autoTriggerTimer.current = null;
+    }
+    sessionStorage.setItem('signupModalShown', 'true');
+    _openAuthModal?.(...args);
+  };
 
 
   // Track window width for responsive carousel positioning
@@ -44,22 +44,22 @@ const openAuthModal = (...args) => {
   }, []);
 
   // ✅ NEW: Auto-trigger signup modal after 5 seconds
-useEffect(() => {
-  // Don't trigger if modal is already open or user already saw it
-  if (isAuthOpen) return;
-  const hasShown = sessionStorage.getItem('signupModalShown');
-  if (hasShown) return;
+  useEffect(() => {
+    // Don't trigger if modal is already open or user already saw it
+    if (isAuthOpen) return;
+    const hasShown = sessionStorage.getItem('signupModalShown');
+    if (hasShown) return;
 
-  autoTriggerTimer.current = setTimeout(() => {
-    // Double-check modal still isn't open at fire time
-    if (!isAuthOpen) {
-      _openAuthModal?.('signup');
-      sessionStorage.setItem('signupModalShown', 'true');
-    }
-  }, 5000);
+    autoTriggerTimer.current = setTimeout(() => {
+      // Double-check modal still isn't open at fire time
+      if (!isAuthOpen) {
+        _openAuthModal?.('signup');
+        sessionStorage.setItem('signupModalShown', 'true');
+      }
+    }, 5000);
 
-  return () => clearTimeout(autoTriggerTimer.current);
-}, [isAuthOpen]); // ← re-evaluate if modal opens
+    return () => clearTimeout(autoTriggerTimer.current);
+  }, [isAuthOpen]); // ← re-evaluate if modal opens
 
   // Intersection Observer for scroll reveal
   useEffect(() => {
@@ -196,8 +196,10 @@ useEffect(() => {
           setLiveEvents(activeEvents);
 
           // 2. Featured Events (Status: completed, sorted by tickets sold)
-          const completedEvents = data
-            .filter(evt => evt.status === 'completed')
+          let featured = data
+            .filter(evt => evt.status === 'completed');
+
+          const formattedFeaturedEvents = featured
             .map(evt => {
               const totalSold = evt.priceLevels?.reduce((sum, pl) => sum + (pl.quantitySold || 0), 0) || 0;
               return {
@@ -212,10 +214,10 @@ useEffect(() => {
             .sort((a, b) => b.sold - a.sold)
             .slice(0, 5); // Top 5 featured
 
-          setFeaturedEvents(completedEvents);
+          setFeaturedEvents(formattedFeaturedEvents);
           // Set initial carousel index to middle if we have items
-          if (completedEvents.length > 0) {
-            setCarouselIndex(Math.floor(completedEvents.length / 2));
+          if (formattedFeaturedEvents.length > 0) {
+            setCarouselIndex(Math.floor(formattedFeaturedEvents.length / 2));
           }
         }
       } catch (error) {
@@ -232,21 +234,27 @@ useEffect(() => {
 
     const interval = setInterval(() => {
       handleNext();
-    }, 4000); // 4 seconds for a more relaxed pace
+    }, 10000); // 10 seconds
 
     return () => clearInterval(interval);
   }, [featuredEvents]);
+
+
 
   const [direction, setDirection] = useState('next');
 
   const handleNext = () => {
     setDirection('next');
-    setFeaturedEvents(prev => [...prev.slice(1), prev[0]]);
+    if (featuredEvents.length > 0) {
+      setCarouselIndex((prev) => (prev + 1) % featuredEvents.length);
+    }
   };
 
   const handlePrev = () => {
     setDirection('prev');
-    setFeaturedEvents(prev => [prev[prev.length - 1], ...prev.slice(0, -1)]);
+    if (featuredEvents.length > 0) {
+      setCarouselIndex((prev) => (prev - 1 + featuredEvents.length) % featuredEvents.length);
+    }
   };
 
 
@@ -313,14 +321,14 @@ useEffect(() => {
       </section>
 
       {/* Announcements */}
-      <section className="nft-section-full reveal" aria-label="Platform announcements">
-        <div className="container">
-          <div className="announcement-header">
-            <h3>Platform Announcements</h3>
+      {announcements.length > 0 && (
+        <section className="nft-section-full reveal" aria-label="Platform announcements">
+          <div className="container">
+            <div className="announcement-header">
+              <h3>Platform Announcements</h3>
+            </div>
           </div>
-        </div>
 
-        {announcements.length > 0 ? (
           <div className="announcements-marquee-container" role="region" aria-label="Scrolling announcements" aria-live="polite">
             <div className="announcements-marquee-track animating">
               {/* Render list twice for seamless loop */}
@@ -353,18 +361,8 @@ useEffect(() => {
               ))}
             </div>
           </div>
-        ) : (
-          <div className="container">
-            <div className="nft-empty-state">
-              <div className="empty-icon-glow">
-                <Icon icon="mdi:bullhorn-variant-outline" />
-              </div>
-              <h4>No Announcements</h4>
-              <p>Stay tuned! We'll post updates and news here when they're available.</p>
-            </div>
-          </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* Upcoming Events */}
       <section id="events" className="nft-section container reveal" aria-label="Live and upcoming events">
@@ -373,13 +371,13 @@ useEffect(() => {
             <h3>Live & Upcoming Events</h3>
             <p className="nft-subheading">Secure your spot at the hottest events in town.</p>
           </div>
-         <button
-  className="nft-link"
-  onClick={(e) => { e.preventDefault(); openAuthModal('login'); }}
-  aria-label="Log in to view all events"
->
-  View All
-</button>
+          <button
+            className="nft-link"
+            onClick={(e) => { e.preventDefault(); openAuthModal('login'); }}
+            aria-label="Log in to view all events"
+          >
+            View All
+          </button>
         </div>
 
         {liveEvents.length > 0 ? (
@@ -414,13 +412,13 @@ useEffect(() => {
                     <div className="nft-v2-countdown">
                       <span>{evt.daysLeft > 0 ? `${evt.daysLeft} days left` : 'Starting soon'}</span>
                     </div>
-<button
-  className="nft-v2-btn"
-  onClick={() => openAuthModal('login')}
-  aria-label={`Get tickets for ${evt.title}`}
->
-  Get Tickets
-</button>                  </div>
+                    <button
+                      className="nft-v2-btn"
+                      onClick={() => openAuthModal('login')}
+                      aria-label={`Get tickets for ${evt.title}`}
+                    >
+                      Get Tickets
+                    </button>                  </div>
                 </div>
               </div>
             ))}
@@ -438,90 +436,84 @@ useEffect(() => {
 
 
       {/* Featured Events (Web3 Carousel) */}
-      <section className="nft-section featured-carousel-section reveal" aria-label="Featured events carousel">
-        <div className="container">
-          <div className="nft-section-header centered">
-            <h2 className="carousel-title">Featured Events</h2>
-          </div>
+      {featuredEvents.length > 0 && (
+        <section className="nft-section featured-carousel-section reveal" aria-label="Featured events carousel">
+          <div className="container">
+            <div className="nft-section-header centered">
+              <h2 className="carousel-title">Featured Events</h2>
+            </div>
 
-          <div className="carousel-view-container">
-            <div
-              className={`carousel-track ${direction}`}
-              style={{ position: 'relative' }}
-            >
-              {featuredEvents.length > 0 ? (
-                featuredEvents.map((evt, idx) => {
-                  const centerIdx = Math.floor(featuredEvents.length / 2);
-                  const isCenter = idx === centerIdx;
-                  const distance = Math.abs(idx - centerIdx);
-                  const opacity = Math.max(0.3, 1 - distance * 0.3);
-                  const scale = Math.max(0.8, 1 - distance * 0.1);
+            <div className="carousel-view-container">
+              <div
+                className={`carousel-track ${direction}`}
+                style={{ position: 'relative' }}
+              >
+                {featuredEvents.map((evt, idx) => {
+                    const count = featuredEvents.length;
+                    let offset = idx - carouselIndex;
+                    const half = Math.floor(count / 2);
+                    
+                    if (offset > half) offset -= count;
+                    if (offset < -half) offset += count;
+                    
+                    const isCenter = offset === 0;
+                    const distance = Math.abs(offset);
+                    const opacity = Math.max(0.3, 1 - distance * 0.3);
+                    const scale = Math.max(0.8, 1 - distance * 0.1);
 
-                  return (
-                    <div
-                      key={evt.id}
-                      className={`carousel-item ${isCenter ? 'active' : ''}`}
-                      style={{
-                        opacity,
-                        transform: `scale(${scale}) translateX(${(idx - centerIdx) * (windowWidth < 480 ? 240 : windowWidth < 768 ? 260 : windowWidth < 1024 ? 280 : 340)}px)`,
-                        zIndex: 10 - distance,
-                        position: 'absolute',
-                        left: windowWidth < 480 ? '-110px' : windowWidth < 768 ? '-130px' : '-170px'
-                      }}
-                    >
-                      <div className="nft-v3-card">
-                        <div className="nft-v3-image-area">
-                          <img src={evt.image} alt={`Featured: ${evt.title}`} loading="lazy" />
-                        </div>
-                        <div className="nft-v3-content">
-                          <div className="nft-v3-info">
-                            <h4>{evt.title}</h4>
-                            <p>by {evt.creator}</p>
+                    return (
+                      <div
+                        key={evt.id}
+                        className={`carousel-item ${isCenter ? 'active' : ''}`}
+                        style={{
+                          opacity,
+                          transform: `scale(${scale}) translateX(${offset * (windowWidth < 480 ? 240 : windowWidth < 768 ? 260 : windowWidth < 1024 ? 280 : 340)}px)`,
+                          zIndex: 10 - distance,
+                          position: 'absolute',
+                          left: windowWidth < 480 ? '-110px' : windowWidth < 768 ? '-130px' : '-170px'
+                        }}
+                      >
+                        <div className="nft-v3-card">
+                          <div className="nft-v3-image-area">
+                            <img src={evt.image} alt={`Featured: ${evt.title}`} loading="lazy" />
                           </div>
-                          <div className="nft-v3-stats">
-                            <span className="price">{evt.sold.toLocaleString()} Sold</span>
-                            <span className="likes"><Icon icon="mdi:heart" /> {Math.floor(evt.sold / 10)}k</span>
+                          <div className="nft-v3-content">
+                            <div className="nft-v3-info">
+                              <h4>{evt.title}</h4>
+
+                            </div>
+                            <div className="nft-v3-stats">
+                              <span className="price">{evt.sold.toLocaleString()} Sold</span>
+                              <span className="likes"><Icon icon="mdi:heart" /> {Math.floor(evt.sold / 10)}k</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              ) : (
-                [1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="carousel-item active" style={{ opacity: 0.15, position: 'absolute', transform: `translateX(${(i - 3) * (windowWidth < 480 ? 240 : windowWidth < 768 ? 260 : 340)}px)`, left: windowWidth < 480 ? '-110px' : windowWidth < 768 ? '-130px' : '-170px' }}>
-                    <div className="nft-v3-card skeleton">
-                      <div className="nft-v3-image-area"></div>
-                      <div className="nft-v3-content">
-                        <div className="skeleton-line" style={{ width: '80%', height: '20px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}></div>
-                        <div className="skeleton-line" style={{ width: '50%', height: '14px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                    );
+                  })}
+              </div>
 
-            {/* Navigation Controls */}
-            <div className="carousel-controls">
-              <button
-                className="carousel-nav-btn prev"
-                onClick={handlePrev}
-                aria-label="Previous featured event"
-              >
-                <Icon icon="mdi:chevron-left" aria-hidden="true" />
-              </button>
-              <button
-                className="carousel-nav-btn next"
-                onClick={handleNext}
-                aria-label="Next featured event"
-              >
-                <Icon icon="mdi:chevron-right" aria-hidden="true" />
-              </button>
+              {/* Navigation Controls */}
+              <div className="carousel-controls">
+                <button
+                  className="carousel-nav-btn prev"
+                  onClick={handlePrev}
+                  aria-label="Previous featured event"
+                >
+                  <Icon icon="mdi:chevron-left" aria-hidden="true" />
+                </button>
+                <button
+                  className="carousel-nav-btn next"
+                  onClick={handleNext}
+                  aria-label="Next featured event"
+                >
+                  <Icon icon="mdi:chevron-right" aria-hidden="true" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Built For You */}
       <section id="benefits" className="nft-section container reveal" aria-label="Platform benefits">
@@ -635,7 +627,9 @@ useEffect(() => {
                 </div>
                 <div className="policy-text">
                   <h4>{policy.title}</h4>
-                  <p className="nft-text-ellipsis-2">{policy.content}</p>
+                  <p className="nft-text-ellipsis-2">
+                    {policy.content ? policy.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : ""}
+                  </p>
                 </div>
               </div>
             ))}

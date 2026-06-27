@@ -199,7 +199,7 @@ const ContentManager = () => {
       pdf.setFont('helvetica', 'normal');
       pdf.text(`Updated: ${formatDate(policy.date)}`, margin, y);
       y += 8;
-      
+
       y = drawLongText(pdf, y, policy.content || '', margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 11, logoData, DOCUMENT_TITLE);
 
       finalizeReport(pdf);
@@ -237,7 +237,7 @@ const ContentManager = () => {
       pdf.setFont('helvetica', 'normal');
       pdf.text(`Date: ${formatDate(ann.date)}`, margin, y);
       y += 8;
-      
+
       y = drawLongText(pdf, y, ann.content || '', margin, pdfWidth, pdfHeight, FOOTER_HEIGHT, 11, logoData, DOCUMENT_TITLE);
 
       finalizeReport(pdf);
@@ -324,7 +324,9 @@ const ContentManager = () => {
                       </div>
                     </div>
                   </div>
-                  <p className="small-body-text announcement-desc" title={a.content}>{a.content}</p>
+                  <p className="small-body-text announcement-desc" title={a.content ? a.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : ""}>
+                    {a.content ? a.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : ""}
+                  </p>
                 </div>
               ))
             )}
@@ -366,12 +368,12 @@ const ContentManager = () => {
                         {formatDate(p.date)}
                       </span>
                       <div className="legal-actions">
-                        <button
+                        {/* <button
                           className="legal-action-btn"
                           onClick={() => handleDownloadPolicy(p)}
                         >
                           <Icon icon="mdi:download" width="18" />
-                        </button>
+                        </button> */}
                         <button
                           className="legal-action-btn"
                           onClick={() => setEditingPolicy(p)}
@@ -387,7 +389,9 @@ const ContentManager = () => {
                       </div>
                     </div>
                   </div>
-                  <p className="small-body-text legal-desc" title={p.content}>{p.content}</p>
+                  <p className="small-body-text legal-desc" title={p.content ? p.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : ""}>
+                    {p.content ? p.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : ""}
+                  </p>
                 </div>
               ))
             )}

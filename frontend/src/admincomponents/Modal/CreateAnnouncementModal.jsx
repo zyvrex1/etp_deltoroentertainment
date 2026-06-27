@@ -19,6 +19,20 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
         contentcategory: 'Update' // matches backend field
     });
 
+    const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+    const dropdownRef = React.useRef(null);
+
+    // Close dropdown on click outside
+    React.useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     if (!isOpen) return null;
 
     const handleChange = (e) => {
@@ -69,6 +83,8 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
         }
     };
 
+    const categories = ["General", "Update", "News", "Maintenance", "Alert"];
+
     return (
         <div className="general-modal-overlay">
             <div className="general-announcement-modal-container">
@@ -85,17 +101,38 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSave }) => {
 
                            <div className="announcement-form-group">
                                 <h6>Category</h6>
-                                <select
-                                    name="contentcategory"
-                                    value={formData.contentcategory}
-                                    onChange={handleChange}
-                                >
-                                    <option value="General">General</option>
-                                    <option value="Update">Update</option>
-                                    <option value="News">News</option>
-                                    <option value="Maintenance">Maintenance</option>
-                                    <option value="Alert">Alert</option>
-                                </select>
+                                <div className="modal-filter-dropdown" ref={dropdownRef}>
+                                    <button
+                                        type="button"
+                                        className="modal-filter-dropdown-btn"
+                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                    >
+                                        <span className="modal-truncate-text">
+                                            {formData.contentcategory || "Select Category"}
+                                        </span>
+                                        <Icon
+                                            icon="mdi:chevron-down"
+                                            className={`modal-dropdown-icon ${isDropdownOpen ? "open" : ""}`}
+                                        />
+                                    </button>
+                                    {isDropdownOpen && (
+                                        <div className="modal-filter-dropdown-menu">
+                                            {categories.map((cat) => (
+                                                <button
+                                                    type="button"
+                                                    key={cat}
+                                                    className={`modal-filter-dropdown-item ${formData.contentcategory === cat ? "active" : ""}`}
+                                                    onClick={() => {
+                                                        setFormData({ ...formData, contentcategory: cat });
+                                                        setIsDropdownOpen(false);
+                                                    }}
+                                                >
+                                                    {cat}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="announcement-form-group">
                                 <h6>Publish Date</h6>
