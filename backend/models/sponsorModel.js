@@ -37,8 +37,8 @@ const sponsorSchema = new Schema({
     trim: true
   }
 }, { 
-  timestamps: true
-  // shardKey: { userId: 1 } // add comma in true
+  timestamps: true,
+  shardKey: { userId: 1 } // add comma in true
 });
 
 module.exports = mongoose.model('Sponsor', sponsorSchema)

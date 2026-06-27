@@ -38,8 +38,8 @@ const notificationSchema = new mongoose.Schema({
         required: false
     }
 }, { 
-    timestamps: true
-    // shardKey: { _id: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
+    timestamps: true,
+    shardKey: { _id: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
 });
 
 notificationSchema.index({ userId: 1, unread: 1, createdAt: -1 });
