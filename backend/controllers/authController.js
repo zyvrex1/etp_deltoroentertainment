@@ -125,13 +125,11 @@ const signupUser = async (req, res) => {
 
     emitUpdate('dashboardUpdate')
 
-    return res.status(201).json({
-      _id:       user._id,
+     return res.status(201).json({
       message:   'User created successfully',
       email:     user.email,
       firstName: user.firstName,
       lastName:  user.lastName,
-      role:      user.role,
       avatar:    user.avatar,
       token:     accessToken,
     })
@@ -179,20 +177,18 @@ const loginUser = async (req, res) => {
     // ── Issue tokens ──
     const accessToken = await issueTokens(user, res)
 
-    return res.status(200).json({
-      _id:            user._id,
-      email:          user.email,
-      firstName:      user.firstName,
-      lastName:       user.lastName,
-      role:           user.role,
-      phone:          user.phone,
-      avatar:         user.avatar,
-      twoFactor:      user.twoFactor,
-      notifications:  user.notifications,
-      cart:           user.cart           || [],
-      paymentMethods: user.paymentMethods || [],
-      token:          accessToken,
-    })
+  return res.status(200).json({
+    firstName:      user.firstName,
+    lastName:       user.lastName,
+    email:          user.email,
+    phone:          user.phone,
+    avatar:         user.avatar,
+    role:           user.role,
+    notifications:  user.notifications,
+    cart:           user.cart           || [],
+    paymentMethods: user.paymentMethods || [],
+    token:          accessToken,
+})
 
   } catch (err) {
     console.error('Login error:', err.message, 'for email:', email)
@@ -357,26 +353,59 @@ const logoutUser = async (req, res) => {
   return res.status(200).json({ message: 'Logged out successfully' })
 }
 
-// ================= PROFILE =================
+
+function sanitizeCartItem(item) {
+  return {
+    cartId:       item.cartId,
+    categoryName: item.categoryName,
+    facePrice:    item.facePrice,
+    serviceFee:   item.serviceFee,
+    event: item.event ? {
+      title:     item.event.title,
+      image:     item.event.image,
+      startDate: item.event.startDate,
+      startTime: item.event.startTime,
+      venue:     item.event.venue,
+    } : null,
+    seat: item.seat ? { label: item.seat.label } : null,
+  }
+}
+
 const getProfile = async (req, res) => {
   const { _id } = req.user
 
   try {
-    const user = await User.findById(_id).select('-password')
+    // Strip sensitive fields at the DB level
+    const user = await User.findById(_id)
+      .select('-password -twoFactor -twoFactorSecret -passwordResetToken -passwordResetExpires -__v')
     if (!user) return res.status(404).json({ error: 'User not found' })
 
+    // Deduplicate cart by cartId, strip internal IDs
+    const seen = new Set()
+    const safeCart = (user.cart || [])
+      .filter(item => {
+        if (!item.cartId || seen.has(item.cartId)) return false
+        seen.add(item.cartId)
+        return true
+      })
+      .map(sanitizeCartItem)
+
     let profileData = {
-      _id:            user._id,
-      role:           user.role,
       firstName:      user.firstName,
       lastName:       user.lastName,
       email:          user.email,
       phone:          user.phone,
       avatar:         user.avatar,
       notifications:  user.notifications,
-      twoFactor:      user.twoFactor,
-      cart:           user.cart           || [],
-      paymentMethods: user.paymentMethods || [],
+      cart:           safeCart,
+      paymentMethods: (user.paymentMethods || []).map(pm => ({
+        id:        pm.id,
+        brand:     pm.brand,
+        last4:     pm.last4,
+        expMonth:  pm.expMonth,
+        expYear:   pm.expYear,
+        isDefault: pm.isDefault,
+      })),
     }
 
     if (user.role === 'promoter') {
@@ -456,17 +485,14 @@ const updateProfile = async (req, res) => {
       }
     }
 
-    res.status(200).json({
+     res.status(200).json({
       message: 'Profile updated successfully',
       user: {
-        _id:            user._id,
         firstName:      user.firstName,
         lastName:       user.lastName,
         email:          user.email,
         phone:          user.phone,
         avatar:         user.avatar,
-        role:           user.role,
-        twoFactor:      user.twoFactor,
         notifications:  user.notifications,
         paymentMethods: user.paymentMethods || [],
       },

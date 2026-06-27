@@ -25,7 +25,10 @@ export const authReducer = (state, action) => {
     case 'UPDATE_TOKEN':
       return { ...state, user: { ...state.user, token: action.payload } }
     case 'LOGOUT':
-      return { ...state, user: null }
+      return {
+        ...state,
+        user: action.payload ?? null,  // keeps public shell if provided
+      }
     case 'FINISH_LOADING':
       return { ...state, loading: false }
     default:
@@ -34,6 +37,24 @@ export const authReducer = (state, action) => {
 }
 
 export const AuthContextProvider = ({ children }) => {
+  const logout = async () => {
+  try {
+    await api.post('/auth/logout')
+  } catch (_) {}
+
+  cancelProactiveRefresh()
+  clearAccessToken()
+
+  const shell = state.user
+    ? {
+        firstName: state.user.firstName,
+        lastName:  state.user.lastName,
+        avatar:    state.user.avatar,
+      }
+    : null
+
+  dispatch({ type: 'LOGOUT', payload: shell })
+}
   const [state, dispatch] = useReducer(authReducer, {
     user:    null,
     loading: true,
@@ -123,8 +144,8 @@ export const AuthContextProvider = ({ children }) => {
   }, [])
 
     return (
-    <AuthContext.Provider value={{ ...state, dispatch, scheduleProactiveRefresh, cancelProactiveRefresh }}>
-      {children}
+<AuthContext.Provider value={{ ...state, state, dispatch, scheduleProactiveRefresh, cancelProactiveRefresh }}>
+        {children}
     </AuthContext.Provider>
   )
 }

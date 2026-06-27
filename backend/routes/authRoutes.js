@@ -60,7 +60,7 @@ router.post('/refresh', refreshLimiter, noCache, refreshToken)
 router.post('/logout', logoutUser)
 
 // ── Protected routes ──────────────────────────────────────────
-router.get('/profile',          requireAuth, getProfile)
+router.get('/profile',          requireAuth, noCache, getProfile)
 router.put('/update-profile',   requireAuth, updateProfile)
 router.put('/update-password',  requireAuth, updatePassword)
 

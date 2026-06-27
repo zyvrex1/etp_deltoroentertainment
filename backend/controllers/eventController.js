@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 const Event = require("../models/eventModel");
 const VenueMap = require("../models/venueMapModel");
+const { serializeEvent } = require("../serializers/eventSerializer");
 
 const mapVenueMapToEvent = (eventDoc) => {
   if (!eventDoc) return null;
@@ -101,8 +102,8 @@ const autoHealEvents = async (eventsArr) => {
       if (event.booths && event.booths.length > 0) {
         event.booths.forEach((booth, index) => {
           const idStr = (booth._id || "").toString();
-          const resObj = eventReservations.find(r => 
-            r.type === "booth" && 
+          const resObj = eventReservations.find(r =>
+            r.type === "booth" &&
             (r.boothId?.toString() === idStr || r.boothCode === booth.code || r.boothCode === booth.label)
           );
           const isReserved = !!resObj;
@@ -142,8 +143,8 @@ const autoHealEvents = async (eventsArr) => {
           const idStr = (item._id || item.id || "").toString();
 
           if (type === "booth") {
-            const resObj = eventReservations.find(r => 
-              r.type === "booth" && 
+            const resObj = eventReservations.find(r =>
+              r.type === "booth" &&
               (r.boothId?.toString() === idStr || r.boothCode === item.code || r.boothCode === item.label)
             );
             const isReserved = !!resObj;
@@ -177,8 +178,8 @@ const autoHealEvents = async (eventsArr) => {
               }
             }
           } else if (type === "seat") {
-            const resObj = eventReservations.find(r => 
-              r.type === "seat" && 
+            const resObj = eventReservations.find(r =>
+              r.type === "seat" &&
               (r.seatIds?.map(id => id.toString()).includes(idStr) || r.seatLabels?.includes(item.label) || r.seatLabels?.includes(item.code))
             );
             const isReserved = !!resObj;
@@ -258,6 +259,26 @@ const autoHealEvents = async (eventsArr) => {
   return isArray ? events : events[0];
 };
 
+const buildCounts = (statusCountsAggr, role) => {
+  const counts = { pending: 0, approved: 0, rejected: 0, cancelled: 0, completed: 0, all: 0 };
+  let total = 0;
+  statusCountsAggr.forEach(r => {
+    if (counts.hasOwnProperty(r._id)) counts[r._id] = r.count;
+    total += r.count;
+  });
+  counts.all = total;
+
+  const isStaff = ['admin', 'superadmin', 'promoter'].includes(role);
+  if (isStaff) return counts;
+
+  // Guests/customers/sponsors only get visibility into what they're allowed to see
+  return {
+    // approved: counts.approved,
+    // completed: counts.completed,
+    all: counts.approved + counts.completed,
+  };
+};
+
 
 const getEvents = async (req, res) => {
   try {
@@ -307,16 +328,9 @@ const getEvents = async (req, res) => {
       { $match: baseCountFilter },
       { $group: { _id: "$status", count: { $sum: 1 } } }
     ]);
-    
-    let totalEventsCount = 0;
-    const counts = { pending: 0, approved: 0, rejected: 0, cancelled: 0, completed: 0, all: 0 };
-    statusCountsAggr.forEach(r => {
-      if (counts.hasOwnProperty(r._id)) {
-        counts[r._id] = r.count;
-      }
-      totalEventsCount += r.count;
-    });
-    counts.all = totalEventsCount;
+
+    const role = (user?.role || '').toLowerCase();
+    const counts = buildCounts(statusCountsAggr, role);
 
     const [eventsData, total] = await Promise.all([
       Event.find(filter)
@@ -349,12 +363,12 @@ const getEvents = async (req, res) => {
           const endDateTime = new Date(event.endDate);
           endDateTime.setHours(hours, minutes, 0, 0);
           if (endDateTime < now) {
-             event.status = "completed";
-             Event.updateOne({ _id: event._id }, { status: "completed" }).exec().catch(()=>{});
+            event.status = "completed";
+            Event.updateOne({ _id: event._id }, { status: "completed" }).exec().catch(() => { });
           }
         } else if (event.endDate && new Date(event.endDate) < now) {
           event.status = "completed";
-          Event.updateOne({ _id: event._id }, { status: "completed" }).exec().catch(()=>{});
+          Event.updateOne({ _id: event._id }, { status: "completed" }).exec().catch(() => { });
         }
       }
     }
@@ -362,15 +376,11 @@ const getEvents = async (req, res) => {
     let events = eventsData.map(event => mapVenueMapToEvent(event));
     events = await autoHealEvents(events);
 
+    const serialized = events.map(e => serializeEvent(e, req.user));
     return res.status(200).json({
-      data: events,
+      data: serialized,
       counts,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     });
   } catch (error) {
     return res.status(400).json({ error: error.message });
@@ -463,7 +473,7 @@ const getEvent = async (req, res) => {
     const mappedEvent = mapVenueMapToEvent(event);
     const healedEvent = await autoHealEvents(mappedEvent);
 
-    return res.status(200).json(healedEvent);
+    return res.status(200).json(serializeEvent(healedEvent, req.user));
   } catch (error) {
     console.error("Error fetching event details:", error);
     return res.status(400).json({ error: error.message });
@@ -475,7 +485,7 @@ const uploadImageToR2 = async (file) => {
     file.buffer,
     file.mimetype
   );
-  
+
   if (!process.env.R2_BUCKET_NAME) {
     const filename = `${uuidv4()}${ext}`;
     const uploadDir = path.join(__dirname, '..', 'uploads');
@@ -515,11 +525,11 @@ const deleteImageFromR2 = async (imageUrl) => {
     }
     return;
   }
-  
+
   try {
     const key = imageUrl.replace(`${process.env.CDN_BASE_URL}/`, "");
     if (!key.startsWith("uploads/")) return;
-    
+
     if (process.env.R2_BUCKET_NAME) {
       await s3Client.send(new DeleteObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME,
@@ -536,7 +546,7 @@ const createEvent = async (req, res) => {
 
   console.log('🔍 req.file:', req.file ? `${req.file.originalname} | buffer: ${!!req.file.buffer} | size: ${req.file.size}` : 'NO FILE');
   try {
-    let {title, description, category, venue, startDate, endDate, startTime, endTime, priceLevels = [], seatMap = null, booths = [], isFeatured = false, eventType,} = req.body;
+    let { title, description, category, venue, startDate, endDate, startTime, endTime, priceLevels = [], seatMap = null, booths = [], isFeatured = false, eventType, } = req.body;
 
     if (typeof venue === "string") venue = JSON.parse(venue);
 
@@ -546,7 +556,7 @@ const createEvent = async (req, res) => {
 
     if (typeof seatMap === "string") seatMap = JSON.parse(seatMap);
 
-   const image = req.file ? await uploadImageToR2(req.file) : null;
+    const image = req.file ? await uploadImageToR2(req.file) : null;
 
     const requiredFields = [
       "title",
@@ -904,7 +914,7 @@ const deleteEvent = async (req, res) => {
   // 3. Cascade delete associated records
   try {
     // Delete event image
- await deleteImageFromR2(event.image);
+    await deleteImageFromR2(event.image);
 
     // Delete all reservations for this event
     await Reservation.deleteMany({ event: id });
@@ -917,9 +927,9 @@ const deleteEvent = async (req, res) => {
     if (event.venueMap) {
       const venueMap = await VenueMap.findById(event.venueMap);
       if (venueMap) {
-       if (venueMap.backgroundImage) {
-  await deleteImageFromR2(venueMap.backgroundImage);
-}
+        if (venueMap.backgroundImage) {
+          await deleteImageFromR2(venueMap.backgroundImage);
+        }
         await VenueMap.findByIdAndDelete(event.venueMap);
       }
     }
@@ -1049,14 +1059,14 @@ const updateEvent = async (req, res) => {
       await deleteImageFromR2(existingEvent.image); // clean up old R2 image
     } else if (req.body.image === "" || req.body.image === null) {
       finalImage = null;
-  await deleteImageFromR2(existingEvent.image);
-}
-const finalVenue = venue || existingEvent.venue;
-let finalPriceLevels = Array.isArray(priceLevels)
-  ? priceLevels
-  : existingEvent.priceLevels || [];
-let finalSeatMap = seatMap !== undefined ? seatMap : existingEvent.seatMap;
-let finalBooths =
+      await deleteImageFromR2(existingEvent.image);
+    }
+    const finalVenue = venue || existingEvent.venue;
+    let finalPriceLevels = Array.isArray(priceLevels)
+      ? priceLevels
+      : existingEvent.priceLevels || [];
+    let finalSeatMap = seatMap !== undefined ? seatMap : existingEvent.seatMap;
+    let finalBooths =
       booths !== undefined ? booths : existingEvent.booths || [];
 
     // Map to track input IDs and names to final ObjectIds
@@ -1264,8 +1274,8 @@ let finalBooths =
     if (layoutData !== undefined || finalSeatMap !== undefined) {
       await VenueMap.findOneAndUpdate(
         { eventId: id },
-        { 
-          $set: { 
+        {
+          $set: {
             ...(layoutData !== undefined && {
               items: layoutData.items || [],
               canvasWidth: layoutData.canvasWidth || 1400,
@@ -1278,12 +1288,12 @@ let finalBooths =
             ...(finalSeatMap !== undefined && {
               seatMap: (finalEventType === "Seating Arrangement" || finalEventType === "Reservation") ? finalSeatMap : null
             })
-          } 
+          }
         },
         { upsert: true }
       );
     }
-    
+
     const updatedEvent = await Event.findByIdAndUpdate(
       id,
       { $set: updatedData },
@@ -1534,12 +1544,12 @@ const buySeats = async (req, res) => {
 
   try {
     const event = await Event.findById(id).populate('venueMap');
-if (!event) return res.status(404).json({ error: "No such event" });
+    if (!event) return res.status(404).json({ error: "No such event" });
 
-// Map venueMap → layoutData so the rest of buySeats can find layout items
-const mappedEvent = mapVenueMapToEvent(event);
-// Re-assign so the rest of the function uses the mapped version
-Object.assign(event, mappedEvent);
+    // Map venueMap → layoutData so the rest of buySeats can find layout items
+    const mappedEvent = mapVenueMapToEvent(event);
+    // Re-assign so the rest of the function uses the mapped version
+    Object.assign(event, mappedEvent);
 
     const buyerName = req.user.companyName || `${req.user.firstName} ${req.user.lastName}`;
     const buyerEmail = req.user.email || "";

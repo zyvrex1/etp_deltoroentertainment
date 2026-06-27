@@ -1,11 +1,12 @@
 const mongoose = require("mongoose");
 const Announcement = require("../models/announcementModel");
+const { serializeAnnouncement } = require("../serializers/announcementSerializer")
 
 // GET all announcements
 const getAnnouncements = async (req, res) => {
   try {
     const announcements = await Announcement.find().sort({ date: -1 });
-    res.status(200).json(announcements);
+    res.status(200).json(announcements.map(serializeAnnouncement));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

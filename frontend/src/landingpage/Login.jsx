@@ -148,19 +148,20 @@ const Login = ({ role, onBack }) => {
         }
     }, [error, isLockedOut]);
 
-    useEffect(() => {
-        if (user && justLoggedIn) {
-            const closeModalEvent = new CustomEvent("closeLoginModal");
-            window.dispatchEvent(closeModalEvent);
+useEffect(() => {
+    if (user && user.role && justLoggedIn) {
+        const closeModalEvent = new CustomEvent("closeLoginModal");
+        window.dispatchEvent(closeModalEvent);
 
-            showSuccessAlert("Login Successful", `Welcome ${user.firstName || "User"}`);
+        showSuccessAlert("Login Successful", `Welcome ${user.firstName || "User"}`);
 
-            if (user.role === "admin")         navigate("/admin");
-            else if (user.role === "promoter") navigate("/promoter");
-            else if (user.role === "customer") navigate("/customer");
-            else if (user.role === "sponsor")  navigate("/sponsor");
-        }
-    }, [user, justLoggedIn, navigate]);
+        if (user.role === "admin")         navigate("/admin");
+        else if (user.role === "promoter") navigate("/promoter");
+        else if (user.role === "customer") navigate("/customer");
+        else if (user.role === "sponsor")  navigate("/sponsor");
+        else showErrorAlert("Login Failed", `This account is authorized for ${user.role} access only.`);
+    }
+}, [user, user?.role, justLoggedIn, navigate]);
 
     if (!roleData) return null;
 

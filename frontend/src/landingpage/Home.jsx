@@ -148,8 +148,7 @@ const Home = () => {
             id: policy._id,
             title: policy.title,
             content: policy.content,
-            key: policy.policyKey,
-            date: new Date(policy.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+            date: new Date(policy.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
             icon: "mdi:file-document-outline"
           }));
           setPolicies(mappedPolicies);
@@ -449,48 +448,47 @@ const Home = () => {
                 style={{ position: 'relative' }}
               >
                 {featuredEvents.map((evt, idx) => {
-                    const count = featuredEvents.length;
-                    let offset = idx - carouselIndex;
-                    const half = Math.floor(count / 2);
-                    
-                    if (offset > half) offset -= count;
-                    if (offset < -half) offset += count;
-                    
-                    const isCenter = offset === 0;
-                    const distance = Math.abs(offset);
-                    const opacity = Math.max(0.3, 1 - distance * 0.3);
-                    const scale = Math.max(0.8, 1 - distance * 0.1);
+                  const count = featuredEvents.length;
+                  let offset = idx - carouselIndex;
+                  const half = Math.floor(count / 2);
 
-                    return (
-                      <div
-                        key={evt.id}
-                        className={`carousel-item ${isCenter ? 'active' : ''}`}
-                        style={{
-                          opacity,
-                          transform: `scale(${scale}) translateX(${offset * (windowWidth < 480 ? 240 : windowWidth < 768 ? 260 : windowWidth < 1024 ? 280 : 340)}px)`,
-                          zIndex: 10 - distance,
-                          position: 'absolute',
-                          left: windowWidth < 480 ? '-110px' : windowWidth < 768 ? '-130px' : '-170px'
-                        }}
-                      >
-                        <div className="nft-v3-card">
-                          <div className="nft-v3-image-area">
-                            <img src={evt.image} alt={`Featured: ${evt.title}`} loading="lazy" />
+                  if (offset > half) offset -= count;
+                  if (offset < -half) offset += count;
+
+                  const isCenter = offset === 0;
+                  const distance = Math.abs(offset);
+                  const opacity = Math.max(0.3, 1 - distance * 0.3);
+                  const scale = Math.max(0.8, 1 - distance * 0.1);
+
+                  return (
+                    <div
+                      key={evt.id}
+                      className={`carousel-item ${isCenter ? 'active' : ''}`}
+                      style={{
+                        opacity,
+                        transform: `scale(${scale}) translateX(${offset * (windowWidth < 480 ? 240 : windowWidth < 768 ? 260 : windowWidth < 1024 ? 280 : 340)}px)`,
+                        zIndex: 10 - distance,
+                        position: 'absolute',
+                        left: windowWidth < 480 ? '-110px' : windowWidth < 768 ? '-130px' : '-170px'
+                      }}
+                    >
+                      <div className="nft-v3-card">
+                        <div className="nft-v3-image-area">
+                          <img src={evt.image} alt={`Featured: ${evt.title}`} loading="lazy" />
+                        </div>
+                        <div className="nft-v3-content">
+                          <div className="nft-v3-info">
+                            <h4>{evt.title}</h4>
+
                           </div>
-                          <div className="nft-v3-content">
-                            <div className="nft-v3-info">
-                              <h4>{evt.title}</h4>
-
-                            </div>
-                            <div className="nft-v3-stats">
-                              <span className="price">{evt.sold.toLocaleString()} Sold</span>
-                              <span className="likes"><Icon icon="mdi:heart" /> {Math.floor(evt.sold / 10)}k</span>
-                            </div>
+                          <div className="nft-v3-stats">
+                            <span className="price">{evt.sold.toLocaleString()} Sold</span>
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Navigation Controls */}

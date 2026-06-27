@@ -592,5 +592,8 @@ eventSchema.index({ status: 1 });
 eventSchema.index({ createdBy: 1 });
 eventSchema.index({ "venue._id": 1 });
 eventSchema.index({ category: 1 });
-
+eventSchema.index({ assignedPromoters: 1 });
+eventSchema.index({ createdAt: -1 });
+// Matches the most common getEvents access pattern: filter by status, sorted newest-first
+eventSchema.index({ status: 1, createdAt: -1 });
 module.exports = mongoose.model("Event", eventSchema);

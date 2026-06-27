@@ -11,12 +11,14 @@ import SponsorViewNotif from './SponsorViewNotif';
 import { getNotificationPath } from '../utils/notificationPaths';
 import { filterNotificationsForRole } from '../utils/notificationFilters';
 import './SponsorHeader.css';
+import { useLogout } from '../hooks/useLogout';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function SponsorHeader() {
     const { user: authUser } = useAuthContext();
-    const { cartItems } = useSponsorCartContext();
-    const { notifications, dispatch } = useNotificationsContext();
+const { cartItems } = useSponsorCartContext();
+const { notifications, dispatch } = useNotificationsContext();
+const { logout } = useLogout();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [showAllNotifs, setShowAllNotifs] = useState(false);
@@ -36,14 +38,14 @@ export default function SponsorHeader() {
         return (firstInitial + lastInitial).toUpperCase();
     };
 
-    const handleSignOut = async () => {
-        setIsDropdownOpen(false);
-        const result = await showConfirmAlert("Sign Out?", "Are you sure you want to sign out?", "Yes, Sign Out");
-        if (result.isConfirmed) {
-            localStorage.removeItem('user');
-            window.location.href = "/?logout=success";
-        }
-    };
+  const handleSignOut = async () => {
+    setIsDropdownOpen(false);
+    const result = await showConfirmAlert("Sign Out?", "Are you sure you want to sign out?", "Yes, Sign Out");
+    if (result.isConfirmed) {
+        await logout();
+        window.location.href = "/?logout=success";
+    }
+};
 
     const toggleDropdown = () => {
         setIsDropdownOpen(!isDropdownOpen);
@@ -154,7 +156,7 @@ export default function SponsorHeader() {
         };
     }, []);
 
-    if (!authUser) return null;
+ if (!authUser) return null;
 
     return (
         <header className="sponsor-header">

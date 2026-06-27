@@ -31,9 +31,9 @@ const paginate = require('../middleware/paginate')
 
 router.get('/', optionalAuth, paginate, getEvents)
 router.get('/:id', optionalAuth, getEvent)
-router.get("/:eventId/price-levels", getPriceLevels);
 
 router.use(requireAuth) // Everything below this requires a login
+router.get("/:eventId/price-levels", getPriceLevels);
 
 router.post('/', requireRole('promoter', 'admin', 'superadmin'), upload.single('image'), createEvent)
 router.delete('/:id', requireRole('promoter', 'admin', 'superadmin'), deleteEvent)

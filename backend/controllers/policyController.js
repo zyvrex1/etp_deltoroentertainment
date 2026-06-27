@@ -2,12 +2,13 @@ const mongoose = require("mongoose");
 const Policy = require("../models/policyModel");
 const notificationController = require('./notificationController');
 const socket = require('../socket');
+const { serializePolicy } = require("../serializers/policySerializer");
 
 // GET all policies
 const getPolicies = async (req, res) => {
   try {
     const policies = await Policy.find();
-    res.status(200).json(policies);
+    res.status(200).json(policies.map(serializePolicy));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

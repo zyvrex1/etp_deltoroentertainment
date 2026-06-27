@@ -43,10 +43,10 @@ export default function CustomerHeader() {
     const handleSignOut = async () => {
         setIsDropdownOpen(false);
         const result = await showConfirmAlert("Sign Out?", "Are you sure you want to sign out?", "Yes, Sign Out");
-        if (result.isConfirmed) {
-            logout();
-            window.location.href = "/?logout=success";
-        }
+       if (result.isConfirmed) {
+    await logout();
+    window.location.href = "/?logout=success";
+}
     };
 
     const toggleDropdown = () => {
