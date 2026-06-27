@@ -560,6 +560,19 @@ const forgotPassword = async (req, res) => {
       return res.status(200).json({ message: SAFE_MSG })
     }
  
+    // Rate limit OTP/Reset link requests to once per 60 seconds
+    if (user.passwordResetExpires) {
+      const creationTime = new Date(user.passwordResetExpires).getTime() - 15 * 60 * 1000
+      const timePassed = Date.now() - creationTime
+      const cooldownMs = 60 * 1000
+      if (timePassed < cooldownMs) {
+        const secondsLeft = Math.ceil((cooldownMs - timePassed) / 1000)
+        return res.status(429).json({
+          error: `Please wait ${secondsLeft} second${secondsLeft !== 1 ? 's' : ''} before requesting another reset link.`
+        })
+      }
+    }
+
     // 1. Generate a high-entropy raw token (256 bits)
     const rawToken  = crypto.randomBytes(32).toString('hex')        // ← 64-char hex, 256 bits
     const tokenHash = hashResetToken(rawToken)                      // ← only the hash is stored
