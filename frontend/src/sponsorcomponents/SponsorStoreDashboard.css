@@ -93,10 +93,7 @@
     animation: fadeIn 0.3s ease-in-out;
   }
 
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  
 
   @media (max-width: 768px) {
     .ssd-tabs-container {
@@ -111,3 +108,9 @@
     padding: 16px;
   }
 }
+
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }

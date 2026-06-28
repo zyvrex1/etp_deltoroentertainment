@@ -224,17 +224,7 @@
 }
 
 /* Animation */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.95);
-    }
 
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
 
 /* Responsive Design */
 @media (max-width: 600px) {
@@ -285,5 +275,18 @@
 
     .tx-modal-footer {
         padding: 16px;
+    }
+}
+
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
     }
 }

@@ -26,16 +26,7 @@
   animation: slideInViewEvent 0.3s ease-out;
 }
 
-@keyframes slideInViewEvent {
-  from {
-    transform: translateY(30px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
+
 
 .promoter-view-event-header {
   padding: 20px 24px;
@@ -278,4 +269,16 @@ overflow: visible !important;
 }
 }
 
+}
+
+
+@keyframes slideInViewEvent {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

@@ -91,17 +91,7 @@
     }
 }
 
-@keyframes slideIn {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 
 .sponsor-documents-body {
@@ -300,4 +290,16 @@ background-color: var(--color-red-primary);        border-radius: 8px;
 
 .sponsor-documents-modal .sd-section-content li {
     margin-bottom: 8px !important;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }

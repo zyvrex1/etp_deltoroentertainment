@@ -904,29 +904,9 @@ html {
     animation: skeleton-loading 2s infinite;
 }
 
-@keyframes skeleton-loading {
-    0% {
-        background-position: 200% 0;
-    }
 
-    100% {
-        background-position: -200% 0;
-    }
-}
 
-@keyframes pulse {
-    0% {
-        opacity: 0.5;
-    }
 
-    50% {
-        opacity: 0.2;
-    }
-
-    100% {
-        opacity: 0.5;
-    }
-}
 
 
 
@@ -1246,45 +1226,11 @@ html {
 
 
 /* Animations */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
-@keyframes float {
-    0% {
-        transform: translateY(0px);
-    }
 
-    50% {
-        transform: translateY(-10px);
-    }
 
-    100% {
-        transform: translateY(0px);
-    }
-}
 
-@keyframes glow {
-    0% {
-        filter: drop-shadow(0 0 5px rgba(198, 40, 40, 0.3));
-    }
-
-    50% {
-        filter: drop-shadow(0 0 20px rgba(198, 40, 40, 0.6));
-    }
-
-    100% {
-        filter: drop-shadow(0 0 5px rgba(198, 40, 40, 0.3));
-    }
-}
 
 .reveal {
     opacity: 0;
@@ -1379,15 +1325,7 @@ html {
     animation-play-state: paused;
 }
 
-@keyframes marquee-train {
-    from {
-        transform: translateX(0);
-    }
 
-    to {
-        transform: translateX(-50%);
-    }
-}
 
 .announcement-marquee-item {
     flex: 0 0 auto;
@@ -2503,5 +2441,79 @@ a:focus-visible {
     .reveal {
         transition-duration: 0.4s;
         transform: translateY(20px);
+    }
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 0.2;
+    }
+
+    100% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+@keyframes glow {
+    0% {
+        filter: drop-shadow(0 0 5px rgba(198, 40, 40, 0.3));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 20px rgba(198, 40, 40, 0.6));
+    }
+
+    100% {
+        filter: drop-shadow(0 0 5px rgba(198, 40, 40, 0.3));
+    }
+}
+
+@keyframes marquee-train {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-50%);
     }
 }

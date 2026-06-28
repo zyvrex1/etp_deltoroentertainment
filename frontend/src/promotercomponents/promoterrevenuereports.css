@@ -522,10 +522,7 @@
     animation: shimmer 2s infinite linear;
 }
 
-@keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
+
 
 .skeleton-text {
     height: 12px;
@@ -568,4 +565,9 @@
     display: flex;
     align-items: center;
     background: white;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }

@@ -26,10 +26,7 @@
 }
 
 
-@keyframes modalScaleUp {
-    from { transform: scale(0.9); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
+
 
 .coqr-modal-header {
     display: flex;
@@ -246,3 +243,9 @@
 
 
 
+
+
+@keyframes modalScaleUp {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}

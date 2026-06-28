@@ -54,17 +54,7 @@
     transition: color 0.2s;
 }
 
-@keyframes sapmFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
 .sapm-title {
     margin-top: 0;
@@ -311,5 +301,17 @@ input[type="date"] {
     .sapm-cancel-btn,
     .sapm-submit-btn {
         width: 100%;
+    }
+}
+
+@keyframes sapmFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

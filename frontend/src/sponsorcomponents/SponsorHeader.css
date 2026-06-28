@@ -310,10 +310,7 @@
         animation: slideUp 0.3s ease-out forwards;
     }
 
-    @keyframes slideUp {
-        from { transform: translateY(100%); }
-        to { transform: translateY(0); }
-    }
+    
 
     .mobile-profile-header {
         display: flex;
@@ -434,3 +431,8 @@
         right: -10px;
     }
 }
+
+@keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }

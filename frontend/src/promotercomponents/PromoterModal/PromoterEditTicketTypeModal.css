@@ -68,17 +68,7 @@
     }
 }
 
-@keyframes slideInEditTicket {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 
 .promoter-edit-ticket-modal-body {
@@ -172,5 +162,17 @@
     .promoter-edit-ticket-form-row {
         grid-template-columns: 1fr;
         gap: 16px;
+    }
+}
+
+@keyframes slideInEditTicket {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

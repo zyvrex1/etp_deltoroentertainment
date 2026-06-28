@@ -8,14 +8,7 @@
     animation: smp-spin 1s linear infinite;
   }
 
-  @keyframes smp-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  
 
 
   .spa-header-section {
@@ -612,3 +605,12 @@
     }
   }
 }
+
+@keyframes smp-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }

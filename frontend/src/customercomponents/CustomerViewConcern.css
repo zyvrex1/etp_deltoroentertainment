@@ -10,10 +10,7 @@
         animation: cvcFadeIn 0.3s ease-out;
     }
 
-    @keyframes cvcFadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    
 
     /* BREADCRUMB */
     .cvc-breadcrumb {
@@ -567,3 +564,8 @@
 .cvc-att-label{
     color: var(--color-black-secondary);
 }
+
+@keyframes cvcFadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }

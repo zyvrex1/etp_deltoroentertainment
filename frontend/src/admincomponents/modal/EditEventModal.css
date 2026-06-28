@@ -25,17 +25,7 @@
     }
 }
 
-@keyframes slideIn {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 .edit-event-modal-header {
     padding: 24px;
@@ -312,5 +302,17 @@
     .extra-actions-row {
         flex-direction: column;
         gap: 12px;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

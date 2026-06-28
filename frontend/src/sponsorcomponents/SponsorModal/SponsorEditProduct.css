@@ -3,10 +3,7 @@
   margin-right: 8px;
 }
 
-@keyframes sap-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+
 
 .sep-modal-overlay {
   position: fixed;
@@ -507,4 +504,10 @@
   .sep-modal-header h2 {
     font-size: 18px;
   }
+}
+
+
+@keyframes sap-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

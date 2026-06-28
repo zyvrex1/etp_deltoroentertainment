@@ -31,17 +31,7 @@
 
 }
 
-@keyframes slideIn {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 .general-modal-header {
     display: flex;
@@ -280,5 +270,17 @@
         z-index: 10;
         border-top: 1px solid var(--color-border);
         box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

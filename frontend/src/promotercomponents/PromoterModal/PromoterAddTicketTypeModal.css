@@ -68,17 +68,7 @@
     }
 }
 
-@keyframes slideInAddTicket {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 .promoter-add-ticket-modal-body {
     padding: 24px;
@@ -172,5 +162,17 @@
     .promoter-add-ticket-form-row {
         grid-template-columns: 1fr;
         gap: 16px;
+    }
+}
+
+@keyframes slideInAddTicket {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

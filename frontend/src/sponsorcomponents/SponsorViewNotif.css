@@ -246,10 +246,7 @@
     }
 }
 
-@keyframes slideInRight {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
-}
+
 
 /* Responsive */
 @media (max-width: 1024px) {
@@ -291,4 +288,10 @@
             font-size: 14px !important;
         }
     }
+}
+
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
 }

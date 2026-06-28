@@ -58,17 +58,7 @@
     }
 }
 
-@keyframes slideInUploadMap {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 
 
@@ -250,5 +240,17 @@
     .promoter-upload-map-body,
     .promoter-upload-map-footer {
         padding: 16px;
+    }
+}
+
+@keyframes slideInUploadMap {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

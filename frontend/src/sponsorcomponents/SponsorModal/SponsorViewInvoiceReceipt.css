@@ -29,17 +29,7 @@
     overflow: hidden;
 }
 
-@keyframes slideInInvoice {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 .sir-modal-header {
     display: flex;
@@ -386,5 +376,17 @@
     .sir-download-btn {
         width: 100%;
         justify-content: center;
+    }
+}
+
+@keyframes slideInInvoice {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

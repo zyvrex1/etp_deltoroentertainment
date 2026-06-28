@@ -65,17 +65,7 @@
     }
 }
 
-@keyframes svfhSlideIn {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 .svfh-modal-body {
     flex: 1;
@@ -379,5 +369,17 @@
         border-radius: 0;
         max-height: 100vh;
         height: 100%;
+    }
+}
+
+@keyframes svfhSlideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

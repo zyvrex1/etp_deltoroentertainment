@@ -30,17 +30,7 @@
     }
 }
 
-@keyframes slideIn {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 .general-modal-header {
     display: flex;
@@ -287,5 +277,17 @@ background-color: var(--color-bg-light);
     .promoter-avatar {
         width: 40px;
         height: 40px;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

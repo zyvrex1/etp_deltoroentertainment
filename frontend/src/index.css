@@ -789,10 +789,7 @@ li {
   border-radius: 4px;
 }
 
-@keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
+
 
 .skeleton-text {
   height: 14px;
@@ -914,4 +911,10 @@ li {
 
 .react-international-phone-country-selector-button__button-content {
   background-color: transparent !important;
+}
+
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

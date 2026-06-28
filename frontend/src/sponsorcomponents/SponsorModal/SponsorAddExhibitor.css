@@ -54,17 +54,7 @@
     color: var(--color-black-primary);
 }
 
-@keyframes slideIn {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 .add-exhibitor-modal-body {
     display: flex;
@@ -246,5 +236,17 @@
         width: 100%;
         margin: 0 16px;
         padding: 20px 16px;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

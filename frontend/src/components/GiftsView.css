@@ -286,10 +286,7 @@
 }
 
 /* ── Skeleton Loading ───────────────────────────────────────── */
-@keyframes skeleton-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
+
 
 .skeleton-box {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -397,9 +394,7 @@
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+
 
 @media (max-width: 1200px) {
   .my-gifts-grid {
@@ -442,4 +437,14 @@
   .my-gifts-grid {
     grid-template-columns: 1fr;
   }
+}
+
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

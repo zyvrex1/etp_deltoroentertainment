@@ -2,10 +2,7 @@
   animation: csp-spin 1s linear infinite;
 }
 
-@keyframes csp-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+
 
 .csp-container {
   padding: 15px 30px;
@@ -508,10 +505,7 @@
   }
 }
 
-@keyframes slideUp {
-  from { transform: translate(-50%, 100%); opacity: 0; }
-  to { transform: translate(-50%, 0); opacity: 1; }
-}
+
 
 /* Modal Overlay for Cart Details */
 .cart-modal-overlay {
@@ -742,4 +736,15 @@
     width: 28px;
     height: 28px;
   }
+}
+
+
+@keyframes csp-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideUp {
+  from { transform: translate(-50%, 100%); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
 }

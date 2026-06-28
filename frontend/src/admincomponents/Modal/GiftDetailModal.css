@@ -19,16 +19,7 @@
   box-sizing: border-box;
 }
 
-@keyframes detailModalSlideIn {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
+
 
 /* ── Header ────────────────────────────────────────────── */
 .gift-detail-modal-header {
@@ -325,5 +316,17 @@
       text-align: center;
       justify-content: center;
     }
+  }
+}
+
+
+@keyframes detailModalSlideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }

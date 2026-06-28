@@ -19,16 +19,7 @@
   box-sizing: border-box;
 }
 
-@keyframes assignModalSlideIn {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
+
 
 /* ── Header ────────────────────────────────────────────── */
 .assign-gift-modal-header {
@@ -295,3 +286,15 @@ font-weight: 700;
   }
 }
 
+
+
+@keyframes assignModalSlideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

@@ -1,3 +1,5 @@
+
+
 .svc-container {
     padding: 32px 40px;
     max-width: 1440px;
@@ -8,11 +10,6 @@
 
     &.fade-in {
         animation: svcFadeIn 0.3s ease-out;
-    }
-
-    @keyframes svcFadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
     }
 
     /* BREADCRUMB */
@@ -578,4 +575,9 @@
 
 .svc-att-label{
     color: var(--color-black-secondary);
+}
+
+@keyframes svcFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

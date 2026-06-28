@@ -511,14 +511,7 @@
 }
 
 /* Skeleton Loading Screen */
-@keyframes skeleton-shimmer {
-    0% {
-        background-position: -200% 0;
-    }
-    100% {
-        background-position: 200% 0;
-    }
-}
+
 
 .skeleton-box {
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -583,4 +576,13 @@
 .order-skeleton-total-val {
     width: 100px;
     height: 24px;
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
 }

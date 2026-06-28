@@ -486,6 +486,8 @@
     border-radius: 8px;
 }
 
+
+
 @keyframes sbe-skeleton-loading {
     0% {
         background-position: 200% 0;

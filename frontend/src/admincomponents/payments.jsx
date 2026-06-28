@@ -854,16 +854,16 @@ const Payments = () => {
 
       const approvedRes = reservations.filter(r => idsToUpdate.map(String).includes(String(r._id)));
       const payloads = await generateTicketsForReservations(approvedRes);
-      
+
       if (payloads.length > 0) {
-         try {
-             await api.post(`/reservations/${id}/send-tickets`, { tickets: payloads });
-         } catch (emailErr) {
-             console.error("Error sending ticket email:", emailErr);
-             await showErrorAlert('Email Error', 'Reservation approved, but failed to send the ticket email.');
-         }
+        try {
+          await api.post(`/reservations/${id}/send-tickets`, { tickets: payloads });
+        } catch (emailErr) {
+          console.error("Error sending ticket email:", emailErr);
+          await showErrorAlert('Email Error', 'Reservation approved, but failed to send the ticket email.');
+        }
       } else {
-         console.warn("No payloads generated for tickets. Layout might be missing.");
+        console.warn("No payloads generated for tickets. Layout might be missing.");
       }
 
       setReservations(prev =>
@@ -929,7 +929,7 @@ const Payments = () => {
     <div className="payments-page">
       <div className="payments-header">
         <div>
-          <h1>Payments & Payouts</h1>
+          <h1>Transactions</h1>
           <p className="large-body-text">Manage promoter payouts and platform payment settings.</p>
         </div>
       </div>

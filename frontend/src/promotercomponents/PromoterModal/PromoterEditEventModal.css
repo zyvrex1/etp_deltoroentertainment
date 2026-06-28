@@ -71,17 +71,7 @@
     }
 }
 
-@keyframes slideInEditEvent {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 .promoter-edit-event-modal-body {
     padding: 24px;
@@ -354,5 +344,17 @@
 
     .promoter-edit-event-modal-footer {
         padding: 16px;
+    }
+}
+
+@keyframes slideInEditEvent {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

@@ -27,17 +27,7 @@
     animation: slideIn 0.3s ease-out;
 }
 
-@keyframes slideIn {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 /* Header */
 .upload-map-modal-header {
@@ -239,5 +229,17 @@
     .upload-map-modal-body,
     .upload-map-modal-footer {
         padding: 16px;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

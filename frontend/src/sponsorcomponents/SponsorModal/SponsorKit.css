@@ -78,17 +78,7 @@
 }
 
 
-@keyframes slideIn {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
 
 
 .sponsor-kit-body {
@@ -709,5 +699,17 @@
     .sk-cta-contact {
         flex-direction: column;
         gap: 12px !important;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

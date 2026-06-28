@@ -280,15 +280,7 @@
     margin-bottom: 16px;
 }
 
-@keyframes sh-spin {
-    from {
-        transform: rotate(0deg);
-    }
 
-    to {
-        transform: rotate(360deg);
-    }
-}
 
 /* Event Cards */
 .sh-event-card-v2 {
@@ -523,15 +515,7 @@
     animation-play-state: paused;
 }
 
-@keyframes sh-marquee-scroll {
-    from {
-        transform: translateX(0);
-    }
 
-    to {
-        transform: translateX(calc(-50% - 12px));
-    }
-}
 
 .sh-announcement-marquee-item {
     flex-shrink: 0;
@@ -936,4 +920,24 @@
         font-size: 12px;
     }
 
+}
+
+@keyframes sh-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes sh-marquee-scroll {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(calc(-50% - 12px));
+    }
 }

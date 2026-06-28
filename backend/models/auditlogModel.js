@@ -4,7 +4,8 @@ const auditLogSchema = new mongoose.Schema({
   action: {
     type: String,
     required: true,
-    enum: ['LOGIN_SUCCESS', 'LOGIN_FAILED', 'USER_SIGNUP', 'USER_CREATED'],
+    // Added 'LOGOUT' to the allowed enum values
+    enum: ['LOGIN_SUCCESS', 'LOGIN_FAILED', 'USER_SIGNUP', 'USER_CREATED', 'LOGOUT'],
     index: true
   },
   userId: {
@@ -12,13 +13,20 @@ const auditLogSchema = new mongoose.Schema({
     ref: 'User',
     default: null
   },
-  email:     { type: String, required: true },
+  email: {
+    type: String,
+    // Modified to prevent crashes if email is completely missing on a forced/expired logout
+    required: function () {
+      return this.action !== 'LOGOUT';
+    },
+    default: 'unknown@eticketspro.com'
+  },
   firstName: { type: String, default: '' },
-  lastName:  { type: String, default: '' },
-  role:      { type: String, default: '' },
+  lastName: { type: String, default: '' },
+  role: { type: String, default: '' },
   ipAddress: { type: String, default: '' },
   userAgent: { type: String, default: '' },
-  details:   { type: String, default: '' },
+  details: { type: String, default: '' },
 }, {
   timestamps: true,
   shardKey: { email: "hashed" } // Uncomment when upgrading to M10+ dedicated cluster
