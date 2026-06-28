@@ -15,6 +15,9 @@ const EventSelection = ({ setSelectedEvent }) => {
   const [sortFilter, setSortFilter] = useState("Recently Added");
   const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
   const eventDropdownRef = useRef(null);
+  const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef(null);
 
   // Fetch events from API
   useEffect(() => {
@@ -53,6 +56,12 @@ const EventSelection = ({ setSelectedEvent }) => {
       ) {
         setIsEventDropdownOpen(false);
       }
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(event.target)
+      ) {
+        setIsCategoryDropdownOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -80,12 +89,14 @@ const EventSelection = ({ setSelectedEvent }) => {
     }
   };
 
-  // Filter events based on search
+  // Filter events based on search and category
   const filteredEvents = sortEvents(
-    events?.filter((event) =>
-      event.status === "approved" && // Ensure only approved events are shown
-      event.title?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    events?.filter((event) => {
+      const matchesStatus = event.status === "approved";
+      const matchesSearch = event.title?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = categoryFilter === "All Categories" || event.category === categoryFilter;
+      return matchesStatus && matchesSearch && matchesCategory;
+    })
   );
 
   return (
@@ -114,7 +125,39 @@ const EventSelection = ({ setSelectedEvent }) => {
             </div>
           </div>
 
-          <div className="bt-toolbar-right">
+          <div className="bt-toolbar-right" style={{ display: 'flex', gap: '10px' }}>
+            {/* Category Filter Dropdown */}
+            <div className="bt-filter-dropdown" ref={categoryDropdownRef}>
+              <button
+                className="bt-filter-dropdown-btn small-body-text"
+                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+              >
+                <span className="truncate-text">{categoryFilter}</span>
+                <Icon
+                  icon="mdi:chevron-down"
+                  className={`dropdown-icon ${isCategoryDropdownOpen ? "open" : ""}`}
+                />
+              </button>
+
+              {isCategoryDropdownOpen && (
+                <div className="bt-filter-dropdown-menu">
+                  {["All Categories", ...new Set(events?.filter(e => e.category).map(e => e.category) || [])].map((option) => (
+                    <button
+                      key={option}
+                      className={`bt-filter-dropdown-item small-body-text ${categoryFilter === option ? "active" : ""}`}
+                      onClick={() => {
+                        setCategoryFilter(option);
+                        setIsCategoryDropdownOpen(false);
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Sort Filter Dropdown */}
             <div className="bt-filter-dropdown" ref={eventDropdownRef}>
               <button
                 className="bt-filter-dropdown-btn small-body-text"
