@@ -127,6 +127,7 @@ const signupUser = async (req, res) => {
 
      return res.status(201).json({
       message:   'User created successfully',
+      _id:       user._id,
       email:     user.email,
       firstName: user.firstName,
       lastName:  user.lastName,
@@ -178,6 +179,7 @@ const loginUser = async (req, res) => {
     const accessToken = await issueTokens(user, res)
 
   return res.status(200).json({
+    _id:            user._id,
     firstName:      user.firstName,
     lastName:       user.lastName,
     email:          user.email,
@@ -396,6 +398,7 @@ const getProfile = async (req, res) => {
       .map(sanitizeCartItem)
 
     let profileData = {
+      _id:            user._id,
       firstName:      user.firstName,
       lastName:       user.lastName,
       email:          user.email,
@@ -494,6 +497,7 @@ const updateProfile = async (req, res) => {
      res.status(200).json({
       message: 'Profile updated successfully',
       user: {
+        _id:            user._id,
         firstName:      user.firstName,
         lastName:       user.lastName,
         email:          user.email,

@@ -106,12 +106,13 @@ const Login = ({ role, onBack }) => {
         // Prevent submit while actively locked out
         if (isLockedOut) return;
 
-        if (isForgotPassword) {
-            if (!email) {
-                showErrorAlert("Input Required", "Please enter your email to receive a password reset link.");
-                return;
-            }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            showErrorAlert("Invalid Email", "the email you put is not correct");
+            return;
+        }
 
+        if (isForgotPassword) {
             setIsResetLoading(true);
             try {
                 const response = await forgotPassword(email);
@@ -206,7 +207,7 @@ useEffect(() => {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            <form noValidate onSubmit={handleSubmit}>
                 <div className="auth-form-group">
                     <div className="auth-form-label-row">
                         <label className="auth-form-label">Email Address</label>

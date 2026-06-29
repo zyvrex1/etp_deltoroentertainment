@@ -74,7 +74,7 @@ const PromoterSidebar = ({ mobileExpanded, setMobileExpanded }) => {
 
           <NavLink to="/promoter/promoter-events" className="sidebar-item" onClick={handleLinkClick}>
             <MdEventAvailable className="icon" />
-            <span>Create Events</span>
+            <span>Manage My Events</span>
           </NavLink>
           <NavLink to="/promoter/promoter-eventmanagement" className="sidebar-item" onClick={handleLinkClick}>
             <MdEvent className="icon" />
@@ -82,7 +82,7 @@ const PromoterSidebar = ({ mobileExpanded, setMobileExpanded }) => {
           </NavLink>
 
           <NavLink to="/promoter/promoter-eventmonitoring" className="sidebar-item" onClick={handleLinkClick}>
-            <MdInsights className="icon" />
+            <MdPeople className="icon" />
             <span>Manage Attendees</span>
           </NavLink>
         </div>
