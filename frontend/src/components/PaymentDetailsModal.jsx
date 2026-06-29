@@ -58,8 +58,8 @@ const PaymentDetailsModal = ({ isOpen, onClose, paymentMethods, onSuccess, amoun
                                         <h5 className="pdm-method-type">{method.type}</h5>
                                         {method.type === 'Bank Account' || method.type === 'Visa' ? (
                                             <>
-                                                {method.accountHolder && <div className="pdm-method-detail"><strong>Name:</strong> {method.accountHolder || method.cardHolder}</div>}
-                                                {method.accountNumber && <div className="pdm-method-detail"><strong>Account Number:</strong> {method.accountNumber || method.cardNumber}</div>}
+                                                {(method.accountHolder || method.cardHolder) && <div className="pdm-method-detail"><strong>Name:</strong> {method.accountHolder || method.cardHolder}</div>}
+                                                {(method.accountNumber || method.cardNumber) && <div className="pdm-method-detail"><strong>{method.type === 'Visa' ? 'Card Number' : 'Account Number'}:</strong> {method.accountNumber || method.cardNumber}</div>}
                                                 {method.routingNumber && <div className="pdm-method-detail"><strong>Routing:</strong> {method.routingNumber}</div>}
                                             </>
                                         ) : method.type === 'PayPal' ? (

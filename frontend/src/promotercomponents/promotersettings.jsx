@@ -597,7 +597,7 @@ const PromoterSettings = () => {
                 payoutMethods.map((method) => (
                   <div key={method.id || method._id} className="ps-payout-item">
                     <div className="ps-payout-icon">
-                      <Icon icon={method.icon || "mdi:credit-card"} width="24" />
+                      <Icon icon={method.icon || (method.type === 'PayPal' ? 'logos:paypal' : method.type === 'Bank Account' ? 'mdi:bank' : method.type === 'GCash' ? 'logos:gcash' : 'mdi:credit-card')} width="24" />
                     </div>
                     <div className="ps-payout-info">
                       <div className="ps-payout-title-row">
@@ -634,21 +634,22 @@ const PromoterSettings = () => {
                             )}
                           </>
                         ) : (
-                          '•••• •••• ••••'
+                          method.type === 'Bank Account'
+                            ? <div><strong>Account No:</strong> ••••••{method.last4 || '••••'}</div>
+                            : (method.type === 'Visa' || method.type === 'Mastercard' || method.type === 'Credit Card')
+                              ? <div><strong>Card No:</strong> ••••••••••••{method.last4 || '••••'}</div>
+                              : method.type === 'PayPal'
+                                ? <div><strong>Email:</strong> {method.paypalEmail ? method.paypalEmail.replace(/(.{2})[^@]+(@.+)/, '$1••••$2') : '•••• •••• ••••'}</div>
+                                : '•••• •••• ••••'
                         )}
                       </div>
-                      {!visibleMethods.has(method.id || method._id) && method.expires && method.expires !== 'N/A' && (
-                        <span className="ps-payout-expires d-block mt-1">Expires: {method.expires}</span>
-                      )}
                     </div>
                     <div className="ps-payout-actions">
                       <button
-                        className="ps-set-default-btn p-0 border-0 bg-transparent"
+                        className={`ps-set-default-btn ${method.isDefault ? 'is-default' : ''}`}
                         onClick={() => handleSetDefaultMethod(method.id || method._id)}
                       >
-                        <span className={`smaller-body-text ${method.isDefault ? 'button-label ps-pill-default px-2 py-1' : 'ps-set-default-text'}`}>
-                          {method.isDefault ? "Default" : "Set as Default"}
-                        </span>
+                        {method.isDefault ? "Default" : "Set as Default"}
                       </button>
                       <button
                         className="ps-icon-btn"
@@ -679,26 +680,28 @@ const PromoterSettings = () => {
           </div>
 
           {/* TEAM MEMBERS CARD */}
-          <div className="ps-card">
-            <h4 className="ps-card-title">Team Members</h4>
-            <div className="ps-team-list">
-              {teamMembers.map((member) => (
-                <div key={member.id} className="ps-team-item">
-                  <div className="ps-team-item-left">
-                    <div className="ps-team-avatar">{member.initials}</div>
-                    <div className="ps-team-details">
-                      <h5 className="ps-team-name">{member.name}</h5>
-                      <span className="ps-team-email smaller-body-text">{member.email}</span>
+          {teamMembers.length > 0 && (
+            <div className="ps-card">
+              <h4 className="ps-card-title">Team Members</h4>
+              <div className="ps-team-list">
+                {teamMembers.map((member) => (
+                  <div key={member.id} className="ps-team-item">
+                    <div className="ps-team-item-left">
+                      <div className="ps-team-avatar">{member.initials}</div>
+                      <div className="ps-team-details">
+                        <h5 className="ps-team-name">{member.name}</h5>
+                        <span className="ps-team-email smaller-body-text">{member.email}</span>
+                      </div>
+                    </div>
+                    <div className="ps-team-item-right">
+                      <span className={`button-label ${member.status === 'Active' ? 'ps-pill-active' : 'ps-pill-offline'}`}>{member.status}</span>
+                      <span className="ps-team-event small-body-text">{member.event}</span>
                     </div>
                   </div>
-                  <div className="ps-team-item-right">
-                    <span className={`button-label ${member.status === 'Active' ? 'ps-pill-active' : 'ps-pill-offline'}`}>{member.status}</span>
-                    <span className="ps-team-event small-body-text">{member.event}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* NOTIFICATION PREFERENCES CARD */}
           <div className="ps-card mt-4">

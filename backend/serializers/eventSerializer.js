@@ -15,7 +15,23 @@ const serializeEvent = (event, user) => {
         return e;
     }
 
-    // Non-staff: what the landing page and browse events pages render
+    if (!user) {
+        return {
+            _id: e._id,
+            title: e.title,
+            category: e.category,
+            image: e.image || null,
+            status: e.status,
+            startDate: e.startDate,
+            venue: e.venue ? { city: e.venue.city, state: e.venue.state } : null,
+
+            ...(isCompleted && {
+                totalSold: (e.priceLevels || []).reduce((sum, p) => sum + (p.quantitySold || 0), 0),
+                creatorName: getCreatorLabel(e.createdBy),
+            }),
+        };
+    }
+
     return {
         _id: e._id,
         title: e.title,
@@ -23,9 +39,16 @@ const serializeEvent = (event, user) => {
         image: e.image || null,
         status: e.status,
         startDate: e.startDate,
-        venue: e.venue ? { city: e.venue.city, state: e.venue.state } : null,
+        endDate: e.endDate,
+        startTime: e.startTime,
+        endTime: e.endTime,
+        eventType: e.eventType,
+        venue: e.venue ? { name: e.venue.name, city: e.venue.city, state: e.venue.state, address: e.venue.address } : null,
+        priceLevels: e.priceLevels,
+        seatMap: e.seatMap,
+        layoutData: e.layoutData,
+        booths: e.booths,
 
-        // Only completed/featured events show these on cards — don't ship them for upcoming events
         ...(isCompleted && {
             totalSold: (e.priceLevels || []).reduce((sum, p) => sum + (p.quantitySold || 0), 0),
             creatorName: getCreatorLabel(e.createdBy),
