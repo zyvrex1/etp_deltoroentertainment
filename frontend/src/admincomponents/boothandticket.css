@@ -1552,9 +1552,10 @@
 
     .bt-card-info {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 8px;
         color: var(--color-black-secondary);
+        text-align: left;
     }
 
     .bt-header-left {
