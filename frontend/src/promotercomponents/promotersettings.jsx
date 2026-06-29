@@ -603,12 +603,43 @@ const PromoterSettings = () => {
                       <div className="ps-payout-title-row">
                         <span className="ps-payout-type">{method.type}</span>
                       </div>
-                      <span className="ps-payout-detail regular-body-text text-black d-block">
-                        {visibleMethods.has(method.id || method._id)
-                          ? (method.cardNumber || method.accountNumber || method.paypalEmail || method.last4)
-                          : '•••• •••• ••••'}
-                      </span>
-                      <span className="ps-payout-expires d-block mt-1">Expires: {method.expires}</span>
+                      <div className="ps-payout-detail regular-body-text text-black d-block">
+                        {visibleMethods.has(method.id || method._id) ? (
+                          <>
+                            {(method.type === 'Visa' || method.type === 'Mastercard' || method.type === 'Credit Card') && (
+                              <>
+                                {method.cardHolder && <div><strong>Name:</strong> {method.cardHolder}</div>}
+                                {method.cardNumber && <div><strong>Card No:</strong> {method.cardNumber}</div>}
+                                {method.expires && <div><strong>Expires:</strong> {method.expires}</div>}
+                              </>
+                            )}
+                            {method.type === 'Bank Account' && (
+                              <>
+                                {method.accountHolder && <div><strong>Name:</strong> {method.accountHolder}</div>}
+                                {method.accountNumber && <div><strong>Account No:</strong> {method.accountNumber}</div>}
+                                {method.routingNumber && <div><strong>Routing No:</strong> {method.routingNumber}</div>}
+                              </>
+                            )}
+                            {method.type === 'PayPal' && (
+                              <div><strong>Email:</strong> {method.paypalEmail}</div>
+                            )}
+                            {method.type === 'GCash' && (
+                              <>
+                                {method.accountHolder && <div><strong>Name:</strong> {method.accountHolder}</div>}
+                                {method.accountNumber && <div><strong>Number:</strong> {method.accountNumber}</div>}
+                              </>
+                            )}
+                            {!['Visa','Mastercard','Credit Card','Bank Account','PayPal','GCash'].includes(method.type) && (
+                              <div>{method.cardNumber || method.accountNumber || method.paypalEmail || method.last4 || '—'}</div>
+                            )}
+                          </>
+                        ) : (
+                          '•••• •••• ••••'
+                        )}
+                      </div>
+                      {!visibleMethods.has(method.id || method._id) && method.expires && method.expires !== 'N/A' && (
+                        <span className="ps-payout-expires d-block mt-1">Expires: {method.expires}</span>
+                      )}
                     </div>
                     <div className="ps-payout-actions">
                       <button

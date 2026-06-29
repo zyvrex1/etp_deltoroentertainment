@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import "./settings.css";
 import "../admincomponents/modal/CreateUserModal.css";
+import PromoterPayoutMethodModal from "../promotercomponents/PromoterModal/PromoterPayoutMethodModal.jsx";
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../utils/sweetAlert";
@@ -36,6 +37,82 @@ const Settings = () => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
+    const [payoutMethods, setPayoutMethods] = useState(user?.paymentMethods || []);
+    const [visibleMethods, setVisibleMethods] = useState(new Set());
+
+    const toggleMethodVisibility = (id) => {
+        setVisibleMethods(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const handleSavePayoutSettings = async (updatedMethods) => {
+        try {
+            const formData = new FormData();
+            formData.append("paymentMethods", JSON.stringify(updatedMethods));
+
+            const response = await authService.updateProfile(formData, user.token);
+            const updatedUser = { ...user, ...response.data };
+
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            dispatch({ type: "LOGIN", payload: updatedUser });
+            setPayoutMethods(response.data.paymentMethods || []);
+
+            await showSuccessAlert("Payout Settings Saved", "Your payout methods have been updated.");
+        } catch (error) {
+            console.error("Save Error:", error);
+            showErrorAlert("Update Failed", error.response?.data?.error || error.message || "Failed to save payout methods.");
+        }
+    };
+
+    const handleAddPayoutMethod = (newMethod) => {
+        const updated = [...payoutMethods, { ...newMethod, id: Date.now() }];
+        // Ensure only one default exists
+        if (newMethod.isDefault) {
+            updated.forEach(m => {
+                if (m.id !== updated[updated.length - 1].id) m.isDefault = false;
+            });
+        }
+        setPayoutMethods(updated);
+        handleSavePayoutSettings(updated);
+    };
+
+    const handleRemovePayoutMethod = async (id) => {
+        const result = await showConfirmAlert(
+            "Remove Method?",
+            "Are you sure you want to remove this payout method?",
+            "Yes, Remove",
+            "Cancel"
+        );
+
+        if (result.isConfirmed) {
+            const updated = payoutMethods.filter(m => (m.id || m._id) !== id);
+            setPayoutMethods(updated);
+            handleSavePayoutSettings(updated);
+        }
+    };
+
+    const handleSetDefaultMethod = (id) => {
+        // Find the current method to see its state
+        const currentMethod = payoutMethods.find(m => (m.id || m._id) === id);
+        const wasDefault = currentMethod?.isDefault;
+
+        const updated = payoutMethods.map(m => {
+            const isTarget = (m.id || m._id) === id;
+            if (isTarget) {
+                return { ...m, isDefault: !wasDefault };
+            }
+            return { ...m, isDefault: false }; // Only one default allowed
+        });
+
+        setPayoutMethods(updated);
+        handleSavePayoutSettings(updated);
+    };
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -72,6 +149,9 @@ const Settings = () => {
                         supportMessages: data.notifications?.supportMessages !== false
                     }
                 });
+                if (data.paymentMethods) {
+                    setPayoutMethods(data.paymentMethods);
+                }
             } catch (error) {
                 console.error("Error fetching profile:", error);
             } finally {
@@ -254,48 +334,48 @@ const Settings = () => {
                             />
                         </div>
                     </div>
-<div className="as-form-row">
-                    <div className="as-form-group">
-                        <label className="as-label">Email Address</label>
-                        <input
-                            type="email"
-                            className="as-input"
-                            value={profile.email}
-                            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                        />
-                    </div>
+                    <div className="as-form-row">
+                        <div className="as-form-group">
+                            <label className="as-label">Email Address</label>
+                            <input
+                                type="email"
+                                className="as-input"
+                                value={profile.email}
+                                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                            />
+                        </div>
 
-                    <div className="as-form-group">
-                        <label className="as-label">Phone Number</label>
-                        <PhoneInput
-                            defaultCountry="us"
-                            value={profile.phone || ""}
-                            onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
-                            inputClassName="as-input"
-                            className="phone-input-container"
-                            style={{
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '0', 
-                                border: '1px solid var(--color-black-tertiary)', 
-                                borderRadius: '6px' 
-                            }}
-                            inputStyle={{
-                                border: 'none', 
-                                padding: '10px 12px', 
-                                outline: 'none', 
-                                borderRadius: '0', 
-                                flex: 1, 
-                            }}
-                            buttonStyle={{
-                                border: 'none', 
-                                backgroundColor: 'transparent', 
-                                boxShadow: 'none', 
-                                color: '#64748b' 
-                            }}
-                        />
+                        <div className="as-form-group">
+                            <label className="as-label">Phone Number</label>
+                            <PhoneInput
+                                defaultCountry="us"
+                                value={profile.phone || ""}
+                                onChange={(phone) => setProfile((prev) => ({ ...prev, phone }))}
+                                inputClassName="as-input"
+                                className="phone-input-container"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0',
+                                    border: '1px solid var(--color-black-tertiary)',
+                                    borderRadius: '6px'
+                                }}
+                                inputStyle={{
+                                    border: 'none',
+                                    padding: '10px 12px',
+                                    outline: 'none',
+                                    borderRadius: '0',
+                                    flex: 1,
+                                }}
+                                buttonStyle={{
+                                    border: 'none',
+                                    backgroundColor: 'transparent',
+                                    boxShadow: 'none',
+                                    color: '#64748b'
+                                }}
+                            />
+                        </div>
                     </div>
-</div>
 
 
 
@@ -461,7 +541,114 @@ const Settings = () => {
                         Save Preferences
                     </button>
                 </div>
+
+                {/* PAYMENT METHODS CARD */}
+                <div className="ps-column">
+                    <div className="ps-card">
+                        <div className="ps-card-header-flex">
+                            <h4 className="ps-card-title m-0">Payout Methods</h4>
+                            <button className="ps-add-card-btn primary-button" onClick={() => setIsPayoutModalOpen(true)}>
+                                <Icon icon="mdi:plus" /> Add Method
+                            </button>
+                        </div>
+
+                        <div className="ps-payout-list">
+                            {payoutMethods.length === 0 ? (
+                                <div className="ps-empty-payment text-center py-4">
+                                    <p className="smaller-body-text text-secondary">No payout methods added yet.</p>
+                                </div>
+                            ) : (
+                                payoutMethods.map((method) => (
+                                    <div key={method.id || method._id} className="ps-payout-item">
+                                        <div className="ps-payout-icon">
+                                            <Icon icon={method.icon || "mdi:credit-card"} width="24" />
+                                        </div>
+                                        <div className="ps-payout-info">
+                                            <div className="ps-payout-title-row">
+                                                <span className="ps-payout-type">{method.type}</span>
+                                            </div>
+                                            <div className="ps-payout-detail regular-body-text text-black d-block">
+                                                {visibleMethods.has(method.id || method._id) ? (
+                                                    <>
+                                                        {(method.type === 'Visa' || method.type === 'Mastercard' || method.type === 'Credit Card') && (
+                                                            <>
+                                                                {method.cardHolder && <div><strong>Name:</strong> {method.cardHolder}</div>}
+                                                                {method.cardNumber && <div><strong>Card No:</strong> {method.cardNumber}</div>}
+                                                                {method.expires && <div><strong>Expires:</strong> {method.expires}</div>}
+                                                            </>
+                                                        )}
+                                                        {method.type === 'Bank Account' && (
+                                                            <>
+                                                                {method.accountHolder && <div><strong>Name:</strong> {method.accountHolder}</div>}
+                                                                {method.accountNumber && <div><strong>Account No:</strong> {method.accountNumber}</div>}
+                                                                {method.routingNumber && <div><strong>Routing No:</strong> {method.routingNumber}</div>}
+                                                            </>
+                                                        )}
+                                                        {method.type === 'PayPal' && (
+                                                            <div><strong>Email:</strong> {method.paypalEmail}</div>
+                                                        )}
+                                                        {method.type === 'GCash' && (
+                                                            <>
+                                                                {method.accountHolder && <div><strong>Name:</strong> {method.accountHolder}</div>}
+                                                                {method.accountNumber && <div><strong>Number:</strong> {method.accountNumber}</div>}
+                                                            </>
+                                                        )}
+                                                        {!['Visa','Mastercard','Credit Card','Bank Account','PayPal','GCash'].includes(method.type) && (
+                                                            <div>{method.cardNumber || method.accountNumber || method.paypalEmail || method.last4 || '—'}</div>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    '•••• •••• ••••'
+                                                )}
+                                            </div>
+                                            {!visibleMethods.has(method.id || method._id) && method.expires && method.expires !== 'N/A' && (
+                                                <span className="ps-payout-expires d-block mt-1">Expires: {method.expires}</span>
+                                            )}
+                                        </div>
+                                        <div className="ps-payout-actions">
+                                            <button
+                                                className="ps-set-default-btn p-0 border-0 bg-transparent"
+                                                onClick={() => handleSetDefaultMethod(method.id || method._id)}
+                                            >
+                                                <span className={`smaller-body-text ${method.isDefault ? 'button-label ps-pill-default px-2 py-1' : 'ps-set-default-text'}`}>
+                                                    {method.isDefault ? "Default" : "Set as Default"}
+                                                </span>
+                                            </button>
+                                            <button
+                                                className="ps-icon-btn"
+                                                onClick={() => toggleMethodVisibility(method.id || method._id)}
+                                                title={visibleMethods.has(method.id || method._id) ? "Hide Details" : "Show Details"}
+                                            >
+                                                <Icon
+                                                    icon={visibleMethods.has(method.id || method._id) ? "mdi:eye-off-outline" : "mdi:eye-outline"}
+                                                    width="20"
+                                                    color="#666"
+                                                />
+                                            </button>
+                                            <button
+                                                className="ps-icon-btn"
+                                                onClick={() => handleRemovePayoutMethod(method.id || method._id)}
+                                            >
+                                                <Icon icon="mdi:trash-can-outline" width="20" color="#666" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="ps-secure-storage-msg smaller-body-text">
+                            <strong>Secure Storage:</strong> Your payout information is encrypted and stored securely. We never store your full card number or CVV.
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <PromoterPayoutMethodModal
+                isOpen={isPayoutModalOpen}
+                onClose={() => setIsPayoutModalOpen(false)}
+                onAdd={handleAddPayoutMethod}
+            />
         </div>
     );
 };

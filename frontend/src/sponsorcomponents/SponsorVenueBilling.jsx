@@ -7,6 +7,7 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import { useSponsorCartContext } from '../context/SponsorCartContext';
 import * as authService from '../services/authService';
 import digitalgiftsService from '../services/digitalgiftsService';
+import PaymentDetailsModal from '../components/PaymentDetailsModal';
 import axios from 'axios';
 import './SponsorVenueBilling.css';
 
@@ -83,6 +84,8 @@ const SponsorVenueBilling = () => {
 
     const [paymentMethod, setPaymentMethod] = useState('invoice');
     const [savedMethods, setSavedMethods] = useState([]);
+    const [adminPaymentMethods, setAdminPaymentMethods] = useState([]);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [validationErrors, setValidationErrors] = useState([]);
 
@@ -133,7 +136,23 @@ const SponsorVenueBilling = () => {
             }
         };
 
+        const fetchAdminPaymentMethods = async () => {
+            if (!user?.token) return;
+            try {
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/admin/payment-methods`, {
+                    headers: { 'Authorization': `Bearer ${user.token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setAdminPaymentMethods(data);
+                }
+            } catch (error) {
+                console.error("Error fetching admin payment methods:", error);
+            }
+        };
+
         fetchProfile();
+        fetchAdminPaymentMethods();
     }, [user]);
 
     // Clear validation errors when the user edits any field
@@ -234,7 +253,7 @@ const SponsorVenueBilling = () => {
         return `${m.type || 'Card'} \u2022\u2022\u2022\u2022 ${m.last4}`;
     };
 
-    const handlePay = async () => {
+    const handlePayClick = async () => {
         if (isSubmitting) return;
 
         // 1. Client-side validation
@@ -255,6 +274,11 @@ const SponsorVenueBilling = () => {
 
         if (!result.isConfirmed) return;
 
+        setIsPaymentModalOpen(true);
+    };
+
+    const handlePaymentComplete = async () => {
+        setIsPaymentModalOpen(false);
         setIsSubmitting(true);
 
         const successfulItems = [];
@@ -760,7 +784,7 @@ const SponsorVenueBilling = () => {
 
                             <button
                                 className="primary-button svb-pay-btn mb-2 w-100 p-3"
-                                onClick={handlePay}
+                                onClick={handlePayClick}
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? (
@@ -776,6 +800,13 @@ const SponsorVenueBilling = () => {
                     </div>
                 </div>
             </div>
+            <PaymentDetailsModal 
+                isOpen={isPaymentModalOpen} 
+                onClose={() => setIsPaymentModalOpen(false)} 
+                paymentMethods={adminPaymentMethods} 
+                onSuccess={handlePaymentComplete}
+                amount={totalGrand}
+            />
         </div>
     );
 };

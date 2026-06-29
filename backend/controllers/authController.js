@@ -237,26 +237,31 @@ const refreshToken = async (req, res) => {
 
   if (!raw) {
     console.log('[refreshToken] No refresh token found in cookies')
-    return res.status(401).json({ error: 'No refresh token' })
+    return res.status(200).json({ token: null, error: 'No refresh token' })
   }
 
   let payload
   try {
     payload = verifyRefreshToken(raw)
-  } catch {
+  } catch (err) {
+    console.log('[refreshToken] Verification failed:', err.message)
     // Expired or tampered — clear the cookie and bail
     res.clearCookie('refreshToken', refreshCookieOptions())
-    return res.status(401).json({ error: 'Refresh token invalid or expired' })
+    return res.status(200).json({ token: null, error: 'Refresh token invalid or expired' })
   }
 
   try {
     const tokenHash = hashToken(raw)
     const stored    = await RefreshToken.findOne({ tokenHash })
 
+    console.log('[refreshToken] tokenHash:', tokenHash)
+    console.log('[refreshToken] stored found in DB?:', !!stored)
+
     if (!stored) {
       // Token not in DB at all — clear cookie
+      console.log('[refreshToken] Not in DB. Returning "not recognised".')
       res.clearCookie('refreshToken', refreshCookieOptions())
-      return res.status(401).json({ error: 'Refresh token not recognised' })
+      return res.status(200).json({ token: null, error: 'Refresh token not recognised' })
     }
 
     // ── Reuse / replay attack detection ──────────────────────────
@@ -304,7 +309,7 @@ const refreshToken = async (req, res) => {
     const user = await User.findById(payload._id).select('_id role')
     if (!user) {
       res.clearCookie('refreshToken', refreshCookieOptions())
-      return res.status(401).json({ error: 'User no longer exists' })
+      return res.status(200).json({ token: null, error: 'User no longer exists' })
     }
 
     // Issue new tokens in the same family
@@ -315,7 +320,7 @@ const refreshToken = async (req, res) => {
   } catch (err) {
     console.error('[refreshToken] Unexpected error:', err.message)
     res.clearCookie('refreshToken', refreshCookieOptions())
-    return res.status(401).json({ error: 'Session expired. Please log in again.' })
+    return res.status(200).json({ token: null, error: 'Session expired. Please log in again.' })
   }
 }
 
@@ -396,6 +401,7 @@ const getProfile = async (req, res) => {
       email:          user.email,
       phone:          user.phone,
       avatar:         user.avatar,
+      role:           user.role,
       notifications:  user.notifications,
       cart:           safeCart,
       paymentMethods: (user.paymentMethods || []).map(pm => ({

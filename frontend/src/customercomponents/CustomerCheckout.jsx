@@ -10,6 +10,7 @@ import eventsService from '../services/eventsService';
 import * as authService from '../services/authService';
 import digitalgiftsService from '../services/digitalgiftsService';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
+import PaymentDetailsModal from '../components/PaymentDetailsModal';
 import './CustomerCheckout.css';
 
 const CustomerCheckout = () => {
@@ -19,6 +20,8 @@ const CustomerCheckout = () => {
     const { user } = useAuthContext();
     const [paymentMethod, setPaymentMethod] = useState('invoice');
     const [savedMethods, setSavedMethods] = useState([]);
+    const [adminPaymentMethods, setAdminPaymentMethods] = useState([]);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [poNumber, setPoNumber] = useState(`PO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
     const [apEmail, setApEmail] = useState(user?.email || "");
 
@@ -58,7 +61,24 @@ const CustomerCheckout = () => {
                 console.error("Error fetching profile:", error);
             }
         };
+        
+        const fetchAdminPaymentMethods = async () => {
+            if (!user?.token) return;
+            try {
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/admin/payment-methods`, {
+                    headers: { 'Authorization': `Bearer ${user.token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setAdminPaymentMethods(data);
+                }
+            } catch (error) {
+                console.error("Error fetching admin payment methods:", error);
+            }
+        };
+
         fetchPhone();
+        fetchAdminPaymentMethods();
     }, [user]);
 
     const selectedIds = location.state?.selectedItems || [];
@@ -150,7 +170,7 @@ const CustomerCheckout = () => {
         return `${m.type || 'Card'} •••• ${m.last4}`;
     };
 
-    const handlePay = async () => {
+    const handlePayClick = async () => {
         const result = await showConfirmAlert(
             "Confirm Payment",
             `Are you sure you want to proceed with the payment of $${total.toFixed(2)}?`,
@@ -158,7 +178,13 @@ const CustomerCheckout = () => {
         );
 
         if (result.isConfirmed) {
-            try {
+            setIsPaymentModalOpen(true);
+        }
+    };
+
+    const handlePaymentComplete = async () => {
+        setIsPaymentModalOpen(false);
+        try {
                 const itemsByEvent = checkoutItems.reduce((acc, item) => {
                     const eventId = item.event._id || item.event.id;
                     if (!acc[eventId]) acc[eventId] = [];
@@ -239,7 +265,6 @@ const seatIds = eventItems.map(item => item.seat?.id || item.seat?._id || item.i
                     showErrorAlert('Payment Failed', error.message || 'There was an error processing your payment.');
                 }
             }
-        }
     };
 
     if (checkoutItems.length === 0) {
@@ -574,13 +599,21 @@ const gaItems = eventItems.filter(i => getSeatId(i).startsWith("GA-"));
                                 <h4 className="text-red m-0">${total.toFixed(2)}</h4>
                             </div>
 
-                            <button className="primary-button cc-pay-btn mt-4 w-100" onClick={handlePay}>
+                            <button className="primary-button cc-pay-btn mt-4 w-100" onClick={handlePayClick}>
                                 Pay ${total.toFixed(2)}
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
+            
+            <PaymentDetailsModal 
+                isOpen={isPaymentModalOpen} 
+                onClose={() => setIsPaymentModalOpen(false)} 
+                paymentMethods={adminPaymentMethods} 
+                onSuccess={handlePaymentComplete}
+                amount={total}
+            />
         </div>
     );
 };

@@ -190,6 +190,19 @@ const updateNotifications = async (req, res) => {
   }
 };
 
+// ✅ Get Admin Payment Methods
+const getAdminPaymentMethods = async (req, res) => {
+  try {
+    const admin = await User.findOne({ role: 'admin' });
+    if (!admin) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    res.json(admin.paymentMethods || []);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getPromoters = async (req, res) => {
   try {
     const { search } = req.query;
@@ -320,6 +333,7 @@ module.exports = {
   updateProfile,
   updateSecurity,
   updateNotifications,
+  getAdminPaymentMethods,
   getPromoters,
   getSponsors,
   updateCart,

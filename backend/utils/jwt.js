@@ -55,15 +55,13 @@ function hashToken(raw) {
 // Centralised so every set/clear call uses identical flags
 function refreshCookieOptions() {
   const isProd = process.env.NODE_ENV === 'production'
-  const raw    = process.env.JWT_REFRESH_EXPIRES_IN || '7d'
-  const days   = parseInt(raw, 10) || 7   // add radix 10 to be explicit
 
   return {
     httpOnly: true,
     secure:   isProd,
     sameSite: isProd ? 'strict' : 'lax',
-    maxAge:   days * 24 * 60 * 60 * 1000,
-    path:     '/api/auth',
+    path:     '/',   // '/' ensures the cookie is sent on every request
+    maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days (fixes potential session cookie stripping)
   }
 }
 

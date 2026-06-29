@@ -1,6 +1,11 @@
 import axios from 'axios'
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000'
+// Use VITE_BACKEND_URL if explicitly provided, otherwise default to empty string
+// An empty string ensures Axios uses relative paths (e.g., /api/...) so that 
+// the Vite proxy intercepts the request natively in development.
+const BASE_URL = import.meta.env.VITE_BACKEND_URL !== undefined 
+  ? import.meta.env.VITE_BACKEND_URL 
+  : ''
 
 const api = axios.create({
   baseURL: `${BASE_URL}/api`,
@@ -72,9 +77,12 @@ api.interceptors.response.use(
     isRefreshing     = true
 
     try {
-      // Cookie is sent automatically (withCredentials: true)
       const { data } = await api.post('/auth/refresh')
       const newToken  = data.token
+
+      if (!newToken) {
+        throw new Error('No refresh token returned')
+      }
 
       setAccessToken(newToken)
       original.headers.Authorization = `Bearer ${newToken}`
