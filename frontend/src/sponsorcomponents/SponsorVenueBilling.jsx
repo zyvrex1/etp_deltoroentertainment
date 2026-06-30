@@ -619,7 +619,7 @@ const SponsorVenueBilling = () => {
                             })} */}
 
                             {/* Credit Card Option */}
-                            <div
+                            {/* <div
                                 className={`svb-payment-option ${paymentMethod === 'card' ? 'selected' : ''}`}
                                 onClick={() => { setValidationErrors([]); setPaymentMethod('card'); }}
                             >
@@ -660,7 +660,7 @@ const SponsorVenueBilling = () => {
                                         </div>
                                     </div>
                                 )}
-                            </div>
+                            </div> */}
 
                             {/* Invoice Option */}
                             <div
@@ -800,10 +800,10 @@ const SponsorVenueBilling = () => {
                     </div>
                 </div>
             </div>
-            <PaymentDetailsModal 
-                isOpen={isPaymentModalOpen} 
-                onClose={() => setIsPaymentModalOpen(false)} 
-                paymentMethods={adminPaymentMethods} 
+            <PaymentDetailsModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                paymentMethods={adminPaymentMethods}
                 onSuccess={handlePaymentComplete}
                 amount={totalGrand}
             />

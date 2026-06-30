@@ -193,7 +193,7 @@ const updateNotifications = async (req, res) => {
 // ✅ Get Admin Payment Methods
 const getAdminPaymentMethods = async (req, res) => {
   try {
-    const admin = await User.findOne({ role: 'admin' });
+    const admin = await User.findOne({ role: { $in: ['superadmin', 'admin'] } }).sort({ role: -1 });
     if (!admin) {
       return res.status(404).json({ error: 'Admin not found' });
     }
