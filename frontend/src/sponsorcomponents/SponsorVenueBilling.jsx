@@ -6,6 +6,7 @@ import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/swe
 import { useAuthContext } from '../hooks/useAuthContext';
 import { useSponsorCartContext } from '../context/SponsorCartContext';
 import * as authService from '../services/authService';
+import api from '../services/api';
 import digitalgiftsService from '../services/digitalgiftsService';
 import PaymentDetailsModal from '../components/PaymentDetailsModal';
 import axios from 'axios';
@@ -137,15 +138,9 @@ const SponsorVenueBilling = () => {
         };
 
         const fetchAdminPaymentMethods = async () => {
-            if (!user?.token) return;
             try {
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/admin/payment-methods`, {
-                    headers: { 'Authorization': `Bearer ${user.token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setAdminPaymentMethods(data);
-                }
+                const res = await api.get('/user/admin/payment-methods');
+                setAdminPaymentMethods(res.data || []);
             } catch (error) {
                 console.error("Error fetching admin payment methods:", error);
             }

@@ -193,12 +193,24 @@ const updateNotifications = async (req, res) => {
 // ✅ Get Admin Payment Methods
 const getAdminPaymentMethods = async (req, res) => {
   try {
-    const admin = await User.findOne({ role: { $in: ['superadmin', 'admin'] } }).sort({ role: -1 });
-    if (!admin) {
+    // Find the admin that has the most payment methods configured (PayPal payout set up)
+    const admins = await User.find({ role: { $in: ['superadmin', 'admin'] } });
+    if (!admins || admins.length === 0) {
+      console.log('[getAdminPaymentMethods] No admin user found in DB');
       return res.status(404).json({ error: 'Admin not found' });
     }
-    res.json(admin.paymentMethods || []);
+    // Prefer superadmin first, then the admin with most payment methods
+    const sorted = admins.sort((a, b) => {
+      if (a.role === 'superadmin' && b.role !== 'superadmin') return -1;
+      if (b.role === 'superadmin' && a.role !== 'superadmin') return 1;
+      return (b.paymentMethods?.length || 0) - (a.paymentMethods?.length || 0);
+    });
+    const admin = sorted[0];
+    const methods = admin.paymentMethods || [];
+    console.log('[getAdminPaymentMethods] Admin:', admin.email, '| paymentMethods count:', methods.length);
+    res.json(methods);
   } catch (error) {
+    console.error('[getAdminPaymentMethods] Error:', error.message);
     res.status(500).json({ error: error.message });
   }
 };

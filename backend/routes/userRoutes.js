@@ -4,8 +4,10 @@ const requireAuth = require('../middleware/requireAuth');
 
 const { getUserById, updateProfile, updateSecurity, updateNotifications, upload, getAdminPaymentMethods, getPromoters, getSponsors, updateCart, addPaymentMethod, removePaymentMethod, setDefaultPaymentMethod } = require('../controllers/userController');
 
-// ✅ Get Admin payment methods (publicly accessible or just requireAuth)
-router.get("/admin/payment-methods", requireAuth, getAdminPaymentMethods);
+// ✅ Get Admin payment methods (public — no auth required, PayPal payout info for customers/sponsors)
+router.get("/admin/payment-methods", getAdminPaymentMethods);
+
+
 
 // ✅ Search promoters for collaboration
 router.get("/promoters", requireAuth, getPromoters);
