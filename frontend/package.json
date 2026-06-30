@@ -12,7 +12,7 @@
   "dependencies": {
     "@iconify/react": "^6.0.2",
     "@stripe/stripe-js": "^9.8.0",
-    "axios": "^1.13.5",
+    "axios": "^1.18.1",
     "canvas": "^3.2.3",
     "html2canvas": "^1.4.1",
     "html5-qrcode": "^2.3.8",
